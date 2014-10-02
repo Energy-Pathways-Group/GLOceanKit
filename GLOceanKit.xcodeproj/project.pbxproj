@@ -10,6 +10,15 @@
 		8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187734819DDB234007E5DA3 /* GLOceanKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187734F19DDB234007E5DA3 /* GLOceanKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187734319DDB234007E5DA3 /* GLOceanKit.framework */; };
 		8187735619DDB234007E5DA3 /* GLOceanKitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187735519DDB234007E5DA3 /* GLOceanKitTests.m */; };
+		8187736019DDB3AD007E5DA3 /* GLNumericalModelingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */; };
+		8187736819DDB421007E5DA3 /* GLOceanKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187736719DDB421007E5DA3 /* GLOceanKit.h */; };
+		8187736A19DDB421007E5DA3 /* GLOceanKit.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187736919DDB421007E5DA3 /* GLOceanKit.m */; };
+		8187737019DDB421007E5DA3 /* libGLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187736519DDB421007E5DA3 /* libGLOceanKit.dylib */; };
+		8187737D19DDB438007E5DA3 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */; };
+		8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; };
+		8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; };
+		8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
+		8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,6 +27,13 @@
 			containerPortal = 8187733A19DDB233007E5DA3 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8187734219DDB234007E5DA3;
+			remoteInfo = GLOceanKit;
+		};
+		8187737119DDB421007E5DA3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8187733A19DDB233007E5DA3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8187736419DDB421007E5DA3;
 			remoteInfo = GLOceanKit;
 		};
 /* End PBXContainerItemProxy section */
@@ -29,6 +45,15 @@
 		8187734E19DDB234007E5DA3 /* GLOceanKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GLOceanKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8187735419DDB234007E5DA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8187735519DDB234007E5DA3 /* GLOceanKitTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GLOceanKitTests.m; sourceTree = "<group>"; };
+		8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = GLNumericalModelingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8187736519DDB421007E5DA3 /* libGLOceanKit.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libGLOceanKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		8187736719DDB421007E5DA3 /* GLOceanKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GLOceanKit.h; sourceTree = "<group>"; };
+		8187736919DDB421007E5DA3 /* GLOceanKit.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GLOceanKit.m; sourceTree = "<group>"; };
+		8187736F19DDB421007E5DA3 /* GLOceanKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GLOceanKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8187737519DDB421007E5DA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = GLNumericalModelingKit.dylib; path = "../../../Library/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug/GLNumericalModelingKit.dylib"; sourceTree = "<group>"; };
+		8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Quasigeostrophy2D.h; sourceTree = "<group>"; };
+		8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Quasigeostrophy2D.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8187736019DDB3AD007E5DA3 /* GLNumericalModelingKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -47,15 +73,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8187736219DDB421007E5DA3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8187737D19DDB438007E5DA3 /* GLNumericalModelingKit.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8187736C19DDB421007E5DA3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8187737019DDB421007E5DA3 /* libGLOceanKit.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		8187733919DDB233007E5DA3 = {
 			isa = PBXGroup;
 			children = (
+				8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */,
 				8187734519DDB234007E5DA3 /* GLOceanKit */,
 				8187735219DDB234007E5DA3 /* GLOceanKitTests */,
+				8187736619DDB421007E5DA3 /* GLOceanKit */,
+				8187737319DDB421007E5DA3 /* GLOceanKitTests */,
 				8187734419DDB234007E5DA3 /* Products */,
+				8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */,
 			);
 			sourceTree = "<group>";
 		};
@@ -64,6 +110,8 @@
 			children = (
 				8187734319DDB234007E5DA3 /* GLOceanKit.framework */,
 				8187734E19DDB234007E5DA3 /* GLOceanKitTests.xctest */,
+				8187736519DDB421007E5DA3 /* libGLOceanKit.dylib */,
+				8187736F19DDB421007E5DA3 /* GLOceanKitTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,6 +120,8 @@
 			isa = PBXGroup;
 			children = (
 				8187734819DDB234007E5DA3 /* GLOceanKit.h */,
+				8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */,
+				8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */,
 				8187734619DDB234007E5DA3 /* Supporting Files */,
 			);
 			path = GLOceanKit;
@@ -102,6 +152,31 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		8187736619DDB421007E5DA3 /* GLOceanKit */ = {
+			isa = PBXGroup;
+			children = (
+				8187736719DDB421007E5DA3 /* GLOceanKit.h */,
+				8187736919DDB421007E5DA3 /* GLOceanKit.m */,
+			);
+			path = GLOceanKit;
+			sourceTree = "<group>";
+		};
+		8187737319DDB421007E5DA3 /* GLOceanKitTests */ = {
+			isa = PBXGroup;
+			children = (
+				8187737419DDB421007E5DA3 /* Supporting Files */,
+			);
+			path = GLOceanKitTests;
+			sourceTree = "<group>";
+		};
+		8187737419DDB421007E5DA3 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				8187737519DDB421007E5DA3 /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -109,16 +184,26 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
 				8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8187736319DDB421007E5DA3 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
+				8187736819DDB421007E5DA3 /* GLOceanKit.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		8187734219DDB234007E5DA3 /* GLOceanKit */ = {
+		8187734219DDB234007E5DA3 /* GLOceanKitFramework */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8187735919DDB234007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKit" */;
+			buildConfigurationList = 8187735919DDB234007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKitFramework" */;
 			buildPhases = (
 				8187733E19DDB234007E5DA3 /* Sources */,
 				8187733F19DDB234007E5DA3 /* Frameworks */,
@@ -129,7 +214,7 @@
 			);
 			dependencies = (
 			);
-			name = GLOceanKit;
+			name = GLOceanKitFramework;
 			productName = GLOceanKit;
 			productReference = 8187734319DDB234007E5DA3 /* GLOceanKit.framework */;
 			productType = "com.apple.product-type.framework";
@@ -152,6 +237,41 @@
 			productReference = 8187734E19DDB234007E5DA3 /* GLOceanKitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		8187736419DDB421007E5DA3 /* GLOceanKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8187737619DDB421007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKit" */;
+			buildPhases = (
+				8187736119DDB421007E5DA3 /* Sources */,
+				8187736219DDB421007E5DA3 /* Frameworks */,
+				8187736319DDB421007E5DA3 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GLOceanKit;
+			productName = GLOceanKit;
+			productReference = 8187736519DDB421007E5DA3 /* libGLOceanKit.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		8187736E19DDB421007E5DA3 /* GLOceanKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8187737919DDB421007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKitTests" */;
+			buildPhases = (
+				8187736B19DDB421007E5DA3 /* Sources */,
+				8187736C19DDB421007E5DA3 /* Frameworks */,
+				8187736D19DDB421007E5DA3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8187737219DDB421007E5DA3 /* PBXTargetDependency */,
+			);
+			name = GLOceanKitTests;
+			productName = GLOceanKitTests;
+			productReference = 8187736F19DDB421007E5DA3 /* GLOceanKitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -165,6 +285,12 @@
 						CreatedOnToolsVersion = 6.1;
 					};
 					8187734D19DDB234007E5DA3 = {
+						CreatedOnToolsVersion = 6.1;
+					};
+					8187736419DDB421007E5DA3 = {
+						CreatedOnToolsVersion = 6.1;
+					};
+					8187736E19DDB421007E5DA3 = {
 						CreatedOnToolsVersion = 6.1;
 					};
 				};
@@ -181,8 +307,10 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8187734219DDB234007E5DA3 /* GLOceanKit */,
+				8187734219DDB234007E5DA3 /* GLOceanKitFramework */,
 				8187734D19DDB234007E5DA3 /* GLOceanKitTests */,
+				8187736419DDB421007E5DA3 /* GLOceanKit */,
+				8187736E19DDB421007E5DA3 /* GLOceanKitTests */,
 			);
 		};
 /* End PBXProject section */
@@ -202,6 +330,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8187736D19DDB421007E5DA3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -209,6 +344,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,13 +356,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8187736119DDB421007E5DA3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8187736A19DDB421007E5DA3 /* GLOceanKit.m in Sources */,
+				8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8187736B19DDB421007E5DA3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		8187735119DDB234007E5DA3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 8187734219DDB234007E5DA3 /* GLOceanKit */;
+			target = 8187734219DDB234007E5DA3 /* GLOceanKitFramework */;
 			targetProxy = 8187735019DDB234007E5DA3 /* PBXContainerItemProxy */;
+		};
+		8187737219DDB421007E5DA3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8187736419DDB421007E5DA3 /* GLOceanKit */;
+			targetProxy = 8187737119DDB421007E5DA3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -319,11 +476,15 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = GLOceanKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = GLOceanKit;
 				SKIP_INSTALL = YES;
 			};
 			name = Debug;
@@ -336,11 +497,15 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = GLOceanKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = GLOceanKit;
 				SKIP_INSTALL = YES;
 			};
 			name = Release;
@@ -377,6 +542,80 @@
 			};
 			name = Release;
 		};
+		8187737719DDB421007E5DA3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Applications/Xcode\\ 6.1b3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
+					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8187737819DDB421007E5DA3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Applications/Xcode\\ 6.1b3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
+					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		8187737A19DDB421007E5DA3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = GLOceanKitTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8187737B19DDB421007E5DA3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = GLOceanKitTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -389,19 +628,37 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8187735919DDB234007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKit" */ = {
+		8187735919DDB234007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKitFramework" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8187735A19DDB234007E5DA3 /* Debug */,
 				8187735B19DDB234007E5DA3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		8187735C19DDB234007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKitTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8187735D19DDB234007E5DA3 /* Debug */,
 				8187735E19DDB234007E5DA3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8187737619DDB421007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8187737719DDB421007E5DA3 /* Debug */,
+				8187737819DDB421007E5DA3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		8187737919DDB421007E5DA3 /* Build configuration list for PBXNativeTarget "GLOceanKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8187737A19DDB421007E5DA3 /* Debug */,
+				8187737B19DDB421007E5DA3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};

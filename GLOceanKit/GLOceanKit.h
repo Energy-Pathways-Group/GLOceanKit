@@ -6,14 +6,8 @@
 //  Copyright (c) 2014 Jeffrey J. Early. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
-//! Project version number for GLOceanKit.
-FOUNDATION_EXPORT double GLOceanKitVersionNumber;
+@interface GLOceanKit : NSObject
 
-//! Project version string for GLOceanKit.
-FOUNDATION_EXPORT const unsigned char GLOceanKitVersionString[];
-
-// In this header, you should import all the public headers of your framework using statements like #import <GLOceanKit/PublicHeader.h>
-
-
+@end
