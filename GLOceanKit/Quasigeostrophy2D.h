@@ -107,4 +107,39 @@
 // k_damp = k_min*dampingFraction
 @property GLFloat frictionalDampingFraction;
 
+/// Whether or not you want to advect the floats specified by initial positions (xPosition, yPosition)
+@property BOOL shouldAdvectFloats;
+
+/// Whether or not you want to advect the tracers in the tracers array.
+@property BOOL shouldAdvectTracer;
+
+/************************************************/
+/*		Derived Parameters						*/
+/************************************************/
+
+#pragma mark -
+#pragma mark Derived Parameters
+#pragma mark
+
+// forcing wavenumber
+@property(readonly) GLFloat k_f;
+
+// small scale damping wavenumber
+@property(readonly) GLFloat k_nu;
+
+// large scale thermal damping wavenumber
+@property(readonly) GLFloat k_alpha;
+
+// large scale frictional damping wavenumber
+@property(readonly) GLFloat k_r;
+
+// forcing width
+@property(readonly) GLFloat k_width;
+
+// max resolved wavenumber
+@property(readonly) GLFloat k_max;
+
+// small scale damping parameter
+@property(readonly) GLFloat nu;
+
 @end

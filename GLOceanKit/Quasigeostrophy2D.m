@@ -17,6 +17,7 @@
 @property(strong) GLLinearTransform *diffJacobianY;
 @property(strong) GLLinearTransform *diffLinear;
 @property(strong) GLLinearTransform *tracerDamp;
+@property BOOL shouldAdvancePhases;
 @end
 
 @implementation Quasigeostrophy2D
@@ -209,12 +210,21 @@
 			k_nu=k_min;
 		}
 	}
+	
+	// we aren't properly KVC here.
+	_k_f = k_f;
+	_k_nu = k_nu;
+	_k_alpha = k_alpha;
+	_k_r = k_r;
+	_k_width = k_width;
+	_k_max = k_max;
+	_nu = nu;
+	
 	NSLog(@"k_nu=%f",k_nu);
 	
 	// The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
 	GLVariable *forcing = [GLFunction functionOfRealTypeWithDimensions: wavenumberDimensions forEquation: self.equation];
 	GLVariable *phaseSpeed;
-	BOOL shouldAdvancePhases = NO;
 	if (!self.phi) {
 		// The random number generator will enforce the hermitian symmetry.
 		self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: self.equation];
@@ -238,7 +248,7 @@
 		
 		if (self.forcingDecorrelationTime == HUGE_VAL) {
 			// Infinite decorrelation time means the phases don't change.
-			shouldAdvancePhases = NO;
+			self.shouldAdvancePhases = NO;
 		} else if (self.forcingDecorrelationTime > 0.0) {
 			// Let the phases evolve with a give speed, but only if we chose a nonzero decorrelation time.
 			phaseSpeed = [bigK scalarMultiply: 2*M_PI*self.T_QG/(k_f*self.forcingDecorrelationTime)];
@@ -246,10 +256,10 @@
 			for (NSUInteger i=0; i<forcing.nDataPoints; i++) {
 				if ( fabs(kk[i]-k_f) >= k_width/2.0 ) f[i] = 0.0;
 			}
-			shouldAdvancePhases = YES;
+			self.shouldAdvancePhases = YES;
 		} else {
 			// In this case we will choose random values at each time step, so the phase change may as well be zero.
-			shouldAdvancePhases = NO;
+			self.shouldAdvancePhases = NO;
 		}
 		
 	} else {
@@ -284,7 +294,105 @@
 	if (self.shouldUseBeta) {
 		GLLinearTransform *diff_x = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(0)] fromDimensions:spectralDimensions forEquation:self.equation];
 		self.diffLinear = [self.diffLinear minus: diff_x];
-	}	
+	}
+	
+	/************************************************************************************************/
+	/*		Estimate the time step																	*/
+	/************************************************************************************************/
+	
+	GLDimension *xDim = self.dimensions[0];
+	CGFloat cfl = 0.25;
+	
+	// Rounds dt to a number that evenly divides one day.
+	GLFloat viscous_dt = cfl*xDim.sampleInterval * xDim.sampleInterval / (nu);
+	GLFloat maxU = pow(alpha,-0.125)*pow(real_energy,3./8.);
+	maxU = u_rms;
+	GLFloat other_dt = cfl*xDim.sampleInterval/maxU;
+	GLFloat dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
+	
+	if (shouldRestart) {
+		GLVariable *v = [[ssh x] spatialDomain];
+		GLVariable *u = [[ssh y] spatialDomain];
+		GLVariable *speed = [[u times: u] plus: [v times: v]];
+		[equation solveForVariable: speed];
+		
+		
+		GLFloat U = sqrt([speed maxNow]);
+		dt = cfl * xDim.sampleInterval / U;
+	}
+	
+	NSLog(@"Reynolds number: %f", maxU*xDim.domainLength/nu);
+	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*T_QG, other_dt*T_QG);
+}
+
+- (void) createIntegrationOperation
+{
+
+	
+	NSMutableArray *yin = [NSMutableArray arrayWithObject: zeta];
+	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-6)];
+	if (self.shouldAdvancePhases) {
+		[yin addObject: self.phi];
+		[absTolerances addObject: @(1e0)];
+	}
+	if (self.shouldAdvectFloats) {
+		[yin addObjectsFromArray:@[self.xPosition, self.yPosition]];
+		[absTolerances addObjectsFromArray:@[@(1e-3), @(1e-3)]];
+	}
+	if (self.shouldAdvectTracer) {
+		for (GLFunction *tracer in self.tracers) {
+			[yin addObject: [tracer frequencyDomain]];
+			[absTolerances addObject: @(1e-3)];
+		}
+	}
+	
+	GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: dt fFromTY:^(GLVariable *time, NSArray *yNew) {
+		//		GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: other_dt fFromTY:^(GLVariable *time, NSArray *yNew){
+		NSUInteger iInput = 0;
+		GLVariable *eta = [yNew[0] diff: @"inverseLaplacianMinusOne"];
+		GLVariable *f = [[eta diff:@"diffLin"] plus: [[[[eta y] times: [eta diff: @"diffJacobianX"]] minus: [[eta x] times: [eta diff: @"diffJacobianY"]]] frequencyDomain]];
+		
+		if (shouldForce) {
+			GLVariable *phase;
+			if (forcingDecorrelationTime == HUGE_VAL) {
+				phase = initialPhase;
+			} else if (forcingDecorrelationTime == 0.0) {
+				phase = [GLVariable variableWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: equation];
+			} else {
+				phase = yNew[++iInput];
+			}
+			f = [f plus: [forcing multiply: [[phase swapComplex] exponentiate]]];
+		}
+		
+		NSMutableArray *fout = [NSMutableArray arrayWithObject: f];
+		
+		if (shouldAdvancePhases) {
+			GLVariable *randomPhases = [GLVariable variableWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: equation];
+			GLVariable *omega = [phaseSpeed multiply: [randomPhases dividedBy: [randomPhases abs]]];
+			[fout addObject: omega];
+		}
+		
+		if (shouldAdvectFloats) {
+			NSArray *uv = @[[[[eta y] spatialDomain] negate], [[eta x] spatialDomain] ];
+			NSArray *xy = @[yNew[++iInput], yNew[++iInput]];
+			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: uv secondOperand: xy];
+			
+			[fout addObjectsFromArray:@[interp.result[0], interp.result[1]]];
+		}
+		
+		if (shouldAdvectTracer) {
+			GLVariable *tracer = yNew[++iInput];
+			GLVariable *fTracer = [[[[[eta y] times: [tracer x]] minus:[[eta x] times: [tracer y]] ] frequencyDomain] plus: [tracer diff: @"damp"]];
+			
+			[fout addObject: fTracer];
+		}
+		
+		return fout;
+		
+	}];
+	if ([[integrator class] isSubclassOfClass: [GLAdaptiveRungeKuttaOperation class]]) {
+		[ (GLAdaptiveRungeKuttaOperation *) integrator setAbsoluteTolerance: absTolerances ];
+	}
 }
 
 @end
