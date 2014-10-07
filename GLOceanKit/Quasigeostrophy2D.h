@@ -18,6 +18,8 @@
 
 /// The spatial dimensions, e.g., (x, y), although they will be in the order given during initialization.
 @property(strong) NSArray *dimensions;
+@property(strong) NSArray *wavenumberDimensions;
+@property(strong) GLMutableDimension *tDim;
 
 @property(strong) GLEquation *equation;
 
@@ -28,6 +30,12 @@
 
 // Initial phase of the forcing function
 @property(strong) GLFunction *phi;
+
+// The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
+@property(strong) GLFunction *forcing;
+
+// the phase speed of each component
+@property(strong) GLFunction *phaseSpeed;
 
 // Position of the floats
 @property(strong) GLFunction *xPosition;
@@ -114,6 +122,41 @@
 @property BOOL shouldAdvectTracer;
 
 /************************************************/
+/*		Output Control							*/
+/************************************************/
+
+#pragma mark -
+#pragma mark Output Control
+#pragma mark
+
+// Adds the QG turbulence metadata to file. Do NOT call this function if you've set an outputFile below; that will be done automatically.
+- (void) addMetadataToNetCDFFile: (GLNetCDFFile *) file;
+
+/// Optional output file.
+// By default this will output the ssh and any tracers or floats.
+@property(copy) NSURL *outputFile;
+
+/// Set to YES to write the ssh in frequency domain out. This is redundant and can be derived from the ssh.
+@property BOOL shouldWriteSSHFD;
+
+/// Set to YES to write the relative vorticity out. This is redundant and can be derived from the ssh.
+@property BOOL shouldWriteRV;
+
+/// Set to YES to write the force out. This is redundant and can be derived from the force magnitude and phase.
+@property BOOL shouldWriteForce;
+
+/// *Dimensionalized* ssh function (with time dimension) associated with the netcdf file.
+@property(strong,readonly) GLMutableVariable *sshHistory;
+@property(strong,readonly) GLFunction *dimensionalForceMag;
+@property(strong,readonly) GLMutableVariable *phaseHistory;
+@property(strong,readonly) GLMutableVariable *sshFDHistory;
+@property(strong,readonly) GLMutableVariable *rvHistory;
+@property(strong,readonly) GLMutableVariable *forceHistory;
+@property(strong,readonly) GLMutableVariable *xPositionHistory;
+@property(strong,readonly) GLMutableVariable *yPositionHistory;
+@property(strong,readonly) NSArray *tracerHistories;
+
+/************************************************/
 /*		Derived Parameters						*/
 /************************************************/
 
@@ -138,6 +181,12 @@
 
 // max resolved wavenumber
 @property(readonly) GLFloat k_max;
+
+// thermal damping parameter
+@property(readonly) GLFloat alpha;
+
+// frictional damping parameter
+@property(readonly) GLFloat r;
 
 // small scale damping parameter
 @property(readonly) GLFloat nu;

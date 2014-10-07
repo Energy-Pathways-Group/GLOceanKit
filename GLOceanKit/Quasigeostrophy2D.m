@@ -12,12 +12,36 @@
 #define R 6.371e6
 
 @interface Quasigeostrophy2D ()
+@property(strong) GLLinearTransform *laplacian;
+@property(strong) GLLinearTransform *laplacianMinusOne;
 @property(strong) GLLinearTransform *inverseLaplacianMinusOne;
 @property(strong) GLLinearTransform *diffJacobianX;
 @property(strong) GLLinearTransform *diffJacobianY;
 @property(strong) GLLinearTransform *diffLinear;
 @property(strong) GLLinearTransform *tracerDamp;
 @property BOOL shouldAdvancePhases;
+@property BOOL isRestart;
+@property GLFloat dt;
+
+@property(strong) GLMutableVariable *sshHistory;
+@property(strong) GLFunction *dimensionalForceMag;
+@property(strong) GLMutableVariable *phaseHistory;
+@property(strong) GLMutableVariable *sshFDHistory;
+@property(strong) GLMutableVariable *rvHistory;
+@property(strong) GLMutableVariable *forceHistory;
+@property(strong) GLMutableVariable *xPositionHistory;
+@property(strong) GLMutableVariable *yPositionHistory;
+@property(strong) NSArray *tracerHistories;
+
+@property GLFloat k_f;
+@property GLFloat k_nu;
+@property GLFloat k_alpha;
+@property GLFloat k_r;
+@property GLFloat k_width;
+@property GLFloat k_max;
+@property GLFloat alpha;
+@property GLFloat r;
+@property GLFloat nu;
 @end
 
 @implementation Quasigeostrophy2D
@@ -140,7 +164,7 @@
 		self.forcingDecorrelationTime = [restartFile.globalAttributes[@"forcing-decorrelation-time"] doubleValue];
 		self.thermalDampingFraction = [restartFile.globalAttributes[@"thermal-damping-fraction"] doubleValue];
 		self.frictionalDampingFraction = [restartFile.globalAttributes[@"frictional-damping-fraction"] doubleValue];
-
+		self.isRestart = YES;
 	}
 	
 	return self;
@@ -153,48 +177,47 @@
 
 - (void) createDifferentialOperators
 {
-	NSArray *spectralDimensions = [self.ssh dimensionsTransformedToBasis: self.ssh.differentiationBasis];
+	self.wavenumberDimensions = [self.ssh dimensionsTransformedToBasis: self.ssh.differentiationBasis];
 	
-	GLLinearTransform *laplacian = [GLLinearTransform harmonicOperatorFromDimensions: spectralDimensions forEquation: self.equation];
-	GLLinearTransform *laplacianMinusOne = [laplacian plus: @(-1.0)];
-	self.inverseLaplacianMinusOne = [laplacianMinusOne inverse];
+	self.laplacian = [GLLinearTransform harmonicOperatorFromDimensions: self.wavenumberDimensions forEquation: self.equation];
+	self.laplacianMinusOne = [self.laplacian plus: @(-1.0)];
+	self.inverseLaplacianMinusOne = [self.laplacianMinusOne inverse];
 	
-	GLLinearTransform *diff_xxx = [GLLinearTransform differentialOperatorWithDerivatives:@[@(3),@(0)] fromDimensions:spectralDimensions forEquation:self.equation];
-	GLLinearTransform *diff_xyy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(2)] fromDimensions:spectralDimensions forEquation:self.equation];
-	GLLinearTransform *diff_xxy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(2),@(1)] fromDimensions:spectralDimensions forEquation:self.equation];
-	GLLinearTransform *diff_yyy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(0),@(3)] fromDimensions:spectralDimensions forEquation:self.equation];
+	GLLinearTransform *diff_xxx = [GLLinearTransform differentialOperatorWithDerivatives:@[@(3),@(0)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
+	GLLinearTransform *diff_xyy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(2)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
+	GLLinearTransform *diff_xxy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(2),@(1)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
+	GLLinearTransform *diff_yyy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(0),@(3)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
 	
 	self.diffJacobianX = [diff_xxx plus: diff_xyy];
 	self.diffJacobianY = [diff_xxy plus: diff_yyy];
 	
 	// I'm looking at Scott & Polvani, 2007 for this.
-	NSArray *wavenumberDimensions = laplacianMinusOne.toDimensions;
 	GLFunction *bigK;
-	for (GLDimension *dim in wavenumberDimensions) {
-		GLFunction *k = [GLFunction functionOfRealTypeFromDimension: dim withDimensions: wavenumberDimensions forEquation:self.equation];
+	for (GLDimension *dim in self.wavenumberDimensions) {
+		GLFunction *k = [GLFunction functionOfRealTypeFromDimension: dim withDimensions: self.wavenumberDimensions forEquation:self.equation];
 		bigK = !bigK ? [k multiply: k] : [bigK plus: [k multiply: k]];
 	}
 	bigK = [bigK sqrt];
 	
-	GLFloat k_max = [wavenumberDimensions[0] domainMin]+[wavenumberDimensions[0] domainLength];
+	GLFloat k_max = [self.wavenumberDimensions[0] domainMin]+[self.wavenumberDimensions[0] domainLength];
 	if ([GLBasisTransformOperation shouldAntialias]) {
 		k_max = 2.0*k_max/3.0;
 	}
 	
 	GLFloat k_f = k_max/self.forcingFraction;
-	GLFloat k_width = [wavenumberDimensions[0] sampleInterval]*self.forcingWidth;
+	GLFloat k_width = [self.wavenumberDimensions[0] sampleInterval]*self.forcingWidth;
 	
 	GLFloat real_energy = pow(self.f_zeta,1.5)/(k_f*k_f);
 	
-	GLFloat k_alpha = [wavenumberDimensions[0] sampleInterval]*self.thermalDampingFraction;
+	GLFloat k_alpha = [self.wavenumberDimensions[0] sampleInterval]*self.thermalDampingFraction;
 	GLFloat alpha = pow(pow(self.f_zeta, 1.5)*pow(k_alpha,8.0)/pow(k_f, 2.0),0.3333);
 	
 	// Note that I'm adjusting the friction by what *really* happens. Our estimate is off, for some reason.
-	GLFloat k_r = [wavenumberDimensions[0] sampleInterval]*self.frictionalDampingFraction;
+	GLFloat k_r = [self.wavenumberDimensions[0] sampleInterval]*self.frictionalDampingFraction;
 	GLFloat r = 0.04*pow( pow(k_r, 2.0) * real_energy, 0.3333);
 	
 	// compute the svv cutoff, k_c
-	GLFloat deltaK = [wavenumberDimensions[0] sampleInterval];
+	GLFloat deltaK = [self.wavenumberDimensions[0] sampleInterval];
 	GLFloat k_c = deltaK * pow(k_max/deltaK, 0.75);
 	
 	GLFloat u_rms = k_alpha > k_r ? pow(real_energy/k_alpha,0.333) : pow(real_energy/k_r,0.333);
@@ -203,7 +226,7 @@
 	GLFloat k_nu = k_c;
 	GLFloat k_min = k_c;
 	GLFloat min = fabs(nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
-	for (k_min=k_c; k_min<k_max; k_min += [wavenumberDimensions[0] sampleInterval]) {
+	for (k_min=k_c; k_min<k_max; k_min += [self.wavenumberDimensions[0] sampleInterval]) {
 		GLFloat a = fabs(nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
 		if (a<min) {
 			min=a;
@@ -211,37 +234,37 @@
 		}
 	}
 	
-	// we aren't properly KVC here.
-	_k_f = k_f;
-	_k_nu = k_nu;
-	_k_alpha = k_alpha;
-	_k_r = k_r;
-	_k_width = k_width;
-	_k_max = k_max;
-	_nu = nu;
+	self.k_f = k_f;
+	self.k_nu = k_nu;
+	self.k_alpha = k_alpha;
+	self.k_r = k_r;
+	self.k_width = k_width;
+	self.k_max = k_max;
+	self.alpha = alpha;
+	self.r = r;
+	self.nu = nu;
 	
 	NSLog(@"k_nu=%f",k_nu);
 	
 	// The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
-	GLVariable *forcing = [GLFunction functionOfRealTypeWithDimensions: wavenumberDimensions forEquation: self.equation];
-	GLVariable *phaseSpeed;
+	self.forcing = [GLFunction functionOfRealTypeWithDimensions: self.wavenumberDimensions forEquation: self.equation];
 	if (!self.phi) {
 		// The random number generator will enforce the hermitian symmetry.
-		self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: self.equation];
+		self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
 	}
 	
 	if (self.shouldForce)
 	{
 		// Now evenly distribute the intended force across all wavenumbers in the band
-		GLFloat *f = [forcing pointerValue];
+		GLFloat *f = [self.forcing pointerValue];
 		GLFloat *kk = [bigK pointerValue];
 		GLFloat totalWavenumbersInBand = 0;
-		for (NSUInteger i=0; i<forcing.nDataPoints; i++) {
+		for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
 			if ( fabs(kk[i]-k_f) < k_width/2.0 ) totalWavenumbersInBand += 1.0;
 		}
 		// We are ignoring the negative frequencies for l. So we need to add those in as well.
 		// This is not exactly double, but close enough.
-		for (NSUInteger i=0; i<forcing.nDataPoints; i++) {
+		for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
 			if ( fabs(kk[i]-k_f) < k_width/2.0 ) f[i] = self.f_zeta/sqrt(2*totalWavenumbersInBand);
 			else f[i] = 0.0;
 		}
@@ -251,9 +274,9 @@
 			self.shouldAdvancePhases = NO;
 		} else if (self.forcingDecorrelationTime > 0.0) {
 			// Let the phases evolve with a give speed, but only if we chose a nonzero decorrelation time.
-			phaseSpeed = [bigK scalarMultiply: 2*M_PI*self.T_QG/(k_f*self.forcingDecorrelationTime)];
-			f = phaseSpeed.pointerValue;
-			for (NSUInteger i=0; i<forcing.nDataPoints; i++) {
+			self.phaseSpeed = [bigK scalarMultiply: 2*M_PI*self.T_QG/(k_f*self.forcingDecorrelationTime)];
+			f = self.phaseSpeed.pointerValue;
+			for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
 				if ( fabs(kk[i]-k_f) >= k_width/2.0 ) f[i] = 0.0;
 			}
 			self.shouldAdvancePhases = YES;
@@ -263,7 +286,7 @@
 		}
 		
 	} else {
-		[forcing zero];
+		[self.forcing zero];
 		[self.phi zero];
 	}
 	
@@ -271,18 +294,18 @@
 	/*		Create and cache the differential operators we will need								*/
 	/************************************************************************************************/
 	
-	GLLinearTransform *harmonic = [GLLinearTransform harmonicOperatorOfOrder: 1 fromDimensions: spectralDimensions forEquation: self.equation];
-	GLLinearTransform *biharmonic = [GLLinearTransform harmonicOperatorOfOrder: 2 fromDimensions: spectralDimensions forEquation: self.equation];
+	GLLinearTransform *harmonic = [GLLinearTransform harmonicOperatorOfOrder: 1 fromDimensions: self.wavenumberDimensions forEquation: self.equation];
+	GLLinearTransform *biharmonic = [GLLinearTransform harmonicOperatorOfOrder: 2 fromDimensions: self.wavenumberDimensions forEquation: self.equation];
 	
 	// first create the small scale damping operator, used for numerical stability.
 	GLLinearTransform *numericalDamp;
 	if (self.shouldUseSVV) {
-		GLLinearTransform *svv = [GLLinearTransform spectralVanishingViscosityFilterWithDimensions: spectralDimensions scaledForAntialiasing: self.shouldAntiAlias forEquation: self.equation];
+		GLLinearTransform *svv = [GLLinearTransform spectralVanishingViscosityFilterWithDimensions: self.wavenumberDimensions scaledForAntialiasing: self.shouldAntiAlias forEquation: self.equation];
 		numericalDamp = [[biharmonic times: @(nu)] times: svv];
 		
 		self.tracerDamp = [[harmonic times: @(nu)] times: svv];
 	} else {
-		GLLinearTransform *biharmonic = [GLLinearTransform harmonicOperatorOfOrder: 2 fromDimensions: spectralDimensions forEquation: self.equation];
+		GLLinearTransform *biharmonic = [GLLinearTransform harmonicOperatorOfOrder: 2 fromDimensions: self.wavenumberDimensions forEquation: self.equation];
 		numericalDamp = [biharmonic times: @(nu)];
 		
 		self.tracerDamp = [harmonic times: @(nu)];
@@ -292,7 +315,7 @@
 	self.diffLinear = [[numericalDamp plus: @(alpha)] plus: [harmonic times: @(-r)]];
 	
 	if (self.shouldUseBeta) {
-		GLLinearTransform *diff_x = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(0)] fromDimensions:spectralDimensions forEquation:self.equation];
+		GLLinearTransform *diff_x = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(0)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
 		self.diffLinear = [self.diffLinear minus: diff_x];
 	}
 	
@@ -308,26 +331,24 @@
 	GLFloat maxU = pow(alpha,-0.125)*pow(real_energy,3./8.);
 	maxU = u_rms;
 	GLFloat other_dt = cfl*xDim.sampleInterval/maxU;
-	GLFloat dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
+	self.dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
 	
-	if (shouldRestart) {
-		GLVariable *v = [[ssh x] spatialDomain];
-		GLVariable *u = [[ssh y] spatialDomain];
-		GLVariable *speed = [[u times: u] plus: [v times: v]];
-		[equation solveForVariable: speed];
-		
+	if (self.isRestart) {
+		GLFunction *v = [[self.ssh x] spatialDomain];
+		GLFunction *u = [[self.ssh y] spatialDomain];
+		GLFunction *speed = [[u times: u] plus: [v times: v]];
 		
 		GLFloat U = sqrt([speed maxNow]);
-		dt = cfl * xDim.sampleInterval / U;
+		self.dt = cfl * xDim.sampleInterval / U;
 	}
 	
 	NSLog(@"Reynolds number: %f", maxU*xDim.domainLength/nu);
-	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*T_QG, other_dt*T_QG);
+	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*self.T_QG, other_dt*self.T_QG);
 }
 
 - (void) createIntegrationOperation
 {
-
+	GLFunction *zeta = [self.ssh differentiateWithOperator: self.laplacianMinusOne];
 	
 	NSMutableArray *yin = [NSMutableArray arrayWithObject: zeta];
 	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-6)];
@@ -346,33 +367,33 @@
 		}
 	}
 	
-	GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: dt fFromTY:^(GLVariable *time, NSArray *yNew) {
+	GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: self.dt fFromTY:^(GLVariable *time, NSArray *yNew) {
 		//		GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: other_dt fFromTY:^(GLVariable *time, NSArray *yNew){
 		NSUInteger iInput = 0;
-		GLVariable *eta = [yNew[0] diff: @"inverseLaplacianMinusOne"];
-		GLVariable *f = [[eta diff:@"diffLin"] plus: [[[[eta y] times: [eta diff: @"diffJacobianX"]] minus: [[eta x] times: [eta diff: @"diffJacobianY"]]] frequencyDomain]];
-		
-		if (shouldForce) {
-			GLVariable *phase;
-			if (forcingDecorrelationTime == HUGE_VAL) {
-				phase = initialPhase;
-			} else if (forcingDecorrelationTime == 0.0) {
-				phase = [GLVariable variableWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: equation];
+		GLFunction *eta = [yNew[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
+		GLFunction *f = [[eta differentiateWithOperator: self.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: self.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: self.diffJacobianY]]] frequencyDomain]];
+
+		if (self.shouldForce) {
+			GLFunction *phase;
+			if (self.forcingDecorrelationTime == HUGE_VAL) {
+				phase = self.phi;
+			} else if (self.forcingDecorrelationTime == 0.0) {
+				phase = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
 			} else {
 				phase = yNew[++iInput];
 			}
-			f = [f plus: [forcing multiply: [[phase swapComplex] exponentiate]]];
+			f = [f plus: [self.forcing multiply: [[phase swapComplex] exponentiate]]];
 		}
 		
 		NSMutableArray *fout = [NSMutableArray arrayWithObject: f];
 		
-		if (shouldAdvancePhases) {
-			GLVariable *randomPhases = [GLVariable variableWithRandomValuesBetween: -M_PI and: M_PI withDimensions: wavenumberDimensions forEquation: equation];
-			GLVariable *omega = [phaseSpeed multiply: [randomPhases dividedBy: [randomPhases abs]]];
+		if (self.shouldAdvancePhases) {
+			GLFunction *randomPhases = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
+			GLFunction *omega = [self.phaseSpeed multiply: [randomPhases dividedBy: [randomPhases abs]]];
 			[fout addObject: omega];
 		}
 		
-		if (shouldAdvectFloats) {
+		if (self.shouldAdvectFloats) {
 			NSArray *uv = @[[[[eta y] spatialDomain] negate], [[eta x] spatialDomain] ];
 			NSArray *xy = @[yNew[++iInput], yNew[++iInput]];
 			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: uv secondOperand: xy];
@@ -380,11 +401,13 @@
 			[fout addObjectsFromArray:@[interp.result[0], interp.result[1]]];
 		}
 		
-		if (shouldAdvectTracer) {
-			GLVariable *tracer = yNew[++iInput];
-			GLVariable *fTracer = [[[[[eta y] times: [tracer x]] minus:[[eta x] times: [tracer y]] ] frequencyDomain] plus: [tracer diff: @"damp"]];
-			
-			[fout addObject: fTracer];
+		if (self.shouldAdvectTracer) {
+			for (NSUInteger iTracer=0; iTracer<self.tracers.count; iTracer++) {
+				GLFunction *tracer = yNew[++iInput];
+				GLFunction *fTracer = [[[[[eta y] times: [tracer x]] minus:[[eta x] times: [tracer y]] ] frequencyDomain] plus: [tracer differentiateWithOperator: self.tracerDamp]];
+				
+				[fout addObject: fTracer];
+			}
 		}
 		
 		return fout;
@@ -394,5 +417,116 @@
 		[ (GLAdaptiveRungeKuttaOperation *) integrator setAbsoluteTolerance: absTolerances ];
 	}
 }
+
+- (void) addMetadataToNetCDFFile: (GLNetCDFFile *) netcdfFile;
+{
+	GLFloat wavenumberScale = 1./(self.L_QG);
+	
+	[netcdfFile setGlobalAttribute: @(self.shouldUseBeta) forKey:@"uses-beta"];
+	[netcdfFile setGlobalAttribute: @(self.shouldAntiAlias) forKey:@"is-anti-aliased"];
+	[netcdfFile setGlobalAttribute: @(self.shouldUseSVV) forKey:@"uses-spectral-vanishing-viscosity"];
+	[netcdfFile setGlobalAttribute: @(self.forcingFraction) forKey:@"forcing-fraction"];
+	[netcdfFile setGlobalAttribute: @(self.thermalDampingFraction) forKey:@"thermal-damping-fraction"];
+	[netcdfFile setGlobalAttribute: @(self.frictionalDampingFraction) forKey:@"frictional-damping-fraction"];
+	[netcdfFile setGlobalAttribute: @(self.forcingWidth) forKey:@"forcing-fraction-width"];
+	[netcdfFile setGlobalAttribute: @(self.f_zeta) forKey:@"f_zeta"];
+	[netcdfFile setGlobalAttribute: @(self.alpha) forKey:@"alpha"];
+	[netcdfFile setGlobalAttribute: @(self.r) forKey:@"r"];
+	[netcdfFile setGlobalAttribute: @(self.forcingDecorrelationTime) forKey:@"forcing-decorrelation-time"];
+	[netcdfFile setGlobalAttribute: @(self.latitude) forKey:@"latitude"];
+	
+	// The rest of these can be derived from the others, but it's convinient to save them anyway.
+	[netcdfFile setGlobalAttribute: @(self.k_f*wavenumberScale) forKey:@"forcing_wavenumber"];
+	[netcdfFile setGlobalAttribute: @(self.k_nu*wavenumberScale) forKey:@"viscous_wavenumber"];
+	[netcdfFile setGlobalAttribute: @(self.k_alpha*wavenumberScale) forKey:@"thermal_damping_wavenumber"];
+	[netcdfFile setGlobalAttribute: @(self.k_r*wavenumberScale) forKey:@"frictional_damping_wavenumber"];
+	[netcdfFile setGlobalAttribute: @(self.k_width*wavenumberScale) forKey:@"forcing_width"];
+	[netcdfFile setGlobalAttribute: @(self.k_max*wavenumberScale) forKey:@"max_resolved_wavenumber"];
+	[netcdfFile setGlobalAttribute: @(self.nu*self.L_QG*self.L_QG/(self.T_QG)) forKey:@"nu"];
+	[netcdfFile setGlobalAttribute: @(self.N_QG) forKey:@"height_scale"];
+	[netcdfFile setGlobalAttribute: @(self.L_QG) forKey:@"length_scale"];
+	[netcdfFile setGlobalAttribute: @(1/(self.T_QG)) forKey:@"vorticity_scale"];
+	[netcdfFile setGlobalAttribute: @(self.T_QG) forKey:@"time_scale"];
+}
+
+- (GLNetCDFFile *) createNetCDFAtURL: (NSURL *) outputURL
+{
+	GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: outputURL forEquation: self.equation overwriteExisting: YES];
+	[self addMetadataToNetCDFFile: netcdfFile];
+	
+	self.tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
+	self.tDim.name = @"time";
+	self.tDim.units = @"s";
+	
+	GLFloat wavenumberScale = 1./(self.L_QG);
+	
+	GLFunction *dimensionalSSH = [self.ssh scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+	self.sshHistory = [dimensionalSSH variableByAddingDimension: self.tDim];
+	self.sshHistory.name = @"SSH";
+	self.sshHistory = [netcdfFile addVariable: self.sshHistory];
+	
+	GLFunction *dimensionalForceMag = [self.forcing scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: wavenumberScale units: @"cycles/m"];
+	dimensionalForceMag.name = @"force_magnitude";
+	self.dimensionalForceMag = [netcdfFile addVariable: dimensionalForceMag];
+	
+	GLFunction *dimensionalPhase = [self.phi scaleVariableBy: 1.0 withUnits: @"radians" dimensionsBy: wavenumberScale units: @"cycles/m"];
+	dimensionalPhase.name = @"force_phase";
+	if (self.shouldAdvancePhases) {
+		self.phaseHistory = [dimensionalPhase variableByAddingDimension: self.tDim];
+		self.phaseHistory.name = @"force_phase";
+		self.phaseHistory = [netcdfFile addVariable: self.phaseHistory];
+	} else {
+		[netcdfFile addVariable: dimensionalPhase];
+	}
+	
+	
+	if (self.shouldWriteSSHFD) {
+		GLFunction *dimensionalSSHFD = [[self.ssh frequencyDomain] scaleVariableBy: self.N_QG withUnits: @"m^3" dimensionsBy: wavenumberScale units: @"cycles/m"];
+		self.sshFDHistory = [dimensionalSSHFD variableByAddingDimension: self.tDim];
+		self.sshFDHistory.name = @"SSH_FD";
+		self.sshFDHistory = [netcdfFile addVariable: self.sshFDHistory];
+	}
+	
+	if (self.shouldWriteRV) {
+		GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
+		GLFunction *dimensionalRV = [[self.laplacian transform: self.ssh] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
+		self.rvHistory = [dimensionalRV variableByAddingDimension: self.tDim];
+		self.rvHistory.name = @"RV";
+		self.rvHistory = [netcdfFile addVariable: self.rvHistory];
+	}
+	
+	if (self.shouldWriteForce) {
+		GLFunction *dimensionalForce = [[[self.forcing multiply: [[self.phi swapComplex] exponentiate]] spatialDomain] scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: self.L_QG units: @"m"];
+		self.forceHistory = [dimensionalForce variableByAddingDimension: self.tDim];
+		self.forceHistory.name = @"force";
+		self.forceHistory = [netcdfFile addVariable: self.forceHistory];
+	}
+	
+	if (self.shouldAdvectFloats) {
+		GLFunction *dimensionalXPosition = [self.xPosition scaleVariableBy: self.L_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+		self.xPositionHistory = [dimensionalXPosition variableByAddingDimension: self.tDim];
+		self.xPositionHistory.name = @"x-position";
+		self.xPositionHistory = [netcdfFile addVariable: self.xPositionHistory];
+		
+		GLFunction *dimensionalYPosition = [self.yPosition scaleVariableBy: self.L_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+		self.yPositionHistory = [dimensionalYPosition variableByAddingDimension: self.tDim];
+		self.yPositionHistory.name = @"y-position";
+		self.yPositionHistory = [netcdfFile addVariable: self.yPositionHistory];
+	}
+	
+	if (self.shouldAdvectTracer) {
+		NSMutableArray *tracerHistories = [NSMutableArray array];
+		for (GLFunction *tracer in self.tracers) {
+			GLMutableVariable *tracerHistory = [tracer variableByAddingDimension: self.tDim];
+			tracerHistory.name = @"tracer";
+			tracerHistory = [netcdfFile addVariable: tracerHistory];
+			[tracerHistories addObject: tracerHistory];
+		}
+		self.tracerHistories = tracerHistories;
+	}
+	
+	return netcdfFile;
+}
+
 
 @end
