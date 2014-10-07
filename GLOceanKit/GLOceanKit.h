@@ -6,8 +6,4 @@
 //  Copyright (c) 2014 Jeffrey J. Early. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-
-@interface GLOceanKit : NSObject
-
-@end
+#import <GLOceanKit/Quasigeostrophy2D.h>
