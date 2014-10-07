@@ -49,6 +49,12 @@
 - (Quasigeostrophy2D *) initWithDimensions: (NSArray *) dims depth: (GLFloat) h latitude: (GLFloat) lat0 equation: (GLEquation *) equation
 {
 	if ((self=[super init])) {
+		
+		if (dims.count != 2) {
+			[NSException raise: "InvalidDimensions" format: @"You must initialize with exactly two dimensions"];
+		}
+		
+		
 		self.dimensions = dims;
 		_h = h;
 		_latitude = lat0;
@@ -61,6 +67,10 @@
 		_L_QG = sqrt(g*self.h)/self.f0; // m
 		_T_QG = 1/(self.beta*self.L_QG); // s
 		_N_QG = self.h*(self.beta*self.L_QG*self.L_QG)/sqrt(g*self.h); // m
+		
+		GLDimension *xDim = [dims[0] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: nil];
+		GLDimension *yDim = [dims[1] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: nil];
+		self.dimensions = @[xDim, yDim];
 		
 		self.equation = equation;
 		self.ssh = [GLFunction functionOfRealTypeWithDimensions: self.dimensions forEquation:self.equation];
