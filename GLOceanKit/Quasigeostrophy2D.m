@@ -373,7 +373,9 @@
 	GLFloat maxU = pow(alpha,-0.125)*pow(real_energy,3./8.);
 	maxU = u_rms;
 	GLFloat other_dt = cfl*xDim.sampleInterval/maxU;
-	self.dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
+	//self.dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
+#warning come back and fix the time step issue.
+    self.dt = other_dt;
 	
 	if (self.isRestart) {
 		GLFunction *v = [[self.ssh x] spatialDomain];
@@ -393,7 +395,7 @@
 	GLFunction *zeta = [self.ssh differentiateWithOperator: self.laplacianMinusOne];
 	
 	NSMutableArray *yin = [NSMutableArray arrayWithObject: zeta];
-	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-6)];
+	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-3)];
 	if (self.shouldAdvancePhases) {
 		[yin addObject: self.phi];
 		[absTolerances addObject: @(1e0)];
@@ -410,7 +412,7 @@
 	}
 	
 	GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: self.dt fFromTY:^(GLVariable *time, NSArray *yNew) {
-		//		GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: other_dt fFromTY:^(GLVariable *time, NSArray *yNew){
+	//GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: self.dt fFromTY:^(GLVariable *time, NSArray *yNew){
 		NSUInteger iInput = 0;
 		GLFunction *eta = [yNew[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
 		GLFunction *f = [[eta differentiateWithOperator: self.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: self.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: self.diffJacobianY]]] frequencyDomain]];
@@ -586,12 +588,13 @@
     GLFloat wavenumberScale = 1./(self.L_QG);
     GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
     
+    NSLog(@"Starting simulation...");
     for (GLFloat time = self.outputInterval/self.T_QG; time < maxTime/self.T_QG; time += self.outputInterval/self.T_QG)
     {
         @autoreleasepool {
             NSUInteger iOut = 0;
             NSArray *yout = [self.integrator stepForwardToTime: time];
-            NSLog(@"Logging day: %f, last step size: %f.", (time*self.T_QG), self.integrator.lastStepSize*self.T_QG);
+            NSLog(@"Logging day: %f, last step size: %f.", (time*self.T_QG/86400.), self.integrator.lastStepSize*self.T_QG);
             
             [self.tDim addPoint: @(time*self.T_QG)];
             
