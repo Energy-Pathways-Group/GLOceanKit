@@ -12,6 +12,14 @@
 #define R 6.371e6
 
 @interface Quasigeostrophy2D ()
+
+@property(strong) NSArray *dimensions;
+@property(strong) NSArray *wavenumberDimensions;
+@property(strong) GLMutableDimension *tDim;
+
+@property(strong) GLEquation *equation;
+@property(strong) GLRungeKuttaOperation *integrator;
+
 @property(strong) GLLinearTransform *laplacian;
 @property(strong) GLLinearTransform *laplacianMinusOne;
 @property(strong) GLLinearTransform *inverseLaplacianMinusOne;

@@ -15,33 +15,40 @@
 
 - (Quasigeostrophy2D *) initWithFile: (NSURL *) fileURL resolutionDoubling: (BOOL) shouldDouble;
 
-
 /// The spatial dimensions, e.g., (x, y), although they will be in the order given during initialization.
-@property(strong) NSArray *dimensions;
-@property(strong) NSArray *wavenumberDimensions;
-@property(strong) GLMutableDimension *tDim;
+@property(strong,readonly) NSArray *dimensions;
+@property(strong,readonly) NSArray *wavenumberDimensions;
+@property(strong,readonly) GLMutableDimension *tDim;
 
-@property(strong) GLEquation *equation;
+@property(strong,readonly) GLEquation *equation;
 
-@property(strong) GLRungeKuttaOperation *integrator;
+@property(strong,readonly) GLRungeKuttaOperation *integrator;
+
+// These are automatically set for you, but you can override them.
 
 // Current SSH. Either 0 everywhere, if freshly initialized, or the the last recorded SSH value, if initialized from file.
+// Has dimensions that are given in the dimensions array.
 @property(strong) GLFunction *ssh;
 
 // Initial phase of the forcing function
+// Has dimensions that are given in the wavenumberDimensions array.
 @property(strong) GLFunction *phi;
 
 // The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
+// Has dimensions that are given in the wavenumberDimensions array.
 @property(strong) GLFunction *forcing;
 
 // the phase speed of each component
+// Has dimensions that are given in the wavenumberDimensions array.
 @property(strong) GLFunction *phaseSpeed;
 
 // Position of the floats
+// Can have any dimensions, but the values must refer the dimensions in the dimensions array.
 @property(strong) GLFunction *xPosition;
 @property(strong) GLFunction *yPosition;
 
 // An array of passive tracers
+// Has dimensions that are given in the dimensions array.
 @property(strong) NSArray *tracers;
 
 /************************************************/
