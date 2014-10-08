@@ -24,6 +24,8 @@
 
 @property(strong,readonly) GLRungeKuttaOperation *integrator;
 
+- (void) runSimulationToTime: (GLFloat) time;
+
 // These are automatically set for you, but you can override them.
 
 // Current SSH. Either 0 everywhere, if freshly initialized, or the the last recorded SSH value, if initialized from file.
@@ -44,11 +46,13 @@
 
 // Position of the floats
 // Can have any dimensions, but the values must refer the dimensions in the dimensions array.
+// You must also set shouldAdvectFloats to YES.
 @property(strong) GLFunction *xPosition;
 @property(strong) GLFunction *yPosition;
 
 // An array of passive tracers
 // Has dimensions that are given in the dimensions array.
+// You must also set shouldAdvectTracer to YES.
 @property(strong) NSArray *tracers;
 
 /************************************************/
@@ -123,7 +127,8 @@
 @property GLFloat frictionalDampingFraction;
 
 /// Whether or not you want to advect the floats specified by initial positions (xPosition, yPosition)
-@property BOOL shouldAdvectFloats;
+/// This will automatically place a float at each (initial) grid point. You can override this.
+@property(nonatomic) BOOL shouldAdvectFloats;
 
 /// Whether or not you want to advect the tracers in the tracers array.
 @property BOOL shouldAdvectTracer;
@@ -142,6 +147,9 @@
 /// Optional output file.
 // By default this will output the ssh and any tracers or floats.
 @property(copy) NSURL *outputFile;
+
+/// In seconds.
+@property GLFloat outputInterval;
 
 /// Set to YES to write the ssh in frequency domain out. This is redundant and can be derived from the ssh.
 @property BOOL shouldWriteSSHFD;

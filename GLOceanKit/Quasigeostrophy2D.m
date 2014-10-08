@@ -50,6 +50,11 @@
 @property GLFloat alpha;
 @property GLFloat r;
 @property GLFloat nu;
+
+- (void) createDifferentialOperators;
+- (GLNetCDFFile *) createNetCDFFileAtURL: (NSURL *) outputURL;
+- (void) createIntegrationOperation;
+
 @end
 
 @implementation Quasigeostrophy2D
@@ -59,11 +64,9 @@
 	if ((self=[super init])) {
 		
 		if (dims.count != 2) {
-			[NSException raise: "InvalidDimensions" format: @"You must initialize with exactly two dimensions"];
+			[NSException raise: @"InvalidDimensions" format: @"You must initialize with exactly two dimensions"];
 		}
-		
-		
-		self.dimensions = dims;
+				
 		_h = h;
 		_latitude = lat0;
 		
@@ -76,8 +79,8 @@
 		_T_QG = 1/(self.beta*self.L_QG); // s
 		_N_QG = self.h*(self.beta*self.L_QG*self.L_QG)/sqrt(g*self.h); // m
 		
-		GLDimension *xDim = [dims[0] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: nil];
-		GLDimension *yDim = [dims[1] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: nil];
+		GLDimension *xDim = [dims[0] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: @"unitless"];
+		GLDimension *yDim = [dims[1] scaledBy: 1/_L_QG translatedBy: 0.0 withUnits: @"unitless"];
 		self.dimensions = @[xDim, yDim];
 		
 		self.equation = equation;
@@ -193,6 +196,23 @@
 	_shouldAntiAlias = shouldAntiAlias;
 }
 
+- (void) setShouldAdvectFloats:(BOOL)shouldAdvectFloats {
+    // We are told to advect some floats, but the positions aren't set, so lets set the positions.
+    if (shouldAdvectFloats && (!self.xPosition || !self.yPosition)) {
+        GLDimension *xDim = self.dimensions[0];
+        GLDimension *yDim = self.dimensions[1];
+        GLDimension *xFloatDim = [[GLDimension alloc] initDimensionWithGrid: xDim.gridType nPoints: xDim.nPoints domainMin: xDim.domainMin length:xDim.domainLength];
+        xFloatDim.name = @"x-float";
+        GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: yDim.gridType nPoints: yDim.nPoints domainMin: yDim.domainMin length:yDim.domainLength];
+        yFloatDim.name = @"y-float";
+        
+        NSArray *floatDims = @[xFloatDim, yFloatDim];
+        self.xPosition = [GLFunction functionOfRealTypeFromDimension: xFloatDim withDimensions: floatDims forEquation: self.equation];
+        self.yPosition = [GLFunction functionOfRealTypeFromDimension: yFloatDim withDimensions: floatDims forEquation: self.equation];
+    }
+    _shouldAdvectFloats = shouldAdvectFloats;
+}
+
 - (void) createDifferentialOperators
 {
 	self.wavenumberDimensions = [self.ssh dimensionsTransformedToBasis: self.ssh.differentiationBasis];
@@ -221,6 +241,10 @@
 	if ([GLBasisTransformOperation shouldAntialias]) {
 		k_max = 2.0*k_max/3.0;
 	}
+    
+    if (self.f_zeta == 0) {
+        NSLog(@"Warning: f_zeta is set to zero.");
+    }
 	
 	GLFloat k_f = k_max/self.forcingFraction;
 	GLFloat k_width = [self.wavenumberDimensions[0] sampleInterval]*self.forcingWidth;
@@ -434,6 +458,8 @@
 	if ([[integrator class] isSubclassOfClass: [GLAdaptiveRungeKuttaOperation class]]) {
 		[ (GLAdaptiveRungeKuttaOperation *) integrator setAbsoluteTolerance: absTolerances ];
 	}
+    
+    self.integrator = integrator;
 }
 
 - (void) addMetadataToNetCDFFile: (GLNetCDFFile *) netcdfFile;
@@ -467,7 +493,7 @@
 	[netcdfFile setGlobalAttribute: @(self.T_QG) forKey:@"time_scale"];
 }
 
-- (GLNetCDFFile *) createNetCDFAtURL: (NSURL *) outputURL
+- (GLNetCDFFile *) createNetCDFFileAtURL: (NSURL *) outputURL
 {
 	GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: outputURL forEquation: self.equation overwriteExisting: YES];
 	[self addMetadataToNetCDFFile: netcdfFile];
@@ -478,7 +504,7 @@
 	
 	GLFloat wavenumberScale = 1./(self.L_QG);
 	
-	GLFunction *dimensionalSSH = [self.ssh scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+	GLFunction *dimensionalSSH = [[self.ssh spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
 	self.sshHistory = [dimensionalSSH variableByAddingDimension: self.tDim];
 	self.sshHistory.name = @"SSH";
 	self.sshHistory = [netcdfFile addVariable: self.sshHistory];
@@ -507,7 +533,7 @@
 	
 	if (self.shouldWriteRV) {
 		GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
-		GLFunction *dimensionalRV = [[self.laplacian transform: self.ssh] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
+		GLFunction *dimensionalRV = [[[self.laplacian transform: self.ssh] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
 		self.rvHistory = [dimensionalRV variableByAddingDimension: self.tDim];
 		self.rvHistory.name = @"RV";
 		self.rvHistory = [netcdfFile addVariable: self.rvHistory];
@@ -546,5 +572,83 @@
 	return netcdfFile;
 }
 
+
+- (void) runSimulationToTime: (GLFloat) maxTime
+{
+    [self createDifferentialOperators];
+    [self createIntegrationOperation];
+    
+    GLNetCDFFile *netcdfFile;
+    if (self.outputFile) {
+        netcdfFile = [self createNetCDFFileAtURL: self.outputFile];
+    }
+    
+    GLFloat wavenumberScale = 1./(self.L_QG);
+    GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
+    
+    for (GLFloat time = self.outputInterval/self.T_QG; time < maxTime/self.T_QG; time += self.outputInterval/self.T_QG)
+    {
+        @autoreleasepool {
+            NSUInteger iOut = 0;
+            NSArray *yout = [self.integrator stepForwardToTime: time];
+            NSLog(@"Logging day: %f, last step size: %f.", (time*self.T_QG), self.integrator.lastStepSize*self.T_QG);
+            
+            [self.tDim addPoint: @(time*self.T_QG)];
+            
+            GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
+            self.ssh = [[etaFD spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+            
+            [self.sshHistory concatenateWithLowerDimensionalVariable: self.ssh alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+            [netcdfFile waitUntilAllOperationsAreFinished];
+            
+            if (self.shouldWriteSSHFD) {
+                GLFunction *etaFDDim = [etaFD scaleVariableBy: self.N_QG withUnits: @"m^3" dimensionsBy: wavenumberScale units: @"cycles/m"];
+                [self.sshFDHistory concatenateWithLowerDimensionalVariable: etaFDDim alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                [netcdfFile waitUntilAllOperationsAreFinished];
+            }
+            
+            if (self.shouldWriteRV) {
+                GLFunction *rv2 = [[[self.laplacian transform: self.ssh] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
+                [self.rvHistory concatenateWithLowerDimensionalVariable: rv2 alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                [netcdfFile waitUntilAllOperationsAreFinished];
+            }
+            
+            if (self.shouldAdvancePhases) {
+                GLFunction *phase = [yout[++iOut] scaleVariableBy: 1.0 withUnits: @"radians" dimensionsBy: wavenumberScale units: @"cycles/m"];
+                [self.phaseHistory concatenateWithLowerDimensionalVariable: phase alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                
+                if (self.shouldWriteForce) {
+                    GLFunction *dimensionalForce = [[[self.forcing multiply: [[yout[iOut] swapComplex] exponentiate]] spatialDomain] scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: self.L_QG units: @"m"];
+                    [self.forceHistory concatenateWithLowerDimensionalVariable: dimensionalForce alongDimensionAtIndex:0  toIndex:(self.tDim.nPoints-1)];
+                }
+            }
+            
+            if (self.shouldAdvectFloats) {
+                self.xPosition = [yout[++iOut] scaleVariableBy: self.L_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+                self.yPosition = [yout[++iOut] scaleVariableBy: self.L_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+                [self.xPositionHistory concatenateWithLowerDimensionalVariable: self.xPosition alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                [netcdfFile waitUntilAllOperationsAreFinished];
+                [self.yPositionHistory concatenateWithLowerDimensionalVariable: self.yPosition alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                [netcdfFile waitUntilAllOperationsAreFinished];
+            }
+            
+            if (self.shouldAdvectTracer) {
+                for (GLMutableVariable *tracerHistory in self.tracerHistories) {
+                    GLFunction *tracer = [yout[++iOut] spatialDomain];
+                    [tracerHistory concatenateWithLowerDimensionalVariable: tracer alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+                    [netcdfFile waitUntilAllOperationsAreFinished];
+                }
+            }
+        }
+    }
+    
+    NSLog(@"Close the NetCDF file and wrap up");
+    
+    [self.equation waitUntilAllOperationsAreFinished];
+    
+    // The NetCDF file may still be writing data. We need to make sure it finishes before we exit.
+    [netcdfFile waitUntilAllOperationsAreFinished];
+    [netcdfFile close];
+}
 
 @end
