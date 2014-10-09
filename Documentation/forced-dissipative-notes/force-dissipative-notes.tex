@@ -103,7 +103,7 @@ In a numerical simulation, the small scale dissipation is set to maintain numeri
 \subsubsection{Large scale damping}
 %%%%%%%%%%%%%%%%%%
 
-In the case where $\alpha=0$, $r \neq 0$, the average energy must equilibrate to $\frac{\epsilon}{r}$ as can be seen from simply solving the differential equation. From scaling, we can determine the minimum scale at which friction matters is $k_r = \left( \frac{r^3}{\epsilon} \right)^{\frac{1}{2}}$. This implies a characteristic velocity scale of $u_r=\left(\frac{\epsilon}{k_r}\right)^\frac{1}{3}$.
+In the case where $\alpha=0$, $r \neq 0$, the average energy must equilibrate to $\frac{\epsilon}{r}$ as can be seen from simply solving the differential equation. From scaling, we can determine the minimum scale at which friction matters is $k_r = \left( \frac{r^3}{\epsilon} \right)^{\frac{1}{2}}$. This implies a characteristic velocity scale of $u_r=\left(\frac{\epsilon}{k_r}\right)^\frac{1}{3}$. In practice, I seem to have to set $r = 0.04 \left( \epsilon k_r^2 \right)^{\frac{1}{3}}$ where I'm using $c_\epsilon=1$. The resulting $u_r$ works fantastically well for setting the time step, for a $cfl=0.25$.
 
 In the case where $\alpha \neq 0$, $r = 0$, it's clear that the frictional scale must be $k_{\alpha}= \left( \frac{\alpha^3 \lambda^6}{\epsilon} \right)^{\frac{1}{8}}$. This implies a characteristic velocity scale of $u_\alpha=\left(\frac{\epsilon}{k_\alpha}\right)^\frac{1}{3}$. After a few tests it looks like this is a good estimate, but should be doubled. This could be a square root of energy (which needs an extra $\sqrt{2}$ factor).
 
@@ -135,6 +135,8 @@ Q(k) =
 \end{cases}
 \end{equation}
 The wavenumber at which viscosity is first felt, $k_\nu$ can be found by solving for $k_\nu$ in the equation $\nu Q(k_\nu) = f_\zeta^\frac{1}{2} (2 \pi k_\nu)^{-2}$
+
+The CFL condition is $dt < \frac{(\Delta x)^2}{\nu}$.
 
 
 \end{document}  

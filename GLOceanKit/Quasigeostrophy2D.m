@@ -95,14 +95,13 @@
 	return self;
 }
 
-- (Quasigeostrophy2D *) initWithFile: (NSURL *) fileURL resolutionDoubling: (BOOL) shouldDouble
+- (Quasigeostrophy2D *) initWithFile: (NSURL *) fileURL resolutionDoubling: (BOOL) shouldDouble equation: (GLEquation *) equation
 {
-	GLEquation *equation = [[GLEquation alloc] init];
 	GLNetCDFFile *restartFile = [[GLNetCDFFile alloc] initWithURL: fileURL forEquation: equation];
 	
 	// Now let's do a bunch of sanity checks to see if we really can read form this file.
 	
-	NSArray *requiredAttributes = @[@"is-anti-aliased", @"r", @"alpha", @"f_zeta", @"forcing-fraction-width", @"forcing-fraction", @"uses-beta", @"latitude", @"equivalent-depth", @"L_QG", @"N_QG", @"uses-spectral-vanishing-viscosity"];
+	NSArray *requiredAttributes = @[@"is-anti-aliased", @"r", @"alpha", @"f_zeta", @"forcing-fraction-width", @"forcing-fraction", @"uses-beta", @"forcing-decorrelation-time", @"latitude", @"equivalent-depth", @"uses-spectral-vanishing-viscosity"];
 	for (NSString *attribute in requiredAttributes) {
 		if ( !(restartFile.globalAttributes[attribute]) ) {
 			[NSException raise:@"InvalidRestartFileException" format: @"The restart file does not contain the attribute: %@.", attribute];
@@ -370,9 +369,7 @@
 	
 	// Rounds dt to a number that evenly divides one day.
 	GLFloat viscous_dt = cfl*xDim.sampleInterval * xDim.sampleInterval / (nu);
-	GLFloat maxU = pow(alpha,-0.125)*pow(real_energy,3./8.);
-	maxU = u_rms;
-	GLFloat other_dt = cfl*xDim.sampleInterval/maxU;
+	GLFloat other_dt = cfl*xDim.sampleInterval/u_rms;
 	//self.dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
 #warning come back and fix the time step issue.
     self.dt = other_dt;
@@ -386,7 +383,7 @@
 		self.dt = cfl * xDim.sampleInterval / U;
 	}
 	
-	NSLog(@"Reynolds number: %f", maxU*xDim.domainLength/nu);
+	NSLog(@"Reynolds number: %f", u_rms*xDim.domainLength/nu);
 	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*self.T_QG, other_dt*self.T_QG);
 }
 
@@ -476,6 +473,7 @@
 	[netcdfFile setGlobalAttribute: @(self.frictionalDampingFraction) forKey:@"frictional-damping-fraction"];
 	[netcdfFile setGlobalAttribute: @(self.forcingWidth) forKey:@"forcing-fraction-width"];
 	[netcdfFile setGlobalAttribute: @(self.f_zeta) forKey:@"f_zeta"];
+	[netcdfFile setGlobalAttribute: @(self.h) forKey:@"equivalent-depth"];
 	[netcdfFile setGlobalAttribute: @(self.alpha) forKey:@"alpha"];
 	[netcdfFile setGlobalAttribute: @(self.r) forKey:@"r"];
 	[netcdfFile setGlobalAttribute: @(self.forcingDecorrelationTime) forKey:@"forcing-decorrelation-time"];

@@ -13,7 +13,7 @@
 
 - (Quasigeostrophy2D *) initWithDimensions: (NSArray *) dims depth: (GLFloat) h latitude: (GLFloat) lat0 equation: (GLEquation *) equation;
 
-- (Quasigeostrophy2D *) initWithFile: (NSURL *) fileURL resolutionDoubling: (BOOL) shouldDouble;
+- (Quasigeostrophy2D *) initWithFile: (NSURL *) fileURL resolutionDoubling: (BOOL) shouldDouble equation: (GLEquation *) equation;
 
 /// The spatial dimensions, e.g., (x, y), although they will be in the order given during initialization.
 @property(strong,readonly) NSArray *dimensions;
