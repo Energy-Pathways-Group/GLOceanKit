@@ -27,6 +27,8 @@
 %	22/07/2013 --- added a time, f0, latitude, variable
 %	02/04/2014 --- fixed a bug in the wavenumber that is used.
 %	06/17/2014 --- forced x,y,t to double precision for general compatibility.
+%   15/10/2014 --- added a 'pass through' option which queries the file for
+%   any other attributes.
 function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 	ssh = []; sshFD = [];
 	rv = []; rvFD = [];
@@ -53,6 +55,7 @@ function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 	l = deltaL*[0:(length(y)/2-1), (-length(y)/2):-1]';
 	[K, L] = meshgrid(k,l);
 	
+    varargout = cell(size(varargin));
 	for iArg=1:length(varargin)
 		if ( strcmp(varargin{iArg}, 'latitude') )
 			varargout{iArg} = latitude;
@@ -149,6 +152,8 @@ function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 		elseif( strcmp(varargin{iArg}, 'force' ) )
 			force = forceFromFile(file, timeIndex, force);
 			varargout{iArg} = force;
+        else
+            varargout{iArg} = ncreadatt(file, '/', varargin{iArg});
 		end
 	end
 end

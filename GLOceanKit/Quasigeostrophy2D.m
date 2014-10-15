@@ -127,8 +127,9 @@
 	[ssh solve];
 	
 	// Nondimensionalize the ssh
-	GLFloat L_QG = [restartFile.globalAttributes[@"L_QG"] doubleValue];
-	GLFloat N_QG = [restartFile.globalAttributes[@"N_QG"] doubleValue];
+	GLFloat L_QG = [restartFile.globalAttributes[@"length_scale"] doubleValue];
+	GLFloat N_QG = [restartFile.globalAttributes[@"height_scale"] doubleValue];
+    GLFloat T_QG = [restartFile.globalAttributes[@"time_scale"] doubleValue];
 	ssh = [ssh scaleVariableBy: 1./N_QG withUnits: @"unitless" dimensionsBy: 1./L_QG units: @"unitless"];
 	
 	// Grab the dimensions (which won't be named because we just made everything unitless)
@@ -149,6 +150,8 @@
 		ssh = [sshX2 spatialDomain];
 	}
 	
+    NSLog(@"%g, %g", xDim.sampleInterval, [ssh.dimensions[0] sampleInterval ]);
+    
 	// Now extract the phase of the forcing from the last record
 	GLFunction *phi0 = [restartFile variableWithName: @"force_phase"];
 	if (phi0.dimensions.count == 3) {
@@ -163,13 +166,22 @@
 	// And project onto the current spatial coordinates (regardless of whether or not we doubled).
 	phi0 = [phi0 projectOntoDimensions: @[xDim, yDim] usingSpectralBasis: @[@(kGLExponentialBasis), @(kGLExponentialBasis)]];
 	[phi0 solve];
-	
+    
+    // Extract the magnitude of the force
+    GLFunction *dimensionalForceMag = [restartFile variableWithName: @"force_magnitude"];
+    GLFunction *forcing = [dimensionalForceMag scaleVariableBy: pow((T_QG),2.) withUnits: @"unitless" dimensionsBy: L_QG units: @"unitless"];
+    forcing = [forcing projectOntoDimensions: @[xDim, yDim] usingSpectralBasis: @[@(kGLExponentialBasis), @(kGLExponentialBasis)]];
+    [forcing solve];
+    
 	GLFloat h = [restartFile.globalAttributes[@"equivalent-depth"] doubleValue];
 	GLFloat lat = [restartFile.globalAttributes[@"latitude"] doubleValue];
 	
-	if ((self=[self initWithDimensions: @[xDim, yDim] depth: h latitude: lat equation: equation])) {
+    GLDimension *dimXdim = [xDim scaledBy: L_QG translatedBy:0.0 withUnits:@"m"];
+    GLDimension *dimYdim = [yDim scaledBy: L_QG translatedBy:0.0 withUnits:@"m"];
+	if ((self=[self initWithDimensions: @[dimXdim, dimYdim] depth: h latitude: lat equation: equation])) {
 		self.ssh = ssh;
 		self.phi = phi0;
+        self.forcing = forcing;
 		self.shouldUseBeta = [restartFile.globalAttributes[@"uses-beta"] boolValue];
 		self.shouldUseSVV = [restartFile.globalAttributes[@"uses-spectral-vanishing-viscosity"] boolValue];
 		self.shouldAntiAlias = [restartFile.globalAttributes[@"is-anti-aliased"] boolValue];
@@ -245,91 +257,42 @@
         NSLog(@"Warning: f_zeta is set to zero.");
     }
 	
-	GLFloat k_f = k_max/self.forcingFraction;
-	GLFloat k_width = [self.wavenumberDimensions[0] sampleInterval]*self.forcingWidth;
+	self.k_f = k_max/self.forcingFraction;
+	self.k_width = [self.wavenumberDimensions[0] sampleInterval]*self.forcingWidth;
 	
-	GLFloat real_energy = pow(self.f_zeta,1.5)/(k_f*k_f);
+	GLFloat real_energy = pow(self.f_zeta,1.5)/(self.k_f*self.k_f);
 	
-	GLFloat k_alpha = [self.wavenumberDimensions[0] sampleInterval]*self.thermalDampingFraction;
-	GLFloat alpha = pow(pow(self.f_zeta, 1.5)*pow(k_alpha,8.0)/pow(k_f, 2.0),0.3333);
+	self.k_alpha = [self.wavenumberDimensions[0] sampleInterval]*self.thermalDampingFraction;
+	self.alpha = pow(pow(self.f_zeta, 1.5)*pow(self.k_alpha,8.0)/pow(self.k_f, 2.0),0.3333);
 	
 	// Note that I'm adjusting the friction by what *really* happens. Our estimate is off, for some reason.
-	GLFloat k_r = [self.wavenumberDimensions[0] sampleInterval]*self.frictionalDampingFraction;
-	GLFloat r = 0.04*pow( pow(k_r, 2.0) * real_energy, 0.3333);
+	self.k_r = [self.wavenumberDimensions[0] sampleInterval]*self.frictionalDampingFraction;
+	self.r = 0.04*pow( pow(self.k_r, 2.0) * real_energy, 0.3333);
 	
 	// compute the svv cutoff, k_c
 	GLFloat deltaK = [self.wavenumberDimensions[0] sampleInterval];
 	GLFloat k_c = deltaK * pow(k_max/deltaK, 0.75);
 	
-	GLFloat u_rms = k_alpha > k_r ? pow(real_energy/k_alpha,0.333) : pow(real_energy/k_r,0.333);
-	GLFloat nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
+	GLFloat u_rms = self.k_alpha > self.k_r ? pow(real_energy/self.k_alpha,0.333) : pow(real_energy/self.k_r,0.333);
+	self.nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
 	
-	GLFloat k_nu = k_c;
+    NSLog(@"sample interval: %g, u_rms: %g, real_energy: %g",[self.dimensions[0] sampleInterval],u_rms ,real_energy);
+    
+	self.k_nu = k_c;
 	GLFloat k_min = k_c;
-	GLFloat min = fabs(nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
+	GLFloat min = fabs(self.nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
 	for (k_min=k_c; k_min<k_max; k_min += [self.wavenumberDimensions[0] sampleInterval]) {
-		GLFloat a = fabs(nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
+		GLFloat a = fabs(self.nu*exp( -pow((k_min-k_max)/(k_min-k_c),2.0) ) - sqrt(self.f_zeta)/(4*M_PI*M_PI*k_min*k_min));
 		if (a<min) {
 			min=a;
-			k_nu=k_min;
+			self.k_nu=k_min;
 		}
 	}
 	
-	self.k_f = k_f;
-	self.k_nu = k_nu;
-	self.k_alpha = k_alpha;
-	self.k_r = k_r;
-	self.k_width = k_width;
+
 	self.k_max = k_max;
-	self.alpha = alpha;
-	self.r = r;
-	self.nu = nu;
-	
-	NSLog(@"k_nu=%f",k_nu);
-	
-	// The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
-	self.forcing = [GLFunction functionOfRealTypeWithDimensions: self.wavenumberDimensions forEquation: self.equation];
-	if (!self.phi) {
-		// The random number generator will enforce the hermitian symmetry.
-		self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
-	}
-	
-	if (self.shouldForce)
-	{
-		// Now evenly distribute the intended force across all wavenumbers in the band
-		GLFloat *f = [self.forcing pointerValue];
-		GLFloat *kk = [bigK pointerValue];
-		GLFloat totalWavenumbersInBand = 0;
-		for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
-			if ( fabs(kk[i]-k_f) < k_width/2.0 ) totalWavenumbersInBand += 1.0;
-		}
-		// We are ignoring the negative frequencies for l. So we need to add those in as well.
-		// This is not exactly double, but close enough.
-		for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
-			if ( fabs(kk[i]-k_f) < k_width/2.0 ) f[i] = self.f_zeta/sqrt(2*totalWavenumbersInBand);
-			else f[i] = 0.0;
-		}
 		
-		if (self.forcingDecorrelationTime == HUGE_VAL) {
-			// Infinite decorrelation time means the phases don't change.
-			self.shouldAdvancePhases = NO;
-		} else if (self.forcingDecorrelationTime > 0.0) {
-			// Let the phases evolve with a give speed, but only if we chose a nonzero decorrelation time.
-			self.phaseSpeed = [bigK scalarMultiply: 2*M_PI*self.T_QG/(k_f*self.forcingDecorrelationTime)];
-			f = self.phaseSpeed.pointerValue;
-			for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
-				if ( fabs(kk[i]-k_f) >= k_width/2.0 ) f[i] = 0.0;
-			}
-			self.shouldAdvancePhases = YES;
-		} else {
-			// In this case we will choose random values at each time step, so the phase change may as well be zero.
-			self.shouldAdvancePhases = NO;
-		}
-		
-	} else {
-		[self.forcing zero];
-		[self.phi zero];
-	}
+    [self buildForcingFunction];
 	
 	/************************************************************************************************/
 	/*		Create and cache the differential operators we will need								*/
@@ -342,18 +305,18 @@
 	GLLinearTransform *numericalDamp;
 	if (self.shouldUseSVV) {
 		GLLinearTransform *svv = [GLLinearTransform spectralVanishingViscosityFilterWithDimensions: self.wavenumberDimensions scaledForAntialiasing: self.shouldAntiAlias forEquation: self.equation];
-		numericalDamp = [[biharmonic times: @(nu)] times: svv];
+		numericalDamp = [[biharmonic times: @(self.nu)] times: svv];
 		
-		self.tracerDamp = [[harmonic times: @(nu)] times: svv];
+		self.tracerDamp = [[harmonic times: @(self.nu)] times: svv];
 	} else {
 		GLLinearTransform *biharmonic = [GLLinearTransform harmonicOperatorOfOrder: 2 fromDimensions: self.wavenumberDimensions forEquation: self.equation];
-		numericalDamp = [biharmonic times: @(nu)];
+		numericalDamp = [biharmonic times: @(self.nu)];
 		
-		self.tracerDamp = [harmonic times: @(nu)];
+		self.tracerDamp = [harmonic times: @(self.nu)];
 	}
 	
 	// Now add the two large scale damping components.
-	self.diffLinear = [[numericalDamp plus: @(alpha)] plus: [harmonic times: @(-r)]];
+	self.diffLinear = [[numericalDamp plus: @(self.alpha)] plus: [harmonic times: @(-self.r)]];
 	
 	if (self.shouldUseBeta) {
 		GLLinearTransform *diff_x = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(0)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
@@ -368,7 +331,7 @@
 	CGFloat cfl = 0.25;
 	
 	// Rounds dt to a number that evenly divides one day.
-	GLFloat viscous_dt = cfl*xDim.sampleInterval * xDim.sampleInterval / (nu);
+	GLFloat viscous_dt = cfl*xDim.sampleInterval * xDim.sampleInterval / (self.nu);
 	GLFloat other_dt = cfl*xDim.sampleInterval/u_rms;
 	//self.dt = 1/(self.T_QG*ceil(1/(self.T_QG*other_dt)));
 #warning come back and fix the time step issue.
@@ -383,8 +346,64 @@
 		self.dt = cfl * xDim.sampleInterval / U;
 	}
 	
-	NSLog(@"Reynolds number: %f", u_rms*xDim.domainLength/nu);
+	NSLog(@"Reynolds number: %f", u_rms*xDim.domainLength/self.nu);
 	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*self.T_QG, other_dt*self.T_QG);
+}
+
+- (void) buildForcingFunction
+{
+    if (self.shouldForce) {
+        
+        if (!self.phi) {
+            // The random number generator will enforce the hermitian symmetry.
+            self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
+        }
+        
+        // The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
+        if (!self.forcing) {
+            self.forcing = [GLFunction functionOfRealTypeWithDimensions: self.wavenumberDimensions forEquation: self.equation];
+            
+            GLFunction *bigK;
+            for (GLDimension *dim in self.wavenumberDimensions) {
+                GLFunction *k = [GLFunction functionOfRealTypeFromDimension: dim withDimensions: self.wavenumberDimensions forEquation:self.equation];
+                bigK = !bigK ? [k multiply: k] : [bigK plus: [k multiply: k]];
+            }
+            bigK = [bigK sqrt];
+            
+            // Now evenly distribute the intended force across all wavenumbers in the band
+            GLFloat *f = [self.forcing pointerValue];
+            GLFloat *kk = [bigK pointerValue];
+            GLFloat totalWavenumbersInBand = 0;
+            for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
+                if ( fabs(kk[i]-self.k_f) < self.k_width/2.0 ) totalWavenumbersInBand += 1.0;
+            }
+            // We are ignoring the negative frequencies for l. So we need to add those in as well.
+            // This is not exactly double, but close enough.
+            for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
+                if ( fabs(kk[i]-self.k_f) < self.k_width/2.0 ) f[i] = self.f_zeta/sqrt(2*totalWavenumbersInBand);
+                else f[i] = 0.0;
+            }
+            
+            if (self.forcingDecorrelationTime == HUGE_VAL) {
+                // Infinite decorrelation time means the phases don't change.
+                self.shouldAdvancePhases = NO;
+            } else if (self.forcingDecorrelationTime > 0.0) {
+                // Let the phases evolve with a give speed, but only if we chose a nonzero decorrelation time.
+                self.phaseSpeed = [bigK scalarMultiply: 2*M_PI*self.T_QG/(self.k_f*self.forcingDecorrelationTime)];
+                f = self.phaseSpeed.pointerValue;
+                for (NSUInteger i=0; i<self.forcing.nDataPoints; i++) {
+                    if ( fabs(kk[i]-self.k_f) >= self.k_width/2.0 ) f[i] = 0.0;
+                }
+                self.shouldAdvancePhases = YES;
+            } else {
+                // In this case we will choose random values at each time step, so the phase change may as well be zero.
+                self.shouldAdvancePhases = NO;
+            }
+        }
+    } else {
+        self.forcing = nil;
+        self.phi = nil;
+    }
 }
 
 - (void) createIntegrationOperation
@@ -509,20 +528,23 @@
 	self.sshHistory.name = @"SSH";
 	self.sshHistory = [netcdfFile addVariable: self.sshHistory];
 	
-	GLFunction *dimensionalForceMag = [self.forcing scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: wavenumberScale units: @"cycles/m"];
-	dimensionalForceMag.name = @"force_magnitude";
-	self.dimensionalForceMag = [netcdfFile addVariable: dimensionalForceMag];
-	
-	GLFunction *dimensionalPhase = [self.phi scaleVariableBy: 1.0 withUnits: @"radians" dimensionsBy: wavenumberScale units: @"cycles/m"];
-	dimensionalPhase.name = @"force_phase";
-	if (self.shouldAdvancePhases) {
-		self.phaseHistory = [dimensionalPhase variableByAddingDimension: self.tDim];
-		self.phaseHistory.name = @"force_phase";
-		self.phaseHistory = [netcdfFile addVariable: self.phaseHistory];
-	} else {
-		[netcdfFile addVariable: dimensionalPhase];
-	}
-	
+    if (self.forcing) {
+        GLFunction *dimensionalForceMag = [self.forcing scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: wavenumberScale units: @"cycles/m"];
+        dimensionalForceMag.name = @"force_magnitude";
+        self.dimensionalForceMag = [netcdfFile addVariable: dimensionalForceMag];
+    }
+    
+    if (self.phi) {
+        GLFunction *dimensionalPhase = [self.phi scaleVariableBy: 1.0 withUnits: @"radians" dimensionsBy: wavenumberScale units: @"cycles/m"];
+        dimensionalPhase.name = @"force_phase";
+        if (self.shouldAdvancePhases) {
+            self.phaseHistory = [dimensionalPhase variableByAddingDimension: self.tDim];
+            self.phaseHistory.name = @"force_phase";
+            self.phaseHistory = [netcdfFile addVariable: self.phaseHistory];
+        } else {
+            [netcdfFile addVariable: dimensionalPhase];
+        }
+    }
 	
 	if (self.shouldWriteSSHFD) {
 		GLFunction *dimensionalSSHFD = [[self.ssh frequencyDomain] scaleVariableBy: self.N_QG withUnits: @"m^3" dimensionsBy: wavenumberScale units: @"cycles/m"];
