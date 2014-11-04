@@ -219,6 +219,7 @@
 - (void) createIntegrationOperation;
 
 @property(copy) FfromTYVector fBlock;
+@property(strong) GLLinearTransform *inverseLaplacianMinusOne;
 @property(strong, readwrite, nonatomic) NSArray *yin;
 @property(strong, readwrite, nonatomic) NSArray *absoluteTolerance;
 

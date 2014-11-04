@@ -22,7 +22,6 @@
 
 @property(strong) GLLinearTransform *laplacian;
 @property(strong) GLLinearTransform *laplacianMinusOne;
-@property(strong) GLLinearTransform *inverseLaplacianMinusOne;
 @property(strong) GLLinearTransform *diffJacobianX;
 @property(strong) GLLinearTransform *diffJacobianY;
 @property(strong) GLLinearTransform *diffLinear;
