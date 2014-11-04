@@ -427,33 +427,33 @@
 		}
 	}
 	
-	GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: self.dt fFromTY:^(GLVariable *time, NSArray *yNew) {
-	//GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: self.dt fFromTY:^(GLVariable *time, NSArray *yNew){
+    __weak Quasigeostrophy2D *qg = self;
+	self.fBlock = ^(GLVariable *time, NSArray *yNew) {
 		NSUInteger iInput = 0;
-		GLFunction *eta = [yNew[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
-		GLFunction *f = [[eta differentiateWithOperator: self.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: self.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: self.diffJacobianY]]] frequencyDomain]];
+		GLFunction *eta = [yNew[0] differentiateWithOperator: qg.inverseLaplacianMinusOne];
+		GLFunction *f = [[eta differentiateWithOperator: qg.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: qg.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: qg.diffJacobianY]]] frequencyDomain]];
 
-		if (self.shouldForce) {
+		if (qg.shouldForce) {
 			GLFunction *phase;
-			if (self.forcingDecorrelationTime == HUGE_VAL) {
-				phase = self.phi;
-			} else if (self.forcingDecorrelationTime == 0.0) {
-				phase = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
+			if (qg.forcingDecorrelationTime == HUGE_VAL) {
+				phase = qg.phi;
+			} else if (qg.forcingDecorrelationTime == 0.0) {
+				phase = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: qg.wavenumberDimensions forEquation: qg.equation];
 			} else {
 				phase = yNew[++iInput];
 			}
-			f = [f plus: [self.forcing multiply: [[phase swapComplex] exponentiate]]];
+			f = [f plus: [qg.forcing multiply: [[phase swapComplex] exponentiate]]];
 		}
 		
 		NSMutableArray *fout = [NSMutableArray arrayWithObject: f];
 		
-		if (self.shouldAdvancePhases) {
-			GLFunction *randomPhases = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
-			GLFunction *omega = [self.phaseSpeed multiply: [randomPhases dividedBy: [randomPhases abs]]];
+		if (qg.shouldAdvancePhases) {
+			GLFunction *randomPhases = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: qg.wavenumberDimensions forEquation: qg.equation];
+			GLFunction *omega = [qg.phaseSpeed multiply: [randomPhases dividedBy: [randomPhases abs]]];
 			[fout addObject: omega];
 		}
 		
-		if (self.shouldAdvectFloats) {
+		if (qg.shouldAdvectFloats) {
 			NSArray *uv = @[[[[eta y] spatialDomain] negate], [[eta x] spatialDomain] ];
 			NSArray *xy = @[yNew[++iInput], yNew[++iInput]];
 			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: uv secondOperand: xy];
@@ -461,10 +461,10 @@
 			[fout addObjectsFromArray:@[interp.result[0], interp.result[1]]];
 		}
 		
-		if (self.shouldAdvectTracer) {
-			for (NSUInteger iTracer=0; iTracer<self.tracers.count; iTracer++) {
+		if (qg.shouldAdvectTracer) {
+			for (NSUInteger iTracer=0; iTracer<qg.tracers.count; iTracer++) {
 				GLFunction *tracer = yNew[++iInput];
-				GLFunction *fTracer = [[[[[eta y] times: [tracer x]] minus:[[eta x] times: [tracer y]] ] frequencyDomain] plus: [tracer differentiateWithOperator: self.tracerDamp]];
+				GLFunction *fTracer = [[[[[eta y] times: [tracer x]] minus:[[eta x] times: [tracer y]] ] frequencyDomain] plus: [tracer differentiateWithOperator: qg.tracerDamp]];
 				
 				[fout addObject: fTracer];
 			}
@@ -472,12 +472,15 @@
 		
 		return fout;
 		
-	}];
+	};
+    GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: self.dt fFromTY: self.fBlock];
 	if ([[integrator class] isSubclassOfClass: [GLAdaptiveRungeKuttaOperation class]]) {
 		[ (GLAdaptiveRungeKuttaOperation *) integrator setAbsoluteTolerance: absTolerances ];
 	}
     
     self.integrator = integrator;
+    self.yin = yin;
+    self.absoluteTolerance = absTolerances;
 }
 
 - (void) addMetadataToNetCDFFile: (GLNetCDFFile *) netcdfFile;

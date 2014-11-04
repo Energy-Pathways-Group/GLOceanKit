@@ -207,4 +207,19 @@
 // small scale damping parameter
 @property(readonly) GLFloat nu;
 
+/************************************************/
+/*		Internal Usage                          */
+/************************************************/
+
+#pragma mark -
+#pragma mark Internal Usage
+#pragma mark
+
+- (void) createDifferentialOperators;
+- (void) createIntegrationOperation;
+
+@property(copy) FfromTYVector fBlock;
+@property(strong, readwrite, nonatomic) NSArray *yin;
+@property(strong, readwrite, nonatomic) NSArray *absoluteTolerance;
+
 @end
