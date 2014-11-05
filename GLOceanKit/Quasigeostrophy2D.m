@@ -336,14 +336,14 @@
 #warning come back and fix the time step issue.
     self.dt = other_dt;
 	
-	if (self.isRestart) {
-		GLFunction *v = [[self.ssh x] spatialDomain];
-		GLFunction *u = [[self.ssh y] spatialDomain];
-		GLFunction *speed = [[u times: u] plus: [v times: v]];
-		
-		GLFloat U = sqrt([speed maxNow]);
-		self.dt = cfl * xDim.sampleInterval / U;
-	}
+//	if (self.isRestart) {
+//		GLFunction *v = [[self.ssh x] spatialDomain];
+//		GLFunction *u = [[self.ssh y] spatialDomain];
+//		GLFunction *speed = [[u times: u] plus: [v times: v]];
+//		
+//		GLFloat U = sqrt([speed maxNow]);
+//		self.dt = cfl * xDim.sampleInterval / U;
+//	}
 	
 	NSLog(@"Reynolds number: %f", u_rms*xDim.domainLength/self.nu);
 	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*self.T_QG, other_dt*self.T_QG);
@@ -408,9 +408,10 @@
 - (void) createIntegrationOperation
 {
 	GLFunction *zeta = [self.ssh differentiateWithOperator: self.laplacianMinusOne];
+    GLFunction *zetaSD = [zeta spatialDomain];
 	
 	NSMutableArray *yin = [NSMutableArray arrayWithObject: zeta];
-	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-3)];
+	NSMutableArray *absTolerances = [NSMutableArray arrayWithObject: @(1e-1)];
 	if (self.shouldAdvancePhases) {
 		[yin addObject: self.phi];
 		[absTolerances addObject: @(1e0)];
@@ -473,7 +474,8 @@
 		
 	};
     GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta23AdvanceY: yin stepSize: self.dt fFromTY: self.fBlock];
-	if ([[integrator class] isSubclassOfClass: [GLAdaptiveRungeKuttaOperation class]]) {
+    //GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: yin stepSize: self.dt fFromTY: self.fBlock];
+    if ([[integrator class] isSubclassOfClass: [GLAdaptiveRungeKuttaOperation class]]) {
 		[ (GLAdaptiveRungeKuttaOperation *) integrator setAbsoluteTolerance: absTolerances ];
 	}
     
@@ -616,7 +618,7 @@
         @autoreleasepool {
             NSUInteger iOut = 0;
             NSArray *yout = [self.integrator stepForwardToTime: time];
-            NSLog(@"Logging day: %f, last step size: %f.", (time*self.T_QG/86400.), self.integrator.lastStepSize*self.T_QG);
+            NSLog(@"Logging day: %f, last step size: %f seconds.", (time*self.T_QG/86400.), self.integrator.lastStepSize*self.T_QG);
             
             [self.tDim addPoint: @(time*self.T_QG)];
             
