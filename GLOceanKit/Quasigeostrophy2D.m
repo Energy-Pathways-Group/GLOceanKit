@@ -356,6 +356,8 @@
         if (!self.phi) {
             // The random number generator will enforce the hermitian symmetry.
             self.phi = [GLFunction functionWithRandomValuesBetween: -M_PI and: M_PI withDimensions: self.wavenumberDimensions forEquation: self.equation];
+            // This line is pivotal: we must remove the dependency to the random number generator operation before using this.
+            [self.phi solve];
         }
         
         // The variable 'forcing' contains the magnitude of the forcing term for each wavenumber, but no phase information.
@@ -442,7 +444,7 @@
 			} else {
 				phase = yNew[++iInput];
 			}
-			f = [f plus: [qg.forcing multiply: [[phase swapComplex] exponentiate]]];
+			f = [f plus: [qg.forcing multiply: [[phase swapComplex] exponentiate]]];            
 		}
 		
 		NSMutableArray *fout = [NSMutableArray arrayWithObject: f];
