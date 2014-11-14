@@ -273,7 +273,7 @@
 	GLFloat k_c = deltaK * pow(k_max/deltaK, 0.75);
 	
 	GLFloat u_rms = self.k_alpha > self.k_r ? pow(real_energy/self.k_alpha,0.333) : pow(real_energy/self.k_r,0.333);
-	self.nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
+	self.nu = [self.dimensions[0] sampleInterval]*u_rms; // sqrt(2.) is very stable, 2. also seems to work.
 	
     NSLog(@"sample interval: %g, u_rms: %g, real_energy: %g",[self.dimensions[0] sampleInterval],u_rms ,real_energy);
     
@@ -561,7 +561,7 @@
 	
 	if (self.shouldWriteRV) {
 		GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
-		GLFunction *dimensionalRV = [[[self.laplacian transform: self.ssh] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
+		GLFunction *dimensionalRV = [[[self.ssh differentiateWithOperator: self.laplacian] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
 		self.rvHistory = [dimensionalRV variableByAddingDimension: self.tDim];
 		self.rvHistory.name = @"RV";
 		self.rvHistory = [netcdfFile addVariable: self.rvHistory];
@@ -637,7 +637,7 @@
             }
             
             if (self.shouldWriteRV) {
-                GLFunction *rv2 = [[[self.laplacian transform: self.ssh] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
+                GLFunction *rv2 = [[[self.laplacian transform: etaFD] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
                 [self.rvHistory concatenateWithLowerDimensionalVariable: rv2 alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
                 [netcdfFile waitUntilAllOperationsAreFinished];
             }
