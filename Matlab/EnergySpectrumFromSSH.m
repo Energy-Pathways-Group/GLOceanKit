@@ -19,8 +19,10 @@ deltaK = ones(size(energyPSD)) * (l(2)-l(1));
 intEnergyPSD = energyPSD .* deltaK;
 
 % Build the wavenumber vector and find the energy in those bins
-kMag = k(length(k)/2+1:end);
-dK = kMag(2)-kMag(1);
+%kMag = k(length(k)/2+1:end);
+%dK = kMag(2)-kMag(1);
+dK = k(2)-k(1);
+kMag = 0:dK:max(max(rhoK));
 indices = cell( length(kMag), 1);
 for i = 1:length(kMag)
 	indices{i} = find( rhoK >= kMag(i)-dK/2 & rhoK < kMag(i)+dK/2 );

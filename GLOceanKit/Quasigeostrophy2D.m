@@ -433,7 +433,23 @@
 	self.fBlock = ^(GLVariable *time, NSArray *yNew) {
 		NSUInteger iInput = 0;
 		GLFunction *eta = [yNew[0] differentiateWithOperator: qg.inverseLaplacianMinusOne];
-		GLFunction *f = [[eta differentiateWithOperator: qg.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: qg.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: qg.diffJacobianY]]] frequencyDomain]];
+		//GLFunction *f = [[eta differentiateWithOperator: qg.diffLinear] plus: [[[[eta y] times: [eta differentiateWithOperator: qg.diffJacobianX]] minus: [[eta x] times: [eta differentiateWithOperator: qg.diffJacobianY]]] frequencyDomain]];
+        
+        GLFunction *eta_y = [eta y];
+        GLFunction *eta_nabla_x = [eta differentiateWithOperator: qg.diffJacobianX];
+        GLFunction *eta_x = [eta x];
+        GLFunction *eta_nabla_y = [eta differentiateWithOperator: qg.diffJacobianY];
+        
+        GLFunction *eta_y_sd = [eta_y spatialDomain];
+        GLFunction *eta_nabla_x_sd = [eta_nabla_x spatialDomain];
+        GLFunction *eta_x_sd = [eta_x spatialDomain];
+        GLFunction *eta_nabla_y_sd = [eta_nabla_y spatialDomain];
+        
+        GLFunction *a = [eta_y_sd times: eta_nabla_x_sd];
+        GLFunction *b = [eta_x_sd times: eta_nabla_y_sd];
+        
+        GLFunction *f = [[eta differentiateWithOperator: qg.diffLinear] plus: [[a minus: b] frequencyDomain]];
+        
 
 		if (qg.shouldForce) {
 			GLFunction *phase;
