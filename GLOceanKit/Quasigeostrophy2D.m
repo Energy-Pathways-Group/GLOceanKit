@@ -273,7 +273,7 @@
 	GLFloat k_c = deltaK * pow(k_max/deltaK, 0.75);
 	
 	GLFloat u_rms = self.k_alpha > self.k_r ? pow(real_energy/self.k_alpha,0.333) : pow(real_energy/self.k_r,0.333);
-	self.nu = [self.dimensions[0] sampleInterval]*u_rms; // sqrt(2.) is very stable, 2. also seems to work.
+	self.nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
 	
     NSLog(@"sample interval: %g, u_rms: %g, real_energy: %g",[self.dimensions[0] sampleInterval],u_rms ,real_energy);
     
