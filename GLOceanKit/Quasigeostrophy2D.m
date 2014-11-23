@@ -273,6 +273,13 @@
 	GLFloat k_c = deltaK * pow(k_max/deltaK, 0.75);
 	
 	GLFloat u_rms = self.k_alpha > self.k_r ? pow(real_energy/self.k_alpha,0.333) : pow(real_energy/self.k_r,0.333);
+    if (u_rms==0.0 || isnan(u_rms)) {
+        GLFunction *v = [[self.ssh x] spatialDomain];
+        GLFunction *u = [[self.ssh y] spatialDomain];
+        GLFunction *speed = [[u times: u] plus: [v times: v]];
+        
+        u_rms = sqrt([speed maxNow]);
+    }
 	self.nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
 	
     NSLog(@"sample interval: %g, u_rms: %g, real_energy: %g",[self.dimensions[0] sampleInterval],u_rms ,real_energy);
@@ -336,17 +343,19 @@
 #warning come back and fix the time step issue.
     self.dt = other_dt;
 	
-//	if (self.isRestart) {
-//		GLFunction *v = [[self.ssh x] spatialDomain];
-//		GLFunction *u = [[self.ssh y] spatialDomain];
-//		GLFunction *speed = [[u times: u] plus: [v times: v]];
-//		
-//		GLFloat U = sqrt([speed maxNow]);
-//		self.dt = cfl * xDim.sampleInterval / U;
-//	}
+    if (isnan(self.dt)) {
+		GLFunction *v = [[self.ssh x] spatialDomain];
+		GLFunction *u = [[self.ssh y] spatialDomain];
+		GLFunction *speed = [[u times: u] plus: [v times: v]];
+		
+		GLFloat U = sqrt([speed maxNow]);
+        if (U==0.0) U=1.0;
+		self.dt = cfl * xDim.sampleInterval / U;
+	}
 	
 	NSLog(@"Reynolds number: %f", u_rms*xDim.domainLength/self.nu);
 	NSLog(@"v_dt: %f, other_dt: %f", viscous_dt*self.T_QG, other_dt*self.T_QG);
+    NSLog(@"dt: %f", self.dt);
 }
 
 - (void) buildForcingFunction
