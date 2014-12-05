@@ -1,5 +1,5 @@
-file = '/Volumes/Music/Model_Output/QGDampedSlab_Monopole.nc';
-output_file = '/Volumes/Music/Model_Output/QGDampedSlabTrajectories_Monopole.mat';
+file = '/Volumes/Data/QGPlusSlab/MonopoleExperimentWithNoWindsLongDamp_+/QGDampedSlab_Monopole.nc';
+output_file = '/Volumes/Data/QGPlusSlab/MonopoleExperimentWithNoWindsLongDamp_+/QGDampedSlabTrajectories_Monopole.mat';
 shouldSaveStrainAndVorticity = 1;
 
 %addpath('../GLOceanKit/Matlab/')
