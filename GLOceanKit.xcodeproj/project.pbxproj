@@ -7,13 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		811C38E91A38DEFC00C7DC69 /* GLInternalModes.h in Headers */ = {isa = PBXBuildFile; fileRef = 811C38E51A38DEFC00C7DC69 /* GLInternalModes.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		811C38EA1A38DEFC00C7DC69 /* GLInternalModes.h in Headers */ = {isa = PBXBuildFile; fileRef = 811C38E51A38DEFC00C7DC69 /* GLInternalModes.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		811C38EB1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E61A38DEFC00C7DC69 /* GLInternalModes.m */; };
+		811C38EC1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E61A38DEFC00C7DC69 /* GLInternalModes.m */; };
+		811C38ED1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */ = {isa = PBXBuildFile; fileRef = 811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		811C38EE1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */ = {isa = PBXBuildFile; fileRef = 811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		811C38EF1A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */; };
+		811C38F01A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */; };
 		8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187734819DDB234007E5DA3 /* GLOceanKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187734F19DDB234007E5DA3 /* GLOceanKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187734319DDB234007E5DA3 /* GLOceanKit.framework */; };
 		8187735619DDB234007E5DA3 /* GLOceanKitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187735519DDB234007E5DA3 /* GLOceanKitTests.m */; };
 		8187736019DDB3AD007E5DA3 /* GLNumericalModelingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */; };
 		8187736819DDB421007E5DA3 /* GLOceanKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187736719DDB421007E5DA3 /* GLOceanKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187737019DDB421007E5DA3 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187736519DDB421007E5DA3 /* GLOceanKit.dylib */; };
-		8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; };
+		8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
 		8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
@@ -38,6 +46,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		811C38E51A38DEFC00C7DC69 /* GLInternalModes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalModes.h; sourceTree = "<group>"; };
+		811C38E61A38DEFC00C7DC69 /* GLInternalModes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalModes.m; sourceTree = "<group>"; };
+		811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalWaveInitialization.h; sourceTree = "<group>"; };
+		811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalWaveInitialization.m; sourceTree = "<group>"; };
 		8187734319DDB234007E5DA3 /* GLOceanKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GLOceanKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8187734719DDB234007E5DA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8187734819DDB234007E5DA3 /* GLOceanKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GLOceanKit.h; sourceTree = "<group>"; };
@@ -122,6 +134,10 @@
 				8187734819DDB234007E5DA3 /* GLOceanKit.h */,
 				8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */,
 				8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */,
+				811C38E51A38DEFC00C7DC69 /* GLInternalModes.h */,
+				811C38E61A38DEFC00C7DC69 /* GLInternalModes.m */,
+				811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */,
+				811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */,
 				8187734619DDB234007E5DA3 /* Supporting Files */,
 			);
 			path = GLOceanKit;
@@ -184,7 +200,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
+				811C38E91A38DEFC00C7DC69 /* GLInternalModes.h in Headers */,
 				8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */,
+				811C38ED1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,7 +211,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
+				811C38EA1A38DEFC00C7DC69 /* GLInternalModes.h in Headers */,
 				8187736819DDB421007E5DA3 /* GLOceanKit.h in Headers */,
+				811C38EE1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -343,6 +363,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				811C38EB1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */,
+				811C38EF1A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */,
 				8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -359,6 +381,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				811C38EC1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */,
+				811C38F01A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */,
 				8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

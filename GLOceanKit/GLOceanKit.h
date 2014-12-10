@@ -7,3 +7,5 @@
 //
 
 #import <GLOceanKit/Quasigeostrophy2D.h>
+#import <GLOceanKit/GLInternalModes.h>
+#import <GLOceanKit/GLInternalWaveInitialization.h>
