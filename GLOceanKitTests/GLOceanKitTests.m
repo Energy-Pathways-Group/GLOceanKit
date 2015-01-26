@@ -8,6 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 #import <XCTest/XCTest.h>
+#import <GLNumericalModelingKit/GLNumericalModelingKit.h>
+#import "GLOceanKit.h"
 
 @interface GLOceanKitTests : XCTestCase
 
@@ -26,7 +28,18 @@
 }
 
 - (void)testExample {
-    // This is an example of a functional test case.
+	GLFloat N2_0 = 1.69e-4;
+	GLFloat rho0 = 1025;
+	GLFloat g = 9.81;
+	
+	GLEquation *equation = [[GLEquation alloc] init];
+	GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 128 domainMin: -300.0 length: 300.0];
+	GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+	GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
+	
+	GLInternalModes *internalModes = [[GLInternalModes alloc] init];
+	[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[zDim] forLatitude: 33.0];
+
     XCTAssert(YES, @"Pass");
 }
 
