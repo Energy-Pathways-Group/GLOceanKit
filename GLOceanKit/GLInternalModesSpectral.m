@@ -89,11 +89,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	GLFunction *buoyancy = [[rho dividedBy: rho0] times: @(-g)];
 	
 	self.diffZ = [GLLinearTransform differentialOperatorWithDerivatives: 1 fromDimension: buoyancy.dimensions[0] forEquation: self.equation];
-	
-	// First construct N^2
-	self.diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation: self.equation];
-	//self.diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation: self.equation];
-	self.N2 = [self.diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
+	self.N2 = [self.diffZ transform: buoyancy];
 	self.N2.name = @"N2";
 }
 
