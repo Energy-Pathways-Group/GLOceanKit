@@ -27,6 +27,10 @@
 		81888A411A76B3A1006CAD32 /* GLNumericalModelingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */; };
 		81888A421A76B40A006CAD32 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81D9E06E19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib */; };
 		81888A431A76B452006CAD32 /* GLOceanKitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187735519DDB234007E5DA3 /* GLOceanKitTests.m */; };
+		819775E31AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */ = {isa = PBXBuildFile; fileRef = 819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */; };
+		819775E41AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */ = {isa = PBXBuildFile; fileRef = 819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */; };
+		819775E51AA8C1BF008BDC6F /* GLInternalModesSpectral.m in Sources */ = {isa = PBXBuildFile; fileRef = 819775E21AA8C1BF008BDC6F /* GLInternalModesSpectral.m */; };
+		819775E61AA8C1BF008BDC6F /* GLInternalModesSpectral.m in Sources */ = {isa = PBXBuildFile; fileRef = 819775E21AA8C1BF008BDC6F /* GLInternalModesSpectral.m */; };
 		81D9E06F19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81D9E06E19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib */; };
 /* End PBXBuildFile section */
 
@@ -64,6 +68,8 @@
 		8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = GLNumericalModelingKit.dylib; path = "../../../Library/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug/GLNumericalModelingKit.dylib"; sourceTree = "<group>"; };
 		8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Quasigeostrophy2D.h; sourceTree = "<group>"; };
 		8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Quasigeostrophy2D.m; sourceTree = "<group>"; };
+		819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalModesSpectral.h; sourceTree = "<group>"; };
+		819775E21AA8C1BF008BDC6F /* GLInternalModesSpectral.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalModesSpectral.m; sourceTree = "<group>"; };
 		81D9E06E19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = GLNumericalModelingKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -136,6 +142,8 @@
 				8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */,
 				811C38E51A38DEFC00C7DC69 /* GLInternalModes.h */,
 				811C38E61A38DEFC00C7DC69 /* GLInternalModes.m */,
+				819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */,
+				819775E21AA8C1BF008BDC6F /* GLInternalModesSpectral.m */,
 				811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */,
 				811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */,
 				8187734619DDB234007E5DA3 /* Supporting Files */,
@@ -175,6 +183,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				819775E31AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */,
 				8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
 				811C38E91A38DEFC00C7DC69 /* GLInternalModes.h in Headers */,
 				8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */,
@@ -187,6 +196,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */,
+				819775E41AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */,
 				811C38EA1A38DEFC00C7DC69 /* GLInternalModes.h in Headers */,
 				811C38EE1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */,
 			);
@@ -340,6 +350,7 @@
 			files = (
 				811C38EB1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */,
 				811C38EF1A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */,
+				819775E51AA8C1BF008BDC6F /* GLInternalModesSpectral.m in Sources */,
 				8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -358,6 +369,7 @@
 			files = (
 				811C38EC1A38DEFC00C7DC69 /* GLInternalModes.m in Sources */,
 				811C38F01A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */,
+				819775E61AA8C1BF008BDC6F /* GLInternalModesSpectral.m in Sources */,
 				8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
