@@ -8,4 +8,5 @@
 
 #import <GLOceanKit/Quasigeostrophy2D.h>
 #import <GLOceanKit/GLInternalModes.h>
+#import <GLOceanKit/GLInternalModesSpectral.h>
 #import <GLOceanKit/GLInternalWaveInitialization.h>
