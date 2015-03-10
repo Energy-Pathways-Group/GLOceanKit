@@ -116,7 +116,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 - (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
 {
 	S = [S makeRealIfPossible];
-	self.S = [S normalizeWithFunction: norm]; self.S.name = @"S_transform";
+	GLLinearTransform *S_spatial = [self.T matrixMultiply: S];
+	self.S = [S_spatial normalizeWithFunction: norm]; self.S.name = @"S_transform";
 	
 	GLLinearTransform *diffZ;
 	if (S.toDimensions.count == diffZ.fromDimensions.count) {
@@ -125,7 +126,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 		diffZ = [self.diffZ expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
 	}
 	
-	self.Sprime = [diffZ multiply: self.S];
+	self.Sprime = [self.T matrixMultiply: [diffZ multiply: self.S]];
 	GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: self.eigendepths];
 	GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: self.Sprime secondOperand: scaling];
 	self.Sprime = op.result[0]; self.Sprime.name = @"Sprime_transform";
@@ -140,6 +141,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	self.T = [GLLinearTransform discreteTransformFromDimension: self.chebDim toBasis: kGLDeltaBasis forEquation:self.equation];
 	// Create an operation to compute the Chebyshev differentiation matrices.
 	GLMatrixDescription *matrixDescription = self.diffZ.matrixDescription;
+	GLFloat scale = 2./self.zDim.domainLength;
 	variableOperation chebOp = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
 		GLFloat *A = (GLFloat *) [operandArray[0] bytes];
 		GLFloat *C = (GLFloat *) [resultArray[0] bytes];
@@ -163,7 +165,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 				C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = coeff*C[i*matrixDescription.strides[0].rowStride + (j-2)*matrixDescription.strides[0].columnStride] + 2*j*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
 			}
 		}
-		
+	
+		vGL_vsmul(C, matrixDescription.strides[0].stride, &scale,C, matrixDescription.strides[0].stride,matrixDescription.strides[0].nPoints);
 	};
 	
 	GLVariableOperation *operation = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: self.T]] operand:@[self.T] buffers:@[] operation: chebOp];
@@ -177,6 +180,19 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	GLFunction *invN2 = [self.N2 scalarDivide: -g];
 //	GLFunction *invN2 = [[self.N2 minus: @(self.f0*self.f0)] scalarDivide: -g];
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: invN2] multiply: self.T];
+	
+	GLFloat *a = A.pointerValue;
+	GLFloat *b = B.pointerValue;
+	GLFloat *T = self.T.pointerValue;
+	NSUInteger iTop=0;
+	NSUInteger iBottom=A.matrixDescription.strides[0].nRows-1;
+	for (NSUInteger j=0; j<A.matrixDescription.strides[0].nColumns; j++) {
+		a[iTop*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = T[iTop*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+		b[iTop*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = 0.0;
+		
+		a[iBottom*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = T[iBottom*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+		b[iBottom*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = 0.0;
+	}
 	
 	NSArray *system = [B generalizedEigensystemWith: A];
 	
