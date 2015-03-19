@@ -66,6 +66,8 @@
 
 @property(strong) GLLinearTransform *diffOp;
 
+@property(readonly,strong) GLEquation *equation;
+
 /** Compute the internal wave modes for a given wavenumber.
  @discussion This method differs from the above, primary methods, by solving the generalized eigenvalue from for omega, rather than h.
  @param rho Density profile given as a function of z only.

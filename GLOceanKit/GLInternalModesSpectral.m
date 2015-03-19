@@ -124,6 +124,48 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     
 	self.N2 = [self.T_zIn transform: buoyancy_z];
 	self.N2.name = @"N2";
+    
+    [self createChebyshevTransformations];
+}
+
+- (void) createChebyshevTransformations
+{
+    self.T = [GLLinearTransform discreteTransformFromDimension: self.chebDim toBasis: kGLDeltaBasis forEquation:self.equation];
+    // Create an operation to compute the Chebyshev differentiation matrices.
+    GLMatrixDescription *matrixDescription = self.diffZ.matrixDescription;
+    GLFloat scale = 2./self.zDim.domainLength;
+    variableOperation chebOp = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
+        GLFloat *A = (GLFloat *) [operandArray[0] bytes];
+        GLFloat *C = (GLFloat *) [resultArray[0] bytes];
+        
+        NSUInteger j=0;
+        for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
+            C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 0;
+        }
+        j=1;
+        for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
+            C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 2*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
+        }
+        j=2;
+        for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
+            C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 4*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
+        }
+        
+        for (j=3; j<matrixDescription.strides[0].nColumns; j++) {
+            for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
+                GLFloat coeff = ((GLFloat) j)/(((GLFloat) j)-2.);
+                C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = coeff*C[i*matrixDescription.strides[0].rowStride + (j-2)*matrixDescription.strides[0].columnStride] + 2*j*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
+            }
+        }
+        
+        vGL_vsmul(C, matrixDescription.strides[0].stride, &scale,C, matrixDescription.strides[0].stride,matrixDescription.strides[0].nPoints);
+    };
+    
+    GLVariableOperation *operation = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: self.T]] operand:@[self.T] buffers:@[] operation: chebOp];
+    self.Tz = operation.result[0];
+    
+    GLVariableOperation *op2 = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: self.Tz]] operand:@[self.Tz] buffers:@[] operation: chebOp];
+    self.Tzz = op2.result[0];
 }
 
 - (void) normalizeDepthBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
@@ -167,46 +209,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 {
 	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
 	
-	self.T = [GLLinearTransform discreteTransformFromDimension: self.chebDim toBasis: kGLDeltaBasis forEquation:self.equation];
-	// Create an operation to compute the Chebyshev differentiation matrices.
-	GLMatrixDescription *matrixDescription = self.diffZ.matrixDescription;
-	GLFloat scale = 2./self.zDim.domainLength;
-	variableOperation chebOp = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
-		GLFloat *A = (GLFloat *) [operandArray[0] bytes];
-		GLFloat *C = (GLFloat *) [resultArray[0] bytes];
-		
-		NSUInteger j=0;
-		for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
-			C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 0;
-		}
-		j=1;
-		for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
-			C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 2*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
-		}
-		j=2;
-		for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
-			C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = 4*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
-		}
-		
-		for (j=3; j<matrixDescription.strides[0].nColumns; j++) {
-			for (NSUInteger i=0; i<matrixDescription.strides[0].nRows; i++) {
-				GLFloat coeff = ((GLFloat) j)/(((GLFloat) j)-2.);
-				C[i*matrixDescription.strides[0].rowStride + j*matrixDescription.strides[0].columnStride] = coeff*C[i*matrixDescription.strides[0].rowStride + (j-2)*matrixDescription.strides[0].columnStride] + 2*j*A[i*matrixDescription.strides[0].rowStride + (j-1)*matrixDescription.strides[0].columnStride];
-			}
-		}
-	
-		vGL_vsmul(C, matrixDescription.strides[0].stride, &scale,C, matrixDescription.strides[0].stride,matrixDescription.strides[0].nPoints);
-	};
-	
-	GLVariableOperation *operation = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: self.T]] operand:@[self.T] buffers:@[] operation: chebOp];
-	self.Tz = operation.result[0];
-	
-	GLVariableOperation *op2 = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: self.Tz]] operand:@[self.Tz] buffers:@[] operation: chebOp];
-	self.Tzz = op2.result[0];
-	
 	GLLinearTransform *A = self.Tzz;
-	
-//  GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-g)]] multiply: self.T];
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [self.N2_cheb_grid times: @(-1/g)]] multiply: self.T];
 	
 	GLFloat *a = A.pointerValue;
@@ -234,20 +237,28 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 {
 	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
 	
-	// -g/(N2-f*f)
-	GLFunction *invN2 = [[self.N2 minus: @(self.f0*self.f0)] scalarDivide: -g];
-	
-	GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation:self.equation];
-	GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
 	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[self.zDim] toDimensions: @[self.zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:self.equation matrix:^( NSUInteger *row, NSUInteger *col ) {
 		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
 	}];
-	GLLinearTransform *diffOp = [invN2_trans multiply: [diffZZ minus: k2]];
-	self.diffOp = diffOp;
+    GLLinearTransform *A = [self.Tzz minus: [k2 multiply: self.T]];
+    GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] multiply: self.T];
 	
-	NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
+    GLFloat *a = A.pointerValue;
+    GLFloat *b = B.pointerValue;
+    GLFloat *T = self.T.pointerValue;
+    NSUInteger iTop=0;
+    NSUInteger iBottom=A.matrixDescription.strides[0].nRows-1;
+    for (NSUInteger j=0; j<A.matrixDescription.strides[0].nColumns; j++) {
+        a[iTop*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = T[iTop*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+        b[iTop*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = 0.0;
+        
+        a[iBottom*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = T[iBottom*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+        b[iBottom*A.matrixDescription.strides[0].rowStride + j*A.matrixDescription.strides[0].columnStride] = 0.0;
+    }
+    
+    NSArray *system = [B generalizedEigensystemWith: A];
 	
-	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
+	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(1/g)]];
 	
 	self.eigenfrequencies = [[[[self.eigendepths abs] times: @(g*k*k)] plus: @(self.f0*self.f0)] sqrt];
 	return @[self.eigendepths, self.S, self.Sprime];

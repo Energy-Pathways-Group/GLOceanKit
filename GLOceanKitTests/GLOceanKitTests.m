@@ -35,7 +35,89 @@
     [super tearDown];
 }
 
-- (void)testInternalModesFiniteDifference {
+- (void) compareSolution: (GLInternalModes *) internalModes toAnalyticalSolutionWithK: (GLFloat) k N2: (GLFloat) N2_0 latitude: (GLFloat) latitude depth: (GLFloat) H
+{
+    GLFloat g = 9.81;
+    
+    GLLinearTransform *S = internalModes.S;
+    GLLinearTransform *Sprime = internalModes.Sprime;
+    
+    GLDimension *zDim = S.toDimensions[0];
+    GLDimension *nDim = S.fromDimensions[0];
+    GLFunction *n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim,zDim] forEquation: internalModes.equation];
+    GLFunction *z2 = [GLFunction functionOfRealTypeFromDimension: zDim withDimensions:@[nDim,zDim] forEquation: internalModes.equation];
+    
+    GLFloat coeff = sqrt(2*g/H)/sqrt(N2_0-internalModes.f0*internalModes.f0);
+    GLFunction *kz = [[n plus: @(1.)] times: @(M_PI/H)];
+    GLFunction *hn = [[[[kz times: kz] plus: @(k*k)] pow: -1.0] times: @(N2_0/g)];
+    GLFunction *Gn = [[[kz times: z2] sin] times: @(coeff)];
+    GLFunction *Fn = [[[[[kz times: z2] cos] times: @(coeff)] times: kz] times: hn];
+    
+    NSUInteger A_rs = Gn.matrixDescription.strides[1].stride;
+    NSUInteger A_cs = Gn.matrixDescription.strides[0].stride;
+    
+    NSUInteger B_rs = S.matrixDescription.strides[0].rowStride;
+    NSUInteger B_cs = S.matrixDescription.strides[0].columnStride;
+    
+    GLFloat precision = 1e-2;
+    
+    // First check the w-modes, Gn
+    for (NSUInteger j=0; j<nDim.nPoints; j++) {
+        GLFloat max = 0.0;
+        for (NSUInteger i=0; i<zDim.nPoints; i++) {
+            if (fabs(Gn.pointerValue[i*A_rs + j*A_cs]) > max) {
+                max = fabs(Gn.pointerValue[i*A_rs + j*A_cs]);
+            }
+        }
+        
+        NSUInteger failures = 0;
+        for (NSUInteger i=0; i<zDim.nPoints; i++) {
+            if ( !fequalprec(fabs(Gn.pointerValue[i*A_rs + j*A_cs])/max, fabs(S.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
+                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Gn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
+                failures++;
+            }
+        }
+        if (failures) {
+            XCTFail(@"w-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
+            break;
+        }
+    }
+    
+    // Next check the (u,v)-modes, Fn
+    for (NSUInteger j=0; j<nDim.nPoints; j++) {
+        GLFloat max = 0.0;
+        for (NSUInteger i=0; i<zDim.nPoints; i++) {
+            if (fabs(Fn.pointerValue[i*A_rs + j*A_cs]) > max) {
+                max = fabs(Fn.pointerValue[i*A_rs + j*A_cs]);
+            }
+        }
+        
+        NSUInteger failures = 0;
+        for (NSUInteger i=0; i<zDim.nPoints; i++) {
+            if ( !fequalprec(fabs(Fn.pointerValue[i*A_rs + j*A_cs])/max, fabs(Sprime.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
+                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Fn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
+                failures++;
+            }
+        }
+        if (failures) {
+            XCTFail(@"(u,v)-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
+            break;
+        }
+    }
+    
+    n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim] forEquation: internalModes.equation];
+    kz = [[n plus: @(1.)] times: @(M_PI/H)];
+    GLFunction *h = [[[[kz times: kz] plus: @(k*k)] pow: -1.0] times: @(N2_0/g)];
+    for (NSUInteger j=0; j<nDim.nPoints; j++) {
+        if (!fequalprec(fabs(internalModes.eigendepths.pointerValue[j])/h.pointerValue[j], 1.0,precision)) {
+            XCTFail(@"Eigenvalue %lu failed with a precision of %f. Expected %g, found %g", j, precision, h.pointerValue[j], internalModes.eigendepths.pointerValue[j]);
+            break;
+        }
+        
+    }
+}
+
+- (void)testInternalGeostrophicModesFiniteDifference {
 	GLFloat N2_0 = 1.69e-4;
 	GLFloat rho0 = 1025;
 	GLFloat g = 9.81;
@@ -50,84 +132,11 @@
 	GLInternalModes *internalModes = [[GLInternalModes alloc] init];
 	[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
 
-    GLLinearTransform *S = internalModes.S;
-    GLLinearTransform *Sprime = internalModes.Sprime;
-    
-    GLDimension *nDim = S.fromDimensions[0];
-    GLFunction *n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim,zDim] forEquation: equation];
-    GLFunction *z2 = [GLFunction functionOfRealTypeFromDimension: zDim withDimensions:@[nDim,zDim] forEquation: equation];
-    
-    GLFloat coeff = sqrt(2*g/H)/sqrt(N2_0-internalModes.f0*internalModes.f0);
-    GLFunction *kz = [[n plus: @(1.)] times: @(M_PI/H)];
-    GLFunction *hn = [[[[n plus: @(1.)] times: @(M_PI/H)] pow: -2.0] times: @(N2_0/g)];
-    GLFunction *Gn = [[[kz times: z2] sin] times: @(coeff)];
-    GLFunction *Fn = [[[[[kz times: z2] cos] times: @(coeff)] times: kz] times: hn];
-    
-    NSUInteger A_rs = Gn.matrixDescription.strides[1].stride;
-    NSUInteger A_cs = Gn.matrixDescription.strides[0].stride;
-    
-    NSUInteger B_rs = S.matrixDescription.strides[0].rowStride;
-    NSUInteger B_cs = S.matrixDescription.strides[0].columnStride;
-    
-    GLFloat precision = 1e-2;
-    
-    // First check the w-modes, Gn
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        GLFloat max = 0.0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if (fabs(Gn.pointerValue[i*A_rs + j*A_cs]) > max) {
-                max = fabs(Gn.pointerValue[i*A_rs + j*A_cs]);
-            }
-        }
-        
-        NSUInteger failures = 0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if ( !fequalprec(fabs(Gn.pointerValue[i*A_rs + j*A_cs])/max, fabs(S.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
-                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Gn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
-                failures++;
-            }
-        }
-        if (failures) {
-            XCTFail(@"w-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
-            break;
-        }
-    }
-    
-    // Next check the (u,v)-modes, Fn
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        GLFloat max = 0.0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if (fabs(Fn.pointerValue[i*A_rs + j*A_cs]) > max) {
-                max = fabs(Fn.pointerValue[i*A_rs + j*A_cs]);
-            }
-        }
-        
-        NSUInteger failures = 0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if ( !fequalprec(fabs(Fn.pointerValue[i*A_rs + j*A_cs])/max, fabs(Sprime.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
-                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Fn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
-                failures++;
-            }
-        }
-        if (failures) {
-            XCTFail(@"(u,v)-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
-            break;
-        }
-    }
-    
-    n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim] forEquation: equation];
-    GLFunction *h = [[[[n plus: @(1.)] times: @(M_PI/H)] pow: -2.0] times: @(N2_0/g)];
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        if (!fequalprec(fabs(internalModes.eigendepths.pointerValue[j])/h.pointerValue[j], 1.0,precision)) {
-            XCTFail(@"Eigenvalue %lu failed with a precision of %f. Expected %g, found %g", j, precision, h.pointerValue[j], internalModes.eigendepths.pointerValue[j]);
-            break;
-        }
-        
-    }
+    [self compareSolution: internalModes toAnalyticalSolutionWithK: 0.0 N2:N2_0 latitude:latitude depth:H];
     
 }
 
-- (void)testInternalModesSpectral {
+- (void)testInternalGeostrophicModesSpectral {
     GLFloat N2_0 = 1.69e-4;
     GLFloat rho0 = 1025;
     GLFloat g = 9.81;
@@ -142,80 +151,46 @@
     GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
     [internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
     
-    GLLinearTransform *S = internalModes.S;
-    GLLinearTransform *Sprime = internalModes.Sprime;
+    [self compareSolution: internalModes toAnalyticalSolutionWithK: 0.0 N2:N2_0 latitude:latitude depth:H];
+}
+
+- (void)testInternalWaveModesFiniteDifference {
+    GLFloat N2_0 = 1.69e-4;
+    GLFloat rho0 = 1025;
+    GLFloat g = 9.81;
+    GLFloat latitude = 33.0;
+    GLFloat H = 300;
+    GLFloat k = 0.1;
     
-    GLDimension *nDim = S.fromDimensions[0];
-    GLFunction *n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim,zDim] forEquation: equation];
-    GLFunction *z2 = [GLFunction functionOfRealTypeFromDimension: zDim withDimensions:@[nDim,zDim] forEquation: equation];
+    GLEquation *equation = [[GLEquation alloc] init];
+    GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 32 domainMin: -H length: H];
+    GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+    GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
     
-    GLFloat coeff = sqrt(2*g/H)/sqrt(N2_0-internalModes.f0*internalModes.f0);
-    GLFunction *kz = [[n plus: @(1.)] times: @(M_PI/H)];
-    GLFunction *hn = [[[[n plus: @(1.)] times: @(M_PI/H)] pow: -2.0] times: @(N2_0/g)];
-    GLFunction *Gn = [[[kz times: z2] sin] times: @(coeff)];
-    GLFunction *Fn = [[[[[kz times: z2] cos] times: @(coeff)] times: kz] times: hn];
+    GLInternalModes *internalModes = [[GLInternalModes alloc] init];
+    [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude];
     
-    NSUInteger A_rs = Gn.matrixDescription.strides[1].stride;
-    NSUInteger A_cs = Gn.matrixDescription.strides[0].stride;
+    [self compareSolution: internalModes toAnalyticalSolutionWithK: k N2:N2_0 latitude:latitude depth:H];
     
-    NSUInteger B_rs = S.matrixDescription.strides[0].rowStride;
-    NSUInteger B_cs = S.matrixDescription.strides[0].columnStride;
+}
+
+- (void)testInternalWaveModesSpectral {
+    GLFloat N2_0 = 1.69e-4;
+    GLFloat rho0 = 1025;
+    GLFloat g = 9.81;
+    GLFloat latitude = 33.0;
+    GLFloat H = 300;
+    GLFloat k = 0.1;
     
-    GLFloat precision = 1e-2;
+    GLEquation *equation = [[GLEquation alloc] init];
+    GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 32 domainMin: -H length: H]; zDim.name = @"z";
+    GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+    GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
     
-    // First check the w-modes, Gn
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        GLFloat max = 0.0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if (fabs(Gn.pointerValue[i*A_rs + j*A_cs]) > max) {
-                max = fabs(Gn.pointerValue[i*A_rs + j*A_cs]);
-            }
-        }
-        
-        NSUInteger failures = 0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if ( !fequalprec(fabs(Gn.pointerValue[i*A_rs + j*A_cs])/max, fabs(S.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
-                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Gn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
-                failures++;
-            }
-        }
-        if (failures) {
-            XCTFail(@"w-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
-            break;
-        }
-    }
+    GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+    [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude];
     
-    // Next check the (u,v)-modes, Fn
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        GLFloat max = 0.0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if (fabs(Fn.pointerValue[i*A_rs + j*A_cs]) > max) {
-                max = fabs(Fn.pointerValue[i*A_rs + j*A_cs]);
-            }
-        }
-        
-        NSUInteger failures = 0;
-        for (NSUInteger i=0; i<zDim.nPoints; i++) {
-            if ( !fequalprec(fabs(Fn.pointerValue[i*A_rs + j*A_cs])/max, fabs(Sprime.pointerValue[i*B_rs + j*B_cs])/max,precision) ) {
-                //XCTFail(@"(%lu,%lu): Expected %f, found %f.",i,j, Fn.pointerValue[i*A_rs + j*A_cs], S.pointerValue[i*B_rs + j*B_cs]);
-                failures++;
-            }
-        }
-        if (failures) {
-            XCTFail(@"(u,v)-mode %lu failed for %lu (of %lu) values with a precision of %f", j, failures, nDim.nPoints, precision);
-            break;
-        }
-    }
-    
-    n = [GLFunction functionOfRealTypeFromDimension: nDim withDimensions:@[nDim] forEquation: equation];
-    GLFunction *h = [[[[n plus: @(1.)] times: @(M_PI/H)] pow: -2.0] times: @(N2_0/g)];
-    for (NSUInteger j=0; j<nDim.nPoints; j++) {
-        if (!fequalprec(fabs(internalModes.eigendepths.pointerValue[j])/h.pointerValue[j], 1.0,precision)) {
-            XCTFail(@"Eigenvalue %lu failed with a precision of %f. Expected %g, found %g", j, precision, h.pointerValue[j], internalModes.eigendepths.pointerValue[j]);
-            break;
-        }
-        
-    }
+    [self compareSolution: internalModes toAnalyticalSolutionWithK: k N2:N2_0 latitude:latitude depth:H];
 }
 
 //- (void)testPerformanceExample {
