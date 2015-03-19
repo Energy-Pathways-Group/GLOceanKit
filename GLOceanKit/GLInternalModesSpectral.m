@@ -17,12 +17,31 @@
 - (void) normalizeFrequencyBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
 - (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
 @property(strong) GLEquation *equation;
+
+/// The dimension the user used for rho
+@property(strong) GLDimension *zInDim;
+
+/// A ChebyshevEndpointGrid dimension similar to the users input dimension.
 @property(strong) GLDimension *zDim;
+
+/// Transform of the the above zDim
 @property(strong) GLDimension *chebDim;
+
+/// A copy of rho projected (interpolated) onto zDim
+@property(strong) GLFunction *rho_cheb_grid;
+
+/// N2 on zDim
+@property(strong) GLFunction *N2_cheb_grid;
+
+// These are all on zDim
 @property(strong) GLLinearTransform *diffZ;
 @property(strong) GLLinearTransform *T;
 @property(strong) GLLinearTransform *Tz;
 @property(strong) GLLinearTransform *Tzz;
+
+// Chebyshev polynomials on the zInDim.
+@property(strong) GLLinearTransform *T_zIn;
+
 @end
 
 @implementation GLInternalModesSpectral
@@ -81,27 +100,35 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
 	GLDimension *zInitial = rho.dimensions[0];
 	if (zInitial.gridType == kGLChebyshevEndpointGrid) {
+        self.zInDim = zInitial;
 		self.zDim = zInitial;
 		self.rho = rho;
+        self.rho_cheb_grid = rho;
 	} else {
+        self.zInDim = zInitial;
 		self.zDim = [[GLDimension alloc] initDimensionWithGrid: kGLChebyshevEndpointGrid nPoints: zInitial.nPoints domainMin:zInitial.domainMin length:zInitial.domainLength];
 		GLFunction *z = [GLFunction functionOfRealTypeFromDimension: self.zDim withDimensions: @[self.zDim] forEquation: self.equation];
-		self.rho = [rho interpolateAtPoints: @[z]];
+        self.rho = rho;
+		self.rho_cheb_grid = [rho interpolateAtPoints: @[z]];
 	}
-	
-	GLFunction *rho_cheb = [self.rho transformToBasis: @[@(kGLChebyshevBasis)]];
+    
+    GLFunction *rho_cheb = [[self.rho_cheb_grid minus: rho0] transformToBasis: @[@(kGLChebyshevBasis)]];
 	GLFunction *buoyancy = [[rho_cheb dividedBy: rho0] times: @(-g)];
 	self.chebDim = rho_cheb.dimensions[0];
 	
-	self.diffZ = [GLLinearTransform differentialOperatorWithDerivatives: 1 fromDimension: buoyancy.dimensions[0] forEquation: self.equation];
-	self.N2 = [[self.diffZ transform: buoyancy] transformToBasis: @[@(kGLDeltaBasis)]];
+	self.diffZ = [GLLinearTransform differentialOperatorWithDerivatives: 1 fromDimension: self.chebDim forEquation: self.equation];
+    GLFunction *buoyancy_z = [self.diffZ transform: buoyancy];
+    self.N2_cheb_grid = [buoyancy_z transformToBasis: @[@(kGLDeltaBasis)]];
+    
+    self.T_zIn = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: self.zInDim forEquation: self.equation];
+    
+	self.N2 = [self.T_zIn transform: buoyancy_z];
 	self.N2.name = @"N2";
 }
 
 - (void) normalizeDepthBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
 {
-	lambda = [lambda makeRealIfPossible];
-	self.eigendepths = [lambda scalarDivide: 1.0]; self.eigendepths.name = @"eigendepths";
+	self.eigendepths = [lambda makeRealIfPossible]; self.eigendepths.name = @"eigendepths";
 	self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 	[self normalizeEigenvectors:S withNorm: norm];
 }
@@ -115,9 +142,13 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
 {
-	S = [S makeRealIfPossible];
-	GLLinearTransform *S_spatial = [self.T matrixMultiply: S];
-	self.S = [S_spatial normalizeWithFunction: norm]; self.S.name = @"S_transform";
+    GLLinearTransform *S_spatial_cheb_grid = [self.T matrixMultiply: [S makeRealIfPossible]];
+    S_spatial_cheb_grid = [S_spatial_cheb_grid normalizeWithFunction: norm];
+    GLLinearTransform *Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
+    S = [Tinv matrixMultiply: S_spatial_cheb_grid];
+    
+	self.S = [self.T_zIn matrixMultiply: S];
+	self.S.name = @"S_transform";
 	
 	GLLinearTransform *diffZ;
 	if (S.toDimensions.count == diffZ.fromDimensions.count) {
@@ -126,7 +157,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 		diffZ = [self.diffZ expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
 	}
 	
-	self.Sprime = [self.T matrixMultiply: [diffZ multiply: self.S]];
+	self.Sprime = [self.T_zIn matrixMultiply: [diffZ multiply: S]];
 	GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: self.eigendepths];
 	GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: self.Sprime secondOperand: scaling];
 	self.Sprime = op.result[0]; self.Sprime.name = @"Sprime_transform";
@@ -135,8 +166,6 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 - (NSArray *) internalGeostrophicModesFromDensityProfile: (GLFunction *) rho forLatitude: (GLFloat) latitude
 {
 	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
-	
-	
 	
 	self.T = [GLLinearTransform discreteTransformFromDimension: self.chebDim toBasis: kGLDeltaBasis forEquation:self.equation];
 	// Create an operation to compute the Chebyshev differentiation matrices.
@@ -177,9 +206,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
 	GLLinearTransform *A = self.Tzz;
 	
-	GLFunction *invN2 = [self.N2 scalarDivide: -g];
-//	GLFunction *invN2 = [[self.N2 minus: @(self.f0*self.f0)] scalarDivide: -g];
-	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: invN2] multiply: self.T];
+//  GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-g)]] multiply: self.T];
+	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [self.N2_cheb_grid times: @(-1/g)]] multiply: self.T];
 	
 	GLFloat *a = A.pointerValue;
 	GLFloat *b = B.pointerValue;
@@ -196,7 +224,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
 	NSArray *system = [B generalizedEigensystemWith: A];
 	
-	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [self.N2 times: @(1/g)]];
+	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [self.N2_cheb_grid times: @(1/g)]];
 	
 	self.eigenfrequencies = [self.eigendepths times: @(0)];
 	return @[self.eigendepths, self.S, self.Sprime];
