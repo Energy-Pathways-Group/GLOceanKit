@@ -266,21 +266,48 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 {
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude];
+    
+    if (dimensions.count != 3) {
+        [NSException raise:@"InvalidDimensions" format: @"We are assuming exactly three dimensions"];
+    }
+    
+    // Now we need to create two sets of dimensions:
+    // 1. Our 'fromDimensions' will be Chebyshev polynomails for z, and exponentials for x,y
+    // 2. Our 'toDimensions' will be physical z, and exponentials for x,y
+    
 	// create an array with the intended transformation (this is agnostic to dimension ordering).
-	NSMutableArray *basis = [NSMutableArray array];
-	GLDimension *zDim;
+	NSMutableArray *fromBasis = [NSMutableArray array];
+    NSMutableArray *toBasis = [NSMutableArray array];
+    NSMutableArray *fromSpatialDimensions = [NSMutableArray array];
+    NSMutableArray *toSpatialDimensions = [NSMutableArray array];
+    NSUInteger xIndex = NSNotFound;
+    NSUInteger yIndex = NSNotFound;
+    NSUInteger zIndex = NSNotFound;
 	for (GLDimension *dim in dimensions) {
-		if ( [dim.name isEqualToString: @"x"] || [dim.name isEqualToString: @"y"]) {
-			[basis addObject: @(kGLExponentialBasis)];
-		} else {
-			zDim = dim;
-			[basis addObject: @(dim.basisFunction)];
-		}
+        if (self.zInDim == dim) {
+            [toBasis addObject: @(self.zDim.basisFunction)];
+            [toSpatialDimensions addObject: self.zDim];
+            [fromBasis addObject: @(self.chebDim.basisFunction)];
+            [fromSpatialDimensions addObject: self.chebDim];
+            zIndex = [dimensions indexOfObject: dim];
+        } else {
+            [toBasis addObject: @(kGLExponentialBasis)];
+            [toSpatialDimensions addObject: dim];
+            [fromBasis addObject: @(kGLExponentialBasis)];
+            [fromSpatialDimensions addObject: dim];
+            if (xIndex == NSNotFound) {
+                xIndex = [dimensions indexOfObject: dim];
+            } else {
+                yIndex = [dimensions indexOfObject: dim];
+            }
+        }
 	}
 	
-	NSArray *transformedDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: dimensions transformedToBasis: basis];
+	NSArray *fromDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: fromSpatialDimensions transformedToBasis: fromBasis];
+    NSArray *toDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: toSpatialDimensions transformedToBasis: toBasis];
 	GLDimension *kDim, *lDim;
-	for (GLDimension *dim in transformedDimensions) {
+	for (GLDimension *dim in toDimensions) {
 		if ( [dim.name isEqualToString: @"k"]) {
 			kDim = dim;
 		} else if ( [dim.name isEqualToString: @"l"]) {
@@ -289,24 +316,41 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	}
 	
 	GLEquation *equation = rho.equation;
-	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation] scalarMultiply: 2*M_PI];
-	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation] scalarMultiply: 2*M_PI];
-	GLFunction *K2 = [[self.k multiply: self.k] plus: [self.l multiply: self.l]];
+	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+    GLLinearTransform *K2 = [[GLLinearTransform linearTransformFromFunction:[[self.k multiply: self.k] plus: [self.l multiply: self.l]]] expandedWithFromDimensions: toDimensions toDimensions: toDimensions];
 	
-	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
+	GLLinearTransform *T = [self.T expandedWithFromDimensions: fromDimensions toDimensions: toDimensions];
+    GLLinearTransform *Tzz = [self.Tzz expandedWithFromDimensions: fromDimensions toDimensions: toDimensions];
+    
+    GLLinearTransform *A = [Tzz minus: [K2 multiply: T]];
+    GLLinearTransform *scaling = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] expandedWithFromDimensions: toDimensions toDimensions: toDimensions];
+    GLLinearTransform *B = [scaling multiply: T];
+    
+    GLFloat *a = A.pointerValue;
+    GLFloat *b = B.pointerValue;
+    GLMatrixDescription *md = A.matrixDescription;
+    NSUInteger iTop=0;
+    NSUInteger iBottom = md.strides[zIndex].nRows-1;
+    for (NSUInteger iX=0; iX<md.strides[xIndex].nDiagonalPoints; iX++) {
+        NSUInteger index = iX*md.strides[xIndex].stride;
+        for (NSUInteger iY=0; iY<md.strides[yIndex].nDiagonalPoints; iY++) {
+            NSUInteger index2 = index + iY*md.strides[yIndex].stride;
+            for (NSUInteger j=0; j<A.matrixDescription.strides[zIndex].nColumns; j++) {
+                NSUInteger topIndex = index2 + iTop*md.strides[zIndex].rowStride + j*md.strides[zIndex].columnStride;
+                a[topIndex] = self.T.pointerValue[iTop*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+                b[topIndex] = 0.0;
+                
+                NSUInteger bottomIndex = index2 + iTop*md.strides[zIndex].rowStride + j*md.strides[zIndex].columnStride;
+                a[bottomIndex] = self.T.pointerValue[iBottom*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
+                b[bottomIndex] = 0.0;
+            }
+        }
+    }
+    
+    NSArray *system = [B generalizedEigensystemWith: A];
 	
-	GLFunction *invN2 = [[self.N2 minus: @(self.f0*self.f0)] scalarDivide: -g];
-	
-	// Now construct A = k*k*eye(N) - Diff2;
-	GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
-	
-	GLLinearTransform *invN2_trans = [[GLLinearTransform linearTransformFromFunction: invN2] expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
-	GLLinearTransform *diffOp = [invN2_trans multiply: [diffZZ minus: [GLLinearTransform linearTransformFromFunction:K2]]];
-	
-	NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
-	
-	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
+	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(1/g)]];
 	
 	NSArray *spectralDimensions = self.eigendepths.dimensions;
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: spectralDimensions forEquation: equation] scalarMultiply: 2*M_PI];
