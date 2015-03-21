@@ -42,6 +42,11 @@
 // Chebyshev polynomials on the zInDim.
 @property(strong) GLLinearTransform *T_zIn;
 
+// The 'expanded' dimensions.
+@property(strong) NSArray *fromDimensions;
+@property(strong) NSArray *toDimensions;
+@property(strong) NSArray *toFinalDimensions;
+
 @end
 
 @implementation GLInternalModesSpectral
@@ -184,12 +189,23 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
 {
-    GLLinearTransform *S_spatial_cheb_grid = [self.T matrixMultiply: [S makeRealIfPossible]];
+    GLLinearTransform *T, *Tinv, *T_zIn;
+    if (self.toDimensions) {
+        T = [self.T expandedWithFromDimensions: self.fromDimensions toDimensions: self.toDimensions];
+        T_zIn = [self.T_zIn expandedWithFromDimensions: self.fromDimensions toDimensions: self.toFinalDimensions];
+        Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
+        Tinv = [Tinv expandedWithFromDimensions: self.toDimensions toDimensions: self.fromDimensions];
+    } else {
+        T = self.T;
+        T_zIn = self.T_zIn;
+        Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
+    }
+    
+    GLLinearTransform *S_spatial_cheb_grid = [T matrixMultiply: [S makeRealIfPossible]];
     S_spatial_cheb_grid = [S_spatial_cheb_grid normalizeWithFunction: norm];
-    GLLinearTransform *Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
     S = [Tinv matrixMultiply: S_spatial_cheb_grid];
     
-	self.S = [self.T_zIn matrixMultiply: S];
+	self.S = [T_zIn matrixMultiply: S];
 	self.S.name = @"S_transform";
 	
 	GLLinearTransform *diffZ;
@@ -199,7 +215,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 		diffZ = [self.diffZ expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
 	}
 	
-	self.Sprime = [self.T_zIn matrixMultiply: [diffZ multiply: S]];
+	self.Sprime = [T_zIn matrixMultiply: [diffZ multiply: S]];
 	GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: self.eigendepths];
 	GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: self.Sprime secondOperand: scaling];
 	self.Sprime = op.result[0]; self.Sprime.name = @"Sprime_transform";
@@ -281,6 +297,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     NSMutableArray *toBasis = [NSMutableArray array];
     NSMutableArray *fromSpatialDimensions = [NSMutableArray array];
     NSMutableArray *toSpatialDimensions = [NSMutableArray array];
+    NSMutableArray *toFinalSpatialDimensions = [NSMutableArray array];
     NSUInteger xIndex = NSNotFound;
     NSUInteger yIndex = NSNotFound;
     NSUInteger zIndex = NSNotFound;
@@ -288,12 +305,14 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
         if (self.zInDim == dim) {
             [toBasis addObject: @(self.zDim.basisFunction)];
             [toSpatialDimensions addObject: self.zDim];
+            [toFinalSpatialDimensions addObject: self.zInDim];
             [fromBasis addObject: @(self.chebDim.basisFunction)];
             [fromSpatialDimensions addObject: self.chebDim];
             zIndex = [dimensions indexOfObject: dim];
         } else {
             [toBasis addObject: @(kGLExponentialBasis)];
             [toSpatialDimensions addObject: dim];
+            [toFinalSpatialDimensions addObject: dim];
             [fromBasis addObject: @(kGLExponentialBasis)];
             [fromSpatialDimensions addObject: dim];
             if (xIndex == NSNotFound) {
@@ -304,10 +323,11 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
         }
 	}
 	
-	NSArray *fromDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: fromSpatialDimensions transformedToBasis: fromBasis];
-    NSArray *toDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: toSpatialDimensions transformedToBasis: toBasis];
+	self.fromDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: fromSpatialDimensions transformedToBasis: fromBasis];
+    self.toDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: toSpatialDimensions transformedToBasis: toBasis];
+    self.toFinalDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: toFinalSpatialDimensions transformedToBasis: toBasis];
 	GLDimension *kDim, *lDim;
-	for (GLDimension *dim in toDimensions) {
+	for (GLDimension *dim in self.toDimensions) {
 		if ( [dim.name isEqualToString: @"k"]) {
 			kDim = dim;
 		} else if ( [dim.name isEqualToString: @"l"]) {
@@ -316,15 +336,15 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	}
 	
 	GLEquation *equation = rho.equation;
-	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
-	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
-    GLLinearTransform *K2 = [[GLLinearTransform linearTransformFromFunction:[[self.k multiply: self.k] plus: [self.l multiply: self.l]]] expandedWithFromDimensions: toDimensions toDimensions: toDimensions];
+	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: self.toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: self.toDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+    GLLinearTransform *K2 = [[GLLinearTransform linearTransformFromFunction:[[self.k multiply: self.k] plus: [self.l multiply: self.l]]] expandedWithFromDimensions: self.toDimensions toDimensions: self.toDimensions];
 	
-	GLLinearTransform *T = [self.T expandedWithFromDimensions: fromDimensions toDimensions: toDimensions];
-    GLLinearTransform *Tzz = [self.Tzz expandedWithFromDimensions: fromDimensions toDimensions: toDimensions];
+	GLLinearTransform *T = [self.T expandedWithFromDimensions: self.fromDimensions toDimensions: self.toDimensions];
+    GLLinearTransform *Tzz = [self.Tzz expandedWithFromDimensions: self.fromDimensions toDimensions: self.toDimensions];
     
     GLLinearTransform *A = [Tzz minus: [K2 multiply: T]];
-    GLLinearTransform *scaling = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] expandedWithFromDimensions: toDimensions toDimensions: toDimensions];
+    GLLinearTransform *scaling = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] expandedWithFromDimensions: self.toDimensions toDimensions: self.toDimensions];
     GLLinearTransform *B = [scaling multiply: T];
     
     GLFloat *a = A.pointerValue;
@@ -336,14 +356,14 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
         NSUInteger index = iX*md.strides[xIndex].stride;
         for (NSUInteger iY=0; iY<md.strides[yIndex].nDiagonalPoints; iY++) {
             NSUInteger index2 = index + iY*md.strides[yIndex].stride;
-            for (NSUInteger j=0; j<A.matrixDescription.strides[zIndex].nColumns; j++) {
+            for (NSUInteger j=0; j<md.strides[zIndex].nColumns; j++) {
                 NSUInteger topIndex = index2 + iTop*md.strides[zIndex].rowStride + j*md.strides[zIndex].columnStride;
                 a[topIndex] = self.T.pointerValue[iTop*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
-                b[topIndex] = 0.0;
+                b[iTop*B.matrixDescription.strides[zIndex].rowStride + j*B.matrixDescription.strides[zIndex].columnStride] = 0.0;
                 
-                NSUInteger bottomIndex = index2 + iTop*md.strides[zIndex].rowStride + j*md.strides[zIndex].columnStride;
+                NSUInteger bottomIndex = index2 + iBottom*md.strides[zIndex].rowStride + j*md.strides[zIndex].columnStride;
                 a[bottomIndex] = self.T.pointerValue[iBottom*self.T.matrixDescription.strides[0].rowStride + j*self.T.matrixDescription.strides[0].columnStride];
-                b[bottomIndex] = 0.0;
+                b[iBottom*B.matrixDescription.strides[zIndex].rowStride + j*B.matrixDescription.strides[zIndex].columnStride] = 0.0;
             }
         }
     }
