@@ -328,7 +328,7 @@
     GLFloat k = 0.1;
     
     GLEquation *equation = [[GLEquation alloc] init];
-    GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 32 domainMin: -H length: H]; zDim.name = @"z";
+    GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 512 domainMin: -H length: H]; zDim.name = @"z";
     GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
     GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
     
@@ -336,6 +336,25 @@
     [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude];
     
     [self compareSolution: internalModes toAnalyticalSolutionWithK: k N2:N2_0 latitude:latitude depth:H];
+}
+
+- (void)testInternalWaveModesSpectralOptimized {
+	GLFloat N2_0 = 1.69e-4;
+	GLFloat rho0 = 1025;
+	GLFloat g = 9.81;
+	GLFloat latitude = 33.0;
+	GLFloat H = 300;
+	GLFloat k = 0.1;
+	
+	GLEquation *equation = [[GLEquation alloc] init];
+	GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 512 domainMin: -H length: H]; zDim.name = @"z";
+	GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+	GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
+	
+	GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+	[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude maximumModes: 31 zOutDim: zDim];
+	
+	[self compareSolution: internalModes toAnalyticalSolutionWithK: k N2:N2_0 latitude:latitude depth:H];
 }
 
 - (void)testInternalWaveFullModesFiniteDifference {
@@ -397,11 +416,45 @@
 //    [internalModes.S dumpToConsole];
 }
 
-//- (void)testPerformanceExample {
-//    // This is an example of a performance test case.
-//    [self measureBlock:^{
-//        // Put the code you want to measure the time of here.
-//    }];
-//}
+- (void)testPerformanceSpectral {
+	GLFloat N2_0 = 1.69e-4;
+	GLFloat rho0 = 1025;
+	GLFloat g = 9.81;
+	GLFloat latitude = 33.0;
+	GLFloat H = 300;
+	GLFloat k = 0.1;
+	
+	GLEquation *equation = [[GLEquation alloc] init];
+	GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 256 domainMin: -H length: H]; zDim.name = @"z";
+	GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+	GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
+	
+	GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+
+	[self measureBlock:^{
+        [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude];
+    }];
+}
+
+- (void)testPerformanceOptimized {
+	GLFloat N2_0 = 1.69e-4;
+	GLFloat rho0 = 1025;
+	GLFloat g = 9.81;
+	GLFloat latitude = 33.0;
+	GLFloat H = 300;
+	GLFloat k = 0.1;
+	
+	GLEquation *equation = [[GLEquation alloc] init];
+	GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 256 domainMin: -H length: H]; zDim.name = @"z";
+	GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+	GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
+	
+	GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+	[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude maximumModes: 0 zOutDim: zDim];
+	
+	[self measureBlock:^{
+		[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude maximumModes: 0 zOutDim: zDim];
+	}];
+}
 
 @end
