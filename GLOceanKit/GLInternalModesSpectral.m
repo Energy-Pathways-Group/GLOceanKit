@@ -398,6 +398,16 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	return @[self.eigendepths, self.S, self.Sprime];
 }
 
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
+{
+    NSArray *results = [self createOptimizedOperationFromDensityProfile: rho wavenumber: 0.0 forLatitude:latitude maximumModes:maxModes zOutDim:zOutDim];
+    GLFunction *eigendepths = results[0];
+    GLLinearTransform *S = results[1];
+    GLLinearTransform *Sprime = results[2];
+    
+    
+}
+
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 {
     [self createStratificationProfileFromDensity: rho atLatitude: latitude];
