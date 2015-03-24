@@ -281,105 +281,113 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	return @[self.eigendepths, self.S, self.Sprime];
 }
 
+- (NSArray *) createOptimizedOperationFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
+{
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude];
+    
+    // These are the two matrices (without correct boundary conditions) that we need to find the eigensystem of.
+    GLScalar *k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
+    GLLinearTransform *A = [self.Tzz minus: [k2 multiply: self.T]];
+    GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] multiply: self.T];
+    
+    // Operation that sets the boundary conditions for A.
+    GLMatrixDescription *mdA = A.matrixDescription;
+    GLMatrixDescription *mdT = self.T.matrixDescription;
+    variableOperation boundaryAop = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
+        GLFloat *Ain = (GLFloat *) [operandArray[0] bytes];
+        GLFloat *Tin = (GLFloat *) [operandArray[1] bytes];
+        GLFloat *Aout = (GLFloat *) [resultArray[0] bytes];
+        
+        memcpy(Aout, Ain, mdA.nPoints*sizeof(GLFloat));
+        
+        NSUInteger iTop=0;
+        NSUInteger iBottom=mdA.strides[0].nRows-1;
+        for (NSUInteger j=0; j<mdA.strides[0].nColumns; j++) {
+            Aout[iTop*mdA.strides[0].rowStride + j*mdA.strides[0].columnStride] = Tin[iTop*mdT.strides[0].rowStride + j*mdT.strides[0].columnStride];
+            Aout[iBottom*mdA.strides[0].rowStride + j*mdA.strides[0].columnStride] = Tin[iBottom*mdT.strides[0].rowStride + j*mdT.strides[0].columnStride];
+        }
+    };
+    GLVariableOperation *operationA = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: A]] operand:@[A,self.T] buffers:@[] operation: boundaryAop];
+    A = operationA.result[0];
+    
+    // Operation that sets the boundary conditions for B.
+    GLMatrixDescription *mdB = B.matrixDescription;
+    variableOperation boundaryBop = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
+        GLFloat *Bin = (GLFloat *) [operandArray[0] bytes];
+        GLFloat *Bout = (GLFloat *) [resultArray[0] bytes];
+        
+        memcpy(Bout, Bin, mdB.nPoints*sizeof(GLFloat));
+        
+        NSUInteger iTop=0;
+        NSUInteger iBottom=mdB.strides[0].nRows-1;
+        for (NSUInteger j=0; j<mdB.strides[0].nColumns; j++) {
+            Bout[iTop*mdB.strides[0].rowStride + j*mdB.strides[0].columnStride] = 0.0;
+            Bout[iBottom*mdB.strides[0].rowStride + j*mdB.strides[0].columnStride] = 0.0;
+        }
+    };
+    GLVariableOperation *operationB = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: B]] operand:@[B] buffers:@[] operation: boundaryBop];
+    B = operationB.result[0];
+    
+    // Now solve the eigenvalue problem.
+    NSArray *system = [B generalizedEigensystemWith: A];
+    
+    GLLinearTransform *S;
+    GLFunction *h;
+    if (maxModes) {
+        h = [system[0] variableFromIndexRangeString: [NSString stringWithFormat: @"0:%lu", maxModes-1]];
+        S = [system[1] reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", maxModes-1] toDimension: @":"];
+    } else {
+        h = system[0];
+        S = system[1];
+    }
+    
+    // Hopefully these matrices came out real
+    S = [S makeRealIfPossible];
+    h = [h makeRealIfPossible];
+    
+    
+    // Now convert to the spatial domain in order to normalize (note, we can get around this if needed!)
+    GLLinearTransform *Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
+    GLLinearTransform *S_spatial_cheb_grid = [self.T matrixMultiply: S];
+    S_spatial_cheb_grid = [S_spatial_cheb_grid normalizeWithFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(1/g)]];
+    GLLinearTransform *S_cheb = [Tinv matrixMultiply: S_spatial_cheb_grid];
+    
+    GLLinearTransform *T_zOut;
+    if (self.zInDim == zOutDim) {
+        T_zOut = self.T_zIn;
+    } else {
+        T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
+    }
+    
+    S = [T_zOut matrixMultiply: S_cheb];
+    
+    GLLinearTransform *Sprime = [T_zOut matrixMultiply: [self.diffZ multiply: S_cheb]];
+    GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: h];
+    GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: Sprime secondOperand: scaling];
+    Sprime = op.result[0];
+    
+    GLOperationOptimizer *optimizer = [[GLOperationOptimizer alloc] initWithTopVariables: @[k2] bottomVariables: @[h, S, Sprime]];
+    self.operation = optimizer.operationBlock;
+    self.dataBuffers = [NSMutableArray array];
+    for (GLBuffer *aBuffer in optimizer.internalDataBuffers) {
+        [self.dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
+    }
+    
+    S.name = @"S_transform";
+    Sprime.name = @"Sprime_transform";
+    h.name = @"eigendepths";
+    
+    return @[h, S, Sprime];
+}
+
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
 {
 	if (!self.operation) {
-		[self createStratificationProfileFromDensity: rho atLatitude: latitude];
-		
-		// These are the two matrices (without correct boundary conditions) that we need to find the eigensystem of.
-		GLScalar *k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
-		GLLinearTransform *A = [self.Tzz minus: [k2 multiply: self.T]];
-		GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] multiply: self.T];
-		
-		// Operation that sets the boundary conditions for A.
-		GLMatrixDescription *mdA = A.matrixDescription;
-		GLMatrixDescription *mdT = self.T.matrixDescription;
-		variableOperation boundaryAop = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
-			GLFloat *Ain = (GLFloat *) [operandArray[0] bytes];
-			GLFloat *Tin = (GLFloat *) [operandArray[1] bytes];
-			GLFloat *Aout = (GLFloat *) [resultArray[0] bytes];
-			
-			memcpy(Aout, Ain, mdA.nPoints*sizeof(GLFloat));
-			
-			NSUInteger iTop=0;
-			NSUInteger iBottom=mdA.strides[0].nRows-1;
-			for (NSUInteger j=0; j<mdA.strides[0].nColumns; j++) {
-				Aout[iTop*mdA.strides[0].rowStride + j*mdA.strides[0].columnStride] = Tin[iTop*mdT.strides[0].rowStride + j*mdT.strides[0].columnStride];
-				Aout[iBottom*mdA.strides[0].rowStride + j*mdA.strides[0].columnStride] = Tin[iBottom*mdT.strides[0].rowStride + j*mdT.strides[0].columnStride];
-			}
-		};
-		GLVariableOperation *operationA = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: A]] operand:@[A,self.T] buffers:@[] operation: boundaryAop];
-		A = operationA.result[0];
-		
-		// Operation that sets the boundary conditions for B.
-		GLMatrixDescription *mdB = B.matrixDescription;
-		variableOperation boundaryBop = ^(NSArray *resultArray, NSArray *operandArray, NSArray *bufferArray) {
-			GLFloat *Bin = (GLFloat *) [operandArray[0] bytes];
-			GLFloat *Bout = (GLFloat *) [resultArray[0] bytes];
-			
-			memcpy(Bout, Bin, mdB.nPoints*sizeof(GLFloat));
-			
-			NSUInteger iTop=0;
-			NSUInteger iBottom=mdB.strides[0].nRows-1;
-			for (NSUInteger j=0; j<mdB.strides[0].nColumns; j++) {
-				Bout[iTop*mdB.strides[0].rowStride + j*mdB.strides[0].columnStride] = 0.0;
-				Bout[iBottom*mdB.strides[0].rowStride + j*mdB.strides[0].columnStride] = 0.0;
-			}
-		};
-		GLVariableOperation *operationB = [[GLVariableOperation alloc] initWithResult: @[[GLVariable variableWithPrototype: B]] operand:@[B] buffers:@[] operation: boundaryBop];
-		B = operationB.result[0];
-		
-		// Now solve the eigenvalue problem.
-		NSArray *system = [B generalizedEigensystemWith: A];
-		
-		GLLinearTransform *S;
-		GLFunction *h;
-		if (maxModes) {
-			h = [system[0] variableFromIndexRangeString: [NSString stringWithFormat: @"0:%lu", maxModes-1]];
-			S = [system[1] reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", maxModes-1] toDimension: @":"];
-		} else {
-			h = system[0];
-			S = system[1];
-		}
-		
-		// Hopefully these matrices came out real
-		S = [S makeRealIfPossible];
-		h = [h makeRealIfPossible];
-		
-		
-		// Now convert to the spatial domain in order to normalize (note, we can get around this if needed!)
-		GLLinearTransform *Tinv = [GLLinearTransform discreteTransformFromDimension: self.zDim toDimension: self.chebDim forEquation:self.equation];
-		GLLinearTransform *S_spatial_cheb_grid = [self.T matrixMultiply: S];
-		S_spatial_cheb_grid = [S_spatial_cheb_grid normalizeWithFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(1/g)]];
-		GLLinearTransform *S_cheb = [Tinv matrixMultiply: S_spatial_cheb_grid];
-		
-		GLLinearTransform *T_zOut;
-		if (self.zInDim == zOutDim) {
-			T_zOut = self.T_zIn;
-		} else {
-			T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
-		}
-		
-		S = [T_zOut matrixMultiply: S_cheb];
-		
-		GLLinearTransform *Sprime = [T_zOut matrixMultiply: [self.diffZ multiply: S_cheb]];
-		GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: h];
-		GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: Sprime secondOperand: scaling];
-		Sprime = op.result[0];
-		
-		GLOperationOptimizer *optimizer = [[GLOperationOptimizer alloc] initWithTopVariables: @[k2] bottomVariables: @[h, S, Sprime]];
-		self.operation = optimizer.operationBlock;
-		self.dataBuffers = [NSMutableArray array];
-		for (GLBuffer *aBuffer in optimizer.internalDataBuffers) {
-			[self.dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
-		}
-		
-		self.S = S;
-		self.Sprime = Sprime;
-		self.eigendepths = h;
-		self.S.name = @"S_transform";
-		self.Sprime.name = @"Sprime_transform";
-		self.eigendepths.name = @"eigendepths";
+        NSArray *results = [self createOptimizedOperationFromDensityProfile: rho wavenumber: k forLatitude:latitude maximumModes:maxModes zOutDim:zOutDim];
+        
+        self.eigendepths = results[0];
+        self.S = results[1];
+        self.Sprime = results[2];
 	}
 	
 	GLScalar *k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
