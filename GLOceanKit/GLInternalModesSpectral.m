@@ -47,8 +47,10 @@
 @property(strong) NSArray *toFinalDimensions;
 
 
+@property(strong) GLOperationOptimizer *optimizer;
 @property(copy) variableOperation operation;
 @property(strong) NSMutableArray *dataBuffers;
+@property(strong) GLScalar *k2;
 
 @end
 
@@ -286,8 +288,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     [self createStratificationProfileFromDensity: rho atLatitude: latitude];
     
     // These are the two matrices (without correct boundary conditions) that we need to find the eigensystem of.
-    GLScalar *k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
-    GLLinearTransform *A = [self.Tzz minus: [k2 multiply: self.T]];
+    self.k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
+    GLLinearTransform *A = [self.Tzz minus: [self.k2 multiply: self.T]];
     GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(-1/g)]] multiply: self.T];
     
     // Operation that sets the boundary conditions for A.
@@ -342,8 +344,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     }
     
     // Hopefully these matrices came out real
-    S = [S makeRealIfPossible];
-    h = [h makeRealIfPossible];
+    S = [S realPart];
+    h = [h realPart];
     
     
     // Now convert to the spatial domain in order to normalize (note, we can get around this if needed!)
@@ -366,12 +368,15 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: Sprime secondOperand: scaling];
     Sprime = op.result[0];
     
-    GLOperationOptimizer *optimizer = [[GLOperationOptimizer alloc] initWithTopVariables: @[k2] bottomVariables: @[h, S, Sprime]];
-    self.operation = optimizer.operationBlock;
+    self.optimizer = [[GLOperationOptimizer alloc] initWithTopVariables: @[self.k2] bottomVariables: @[h, S, Sprime]];
+    self.operation = self.optimizer.operationBlock;
     self.dataBuffers = [NSMutableArray array];
-    for (GLBuffer *aBuffer in optimizer.internalDataBuffers) {
+    for (GLBuffer *aBuffer in self.optimizer.internalDataBuffers) {
         [self.dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
     }
+	//GLOperationVisualizer *vis = [[GLOperationVisualizer alloc] initWithTopVariables: self.optimizer.topVariables. bottomVariables:<#(NSArray *)#>]
+	
+	//NSLog(optimizer)
     
     S.name = @"S_transform";
     Sprime.name = @"Sprime_transform";
@@ -400,12 +405,111 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
 {
+	if (dimensions.count != 3) {
+		[NSException raise:@"InvalidDimensions" format: @"We are assuming exactly three dimensions"];
+	}
+	
     NSArray *results = [self createOptimizedOperationFromDensityProfile: rho wavenumber: 0.0 forLatitude:latitude maximumModes:maxModes zOutDim:zOutDim];
     GLFunction *eigendepths = results[0];
     GLLinearTransform *S = results[1];
     GLLinearTransform *Sprime = results[2];
     
-    
+	// Now we need to create two sets of dimensions:
+	// 1. Our 'fromDimensions' will be modes for z, and exponentials for x,y
+	// 2. Our 'toDimensions' will be physical z, and exponentials for x,y
+	
+	// create an array with the intended transformation (this is agnostic to dimension ordering).
+	NSMutableArray *fromBasis = [NSMutableArray array];
+	NSMutableArray *toBasis = [NSMutableArray array];
+	NSMutableArray *fromSpatialDimensions = [NSMutableArray array];
+	NSMutableArray *toSpatialDimensions = [NSMutableArray array];
+	NSMutableArray *matrixFormat = [NSMutableArray array];
+	NSUInteger xIndex = NSNotFound;
+	NSUInteger yIndex = NSNotFound;
+	NSUInteger zIndex = NSNotFound;
+	for (GLDimension *dim in dimensions) {
+		if (self.zInDim == dim) {
+			[matrixFormat addObject: @(kGLDenseMatrixFormat)];
+			
+			[toBasis addObject: @([S.toDimensions[0] basisFunction])];
+			[toSpatialDimensions addObject: S.toDimensions[0]];
+
+			[fromBasis addObject: @([S.fromDimensions[0] basisFunction])];
+			[fromSpatialDimensions addObject: S.fromDimensions[0]];
+			zIndex = [dimensions indexOfObject: dim];
+		} else {
+			[matrixFormat addObject: @(kGLDiagonalMatrixFormat)];
+			
+			[toBasis addObject: @(kGLExponentialBasis)];
+			[toSpatialDimensions addObject: dim];
+			
+			[fromBasis addObject: @(kGLExponentialBasis)];
+			[fromSpatialDimensions addObject: dim];
+			if (xIndex == NSNotFound) {
+				xIndex = [dimensions indexOfObject: dim];
+			} else {
+				yIndex = [dimensions indexOfObject: dim];
+			}
+		}
+	}
+	
+	self.fromDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: fromSpatialDimensions transformedToBasis: fromBasis];
+	self.toDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: toSpatialDimensions transformedToBasis: toBasis];
+
+	GLDimension *kDim, *lDim;
+	for (GLDimension *dim in self.toDimensions) {
+		if ( [dim.name isEqualToString: @"k"]) {
+			kDim = dim;
+		} else if ( [dim.name isEqualToString: @"l"]) {
+			lDim = dim;
+		}
+	}
+	
+	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: self.toDimensions forEquation: self.equation] scalarMultiply: 2*M_PI];
+	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: self.toDimensions forEquation: self.equation] scalarMultiply: 2*M_PI];
+	
+	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: self.fromDimensions forEquation: self.equation] scalarMultiply: 2*M_PI];
+	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: self.fromDimensions forEquation: self.equation] scalarMultiply: 2*M_PI];
+	GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
+	
+	self.S = [GLLinearTransform transformOfType:kGLRealDataFormat withFromDimensions:self.fromDimensions toDimensions:self.toDimensions inFormat:matrixFormat forEquation:self.equation matrix: nil];
+	self.Sprime = [GLLinearTransform transformOfType:kGLRealDataFormat withFromDimensions:self.fromDimensions toDimensions:self.toDimensions inFormat:matrixFormat forEquation:self.equation matrix: nil];
+	self.eigendepths = [GLFunction functionOfRealTypeWithDimensions: self.fromDimensions forEquation:self.equation];
+	
+	GLMatrixDescription *mdK2 = K2.matrixDescription;
+	GLMatrixDescription *mdS = self.S.matrixDescription;
+	for (NSUInteger i=0; i<mdK2.strides[xIndex].nPoints; i++ ) {
+		for (NSUInteger j=0; j<mdK2.strides[yIndex].nPoints; j++ ) {
+			NSUInteger pos = i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
+			self.k2.pointerValue[0] = K2.pointerValue[pos];
+			
+			self.operation( @[eigendepths.data, S.data, Sprime.data], @[self.k2.data], self.dataBuffers);
+			
+			// Copy the eigenvalues over
+			const GLFloat *A = eigendepths.data.bytes;
+			GLFloat *B = self.eigendepths.data.mutableBytes;
+			NSUInteger offset =i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
+			for (NSUInteger n=0; n<mdK2.strides[zIndex].nPoints; n++ ) {
+				B[offset + n*mdK2.strides[zIndex].stride] = A[n];
+			}
+			
+			const GLFloat *S1 = S.data.bytes;
+			const GLFloat *Sprime1 = Sprime.data.bytes;
+			GLFloat *S2 = self.S.data.mutableBytes;
+			GLFloat *Sprime2 = self.Sprime.data.mutableBytes;
+			
+			offset =i*mdS.strides[xIndex].stride + j*mdS.strides[yIndex].stride;
+			for (NSUInteger iPoint=0; iPoint<mdS.strides[zIndex].nPoints; iPoint++ ) {
+				S2[offset + iPoint*mdS.strides[zIndex].stride] = S1[iPoint];
+				Sprime2[offset + iPoint*mdS.strides[zIndex].stride] = Sprime1[iPoint];
+			}
+		}
+	}
+	
+	
+	self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
+	
+	return @[self.eigendepths, self.S, self.Sprime];
 }
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude

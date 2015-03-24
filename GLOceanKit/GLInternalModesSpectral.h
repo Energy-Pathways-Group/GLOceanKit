@@ -34,6 +34,7 @@
  @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim;
 
 // Coriolis frequency (in radians!) given the latitude.
 @property GLFloat f0;
