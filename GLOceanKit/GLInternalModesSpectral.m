@@ -374,9 +374,6 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     for (GLBuffer *aBuffer in self.optimizer.internalDataBuffers) {
         [self.dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
     }
-	//GLOperationVisualizer *vis = [[GLOperationVisualizer alloc] initWithTopVariables: self.optimizer.topVariables. bottomVariables:<#(NSArray *)#>]
-	
-	//NSLog(optimizer)
     
     S.name = @"S_transform";
     Sprime.name = @"Sprime_transform";
@@ -504,6 +501,9 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 				Sprime2[offset + iPoint*mdS.strides[zIndex].stride] = Sprime1[iPoint];
 			}
 		}
+        if (i%2==0) {
+            NSLog(@"Finished %lu of %lu eigenvalue problems", (i+1)*mdK2.strides[yIndex].nPoints, mdK2.strides[xIndex].nPoints*mdK2.strides[yIndex].nPoints );
+        }
 	}
 	
 	
