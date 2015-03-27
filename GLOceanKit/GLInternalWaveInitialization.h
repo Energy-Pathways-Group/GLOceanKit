@@ -8,13 +8,23 @@
 
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
-#import "GLInternalModes.h"
+#import "GLInternalModesSpectral.h"
 
 @interface GLInternalWaveInitialization : NSObject <NSCoding>
 
 /** Compute the internal wave modes a set of wavenumbers.
  @param rho Density profile given as a function of z only.
- @param dimensions A set of vertical and horizontal dimensions. The same vertical dimensions (z) must be included, and at least one horizontal dimension.
+ @param dimensions A set of vertical and horizontal dimensions. A different vertical dimension (z) may be used as long as its a subdomain of z for rho. You must include at least one horizontal dimension.
+ @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
+ @param maximum number of modes to be included in the transformation matrices. Setting this to 0 will use all modes.
+ @param equation The GLEquation object that sould be used for all calculations.
+ @returns A GLInternalWaveInitialization object with N2, eigenfrequencies, S, and Sprime and all the variable phases populated.
+ */
+- (GLInternalWaveInitialization *) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude maxMode: (NSUInteger) maximumModes equation: (GLEquation *) equation;
+
+/** Compute the internal wave modes a set of wavenumbers.
+ @param rho Density profile given as a function of z only.
+ @param dimensions A set of vertical and horizontal dimensions. A different vertical dimension (z) may be used as long as its a subdomain of z for rho. You must include at least one horizontal dimension.
  @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
  @param equation The GLEquation object that sould be used for all calculations.
  @returns A GLInternalWaveInitialization object with N2, eigenfrequencies, S, and Sprime and all the variable phases populated.
@@ -42,7 +52,7 @@
 @property(strong) GLEquation *equation;
 
 /// The object used to generate the internal modes. This contains the untruncated (not limited to maximumModes) matrices.
-@property(strong) GLInternalModes *internalModes;
+@property(strong) GLInternalModesSpectral *internalModes;
 
 /// The spatial dimensions, e.g., (x, y, z), although they will be in the order given during initialization.
 @property(strong) NSArray *fullDimensions;

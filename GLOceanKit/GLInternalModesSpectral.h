@@ -29,12 +29,12 @@
 
 /** Compute the internal wave modes a set of wavenumbers.
  @param rho Density profile given as a function of z only.
- @param dimensions A set of vertical and horizontal dimensions. The same vertical dimensions (z) must be included, and at least one horizontal dimension.
+ @param dimensions A set of vertical and horizontal dimensions. A different vertical dimension (z) may be included, and at least one horizontal dimension.
  @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
  @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
-- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim;
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes;
 
 // Coriolis frequency (in radians!) given the latitude.
 @property GLFloat f0;

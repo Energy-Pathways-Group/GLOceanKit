@@ -436,7 +436,7 @@
 	yDim.name = @"y";
 	
 	GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
-	[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31 zOutDim: zDim];
+	[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31];
 	
 	[self compareSolution: internalModes toAnalyticalSolutionWithN2: N2_0 latitude: latitude depth: H];
 }

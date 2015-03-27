@@ -108,7 +108,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     return self;
 }
 
-- (GLInternalWaveInitialization *) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude equation: (GLEquation *) equation
+- (GLInternalWaveInitialization *) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude maxMode: (NSUInteger) maximumModes equation: (GLEquation *) equation
 {
 	NSUInteger numVerticalDims = 0;
 	NSUInteger numHorizontalDims = 0;
@@ -125,6 +125,19 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 		[NSException raise: @"BadDimensions" format:@"There must be one vertical dimension given, and either 1 or 2 horizontal dimensions."];
 	}
 	
+	GLDimension *zDim = rho.dimensions[0];
+	if (maximumModes > zDim.nPoints) {
+		maximumModes = zDim.nPoints;
+	} else if (maximumModes == 0) {
+		if (zDim.nPoints < 8) {
+			[NSException raise: @"BadDimensions" format:@"You're going to need 8 or more points in the vertical profile for this to work."];
+		} else if (zDim.nPoints > 64) {
+			maximumModes = 32;
+		} else {
+			maximumModes = floor(zDim.nPoints/2);
+		}
+	}
+	
     if ((self=[super init])) {
         self.fullDimensions=dimensions;
         self.equation=equation;
@@ -132,14 +145,58 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 		self.rho = rho;
 		self.latitude = latitude;
 		self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+		self.maximumModes = maximumModes;
         
-        self.internalModes = [[GLInternalModes alloc] init];
-        [self.internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
+        self.internalModes = [[GLInternalModesSpectral alloc] init];
+        [self.internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude maximumModes: maximumModes];
     }
     return self;
 }
 
+- (GLInternalWaveInitialization *) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude equation: (GLEquation *) equation
+{
+	return [self initWithDensityProfile: rho fullDimensions: dimensions latitude: latitude maxMode: 0 equation: equation];
+}
+
 - (void) computeInternalModes
+{
+	self.S = self.internalModes.S;
+	self.Sprime = self.internalModes.Sprime;
+	self.eigenfrequencies = self.internalModes.eigenfrequencies;
+	self.eigendepths = self.internalModes.eigendepths;
+	self.rossbyRadius = self.internalModes.rossbyRadius;
+	self.rho = self.internalModes.rho;
+	self.N2 = self.internalModes.N2;
+	
+	self.rho.name = @"rho_bar";
+	self.N2.name = @"N2";
+	
+	GLFloat minH = [self.eigendepths minNow];
+	if (minH <= 0.0) {
+		NSLog(@"You have eigendepths with negative values. This is not physical, so you should probably try limiting the number of modes you use.");
+	}
+	
+	GLFloat minTime = 2*M_PI/[self.eigenfrequencies maxNow];
+	GLFloat maxTime = 2*M_PI/self.f0;
+	NSLog(@"Maximum wave period (based on the Coriolis frequency) is %02d:%02d (HH:MM)", ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
+	NSLog(@"Minimum wave period (based on the modes and horizontal resolution) is %02d:%02d (HH:MM)", ((int) floor(minTime/3600))%24, ((int) floor(minTime/60))%60);
+	
+	self.spectralDimensions = self.eigenfrequencies.dimensions;
+	
+	for (GLDimension *dim in self.spectralDimensions) {
+		if ( [dim.name isEqualToString: @"k"]) {
+			self.kDim = dim;
+			[self.horizontalDimensions addObject: dim];
+		} else if ( [dim.name isEqualToString: @"l"]) {
+			self.lDim = dim;
+			[self.horizontalDimensions addObject: dim];
+		} else {
+			self.modeDim = dim;
+		}
+	}
+}
+
+- (void) computeInternalModesOld
 {
     if (self.maximumModes || self.maxDepth || self.minDepth) {
         // Identify the z dimension
@@ -315,7 +372,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
-	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless]
+	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless] This function falls to ~1% at 30 modes
 	GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 3*pow(j_star,3/2)/2];
 
 	// This sums to about 1/2, so not quite right.

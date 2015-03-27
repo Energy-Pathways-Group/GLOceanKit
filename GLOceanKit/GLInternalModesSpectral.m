@@ -358,11 +358,20 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     if (self.zInDim == zOutDim) {
         T_zOut = self.T_zIn;
     } else {
-        T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
+        // T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
+		// Our custom T_zOut differs from the GLNumericalModelingKit's implementation by using the zInDim.domainLength and domainMin
+		T_zOut = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[self.chebDim] toDimensions: @[zOutDim] inFormat: @[@(kGLDenseMatrixFormat)] forEquation: self.equation matrix: ^( NSUInteger *row, NSUInteger *col ) {
+			GLFloat *xVal = (GLFloat *) zOutDim.data.bytes;
+			GLFloatComplex value = cos(col[0]*acos((2./self.zInDim.domainLength)*(xVal[row[0]]-self.zInDim.domainMin)-1.0));
+			if (col[0] == 0) { // Factor of 2 in order to match the fast transform implementation
+				value = value/2.0;
+			}
+			return value;
+		}];
     }
-    
+	
     S = [T_zOut matrixMultiply: S_cheb];
-    
+	
     GLLinearTransform *Sprime = [T_zOut matrixMultiply: [self.diffZ multiply: S_cheb]];
     GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: h];
     GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: Sprime secondOperand: scaling];
@@ -400,10 +409,24 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	return @[self.eigendepths, self.S, self.Sprime];
 }
 
-- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes
 {
 	if (dimensions.count != 3) {
 		[NSException raise:@"InvalidDimensions" format: @"We are assuming exactly three dimensions"];
+	}
+	
+	NSUInteger numVerticalDims = 0;
+	NSUInteger numHorizontalDims = 0;
+	GLDimension *zOutDim;
+	for (GLDimension *dim in dimensions) {
+		if ([dim.name isEqualToString: @"x"] || [dim.name isEqualToString: @"y"]) {
+			numHorizontalDims++;
+		} else if ([dim.name isEqualToString: @"z"]) {
+			numVerticalDims++;
+			zOutDim = dim;
+		} else {
+			[NSException raise: @"BadDimensions" format:@"Dimensions must be name x, y, or z"];
+		}
 	}
 	
     NSArray *results = [self createOptimizedOperationFromDensityProfile: rho wavenumber: 0.0 forLatitude:latitude maximumModes:maxModes zOutDim:zOutDim];
@@ -508,6 +531,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
 	
 	self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
+	self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 	
 	return @[self.eigendepths, self.S, self.Sprime];
 }
