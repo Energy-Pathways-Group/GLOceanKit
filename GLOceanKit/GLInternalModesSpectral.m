@@ -11,7 +11,7 @@
 #define g 9.81
 
 @interface GLInternalModesSpectral ()
-- (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude;
+- (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude zOutDim: (GLDimension *) zOutDim;
 - (void) normalizeDepthBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
 - (void) normalizeFrequencyBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
 - (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
@@ -40,6 +40,9 @@
 
 // Chebyshev polynomials on the zInDim.
 @property(strong) GLLinearTransform *T_zIn;
+
+// Chebyshev polynomials on the zInOut.
+@property(strong) GLLinearTransform *T_zOut;
 
 // The 'expanded' dimensions.
 @property(strong) NSArray *fromDimensions;
@@ -98,7 +101,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	return self;
 }
 
-- (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude
+- (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude zOutDim: (GLDimension *) zOutDim
 {
 	if (rho.dimensions.count != 1) {
 		[NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
@@ -121,7 +124,10 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
         self.rho = rho;
 		self.rho_cheb_grid = [rho interpolateAtPoints: @[z]];
 	}
-    
+    if (!zOutDim) {
+        zOutDim = self.zInDim;
+    }
+
     GLFunction *rho_cheb = [[self.rho_cheb_grid minus: rho0] transformToBasis: @[@(kGLChebyshevBasis)]];
 	GLFunction *buoyancy = [[rho_cheb dividedBy: rho0] times: @(-g)];
 	self.chebDim = rho_cheb.dimensions[0];
@@ -132,7 +138,24 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     
     self.T_zIn = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: self.zInDim forEquation: self.equation];
     
-	self.N2 = [self.T_zIn transform: buoyancy_z];
+    if (self.zInDim == zOutDim) {
+        self.T_zOut = self.T_zIn;
+    } else {
+        // T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
+        // Our custom T_zOut differs from the GLNumericalModelingKit's implementation by using the zInDim.domainLength and domainMin
+        self.T_zOut = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[self.chebDim] toDimensions: @[zOutDim] inFormat: @[@(kGLDenseMatrixFormat)] forEquation: self.equation matrix: ^( NSUInteger *row, NSUInteger *col ) {
+            GLFloat *xVal = (GLFloat *) zOutDim.data.bytes;
+            GLFloatComplex value = cos(col[0]*acos((2./self.zInDim.domainLength)*(xVal[row[0]]-self.zInDim.domainMin)-1.0));
+            if (col[0] == 0) { // Factor of 2 in order to match the fast transform implementation
+                value = value/2.0;
+            }
+            return value;
+        }];
+        
+        self.rho = [[self.T_zOut transform: rho_cheb] plus: rho0];
+    }
+    
+	self.N2 = [self.T_zOut transform: buoyancy_z];
 	self.N2.name = @"N2";
     
     [self createChebyshevTransformations];
@@ -228,7 +251,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) internalGeostrophicModesFromDensityProfile: (GLFunction *) rho forLatitude: (GLFloat) latitude
 {
-	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude zOutDim: nil];
 	
 	GLLinearTransform *A = self.Tzz;
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [self.N2_cheb_grid times: @(-1/g)]] multiply: self.T];
@@ -256,7 +279,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude
 {
-	[self createStratificationProfileFromDensity: rho atLatitude: latitude];
+	[self createStratificationProfileFromDensity: rho atLatitude: latitude zOutDim: nil];
 	
 	GLScalar *k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
 	GLLinearTransform *A = [self.Tzz minus: [k2 multiply: self.T]];
@@ -285,7 +308,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) createOptimizedOperationFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude maximumModes: (NSUInteger) maxModes zOutDim: (GLDimension *) zOutDim
 {
-    [self createStratificationProfileFromDensity: rho atLatitude: latitude];
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude zOutDim: zOutDim];
     
     // These are the two matrices (without correct boundary conditions) that we need to find the eigensystem of.
     self.k2 = [GLScalar scalarWithValue: k*k forEquation: self.equation];
@@ -353,26 +376,10 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     GLLinearTransform *S_spatial_cheb_grid = [self.T matrixMultiply: S];
     S_spatial_cheb_grid = [S_spatial_cheb_grid normalizeWithFunction: [[self.N2_cheb_grid minus: @(self.f0*self.f0)] times: @(1/g)]];
     GLLinearTransform *S_cheb = [Tinv matrixMultiply: S_spatial_cheb_grid];
-    
-    GLLinearTransform *T_zOut;
-    if (self.zInDim == zOutDim) {
-        T_zOut = self.T_zIn;
-    } else {
-        // T_zOut = [GLLinearTransform discreteTransformFromDimension: self.chebDim toDimension: zOutDim forEquation: self.equation];
-		// Our custom T_zOut differs from the GLNumericalModelingKit's implementation by using the zInDim.domainLength and domainMin
-		T_zOut = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[self.chebDim] toDimensions: @[zOutDim] inFormat: @[@(kGLDenseMatrixFormat)] forEquation: self.equation matrix: ^( NSUInteger *row, NSUInteger *col ) {
-			GLFloat *xVal = (GLFloat *) zOutDim.data.bytes;
-			GLFloatComplex value = cos(col[0]*acos((2./self.zInDim.domainLength)*(xVal[row[0]]-self.zInDim.domainMin)-1.0));
-			if (col[0] == 0) { // Factor of 2 in order to match the fast transform implementation
-				value = value/2.0;
-			}
-			return value;
-		}];
-    }
 	
-    S = [T_zOut matrixMultiply: S_cheb];
+    S = [self.T_zOut matrixMultiply: S_cheb];
 	
-    GLLinearTransform *Sprime = [T_zOut matrixMultiply: [self.diffZ multiply: S_cheb]];
+    GLLinearTransform *Sprime = [self.T_zOut matrixMultiply: [self.diffZ multiply: S_cheb]];
     GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: h];
     GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: Sprime secondOperand: scaling];
     Sprime = op.result[0];
@@ -448,7 +455,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	NSUInteger yIndex = NSNotFound;
 	NSUInteger zIndex = NSNotFound;
 	for (GLDimension *dim in dimensions) {
-		if (self.zInDim == dim) {
+		if (zOutDim == dim) {
 			[matrixFormat addObject: @(kGLDenseMatrixFormat)];
 			
 			[toBasis addObject: @([S.toDimensions[0] basisFunction])];
@@ -528,8 +535,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
             NSLog(@"Finished %lu of %lu eigenvalue problems", (i+1)*mdK2.strides[yIndex].nPoints, mdK2.strides[xIndex].nPoints*mdK2.strides[yIndex].nPoints );
         }
 	}
-	
-	
+    
 	self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
 	self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 	
@@ -538,7 +544,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 {
-    [self createStratificationProfileFromDensity: rho atLatitude: latitude];
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude zOutDim: nil];
     
     if (dimensions.count != 3) {
         [NSException raise:@"InvalidDimensions" format: @"We are assuming exactly three dimensions"];
