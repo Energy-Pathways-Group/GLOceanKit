@@ -333,9 +333,9 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         C[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
     }
     
-	GLScalar *i = [GLScalar scalarWithValue: I forEquation: self.equation];
+	//GLScalar *i = [GLScalar scalarWithValue: I forEquation: self.equation];
     GLFunction *G_plus = [U_mag duplicate];
-    GLFunction *G_minus = [[U_mag duplicate] times: i]; // Keep the two sides out of phase initially.
+    GLFunction *G_minus = [U_mag duplicate]; // Keep the two sides out of phase initially.
     
     if (sign<0) {
         [G_plus zero];
@@ -455,8 +455,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
 	GLScalar *rho0 = [self.rho min];
     
-	self.zeta_plus = [G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
-    self.zeta_minus = [G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
+	self.zeta_plus = [[G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]] makeHermitian];
+    self.zeta_minus = [[G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]] makeHermitian];
 	
 	self.rho_plus = [[self.zeta_plus times: rho0] times: @(1/g)];
     self.rho_minus = [[self.zeta_minus times: rho0] times: @(1/g)];
