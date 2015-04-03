@@ -54,6 +54,8 @@
 @property(copy) variableOperation operation;
 @property(strong) NSMutableArray *dataBuffers;
 @property(strong) GLScalar *k2;
+@property(strong) NSMutableArray *optimizers;
+@property NSUInteger nProcessors;
 
 @end
 
@@ -390,7 +392,17 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     for (GLBuffer *aBuffer in self.optimizer.internalDataBuffers) {
         [self.dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
     }
-    
+	
+	// The problem doesn't scale well... and for some reason our matrices are being repacked for the problem.
+	// Anyway, it's slower to use all the processors. Using 2 is almost twice as fast as 1, but using 4 is marginally faster than 2.
+	self.nProcessors = [[NSProcessInfo processInfo] activeProcessorCount]/2 < 1 ? 1 : [[NSProcessInfo processInfo] activeProcessorCount]/2;
+	NSLog(@"Solving eigenvalue problem across %lu processes",self.nProcessors);
+	self.optimizers = [NSMutableArray array];
+	for (NSUInteger i=0; i<self.nProcessors; i++) {
+		GLOperationOptimizer *opt = [[GLOperationOptimizer alloc] initWithTopVariables: @[self.k2] bottomVariables: @[h, S, Sprime]];
+		self.optimizers[i] = opt.operationBlock;
+	}
+	
     S.name = @"S_transform";
     Sprime.name = @"Sprime_transform";
     h.name = @"eigendepths";
@@ -503,38 +515,61 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	self.Sprime = [GLLinearTransform transformOfType:kGLRealDataFormat withFromDimensions:self.fromDimensions toDimensions:self.toDimensions inFormat:matrixFormat forEquation:self.equation matrix: nil];
 	self.eigendepths = [GLFunction functionOfRealTypeWithDimensions: self.fromDimensions forEquation:self.equation];
 	
+	dispatch_queue_t globalQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+	
 	GLMatrixDescription *mdK2 = K2.matrixDescription;
 	GLMatrixDescription *mdS = self.S.matrixDescription;
-	for (NSUInteger i=0; i<mdK2.strides[xIndex].nPoints; i++ ) {
-		for (NSUInteger j=0; j<mdK2.strides[yIndex].nPoints; j++ ) {
-			NSUInteger pos = i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
-			self.k2.pointerValue[0] = K2.pointerValue[pos];
-			
-			self.operation( @[eigendepths.data, S.data, Sprime.data], @[self.k2.data], self.dataBuffers);
-			
-			// Copy the eigenvalues over
-			const GLFloat *A = eigendepths.data.bytes;
-			GLFloat *B = self.eigendepths.data.mutableBytes;
-			NSUInteger offset =i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
-			for (NSUInteger n=0; n<mdK2.strides[zIndex].nPoints; n++ ) {
-				B[offset + n*mdK2.strides[zIndex].stride] = A[n];
-			}
-			
-			const GLFloat *S1 = S.data.bytes;
-			const GLFloat *Sprime1 = Sprime.data.bytes;
-			GLFloat *S2 = self.S.data.mutableBytes;
-			GLFloat *Sprime2 = self.Sprime.data.mutableBytes;
-			
-			offset =i*mdS.strides[xIndex].stride + j*mdS.strides[yIndex].stride;
-			for (NSUInteger iPoint=0; iPoint<mdS.strides[zIndex].nPoints; iPoint++ ) {
-				S2[offset + iPoint*mdS.strides[zIndex].stride] = S1[iPoint];
-				Sprime2[offset + iPoint*mdS.strides[zIndex].stride] = Sprime1[iPoint];
-			}
-		}
-        if (i%2==0) {
-            NSLog(@"Finished %lu of %lu eigenvalue problems", (i+1)*mdK2.strides[yIndex].nPoints, mdK2.strides[xIndex].nPoints*mdK2.strides[yIndex].nPoints );
-        }
+	NSUInteger nPoints = (mdK2.strides[xIndex].nPoints)/self.nProcessors;
+	if (self.nProcessors*nPoints != mdK2.strides[xIndex].nPoints) {
+		[NSException raise:@"Opps" format:@"Need to improve the logic here, otherwise you'll miss some points"];
 	}
+	dispatch_apply( self.nProcessors, globalQueue,  ^(size_t iteration) {
+		
+		NSMutableData *eigendepthsData = [[GLMemoryPool sharedMemoryPool] dataWithLength: eigendepths.dataBytes];
+		NSMutableData *sData = [[GLMemoryPool sharedMemoryPool] dataWithLength: S.dataBytes];
+		NSMutableData *sPrimeData = [[GLMemoryPool sharedMemoryPool] dataWithLength: Sprime.dataBytes];
+		GLScalar *k2 = [GLScalar scalarWithValue: 0 forEquation: self.equation];
+		NSMutableArray *dataBuffers = [NSMutableArray array];
+		for (GLBuffer *aBuffer in self.optimizer.internalDataBuffers) {
+			[dataBuffers addObject: [[GLMemoryPool sharedMemoryPool] dataWithLength: aBuffer.numBytes]];
+		}
+		variableOperation op = self.optimizers[iteration];
+		
+		for (NSUInteger i=iteration*nPoints; i<(iteration+1)*nPoints; i++ ) {
+			for (NSUInteger j=0; j<mdK2.strides[yIndex].nPoints; j++ ) {
+				NSUInteger pos = i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
+				k2.pointerValue[0] = K2.pointerValue[pos];
+				
+				op( @[eigendepthsData, sData, sPrimeData], @[k2.data], dataBuffers);
+				
+				// Copy the eigenvalues over
+				const GLFloat *A = eigendepthsData.bytes;
+				GLFloat *B = self.eigendepths.data.mutableBytes;
+				NSUInteger offset =i*mdK2.strides[xIndex].stride + j*mdK2.strides[yIndex].stride;
+				for (NSUInteger n=0; n<mdK2.strides[zIndex].nPoints; n++ ) {
+					B[offset + n*mdK2.strides[zIndex].stride] = A[n];
+				}
+				
+				const GLFloat *S1 = sData.bytes;
+				const GLFloat *Sprime1 = sPrimeData.bytes;
+				GLFloat *S2 = self.S.data.mutableBytes;
+				GLFloat *Sprime2 = self.Sprime.data.mutableBytes;
+				
+				offset =i*mdS.strides[xIndex].stride + j*mdS.strides[yIndex].stride;
+				for (NSUInteger iPoint=0; iPoint<mdS.strides[zIndex].nPoints; iPoint++ ) {
+					S2[offset + iPoint*mdS.strides[zIndex].stride] = S1[iPoint];
+					Sprime2[offset + iPoint*mdS.strides[zIndex].stride] = Sprime1[iPoint];
+				}
+			}
+			if (i%2==0) {
+				NSLog(@"Finished %lu of %lu eigenvalue problems", (i+1)*mdK2.strides[yIndex].nPoints, mdK2.strides[xIndex].nPoints*mdK2.strides[yIndex].nPoints );
+			}	
+		}
+		
+		[[GLMemoryPool sharedMemoryPool] returnData: eigendepthsData];
+		[[GLMemoryPool sharedMemoryPool] returnData: sData];
+		[[GLMemoryPool sharedMemoryPool] returnData: sPrimeData];
+	});
     
 	self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
 	self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";

@@ -7,7 +7,7 @@
 		<key>GLOceanKit.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>5</integer>
+			<integer>6</integer>
 		</dict>
 		<key>GLOceanKitFramework.xcscheme</key>
 		<dict>
@@ -22,7 +22,7 @@
 		<key>GLOceanKitTests.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>15</integer>
+			<integer>17</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>

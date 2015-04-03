@@ -426,10 +426,10 @@
 	GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
 	GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
 	
-	GLFloat width = 1000;
-	GLFloat height = 500;
-	NSUInteger Nx = 4;
-	NSUInteger Ny = 4;
+	GLFloat width = 10e3;
+	GLFloat height = 5e3;
+	NSUInteger Nx = 32;
+	NSUInteger Ny = 32;
 	GLDimension *xDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
 	xDim.name = @"x";
 	GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Ny domainMin: -height/2 length: height];
