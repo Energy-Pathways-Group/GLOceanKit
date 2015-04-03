@@ -293,7 +293,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     // The 1st baroclinic mode is in position 0.
     mode = mode-1;
     
-    GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
+    GLFunction *U_mag = [GLFunction functionOfComplexTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
 	
 	// My notation is horrible here. kDim and lDim are actually reversed!
@@ -346,12 +346,13 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
     
     // Rather than figure out how to properly normalize, we just cheat.
-    GLFloat U0 = [[[self.Sprime transform: [self.u_plus plus: self.u_minus]] abs] maxNow];
-    GLFloat V0 = [[[self.Sprime transform: [self.v_plus plus: self.v_minus]] abs] maxNow];
-    GLFloat Speed = sqrt(U0*U0+V0*V0);
+	GLFunction *u = [[self.Sprime transform: [self.u_plus plus: self.u_minus]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
+	GLFunction *v = [[self.Sprime transform: [self.v_plus plus: self.v_minus]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
+	GLFunction *speed = [[[u times: u] plus: [v times: v]] sqrt];
+    GLFloat Speed = [speed maxNow];
     
-    G_plus = [G_plus times: @(U_max/(2*Speed))];
-    G_minus = [G_minus times: @(U_max/(2*Speed))];
+    G_plus = [G_plus times: @(U_max/(Speed))];
+    G_minus = [G_minus times: @(U_max/(Speed))];
     
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
 	
