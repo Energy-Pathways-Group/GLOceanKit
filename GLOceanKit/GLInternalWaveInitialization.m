@@ -333,9 +333,9 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         C[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
     }
     
-	//GLScalar *i = [GLScalar scalarWithValue: I forEquation: self.equation];
-    GLFunction *G_plus = [U_mag duplicate];
-    GLFunction *G_minus = [U_mag duplicate]; // Keep the two sides out of phase initially.
+	//GLScalar *i = [GLScalar scalarWithValue: -I forEquation: self.equation];
+	GLFunction *G_plus = [[[U_mag duplicate] makeHermitian] negate];
+    GLFunction *G_minus = [[U_mag duplicate] makeHermitian];
     
     if (sign<0) {
         [G_plus zero];
@@ -445,6 +445,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     NSLog(@"Zeroed %lu frequencies, left %lu untouched", zeroed, notZeroed);
 }
 
+// G_plus and G_minus must have Hermitian symmetry, otherwise this won't work.
 - (void) generateWavePhasesFromPositive: (GLFunction *) G_plus negative: (GLFunction *) G_minus
 {
     GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
@@ -455,21 +456,21 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
 	GLScalar *rho0 = [self.rho min];
     
-	self.zeta_plus = [[G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]] makeHermitian];
-    self.zeta_minus = [[G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]] makeHermitian];
+	self.zeta_plus = [G_plus multiply: [[[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies] makeHermitian]];
+    self.zeta_minus = [G_minus multiply: [[[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies] makeHermitian]];
 	
 	self.rho_plus = [[self.zeta_plus times: rho0] times: @(1/g)];
     self.rho_minus = [[self.zeta_minus times: rho0] times: @(1/g)];
 	
-	self.w_plus = [[[G_plus multiply: [K_H multiply: sqrtH]] swapComplex] makeHermitian];
-    self.w_minus = [[[[G_minus multiply: [K_H multiply: sqrtH]] swapComplex] negate] makeHermitian];
+	self.w_plus = [G_plus multiply: [[[K_H multiply: sqrtH] swapComplex] makeHermitian]];
+    self.w_minus = [G_minus multiply: [[[[K_H multiply: sqrtH] swapComplex] negate] makeHermitian]];
     
     GLFunction *denominator = [[self.eigenfrequencies multiply: K_H] multiply: sqrtH];
-	self.u_plus = [[G_plus multiply: [[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] negate]] makeHermitian];
-    self.u_minus = [[G_minus multiply: [[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator]] makeHermitian];
+	self.u_plus = [G_plus multiply: [[[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
+    self.u_minus = [G_minus multiply: [[[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
 	
-	self.v_plus = [[G_plus multiply: [[[[l multiply: self.eigenfrequencies] plus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] negate]] makeHermitian];
-    self.v_minus = [[G_minus multiply: [[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator]] makeHermitian];
+	self.v_plus = [G_plus multiply: [[[[[l multiply: self.eigenfrequencies] plus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
+    self.v_minus = [G_minus multiply: [[[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
     
     self.zeta_plus.name = @"zeta_plus";
     self.zeta_minus.name = @"zeta_minus";
