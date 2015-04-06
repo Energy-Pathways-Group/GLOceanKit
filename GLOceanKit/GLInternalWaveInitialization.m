@@ -434,16 +434,16 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 {
     NSUInteger zeroed = 0;
     NSUInteger notZeroed = 0;
-    GLFloat Nmin = sqrt(fabs([self.N2 minNow]));
+    GLFloat Nmax = sqrt(fabs([self.N2 maxNow]));
     for (NSUInteger i=0; i<self.eigenfrequencies.nDataPoints; i++) {
-        if (self.eigenfrequencies.pointerValue[i] > Nmin) {
+        if (self.eigenfrequencies.pointerValue[i] > Nmax) {
             G.pointerValue[i] = 0;
             zeroed++;
         } else {
             notZeroed++;
         }
     }
-    NSLog(@"Zeroed %lu frequencies, left %lu untouched", zeroed, notZeroed);
+    NSLog(@"Zeroed the amplitude %lu frequencies, left %lu untouched because these components have a frequency greater than the buoyancy frequency.", zeroed, notZeroed);
 }
 
 // G_plus and G_minus must have Hermitian symmetry, otherwise this won't work.
