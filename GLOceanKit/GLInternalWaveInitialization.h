@@ -98,4 +98,6 @@
 @property(strong) GLFunction *w_plus;
 @property(strong) GLFunction *w_minus;
 
+- (void) showDiagnostics;
+
 @end

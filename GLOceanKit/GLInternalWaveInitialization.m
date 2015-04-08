@@ -196,6 +196,58 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	}
 }
 
+- (void) showDiagnostics
+{
+    GLFloat maxOmega = [self.eigenfrequencies maxNow];
+    GLFloat dx = self.f0/2;
+    NSUInteger N = [self.eigenfrequencies maxNow]/dx;
+    
+    
+    GLDimension *omegaDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:N+1 domainMin:0 length:N*dx];
+    GLFunction *omega = [GLFunction functionOfRealTypeFromDimension: omegaDim withDimensions: @[omegaDim] forEquation: self.equation];
+    GLFunction *cardinality = [GLFunction functionOfRealTypeWithDimensions: @[omegaDim] forEquation: self.equation];
+    GLFunction *powerU = [GLFunction functionOfRealTypeWithDimensions: @[omegaDim] forEquation: self.equation];
+    GLFunction *powerV = [GLFunction functionOfRealTypeWithDimensions: @[omegaDim] forEquation: self.equation];
+    [cardinality zero];
+    [powerU zero];
+    [powerV zero];
+    
+    GLFunction *up = [self.u_plus abs];
+    up = [up multiply: up];
+    GLFunction *um = [self.u_minus abs];
+    um = [um multiply: um];
+    
+    GLFunction *vp = [self.v_plus abs];
+    vp = [vp multiply: vp];
+    GLFunction *vm = [self.v_minus abs];
+    vm = [vm multiply: vm];
+    
+    GLMatrixDescription *md = self.eigenfrequencies.matrixDescription;
+    for (NSUInteger mode=0; mode<md.strides[0].nPoints; mode++) {
+        for (NSUInteger i=0; i<md.strides[1].nPoints; i++) {
+            for (NSUInteger j=0; j<md.strides[2].nPoints; j++) {
+                NSUInteger position = mode*md.strides[0].stride + i*md.strides[1].stride + j*md.strides[2].stride;
+                NSUInteger bin = self.eigenfrequencies.pointerValue[position]/omegaDim.sampleInterval;
+                cardinality.pointerValue[bin] += 1;
+                                
+                powerU.pointerValue[bin] += up.pointerValue[position];
+                powerU.pointerValue[bin] += um.pointerValue[position];
+                powerV.pointerValue[bin] += vp.pointerValue[position];
+                powerV.pointerValue[bin] += vm.pointerValue[position];
+            }
+        }
+    }
+    
+    GLFunction *Su = [powerU dividedBy: cardinality];
+    GLFunction *Sv = [powerV dividedBy: cardinality];
+    
+    GLFunction *period = [[omega plus: @(omegaDim.sampleInterval)] scalarDivide: 2*M_PI/60];
+    [omega dumpToConsole];
+    [cardinality dumpToConsole];
+    [Su dumpToConsole];
+    [Sv dumpToConsole];
+}
+
 - (void) computeInternalModesOld
 {
     if (self.maximumModes || self.maxDepth || self.minDepth) {
@@ -374,7 +426,10 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
 	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless] This function falls to ~1% at 30 modes
-	GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 3*pow(j_star,3/2)/2];
+	//GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 3*pow(j_star,3/2)/2];
+    
+    // Winters & D'Asaro version
+    GLFunction *H = [[[j multiply: j] plus: @(j_star*j_star)] scalarDivide: 2*j_star/M_PI];
 
 	// This sums to about 1/2, so not quite right.
 //    GLFunction *Hsum = [H sum: 0];
@@ -386,7 +441,10 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
 	// B(alpha,j) = (2/pi) * 1/R_j * 1/(k^2 + R_j^-2) [m]
 	GLFunction *invR_j = [self.rossbyRadius scalarDivide: 1.0];
-	GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
+	//GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
+    
+    // Winters & D'Asaro version
+    GLFunction *B = [[[invR_j multiply: K2] dividedBy: [[K2 plus: [invR_j multiply: invR_j]] pow: 2.0]] multiply: @(4./M_PI)];
     
     // Alternative scalings.
     //GLFunction *B = [invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]];
