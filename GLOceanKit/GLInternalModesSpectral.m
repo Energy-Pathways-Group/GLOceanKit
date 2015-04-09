@@ -396,7 +396,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	// The problem doesn't scale well... and for some reason our matrices are being repacked for the problem.
 	// Anyway, it's slower to use all the processors. Using 2 is almost twice as fast as 1, but using 4 is marginally faster than 2.
 	self.nProcessors = [[NSProcessInfo processInfo] activeProcessorCount]/2 < 1 ? 1 : [[NSProcessInfo processInfo] activeProcessorCount]/2;
-    self.nProcessors = 1;
+    //self.nProcessors = 1;
 	NSLog(@"Solving eigenvalue problem across %lu processes",self.nProcessors);
 	self.optimizers = [NSMutableArray array];
 	for (NSUInteger i=0; i<self.nProcessors; i++) {
