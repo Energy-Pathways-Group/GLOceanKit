@@ -131,8 +131,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	} else if (maximumModes == 0) {
 		if (zDim.nPoints < 8) {
 			[NSException raise: @"BadDimensions" format:@"You're going to need 8 or more points in the vertical profile for this to work."];
-		} else if (zDim.nPoints > 64) {
-			maximumModes = 32;
+		} else if (zDim.nPoints > 128) {
+			maximumModes = 64;
 		} else {
 			maximumModes = floor(zDim.nPoints/2);
 		}
