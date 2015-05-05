@@ -25,6 +25,7 @@ else
 	% Note that we are *not* trying to make a one-sided spectrum here
 	% We average the positive and negative components, not add them.
 	s = spp+snn;
+    s(1) = s(1)/2; % the zero frequency is just duplicated
 	s(2:end) = s(2:end)/2;
 end
 
