@@ -1,6 +1,6 @@
-file = '/Volumes/Data/QGPlusSlab/MonopoleExperimentWithNoWindsLongDampNonStiff_+/QGDampedSlab_Monopole.nc';
-output_file = '/Volumes/Data/QGPlusSlab/MonopoleExperimentWithNoWindsLongDampNonStiff_+/QGDampedSlabTrajectories_Monopole.mat';
-shouldSaveStrainAndVorticity = 1;
+file = '/Volumes/Data/QGPlusSlab/TurbulenceExperimentNonStiff/QGDampedSlab.nc';
+output_file = '/Volumes/Data/QGPlusSlab/TurbulenceExperimentNonStiff/QGDampedSlabTrajectories.mat';
+shouldSaveStrainAndVorticity = 0;
 
 %addpath('../GLOceanKit/Matlab/')
 
@@ -28,8 +28,9 @@ dt = t(2)-t(1);
 stride = 4;
 timestride = 1;
 t_days = t/86400;
-%timeIndex = find( t_days <= day, 1, 'last');
-timeIndex = length(t);
+day = 300;
+timeIndex = find( t_days-1 <= day, 1, 'last');
+%timeIndex = length(t);
 
 xPosition1 = squeeze(ncread(file, 'x-position-layer-1', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
 yPosition1 = squeeze(ncread(file, 'y-position-layer-1', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
