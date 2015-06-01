@@ -639,7 +639,11 @@
     GLFloat wavenumberScale = 1./(self.L_QG);
     GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
     
-    NSLog(@"Starting simulation...");
+	
+	GLFloat outputIntervalND = self.outputInterval/self.T_QG;
+	GLFloat maxTimeND = maxTime/self.T_QG;
+	GLFloat stepND =self.outputInterval/self.T_QG;
+	NSLog(@"Starting simulation...running to maxTime %f",maxTimeND);
     for (GLFloat time = self.outputInterval/self.T_QG; time < maxTime/self.T_QG; time += self.outputInterval/self.T_QG)
     {
         @autoreleasepool {
