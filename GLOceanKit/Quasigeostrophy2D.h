@@ -106,7 +106,7 @@
 @property BOOL shouldForce;
 
 // What wavenumber do you want to force at, relative to the largest wavenumber.
-// k_f = k_max/forcingFraction.
+// k_f = k_max/forcingFraction. Values less than 4 appear to overlap with the viscous scales.
 // Note that this value automatically doubles if you initialize with resolution doubling.
 @property GLFloat forcingFraction;
 
@@ -120,10 +120,12 @@
 @property GLFloat forcingDecorrelationTime;
 
 // What wavenumber do you want to damp at, relative to the smallest wavenumber.
+// Values less than 4 may not allow for reasonable convergence.
 // k_damp = k_min*dampingFraction
 @property GLFloat thermalDampingFraction;
 
 // What wavenumber do you want to damp at, relative to the smallest wavenumber.
+// Values less than 4 may not allow for reasonable convergence.
 // k_damp = k_min*dampingFraction
 @property GLFloat frictionalDampingFraction;
 

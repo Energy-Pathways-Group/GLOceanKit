@@ -9,8 +9,8 @@ sshFD = fftshift( sshFD );
 [K, L] = meshgrid(k,l);
 rhoK = sqrt( K.*K + L.*L);
 
-deltaX = 1/(2*k(length(k)/2));
-deltaY = 1/(2*k(length(k)/2));
+deltaX = 1/(2*k(1));
+deltaY = 1/(2*l(1));
 spectrumScale = deltaX*deltaY/( length(k) * length(l) );
 heightPSD = spectrumScale * real( sshFD .* conj(sshFD)); % m^2 * m^2
 energyPSD = ((g/f0)^2)* ( (2*2*pi*pi) * rhoK .* rhoK .* heightPSD + (1/L_R)*(1/L_R) * heightPSD ); % m^2 * m^2 / s^2

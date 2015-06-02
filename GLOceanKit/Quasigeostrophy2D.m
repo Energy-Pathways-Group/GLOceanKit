@@ -280,7 +280,7 @@
         
         u_rms = sqrt([speed maxNow]);
     }
-	self.nu = [self.dimensions[0] sampleInterval]*u_rms/2.0; // sqrt(2.) is very stable, 2. also seems to work.
+	self.nu = [self.dimensions[0] sampleInterval]*u_rms; // sqrt(2.) is very stable, 2. also seems to work.
 	
     NSLog(@"sample interval: %g, u_rms: %g, real_energy: %g",[self.dimensions[0] sampleInterval],u_rms ,real_energy);
     
