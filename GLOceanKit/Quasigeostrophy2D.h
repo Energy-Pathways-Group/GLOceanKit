@@ -154,6 +154,9 @@
 /// In seconds.
 @property GLFloat outputInterval;
 
+// Defaults to YES, but can be disabled if it's not necessary for some reason.
+@property BOOL shouldWriteSSH;
+
 /// Set to YES to write the ssh in frequency domain out. This is redundant and can be derived from the ssh.
 @property BOOL shouldWriteSSHFD;
 

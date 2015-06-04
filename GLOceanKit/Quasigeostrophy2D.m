@@ -88,7 +88,7 @@
 		self.shouldUseBeta = NO;
 		self.shouldUseSVV = YES;
 		self.shouldAntiAlias = NO;
-		
+		self.shouldWriteSSH = YES;
 	}
 	
 	return self;
@@ -554,10 +554,12 @@
 	
 	GLFloat wavenumberScale = 1./(self.L_QG);
 	
-	GLFunction *dimensionalSSH = [[self.ssh spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
-	self.sshHistory = [dimensionalSSH variableByAddingDimension: self.tDim];
-	self.sshHistory.name = @"SSH";
-	self.sshHistory = [netcdfFile addVariable: self.sshHistory];
+	if (self.shouldWriteSSH) {
+		GLFunction *dimensionalSSH = [[self.ssh spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
+		self.sshHistory = [dimensionalSSH variableByAddingDimension: self.tDim];
+		self.sshHistory.name = @"SSH";
+		self.sshHistory = [netcdfFile addVariable: self.sshHistory];
+	}
 	
     if (self.forcing) {
         GLFunction *dimensionalForceMag = [self.forcing scaleVariableBy: pow((self.T_QG),-2.) withUnits: @"1/s^2" dimensionsBy: wavenumberScale units: @"cycles/m"];
@@ -638,12 +640,7 @@
     
     GLFloat wavenumberScale = 1./(self.L_QG);
     GLFloat rvScale = (g/self.f0)*(self.N_QG)/pow(self.L_QG,2.0);
-    
 	
-	GLFloat outputIntervalND = self.outputInterval/self.T_QG;
-	GLFloat maxTimeND = maxTime/self.T_QG;
-	GLFloat stepND =self.outputInterval/self.T_QG;
-	NSLog(@"Starting simulation...running to maxTime %f",maxTimeND);
     for (GLFloat time = self.outputInterval/self.T_QG; time < maxTime/self.T_QG; time += self.outputInterval/self.T_QG)
     {
         @autoreleasepool {
@@ -655,10 +652,12 @@
             
             GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
             self.ssh = [[etaFD spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
-            
-            [self.sshHistory concatenateWithLowerDimensionalVariable: self.ssh alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
-            [netcdfFile waitUntilAllOperationsAreFinished];
-            
+			
+			if (self.shouldWriteSSH ) {
+				[self.sshHistory concatenateWithLowerDimensionalVariable: self.ssh alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
+				[netcdfFile waitUntilAllOperationsAreFinished];
+			}
+			
             if (self.shouldWriteSSHFD) {
                 GLFunction *etaFDDim = [etaFD scaleVariableBy: self.N_QG withUnits: @"m^3" dimensionsBy: wavenumberScale units: @"cycles/m"];
                 [self.sshFDHistory concatenateWithLowerDimensionalVariable: etaFDDim alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
