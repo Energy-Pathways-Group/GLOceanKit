@@ -1,5 +1,5 @@
-file = '/Volumes/Data/QGPlusSlab/TurbulenceExperimentNonStiff/QGDampedSlab.nc';
-output_file = '/Volumes/Data/QGPlusSlab/TurbulenceExperimentNonStiff/QGDampedSlabTrajectories.mat';
+file = '/Users/jearly/Desktop/Isotropy/TurbulenceIsotropic.nc';
+output_file = '/Users/jearly/Desktop/Isotropy/Trajectories.mat';
 shouldSaveStrainAndVorticity = 0;
 
 %addpath('../GLOceanKit/Matlab/')
@@ -21,7 +21,7 @@ dt = t(2)-t(1);
 % 	The stride indicates how many floats we will skip
 %
 
-stride = 4;
+stride = 32;
 timestride = 1;
 % t_days = t/86400;
 % day = 300;
