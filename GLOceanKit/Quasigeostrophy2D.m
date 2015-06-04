@@ -649,22 +649,23 @@
             NSLog(@"Logging day: %f, last step size: %f seconds.", (time*self.T_QG/86400.), self.integrator.lastStepSize*self.T_QG);
             
             [self.tDim addPoint: @(time*self.T_QG)];
-            
-            GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
-            self.ssh = [[etaFD spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
 			
 			if (self.shouldWriteSSH ) {
+                GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
+                self.ssh = [[etaFD spatialDomain] scaleVariableBy: self.N_QG withUnits: @"m" dimensionsBy: self.L_QG units: @"m"];
 				[self.sshHistory concatenateWithLowerDimensionalVariable: self.ssh alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
 				[netcdfFile waitUntilAllOperationsAreFinished];
 			}
 			
             if (self.shouldWriteSSHFD) {
+                GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
                 GLFunction *etaFDDim = [etaFD scaleVariableBy: self.N_QG withUnits: @"m^3" dimensionsBy: wavenumberScale units: @"cycles/m"];
                 [self.sshFDHistory concatenateWithLowerDimensionalVariable: etaFDDim alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
                 [netcdfFile waitUntilAllOperationsAreFinished];
             }
             
             if (self.shouldWriteRV) {
+                GLFunction *etaFD = [yout[0] differentiateWithOperator: self.inverseLaplacianMinusOne];
                 GLFunction *rv2 = [[[self.laplacian transform: etaFD] spatialDomain] scaleVariableBy: rvScale withUnits: @"1/s" dimensionsBy: self.L_QG units: @"m"];
                 [self.rvHistory concatenateWithLowerDimensionalVariable: rv2 alongDimensionAtIndex:0 toIndex: (self.tDim.nPoints-1)];
                 [netcdfFile waitUntilAllOperationsAreFinished];
