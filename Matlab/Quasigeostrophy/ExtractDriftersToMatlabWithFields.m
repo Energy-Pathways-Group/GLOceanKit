@@ -1,5 +1,5 @@
-file = '/Users/jearly/Desktop/Isotropy/TurbulenceIsotropic.nc';
-output_file = '/Users/jearly/Desktop/Isotropy/Trajectories.mat';
+file = '/Users/jearly/Desktop/Isotropy/TurbulenceIsotropic_FloatsOnly2.nc';
+output_file = '/Users/jearly/Desktop/Isotropy/Experiment6Trajectories11500.mat';
 shouldSaveStrainAndVorticity = 0;
 
 %addpath('../GLOceanKit/Matlab/')
@@ -21,12 +21,12 @@ dt = t(2)-t(1);
 % 	The stride indicates how many floats we will skip
 %
 
-stride = 32;
+stride = 1;
 timestride = 1;
-% t_days = t/86400;
-% day = 300;
-% timeIndex = find( t_days-1 <= day, 1, 'last');
-timeIndex = length(t);
+t_days = t/86400;
+day = 11500;
+timeIndex = find( t_days-1 <= day, 1, 'last');
+% timeIndex = length(t);
 
 xPosition = squeeze(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
 yPosition = squeeze(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
@@ -35,11 +35,11 @@ yPosition = squeeze(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) 1]
 xpos = (reshape(xPosition, [length(yFloat)*length(xFloat)/(stride*stride), timeIndex]))';
 ypos = (reshape(yPosition, [length(yFloat)*length(xFloat)/(stride*stride), timeIndex]))';
 
-timeIndices = 1:timestride:length(t);
+timeIndices = 1:timestride:timeIndex;
 
-t = t(1:timestride:end);
-xpos = xpos(1:timestride:end,:);
-ypos = ypos(1:timestride:end,:);
+t = t(timeIndices);
+xpos = xpos(timeIndices,:);
+ypos = ypos(timeIndices,:);
 
 if shouldSaveStrainAndVorticity == 1
 	
