@@ -6,7 +6,11 @@
 % quick_and_dirty is a flag indicating whether or not you want be really
 % careful about getting the wavelengths exactly correct. Basically, yes,
 % you should use the quick and dirty method and save yourself some time.
-function [Gamma] = HKEVerticalStructureFunction( z, rho, latitude )
+function [Gamma] = HKEVerticalStructureFunction( z, rho, latitude, j_star )
+
+if nargin < 4
+    j_star = 3;
+end
 
 % lets only use half the modes
 nModes = floor(length(z)/2);
@@ -21,7 +25,6 @@ nModes = floor(length(z)/2);
 h(find(h==0.0))=1e-30;
 
 % Create the modal energy fall-off function
-j_star = 3;
 j=1:nModes; % [1 nModes]
 H = (j_star)^(1.5)./(j+j_star).^(5/2);
 %normalization = sum(H);

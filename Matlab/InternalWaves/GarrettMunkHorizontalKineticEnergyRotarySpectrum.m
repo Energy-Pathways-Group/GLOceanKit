@@ -3,7 +3,7 @@
 % Given a range of frequencies (in radians) and a buoyancy frequency N,
 % this returns the horizontal kinetic energy spectrum.
 
-function [S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho, drifterDepth, shouldAlias )
+function [S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho, j_star, drifterDepth, shouldAlias )
 
 b = 1.3e3; % thermocline exponential scale, meters
 N0 = 5.2e-3; % reference buoyancy frequency, 1/seconds
@@ -11,7 +11,7 @@ E0 = 6.3e-5; % non-dimensional energy parameter
 f0 = abs(corfreq(latitude)/3600);
 GM_scale = 1.0; % 
 
-Gamma = abs(HKEVerticalStructureFunction( z, rho, latitude ));
+Gamma = abs(HKEVerticalStructureFunction( z, rho, latitude, j_star ));
 depthIndex = find(z<drifterDepth,1,'first');
 
 % Regular
