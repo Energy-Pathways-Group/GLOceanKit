@@ -24,6 +24,7 @@ fprintf('Gamma at %f is %f', z(depthIndex), Gamma(depthIndex));
 if (shouldAlias ~= 1 )
     prefactor = Gamma(depthIndex)*abs(real(GM_scale*E0*b*b*b*N0*N0*(2/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0))));
     S_gm = real(prefactor.*((f0 - omega).^2)./(omega.*omega));
+    S_gm(find(isnan(S_gm)))=0;
 else 
     % Aliased
     N=length(omega);
