@@ -12,7 +12,13 @@ f0 = abs(corfreq(latitude)/3600);
 GM_scale = 1.0; % 
 
 Gamma = abs(HKEVerticalStructureFunction( z, rho, latitude, j_star ));
-depthIndex = find(z<drifterDepth,1,'first');
+if z(2)-z(1) < 1
+    depthIndex = find(z<drifterDepth,1,'first');
+else
+    depthIndex = find(z<drifterDepth,1,'last');
+end
+
+fprintf('Gamma at %f is %f', z(depthIndex), Gamma(depthIndex));
 
 % Regular
 if (shouldAlias ~= 1 )

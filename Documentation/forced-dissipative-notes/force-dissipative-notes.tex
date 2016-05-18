@@ -41,7 +41,11 @@ The forcing could be confined to a single wavenumber, $|\mathbf{k}|= k_f$, or sp
 \begin{equation}
 \hat{F}(k,t) = f_\zeta \frac{e^{- i \left( \phi_0+\omega t\right)}}{2} \left( \delta \left(k -k_f\right) + \delta\left(k + k_f\right)  \right)
 \end{equation}
-where $f_\zeta$ has units of inverse seconds squared, and the delta function has units of meters.
+where $f_\zeta$ has units of inverse seconds squared, and the delta function has units of meters. In my usual DFT formulation, the inverse transform does not change the units. Specifically I use,
+\begin{equation}
+\hat{x}_n \equiv \sum_{k=0}^{N-1} x_k e^{2\pi i f_k t_n}
+\end{equation}
+which means that the series coefficient $f_\zeta$ carries the same units as $F(x,y)$.
 
 If we want to make a similar function, but slightly more broadband, we should divide $f_\zeta$ by the square root of area that will be summed over in wavenumber space. In our discrete implementation, we simply need to divide by the square root of the number of wave numbers that we distributed the power over. We do this so that then $\sum F^\ast F = f_\zeta^2$.
 
@@ -121,7 +125,7 @@ This isn't really all that different. The only difference is that it now depends
 \subsubsection{Small scale dissipation}
 %%%%%%%%%%%%%%%%%%
 
-Small scale dissipation will be chosen so that the Reynolds number is approximately $1$ at the grid scale. So we set $\nu_\alpha=u_\alpha \Delta x$ or $\nu_r=u_r \Delta x$ depending on which form of large scale damping we're using. In practice, we seem to be able to get away with viscosity a factor of 2 smaller. A factor of 4 maintains stability, but often results in some spectral blocking.
+Small scale dissipation will be chosen so that the Reynolds number is approximately $1$ at the grid scale. So we set $\nu_\alpha=u_\alpha \Delta x$ or $\nu_r=u_r \Delta x$ depending on which form of large scale damping we're using. In practice, we seem to be able to get away with viscosity a factor of 2 smaller. A factor of 4 maintains stability, but often results in some spectral blocking. Actually, in practice I find this not to be true. We do need to keep the Reynolds number at 1---there's no way around this.
 
 From simple scaling arguments the enstrophy cascade will first be affect by damping when $ 2 \pi k_\nu=\left( \frac{ \eta}{\nu^3} \right)^{\frac{1}{6}}$. We introduced another factor of $2\pi$ because a derivative is taken to get from vorticity to vorticity damping. If our assumption about forcing is correct, this suggests that $\nu = f_\zeta^\frac{1}{2} (2 \pi k_\nu)^{-2}$.
 
