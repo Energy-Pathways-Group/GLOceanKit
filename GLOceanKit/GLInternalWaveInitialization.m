@@ -415,30 +415,48 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 {
 	[self computeInternalModes];
 	
+    GLFloat j_star = 3;
+    
     GLFloat L_GM = 1.3E3;       // [m]
     GLFloat invT_GM = 5.2E-3;   // [1/s]
     GLFloat E_GM = 6.3E-5;      // [unitless]
-    
-	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
-	GLFloat j_star = 3;
-	GLFloat E = (L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m/s^{2} ]
+    GLFloat E = (L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m^3/s^2 ]
 	
-	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
-	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
-	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless] This function falls to ~1% at 30 modes
-	//GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 3*pow(j_star,3/2)/2];
+    // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
+    GLFunction *j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
+    GLFunction *H1D = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+    GLFunction *H_norm = [H sum: 0];
     
-    // Winters & D'Asaro version
-    GLFunction *H = [[[j multiply: j] plus: @(j_star*j_star)] scalarDivide: 2*j_star/M_PI];
-
-	// This sums to about 1/2, so not quite right.
-//    GLFunction *Hsum = [H sum: 0];
-//    [Hsum dumpToConsole];
+    GLScalar *intN = [[self.N2 sqrt] integrate];
+    GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrate];
+    GLScalar *e2 = [intN dividedBy: intInvN];
+    GLScalar *s2 = [intN times: intInvN];
+    GLFloat eta2 = eta2.pointerValue;
+    GLFloat m_norm = 2*M_PI/s2.pointerValue;
+    GLFloat H_norm_scalar = H_norm.pointerValue;
+    // For each mode j, we want to integrate over some range of wavenumbers k.
+    GLScalar * (^GM2D_function)(GLFunction *k,GLFloat j) = ^{
+        GLFloat mj2 = j*j*m_norm;
+        GLFloat H = 1/(H_norm_scalar*pow(j+j_star,5/2));
+        GLFunction *tmp1 = [[[[k multiply: k] times: @(eta2)] plus: @(self.f0*self.f0*mj2)] scalarDivide: @(self.f0*mj2*2/M_PI)];
+        GLFunction *tmp2 =[[[[k multiply: k] plus: @(mj2)] scalarDivide: @(eta2-self.f0*self.f0)] sqrt];
+        GLScalar *total = [[[tmp1 multiply: tmp2] times: @(E*H)] integrate];
+        return total;
+    };
     
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
     GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	
+    GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions];
+    NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
+    NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
+    NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
+    for (iMode=0; iMode < j1D.nPoints; iMode++) {
+        
+    }
+    
+    
 	// B(alpha,j) = (2/pi) * 1/R_j * 1/(k^2 + R_j^-2) [m]
 	GLFunction *invR_j = [self.rossbyRadius scalarDivide: 1.0];
 	//GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
