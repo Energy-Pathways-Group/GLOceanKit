@@ -424,22 +424,22 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
     // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
     GLFunction *j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
-    GLFunction *H1D = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
-    GLFunction *H_norm = [H sum: 0];
+    GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5/2] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+    GLFunction *H_norm = [H1D sum: 0];
     
     GLScalar *intN = [[self.N2 sqrt] integrate];
     GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrate];
     GLScalar *e2 = [intN dividedBy: intInvN];
     GLScalar *s2 = [intN times: intInvN];
-    GLFloat eta2 = eta2.pointerValue;
-    GLFloat m_norm = 2*M_PI/s2.pointerValue;
-    GLFloat H_norm_scalar = H_norm.pointerValue;
+    GLFloat eta2 = e2.pointerValue[0];
+    GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
+    GLFloat H_norm_scalar = H_norm.pointerValue[0];
     // For each mode j, we want to integrate over some range of wavenumbers k.
-    GLScalar * (^GM2D_function)(GLFunction *k,GLFloat j) = ^{
+    GLScalar * (^GM2D_function)(GLFunction *,GLFloat) = ^(GLFunction *k,GLFloat j){
         GLFloat mj2 = j*j*m_norm;
         GLFloat H = 1/(H_norm_scalar*pow(j+j_star,5/2));
-        GLFunction *tmp1 = [[[[k multiply: k] times: @(eta2)] plus: @(self.f0*self.f0*mj2)] scalarDivide: @(self.f0*mj2*2/M_PI)];
-        GLFunction *tmp2 =[[[[k multiply: k] plus: @(mj2)] scalarDivide: @(eta2-self.f0*self.f0)] sqrt];
+        GLFunction *tmp1 = [[[[k multiply: k] times: @(eta2)] plus: @(self.f0*self.f0*mj2)] scalarDivide: self.f0*mj2*2/M_PI]; // (2/pi)*f_0*m_j^2/(k^2 \eta^2 + f_0^2 m_j^2)
+        GLFunction *tmp2 =[[[[k multiply: k] plus: @(mj2)] scalarDivide: eta2-self.f0*self.f0] sqrt]; // sqrt{ (eta^2 - f_0^2)/(k^2 + m_j^2)
         GLScalar *total = [[[tmp1 multiply: tmp2] times: @(E*H)] integrate];
         return total;
     };
@@ -448,7 +448,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
     GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	
-    GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions];
+    GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
