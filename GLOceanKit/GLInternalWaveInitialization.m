@@ -452,7 +452,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
-    for (iMode=0; iMode < j1D.nPoints; iMode++) {
+    for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
         
     }
     
