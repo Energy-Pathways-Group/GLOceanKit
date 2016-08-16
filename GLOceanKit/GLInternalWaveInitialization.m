@@ -417,91 +417,113 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
     GLFloat j_star = 3;
     
-    GLFloat L_GM = 1.3E3;       // [m]
-    GLFloat invT_GM = 5.2E-3;   // [1/s]
-    GLFloat E_GM = 6.3E-5;      // [unitless]
+    GLFloat L_GM = 1.3E3;       // thermocline exponential scale, [m]
+    GLFloat invT_GM = 5.2E-3;   // reference buoyancy frequency, [radians/s]
+    GLFloat E_GM = 6.3E-5;      // non-dimensional energy parameter, [unitless]
     GLFloat E = (L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m^3/s^2 ]
 	
+    // Compute the proper normalization with lots of modes
     // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
     GLFunction *j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
     GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5/2] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
     GLFunction *H_norm = [H1D sum: 0];
     
-    GLScalar *intN = [[self.N2 sqrt] integrate];
-    GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrate];
+    // Compute the total energy between two wavenumbers (k0, k1) for a given mode j.
+    GLScalar *intN = [[self.N2 sqrt] integrateToLimits];
+    GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrateToLimits];
     GLScalar *e2 = [intN dividedBy: intInvN];
     GLScalar *s2 = [intN times: intInvN];
     GLFloat eta2 = e2.pointerValue[0];
     GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
     GLFloat H_norm_scalar = H_norm.pointerValue[0];
-    // For each mode j, we want to integrate over some range of wavenumbers k.
-    GLScalar * (^GM2D_function)(GLFunction *,GLFloat) = ^(GLFunction *k,GLFloat j){
+    GLFloat f0 = self.f0;
+    GLFloat (^GM2D_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat k0, GLFloat k1, GLFloat j){
         GLFloat mj2 = j*j*m_norm;
-        GLFloat H = 1/(H_norm_scalar*pow(j+j_star,5/2));
-        GLFunction *tmp1 = [[[[k multiply: k] times: @(eta2)] plus: @(self.f0*self.f0*mj2)] scalarDivide: self.f0*mj2*2/M_PI]; // (2/pi)*f_0*m_j^2/(k^2 \eta^2 + f_0^2 m_j^2)
-        GLFunction *tmp2 =[[[[k multiply: k] plus: @(mj2)] scalarDivide: eta2-self.f0*self.f0] sqrt]; // sqrt{ (eta^2 - f_0^2)/(k^2 + m_j^2)
-        GLScalar *total = [[[tmp1 multiply: tmp2] times: @(E*H)] integrate];
-        return total;
+        GLFloat B0 = (2/M_PI)*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
+        GLFloat B1 = (2/M_PI)*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
+        GLFloat H = pow(j+j_star, -5/2)/H_norm_scalar;
+        return E*H*(B1-B0);
     };
+    
     
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
-    GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
+    GLFunction *Kh = [[[k multiply: k] plus: [l multiply: l]] sqrt];
 	
     GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
+    GLFloat missingEnergy = 0.0; GLFloat max_m = 0.0;
+    GLFloat notMissingEnergy = 0.0;
     for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
+        // Set k=l=0 wavenumber for this mode
+        GM3D.pointerValue[iMode*kDimNPoints*lDimNPoints] = GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
+        notMissingEnergy += GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
         
+        // Walk through the other wavenumbers in a HORRIBLY inefficient fashion and distribute the energy;
+        for (NSUInteger m=1; m<self.kDim.nPoints/2; m++ ) {
+            GLFloat m_lower = 2*M_PI*([self.kDim valueAtIndex: m] - self.kDim.sampleInterval/2);
+            GLFloat m_upper = 2*M_PI*([self.kDim valueAtIndex: m] + self.kDim.sampleInterval/2);
+            
+            NSUInteger totalWavenumbersInRange = 0;
+            for (NSUInteger i=0; i<kDimNPoints; i++) {
+                for (NSUInteger j=0; j<lDimNPoints; j++) {
+                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
+                        totalWavenumbersInRange += 1;
+                    }
+                }
+            }
+            
+            GLFloat energyPerWavenumber = GM2D_function(m_lower,m_upper,iMode+1)/totalWavenumbersInRange;
+            notMissingEnergy += GM2D_function(m_lower,m_upper,iMode+1);
+            
+            for (NSUInteger i=0; i<kDimNPoints; i++) {
+                for (NSUInteger j=0; j<lDimNPoints; j++) {
+                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
+                        GM3D.pointerValue[index] = energyPerWavenumber;
+                    }
+                }
+            }
+            
+            max_m = m_upper;
+        }
+        
+        missingEnergy += GM2D_function(max_m,10*max_m,iMode+1);
     }
     
+    NSLog(@"Due to grid resolution, there is %f missing energy, %f not missing energy.",missingEnergy/E,notMissingEnergy/E);
     
-	// B(alpha,j) = (2/pi) * 1/R_j * 1/(k^2 + R_j^-2) [m]
-	GLFunction *invR_j = [self.rossbyRadius scalarDivide: 1.0];
-	//GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
+    GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
     
-    // Winters & D'Asaro version
-    GLFunction *B = [[[invR_j multiply: K2] dividedBy: [[K2 plus: [invR_j multiply: invR_j]] pow: 2.0]] multiply: @(4./M_PI)];
+    NSLog(@"The GM coefficients should sum to 1. In practice, they sum to: %f",GM_sum.pointerValue[0]);
     
-    // Alternative scalings.
-    //GLFunction *B = [invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]];
-    //GLFunction *B_norm = [[[[invR_j times: @(M_PI*L_GM)] tanh] scalarDivide: M_PI/2] plus: [self.rossbyRadius times:@(-0.5/L_GM)]];
-    //GLFunction *B_norm = [[[invR_j times: @(M_PI*L_GM)] tanh] scalarDivide: M_PI/2];
-    //B = [B dividedBy: B_norm];
-    
-    // Distributed over (k,l), now [m^2]
-    B = [B dividedBy: [[K2 sqrt] times: @(2*M_PI)]];
-    // We just divided by zero, so we need to get rid of that component.
-	B = [B setValue: 0.0 atIndices: @":,0,0"];
-    
-    // This sums a bit off, should come back and fix this.
-//    GLFunction *Bsum = [[[B times: @(1/(L_GM*L_GM))] sum: 2] sum: 1];
-//    [Bsum dumpToConsole];
-    
-    
-	// G^2(alpha, j) = E*H(j)*B(alpha,j)	[ m^{3}/s^{2} ]
-	GLFunction *G2 = [[H multiply: B] multiply: @(E)];
-    
-    // This should only contain half the energy (the other half comes from hermitian symmetry).
-//    GLFunction *G2sum = [[[[G2 times: @(1/(L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM))] sum: 2] sum: 1] sum: 0];
-//    [G2sum dumpToConsole];
-	
-	// G(j,l,k) = G(alpha,j)/sqrt(2*pi*alpha) where alpha = sqrt(k^2 + l^2); [sqrt(kg) m/s]
 	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
-	GLFunction *G = [[G2 sqrt] times: @(0.5)];
+	GLFunction *G = [[GM3D times: @(0.5)] sqrt] ;
 	
     [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
     
-	// <G_+> = 1/2 <G> = <G_->
     // We seed the random number generator, then call and resolve the randomized function so that their order isn't flipped.
-    srand(1);
+    srand(5);
 	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
     [G_plus solve];
 	GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
     [G_plus solve];
+    
+    GLFunction *G_sum = [[[[[G_minus abs] pow: 2.0] mean: 2] mean: 1] mean: 0];
+    NSLog(@"The random coefficients sum to: %f",G_sum.pointerValue[0]);
+    
 	G_plus = [G_plus multiply: G];
 	G_minus = [G_minus multiply: G];
+    
+    GLFunction *a = [[G_plus abs] multiply: [G_plus abs]];
+    
+    GLFunction * GM_random_sum = [[[[[[[G_plus abs] multiply: [G_plus abs]] plus: [[G_minus abs] multiply: [G_minus abs]]] times: @(1/E)] sum: 2] sum: 1] sum: 0];
+    NSLog(@"The GM random coefficients should sum to a value near 1. In practice, they sum to: %f",GM_random_sum.pointerValue[0]);
+          
+    //G_minus = [G_minus setValue: 0.0 atIndices: @":,0,0"]; // Inertial motions go only one direction!
 	
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
 }
