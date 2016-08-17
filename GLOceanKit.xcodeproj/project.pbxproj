@@ -16,15 +16,14 @@
 		811C38EE1A38DEFC00C7DC69 /* GLInternalWaveInitialization.h in Headers */ = {isa = PBXBuildFile; fileRef = 811C38E71A38DEFC00C7DC69 /* GLInternalWaveInitialization.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		811C38EF1A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */; };
 		811C38F01A38DEFC00C7DC69 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 811C38E81A38DEFC00C7DC69 /* GLInternalWaveInitialization.m */; };
+		8145A7571D65073600456ED3 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81D9E06E19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib */; };
 		8187734919DDB234007E5DA3 /* GLOceanKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187734819DDB234007E5DA3 /* GLOceanKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187734F19DDB234007E5DA3 /* GLOceanKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187734319DDB234007E5DA3 /* GLOceanKit.framework */; };
 		8187735619DDB234007E5DA3 /* GLOceanKitTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187735519DDB234007E5DA3 /* GLOceanKitTests.m */; };
-		8187736019DDB3AD007E5DA3 /* GLNumericalModelingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */; };
 		8187738019DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187738119DDB713007E5DA3 /* Quasigeostrophy2D.h in Headers */ = {isa = PBXBuildFile; fileRef = 8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8187738219DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
 		8187738319DDB713007E5DA3 /* Quasigeostrophy2D.m in Sources */ = {isa = PBXBuildFile; fileRef = 8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */; };
-		81888A411A76B3A1006CAD32 /* GLNumericalModelingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */; };
 		819775E31AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */ = {isa = PBXBuildFile; fileRef = 819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		819775E41AA8C1BF008BDC6F /* GLInternalModesSpectral.h in Headers */ = {isa = PBXBuildFile; fileRef = 819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		819775E51AA8C1BF008BDC6F /* GLInternalModesSpectral.m in Sources */ = {isa = PBXBuildFile; fileRef = 819775E21AA8C1BF008BDC6F /* GLInternalModesSpectral.m */; };
@@ -53,9 +52,7 @@
 		8187734E19DDB234007E5DA3 /* GLOceanKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GLOceanKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8187735419DDB234007E5DA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8187735519DDB234007E5DA3 /* GLOceanKitTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GLOceanKitTests.m; sourceTree = "<group>"; };
-		8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = GLNumericalModelingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8187736519DDB421007E5DA3 /* GLOceanKit.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = GLOceanKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = GLNumericalModelingKit.dylib; path = "../../../Library/Developer/Xcode/DerivedData/GLOceanKit-epgesgudyakbnpcqqfvxlsemhjhd/Build/Products/Debug/GLNumericalModelingKit.dylib"; sourceTree = "<group>"; };
 		8187737E19DDB713007E5DA3 /* Quasigeostrophy2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Quasigeostrophy2D.h; sourceTree = "<group>"; };
 		8187737F19DDB713007E5DA3 /* Quasigeostrophy2D.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Quasigeostrophy2D.m; sourceTree = "<group>"; };
 		819775E11AA8C1BF008BDC6F /* GLInternalModesSpectral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalModesSpectral.h; sourceTree = "<group>"; };
@@ -68,7 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8187736019DDB3AD007E5DA3 /* GLNumericalModelingKit.framework in Frameworks */,
+				8145A7571D65073600456ED3 /* GLNumericalModelingKit.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,7 +73,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				81888A411A76B3A1006CAD32 /* GLNumericalModelingKit.framework in Frameworks */,
 				8187734F19DDB234007E5DA3 /* GLOceanKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,11 +92,9 @@
 			isa = PBXGroup;
 			children = (
 				81D9E06E19E5EB5E00C34EFD /* GLNumericalModelingKit.dylib */,
-				8187737C19DDB438007E5DA3 /* GLNumericalModelingKit.dylib */,
 				8187734519DDB234007E5DA3 /* GLOceanKit */,
 				8187735219DDB234007E5DA3 /* GLOceanKitTests */,
 				8187734419DDB234007E5DA3 /* Products */,
-				8187735F19DDB3AD007E5DA3 /* GLNumericalModelingKit.framework */,
 			);
 			sourceTree = "<group>";
 		};

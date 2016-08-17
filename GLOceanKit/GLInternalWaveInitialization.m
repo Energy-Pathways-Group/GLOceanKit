@@ -457,6 +457,18 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
     GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
     
+    NSUInteger numReps = 1;
+    for (NSUInteger i=0; i<numReps-1; i++) {
+        G_plus = [G_plus plus: [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation]];
+        G_minus = [G_minus plus: [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation]];
+    }
+    G_plus = [G_plus times: @(sqrt(1/((GLFloat)numReps)))];
+    G_minus = [G_minus times: @(sqrt(1/((GLFloat)numReps)))];
+    
+    // This forces amplitudes to be uniform, but phases to remain randomized. Good for diagnostics.
+    G_plus = [G_plus dividedBy: [G_plus abs]];
+    G_minus = [G_minus dividedBy: [G_minus abs]];
+    
     NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
@@ -477,7 +489,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
                 for (NSUInteger j=0; j<lDimNPoints; j++) {
                     NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
                     if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
-                        totalWavenumbersInRange += 1;
+                        totalWavenumbersInRange += j == 0 ? 1 : 2; // This accounts for the hermitian conjugacy energy
                     }
                 }
             }
@@ -504,8 +516,10 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     NSLog(@"Due to grid resolution, there is %f missing energy, %f not missing energy.",missingEnergy/E,notMissingEnergy/E);
     
     GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
+    GLFunction *Conjugacy = [GM3D variableFromIndexRangeString: @"1:end,1:end,:"];
+    GLFunction *GM_Conjugacy_sum = [[[[Conjugacy times: @(1/E)] sum: 2] sum: 1] sum: 0];
     
-    NSLog(@"The GM coefficients should sum to 1. In practice, they sum to: %f",GM_sum.pointerValue[0]);
+    NSLog(@"The GM coefficients should sum to 1. In practice, they sum to: %f",GM_sum.pointerValue[0]+GM_Conjugacy_sum.pointerValue[0]);
     
 	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
 	GLFunction *G = [[GM3D times: @(0.5)] sqrt] ;
@@ -527,8 +541,6 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
     G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
     NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0]/E,G_sum2.pointerValue[0]/E);
-    
-    GLFunction *a = [[G_plus abs] multiply: [G_plus abs]];
     
     GLFunction * GM_random_sum = [[[[[[[G_plus abs] multiply: [G_plus abs]] plus: [[G_minus abs] multiply: [G_minus abs]]] times: @(1/E)] sum: 2] sum: 1] sum: 0];
     NSLog(@"The GM random coefficients should sum to a value near 1. In practice, they sum to: %f",GM_random_sum.pointerValue[0]);
@@ -560,7 +572,6 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
     GLFunction *K_H = [[[k multiply: k] plus: [l multiply: l]] sqrt];
-	K_H = [K_H setValue: 1 atIndices: @":,0,0"]; // prevent divide by zero.
     GLFunction *sqrtH = [self.eigendepths sqrt];
     
 	GLScalar *rho0 = [self.rho min];
@@ -574,12 +585,17 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	self.w_plus = [G_plus multiply: [[[K_H multiply: sqrtH] swapComplex] makeHermitian]];
     self.w_minus = [G_minus multiply: [[[[K_H multiply: sqrtH] swapComplex] negate] makeHermitian]];
     
-    GLFunction *denominator = [[self.eigenfrequencies multiply: K_H] multiply: sqrtH];
-	self.u_plus = [G_plus multiply: [[[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
-    self.u_minus = [G_minus multiply: [[[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
-	
-	self.v_plus = [G_plus multiply: [[[[[l multiply: self.eigenfrequencies] plus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
-    self.v_minus = [G_minus multiply: [[[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
+    GLFunction *alpha = [l atan2: k];
+    GLFunction *cosAlpha = [alpha cos];
+    GLFunction *sinAlpha = [alpha sin];
+    GLFunction *denominator = [self.eigenfrequencies multiply: sqrtH];
+    
+	self.u_plus = [G_plus multiply: [[[[[cosAlpha multiply: self.eigenfrequencies] minus: [[sinAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
+    self.u_minus = [G_minus multiply: [[[[cosAlpha multiply: self.eigenfrequencies] plus: [[sinAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
+	self.u_minus = [self.u_minus setValue: 0 atIndices: @":,0,0"]; // Inertial motions go only one direction! This is a special case of the solution.
+    
+	self.v_plus = [G_plus multiply: [[[[[sinAlpha multiply: self.eigenfrequencies] plus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
+    self.v_minus = [G_minus multiply: [[[[sinAlpha multiply: self.eigenfrequencies] minus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
     
     self.zeta_plus.name = @"zeta_plus";
     self.zeta_minus.name = @"zeta_minus";

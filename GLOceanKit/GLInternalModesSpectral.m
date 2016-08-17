@@ -524,6 +524,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	if (self.nProcessors*nPoints != mdK2.strides[xIndex].nPoints) {
 		[NSException raise:@"Opps" format:@"Need to improve the logic here, otherwise you'll miss some points"];
 	}
+    __block NSUInteger totalCompleted = 0;
 	dispatch_apply( self.nProcessors, globalQueue,  ^(size_t iteration) {
 		
 		NSMutableData *eigendepthsData = [[GLMemoryPool sharedMemoryPool] dataWithLength: eigendepths.dataBytes];
@@ -562,6 +563,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 					Sprime2[offset + iPoint*mdS.strides[zIndex].stride] = Sprime1[iPoint];
 				}
 			}
+            totalCompleted = totalCompleted + mdK2.strides[yIndex].nPoints;
 			if (i%2==0) {
 				NSLog(@"Finished %lu of %lu eigenvalue problems", (i+1)*mdK2.strides[yIndex].nPoints, mdK2.strides[xIndex].nPoints*mdK2.strides[yIndex].nPoints );
 			}	
@@ -571,6 +573,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 		[[GLMemoryPool sharedMemoryPool] returnData: sData];
 		[[GLMemoryPool sharedMemoryPool] returnData: sPrimeData];
 	});
+    
+    NSLog(@"Total eigenvalue problems solved: %lu",totalCompleted);
     
 	self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
 	self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
