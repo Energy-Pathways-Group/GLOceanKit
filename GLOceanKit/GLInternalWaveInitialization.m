@@ -450,7 +450,13 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
     GLFunction *Kh = [[[k multiply: k] plus: [l multiply: l]] sqrt];
 	
+    // GM3D stores the *expected* energy of each wave for a given (j,k,l)
     GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
+    
+    // This will randomize the energy of phase of each wave. The *mean* variance (energy) is 1.0.
+    GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+    GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+    
     NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
@@ -494,6 +500,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         missingEnergy += GM2D_function(max_m,10*max_m,iMode+1);
     }
     
+    // Note to self --- things do add up correctly when we go to large domain sizes.
     NSLog(@"Due to grid resolution, there is %f missing energy, %f not missing energy.",missingEnergy/E,notMissingEnergy/E);
     
     GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
@@ -506,17 +513,20 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
     
     // We seed the random number generator, then call and resolve the randomized function so that their order isn't flipped.
-    srand(5);
-	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
-    [G_plus solve];
-	GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
-    [G_plus solve];
+    srand(4);
     
-    GLFunction *G_sum = [[[[[G_minus abs] pow: 2.0] mean: 2] mean: 1] mean: 0];
-    NSLog(@"The random coefficients sum to: %f",G_sum.pointerValue[0]);
+    
+    
+    GLFunction *G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
+    GLFunction *G_sum2 = [[[[[G_minus abs] pow: 2.0] mean: 2] mean: 1] mean: 0];
+    NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0],G_sum2.pointerValue[0]);
     
 	G_plus = [G_plus multiply: G];
 	G_minus = [G_minus multiply: G];
+    
+    G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
+    G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
+    NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0]/E,G_sum2.pointerValue[0]/E);
     
     GLFunction *a = [[G_plus abs] multiply: [G_plus abs]];
     
