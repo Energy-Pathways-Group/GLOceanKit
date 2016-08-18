@@ -425,7 +425,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     // Compute the proper normalization with lots of modes
     // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
     GLFunction *j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
-    GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5/2] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+    GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5./2.] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
     GLFunction *H_norm = [H1D sum: 0];
     
     // Compute the total energy between two wavenumbers (k0, k1) for a given mode j.
@@ -441,10 +441,15 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         GLFloat mj2 = j*j*m_norm;
         GLFloat B0 = (2/M_PI)*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
         GLFloat B1 = (2/M_PI)*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
-        GLFloat H = pow(j+j_star, -5/2)/H_norm_scalar;
+        GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
         return E*H*(B1-B0);
     };
     
+    GLFloat maxEnergy = 0.0;
+    for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
+        maxEnergy += GM2D_function(0,100*2*M_PI*self.kDim.domainLength,iMode+1);
+    }
+    NSLog(@"The GM function sums to a maximum of %f. The reason for this is that B(omega) is not normalized correctly. Integral needs to go to N, not infinity.",maxEnergy/E);
     
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
@@ -538,9 +543,9 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	G_plus = [G_plus multiply: G];
 	G_minus = [G_minus multiply: G];
     
-    G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
-    G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
-    NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0]/E,G_sum2.pointerValue[0]/E);
+    G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum1_conjugacy = [[[[[[G_plus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
+    G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum2_conjugacy = [[[[[[G_minus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
+    NSLog(@"The random coefficients sum to: %f, %f",(G_sum1.pointerValue[0]+G_sum1_conjugacy.pointerValue[0])/E,(G_sum2.pointerValue[0]+G_sum2_conjugacy.pointerValue[0])/E);
     
     GLFunction * GM_random_sum = [[[[[[[G_plus abs] multiply: [G_plus abs]] plus: [[G_minus abs] multiply: [G_minus abs]]] times: @(1/E)] sum: 2] sum: 1] sum: 0];
     NSLog(@"The GM random coefficients should sum to a value near 1. In practice, they sum to: %f",GM_random_sum.pointerValue[0]);
