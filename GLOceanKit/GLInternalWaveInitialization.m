@@ -437,19 +437,20 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
     GLFloat H_norm_scalar = H_norm.pointerValue[0];
     GLFloat f0 = self.f0;
+    GLFloat B_norm = 1./atan( sqrt(eta2/self.f0/self.f0 - 1)); // GM79 assumes this is 2/pi
     GLFloat (^GM2D_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat k0, GLFloat k1, GLFloat j){
         GLFloat mj2 = j*j*m_norm;
-        GLFloat B0 = (2/M_PI)*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
-        GLFloat B1 = (2/M_PI)*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
+        GLFloat B0 = B_norm*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
+        GLFloat B1 = B_norm*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
         GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
         return E*H*(B1-B0);
     };
     
     GLFloat maxEnergy = 0.0;
     for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
-        maxEnergy += GM2D_function(0,100*2*M_PI*self.kDim.domainLength,iMode+1);
+        maxEnergy += GM2D_function(0,10000*2*M_PI*self.kDim.domainLength,iMode+1);
     }
-    NSLog(@"The GM function sums to a maximum of %f. The reason for this is that B(omega) is not normalized correctly. Integral needs to go to N, not infinity.",maxEnergy/E);
+    NSLog(@"The GM function sums to a maximum of %f. If this is less than 1, the reason for this is that B(omega) is not normalized correctly. Integral needs to go to N, not infinity.",maxEnergy/E);
     
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
@@ -514,11 +515,11 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
             max_m = m_upper;
         }
         
-        missingEnergy += GM2D_function(max_m,10*max_m,iMode+1);
+        missingEnergy += GM2D_function(max_m,1000*max_m,iMode+1);
     }
     
     // Note to self --- things do add up correctly when we go to large domain sizes.
-    NSLog(@"Due to grid resolution, there is %f missing energy, %f not missing energy.",missingEnergy/E,notMissingEnergy/E);
+    NSLog(@"Due to *horizontal* grid resolution, there is %f missing energy, %f not missing energy.",missingEnergy/E,notMissingEnergy/E);
     
     GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
     GLFunction *Conjugacy = [GM3D variableFromIndexRangeString: @"1:end,1:end,:"];
