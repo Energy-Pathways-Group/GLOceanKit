@@ -424,9 +424,16 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
     // Compute the proper normalization with lots of modes
     // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
-    GLFunction *j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
+    GLDimension *jDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1024 domainMin: 1.0 length:1024.0];
+    GLFunction *j1D = [GLFunction functionOfRealTypeFromDimension: jDim withDimensions: @[jDim] forEquation: self.equation];
     GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5./2.] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
     GLFunction *H_norm = [H1D sum: 0];
+    
+    j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
+    H1D = [[[[j1D plus: @(j_star)] pow: 5./2.] multiply: H_norm] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+    GLScalar *H1D_sum = [H1D sum: 0];
+    NSLog(@"The model uses %ld vertical modes, which accounts for %.2f%% of the variance.\n",self.modeDim.nPoints,100.0*H1D_sum.pointerValue[0]);
+    
     
     // Compute the total energy between two wavenumbers (k0, k1) for a given mode j.
     GLScalar *intN = [[self.N2 sqrt] integrateToLimits];
@@ -434,6 +441,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLScalar *e2 = [intN dividedBy: intInvN];
     GLScalar *s2 = [intN times: intInvN];
     GLFloat eta2 = e2.pointerValue[0];
+    NSLog(@"Your effective buoyancy frequency is %.2f cycles per day.", sqrt(eta2)*86400/(2*pi));
+    
     GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
     GLFloat H_norm_scalar = H_norm.pointerValue[0];
     GLFloat f0 = self.f0;
