@@ -19,8 +19,8 @@ if (taper_amp == 0)
 	s = st( pos_indices,: );
 	s(2:end,:) = 0.5*(s(2:end,:) + flipud(st( neg_indices,: )));
 else
-	[psi,lambda]=sleptap(size(cv,1),taper_amp);
-	[f,spp,snn,spn]=mspec(dt, cv,psi);
+	[psi,~]=sleptap(size(cv,1),taper_amp);
+	[f,spp,snn,~]=mspec(dt, cv,psi);
 	
 	% Note that we are *not* trying to make a one-sided spectrum here
 	% We average the positive and negative components, not add them.
@@ -30,7 +30,7 @@ else
 end
 
 df = f(2)-f(1);
-indices = find( f <= bandwidth*df );
+indices =  f <= bandwidth*df ;
 
 % The first factor of 1/2 comes from the definition
 % The second factor of 1/2 comes from the two-dimensionality.
