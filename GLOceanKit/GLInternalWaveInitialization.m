@@ -413,15 +413,15 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 
 - (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel
 {
-	[self computeInternalModes];
-	
+    [self computeInternalModes];
+    
     GLFloat j_star = 3;
     
     GLFloat L_GM = 1.3E3;       // thermocline exponential scale, [m]
     GLFloat invT_GM = 5.2E-3;   // reference buoyancy frequency, [radians/s]
     GLFloat E_GM = 6.3E-5;      // non-dimensional energy parameter, [unitless]
     GLFloat E = (L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m^3/s^2 ]
-	
+    
     // Compute the proper normalization with lots of modes
     // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
     GLDimension *jDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1024 domainMin: 1.0 length:1024.0];
@@ -434,52 +434,76 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLScalar *H1D_sum = [H1D sum: 0];
     NSLog(@"The model uses %ld vertical modes, which accounts for %.2f%% of the variance.\n",self.modeDim.nPoints,100.0*H1D_sum.pointerValue[0]);
     
-    
-    // Compute the total energy between two wavenumbers (k0, k1) for a given mode j.
-    GLScalar *intN = [[self.N2 sqrt] integrateToLimits];
-    GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrateToLimits];
-    GLScalar *e2 = [intN dividedBy: intInvN];
-    GLScalar *s2 = [intN times: intInvN];
-    GLFloat eta2 = e2.pointerValue[0];
-    NSLog(@"Your effective buoyancy frequency is %.2f cycles per day.", sqrt(eta2)*86400/(2*pi));
-    
-    GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
     GLFloat H_norm_scalar = H_norm.pointerValue[0];
     GLFloat f0 = self.f0;
-    GLFloat B_norm = 1./atan( sqrt(eta2/self.f0/self.f0 - 1)); // GM79 assumes this is 2/pi
-    GLFloat (^GM2D_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat k0, GLFloat k1, GLFloat j){
-        GLFloat mj2 = j*j*m_norm;
-        GLFloat B0 = B_norm*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
-        GLFloat B1 = B_norm*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
-        GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
-        return E*H*(B1-B0);
-    };
-    
+    GLFloat maxOmega = [self.eigenfrequencies maxNow];
+    GLFloat B_norm = 1./atan( sqrt(maxOmega*maxOmega/self.f0/self.f0 - 1)); // GM79 assumes this is 2/pi
     GLFloat (^GM2D_omega_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat omega0, GLFloat omega1, GLFloat j){
         if (omega0 < f0 && omega1 <= f0) {
             return 0.0;
         } else if (omega0 < f0 && omega1 > f0) {
             omega0 = f0; // set the lower limit to the asymptote
         }
-        GLFloat mj2 = j*j*m_norm;
         GLFloat B0 = B_norm*atan(f0/sqrt(omega0*omega0 - f0*f0));
         GLFloat B1 = B_norm*atan(f0/sqrt(omega1*omega1 - f0*f0));
         GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
-        return E*H*(B1-B0);
+        return -E*H*(B1-B0);
     };
     
     GLFloat maxEnergy = 0.0;
     for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
-        maxEnergy += GM2D_function(0,10000*2*M_PI*self.kDim.domainLength,iMode+1);
+        maxEnergy += GM2D_omega_function(f0,maxOmega,iMode+1);
     }
-    NSLog(@"The GM function sums to a maximum of %f. If this is less than 1, the reason for this is that B(omega) is not normalized correctly. Integral needs to go to N, not infinity.",maxEnergy/E);
+    NSLog(@"The GM function sums to a maximum of %f.",maxEnergy/E);
     
-	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
-	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
-    GLFunction *Kh = [[[k multiply: k] plus: [l multiply: l]] sqrt];
-	
+    GLFloat maxModeSpeed = 9.81 * [self.eigendepths maxNow];
+    GLFloat dk = self.kDim.sampleInterval;
+    GLFloat domega = sqrt( maxModeSpeed*dk*dk + f0*f0 );
+    
+    GLDimension *omegaDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:1+(maxOmega-f0)/domega domainMin:f0 length:maxOmega];
+    GLFunction *omega = [GLFunction functionOfRealTypeFromDimension: omegaDim withDimensions: @[omegaDim] forEquation: self.equation];
+    GLFunction *cardinality = [GLFunction functionOfRealTypeWithDimensions: @[omegaDim] forEquation: self.equation];
+    
     // GM3D stores the *expected* energy of each wave for a given (j,k,l)
     GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
+    
+    GLMatrixDescription *md = self.eigenfrequencies.matrixDescription;
+    maxEnergy = 0.0;
+    for (NSUInteger mode=0; mode<md.strides[0].nPoints; mode++) {
+        
+        // Loop over our omega bins
+        for (NSUInteger w=0; w<omegaDim.nPoints-1; w++ ) {
+            GLFloat omega_lower = omega.pointerValue[w];
+            GLFloat omega_upper = omega.pointerValue[w+1];
+            
+            // Find out how many frequencies are in this band
+            NSUInteger totalFrequenciesInRange = 0;
+            for (NSUInteger i=0; i<md.strides[1].nPoints; i++) {
+                for (NSUInteger j=0; j<md.strides[2].nPoints; j++) {
+                    NSUInteger position = mode*md.strides[0].stride + i*md.strides[1].stride + j*md.strides[2].stride;
+                    if (self.eigenfrequencies.pointerValue[position] >= omega_lower && self.eigenfrequencies.pointerValue[position] < omega_upper) {
+                        totalFrequenciesInRange += j == 0 ? 1 : 2;
+                    }
+                }
+            }
+            maxEnergy += GM2D_omega_function(omega_lower,omega_upper,mode+1);
+            GLFloat energyPerFrequency = GM2D_omega_function(omega_lower,omega_upper,mode+1)/totalFrequenciesInRange;
+            
+            // Now put the energy in this band
+            for (NSUInteger i=0; i<md.strides[1].nPoints; i++) {
+                for (NSUInteger j=0; j<md.strides[2].nPoints; j++) {
+                    NSUInteger position = mode*md.strides[0].stride + i*md.strides[1].stride + j*md.strides[2].stride;
+                    if (self.eigenfrequencies.pointerValue[position] >= omega_lower && self.eigenfrequencies.pointerValue[position] < omega_upper) {
+                        GM3D.pointerValue[position] = energyPerFrequency;
+                    }
+                }
+            }
+            
+        }
+    }
+    NSLog(@"The GM function sums to a maximum of %f.",maxEnergy/E);
+    NSLog(@"Due to horizontal domain size limitations, %.2f%% of the energy is in the j=k=l=0 mode.",100*GM3D.pointerValue[0]/E);
+
     
     // This will randomize the energy of phase of each wave. The *mean* variance (energy) is 1.0.
     GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
@@ -497,65 +521,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     G_plus = [G_plus dividedBy: [G_plus abs]];
     G_minus = [G_minus dividedBy: [G_minus abs]];
     
-    // 3D real FFTs are hard b/c approximately half the energy is assumed from Hermitian conjugacy.
-    // using (i,j,k) ordering for dims (nx,ny,nz), note that the points with assumed (not explicit) conjugacy are:
-    // page/row/column -- for each page, columns > 0
-    NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
-    NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
-    NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
-    GLFloat missingEnergy = 0.0; GLFloat max_m = 0.0;
-    GLFloat notMissingEnergy = 0.0;
-    for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
-        // Set k=l=0 wavenumber for this mode
-        GM3D.pointerValue[iMode*kDimNPoints*lDimNPoints] = GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
-        notMissingEnergy += GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
-        
-        // Walk through the other wavenumbers in a HORRIBLY inefficient fashion and distribute the energy;
-        for (NSUInteger m=1; m<self.kDim.nPoints/2; m++ ) {
-            GLFloat m_lower = 2*M_PI*([self.kDim valueAtIndex: m] - self.kDim.sampleInterval/2);
-            GLFloat m_upper = 2*M_PI*([self.kDim valueAtIndex: m] + self.kDim.sampleInterval/2);
-            
-            NSUInteger totalWavenumbersInRange = 0;
-            NSUInteger totalRandomRepsInRange = 0;
-            for (NSUInteger i=0; i<kDimNPoints; i++) {
-                for (NSUInteger j=0; j<lDimNPoints; j++) {
-                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
-                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
-                        totalWavenumbersInRange += j == 0 ? 1 : 2; // This accounts for the hermitian conjugacy energy
-                        totalRandomRepsInRange += 1;
-                    }
-                }
-            }
-            
-            GLFloat energyPerWavenumber = GM2D_function(m_lower,m_upper,iMode+1)/totalWavenumbersInRange;
-            notMissingEnergy += GM2D_function(m_lower,m_upper,iMode+1);
-            
-            for (NSUInteger i=0; i<kDimNPoints; i++) {
-                for (NSUInteger j=0; j<lDimNPoints; j++) {
-                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
-                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
-                        GM3D.pointerValue[index] = energyPerWavenumber;
-                        
-//                        NSUInteger numRepsRequired = floor(100.0*energyPerWavenumber/E);
-//                        if (numRepsRequired > 0)
-//                        {   // If the energy in this wavenumber band exceeds 1%, reduce the variance of the random number, so it doesn't too heavily effect total energy.
-//                            for (NSUInteger rep=0; rep<numRepsRequired; rep++) {
-//                                
-//                            }
-//                        }
-                    }
-                }
-            }
-            
-            max_m = m_upper;
-        }
-        
-        missingEnergy += GM2D_function(max_m,1000*max_m,iMode+1);
-    }
     
-    // Note to self --- things do add up correctly when we go to large domain sizes.
-    NSLog(@"Due to horizontal grid resolution, %.2f%% of the energy is missing (%.2f%% is accounted for).",100*missingEnergy/E,100*notMissingEnergy/E);
-    NSLog(@"Due to horizontal domain size limitations, %.2f%% of the energy is in the j=k=l=0 mode.",100*GM3D.pointerValue[0]/E);
     
     GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
     GLFunction *Conjugacy = [GM3D variableFromIndexRangeString: @":,:,1:end"];
@@ -563,9 +529,9 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
     NSLog(@"The GM coefficients should sum to 1. In practice, they sum to: %.2f%%.",100.*(GM_sum.pointerValue[0]+GM_Conjugacy_sum.pointerValue[0]));
     
-	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
-	GLFunction *G = [[GM3D times: @(0.5)] sqrt] ;
-	
+    // We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
+    GLFunction *G = [[GM3D times: @(0.5)] sqrt] ;
+    
     [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
     
     // We seed the random number generator, then call and resolve the randomized function so that their order isn't flipped.
@@ -577,8 +543,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     GLFunction *G_sum2 = [[[[[G_minus abs] pow: 2.0] mean: 2] mean: 1] mean: 0];
     NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0],G_sum2.pointerValue[0]);
     
-	G_plus = [G_plus multiply: G];
-	G_minus = [G_minus multiply: G];
+    G_plus = [G_plus multiply: G];
+    G_minus = [G_minus multiply: G];
     
     G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum1_conjugacy = [[[[[[G_plus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
     G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum2_conjugacy = [[[[[[G_minus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
@@ -586,23 +552,22 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
     GLFunction * GM_random_sum = [[[[[[[G_plus abs] multiply: [G_plus abs]] plus: [[G_minus abs] multiply: [G_minus abs]]] times: @(1/E)] sum: 2] sum: 1] sum: 0];
     NSLog(@"The GM random coefficients should sum to a value near 1. In practice, they sum to: %f",GM_random_sum.pointerValue[0]);
-          
+    
     //G_minus = [G_minus setValue: 0.0 atIndices: @":,0,0"]; // Inertial motions go only one direction!
-	
+    
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
     
     
     printf("\n\n[");
-    GLFloat domega = 2*M_PI/(0.5*86400);
-    GLFloat maxOmega = [self.eigenfrequencies maxNow];
+    domega = 2*M_PI/(0.5*86400);
     NSUInteger t=0;
     GLFloat totalEnergyInFrequencyDomain = 0.0;
     for (GLFloat omega=0.0; omega <= maxOmega; omega += domega) {
         GLFloat totalEnergyInWaveband = 0.0;
         for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
-            for (NSUInteger i=0; i<kDimNPoints; i++) {
-                for (NSUInteger j=0; j<lDimNPoints; j++) {
-                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+            for (NSUInteger i=0; i<md.strides[1].nPoints; i++) {
+                for (NSUInteger j=0; j<md.strides[2].nPoints; j++) {
+                    NSUInteger index = iMode*md.strides[0].stride + i*md.strides[1].stride + j*md.strides[2].stride;
                     if (self.eigenfrequencies.pointerValue[index] >= omega && self.eigenfrequencies.pointerValue[index] < omega+domega) {
                         totalEnergyInWaveband += (j!=0 ? 2.0 : 1.0)*GM3D.pointerValue[index];
                         t++;
@@ -618,6 +583,214 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     NSLog(@"Visited %lu of %lu points. Summed the energy to %.2f%% of GM.",t,GM3D.nDataElements,100*totalEnergyInFrequencyDomain/E);
     
 }
+
+//- (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel
+//{
+//	[self computeInternalModes];
+//	
+//    GLFloat j_star = 3;
+//    
+//    GLFloat L_GM = 1.3E3;       // thermocline exponential scale, [m]
+//    GLFloat invT_GM = 5.2E-3;   // reference buoyancy frequency, [radians/s]
+//    GLFloat E_GM = 6.3E-5;      // non-dimensional energy parameter, [unitless]
+//    GLFloat E = (L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m^3/s^2 ]
+//	
+//    // Compute the proper normalization with lots of modes
+//    // The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
+//    GLDimension *jDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1024 domainMin: 1.0 length:1024.0];
+//    GLFunction *j1D = [GLFunction functionOfRealTypeFromDimension: jDim withDimensions: @[jDim] forEquation: self.equation];
+//    GLFunction *H1D = [[[j1D plus: @(j_star)] pow: 5./2.] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+//    GLFunction *H_norm = [H1D sum: 0];
+//    
+//    j1D = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: @[self.modeDim] forEquation: self.equation] plus: @(1)];
+//    H1D = [[[[j1D plus: @(j_star)] pow: 5./2.] multiply: H_norm] scalarDivide: 1]; // 3*pow(j_star,3/2)/2
+//    GLScalar *H1D_sum = [H1D sum: 0];
+//    NSLog(@"The model uses %ld vertical modes, which accounts for %.2f%% of the variance.\n",self.modeDim.nPoints,100.0*H1D_sum.pointerValue[0]);
+//    
+//    
+//    // Compute the total energy between two wavenumbers (k0, k1) for a given mode j.
+//    GLScalar *intN = [[self.N2 sqrt] integrateToLimits];
+//    GLScalar *intInvN = [[[self.N2 sqrt] scalarDivide: 1.0] integrateToLimits];
+//    GLScalar *e2 = [intN dividedBy: intInvN];
+//    GLScalar *s2 = [intN times: intInvN];
+//    GLFloat eta2 = e2.pointerValue[0];
+//    GLFloat maxOmega = [self.eigenfrequencies maxNow];
+//    NSLog(@"Your WKB buoyancy frequency is %.2f cycles per hour, actual is %.2f.", sqrt(eta2)*3600/(2*pi), maxOmega*3600/(2*pi));
+//    
+//    GLFloat m_norm = M_PI*M_PI/s2.pointerValue[0];
+//    GLFloat H_norm_scalar = H_norm.pointerValue[0];
+//    GLFloat f0 = self.f0;
+//    GLFloat B_norm = 1./atan( sqrt(eta2/self.f0/self.f0 - 1)); // GM79 assumes this is 2/pi
+//    GLFloat (^GM2D_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat k0, GLFloat k1, GLFloat j){
+//        GLFloat mj2 = j*j*m_norm;
+//        GLFloat B0 = B_norm*atan((k0/f0)*sqrt((eta2 - f0*f0)/(k0*k0+mj2)));
+//        GLFloat B1 = B_norm*atan((k1/f0)*sqrt((eta2 - f0*f0)/(k1*k1+mj2)));
+//        GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
+//        return E*H*(B1-B0);
+//    };
+//    
+//    GLFloat (^GM2D_omega_function)(GLFloat,GLFloat,GLFloat) = ^(GLFloat omega0, GLFloat omega1, GLFloat j){
+//        if (omega0 < f0 && omega1 <= f0) {
+//            return 0.0;
+//        } else if (omega0 < f0 && omega1 > f0) {
+//            omega0 = f0; // set the lower limit to the asymptote
+//        }
+//        GLFloat mj2 = j*j*m_norm;
+//        GLFloat B0 = B_norm*atan(f0/sqrt(omega0*omega0 - f0*f0));
+//        GLFloat B1 = B_norm*atan(f0/sqrt(omega1*omega1 - f0*f0));
+//        GLFloat H = pow(j+j_star, -5./2.)/H_norm_scalar;
+//        return E*H*(B1-B0);
+//    };
+//    
+//    GLFloat maxEnergy = 0.0;
+//    for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
+//        maxEnergy += GM2D_function(0,10000*2*M_PI*self.kDim.domainLength,iMode+1);
+//    }
+//    NSLog(@"The GM function sums to a maximum of %f. If this is less than 1, the reason for this is that B(omega) is not normalized correctly. Integral needs to go to N, not infinity.",maxEnergy/E);
+//    
+//	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+//	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+//    GLFunction *Kh = [[[k multiply: k] plus: [l multiply: l]] sqrt];
+//	
+//    // GM3D stores the *expected* energy of each wave for a given (j,k,l)
+//    GLFunction *GM3D = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
+//    
+//    // This will randomize the energy of phase of each wave. The *mean* variance (energy) is 1.0.
+//    GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+//    GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+//    
+//    NSUInteger numReps = 1;
+//    for (NSUInteger i=0; i<numReps-1; i++) {
+//        G_plus = [G_plus plus: [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation]];
+//        G_minus = [G_minus plus: [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation]];
+//    }
+//    G_plus = [G_plus times: @(sqrt(1/((GLFloat)numReps)))];
+//    G_minus = [G_minus times: @(sqrt(1/((GLFloat)numReps)))];
+//    
+//    // This forces amplitudes to be uniform, but phases to remain randomized. Good for diagnostics.
+//    G_plus = [G_plus dividedBy: [G_plus abs]];
+//    G_minus = [G_minus dividedBy: [G_minus abs]];
+//    
+//    // 3D real FFTs are hard b/c approximately half the energy is assumed from Hermitian conjugacy.
+//    // using (i,j,k) ordering for dims (nx,ny,nz), note that the points with assumed (not explicit) conjugacy are:
+//    // page/row/column -- for each page, columns > 0
+//    NSUInteger jDimNPoints = [GM3D.dimensions[0] nPoints];
+//    NSUInteger kDimNPoints = [GM3D.dimensions[1] nPoints];
+//    NSUInteger lDimNPoints = [GM3D.dimensions[2] nPoints];
+//    GLFloat missingEnergy = 0.0; GLFloat max_m = 0.0;
+//    GLFloat notMissingEnergy = 0.0;
+//    for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
+//        // Set k=l=0 wavenumber for this mode
+//        GM3D.pointerValue[iMode*kDimNPoints*lDimNPoints] = GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
+//        notMissingEnergy += GM2D_function(0,2*M_PI*self.kDim.sampleInterval/2,iMode+1);
+//        
+//        // Walk through the other wavenumbers in a HORRIBLY inefficient fashion and distribute the energy;
+//        for (NSUInteger m=1; m<self.kDim.nPoints/2; m++ ) {
+//            GLFloat m_lower = 2*M_PI*([self.kDim valueAtIndex: m] - self.kDim.sampleInterval/2);
+//            GLFloat m_upper = 2*M_PI*([self.kDim valueAtIndex: m] + self.kDim.sampleInterval/2);
+//            
+//            NSUInteger totalWavenumbersInRange = 0;
+//            NSUInteger totalRandomRepsInRange = 0;
+//            for (NSUInteger i=0; i<kDimNPoints; i++) {
+//                for (NSUInteger j=0; j<lDimNPoints; j++) {
+//                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+//                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
+//                        totalWavenumbersInRange += j == 0 ? 1 : 2; // This accounts for the hermitian conjugacy energy
+//                        totalRandomRepsInRange += 1;
+//                    }
+//                }
+//            }
+//            
+//            GLFloat energyPerWavenumber = GM2D_function(m_lower,m_upper,iMode+1)/totalWavenumbersInRange;
+//            notMissingEnergy += GM2D_function(m_lower,m_upper,iMode+1);
+//            
+//            for (NSUInteger i=0; i<kDimNPoints; i++) {
+//                for (NSUInteger j=0; j<lDimNPoints; j++) {
+//                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+//                    if (Kh.pointerValue[index] >= m_lower && Kh.pointerValue[index] < m_upper) {
+//                        GM3D.pointerValue[index] = energyPerWavenumber;
+//                        
+////                        NSUInteger numRepsRequired = floor(100.0*energyPerWavenumber/E);
+////                        if (numRepsRequired > 0)
+////                        {   // If the energy in this wavenumber band exceeds 1%, reduce the variance of the random number, so it doesn't too heavily effect total energy.
+////                            for (NSUInteger rep=0; rep<numRepsRequired; rep++) {
+////                                
+////                            }
+////                        }
+//                    }
+//                }
+//            }
+//            
+//            max_m = m_upper;
+//        }
+//        
+//        missingEnergy += GM2D_function(max_m,1000*max_m,iMode+1);
+//    }
+//    
+//    // Note to self --- things do add up correctly when we go to large domain sizes.
+//    NSLog(@"Due to horizontal grid resolution, %.2f%% of the energy is missing (%.2f%% is accounted for).",100*missingEnergy/E,100*notMissingEnergy/E);
+//    NSLog(@"Due to horizontal domain size limitations, %.2f%% of the energy is in the j=k=l=0 mode.",100*GM3D.pointerValue[0]/E);
+//    
+//    GLFunction *GM_sum = [[[[GM3D times: @(1/E)] sum: 2] sum: 1] sum: 0];
+//    GLFunction *Conjugacy = [GM3D variableFromIndexRangeString: @":,:,1:end"];
+//    GLFunction *GM_Conjugacy_sum = [[[[Conjugacy times: @(1/E)] sum: 2] sum: 1] sum: 0];
+//    
+//    NSLog(@"The GM coefficients should sum to 1. In practice, they sum to: %.2f%%.",100.*(GM_sum.pointerValue[0]+GM_Conjugacy_sum.pointerValue[0]));
+//    
+//	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
+//	GLFunction *G = [[GM3D times: @(0.5)] sqrt] ;
+//	
+//    [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
+//    
+//    // We seed the random number generator, then call and resolve the randomized function so that their order isn't flipped.
+//    srand(4);
+//    
+//    
+//    
+//    GLFunction *G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0];
+//    GLFunction *G_sum2 = [[[[[G_minus abs] pow: 2.0] mean: 2] mean: 1] mean: 0];
+//    NSLog(@"The random coefficients sum to: %f, %f",G_sum1.pointerValue[0],G_sum2.pointerValue[0]);
+//    
+//	G_plus = [G_plus multiply: G];
+//	G_minus = [G_minus multiply: G];
+//    
+//    G_sum1 = [[[[[G_plus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum1_conjugacy = [[[[[[G_plus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
+//    G_sum2 = [[[[[G_minus abs] pow: 2.0] sum: 2] sum: 1] sum: 0]; GLFunction *G_sum2_conjugacy = [[[[[[G_minus abs] pow: 2.0] variableFromIndexRangeString: @"1:end,1:end,:"]sum: 2] sum: 1] sum: 0];
+//    NSLog(@"The random coefficients sum to: %f, %f",(G_sum1.pointerValue[0]+G_sum1_conjugacy.pointerValue[0])/E,(G_sum2.pointerValue[0]+G_sum2_conjugacy.pointerValue[0])/E);
+//    
+//    GLFunction * GM_random_sum = [[[[[[[G_plus abs] multiply: [G_plus abs]] plus: [[G_minus abs] multiply: [G_minus abs]]] times: @(1/E)] sum: 2] sum: 1] sum: 0];
+//    NSLog(@"The GM random coefficients should sum to a value near 1. In practice, they sum to: %f",GM_random_sum.pointerValue[0]);
+//          
+//    //G_minus = [G_minus setValue: 0.0 atIndices: @":,0,0"]; // Inertial motions go only one direction!
+//	
+//    [self generateWavePhasesFromPositive: G_plus negative: G_minus];
+//    
+//    
+//    printf("\n\n[");
+//    GLFloat domega = 2*M_PI/(0.5*86400);
+//    NSUInteger t=0;
+//    GLFloat totalEnergyInFrequencyDomain = 0.0;
+//    for (GLFloat omega=0.0; omega <= maxOmega; omega += domega) {
+//        GLFloat totalEnergyInWaveband = 0.0;
+//        for (NSUInteger iMode=0; iMode < j1D.nDataPoints; iMode++) {
+//            for (NSUInteger i=0; i<kDimNPoints; i++) {
+//                for (NSUInteger j=0; j<lDimNPoints; j++) {
+//                    NSUInteger index = (iMode*kDimNPoints+i)*lDimNPoints+j; // (i*ny+j)*nz+k
+//                    if (self.eigenfrequencies.pointerValue[index] >= omega && self.eigenfrequencies.pointerValue[index] < omega+domega) {
+//                        totalEnergyInWaveband += (j!=0 ? 2.0 : 1.0)*GM3D.pointerValue[index];
+//                        t++;
+//                    }
+//                }
+//            }
+//        }
+//        totalEnergyInFrequencyDomain += totalEnergyInWaveband;
+//        printf("%f,%g;\n",omega,totalEnergyInWaveband);
+//    }
+//    printf("];\n\n");
+//    
+//    NSLog(@"Visited %lu of %lu points. Summed the energy to %.2f%% of GM.",t,GM3D.nDataElements,100*totalEnergyInFrequencyDomain/E);
+//    
+//}
 
 - (void) zeroOutUnphysicalComponentsInAmplitudeFunction: (GLFunction *) G
 {
