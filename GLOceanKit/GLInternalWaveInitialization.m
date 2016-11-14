@@ -502,7 +502,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         }
     }
     NSLog(@"The GM function sums to a maximum of %f.",maxEnergy/E);
-    NSLog(@"Due to horizontal domain size limitations, %.2f%% of the energy is in the j=k=l=0 mode.",100*GM3D.pointerValue[0]/E);
+    NSLog(@"Due to horizontal domain size limitations, %.2f%% of the energy is in the j=1, k=l=0 mode.",100*GM3D.pointerValue[0]/E);
 
     
     // This will randomize the energy of phase of each wave. The *mean* variance (energy) is 1.0.
@@ -838,6 +838,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
 	self.v_plus = [G_plus multiply: [[[[[sinAlpha multiply: self.eigenfrequencies] plus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
     self.v_minus = [G_minus multiply: [[[[sinAlpha multiply: self.eigenfrequencies] minus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
+#warning Need to cancel out v_minus!!!
     
     self.zeta_plus.name = @"zeta_plus";
     self.zeta_minus.name = @"zeta_minus";
