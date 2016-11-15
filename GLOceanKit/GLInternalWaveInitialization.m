@@ -838,6 +838,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     
 	self.v_plus = [G_plus multiply: [[[[[sinAlpha multiply: self.eigenfrequencies] plus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] negate] makeHermitian]];
     self.v_minus = [G_minus multiply: [[[[sinAlpha multiply: self.eigenfrequencies] minus: [[cosAlpha times: @(self.f0)] swapComplex]] dividedBy: denominator] makeHermitian]];
+    self.v_minus = [self.v_minus setValue: 0 atIndices: @":,0,0"]; // Inertial motions go only one direction! This is a special case of the solution.
+
 #warning Need to cancel out v_minus!!!
     
     self.zeta_plus.name = @"zeta_plus";
