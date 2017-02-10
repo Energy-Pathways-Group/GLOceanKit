@@ -74,7 +74,7 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
 		return 
 	end
 	
-    if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'total_energy'))
+    if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'total_energy') && ~strcmp(norm, 'const_G_norm') && ~strcmp(norm, 'const_F_norm'))
 		disp('Invalid norm!') 
 		return 
     end
@@ -314,9 +314,13 @@ tic
 			A = max( abs(G(:,j)) );
 			G(:,j) = G(:,j) / A;
 			F(:,j) = F(:,j) / A;
-		elseif strcmp(norm, 'total_energy')
+		elseif strcmp(norm, 'total_energy') || strcmp(norm, 'const_G_norm')
 			A = trapz( z_out, (1/g) * (N2 - f0*f0) .* G(:,j) .^ 2);
 			G(:,j) = G(:,j) / sqrt(A);
+			F(:,j) = F(:,j) / sqrt(A);
+        elseif strcmp(norm, 'const_F_norm')
+            A = trapz( z_out, (1/abs(z_in(end)-z_in(1))) .* F(:,j) .^ 2);
+            G(:,j) = G(:,j) / sqrt(A);
 			F(:,j) = F(:,j) / sqrt(A);
 		end
 	end

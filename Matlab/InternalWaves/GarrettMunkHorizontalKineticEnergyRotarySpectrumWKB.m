@@ -25,8 +25,8 @@ GM_scale = 1.0; %
 lienFactor = ((N_depth*N_depth - omega.*omega)/(N_depth*N_depth));
 
 if (shouldAlias ~= 1 )
-    %prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0)).*lienFactor));
-    prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0))));
+%    prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0)).*lienFactor));
+     prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0))));
     S_gm = real(prefactor.*((f0 - omega).^2)./(omega.*omega));
 else 
     % % Aliased
@@ -34,7 +34,8 @@ else
     M=51;
     sampleInterval = omega(2)-omega(1);
     On = sampleInterval*((-M*N/2):1:(M*N/2)-1)';
-    %prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./On).*(1./sqrt(On.*On-f0*f0)).*lienFactor));
+%     lienFactor = ((N_depth*N_depth - On.*On)/(N_depth*N_depth));
+%     prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./On).*(1./sqrt(On.*On-f0*f0)).*lienFactor));
     prefactor = abs(real(GM_scale*(b*b*N_depth*N0*E0/pi)*(f0./On).*(1./sqrt(On.*On-f0*f0))));
     S_gm = real(prefactor.*((f0 - On).^2)./(On.*On));
     S_gm(find(isnan(S_gm)))=0;
