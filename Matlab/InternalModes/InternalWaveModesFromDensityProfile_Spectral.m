@@ -91,7 +91,7 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
 		else
 			rho=flipud(rho);
 		end
-		didFlipInputGrid=1;
+		didFlipInputGrid = 1;
     else
         didFlipInputGrid = 0;
     end
@@ -143,29 +143,46 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
     
     if (inputIsChebyshevGrid == 1)
         N_polys = N_points;
-    else
-        dz = z_norm(2)-z_norm(1);
+        
+        rho_cheb = fct(rho);
+        
+        % zero pad
+        rho_cheb = [rho_cheb; zeros(N_points,1)];
+        N_points = 2*N_points;
         N_polys = N_points;
-        N_points = round(pi/sqrt(2*abs(dz)) + 1);
-        N_points = length(z_in); %round(length(z_in)/2);
-        %N_points = 256; N_polys = 301;
+    else
+        % N_points = round(pi/sqrt(2*abs(z_norm(2)-z_norm(1))) + 1);
+        
+        % maximum spacing in cheb matches maximum spacing in the given
+        % grid. BUT, we multiply by a factor of 2 so we are never out of
+        % phase.
+        N_points = 2*round(pi/(min(abs(diff(z_norm)))) + 1);
+        N_polys = N_points;
+        
         if (N_points > N_polys)
             N_points = N_polys;
         end
         fprintf('Input was not on a Chebyshev grid. Will interpolated onto a Chebyshev grid of %d points, using the %d data points provided.\n', N_points, length(z_in))
-        z_cheb = cos(((0:N_points-1)')*pi/(N_points-1)); 
+        z_cheb = cos(((0:N_points-1)')*pi/(N_points-1));
         rho = interp1(z_norm, rho, z_cheb, 'spline');
+                
+%         N_points = N_points/2;
+%         N_polys = N_points;
+%         rho_cheb = rho_cheb(1:N_points);
+%         z_cheb = cos(((0:N_points-1)')*pi/(N_points-1));
+
+rho_cheb = fct(rho);
     end
     
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	%
-	% Compute the buoyancy
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %
+    % Compute the buoyancy
 	%
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     
         
-    rho_cheb = fct(rho);
+    
 
     % Convert density to buoyancy. 
     Bouyancy=-g*rho_cheb/rho_0; 
