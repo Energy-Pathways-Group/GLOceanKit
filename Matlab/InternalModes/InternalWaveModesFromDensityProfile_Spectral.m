@@ -80,7 +80,6 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
     end
 
     % We want a monotonically decreasing coordinate in the Chebyshev grid
-	didFlip = 0;
     if (z_in(2) - z_in(1)) > 0
 		if (isrow(z_in))
 			z_in=fliplr(z_in);
@@ -92,7 +91,9 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
 		else
 			rho=flipud(rho);
 		end
-		didFlip=1;
+		didFlipInputGrid=1;
+    else
+        didFlipInputGrid = 0;
     end
     
     % Now let's check to see if we're on an endpoints grid
@@ -256,21 +257,24 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
     %[T] = ChebyshevPolynomialsOnGrid( z_out, N_polys );
     
     % Need to use z_in min and max
-    if (z_out(2)-z_out(1) < 0 )
+    if (z_out(2)-z_out(1) < 0 ) % monotonically decreasing
         z_out = flip(z_out,1);
-        didFlip = 1;
+        didFlipOutputGrid = 1;
     else
-        didFlip = 0;
+        didFlipOutputGrid = 0; % mono-increasing
     end
-    x_norm = (2/(max(z_in)-min(z_in)))*(z_out-min(z_in)) - 1;
+    x_norm = (2/(max(z_in)-min(z_in)))*(z_out-min(z_in)) - 1; % mono-increasing
     t = acos(x_norm);
     T = zeros(length(z_out),N_polys);
     for iPoly=0:(N_polys-1)
        T(:,iPoly+1) = cos(iPoly*t);
     end
     
-    if (didFlip == 1)
-       T = flip(T,1); 
+    thesign = 1;
+    if (didFlipOutputGrid == 1)
+       T = flip(T,1);
+       z_out = flip(z_out,1); % must be flipped back, because it's used for the norm below.
+       thesign = -1;
     end
     
     Diff1 = ChebyshevDifferentiationMatrix( N_polys );
@@ -315,11 +319,11 @@ tic
 			G(:,j) = G(:,j) / A;
 			F(:,j) = F(:,j) / A;
 		elseif strcmp(norm, 'total_energy') || strcmp(norm, 'const_G_norm')
-			A = trapz( z_out, (1/g) * (N2 - f0*f0) .* G(:,j) .^ 2);
+			A = thesign*trapz( z_out, (1/g) * (N2 - f0*f0) .* G(:,j) .^ 2);
 			G(:,j) = G(:,j) / sqrt(A);
 			F(:,j) = F(:,j) / sqrt(A);
         elseif strcmp(norm, 'const_F_norm')
-            A = trapz( z_out, (1/abs(z_in(end)-z_in(1))) .* F(:,j) .^ 2);
+            A = thesign*trapz( z_out, (1/abs(z_in(end)-z_in(1))) .* F(:,j) .^ 2);
             G(:,j) = G(:,j) / sqrt(A);
 			F(:,j) = F(:,j) / sqrt(A);
 		end
