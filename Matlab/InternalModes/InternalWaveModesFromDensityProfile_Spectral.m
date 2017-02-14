@@ -147,7 +147,7 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z_in
         rho_cheb = fct(rho);
         
         % zero pad
-        rho_cheb = [rho_cheb; zeros(N_points,1)];
+        rho_cheb = [rho_cheb; zeros(1*N_points,1)];
         N_points = 2*N_points;
         N_polys = N_points;
     else
