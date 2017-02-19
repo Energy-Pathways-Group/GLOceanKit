@@ -229,6 +229,7 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_FiniteDifference( r
         h = ((omega*omega - f0*f0)./(g*lambda)).';
     end
 	
+    [~,maxIndexZ] = max(z);
     F = zeros(size(G));
 	for j=1:length(G(1,:))
 		F(:,j) = h(j) * Diff1 * G(:,j);
@@ -244,7 +245,12 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_FiniteDifference( r
 			A = trapz( z, (1/g) * (N2 - f0*f0) .* G(:,j) .^ 2);
 			G(:,j) = G(:,j) / sqrt(A);
 			F(:,j) = F(:,j) / sqrt(A);
-		end
+        end
+        
+        if F(maxIndexZ,j)< 0
+            F(:,j) = -F(:,j);
+            G(:,j) = -G(:,j);
+        end
 	end
 
 

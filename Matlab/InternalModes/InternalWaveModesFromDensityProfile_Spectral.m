@@ -314,6 +314,7 @@ rho_cheb = fct(rho);
 %         G(:,j) = T*G_in(:,j) / A;
 %         F(:,j) = h(j) * T* Diff1 * G_in(:,j) / A;
 % 	end
+[~,maxIndexZ] = max(z_out);
 tic
     N2 = T*N2_cheb;
     
@@ -343,7 +344,12 @@ tic
             A = thesign*trapz( z_out, (1/abs(z_in(end)-z_in(1))) .* F(:,j) .^ 2);
             G(:,j) = G(:,j) / sqrt(A);
 			F(:,j) = F(:,j) / sqrt(A);
-		end
+        end
+        
+        if F(maxIndexZ,j)< 0
+            F(:,j) = -F(:,j);
+            G(:,j) = -G(:,j);
+        end
 	end
 toc
 
