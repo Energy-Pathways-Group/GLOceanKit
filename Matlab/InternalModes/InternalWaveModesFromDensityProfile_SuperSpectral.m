@@ -104,12 +104,16 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_SuperSpectral( rho,
     % constant bit
     rho_z_norm = interp1(z_in_norm_grid, rho, z_cheb_grid, 'spline'); % rho, interpolated to that grid
     rho_cheb = fct(rho_z_norm);
+    rho_cheb(length(z_in):end) = 0;
     
     Diff1 = ChebyshevDifferentiationMatrix( N_points );
     Diff1 = (2/L_z)*Diff1;
     N2_cheb= -(g/rho_0)*Diff1*rho_cheb;
     N2_z_cheb = Diff1*N2_cheb; % end points don't look right.
     
+    tmp = ifct(N2_cheb);
+    N2_squared_cheb = fct(tmp.*tmp);
+    N2_squared_cheb(N_points/2:end) = 0;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
@@ -118,10 +122,10 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_SuperSpectral( rho,
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%
     s = -g*rho/rho_0;
     L_s = max(s)-min(s);
-    N_points = length(z_in);
+    N_points = 2*length(z_in); % More is better, but this should be sufficient.
     xi=(0:N_points-1)';
     s_grid = abs(L_s/2)*(cos(xi*pi/(N_points-1))+1) + min(s); % s Chebyshev grid on the s-coordinate
-    z_stretched = interp1(s, z_in, s_grid); % z, evaluated on that s grid
+    z_stretched = interp1(s, z_in, s_grid, 'spline'); % z, evaluated on that s grid
     % as defined here, s increases, as z increases
     
     
@@ -134,13 +138,15 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_SuperSpectral( rho,
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%
     z_stretched_norm = (2/L_z)*(z_stretched-min(z_in)) - 1; % monotonically decreasing
     t = acos(z_stretched_norm);
-    T = zeros(length(z_out),N_polys);
+    T = zeros(length(z_stretched_norm),N_polys);
     for iPoly=0:(N_polys-1)
        T(:,iPoly+1) = cos(iPoly*t);
     end
     
     N2 = T*N2_cheb(1:N_polys);
     N2_z = T*N2_z_cheb(1:N_polys);
+    N2_squared = T*N2_squared_cheb(1:N_polys);
+    
     
     %%%%%%%%%%%%%%%%%%%%%
     %
@@ -167,10 +173,10 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_SuperSpectral( rho,
     
     [T,T_z,T_zz] = ChebyshevPolynomialsOnGrid( s_grid, N_polys );
     
-%     N0 = 5.2e-3;
-%     L = 1300;
-%     N2 = N0*N0+(2/L)*(s_grid+9.81);
-%     N2_z = (2/L)*(N0*N0+(2/L)*(s_grid+9.81));
+    N0 = 5.23e-3;
+    L = 1300;
+    N2_b = N0*N0+(2/L)*(s_grid+9.81);
+    N2_z_b = (2/L)*(N0*N0+(2/L)*(s_grid+9.81));
     
     if strcmp(fixed_attr, 'fixed_k')
         % The eigenvalue equation is,
@@ -220,6 +226,9 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_SuperSpectral( rho,
     
 	[lambda, permutation] = sort(abs(diag(D)),1,'ascend');
     G_in=V(:,permutation);
+    
+    % Zero pad
+%     G_in(N_polys/2:end,:) = 0;
     
     if strcmp(fixed_attr, 'fixed_k')
         h = (1.0 ./ lambda).';

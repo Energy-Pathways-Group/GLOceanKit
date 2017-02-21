@@ -410,7 +410,7 @@ function[]=internal_mode_exponential_test
     rho = rho0*N0*N0*b/(2*g)*(1-exp(2*z/1300))+rho0;
 	latitude = 33;
 	k=0.1;
-    k=0.0;
+    %k=0.0;
 	
 	%[F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z, z, k, latitude, 'max_u', 'free_surface' );
 	[F, G, h, N2] = InternalWaveModesFromDensityProfile_Spectral( rho, z, z, k, latitude, 'max_u', 'rigid_lid' );

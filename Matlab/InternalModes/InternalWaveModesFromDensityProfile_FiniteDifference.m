@@ -50,10 +50,14 @@ function [F, G, h, N2] = InternalWaveModesFromDensityProfile_FiniteDifference( r
 % 
 % 	The quantity N^2 is the buoyancy frequency.
 	
-    if strcmp(rho, '--t')
-		internal_mode_test,return
-    end
-	
+if strcmp(rho, '--t')
+    internal_mode_test,return
+end
+
+if strcmp(rho, '--t2')
+    internal_mode_exponential_test,return
+end
+
     if nargin < 8
 		fixed_attr = 'fixed_k';
     end
@@ -277,6 +281,45 @@ function[]=internal_mode_test
 	
 	[F, G, h, N2] = InternalWaveModesFromDensityProfile_FiniteDifference( rho, z, k, latitude, 'max_u', 'free_surface', 8 );
 
+	figure
+	subplot(1,3,1)
+	plot(F(:,1:4),z, 'LineWidth', 2)
+	ylabel('depth (meters)');
+	xlabel('(u,v)-modes');
+	
+	b = subplot(1,3,2);
+	plot(G(:,1:4),z, 'LineWidth', 2)
+    title(b, sprintf('Internal Modes with Free Surface\n h = (%.2g, %.2g, %.2g, %.2g)', h(1) , h(2), h(3), h(4) ));
+	xlabel('w-modes');
+    
+    subplot(1,3,3)
+	plot(N2,z, 'LineWidth', 2)
+    xlim([0.0 1.1*max(N2)])
+	xlabel('buoyancy frequency');
+end
+
+function[]=internal_mode_exponential_test
+	L_z=-5000;
+    n = 64;
+    xi=(0:n-1)';
+    z = abs(L_z/2)*(cos(xi*pi/(n-1))+1) + L_z;
+    
+	z=(L_z:4.6875:0)';
+    z=linspace(L_z,0,n)';
+    
+    
+    N0 = 5.23e-3;
+    b = 1300;
+    g = 9.81;
+    rho0=1025;
+    rho = rho0*N0*N0*b/(2*g)*(1-exp(2*z/1300))+rho0;
+	latitude = 33;
+	k=0.1;
+%     k=0.0;
+	
+	[F, G, h, N2] = InternalWaveModesFromDensityProfile_FiniteDifference( rho, z, k, latitude, 'max_u', 'rigid_lid' );
+
+    
 	figure
 	subplot(1,3,1)
 	plot(F(:,1:4),z, 'LineWidth', 2)
