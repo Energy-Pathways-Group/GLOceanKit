@@ -1,3 +1,14 @@
+%
+%
+%   modes = InternalModes(rho,z,z_out,latitude)
+%   'rho' must be a vector with length matching 'z'. For finite
+%   differencing, z_out is determined with interpolation, with spectral
+%   methods, it is projected onto the output grid.
+%
+%   modes = InternalModes(rho,z_domain,z_out,latitude)
+%   'rho' must be a function handle. z_domain must be an array with two
+%   values: z_domain = [z_bottom z_surface];
+%
 classdef InternalModes < handle
     properties (Access = public)
         latitude
@@ -11,6 +22,7 @@ classdef InternalModes < handle
     end
     
     properties (Access = protected)
+        g = 9.81
     end
     
     methods
@@ -19,15 +31,15 @@ classdef InternalModes < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function obj = InternalModes(rho, z, latitude, method)
+        function obj = InternalModes(rho, z_in, z_out, latitude)
             % Is density specified as a function handle or as a grid of
             % values?
             if isa(rho,'function_handle') == true
-                if numel(z) ~= 2
-                    error('When using a function handle, z must be an array with two values: z=[z_min z_max];')
+                if numel(z_in) ~= 2
+                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
             elseif isa(rho,'numeric') == true
-                if numel(rho) ~= length(rho) || length(rho) ~= length(z)
+                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');
                 end
             else
@@ -36,13 +48,21 @@ classdef InternalModes < handle
             
             obj.latitude = latitude;
             
-            if nargin == 4
-                if  (~strcmp(method, 'scaled_spectral') && ~strcmp(method, 'finite_difference') && ~strcmp(method, 'spectral'))
-                    error('Invalid method!')
-                else
-                    obj.method = method;
-                end
-            end
+%             if nargin == 4
+%                 if  (~strcmp(method, 'scaled_spectral') && ~strcmp(method, 'finite_difference') && ~strcmp(method, 'spectral'))
+%                     error('Invalid method!')
+%                 else
+%                     obj.method = method;
+%                 end
+%             end
+            
+        end
+        
+        function obj = InitWithFunction(rho,z)
+            
+        end
+        
+        function obj = InitWithGrid(rho,z)
             
         end
         
