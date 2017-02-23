@@ -1,4 +1,4 @@
-classdef InternalModesFiniteDifference < InternalModes
+classdef InternalModesFiniteDifference < InternalModesBase
     properties (Access = public)
         orderOfAccuracy = 4
         Nz
@@ -20,7 +20,7 @@ classdef InternalModesFiniteDifference < InternalModes
                 orderOfAccuracy = 4;
             end
             
-            obj@InternalModes(rho,z_in,z_out,latitude);
+            obj@InternalModesBase(rho,z_in,z_out,latitude);
             
             if orderOfAccuracy < 2
                 obj.orderOfAccuracy = 2;
