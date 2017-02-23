@@ -10,17 +10,31 @@ classdef InternalModesFiniteDifference < InternalModes
     end
     
     methods
-        function obj = InitWithOrder( orderOfAccuracy )
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function obj = InternalModesFiniteDifference(rho, z_in, z_out, latitude, orderOfAccuracy)
+            if nargin < 5
+                orderOfAccuracy = 4;
+            end
+            
+            obj@InternalModes(rho,z_in,z_out,latitude);
+            
             if orderOfAccuracy < 2
                 obj.orderOfAccuracy = 2;
             elseif orderOfAccuracy > obj.Nz
                 obj.orderOfAccuracy = obj.Nz;
             end
+        end
+        
+        function obj = InitWithOrder( orderOfAccuracy )
+
             
             % The operator D is the first order, central difference operator
             obj.Diff1 = FiniteDifferenceMatrix(1, obj.z, 1, 1, orderOfAccuracy);
             
-            %rho_0=trapz( z, rho)/(z(end)-z(1));
             rho_0=min(rho);
             
             % Convert density to buoyancy.

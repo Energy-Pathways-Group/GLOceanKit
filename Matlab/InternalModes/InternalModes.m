@@ -17,7 +17,9 @@ classdef InternalModes < handle
         upper_boundary = 'rigid_lid'
         method = 'scaled_spectral'
         rho
+        rho0
         z
+        Lz
         N2
     end
     
@@ -38,15 +40,19 @@ classdef InternalModes < handle
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
+                obj.rho0 = rho(max(z_in));
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');
                 end
+                obj.rho0 = min(rho);
             else
                 error('rho must be a function handle or an array.');
             end
             
+            obj.Lz = max(z_in) - min(z_in);
             obj.latitude = latitude;
+            obj.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
             
 %             if nargin == 4
 %                 if  (~strcmp(method, 'scaled_spectral') && ~strcmp(method, 'finite_difference') && ~strcmp(method, 'spectral'))
