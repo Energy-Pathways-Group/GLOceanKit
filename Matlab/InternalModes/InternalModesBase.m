@@ -9,7 +9,7 @@
 %   'rho' must be a function handle. z_domain must be an array with two
 %   values: z_domain = [z_bottom z_surface];
 %
-classdef InternalModesBase < handle
+classdef (Abstract) InternalModesBase < handle
     properties (Access = public)
         % scalar constants
         latitude
@@ -32,13 +32,19 @@ classdef InternalModesBase < handle
         orderOfAccuracy
     end
     
-    properties (Dependent)
+    properties (Abstract)
        rho_z
        rho_zz
     end
     
     properties (Access = protected)
         g = 9.81
+    end
+    
+    methods (Abstract)
+        self = InitializeWithGrid(self, rho, z_in)
+        self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
+        self = ModesAtWavenumber(self, k )
     end
     
     methods
@@ -100,13 +106,6 @@ classdef InternalModesBase < handle
             
         end
         
-        function self = InitializeWithGrid(self, rho, z_in)
-        end
-        
-        function self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
-        end
-        
-        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Set the normalization and upper boundary condition
@@ -126,14 +125,6 @@ classdef InternalModesBase < handle
             else
                 obj.upper_boundary = upper_boundary;
             end
-        end
-        
-        function value = get.rho_z(self)
-            value = zeros(size(self.z));
-        end
-        
-        function obj = ModesAtWavenumber(obj, k )
-            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

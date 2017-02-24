@@ -2,7 +2,7 @@ classdef InternalModesSpectral < InternalModesBase
     properties (Access = public)
     end
     
-    properties (Access = private)
+    properties %(Access = private)
         n                   % number of points used in the eigenvalue problem
         z_lobatto_grid      % z_in coordinated, on Chebyshev extrema/Lobatto grid
         rho_lobatto         % rho on the above z_lobatto_grid
@@ -74,6 +74,7 @@ classdef InternalModesSpectral < InternalModesBase
                 z_out = flip(z_out);
             end
             
+            z_in = z_out;
             % Note that z_out might not span the whole domain, so we may
             % need to add z_min and z_max to the end points.
             if z_max > z_out(1)
@@ -131,11 +132,11 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function value = get.rho_z(self)
-            value = self.T_out(self.Diff1 * self.rho_lobatto);
+            value = self.T_out(self.Diff1 * self.rho_cheb);
         end
         
         function value = get.rho_zz(self)
-            value = self.T_out(self.Diff1 * self.Diff1 * self.rho_lobatto);
+            value = self.T_out(self.Diff1 * self.Diff1 * self.rho_cheb);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
