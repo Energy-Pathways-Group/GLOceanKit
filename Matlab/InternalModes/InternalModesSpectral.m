@@ -18,6 +18,11 @@ classdef InternalModesSpectral < InternalModesBase
         z_out                           % output grid
     end
     
+    properties (Dependent)
+        rho_z
+        rho_zz
+    end
+    
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -118,6 +123,19 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             self.z_out = z_out;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computed (dependent) properties
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function value = get.rho_z(self)
+            value = self.T_out(self.Diff1 * self.rho_lobatto);
+        end
+        
+        function value = get.rho_zz(self)
+            value = self.T_out(self.Diff1 * self.Diff1 * self.rho_lobatto);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

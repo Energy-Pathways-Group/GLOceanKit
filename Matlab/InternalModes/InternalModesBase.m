@@ -11,21 +11,30 @@
 %
 classdef InternalModesBase < handle
     properties (Access = public)
+        % scalar constants
         latitude
         f0
+        Lz
+        rho0
+        
+        % output dimension (and grid), and variables on that grid.
+        z
+        rho
+        N2
+        
         normalization = 'const_G_norm'
         upper_boundary = 'rigid_lid'
         method = 'scaled_spectral'
-        rho
-        rho0
-%         z
-        Lz
-        N2
         
         % This should be added *only* to the FiniteDifference subclass, but
         % it needs to be added here because of Matlab's fail obj-oriented
         % class system. Sad!
         orderOfAccuracy
+    end
+    
+    properties (Dependent)
+       rho_z
+       rho_zz
     end
     
     properties (Access = protected)
@@ -117,6 +126,10 @@ classdef InternalModesBase < handle
             else
                 obj.upper_boundary = upper_boundary;
             end
+        end
+        
+        function value = get.rho_z(self)
+            value = zeros(size(self.z));
         end
         
         function obj = ModesAtWavenumber(obj, k )
