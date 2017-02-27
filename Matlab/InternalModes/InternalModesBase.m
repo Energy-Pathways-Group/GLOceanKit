@@ -17,24 +17,25 @@ classdef (Abstract) InternalModesBase < handle
         Lz
         rho0
         
-        % output dimension (and grid), and variables on that grid.
+        % output dimension (and grid)
         z
-        rho
-        N2
         
         normalization = 'const_G_norm'
-        upper_boundary = 'rigid_lid'
+        upperBoundary = 'rigid_lid'
         method = 'scaled_spectral'
         
         % This should be added *only* to the FiniteDifference subclass, but
-        % it needs to be added here because of Matlab's fail obj-oriented
+        % it needs to be added here because of Matlab's failed obj-oriented
         % class system. Sad!
         orderOfAccuracy
     end
     
     properties (Abstract)
-       rho_z
-       rho_zz
+        % All of these variables are given on the output dimension, z
+        rho
+        N2
+        rho_z
+        rho_zz
     end
     
     properties (Access = protected)
@@ -60,11 +61,6 @@ classdef (Abstract) InternalModesBase < handle
                 orderOfAccuracy = 4;
             end
             
-            self.Lz = max(z_in) - min(z_in);
-            self.latitude = latitude;
-            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.orderOfAccuracy = orderOfAccuracy;
-            
             % Make everything a column vector
             if isrow(z_in)
                 z_in = z_in.';
@@ -72,6 +68,12 @@ classdef (Abstract) InternalModesBase < handle
             if isrow(z_out)
                 z_out = z_out.';
             end
+            
+            self.Lz = max(z_in) - min(z_in);
+            self.latitude = latitude;
+            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
+            self.orderOfAccuracy = orderOfAccuracy;
+            self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
              
             % Is density specified as a function handle or as a grid of
             % values?
@@ -119,12 +121,17 @@ classdef (Abstract) InternalModesBase < handle
             end
         end
         
-        function set.upper_boundary(obj,upper_boundary)
-            if  (~strcmp(upper_boundary, 'free_surface') && ~strcmp(upper_boundary, 'rigid_lid') )
+        function set.upperBoundary(obj,upperBoundary)
+            if  (~strcmp(upperBoundary, 'free_surface') && ~strcmp(upperBoundary, 'rigid_lid') )
                 error('Invalid upper boundary condition!')
             else
-                obj.upper_boundary = upper_boundary;
+                obj.upperBoundary = upperBoundary;
+                self.upperBoundaryDidChange();
             end
+        end
+        
+        function self = upperBoundaryDidChange(self)
+        
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

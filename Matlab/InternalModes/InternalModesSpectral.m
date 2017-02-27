@@ -1,5 +1,12 @@
 classdef InternalModesSpectral < InternalModesBase
     properties (Access = public)
+        rho
+        N2
+    end
+    
+    properties (Dependent)
+        rho_z
+        rho_zz
     end
     
     properties %(Access = private)
@@ -15,13 +22,9 @@ classdef InternalModesSpectral < InternalModesBase
         doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
         canFastTransformOutput = 0      % if yes (and it spans the domain), a fast transform can be used
         T_out                           % *function* handle that transforms from spectral to z_out
-        z_out                           % output grid
     end
     
-    properties (Dependent)
-        rho_z
-        rho_zz
-    end
+
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,9 +40,12 @@ classdef InternalModesSpectral < InternalModesBase
             self.Diff1 = (2/self.Lz)*ChebyshevDifferentiationMatrix( self.n );
             self.N2_cheb= -(self.g/self.rho0)*self.Diff1*self.rho_cheb;
             self.N2_z_lobatto = ifct(self.N2_cheb);
-            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( self.z_lobatto_grid, self.n );
             
-            self.InitializeOutputTransformation(z_out);
+            self.InitializeChebyshevMatrices(z_out);
+            
+            % These are the only two we store, all others are computed on
+            % demand
+            self.rho = self.T_out(self.rho_cheb);
             self.N2 = self.T_out(self.N2_cheb);
         end
         
@@ -77,11 +83,11 @@ classdef InternalModesSpectral < InternalModesBase
             z_in = z_out;
             % Note that z_out might not span the whole domain, so we may
             % need to add z_min and z_max to the end points.
-            if z_max > z_out(1)
-                z_in = cat(1,z_max,z_out);
+            if z_max > z_in(1)
+                z_in = cat(1,z_max,z_in);
             end
-            if z_min < z_out(end)
-                z_in = cat(1,z_out,z_min);
+            if z_min < z_in(end)
+                z_in = cat(1,z_in,z_min);
             end
             
             if IsChebyshevGrid(z_in) == 1
@@ -95,35 +101,43 @@ classdef InternalModesSpectral < InternalModesBase
             self.rho_lobatto = rho(self.z_lobatto_grid);
         end
         
+        % The lobatto_grid input should be a properly defined
+        % (monotonically decreasing) Lobatto grid that spans the domain.
+        %
+        % The output_grid lies within that domain.
+        %
         % After the input variables have been initialized, this is used to
-        % initialize the output transformation, T_out(f).
-        function self = InitializeOutputTransformation(self, z_out)
-            if (min(z_out) == min(self.z_lobatto_grid) && max(z_out) == max(self.z_lobatto_grid))
+        % initialize the output transformation, T_out(f), as well as T,
+        % T_z, T_zz
+        function self = InitializeChebyshevMatrices(self, lobatto_grid, output_grid)
+            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( lobatto_grid, length(lobatto_grid) );
+            
+            if (min(output_grid) == min(lobatto_grid) && max(output_grid) == max(lobatto_grid))
                 self.doesOutputGridSpanDomain = 1;
             else
                 self.doesOutputGridSpanDomain = 0;
             end
             
-            if self.doesOutputGridSpanDomain == 1 && IsChebyshevGrid(z_out) == 1
+            % T_out transforms vector solutions of the eigenvalue problem
+            % into gridded solution on z_out
+            if self.doesOutputGridSpanDomain == 1 && IsChebyshevGrid(output_grid) == 1
                 self.canFastTransformOutput = 1; % May require truncation or padding, however.
-                if length(z_out) == self.n
+                if length(output_grid) == self.n
                     self.T_out = @(f_cheb) ifct(f_cheb);
-                elseif length(z_out) > self.n
-                    self.T_out = @(f_cheb) ifct(cat(1,f_cheb,zeros(length(z_out)-self.n,1)));
-                elseif length(z_out) < self.n
-                    self.T_out = @(f_cheb) ifct(f_cheb(1:length(z_out)));
+                elseif length(output_grid) > self.n
+                    self.T_out = @(f_cheb) ifct(cat(1,f_cheb,zeros(length(output_grid)-self.n,1)));
+                elseif length(output_grid) < self.n
+                    self.T_out = @(f_cheb) ifct(f_cheb(1:length(output_grid)));
                 end
             else
-                x = (2/self.Lz)*(z_out-min(self.z_lobatto_grid)) - 1;
+                x = (2/self.Lz)*(output_grid-min(lobatto_grid)) - 1;
                 t = acos(x);
-                TT = zeros(length(z_out),self.n);
+                TT = zeros(length(output_grid),self.n);
                 for iPoly=0:(self.n-1)
                     TT(:,iPoly+1) = cos(iPoly*t);
                 end
                 self.T_out = @(f_cheb) TT*f_cheb;
-            end
-            
-            self.z_out = z_out;
+            end            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,11 +171,11 @@ classdef InternalModesSpectral < InternalModesBase
             B(self.n,:) = 0;
             
             % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upper_boundary, 'free_surface')
+            if strcmp(self.upperBoundary, 'free_surface')
                 % G_z = \frac{1}{h_j} G at the surface
                 A(1,:) = self.T_z(1,:);
                 B(1,:) = self.T(1,:);
-            elseif strcmp(self.upper_boundary, 'rigid_lid')
+            elseif strcmp(self.upperBoundary, 'rigid_lid')
                 A(1,:) = self.T(1,:);
                 B(1,:) = 0;
             end
@@ -180,15 +194,15 @@ classdef InternalModesSpectral < InternalModesBase
             G_cheb=V(:,permutation);
             h = h_func(lambda.');
             
-            F = zeros(length(self.z_out),self.n);
-            G = zeros(length(self.z_out),self.n);
+            F = zeros(length(self.z),self.n);
+            G = zeros(length(self.z),self.n);
             
             if self.doesOutputGridSpanDomain == 1
                 for j=1:self.n
                     G(:,j) = self.T_out(G_cheb(:,j));
                     F(:,j) = h(j) * self.T_out(self.Diff1 * G_cheb(:,j));
                 end
-                [F,G] = self.NormalizeModes(F,G,self.z_out);
+                [F,G] = self.NormalizeModes(F,G,self.z);
             else
                 error('This normalization condition is not yet implemented!')
             end
@@ -219,14 +233,15 @@ end
 % Want to create a chebyshev grid that never has two or more point between
 % its points. If that makes sense.
 function N_points = FindSmallestGridWithNoGaps(z_in)
+L = max(z_in)-min(z_in);
 n = ceil(log2(length(z_in)));
 N_points = 2^n;
-z_lobatto_grid_grid = cos(((0:N_points-1)')*pi/(N_points-1));
+z_lobatto_grid_grid = (L/2)*( cos(((0:N_points-1)')*pi/(N_points-1)) + 1) + min(z_in);
 
 while( length(unique(interp1(z_lobatto_grid_grid,z_lobatto_grid_grid,z_in,'previous'))) ~= length(z_in) )
     n = n + 1;
     N_points = 2^n;
-    z_lobatto_grid_grid = cos(((0:N_points-1)')*pi/(N_points-1));
+    z_lobatto_grid_grid = (L/2)*( cos(((0:N_points-1)')*pi/(N_points-1)) + 1) + min(z_in);
 end
 
 end
