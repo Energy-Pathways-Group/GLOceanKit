@@ -82,7 +82,7 @@ classdef (Abstract) InternalModesBase < handle
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
                 self.rho0 = rho(max(z_in));
-                self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out)
+                self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out);
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');
