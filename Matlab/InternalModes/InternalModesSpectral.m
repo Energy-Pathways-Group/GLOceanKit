@@ -9,21 +9,46 @@ classdef InternalModesSpectral < InternalModesBase
         rho_zz
     end
     
+    % Need to establish notation:
+    %
+    % Dimensions ? like z ? have grids, which may differ. zIn is the
+    % dimension z, on some grid given by the user. zLobatto is the
+    % diension z, on a Lobatto grid. zCheb would be used for the Chebyshev
+    % polynomial representation of a function defined on z. Note that the
+    % base class property 'z' is really zOut.
+    %
+    % Functions ? if they're analytical, they're defined on a dimension,
+    % not a grid. If they're gridded, then the grid must also be specified.
+    % Thus, the function rho(z) when analytically defined will be given as
+    % either just rho (when obvious) or rho_z when necessary. If it's
+    % gridded, then expect rho_zIn or rho_zLobatto.
+    %
+    % Transformations ? a transformation often a matrix (or generally just
+    % a function) that transformation a function from one basis to another.
+    % A common scenario here is that we need to go from zLobatto to zCheb.
+    % In our cases we're usually going from one gridded dimension to
+    % another. Inverse Chebyshev transformations are denote by T, or more
+    % specifically T_zCheb_zLobatto. Because T denotes Chebyshev, we will
+    % simply reduce this to T_zLobatto
+    %
+    % The underscore in the case of rho_z is certainly recognized as a
+    % derivative (because of LaTex notation), so it is awkward with the
+    % notion used here, where the underscore is used to separate the
+    % function/transformation name from the grid. Thus, we leave rho_z and
+    % rho_zz as the only two exceptions to the aforementioned notation
+    % because they are the only public facing interface.
     properties %(Access = private)
-        n                   % number of points used in the eigenvalue problem
-        z_lobatto_grid      % z_in coordinated, on Chebyshev extrema/Lobatto grid
-        rho_lobatto         % rho on the above z_lobatto_grid
-        rho_cheb            % rho in spectral space
-        N2_cheb             % N2 in spectral space
-        N2_z_lobatto        % N2 on the above z_lobatto_grid
+        zLobatto            % z_in coordinated, on Chebyshev extrema/Lobatto grid
+        rho_zLobatto        % rho on the above zLobatto
+        rho_zCheb           % rho in spectral space
+        N2_zCheb            % N2 in spectral space
+        N2_zLobatto         % N2 on the above zLobatto
         Diff1               % single derivative in spectral space
-        T, T_z, T_zz        % Chebyshev polys (and derivs) on the z_lobatto_grid
+        T_zLobatto, Tz_zLobatto, Tzz_zLobatto        % Chebyshev polys (and derivs) on the zLobatto
         
         doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
-        T_out                           % *function* handle that transforms from spectral to z_out
+        T_zCheb_zOut                          % *function* handle that transforms from spectral to z_out
     end
-    
-
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,22 +59,21 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InternalModesSpectral(rho, z_in, z_out, latitude)
             self@InternalModesBase(rho,z_in,z_out,latitude);
             
-            self.rho_cheb = fct(self.rho_lobatto);
-            self.Diff1 = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.z_lobatto_grid) );
-            self.N2_cheb= -(self.g/self.rho0)*self.Diff1*self.rho_cheb;
-            self.N2_z_lobatto = ifct(self.N2_cheb);
+            self.rho_zCheb = fct(self.rho_zLobatto);
+            self.Diff1 = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
+            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1*self.rho_zCheb;
+            self.N2_zLobatto = ifct(self.N2_zCheb);
             
-            self.InitializeChebyshevTMatrices();
+            [self.T_zLobatto,self.Tz_zLobatto,self.Tzz_zLobatto] = ChebyshevPolynomialsOnGrid( self.zLobatto, length(self.zLobatto) );
+            [self.T_zCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.zLobatto, self.z);           
             
-            % These are the only two we store, all others are computed on
-            % demand
-            self.rho = self.T_out(self.rho_cheb);
-            self.N2 = self.T_out(self.N2_cheb);
+            self.rho = self.T_zCheb_zOut(self.rho_zCheb);
+            self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
         end
         
         % Superclass calls this method upon initialization when it
         % determines that the input is given in gridded form. The goal is
-        % to initialize z_lobatto_grid and rho_lobatto.
+        % to initialize zLobatto and rho_zLobatto.
         function self = InitializeWithGrid(self, rho, z_in)
             if (z_in(2) - z_in(1)) > 0
                 z_in = flip(z_in);
@@ -57,17 +81,17 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             if self.IsChebyshevGrid(z_in) == 1
-                self.z_lobatto_grid = z_in;
-                self.rho_lobatto = rho;
+                self.zLobatto = z_in;
+                self.rho_zLobatto = rho;
             else
-                self.z_lobatto_grid = FindSmallestChebyshevGridWithNoGaps( z_in ); % z, on a chebyshev grid
-                self.rho_lobatto = interp1(z_in, rho, self.z_lobatto_grid, 'spline'); % rho, interpolated to that grid
+                self.zLobatto = FindSmallestChebyshevGridWithNoGaps( z_in ); % z, on a chebyshev grid
+                self.rho_zLobatto = interp1(z_in, rho, self.zLobatto, 'spline'); % rho, interpolated to that grid
             end
         end
         
         % Superclass calls this method upon initialization when it
         % determines that the input is given in functional form. The goal
-        % is to initialize z_lobatto_grid and rho_lobatto.
+        % is to initialize zLobatto and rho_zLobatto.
         function self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
             % We have an analytical function describing density, so lets
             % place points on a Chebyshev grid such that z_out is fully
@@ -87,26 +111,12 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             if IsChebyshevGrid(z_in) == 1
-                self.z_lobatto_grid = z_in;
+                self.zLobatto = z_in;
             else
-                self.z_lobatto_grid = FindSmallestChebyshevGridWithNoGaps( z_in ); % z, on a chebyshev grid
+                self.zLobatto = FindSmallestChebyshevGridWithNoGaps( z_in ); % z, on a chebyshev grid
             end
             
-            self.rho_lobatto = rho(self.z_lobatto_grid);
-        end
-                
-        % The lobatto_grid input should be a properly defined
-        % (monotonically decreasing) Lobatto grid that spans the domain.
-        %
-        % The output_grid lies within that domain.
-        %
-        % After the input variables have been initialized, this is used to
-        % initialize the output transformation, T_out(f), as well as T,
-        % T_z, T_zz
-        function self = InitializeChebyshevTMatrices(self)            
-            self.n = length(self.z_lobatto_grid);
-            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( self.z_lobatto_grid, length(self.z_lobatto_grid) );
-            [self.T_out, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.z_lobatto_grid, self.z);            
+            self.rho_zLobatto = rho(self.zLobatto);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,11 +125,11 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function value = get.rho_z(self)
-            value = self.T_out(self.Diff1 * self.rho_cheb);
+            value = self.T_zCheb_zOut(self.Diff1 * self.rho_zCheb);
         end
         
         function value = get.rho_zz(self)
-            value = self.T_out(self.Diff1 * self.Diff1 * self.rho_cheb);
+            value = self.T_zCheb_zOut(self.Diff1 * self.Diff1 * self.rho_zCheb);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,44 +142,50 @@ classdef InternalModesSpectral < InternalModesBase
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
             % B = I
-            A = (self.T_zz - k*k*eye(self.n)*self.T);
-            B = diag((self.f0*self.f0-self.N2_z_lobatto)/self.g)*self.T;
+            T = self.T_zLobatto;
+            Tz = self.Tz_zLobatto;
+            Tzz = self.Tzz_zLobatto;
+            n = length(self.zLobatto);
+            
+            A = (Tzz - k*k*eye(n)*T);
+            B = diag((self.f0*self.f0-self.N2_zLobatto)/self.g)*T;
             
             % Lower boundary is rigid, G=0
-            A(self.n,:) = self.T(self.n,:);
-            B(self.n,:) = 0;
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
             
             % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
             if strcmp(self.upperBoundary, 'free_surface')
                 % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = self.T_z(1,:);
-                B(1,:) = self.T(1,:);
+                A(1,:) = Tz(1,:);
+                B(1,:) = T(1,:);
             elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = self.T(1,:);
+                A(1,:) = T(1,:);
                 B(1,:) = 0;
             end
             
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h] = ModesFromGEP(self,A,B,h_func,self.T_out);
+            [F,G,h] = ModesFromGEP(self,A,B,h_func,self.T_zCheb_zOut);
         end
         
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The h_func parameter is a function that
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
-        function [F,G,h] = ModesFromGEP(self,A,B,h_func,T_out)
+        function [F,G,h] = ModesFromGEP(self,A,B,h_func,T)
             [V,D] = eig( A, B );
             
             [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
             G_cheb=V(:,permutation);
             h = h_func(lambda.');
             
-            F = zeros(length(self.z),self.n);
-            G = zeros(length(self.z),self.n);
+            n = size(G_cheb,1);
+            F = zeros(length(self.z),n);
+            G = zeros(length(self.z),n);
             
             if self.doesOutputGridSpanDomain == 1
-                for j=1:self.n
-                    G(:,j) = T_out(G_cheb(:,j));
-                    F(:,j) = h(j) * T_out(self.Diff1 * G_cheb(:,j));
+                for j=1:n
+                    G(:,j) = T(G_cheb(:,j));
+                    F(:,j) = h(j) * T(self.Diff1 * G_cheb(:,j));
                 end
                 [F,G] = self.NormalizeModes(F,G,self.z);
             else

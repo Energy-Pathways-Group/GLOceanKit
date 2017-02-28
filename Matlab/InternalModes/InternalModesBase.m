@@ -17,8 +17,7 @@ classdef (Abstract) InternalModesBase < handle
         Lz
         rho0
         
-        % output dimension (and grid)
-        z
+        z % really just zOut
         
         normalization = 'const_G_norm'
         upperBoundary = 'rigid_lid'
