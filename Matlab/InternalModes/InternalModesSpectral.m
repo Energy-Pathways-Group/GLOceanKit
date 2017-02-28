@@ -94,11 +94,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             self.rho_lobatto = rho(self.z_lobatto_grid);
         end
-        
-        function self = InitializeChebyshevTMatrices(self)
-            self.InitializeChebyshevTMatricesCallout(self.z_lobatto_grid,self.z)
-        end
-        
+                
         % The lobatto_grid input should be a properly defined
         % (monotonically decreasing) Lobatto grid that spans the domain.
         %
@@ -107,12 +103,10 @@ classdef InternalModesSpectral < InternalModesBase
         % After the input variables have been initialized, this is used to
         % initialize the output transformation, T_out(f), as well as T,
         % T_z, T_zz
-        function self = InitializeChebyshevTMatricesCallout(self, lobatto_grid, output_grid)
-            self.n = length(lobatto_grid);
-            
-            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( lobatto_grid, length(lobatto_grid) );
-            
-            [self.T_out, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(lobatto_grid, output_grid);        
+        function self = InitializeChebyshevTMatrices(self)            
+            self.n = length(self.z_lobatto_grid);
+            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( self.z_lobatto_grid, length(self.z_lobatto_grid) );
+            [self.T_out, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.z_lobatto_grid, self.z);            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,13 +150,13 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h] = ModesFromGEP(self,A,B,h_func);
+            [F,G,h] = ModesFromGEP(self,A,B,h_func,self.T_out);
         end
         
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The h_func parameter is a function that
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
-        function [F,G,h] = ModesFromGEP(self,A,B,h_func)
+        function [F,G,h] = ModesFromGEP(self,A,B,h_func,T_out)
             [V,D] = eig( A, B );
             
             [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
@@ -174,8 +168,8 @@ classdef InternalModesSpectral < InternalModesBase
             
             if self.doesOutputGridSpanDomain == 1
                 for j=1:self.n
-                    G(:,j) = self.T_out(G_cheb(:,j));
-                    F(:,j) = h(j) * self.T_out(self.Diff1 * G_cheb(:,j));
+                    G(:,j) = T_out(G_cheb(:,j));
+                    F(:,j) = h(j) * T_out(self.Diff1 * G_cheb(:,j));
                 end
                 [F,G] = self.NormalizeModes(F,G,self.z);
             else

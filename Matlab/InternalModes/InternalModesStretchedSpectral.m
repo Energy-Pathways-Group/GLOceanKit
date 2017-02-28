@@ -9,6 +9,8 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         
         N2_s_grid           % N2 on the z_s_lobatto grid
         N2_z_s_grid         % (d/dz)N2 on the z_s_lobatto grid
+        
+        T_stretched_out     %
     end
     
 
@@ -102,8 +104,10 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             self.s_out = s(z_out);
         end
         
-        function self = InitializeChebyshevTMatrices(self)
-            self.InitializeChebyshevTMatricesCallout(self.s_lobatto_grid,self.s_out);
+        function self = InitializeChebyshevTMatrices(self)            
+            self.n = length(self.z_lobatto_grid);
+            [self.T,self.T_z,self.T_zz] = ChebyshevPolynomialsOnGrid( self.z_lobatto_grid, length(self.z_lobatto_grid) );
+            [self.T_out, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.z_lobatto_grid, self.z);            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
