@@ -56,8 +56,8 @@ classdef InternalModesSpectral < InternalModesBase
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesSpectral(rho, z_in, z_out, latitude)
-            self@InternalModesBase(rho,z_in,z_out,latitude);
+        function self = InternalModesSpectral(rho, z_in, z_out, latitude,varargin)
+            self@InternalModesBase(rho,z_in,z_out,latitude,varargin{:});
             
             self.rho_zCheb = fct(self.rho_zLobatto);
             self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
@@ -168,6 +168,10 @@ classdef InternalModesSpectral < InternalModesBase
             GFromGCheb = @(G_cheb,h) self.T_zCheb_zOut(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.T_zCheb_zOut(self.Diff1_zCheb*G_cheb);
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega )
+            error('This function is not yet implemented!');
         end
         
         % Take matrices A and B from the generalized eigenvalue problem

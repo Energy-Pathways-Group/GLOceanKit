@@ -21,12 +21,7 @@ classdef (Abstract) InternalModesBase < handle
         
         normalization = 'const_G_norm'
         upperBoundary = 'rigid_lid'
-        method = 'scaled_spectral'
-        
-        % This should be added *only* to the FiniteDifference subclass, but
-        % it needs to be added here because of Matlab's failed obj-oriented
-        % class system. Sad!
-        orderOfAccuracy
+        method = 'scaled_spectral'        
     end
     
     properties (Abstract)
@@ -44,7 +39,8 @@ classdef (Abstract) InternalModesBase < handle
     methods (Abstract)
         self = InitializeWithGrid(self, rho, z_in)
         self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
-        self = ModesAtWavenumber(self, k )
+        [F,G,h] = ModesAtWavenumber(self, k )
+        [F,G,h] = ModesAtFrequency(self, omega )
     end
     
     methods
@@ -53,13 +49,7 @@ classdef (Abstract) InternalModesBase < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesBase(rho, z_in, z_out, latitude, orderOfAccuracy)
-            % This should be in the subclass, but we include it here as a
-            % workaround.
-            if nargin < 5
-                orderOfAccuracy = 4;
-            end
-            
+        function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)            
             % Make everything a column vector
             if isrow(z_in)
                 z_in = z_in.';
@@ -71,8 +61,16 @@ classdef (Abstract) InternalModesBase < handle
             self.Lz = max(z_in) - min(z_in);
             self.latitude = latitude;
             self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.orderOfAccuracy = orderOfAccuracy;
             self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
+            
+            % Set properties supplied as name,value pairs
+            nargs = length(varargin);
+            if mod(nargs,2) ~= 0
+                error('Arguments must be given as name/value pairs');
+            end
+            for k = 1:2:length(varargin)
+                self.(varargin{k}) = varargin{k+1};
+            end
              
             % Is density specified as a function handle or as a grid of
             % values?

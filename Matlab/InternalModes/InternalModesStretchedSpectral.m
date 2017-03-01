@@ -22,8 +22,8 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude)
-            self@InternalModesSpectral(rho,z_in,z_out,latitude);
+        function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude, varargin)
+            self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
             
             Ls = max(self.sLobatto)-min(self.sLobatto);
             self.Diff1_sCheb = (2/Ls)*ChebyshevDifferentiationMatrix( length(self.sLobatto) );
@@ -56,7 +56,8 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             
             s = -self.g*rho/self.rho0;
             L_s = max(s)-min(s);
-            N_points = length(z_in); % More is better, but this should be sufficient.
+%             warning('This choice of N_points is not good.')
+            N_points = 2*length(z_in); % More is better, but this should be sufficient.
             xi=(0:N_points-1)';
             self.sLobatto = abs(L_s/2)*(cos(xi*pi/(N_points-1))+1) + min(s); % s Chebyshev grid on the s-coordinate
             self.z_sLobatto = interp1(s, z_in, self.sLobatto, 'spline'); % z, evaluated on that s grid
@@ -78,7 +79,6 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             s = @(z) -self.g*rho(z)/self.rho0;
             s_min = s(z_max);
             s_max = s(z_min);
-            Ls = s_max-s_min;
             
             s_grid = s(z_out);
             if (s_grid(2) - s_grid(1)) > 0 % make s_grid decreasing
@@ -104,10 +104,10 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             % We use the fact that we have a function handle to iteratively
             % improve this projection.
             self.z_sLobatto = interp1(s(self.zLobatto), self.zLobatto, self.sLobatto, 'spline');
-            for i=1:5
-                self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
-                fprintf('max diff: %f\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
-            end
+%             for i=1:5
+%                 self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
+%                 fprintf('max diff: %f\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
+%             end
             
             self.sOut = s(z_out);
         end
@@ -144,6 +144,10 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             GFromGCheb = @(G_cheb,h) self.T_sCheb_zOut(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_sCheb_zOut(self.Diff1_sCheb*G_cheb);
             [F,G,h] = self.ModesFromGEP(A,B,hFromLambda,GFromGCheb,FFromGCheb);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega )
+            error('This function is not yet implemented!');
         end
         
     end

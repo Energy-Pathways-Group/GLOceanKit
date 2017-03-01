@@ -3,6 +3,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         rho
         N2
         Nz
+        orderOfAccuracy = 4
     end
     
     properties (Dependent)
@@ -28,18 +29,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesFiniteDifference(rho, z_in, z_out, latitude, orderOfAccuracy)
-            if nargin < 5
-                orderOfAccuracy = 4;
-            end
-            
-            if orderOfAccuracy < 2
-                orderOfAccuracy = 2;
-            elseif orderOfAccuracy > length(z_in)
-                orderOfAccuracy = length(z_in);
-            end
-            
-            self@InternalModesBase(rho,z_in,z_out,latitude,orderOfAccuracy);
+        function self = InternalModesFiniteDifference(rho, z_in, z_out, latitude, varargin)            
+            self@InternalModesBase(rho,z_in,z_out,latitude,varargin{:});
             
             self.n = length(self.z_diff);
             self.Diff1 = FiniteDifferenceMatrix(1, self.z_diff, 1, 1, self.orderOfAccuracy);
