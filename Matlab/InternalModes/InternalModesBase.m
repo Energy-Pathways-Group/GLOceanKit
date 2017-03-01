@@ -150,11 +150,11 @@ classdef (Abstract) InternalModesBase < handle
                     G(:,j) = G(:,j) / A;
                     F(:,j) = F(:,j) / A;
                 elseif strcmp(self.normalization, 'const_G_norm')
-                    A = trapz( z, (1/self.g) * (self.N2 - self.f0*self.f0) .* G(:,j) .^ 2);
+                    A = abs(trapz( z, (1/self.g) * (self.N2 - self.f0*self.f0) .* G(:,j) .^ 2));
                     G(:,j) = G(:,j) / sqrt(A);
                     F(:,j) = F(:,j) / sqrt(A);
-                elseif strcmp(self.normalizationnorm, 'const_F_norm')
-                    A = abs(trapz( z_out, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
+                elseif strcmp(self.normalization, 'const_F_norm')
+                    A = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
                     G(:,j) = G(:,j) / sqrt(A);
                     F(:,j) = F(:,j) / sqrt(A);
                 end

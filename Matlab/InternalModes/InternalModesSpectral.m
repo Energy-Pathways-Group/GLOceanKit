@@ -43,7 +43,7 @@ classdef InternalModesSpectral < InternalModesBase
         rho_zCheb           % rho in spectral space
         N2_zCheb            % N2 in spectral space
         N2_zLobatto         % N2 on the above zLobatto
-        Diff1               % single derivative in spectral space
+        Diff1_zCheb         % single derivative in spectral space
         T_zLobatto, Tz_zLobatto, Tzz_zLobatto        % Chebyshev polys (and derivs) on the zLobatto
         
         doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
@@ -60,8 +60,8 @@ classdef InternalModesSpectral < InternalModesBase
             self@InternalModesBase(rho,z_in,z_out,latitude);
             
             self.rho_zCheb = fct(self.rho_zLobatto);
-            self.Diff1 = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
-            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1*self.rho_zCheb;
+            self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
+            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
             self.N2_zLobatto = ifct(self.N2_zCheb);
             
             [self.T_zLobatto,self.Tz_zLobatto,self.Tzz_zLobatto] = ChebyshevPolynomialsOnGrid( self.zLobatto, length(self.zLobatto) );
@@ -80,7 +80,7 @@ classdef InternalModesSpectral < InternalModesBase
                 rho = flip(rho);
             end
             
-            if self.IsChebyshevGrid(z_in) == 1
+            if IsChebyshevGrid(z_in) == 1
                 self.zLobatto = z_in;
                 self.rho_zLobatto = rho;
             else
@@ -125,11 +125,11 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function value = get.rho_z(self)
-            value = self.T_zCheb_zOut(self.Diff1 * self.rho_zCheb);
+            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.rho_zCheb);
         end
         
         function value = get.rho_zz(self)
-            value = self.T_zCheb_zOut(self.Diff1 * self.Diff1 * self.rho_zCheb);
+            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.Diff1_zCheb * self.rho_zCheb);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,19 +164,21 @@ classdef InternalModesSpectral < InternalModesBase
                 B(1,:) = 0;
             end
             
-            h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h] = ModesFromGEP(self,A,B,h_func,self.T_zCheb_zOut);
+            hFromLambda = @(lambda) 1.0 ./ lambda;
+            GFromGCheb = @(G_cheb,h) self.T_zCheb_zOut(G_cheb);
+            FFromGCheb = @(G_cheb,h) h * self.T_zCheb_zOut(self.Diff1_zCheb*G_cheb);
+            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
         end
         
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The h_func parameter is a function that
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
-        function [F,G,h] = ModesFromGEP(self,A,B,h_func,T)
+        function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb)
             [V,D] = eig( A, B );
             
             [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
             G_cheb=V(:,permutation);
-            h = h_func(lambda.');
+            h = hFromLambda(lambda.');
             
             n = size(G_cheb,1);
             F = zeros(length(self.z),n);
@@ -184,8 +186,8 @@ classdef InternalModesSpectral < InternalModesBase
             
             if self.doesOutputGridSpanDomain == 1
                 for j=1:n
-                    G(:,j) = T(G_cheb(:,j));
-                    F(:,j) = h(j) * T(self.Diff1 * G_cheb(:,j));
+                    G(:,j) = GFromGCheb(G_cheb(:,j),h(j));
+                    F(:,j) = FFromGCheb(G_cheb(:,j),h(j));
                 end
                 [F,G] = self.NormalizeModes(F,G,self.z);
             else

@@ -4,7 +4,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         z_sLobatto          % The value of z, at the sLobatto points
         T_zCheb_sLobatto    % Matrix that transforms from zCheb to z_sLobatto (or sLobatto)
         T_sLobatto, Ts_sLobatto, Tss_sLobatto        % Chebyshev polys (and derivs) on the zLobatto
-        
+        Diff1_sCheb         % single derivative in spectral space
         sOut               % desired locations of the output in s-coordinate (deduced from z_out)
         
         N2_sLobatto     	% N2 on the z_sLobatto grid
@@ -25,20 +25,23 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude)
             self@InternalModesSpectral(rho,z_in,z_out,latitude);
             
+            Ls = max(self.sLobatto)-min(self.sLobatto);
+            self.Diff1_sCheb = (2/Ls)*ChebyshevDifferentiationMatrix( length(self.sLobatto) );
             [self.T_sLobatto,self.Ts_sLobatto,self.Tss_sLobatto] = ChebyshevPolynomialsOnGrid( self.sLobatto, length(self.sLobatto) );
             [self.T_sCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.sLobatto, self.sOut);
+            
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
             t = acos((2/self.Lz)*(self.z_sLobatto-min(self.zLobatto)) - 1);
-            self.T_zCheb_sLobatto = zeros(length(t),self.n);
-            for iPoly=0:(self.n-1)
+            self.T_zCheb_sLobatto = zeros(length(t),length(self.zLobatto));
+            for iPoly=0:(length(self.zLobatto)-1)
                 self.T_zCheb_sLobatto(:,iPoly+1) = cos(iPoly*t);
             end
             
-            self.N2_sLobatto = self.T_zCheb_sLobatto * (self.N2_cheb);
-            self.N2z_sLobatto = self.T_zCheb_sLobatto * (self.Diff1*self.N2_cheb);
+            self.N2_sLobatto = self.T_zCheb_sLobatto * (self.N2_zCheb);
+            self.N2z_sLobatto = self.T_zCheb_sLobatto * (self.Diff1_zCheb * self.N2_zCheb);
         end
         
         % Superclass calls this method upon initialization when it
@@ -93,8 +96,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             else
                 % This will likely be waaay overkill in most cases... need
                 % smarter logic here.
-                N_points = FindSmallestChebyshevGridWithNoGaps(s_grid);
-                self.sLobatto = (Ls/2)*(cos(((0:N_points-1)')*pi/(N_points-1)) + 1) + s_min; % z, on a chebyshev grid
+                self.sLobatto = FindSmallestChebyshevGridWithNoGaps(s_grid); % z, on a chebyshev grid
             end
             
             % Now create a transformation for functions defined on
@@ -117,15 +119,16 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h] = ModesAtWavenumber(self, k )
             T = self.T_sLobatto;
-            Tz = self.Tz_sLobatto;
-            Tzz = self.Tzz_sLobatto;
+            Tz = self.Ts_sLobatto;
+            Tzz = self.Tss_sLobatto;
+            n = length(self.sLobatto);
             
             A = diag(self.N2_sLobatto .* self.N2_sLobatto)*Tzz + diag(self.N2z_sLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_sLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
-            A(self.n,:) = T(self.n,:);
-            B(self.n,:) = 0;
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
             
             % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
             if strcmp(self.upperBoundary, 'free_surface')
@@ -137,8 +140,10 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
                 B(1,:) = 0;
             end
             
-            h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h] = self.ModesFromGEP(A,B,h_func);
+            hFromLambda = @(lambda) 1.0 ./ lambda;
+            GFromGCheb = @(G_cheb,h) self.T_sCheb_zOut(G_cheb);
+            FFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_sCheb_zOut(self.Diff1_sCheb*G_cheb);
+            [F,G,h] = self.ModesFromGEP(A,B,hFromLambda,GFromGCheb,FFromGCheb);
         end
         
     end
