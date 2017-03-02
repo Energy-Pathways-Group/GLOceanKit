@@ -17,6 +17,8 @@ classdef (Abstract) InternalModesBase < handle
         Lz
         rho0
         
+        nModes % used to limit the number of modes to be output
+        
         z % really just zOut
         
         normalization = 'const_G_norm'

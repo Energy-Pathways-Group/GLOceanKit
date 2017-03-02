@@ -117,6 +117,7 @@ classdef InternalModes < handle
                 methodName = 'Chebyshev polynomials';
             else
                 self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
+                methodName = 'Chebyshev polynomials on density coordinates';
             end
             
             k=0.0;
