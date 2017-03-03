@@ -27,8 +27,6 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude, varargin)
             self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
-            
-            fprintf('N2 was computed with %d points. The eigenvalue problem will be computed with %d points.\n',length(self.zLobatto), length(self.sLobatto));
         end
                 
         % Superclass calls this method upon initialization when it
@@ -94,10 +92,10 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             % We use the fact that we have a function handle to iteratively
             % improve this projection.
             self.z_sLobatto = interp1(s(self.zLobatto), self.zLobatto, self.sLobatto, 'spline');
-%             for i=1:5
-%                 self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
-%                 fprintf('max diff: %f\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
-%             end
+            for i=1:5
+                self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
+                fprintf('max diff: %g\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
+            end
             
             self.sOut = s(zOut);
         end
@@ -131,6 +129,21 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
             
+%             a = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tz;
+%             b = diag(self.N2z_xLobatto)*Tz;
+%             c = k*k*T;
+%             d = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
+%             climits = [-10 -3];
+%             figure
+%             subplot(2,2,1)
+%             pcolor(log10(abs(a))), shading flat, caxis(climits)
+%             subplot(2,2,2)
+%             pcolor(log10(abs(b))), shading flat, caxis(climits)
+%             subplot(2,2,3)
+%             pcolor(log10(abs(c))), shading flat, caxis(climits)
+%             subplot(2,2,4)
+%             pcolor(log10(abs(d))), shading flat, caxis(climits)
+%             
             A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             

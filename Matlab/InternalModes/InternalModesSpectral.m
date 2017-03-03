@@ -67,6 +67,7 @@ classdef InternalModesSpectral < InternalModesBase
             self@InternalModesBase(rho,zIn,zOut,latitude,varargin{:});
             
             self.rho_zCheb = fct(self.rho_zLobatto);
+            self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
             self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
             
@@ -75,6 +76,12 @@ classdef InternalModesSpectral < InternalModesBase
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
             
             self.SetupEigenvalueProblem();
+            
+            fprintf('N2 was computed with %d points. The eigenvalue problem will be computed with %d points.\n',length(self.zLobatto), length(self.xLobatto));
+        end
+        
+        function f = SetNoiseFloorToZero(~, f)
+           f(abs(f)/max(abs(f)) < 1e-15) = 0;
         end
         
         % Superclass calls this method upon initialization when it
@@ -124,6 +131,13 @@ classdef InternalModesSpectral < InternalModesBase
                 self.zLobatto = FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
             end
             
+            % There's just no reason not to go at least this big since
+            % this is all fast transforms.
+            if (length(self.zLobatto) < 1024)
+                n = 1024;
+                self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+            end
+            
             self.rho_zLobatto = rho(self.zLobatto);
         end
         
@@ -135,7 +149,7 @@ classdef InternalModesSpectral < InternalModesBase
                     self.nEVP = self.nModes;
                 end
             else
-                self.nEVP = length(self.zLobatto);
+                self.nEVP = 512;
             end
             
             n = self.nEVP;
@@ -229,8 +243,45 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
-
+        % In theory we can integrate spectrally, but this seems to do worse
+        % than trapz
+        function [F,G,h] = ModesFromGEPSpecial(self,A,B,hFromLambda,GFromGCheb,FFromGCheb)
+            [V,D] = eig( A, B );
+            
+            [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
+            G_cheb=V(:,permutation);
+            h = hFromLambda(lambda.');
+            
+            n = size(G_cheb,1);
+            F = zeros(length(self.z),n);
+            G = zeros(length(self.z),n);
+            
+            np = (0:(n-1))';
+            Int1 = -(1+(-1).^np)./(np.*np-1);
+            Int1(2) = 0;
+            Int1 = self.Lz/2*Int1;
+            
+            [~,maxIndexZ] = max(self.z);
+            if self.doesOutputGridSpanDomain == 1
+                for j=1:n
+                    J = (1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ifct(G_cheb(:,j)) .^ 2;
+                    A = sqrt(abs(sum(Int1.*fct(J))));
+                    
+                    G(:,j) = GFromGCheb(G_cheb(:,j),h(j))/A;
+                    F(:,j) = FFromGCheb(G_cheb(:,j),h(j))/A;
+                    
+                    if F(maxIndexZ,j)< 0
+                        F(:,j) = -F(:,j);
+                        G(:,j) = -G(:,j);
+                    end
+                end
+%                 [F,G] = self.NormalizeModes(F,G,self.z);
+            else
+                error('This normalization condition is not yet implemented!')
+            end
+        end
         
+         
     end
     
 end
