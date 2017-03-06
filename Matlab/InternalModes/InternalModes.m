@@ -66,7 +66,9 @@ classdef InternalModes < handle
                 zOut = varargin{3};
                 latitude = varargin{4};
                 
-                if  strcmp(self.method, 'stretchedSpectral')
+                if  strcmp(self.method, 'densitySpectral')
+                    self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
+                elseif  strcmp(self.method, 'stretchedSpectral')
                     self.internalModes = InternalModesStretchedSpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'finiteDifference')
                     self.internalModes = InternalModesFiniteDifference(rho,zIn,zOut,latitude,extraargs{:});
@@ -106,9 +108,12 @@ classdef InternalModes < handle
             zIn = [-5000 0];
             zOut = linspace(zIn(1),0,n)';
              
-            if  strcmp(theMethod, 'stretchedSpectral')
-                self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
+            if  strcmp(theMethod, 'densitySpectral')
+                self.internalModes = InternalModesDensitySpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials on density coordinates';
+            elseif  strcmp(theMethod, 'stretchedSpectral')
+                self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
+                methodName = 'Chebyshev polynomials on WKB coordinates';
             elseif strcmp(theMethod, 'finiteDifference')
                 self.internalModes = InternalModesFiniteDifference(rhoFunction,zIn,zOut,lat);
                 methodName = 'finite differencing';
@@ -117,7 +122,7 @@ classdef InternalModes < handle
                 methodName = 'Chebyshev polynomials';
             else
                 self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
-                methodName = 'Chebyshev polynomials on density coordinates';
+                methodName = 'Chebyshev polynomials on WKB coordinates';
             end
             
             k=0.0;
