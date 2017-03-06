@@ -65,16 +65,7 @@ classdef InternalModesSpectral < InternalModesBase
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesSpectral(rho, zIn, zOut, latitude,varargin)
             self@InternalModesBase(rho,zIn,zOut,latitude,varargin{:});
-            
-            self.rho_zCheb = fct(self.rho_zLobatto);
-            self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
-            self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
-            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
-            
-            self.T_zCheb_zOut = ChebyshevTransformForGrid(self.zLobatto, self.z);  
-            self.rho = self.T_zCheb_zOut(self.rho_zCheb);
-            self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-            
+
             self.SetupEigenvalueProblem();
             
             fprintf('N2 was computed with %d points. The eigenvalue problem will be computed with %d points.\n',length(self.zLobatto), length(self.xLobatto));
@@ -82,6 +73,19 @@ classdef InternalModesSpectral < InternalModesBase
         
         function f = SetNoiseFloorToZero(~, f)
            f(abs(f)/max(abs(f)) < 1e-15) = 0;
+        end
+        
+        % Called by InitializeWithGrid and InitializeWithFunction after
+        % they've completed their basic setup.
+        function self = InitializeDerivedQuanitites(self)
+            self.rho_zCheb = fct(self.rho_zLobatto);
+            self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
+            self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
+            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
+            
+            self.T_zCheb_zOut = ChebyshevTransformForGrid(self.zLobatto, self.z);
+            self.rho = self.T_zCheb_zOut(self.rho_zCheb);
+            self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
         end
         
         % Superclass calls this method upon initialization when it
@@ -101,7 +105,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.rho_zLobatto = interp1(zIn, rho, self.zLobatto, 'spline'); % rho, interpolated to that grid
             end
             
-
+            self.InitializeDerivedQuanitites();
         end
         
         % Superclass calls this method upon initialization when it
@@ -139,6 +143,8 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             self.rho_zLobatto = rho(self.zLobatto);
+            
+            self.InitializeDerivedQuanitites();
         end
         
         function self = SetupEigenvalueProblem(self)

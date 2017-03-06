@@ -1,4 +1,4 @@
-%% InternalModesStretchedSpectral
+%% InternalModesDensitySpectral
 % 
 % This class solves the vertical eigenvalue problem on a stretched density
 % coordinate grid using Chebyshev polynomials.
@@ -7,14 +7,13 @@
 % extrema/Lobatto grid. This is the grid upon which the eigenvalue problem
 % is solved, and therefore the class uses the superclass properties denoted
 % with 'x' instead of 's' when setting up the eigenvalue problem.
-classdef InternalModesStretchedSpectral < InternalModesSpectral
+classdef InternalModesDensitySpectral < InternalModesSpectral
     properties %(Access = private)    
-        xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
-        z_xiLobatto          % The value of z, at the sLobatto points
-        xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
+        sLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
+        z_sLobatto          % The value of z, at the sLobatto points
+        sOut                % desired locations of the output in s-coordinate (deduced from z_out)
         
-        N_zCheb
-        Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
+        N2z_xLobatto    	% (d/dz)N2 on the z_sLobatto grid   
     end
     
 
@@ -26,7 +25,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude, varargin)
+        function self = InternalModesDensitySpectral(rho, z_in, z_out, latitude, varargin)
             self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
                 
@@ -45,24 +44,18 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             if self.nEVP > 0
                 if self.nModes > self.nEVP
                     self.nEVP = self.nModes;
-                end    
+                end
             else
                 self.nEVP = 512;
             end
             
-            % Create the stretched grid \xi
-            N_zLobatto = sqrt(ifct(self.N2_zCheb));
-            self.N_zCheb = fct(N_zLobatto);
-            xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(xi_zLobatto)-min(xi_zLobatto);
             n = self.nEVP;
-            self.xiLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(xi_zLobatto);
+            s = -self.g*rho/self.rho0;
+            Ls = max(s)-min(s);
+            self.sLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(s);
+            self.z_sLobatto = interp1(s, z_in, self.sLobatto, 'spline'); % z, evaluated on that s grid
             
-            % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
-            
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
+            self.sOut = interp1(z_in, s, self.z, 'spline'); % z, evaluated on that s grid
         end
         
         % Superclass calls this method upon initialization when it
@@ -75,6 +68,9 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             % Superclass initializes zLobatto and rho_lobatto
             InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
             
+            % Create a stretched grid that includes all the points of z_out
+            s = @(z) -self.g*rho(z)/self.rho0;
+            
             % The user requested that the eigenvalue problem be solved on a
             % grid of particular length
             if self.nEVP > 0
@@ -85,38 +81,41 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
                 self.nEVP = 512;
             end
             
-            % Create the stretched grid \xi
-            N_zLobatto = sqrt(ifct(self.N2_zCheb));
-            self.N_zCheb = fct(N_zLobatto);
-            xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(xi_zLobatto)-min(xi_zLobatto);
             n = self.nEVP;
-            self.xiLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(xi_zLobatto);
+            sMin = s(zMax);
+            sMax = s(zMin);
+            Ls = sMax-sMin;
+            self.sLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;            
             
-            % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
+            % Now create a transformation for functions defined on
+            % z_lobatto to (spectrally) take them into s_lobatto.
+            % We use the fact that we have a function handle to iteratively
+            % improve this projection.
+            self.z_sLobatto = interp1(s(self.zLobatto), self.zLobatto, self.sLobatto, 'spline');
+            for i=1:5
+                self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
+                fprintf('max diff: %g\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
+            end
             
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
+            self.sOut = s(zOut);
         end
         
         function self = SetupEigenvalueProblem(self)
             % We will use the stretched grid to solve the eigenvalue
             % problem.
-            self.xLobatto = self.xiLobatto;
+            self.xLobatto = self.sLobatto;
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
-            T_zCheb_xiLobatto = ChebyshevTransformForGrid(self.zLobatto, self.z_xiLobatto);
-            self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb * self.N_zCheb);
+            T_zCheb_sLobatto = ChebyshevTransformForGrid(self.zLobatto, self.z_sLobatto);
+            self.N2_xLobatto = T_zCheb_sLobatto(self.N2_zCheb);
+            self.N2z_xLobatto = T_zCheb_sLobatto(self.Diff1_zCheb * self.N2_zCheb);
             
-            Lxi = max(self.xiLobatto) - min(self.xiLobatto);
-            self.Diff1_xCheb = (2/Lxi)*ChebyshevDifferentiationMatrix( length(self.xiLobatto) );
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = ChebyshevPolynomialsOnGrid( self.xiLobatto, length(self.xiLobatto) );
-            
-            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
+            Ls = max(self.sLobatto)-min(self.sLobatto);
+            self.Diff1_xCheb = (2/Ls)*ChebyshevDifferentiationMatrix( length(self.sLobatto) );
+            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = ChebyshevPolynomialsOnGrid( self.sLobatto, length(self.sLobatto) );
+            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.sLobatto, self.sOut);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,7 +144,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
 %             subplot(2,2,4)
 %             pcolor(log10(abs(d))), shading flat, caxis(climits)
 %             
-            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz - k*k*T;
+            A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
@@ -164,7 +163,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
             
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
+            FFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
             [F,G,h] = self.ModesFromGEP(A,B,hFromLambda,GFromGCheb,FFromGCheb);
         end
         
