@@ -83,6 +83,11 @@ classdef InternalModesSpectral < InternalModesBase
             self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
             
+            N2_zLobatto = ifct(self.N2_zCheb);
+            if any(N2_zLobatto < 0)
+               error('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. Try using a finer grid.'); 
+            end
+            
             self.T_zCheb_zOut = ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);

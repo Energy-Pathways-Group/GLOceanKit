@@ -37,7 +37,7 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function self = InternalModes(varargin)    
-            self.method = 'stretchedSpectral';
+            self.method = 'wkbSpectral';
             
             % First check to see if the user specified some extra arguments
             if nargin >= 5 
@@ -68,8 +68,8 @@ classdef InternalModes < handle
                 
                 if  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
-                elseif  strcmp(self.method, 'stretchedSpectral')
-                    self.internalModes = InternalModesStretchedSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                elseif  strcmp(self.method, 'wkbSpectral')
+                    self.internalModes = InternalModesWKBSpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'finiteDifference')
                     self.internalModes = InternalModesFiniteDifference(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'spectral')
@@ -111,8 +111,8 @@ classdef InternalModes < handle
             if  strcmp(theMethod, 'densitySpectral')
                 self.internalModes = InternalModesDensitySpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials on density coordinates';
-            elseif  strcmp(theMethod, 'stretchedSpectral')
-                self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
+            elseif  strcmp(theMethod, 'wkbSpectral')
+                self.internalModes = InternalModesWKBSpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials on WKB coordinates';
             elseif strcmp(theMethod, 'finiteDifference')
                 self.internalModes = InternalModesFiniteDifference(rhoFunction,zIn,zOut,lat);
@@ -121,7 +121,7 @@ classdef InternalModes < handle
                 self.internalModes = InternalModesSpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials';
             else
-                self.internalModes = InternalModesStretchedSpectral(rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesWKBSpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials on WKB coordinates';
             end
             

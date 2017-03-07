@@ -54,6 +54,10 @@ classdef InternalModesFiniteDifference < InternalModesBase
         % determines that the input is given in functional form. The goal
         % is to initialize z_diff and rho_z_diff.
         function self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
+            if length(z_out) < 5
+                error('You need more than 5 point output points for finite differencing to work');
+            end
+            
             if (min(z_out) == z_min && max(z_out) == z_max)
                 self.z_diff = z_out;
                 self.rho_z_diff = rho(self.z_diff);

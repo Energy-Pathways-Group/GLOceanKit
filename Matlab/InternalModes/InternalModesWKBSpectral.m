@@ -1,13 +1,13 @@
-%% InternalModesStretchedSpectral
+%% InternalModesWKBSpectral
 % 
-% This class solves the vertical eigenvalue problem on a stretched density
-% coordinate grid using Chebyshev polynomials.
+% This class solves the vertical eigenvalue problem on a WKB stretched
+% density coordinate grid using Chebyshev polynomials.
 %
 % Internally, sLobatto is the stretched density coordinate on a Chebyshev
 % extrema/Lobatto grid. This is the grid upon which the eigenvalue problem
 % is solved, and therefore the class uses the superclass properties denoted
 % with 'x' instead of 's' when setting up the eigenvalue problem.
-classdef InternalModesStretchedSpectral < InternalModesSpectral
+classdef InternalModesWKBSpectral < InternalModesSpectral
     properties %(Access = private)    
         xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
         z_xiLobatto          % The value of z, at the sLobatto points
@@ -26,7 +26,7 @@ classdef InternalModesStretchedSpectral < InternalModesSpectral
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesStretchedSpectral(rho, z_in, z_out, latitude, varargin)
+        function self = InternalModesWKBSpectral(rho, z_in, z_out, latitude, varargin)
             self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
                 
