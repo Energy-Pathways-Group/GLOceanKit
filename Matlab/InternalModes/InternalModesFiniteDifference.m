@@ -11,7 +11,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         rho_zz
     end
     
-    properties (Access = private)
+    properties
         doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
         n                   % length of z_diff
         z_diff              % the z-grid used for differentiation
@@ -40,6 +40,10 @@ classdef InternalModesFiniteDifference < InternalModesBase
             self.InitializeOutputTransformation(z_out);
             self.rho = self.T_out(self.rho_z_diff);
             self.N2 = self.T_out(self.N2_z_diff);
+            
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = self.n;
+            end
         end
         
         % Superclass calls this method upon initialization when it
@@ -78,10 +82,9 @@ classdef InternalModesFiniteDifference < InternalModesBase
             end
             
             if isequal(self.z_diff,z_out)
-                self.T_out = @(f_in) f_in;
-            else
-                error('Other cases not yet implemented');
-                % want to interpolate onto the output grid
+                self.T_out = @(f_in) real(f_in);
+            else % want to interpolate onto the output grid
+                self.T_out = @(f_in) interp1(self.z_diff,real(f_in),z_out);                
             end
         end
         
@@ -120,7 +123,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
             % B = I
-            A = diag(-self.g./(self.N2 - self.f0*self.f0)) * (self.Diff2 - k*k*eye(self.n));
+            A = diag(-self.g./(self.N2_z_diff - self.f0*self.f0)) * (self.Diff2 - k*k*eye(self.n));
             B = eye(self.n);
             
             % Bottom boundary condition (always taken to be G=0)
@@ -150,7 +153,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             % B = I
             
             %%%%% Do we get better accuracy by not dividing by N2??? 
-            A = diag( (self.f0*self.f0 - omega*omega)./(self.N2 - omega*omega) ) * self.Diff2;
+            A = diag( (self.f0*self.f0 - omega*omega)./(self.N2_z_diff - omega*omega) ) * self.Diff2;
             B = eye(self.n);
             
             % Bottom boundary condition (always taken to be G=0)
@@ -184,16 +187,20 @@ classdef InternalModesFiniteDifference < InternalModesBase
             G = V(:,permutation);
             h = h_func(lambda.');
             
-            F = zeros(length(self.z),self.n);
+            F = zeros(self.n,self.n);
             for j=1:self.n
                 F(:,j) = h(j) * self.Diff1 * G(:,j);
             end
             
-            if self.doesOutputGridSpanDomain == 1
-                [F,G] = self.NormalizeModes(F,G,self.z);
-            else
-                error('This normalization condition is not yet implemented!')
+            [F_norm,G_norm] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff);
+            
+            F = zeros(length(self.z),self.nModes);
+            G = zeros(length(self.z),self.nModes);
+            for iMode=1:self.nModes
+                F(:,iMode) = self.T_out(F_norm(:,iMode));
+                G(:,iMode) = self.T_out(G_norm(:,iMode));
             end
+            h = h(1:self.nModes);
         end
 
     end

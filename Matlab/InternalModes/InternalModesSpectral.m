@@ -222,7 +222,7 @@ classdef InternalModesSpectral < InternalModesBase
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
-            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
+            [F,G,h] = ModesFromGEPSpecial(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
@@ -248,7 +248,7 @@ classdef InternalModesSpectral < InternalModesBase
                     G(:,j) = GFromGCheb(G_cheb(:,j),h(j));
                     F(:,j) = FFromGCheb(G_cheb(:,j),h(j));
                 end
-                [F,G] = self.NormalizeModes(F,G,self.z);
+                [F,G] = self.NormalizeModes(F,G,self.N2,self.z);
             else
                 error('This normalization condition is not yet implemented!')
             end

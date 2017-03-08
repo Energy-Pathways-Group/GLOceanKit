@@ -138,7 +138,7 @@ classdef (Abstract) InternalModesBase < handle
         % Generical function to normalize
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G] = NormalizeModes(self,F,G,z)
+        function [F,G] = NormalizeModes(self,F,G,N2,z)
             [~,maxIndexZ] = max(z);
             for j=1:length(G(1,:))
                 if strcmp(self.normalization, 'max_u')
@@ -150,7 +150,7 @@ classdef (Abstract) InternalModesBase < handle
                     G(:,j) = G(:,j) / A;
                     F(:,j) = F(:,j) / A;
                 elseif strcmp(self.normalization, 'const_G_norm')
-                    A = abs(trapz( z, (1/self.g) * (self.N2 - self.f0*self.f0) .* G(:,j) .^ 2));
+                    A = abs(trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
                     G(:,j) = G(:,j) / sqrt(A);
                     F(:,j) = F(:,j) / sqrt(A);
                 elseif strcmp(self.normalization, 'const_F_norm')
