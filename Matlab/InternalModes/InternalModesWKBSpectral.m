@@ -47,7 +47,11 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
                     self.nEVP = self.nModes;
                 end    
             else
-                self.nEVP = 512;
+                self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
+            end
+            
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = floor(self.nEVP/2);
             end
             
             % Create the stretched grid \xi
@@ -82,7 +86,11 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
                     self.nEVP = self.nModes;
                 end    
             else
-                self.nEVP = 512;
+                self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
+            end
+            
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = floor(self.nEVP/2);
             end
             
             % Create the stretched grid \xi
@@ -117,6 +125,13 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = ChebyshevPolynomialsOnGrid( self.xiLobatto, length(self.xiLobatto) );
             
             [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
+            
+            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
+            % for all n, except n=1, where the integral is zero.
+            np = (0:(self.nEVP-1))';
+            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
+            self.Int_xCheb(2) = 0;
+            self.Int_xCheb = Lxi/2*self.Int_xCheb;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,6 +186,47 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         function [F,G,h] = ModesAtFrequency(self, omega )
             error('This function is not yet implemented!');
         end
+        
+        % Take matrices A and B from the generalized eigenvalue problem
+        % (GEP) and returns F,G,h. The h_func parameter is a function that
+        % returns the eigendepth, h, given eigenvalue lambda from the GEP.
+        function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb)
+            [V,D] = eig( A, B );
+            
+            [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
+            G_cheb=V(:,permutation);
+            h = hFromLambda(lambda.');
+            
+            F = zeros(length(self.z),self.nModes);
+            G = zeros(length(self.z),self.nModes);
+            h = h(1:self.nModes);
+            
+            % This still need to be optimized to *not* do the transforms
+            % twice, when the EVP grid is the same as the output grid.
+            [~,maxIndexZ] = max(self.zLobatto);
+            for j=1:self.nModes
+                Fj = h(j)*ifct(self.Diff1_xCheb*G_cheb(:,j));
+                Gj = ifct(G_cheb(:,j));
+                if strcmp(self.normalization, 'max_u')
+                    A = max( abs( Fj ));
+                elseif strcmp(self.normalization, 'max_w')
+                    A = max( abs( Gj ) );
+                elseif strcmp(self.normalization, 'const_G_norm')
+                    J = (1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2;
+                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
+                elseif strcmp(self.normalization, 'const_F_norm')
+                    J = (1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) );
+                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
+                end
+                if Fj(maxIndexZ) < 0
+                    A = -A;
+                end
+                
+                G(:,j) = GFromGCheb(G_cheb(:,j),h(j))/A;
+                F(:,j) = FFromGCheb(G_cheb(:,j),h(j))/A;
+            end
+        end
+
         
     end
     

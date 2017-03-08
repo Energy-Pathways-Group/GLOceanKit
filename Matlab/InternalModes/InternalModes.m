@@ -120,9 +120,11 @@ classdef InternalModes < handle
             elseif strcmp(theMethod, 'spectral')
                 self.internalModes = InternalModesSpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials';
-            else
+            elseif isempty(theMethod)
                 self.internalModes = InternalModesWKBSpectral(rhoFunction,zIn,zOut,lat);
                 methodName = 'Chebyshev polynomials on WKB coordinates';
+            else
+                error('Invalid method!')
             end
             
             k=0.0;

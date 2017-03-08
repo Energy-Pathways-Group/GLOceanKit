@@ -53,6 +53,7 @@ classdef InternalModesSpectral < InternalModesBase
         Diff1_xCheb        % single derivative in spectral space
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
         T_xCheb_zOut
+        Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
         doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
         
     end
@@ -142,8 +143,8 @@ classdef InternalModesSpectral < InternalModesBase
             
             % There's just no reason not to go at least this big since
             % this is all fast transforms.
-            if (length(self.zLobatto) < 1024)
-                n = 1024;
+            if (length(self.zLobatto) < 1025)
+                n = 1025; % 2^n + 1 for a fast Chebyshev transform
                 self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
             end
             
@@ -160,7 +161,11 @@ classdef InternalModesSpectral < InternalModesBase
                     self.nEVP = self.nModes;
                 end
             else
-                self.nEVP = 512;
+                self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
+            end
+            
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = floor(self.nEVP/2);
             end
             
             n = self.nEVP;
@@ -172,6 +177,13 @@ classdef InternalModesSpectral < InternalModesBase
             
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
             [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.xLobatto, self.z);
+            
+            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
+            % for all n, except n=1, where the integral is zero.
+            np = (0:(n-1))';
+            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
+            self.Int_xCheb(2) = 0;
+            self.Int_xCheb = self.Lz/2*self.Int_xCheb;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,7 +234,7 @@ classdef InternalModesSpectral < InternalModesBase
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
-            [F,G,h] = ModesFromGEPSpecial(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
+            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
@@ -239,60 +251,35 @@ classdef InternalModesSpectral < InternalModesBase
             G_cheb=V(:,permutation);
             h = hFromLambda(lambda.');
             
-            n = size(G_cheb,1);
-            F = zeros(length(self.z),n);
-            G = zeros(length(self.z),n);
-            
-            if self.doesOutputGridSpanDomain == 1
-                for j=1:n
-                    G(:,j) = GFromGCheb(G_cheb(:,j),h(j));
-                    F(:,j) = FFromGCheb(G_cheb(:,j),h(j));
+            F = zeros(length(self.z),self.nModes);
+            G = zeros(length(self.z),self.nModes);
+            h = h(1:self.nModes);
+
+            % This still need to be optimized to *not* do the transforms
+            % twice, when the EVP grid is the same as the output grid.
+            [~,maxIndexZ] = max(self.zLobatto);
+            for j=1:self.nModes
+                Fj = h(j)*ifct(self.Diff1_xCheb*G_cheb(:,j));
+                Gj = ifct(G_cheb(:,j));
+                if strcmp(self.normalization, 'max_u')   
+                    A = max( abs( Fj ));
+                elseif strcmp(self.normalization, 'max_w')
+                    A = max( abs( Gj ) );
+                elseif strcmp(self.normalization, 'const_G_norm')
+                    J = (1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2;
+                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
+                elseif strcmp(self.normalization, 'const_F_norm')
+                    J = (1/self.Lz) * Fj.^ 2;
+                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
                 end
-                [F,G] = self.NormalizeModes(F,G,self.N2,self.z);
-            else
-                error('This normalization condition is not yet implemented!')
-            end
-        end
-        
-        % In theory we can integrate spectrally, but this seems to do worse
-        % than trapz
-        function [F,G,h] = ModesFromGEPSpecial(self,A,B,hFromLambda,GFromGCheb,FFromGCheb)
-            [V,D] = eig( A, B );
-            
-            [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
-            G_cheb=V(:,permutation);
-            h = hFromLambda(lambda.');
-            
-            n = size(G_cheb,1);
-            F = zeros(length(self.z),n);
-            G = zeros(length(self.z),n);
-            
-            np = (0:(n-1))';
-            Int1 = -(1+(-1).^np)./(np.*np-1);
-            Int1(2) = 0;
-            Int1 = self.Lz/2*Int1;
-            
-            [~,maxIndexZ] = max(self.z);
-            if self.doesOutputGridSpanDomain == 1
-                for j=1:n
-                    J = (1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ifct(G_cheb(:,j)) .^ 2;
-                    A = sqrt(abs(sum(Int1.*fct(J))));
-                    
-                    G(:,j) = GFromGCheb(G_cheb(:,j),h(j))/A;
-                    F(:,j) = FFromGCheb(G_cheb(:,j),h(j))/A;
-                    
-                    if F(maxIndexZ,j)< 0
-                        F(:,j) = -F(:,j);
-                        G(:,j) = -G(:,j);
-                    end
+                if Fj(maxIndexZ) < 0
+                    A = -A;
                 end
-%                 [F,G] = self.NormalizeModes(F,G,self.z);
-            else
-                error('This normalization condition is not yet implemented!')
-            end
+                
+                G(:,j) = GFromGCheb(G_cheb(:,j),h(j))/A;
+                F(:,j) = FFromGCheb(G_cheb(:,j),h(j))/A;
+            end     
         end
-        
-         
     end
     
 end
