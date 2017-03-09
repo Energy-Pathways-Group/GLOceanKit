@@ -39,7 +39,8 @@ classdef (Abstract) InternalModesBase < handle
     end
     
     methods (Abstract)
-
+        self = InitializeWithGrid(self, rho, z_in)
+        self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
         [F,G,h] = ModesAtWavenumber(self, k )
         [F,G,h] = ModesAtFrequency(self, omega )
     end
@@ -50,55 +51,6 @@ classdef (Abstract) InternalModesBase < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = initStoredProperties(self,rho, z_in, z_out, latitude, args)
-            self.Lz = max(z_in) - min(z_in);
-            self.latitude = latitude;
-            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
-            
-            % Is density specified as a function handle or as a grid of
-            % values?
-            if isa(rho,'function_handle') == true
-                if numel(z_in) ~= 2
-                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
-                end
-                self.rho0 = rho(max(z_in));
-            elseif isa(rho,'numeric') == true
-                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
-                    error('rho must be 1 dimensional and z must have the same length');
-                end
-                if isrow(rho)
-                    rho = rho.';
-                end
-                self.rho0 = min(rho);
-            else
-                error('rho must be a function handle or an array.');
-            end
-            
-            % Set remaining properties supplied as name,value pairs
-            nargs = length(args);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
-            for k = 1:2:length(args)
-                self.(args{k}) = args{k+1};
-            end
-            
-            
-        end
-        
-        function self = Init(
-        
-        function self = InitializeWithGrid(self, rho, z_in)
-            
-        end
-        
-        function self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
-            
-        end
-        
-        % Since we're only allowed one constructor, treat this constructor
-        % as a Gateway to two different convinience initializers
         function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)            
             % Make everything a column vector
             if isrow(z_in)
@@ -108,13 +60,51 @@ classdef (Abstract) InternalModesBase < handle
                 z_out = z_out.';
             end
             
-            self.initStoredProperties(rho,z_in,z_out,latitude,varargin);
-           
+            self.Lz = max(z_in) - min(z_in);
+            self.latitude = latitude;
+            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
+            self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
+            
+            % Set properties supplied as name,value pairs
+            nargs = length(varargin);
+            if mod(nargs,2) ~= 0
+                error('Arguments must be given as name/value pairs');
+            end
+            for k = 1:2:length(varargin)
+                self.(varargin{k}) = varargin{k+1};
+            end
+             
+            % Is density specified as a function handle or as a grid of
+            % values?
             if isa(rho,'function_handle') == true
+                if numel(z_in) ~= 2
+                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
+                end
+                self.rho0 = rho(max(z_in));
                 self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out);
             elseif isa(rho,'numeric') == true
+                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
+                    error('rho must be 1 dimensional and z must have the same length');
+                end
+                if isrow(rho)
+                    rho = rho.';
+                end
+                self.rho0 = min(rho);
                 self.InitializeWithGrid(rho,z_in);
-            end         
+            else
+                error('rho must be a function handle or an array.');
+            end
+            
+
+            
+%             if nargin == 4
+%                 if  (~strcmp(method, 'scaled_spectral') && ~strcmp(method, 'finite_difference') && ~strcmp(method, 'spectral'))
+%                     error('Invalid method!')
+%                 else
+%                     obj.method = method;
+%                 end
+%             end
+            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
