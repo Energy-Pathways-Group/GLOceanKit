@@ -79,17 +79,17 @@ classdef InternalModesSpectral < InternalModesBase
         % Called by InitializeWithGrid and InitializeWithFunction after
         % they've completed their basic setup.
         function self = InitializeDerivedQuanitites(self)
-            self.rho_zCheb = fct(self.rho_zLobatto);
+            self.rho_zCheb = InternalModesSpectral.fct(self.rho_zLobatto);
             self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
-            self.Diff1_zCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.zLobatto) );
+            self.Diff1_zCheb = (2/self.Lz)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.zLobatto) );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
             
-            N2_zLobatto = ifct(self.N2_zCheb);
+            N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
             if any(N2_zLobatto < 0)
                error('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. Try using a finer grid.'); 
             end
             
-            self.T_zCheb_zOut = ChebyshevTransformForGrid(self.zLobatto, self.z);
+            self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
         end
@@ -98,6 +98,8 @@ classdef InternalModesSpectral < InternalModesBase
         % determines that the input is given in gridded form. The goal is
         % to initialize zLobatto and rho_zLobatto.
         function self = InitializeWithGrid(self, rho, zIn)
+            self.validateInitialModeAndEVPSettings();
+            
             if (zIn(2) - zIn(1)) > 0
                 zIn = flip(zIn);
                 rho = flip(rho);
@@ -118,6 +120,9 @@ classdef InternalModesSpectral < InternalModesBase
         % determines that the input is given in functional form. The goal
         % is to initialize zLobatto and rho_zLobatto.
         function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
+            
+            self.validateInitialModeAndEVPSettings();
+            
             % We have an analytical function describing density, so lets
             % place points on a Chebyshev grid such that z_out is fully
             % resolved.
@@ -154,6 +159,25 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function self = SetupEigenvalueProblem(self)
+            n = self.nEVP;
+            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
+            
+            self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
+            self.Diff1_xCheb = (2/self.Lz)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.xLobatto) );
+            
+            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
+            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
+            
+            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
+            % for all n, except n=1, where the integral is zero.
+            np = (0:(n-1))';
+            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
+            self.Int_xCheb(2) = 0;
+            self.Int_xCheb = self.Lz/2*self.Int_xCheb;
+        end
+        
+        function self = validateInitialModeAndEVPSettings(self)
             % The user requested that the eigenvalue problem be solved on a
             % grid of particular length
             if self.nEVP > 0
@@ -167,23 +191,6 @@ classdef InternalModesSpectral < InternalModesBase
             if isempty(self.nModes) || self.nModes < 1
                 self.nModes = floor(self.nEVP/2);
             end
-            
-            n = self.nEVP;
-            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
-            T_zCheb_xLobatto = ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
-            
-            self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
-            self.Diff1_xCheb = (2/self.Lz)*ChebyshevDifferentiationMatrix( length(self.xLobatto) );
-            
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = ChebyshevTransformForGrid(self.xLobatto, self.z);
-            
-            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
-            % for all n, except n=1, where the integral is zero.
-            np = (0:(n-1))';
-            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
-            self.Int_xCheb(2) = 0;
-            self.Int_xCheb = self.Lz/2*self.Int_xCheb;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -232,9 +239,13 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             hFromLambda = @(lambda) 1.0 ./ lambda;
-            GFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
-            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb);
+            GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
+            GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb*G_cheb );
+            GNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
+            FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
+            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
@@ -244,7 +255,7 @@ classdef InternalModesSpectral < InternalModesBase
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The h_func parameter is a function that
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
-        function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb)
+        function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
             [V,D] = eig( A, B );
             
             [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
@@ -259,29 +270,169 @@ classdef InternalModesSpectral < InternalModesBase
             % twice, when the EVP grid is the same as the output grid.
             [~,maxIndexZ] = max(self.zLobatto);
             for j=1:self.nModes
-                Fj = h(j)*ifct(self.Diff1_xCheb*G_cheb(:,j));
-                Gj = ifct(G_cheb(:,j));
+                Fj = FFromGCheb(G_cheb(:,j),h(j));
+                Gj = GFromGCheb(G_cheb(:,j),h(j));
                 if strcmp(self.normalization, 'max_u')   
                     A = max( abs( Fj ));
                 elseif strcmp(self.normalization, 'max_w')
                     A = max( abs( Gj ) );
                 elseif strcmp(self.normalization, 'const_G_norm')
-                    J = (1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2;
-                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
+                    A = sqrt(GNorm( Gj ));
                 elseif strcmp(self.normalization, 'const_F_norm')
-                    J = (1/self.Lz) * Fj.^ 2;
-                    A = sqrt(abs(sum(self.Int_xCheb .*fct(J))));
+                    A = sqrt(FNorm( Fj ));
                 end
                 if Fj(maxIndexZ) < 0
                     A = -A;
                 end
                 
-                G(:,j) = GFromGCheb(G_cheb(:,j),h(j))/A;
-                F(:,j) = FFromGCheb(G_cheb(:,j),h(j))/A;
-            end     
+                G(:,j) = GOutFromGCheb(G_cheb(:,j),h(j))/A;
+                F(:,j) = FOutFromGCheb(G_cheb(:,j),h(j))/A;
+            end
         end
     end
     
+    methods (Static)
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Chebyshev Methods
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % Fast Chebyshev Transform
+        % By Allan P. Engsig-Karup, apek@imm.dtu.dk.
+        function uh = fct(u)
+            N  = length(u);
+            u  = ifft(u([1:N N-1:-1:2])); % reverse ordering due to Matlab's fft
+            uh = ([u(1); 2*u(2:(N-1)); u(N)]);
+            
+            if any(imag(uh))
+                disp('Fast Chebyshev Transform returned imaginary values. Something went wrong!')
+            end
+            
+            uh = real(uh);
+        end
+        
+        % Inverse Fast Chebyshev Transform
+        function u = ifct(uh)
+            N = length(uh) - 1;
+            s = N*[uh(1)*2; uh(2:N); uh(end)*2];
+            u = ifft([s; flip(s(2:end-1))],'symmetric');
+            u=u(1:N+1);
+        end
+        
+        % Given some Lobatto grid and some desired output grid, return the
+        % transformation function T that goes from spectral to the output
+        % grid. This basically gives you spectral interpolation.
+        function [T, doesOutputGridSpanDomain] = ChebyshevTransformForGrid(lobatto_grid, output_grid)
+            if (min(output_grid) == min(lobatto_grid) && max(output_grid) == max(lobatto_grid))
+                doesOutputGridSpanDomain = 1;
+            else
+                doesOutputGridSpanDomain = 0;
+            end
+            
+            % T_out transforms vector solutions of the eigenvalue problem
+            % into gridded solution on z_out
+            if doesOutputGridSpanDomain == 1 && IsChebyshevGrid(output_grid) == 1
+                if length(output_grid) == length(lobatto_grid)
+                    T = @(f_cheb) InternalModesSpectral.ifct(f_cheb);
+                elseif length(output_grid) > length(lobatto_grid)
+                    T = @(f_cheb) InternalModesSpectral.ifct(cat(1,f_cheb,zeros(length(output_grid)-length(lobatto_grid),1)));
+                elseif length(output_grid) < length(lobatto_grid)
+                    T = @(f_cheb) InternalModesSpectral.ifct(f_cheb(1:length(output_grid)));
+                end
+            else
+                L = max(lobatto_grid)-min(lobatto_grid);
+                x = (2/L)*(output_grid-min(lobatto_grid)) - 1;
+                t = acos(x);
+                TT = zeros(length(output_grid),length(lobatto_grid));
+                for iPoly=0:(length(lobatto_grid)-1)
+                    TT(:,iPoly+1) = cos(iPoly*t);
+                end
+                T = @(f_cheb) TT*f_cheb;
+            end
+        end
+        
+        
+        function D = ChebyshevDifferentiationMatrix(n)
+            %% Chebyshev Differentiation Matrix
+            % Returns the Chebyshev differentiation matrix for the first n polynomials.
+            D = zeros(n,n);
+            for i=1:n
+                for j=1:n
+                    if ( j >= i+1 && mod(i+j,2)==1 )
+                        D(i,j) = 2*(j-1);
+                    else
+                        D(i,j) = 0.0;
+                    end
+                end
+            end
+            D(1,:)=0.5*D(1,:);
+        end
+        
+        
+        function [varargout] = ChebyshevPolynomialsOnGrid( x, N_polys )
+            %% Chebyshev Polynomials on Grid
+            % Compute the the first N Chebyshev polynomials and their derivatives for
+            % an arbitrary grid x.
+            %
+            % x_norm = ChebyshevPolynomialsOnGrid( x ) with exactly one argument, x,
+            % returns the x normalized to its typical [-1,1] values.
+            %
+            % T = ChebyshevPolynomialsOnGrid( x, N_polys ) returns the first N_poly
+            % Chebyshev polynomials for an arbitrary grid x.
+            %
+            % [T, T_x, T_xx,...] = ChebyshevPolynomialsOnGrid( x, N_polys ) returns the
+            % first N_poly Chebyshev polynomials and their derivatives for an arbitrary
+            % grid x.
+            %
+            % The returned matrices T, T_xx, etc are size(T) = [length(x) N_polys],
+            % i.e., the polynomials are given column-wise.
+            
+            N_points = length(x);
+            
+            % These are the normalized coordinates for Chebyshev polynomials.
+            L = max(x)-min(x);
+            x_norm = (2/L)*(x-min(x)) - 1;
+            t = acos(x_norm);
+            
+            % if there's only one input argument, we just return x_norm
+            if nargin == 1
+                varargout{1} = x_norm;
+                return;
+            else
+                if N_polys < 4
+                    disp('You must request at least four polynomials. Fixing that for you.')
+                    N_polys = 4;
+                end
+            end
+            
+            N_diff = nargout-1;
+            varargout = cell(1,nargout);
+            
+            % It's easy to create the polynomials, they're stretched cosines!
+            T = zeros(N_points,N_polys);
+            for iPoly=0:(N_polys-1)
+                T(:,iPoly+1) = cos(iPoly*t);
+            end
+            
+            varargout{1} = T;
+            
+            % Now use the recursion formula to compute derivates of polynomials.
+            for n=1:N_diff
+                T = varargout{n};
+                T_x = zeros(size(T));
+                T_x(:,2) = T(:,1);
+                T_x(:,3) = 2*2*T(:,2);
+                for j=4:N_polys
+                    m = j-1;
+                    T_x(:,j) = (m/(m-2))*T_x(:,j-2) + 2*m*T(:,j-1);
+                end
+                varargout{n+1} = (2/L)*T_x;
+            end
+            
+        end
+    end
 end
 
 
