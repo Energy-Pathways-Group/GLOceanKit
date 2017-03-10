@@ -123,8 +123,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
             % B = I
-            A = diag(-self.g./(self.N2_z_diff - self.f0*self.f0)) * (self.Diff2 - k*k*eye(self.n));
-            B = eye(self.n);
+            A = self.Diff2 - k*k*eye(self.n);
+            B = diag(self.f0*self.f0 - self.N2_z_diff)/self.g;
             
             % Bottom boundary condition (always taken to be G=0)
             % NOTE: we already chose the correct BCs when creating the
@@ -147,14 +147,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
-            % The eigenvalue equation is,
-            % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
-            % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
-            % B = I
-            
-            %%%%% Do we get better accuracy by not dividing by N2??? 
-            A = diag( (self.f0*self.f0 - omega*omega)./(self.N2_z_diff - omega*omega) ) * self.Diff2;
-            B = eye(self.n);
+            A = self.Diff2;
+            B = -diag(self.N2_z_diff - omega*omega)/self.g;
             
             % Bottom boundary condition (always taken to be G=0)
             % NOTE: we already chose the correct BCs when creating the
@@ -164,8 +158,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             
             % Surface boundary condition
             if strcmp(self.upperBoundary, 'free_surface')
-                prefactor = (omega*omega - self.f0*self.f0)/self.g;
-                A(end,:) = prefactor*self.Diff2(end,:);
+                % G_z = \frac{1}{h_j} G at the surface
                 B(end,end)=1;
             elseif strcmp(self.upperBoundary, 'rigid_lid')
                 % G=0 at the surface (note we chose this BC when creating Diff2)
@@ -173,7 +166,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 B(end,end)=0;
             end
             
-            h_func = @(lambda) ((omega*omega - self.f0*self.f0)./(self.g*lambda)).';
+            h_func = @(lambda) 1.0 ./ lambda;
             [F,G,h] = ModesFromGEP(self,A,B,h_func);
         end
         

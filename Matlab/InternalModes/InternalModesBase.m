@@ -23,7 +23,6 @@ classdef (Abstract) InternalModesBase < handle
         
         normalization = 'const_G_norm'
         upperBoundary = 'rigid_lid'
-        method = 'scaled_spectral'        
     end
     
     properties (Abstract)
@@ -93,18 +92,7 @@ classdef (Abstract) InternalModesBase < handle
                 self.InitializeWithGrid(rho,z_in);
             else
                 error('rho must be a function handle or an array.');
-            end
-            
-
-            
-%             if nargin == 4
-%                 if  (~strcmp(method, 'scaled_spectral') && ~strcmp(method, 'finite_difference') && ~strcmp(method, 'spectral'))
-%                     error('Invalid method!')
-%                 else
-%                     obj.method = method;
-%                 end
-%             end
-            
+            end   
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,11 +108,11 @@ classdef (Abstract) InternalModesBase < handle
             end
         end
         
-        function set.upperBoundary(obj,upperBoundary)
+        function set.upperBoundary(self,upperBoundary)
             if  (~strcmp(upperBoundary, 'free_surface') && ~strcmp(upperBoundary, 'rigid_lid') )
                 error('Invalid upper boundary condition!')
             else
-                obj.upperBoundary = upperBoundary;
+                self.upperBoundary = upperBoundary;
                 self.upperBoundaryDidChange();
             end
         end
