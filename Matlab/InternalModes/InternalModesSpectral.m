@@ -238,6 +238,38 @@ classdef InternalModesSpectral < InternalModesBase
                 B(1,:) = 0;
             end
             
+            [F,G,h] = self.ModesFromGEPSpectral(A,B);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+            
+            A = Tzz;
+            B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
+            
+            % Lower boundary is rigid, G=0
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+            
+            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
+            if strcmp(self.upperBoundary, 'free_surface')
+                % G_z = \frac{1}{h_j} G at the surface
+                A(1,:) = Tz(1,:);
+                B(1,:) = T(1,:);
+            elseif strcmp(self.upperBoundary, 'rigid_lid')
+                A(1,:) = T(1,:);
+                B(1,:) = 0;
+            end
+            
+            [F,G,h] = self.ModesFromGEPSpectral(A,B);
+        end
+        
+        % This function is an intermediary used by ModesAtFrequency and
+        % ModesAtWavenumber to establish the various norm functions.
+        function [F,G,h] = ModesFromGEPSpectral(self,A,B)
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
             FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
@@ -246,10 +278,6 @@ classdef InternalModesSpectral < InternalModesBase
             GNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-        end
-        
-        function [F,G,h] = ModesAtFrequency(self, omega )
-            error('This function is not yet implemented!');
         end
         
         % Take matrices A and B from the generalized eigenvalue problem

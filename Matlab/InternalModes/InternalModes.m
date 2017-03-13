@@ -200,7 +200,6 @@ classdef InternalModes < handle
                 [F_analytical,G_analytical,h_analytical] = self.ConstantStratificationModesAtWavenumber(k);
             elseif strcmp(self.stratification, 'exponential')
                 imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512);
-                imAnalytical.nModes = maxModes;
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
@@ -228,8 +227,7 @@ classdef InternalModes < handle
                 [F_analytical,G_analytical,h_analytical] = self.ConstantStratificationModesAtFrequency( omega );
             elseif strcmp(self.stratification, 'exponential')
                 imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512);
-                imAnalytical.nModes = maxModes;
-                [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( k );
+                [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
             end
@@ -357,6 +355,10 @@ classdef InternalModes < handle
             N0 = 5.2e-3; g = 9.81;
             k_z = (1:self.nModes)*pi/self.Lz;
             h = (N0*N0 - self.f0*self.f0)./(g*(k*k+k_z.*k_z));
+            if strcmp(self.upperBoundary,'free_surface')
+               k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
+               k_z(1) = 0; h(1) = self.Lz;
+            end
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
         end
         
@@ -364,6 +366,10 @@ classdef InternalModes < handle
             N0 = 5.2e-3; g = 9.81;
             k_z = (1:self.nModes)*pi/self.Lz;
             h = (N0*N0 - omega*omega)./(g * k_z.*k_z);
+            if strcmp(self.upperBoundary,'free_surface')
+                k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
+                k_z(1) = 0; h(1) = self.Lz;
+            end
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
         end
         
@@ -375,9 +381,19 @@ classdef InternalModes < handle
             if strcmp(self.normalization, 'const_G_norm')
                 G = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0))) * sin(k_z .* self.z);
                 F = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0))) * repmat(h.*k_z,length(self.z),1) .* cos(k_z .* self.z);
+                if strcmp(self.upperBoundary,'free_surface')
+                    A = sqrt(3*g/( (N0*N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
+                    G(:,1) = A*(self.z + self.Lz);
+                    F(:,1) = A*self.Lz*ones(size(self.z));
+                end
             elseif strcmp(self.normalization, 'const_F_norm')
                 G = sqrt(2) * sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
                 F = sqrt(2) * cos(k_z.*self.z);
+                if strcmp(self.upperBoundary,'free_surface')
+                    A = sqrt(1/(self.Lz*self.Lz));
+                    G(:,1) = A*(self.z + self.Lz);
+                    F(:,1) = A*self.Lz*ones(size(self.z));
+                end
             end
         end
         
@@ -407,11 +423,17 @@ classdef InternalModes < handle
         function self = ShowErrorFigure(self, h_error, F_error, G_error, theTitle)
             maxModes = length(h_error);
             
+            if strcmp(self.upperBoundary,'free_surface')
+                modes = 0:(maxModes-1);
+            else
+                modes = 1:maxModes;
+            end
+            
             figure
-            plot(h_error, 'g'), ylog
+            plot(modes,h_error, 'g'), ylog
             hold on
-            plot(F_error, 'b')
-            plot(G_error, 'k')
+            plot(modes,F_error, 'b')
+            plot(modes,G_error, 'k')
             xlabel('Mode')
             ylabel('Relative error')
             legend('h', 'F', 'G')
