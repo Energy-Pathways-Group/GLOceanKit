@@ -1,44 +1,105 @@
-%
-%
-%   modes = InternalModes(rho,z,z_out,latitude)
-%   'rho' must be a vector with length matching 'z'. For finite
-%   differencing, z_out is determined with interpolation, with spectral
-%   methods, it is projected onto the output grid.
-%
-%   modes = InternalModes(rho,z_domain,z_out,latitude)
-%   'rho' must be a function handle. z_domain must be an array with two
-%   values: z_domain = [z_bottom z_surface];
-%
-%   modes = InternalModes('constant','wkbSpectral',128)
-%   initializes with given stratification, method, and grid points
-%
+
 classdef InternalModes < handle
-    properties (Access = public)
-        method
-        internalModes % instance of actual internal modes class that's doing all the work
-    end
+    % InternalModes This class solves the internal mode (Sturm-Liouville)
+    % problem for a given density profile.
+    %
+    %   There are two primary methods of initializing this class: either
+    %   you specify density with gridded data, or you specify density as an
+    %   analytical function.
+    %
+    %   modes = InternalModes(rho,z,zOut,latitude);
+    %   'rho' must be a vector of gridded density data with length matching
+    %   'z'. zOut is the output grid upon which all returned function will
+    %   be given.
+    %
+    %   modes = InternalModes(rho,zDomain,zOut,latitude);
+    %   'rho' must be a function handle, e.g.
+    %       rho = @(z) -(N0*N0*rho0/g)*z + rho0
+    %   zDomain must be an array with two values: z_domain = [z_bottom
+    %   z_surface];
+    %
+    %   Once initialized, you can request variations of the density, e.g.,
+    %       N2 = modes.N2;
+    %       rho_zz = modes.rho_zz;
+    %   or you can request the internal modes at a given wavenumber,
+    %       [F,G,h] = modes.ModesAtWavenumber(0.01);
+    %   or frequency,
+    %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
+    %
+    %   There are two convenience methods,
+    %       modes.ShowLowestModesAtWavenumber(0.0);
+    %   and
+    %       modes.ShowLowestModesAtFrequency(5*modes.f0)
+    %   that can be used to quickly visual the modes.
+    %
+    %   Internally the InternalModes class is actually initializing one of
+    %   four different classes used to solve the eigenvalue problem. By
+    %   default is uses Cheyshev polynomials on a WKB coordinate grid. You
+    %   can change this default by passing the name/value pair
+    %   'method'/method where the method is either 'wkbSpectral',
+    %   'densitySpectral', 'spectral' or 'finiteDifference'. For example,
+    %       modes = InternalModes(rho,zDomain,zOut,lat, 'method',
+    %       'finiteDifference');
+    %   will initialize the class that uses finite differencing to solve
+    %   the EVP.
+    %
+    %   You can also pass the argument 'nModes'/nModes to limit the number
+    %   of modes that are returned.
+    %
+    %   Any other name value pairs are passed directly to the class being
+    %   initialized.
+    %
+    %   This wrapper class also supports a number of basic test cases. You
+    %   can initialize the class as follows,
+    %       modes = InternalModes(stratification, method, n);
+    %   where stratification must be either 'constant' (default) or
+    %   'exponential', method must be one of the methods described above,
+    %   and n is the number of points to be used.
+    %
+    %   When initialized with the built-in stratification profiles, you can
+    %   use the functions,
+    %       modes.ShowRelativeErrorAtWavenumber(0.01)
+    %   or
+    %       modes.ShowRelativeErrorAtFrequency(5*modes.f0)
+    %   to assess the quality of the numerical methods. These test
+    %   functions work for both constant G and F normalizations, as well as
+    %   both rigid lid and free surface boundary conditions.
+    %
+    %   See also INTERNALMODESSPECTRAL, INTERNALMODESDENSITYSPECTRAL,
+    %   INTERNALMODESWKBSPECTRAL, and INTERNALMODESFINITEDIFFERENCE
+    %
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
     
-    properties (Access = private)
-       isRunningTestCase = 0;
-       stratification = 'user specified';
-       rhoFunction
-       N2Function
+    properties (Access = public)
+        method % Numerical method used to solve the Sturm-Liouville equation. Either, 'wkbSpectral' (default), 'densitySpectral', 'spectral' or 'finiteDifference'.
+        internalModes % Instance of actual internal modes class that is doing all the work.
     end
     
     properties (Dependent) 
-        latitude
-        f0
-        nModes
+        latitude % Latitude for which the modes are being computed.
+        f0 % Coriolis parameter at the above latitude.
+        nModes % Number of modes to be returned.
         
-        Lz
-        z
-        rho
-        N2
-        rho_z
-        rho_zz
+        Lz % Depth of the ocean.
+        z % Depth coordinate grid used for all output (same as zOut).
+        rho % Density on the z grid.
+        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
+        rho_z % First derivative of density on the z grid.
+        rho_zz % Second derivative of density on the z grid.
         
-        upperBoundary
-        normalization
+        upperBoundary % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
+        normalization % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
+    end
+    
+    properties (Access = private)
+        isRunningTestCase = 0;
+        stratification = 'user specified';
+        rhoFunction
+        N2Function
     end
     
     methods
@@ -49,6 +110,7 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function self = InternalModes(varargin)    
+            % Initialize with either a grid or analytical profile.
             self.method = 'wkbSpectral';
             
             % First check to see if the user specified some extra arguments
@@ -114,61 +176,7 @@ classdef InternalModes < handle
             end
             
         end
-        
-        function self = InitTestCase(self, stratification, theMethod, n)
-            self.method = theMethod;
-            self.isRunningTestCase = 1;
-            self.stratification = stratification;
-            
-            fprintf('InternalModes intialized with %s stratification, %d grid points using %s.\n', self.stratification, n, self.fullMethodName);
-            
-            lat = 33;
-            N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
-            g = 9.81;
-            rho0 = 1025;
-            if  strcmp(stratification, 'constant')
-                self.rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
-                self.N2Function = @(z) N0*N0*ones(size(z));
-            elseif strcmp(stratification, 'exponential')
-                L_gm = 1.3e3; % thermocline exponential scale, meters
-                self.rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-                self.N2Function = @(z) N0*N0*exp(2*z/L_gm);
-            else
-                error('Invalid choice of stratification: you must use constant or exponential');
-            end
-            zIn = [-5000 0];
-            zOut = linspace(zIn(1),0,n)';
-            
-            if  strcmp(theMethod, 'densitySpectral')
-                self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat);
-            elseif  strcmp(theMethod, 'wkbSpectral')
-                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
-            elseif strcmp(theMethod, 'finiteDifference')
-                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
-            elseif strcmp(theMethod, 'spectral')
-                self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat);
-            elseif isempty(theMethod)
-                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
-            else
-                error('Invalid method!')
-            end
-        end
-        
-        function methodName = fullMethodName( self )
-            if  strcmp(self.method, 'densitySpectral')
-                methodName = 'Chebyshev polynomials on density coordinates';
-            elseif  strcmp(self.method, 'wkbSpectral')
-                methodName = 'Chebyshev polynomials on WKB coordinates';
-            elseif strcmp(self.method, 'finiteDifference')
-                methodName = 'finite differencing';
-            elseif strcmp(self.method, 'spectral')
-                methodName = 'Chebyshev polynomials';
-            elseif isempty(self.method)
-                methodName = 'Chebyshev polynomials on WKB coordinates';
-            else
-                error('Invalid method!')
-            end
-        end
+       
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -177,16 +185,20 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function self = ShowLowestModesAtWavenumber( self, k )
+            % Quickly visualize the lowest modes at a given wavenumber.
             [F,G,h] = self.internalModes.ModesAtWavenumber( k );
             self.ShowLowestModesFigure(F,G,h);
         end
         
         function self = ShowLowestModesAtFrequency( self, omega )
+            % Quickly visualize the lowest modes at a given frequency.
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             self.ShowLowestModesFigure(F,G,h);
         end
         
         function self = ShowRelativeErrorAtWavenumber( self, k )
+            % When using one of the built-in test cases, this method will
+            % create a figure showing the relative error of the modes.
             if self.isRunningTestCase == 0
                 error('Cannot show relative error for user specified stratification.\n');
             end
@@ -214,6 +226,8 @@ classdef InternalModes < handle
         end
         
         function self = ShowRelativeErrorAtFrequency( self, omega )
+            % When using one of the built-in test cases, this method will
+            % create a figure showing the relative error of the modes.
             if self.isRunningTestCase == 0
                 error('Cannot show relative error for user specified stratification.\n');
             end
@@ -341,15 +355,72 @@ classdef InternalModes < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h] = ModesAtWavenumber(self, k )
+            % Return the normal modes and eigenvalue at a given wavenumber.
             [F,G,h] = self.internalModes.ModesAtWavenumber( k );
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
+            % Return the normal modes and eigenvalue at a given frequency.
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
         end
     end
     
     methods (Access = private)
+        
+        function self = InitTestCase(self, stratification, theMethod, n)
+            self.method = theMethod;
+            self.isRunningTestCase = 1;
+            self.stratification = stratification;
+            
+            fprintf('InternalModes intialized with %s stratification, %d grid points using %s.\n', self.stratification, n, self.fullMethodName);
+            
+            lat = 33;
+            N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
+            g = 9.81;
+            rho0 = 1025;
+            if  strcmp(stratification, 'constant')
+                self.rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
+                self.N2Function = @(z) N0*N0*ones(size(z));
+            elseif strcmp(stratification, 'exponential')
+                L_gm = 1.3e3; % thermocline exponential scale, meters
+                self.rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+                self.N2Function = @(z) N0*N0*exp(2*z/L_gm);
+            else
+                error('Invalid choice of stratification: you must use constant or exponential');
+            end
+            zIn = [-5000 0];
+            zOut = linspace(zIn(1),0,n)';
+            
+            if  strcmp(theMethod, 'densitySpectral')
+                self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat);
+            elseif  strcmp(theMethod, 'wkbSpectral')
+                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
+            elseif strcmp(theMethod, 'finiteDifference')
+                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
+            elseif strcmp(theMethod, 'spectral')
+                self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat);
+            elseif isempty(theMethod)
+                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
+            else
+                error('Invalid method!')
+            end
+        end
+        
+        function methodName = fullMethodName( self )
+            if  strcmp(self.method, 'densitySpectral')
+                methodName = 'Chebyshev polynomials on density coordinates';
+            elseif  strcmp(self.method, 'wkbSpectral')
+                methodName = 'Chebyshev polynomials on WKB coordinates';
+            elseif strcmp(self.method, 'finiteDifference')
+                methodName = 'finite differencing';
+            elseif strcmp(self.method, 'spectral')
+                methodName = 'Chebyshev polynomials';
+            elseif isempty(self.method)
+                methodName = 'Chebyshev polynomials on WKB coordinates';
+            else
+                error('Invalid method!')
+            end
+        end
         
         function [F,G,h] = ConstantStratificationModesAtWavenumber(self, k)
             N0 = 5.2e-3; g = 9.81;

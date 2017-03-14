@@ -1,56 +1,99 @@
-%
-%
-%   modes = InternalModes(rho,z,z_out,latitude)
-%   'rho' must be a vector with length matching 'z'. For finite
-%   differencing, z_out is determined with interpolation, with spectral
-%   methods, it is projected onto the output grid.
-%
-%   modes = InternalModes(rho,z_domain,z_out,latitude)
-%   'rho' must be a function handle. z_domain must be an array with two
-%   values: z_domain = [z_bottom z_surface];
-%
 classdef (Abstract) InternalModesBase < handle
+    % InternalModesBase is an abstract class from which four different
+    % internal mode solution methods derive.
+    %
+    % The class INTERNALMODES is a wrapper around these four classes.
+    %
+    %   There are two primary methods of initializing this class: either
+    %   you specify density with gridded data, or you specify density as an
+    %   analytical function.
+    %
+    %   modes = InternalModes(rho,z,zOut,latitude);
+    %   'rho' must be a vector of gridded density data with length matching
+    %   'z'. zOut is the output grid upon which all returned function will
+    %   be given.
+    %
+    %   modes = InternalModes(rho,zDomain,zOut,latitude);
+    %   'rho' must be a function handle, e.g.
+    %       rho = @(z) -(N0*N0*rho0/g)*z + rho0
+    %   zDomain must be an array with two values: z_domain = [z_bottom
+    %   z_surface];
+    %
+    %   Once initialized, you can request variations of the density, e.g.,
+    %       N2 = modes.N2;
+    %       rho_zz = modes.rho_zz;
+    %   or you can request the internal modes at a given wavenumber,
+    %       [F,G,h] = modes.ModesAtWavenumber(0.01);
+    %   or frequency,
+    %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
     properties (Access = public)
-        % scalar constants
-        latitude
-        f0
-        Lz
-        rho0
+        latitude % Latitude for which the modes are being computed.
+        f0 % Coriolis parameter at the above latitude.
+        Lz % Depth of the ocean.
+        rho0 % Density at the surface of the ocean.
         
-        nModes % used to limit the number of modes to be output
+        nModes % Used to limit the number of modes to be returned.
         
-        z % really just zOut
+        z % Depth coordinate grid used for all output (same as zOut).
         
-        normalization = 'const_G_norm'
-        upperBoundary = 'rigid_lid'
+        normalization = 'const_G_norm' % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
+        upperBoundary = 'rigid_lid' % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
     end
     
     properties (Abstract)
-        % All of these variables are given on the output dimension, z
-        rho
-        N2
-        rho_z
-        rho_zz
+        rho  % Density on the z grid.
+        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
+        rho_z % First derivative of density on the z grid.
+        rho_zz % Second derivative of density on the z grid.
     end
     
     properties (Access = protected)
-        g = 9.81
+        g = 9.81 % 9.81 meters per second.
     end
     
     methods (Abstract)
-        self = InitializeWithGrid(self, rho, z_in)
-        self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
-        [F,G,h] = ModesAtWavenumber(self, k )
-        [F,G,h] = ModesAtFrequency(self, omega )
+        [F,G,h] = ModesAtWavenumber(self, k ) % Return the normal modes and eigenvalue at a given wavenumber.
+        [F,G,h] = ModesAtFrequency(self, omega ) % Return the normal modes and eigenvalue at a given frequency.
+    end
+    
+    methods (Abstract, Access = protected)
+        self = InitializeWithGrid(self, rho, z_in) % Used internally by subclasses to intialize with a density grid.
+        self = InitializeWithFunction(self, rho, z_min, z_max, z_out) % Used internally by subclasses to intialize with a density function.
     end
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % Set the normalization and upper boundary condition
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function set.normalization(obj,norm)
+            if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'const_G_norm') && ~strcmp(norm, 'const_F_norm'))
+                error('Invalid normalization!')
+            else
+                obj.normalization = norm;
+            end
+        end
+        
+        function set.upperBoundary(self,upperBoundary)
+            if  (~strcmp(upperBoundary, 'free_surface') && ~strcmp(upperBoundary, 'rigid_lid') )
+                error('Invalid upper boundary condition!')
+            else
+                self.upperBoundary = upperBoundary;
+                self.upperBoundaryDidChange();
+            end
+        end
+    end
+    
+    methods (Access = protected)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)            
+        function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)
+            % Initialize with either a grid or analytical profile.
+            
             % Make everything a column vector
             if isrow(z_in)
                 z_in = z_in.';
@@ -95,30 +138,12 @@ classdef (Abstract) InternalModesBase < handle
             end   
         end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Set the normalization and upper boundary condition
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function set.normalization(obj,norm)
-            if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'const_G_norm') && ~strcmp(norm, 'const_F_norm'))
-                error('Invalid normalization!')
-            else
-                obj.normalization = norm;
-            end
-        end
-        
-        function set.upperBoundary(self,upperBoundary)
-            if  (~strcmp(upperBoundary, 'free_surface') && ~strcmp(upperBoundary, 'rigid_lid') )
-                error('Invalid upper boundary condition!')
-            else
-                self.upperBoundary = upperBoundary;
-                self.upperBoundaryDidChange();
-            end
-        end
+
         
         function self = upperBoundaryDidChange(self)
-        
+            % This function is called when the user changes the surface
+            % boundary condition. By overriding this function, a subclass
+            % can respond as necessary.
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,6 +152,11 @@ classdef (Abstract) InternalModesBase < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G] = NormalizeModes(self,F,G,N2,z)
+            % This method normalizes the modes F,G using trapezoidal
+            % integration on the given z grid. At the moment, this is only
+            % used by the finite differencing algorithm, as the spectral
+            % methods can use a superior (more accurate) technique of
+            % directly integrating the polynomials.
             [~,maxIndexZ] = max(z);
             for j=1:length(G(1,:))
                 if strcmp(self.normalization, 'max_u')

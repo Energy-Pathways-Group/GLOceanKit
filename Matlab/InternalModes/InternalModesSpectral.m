@@ -1,14 +1,4 @@
 classdef InternalModesSpectral < InternalModesBase
-    properties (Access = public)
-        rho
-        N2
-    end
-    
-    properties (Dependent)
-        rho_z
-        rho_zz
-    end
-    
     % Need to establish notation:
     %
     % Dimensions ? like z ? have grids, which may differ. zIn is the
@@ -37,6 +27,17 @@ classdef InternalModesSpectral < InternalModesBase
     % function/transformation name from the grid. Thus, we leave rho_z and
     % rho_zz as the only two exceptions to the aforementioned notation
     % because they are the only public facing interface.
+    properties (Access = public)
+        rho
+        N2
+    end
+    
+    properties (Dependent)
+        rho_z
+        rho_zz
+    end
+    
+
     properties %(Access = private)
         zLobatto            % zIn coordinate, on Chebyshev extrema/Lobatto grid
         rho_zLobatto        % rho on the above zLobatto
@@ -71,9 +72,89 @@ classdef InternalModesSpectral < InternalModesBase
             
             fprintf('N2 was computed with %d points. The eigenvalue problem will be computed with %d points.\n',length(self.zLobatto), length(self.xLobatto));
         end
+
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computed (dependent) properties
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function value = get.rho_z(self)
+            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.rho_zCheb);
+        end
+        
+        function value = get.rho_zz(self)
+            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.Diff1_zCheb * self.rho_zCheb);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computation of the modes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [F,G,h] = ModesAtWavenumber(self, k )
+            % The eigenvalue equation is,
+            % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
+            % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
+            % B = I
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+            
+            A = (Tzz - k*k*eye(n)*T);
+            B = diag((self.f0*self.f0-self.N2_xLobatto)/self.g)*T;
+            
+            % Lower boundary is rigid, G=0
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+            
+            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
+            if strcmp(self.upperBoundary, 'free_surface')
+                % G_z = \frac{1}{h_j} G at the surface
+                A(1,:) = Tz(1,:);
+                B(1,:) = T(1,:);
+            elseif strcmp(self.upperBoundary, 'rigid_lid')
+                A(1,:) = T(1,:);
+                B(1,:) = 0;
+            end
+            
+            [F,G,h] = self.ModesFromGEPSpectral(A,B);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+            
+            A = Tzz;
+            B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
+            
+            % Lower boundary is rigid, G=0
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+            
+            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
+            if strcmp(self.upperBoundary, 'free_surface')
+                % G_z = \frac{1}{h_j} G at the surface
+                A(1,:) = Tz(1,:);
+                B(1,:) = T(1,:);
+            elseif strcmp(self.upperBoundary, 'rigid_lid')
+                A(1,:) = T(1,:);
+                B(1,:) = 0;
+            end
+            
+            [F,G,h] = self.ModesFromGEPSpectral(A,B);
+        end
+        
+ 
+    end
+    
+    methods (Access = protected)
         
         function f = SetNoiseFloorToZero(~, f)
-           f(abs(f)/max(abs(f)) < 1e-15) = 0;
+            f(abs(f)/max(abs(f)) < 1e-15) = 0;
         end
         
         % Called by InitializeWithGrid and InitializeWithFunction after
@@ -86,7 +167,9 @@ classdef InternalModesSpectral < InternalModesBase
             
             N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
             if any(N2_zLobatto < 0)
-               error('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. Try using a finer grid.'); 
+                fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
+                N2_zLobatto(N2_zLobatto < 0) = 0;
+                self.N2_zCheb = InternalModesSpectral.fct(N2_zLobatto);
             end
             
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
@@ -193,80 +276,6 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computed (dependent) properties
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function value = get.rho_z(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.rho_zCheb);
-        end
-        
-        function value = get.rho_zz(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.Diff1_zCheb * self.rho_zCheb);
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computation of the modes
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
-            % The eigenvalue equation is,
-            % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
-            % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
-            % B = I
-            T = self.T_xLobatto;
-            Tz = self.Tx_xLobatto;
-            Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
-            
-            A = (Tzz - k*k*eye(n)*T);
-            B = diag((self.f0*self.f0-self.N2_xLobatto)/self.g)*T;
-            
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-            
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upperBoundary, 'free_surface')
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
-            end
-            
-            [F,G,h] = self.ModesFromGEPSpectral(A,B);
-        end
-        
-        function [F,G,h] = ModesAtFrequency(self, omega )
-            T = self.T_xLobatto;
-            Tz = self.Tx_xLobatto;
-            Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
-            
-            A = Tzz;
-            B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
-            
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-            
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upperBoundary, 'free_surface')
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
-            end
-            
-            [F,G,h] = self.ModesFromGEPSpectral(A,B);
-        end
-        
         % This function is an intermediary used by ModesAtFrequency and
         % ModesAtWavenumber to establish the various norm functions.
         function [F,G,h] = ModesFromGEPSpectral(self,A,B)
@@ -293,14 +302,14 @@ classdef InternalModesSpectral < InternalModesBase
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);
             h = h(1:self.nModes);
-
+            
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.
             [~,maxIndexZ] = max(self.zLobatto);
             for j=1:self.nModes
                 Fj = FFromGCheb(G_cheb(:,j),h(j));
                 Gj = GFromGCheb(G_cheb(:,j),h(j));
-                if strcmp(self.normalization, 'max_u')   
+                if strcmp(self.normalization, 'max_u')
                     A = max( abs( Fj ));
                 elseif strcmp(self.normalization, 'max_w')
                     A = max( abs( Gj ) );
