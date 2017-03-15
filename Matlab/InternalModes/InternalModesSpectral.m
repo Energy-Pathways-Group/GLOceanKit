@@ -168,7 +168,7 @@ classdef InternalModesSpectral < InternalModesBase
             N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
             if any(N2_zLobatto < 0)
                 fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
-                N2_zLobatto(N2_zLobatto < 0) = 0;
+                N2_zLobatto(N2_zLobatto <= 0) = min(N2_zLobatto(N2_zLobatto>0));
                 self.N2_zCheb = InternalModesSpectral.fct(N2_zLobatto);
             end
             
