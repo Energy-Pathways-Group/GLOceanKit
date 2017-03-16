@@ -2,10 +2,26 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     % This class solves the vertical eigenvalue problem on a WKB stretched
     % density coordinate grid using Chebyshev polynomials.
     %
-    % Internally, sLobatto is the stretched density coordinate on a Chebyshev
-    % extrema/Lobatto grid. This is the grid upon which the eigenvalue problem
-    % is solved, and therefore the class uses the superclass properties denoted
-    % with 'x' instead of 's' when setting up the eigenvalue problem.
+    % See InternalModesBase for basic usage information.
+    %
+    % This class uses the coordinate
+    %   s = \int_{-Lz}^0 \sqrt(-(g/rho0)*rho_z) dz
+    % to solve the EVP.
+    %
+    % Internally, sLobatto is the stretched WKB coordinate on a
+    % Chebyshev extrema/Lobatto grid. This is the grid upon which the
+    % eigenvalue problem is solved, and therefore the class uses the
+    % superclass properties denoted with 'x' instead of 's' when setting up
+    % the eigenvalue problem.
+    %
+    %   See also INTERNALMODES, INTERNALMODESBASE, INTERNALMODESSPECTRAL,
+    %   INTERNALMODESDENSITYSPECTRAL, and INTERNALMODESFINITEDIFFERENCE.
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
+    
     properties %(Access = private)    
         xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
         z_xiLobatto          % The value of z, at the sLobatto points

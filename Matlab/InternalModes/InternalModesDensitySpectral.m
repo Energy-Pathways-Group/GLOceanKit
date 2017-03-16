@@ -1,13 +1,25 @@
-%% InternalModesDensitySpectral
-% 
-% This class solves the vertical eigenvalue problem on a stretched density
-% coordinate grid using Chebyshev polynomials.
-%
-% Internally, sLobatto is the stretched density coordinate on a Chebyshev
-% extrema/Lobatto grid. This is the grid upon which the eigenvalue problem
-% is solved, and therefore the class uses the superclass properties denoted
-% with 'x' instead of 's' when setting up the eigenvalue problem.
 classdef InternalModesDensitySpectral < InternalModesSpectral
+    % InternalModesDensitySpectral This class solves the vertical
+    % eigenvalue problem on a stretched density coordinate grid using
+    % Chebyshev polynomials.
+    %
+    % See InternalModesBase for basic usage information.
+    %
+    % This class uses the coordinate s=-g*rho/rho0 to solve the EVP.
+    % 
+    % Internally, sLobatto is the stretched density coordinate on a Chebyshev
+    % extrema/Lobatto grid. This is the grid upon which the eigenvalue problem
+    % is solved, and therefore the class uses the superclass properties denoted
+    % with 'x' instead of 's' when setting up the eigenvalue problem.
+    %
+    %   See also INTERNALMODES, INTERNALMODESBASE, INTERNALMODESSPECTRAL,
+    %   INTERNALMODESWKBSPECTRAL, and INTERNALMODESFINITEDIFFERENCE.
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
+    
     properties %(Access = private)    
         sLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
         z_sLobatto          % The value of z, at the sLobatto points

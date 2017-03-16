@@ -1,6 +1,31 @@
 classdef InternalModesFiniteDifference < InternalModesBase
     % This class uses finite differencing of arbitrary order to compute the
-    % internal wave modes. See InternalModesBase f
+    % internal wave modes. See InternalModesBase for basic usage
+    % information.
+    %
+    %   The class takes the name/value pair 'orderOfAccuracy' (default
+    %   value of 4) in order to set the order of accuracy of the finite
+    %   differencing matrix. The matrix is constructed using the weights
+    %   algorithm described by Bengt Fornberg in 'Calaculation of weight in
+    %   finite difference formulas', SIAM review, 1998.
+    %
+    %   Setting the orderOfAccuracy does tended to improve the quality of
+    %   the solution, but does tend to have strange effects when the order
+    %   gets high relative to the number of grid points.
+    %
+    %   If you request a different output grid than input grid, the
+    %   solutions are mapped to the output grid with spline interpolation.
+    %
+    %   See also INTERNALMODES, INTERNALMODESSPECTRAL,
+    %   INTERNALMODESDENSITYSPECTRAL, INTERNALMODESWKBSPECTRAL, and
+    %   INTERNALMODESBASE.
+    %
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
+    
     properties (Access = public)
         rho  % Density on the z grid.
         N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.

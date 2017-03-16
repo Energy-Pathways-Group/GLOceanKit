@@ -1,25 +1,46 @@
 classdef InternalModesSpectral < InternalModesBase
-    % Need to establish notation:
+    % InternalModesSpectral uses Chebyshev polynomials on a z-grid to
+    % compute the internal wave modes. See InternalModesBase for basic
+    % usage information.
     %
-    % Dimensions ? like z ? have grids, which may differ. zIn is the
+    % This class takes the name/value pair 'nEVP' (default 513) in order to
+    % set the default resolution of the polynomials used to solve the
+    % eigenvalue problem (EVP), e.g.,
+    %       modes = InternalModes(rho,zDomain,zOut,latitude, 'nEVP', 128);
+    % Generally speaking, you will get half or more good quality modes (so
+    % nEVP=513 should give you 250 or so quality modes, if the density
+    % structure isn't too weird). Note that the time to solve the EVP
+    % scales as the nEVP^3, so going higher resolution comes at great cost.
+    % For best speed results, nEVP should be set to 2^n+1 to fully utilize
+    % the FFT.
+    %
+    % All solutions are spectrally projected to the request ouput grid, and
+    % therefore will remain high quality. The fastest output can be
+    % achieved by using an Gauss-Lobatto grid spanning z.
+    % 
+    % The modes are normalized by integrating the Chebyshev polynomials on
+    % the Lobatto grid using the exact integrals.
+    %
+    % A word on notation:
+    %
+    % Dimensions -- like z -- have grids, which may differ. zIn is the
     % dimension z, on some grid given by the user. zLobatto is the
     % diension z, on a Lobatto grid. zCheb would be used for the Chebyshev
     % polynomial representation of a function defined on z. Note that the
     % base class property 'z' is really zOut.
     %
-    % Functions ? if they're analytical, they're defined on a dimension,
+    % Functions -- if they're analytical, they're defined on a dimension,
     % not a grid. If they're gridded, then the grid must also be specified.
     % Thus, the function rho(z) when analytically defined will be given as
     % either just rho (when obvious) or rho_z when necessary. If it's
     % gridded, then expect rho_zIn or rho_zLobatto.
     %
-    % Transformations ? a transformation often a matrix (or generally just
+    % Transformations -- a transformation often a matrix (or generally just
     % a function) that transformation a function from one basis to another.
     % A common scenario here is that we need to go from zLobatto to zCheb.
     % In our cases we're usually going from one gridded dimension to
     % another. Inverse Chebyshev transformations are denote by T, or more
-    % specifically T_zCheb_zLobatto. Because T denotes Chebyshev, we will
-    % simply reduce this to T_zLobatto
+    % specifically T_zCheb_zLobatto.
     %
     % The underscore in the case of rho_z is certainly recognized as a
     % derivative (because of LaTex notation), so it is awkward with the
@@ -27,14 +48,31 @@ classdef InternalModesSpectral < InternalModesBase
     % function/transformation name from the grid. Thus, we leave rho_z and
     % rho_zz as the only two exceptions to the aforementioned notation
     % because they are the only public facing interface.
+    %
+    % The 'x' dimension used in the properties for this class are denoted
+    % as such because the different subclasses uses these properties to
+    % store values on different grids. In other words, this class uses 'x'
+    % for the z dimension (depth), but the density subclass uses 'x' for
+    % its density stretched coordinated.
+    %
+    %   See also INTERNALMODES, INTERNALMODESBASE,
+    %   INTERNALMODESDENSITYSPECTRAL, INTERNALMODESWKBSPECTRAL, and
+    %   INTERNALMODESFINITEDIFFERENCE.
+    %
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
+    
     properties (Access = public)
-        rho
-        N2
+        rho % Density on the z grid.
+        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
     end
     
     properties (Dependent)
-        rho_z
-        rho_zz
+        rho_z % First derivative of density on the z grid.
+        rho_zz % Second derivative of density on the z grid.
     end
     
 
@@ -55,8 +93,6 @@ classdef InternalModesSpectral < InternalModesBase
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
         T_xCheb_zOut
         Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
-        doesOutputGridSpanDomain = 0    % if not, the output grid can't be used for normalization
-        
     end
     
     methods
@@ -188,7 +224,7 @@ classdef InternalModesSpectral < InternalModesBase
                 rho = flip(rho);
             end
             
-            if IsChebyshevGrid(zIn) == 1
+            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
                 self.zLobatto = zIn;
                 self.rho_zLobatto = rho;
             else
@@ -223,7 +259,7 @@ classdef InternalModesSpectral < InternalModesBase
                 zIn = cat(1,zIn,zMin);
             end
             
-            if IsChebyshevGrid(zIn) == 1
+            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
                 self.zLobatto = zIn;
             else
                 self.zLobatto = FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
@@ -250,7 +286,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.Diff1_xCheb = (2/self.Lz)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.xLobatto) );
             
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
+            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.
@@ -358,6 +394,24 @@ classdef InternalModesSpectral < InternalModesBase
             u=u(1:N+1);
         end
         
+        function bool = IsChebyshevGrid(z_in)
+            % make sure the grid is monotonically decreasing
+            if (z_in(2) - z_in(1)) > 0
+                z_in = flip(z_in);
+            end
+            
+            z_norm = InternalModesSpectral.ChebyshevPolynomialsOnGrid( z_in );
+            N_points = length(z_in);
+            xi=(0:N_points-1)';
+            lobatto_grid = cos(xi*pi/(N_points-1));
+            z_diff = z_norm-lobatto_grid;
+            if max(abs(z_diff)) < 1e-6
+                bool = 1;
+            else
+                bool = 0;
+            end
+        end
+        
         % Given some Lobatto grid and some desired output grid, return the
         % transformation function T that goes from spectral to the output
         % grid. This basically gives you spectral interpolation.
@@ -370,7 +424,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             % T_out transforms vector solutions of the eigenvalue problem
             % into gridded solution on z_out
-            if doesOutputGridSpanDomain == 1 && IsChebyshevGrid(output_grid) == 1
+            if doesOutputGridSpanDomain == 1 && InternalModesSpectral.IsChebyshevGrid(output_grid) == 1
                 if length(output_grid) == length(lobatto_grid)
                     T = @(f_cheb) InternalModesSpectral.ifct(f_cheb);
                 elseif length(output_grid) > length(lobatto_grid)

@@ -3,6 +3,10 @@ classdef InternalModes < handle
     % InternalModes This class solves the internal mode (Sturm-Liouville)
     % problem for a given density profile.
     %
+    %   This computes the internal modes for u & v (F), the internal modes for w
+    %   (G), the eigendepths (h). You can also request the buoyancy
+    %   frequency (N2) and derivatives of rho (rho_z and rho_zz).
+    %
     %   There are two primary methods of initializing this class: either
     %   you specify density with gridded data, or you specify density as an
     %   analytical function.
@@ -21,7 +25,8 @@ classdef InternalModes < handle
     %   Once initialized, you can request variations of the density, e.g.,
     %       N2 = modes.N2;
     %       rho_zz = modes.rho_zz;
-    %   or you can request the internal modes at a given wavenumber,
+    %   or you can request the internal modes at a given wavenumber, k,
+    %   where k is 2*pi/wavelength.
     %       [F,G,h] = modes.ModesAtWavenumber(0.01);
     %   or frequency,
     %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);

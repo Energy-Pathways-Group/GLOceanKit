@@ -2,7 +2,7 @@ classdef (Abstract) InternalModesBase < handle
     % InternalModesBase is an abstract class from which four different
     % internal mode solution methods derive.
     %
-    % The class INTERNALMODES is a wrapper around these four classes.
+    % The class InternalModes is a wrapper around these four classes.
     %
     %   There are two primary methods of initializing this class: either
     %   you specify density with gridded data, or you specify density as an
@@ -26,6 +26,17 @@ classdef (Abstract) InternalModesBase < handle
     %       [F,G,h] = modes.ModesAtWavenumber(0.01);
     %   or frequency,
     %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
+    %
+    %   Jeffrey J. Early
+    %   jeffrey@jeffreyearly.com
+    %
+    %   March 14th, 2017        Version 1.0
+    %
+    %   See also INTERNALMODES, INTERNALMODESSPECTRAL,
+    %   INTERNALMODESDENSITYSPECTRAL, INTERNALMODESWKBSPECTRAL, and
+    %   INTERNALMODESFINITEDIFFERENCE.
+
+    
     properties (Access = public)
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
