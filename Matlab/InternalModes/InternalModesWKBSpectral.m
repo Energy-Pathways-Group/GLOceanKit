@@ -167,7 +167,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.Diff1_xCheb = (2/Lxi)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.xiLobatto) );
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xiLobatto, length(self.xiLobatto) );
             
-            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
+            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.
@@ -186,7 +186,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
             FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
             GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb*G_cheb );
+            FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb*G_cheb );
             GNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);

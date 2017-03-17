@@ -40,7 +40,6 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
     properties (Access = public)
         N0
         F, G, M
-        version = 1.5
     end
     
     properties (Access = protected)
@@ -104,6 +103,13 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.G = signNorm * self.G;
         end
 
+        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+            myH = self.h(k0+1,l0+1,j0);
+            m = j0*pi/self.Lz;
+            g = 9.81;
+            F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
+            ratio = sqrt(myH)/F_coefficient;
+        end
                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

@@ -3,6 +3,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     properties
        S
        Sprime
+       internalModes
     end
     
     methods
@@ -27,6 +28,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             self.S = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
+            self.internalModes = im;
             
             K2 = self.K2(:,:,1);
             [K2_unique,~,iK2_unique] = unique(K2);
@@ -47,7 +49,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 end
             end
             
-            self.SetOmegaFromEigendepths(h);
+            self.SetOmegaFromEigendepths(self.h);
             
             % Slower algoritm
 %             for i=1:self.Nx
@@ -72,6 +74,21 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             h = (N0*N0-f0*f0)./(g*(kz.*kz + kk));
             G = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0)))*sin(kz.*z);
             F = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0)))* h.*kz.*cos(kz.*z);
+        end
+        
+        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+            myH = self.h(k0+1,l0+1,j0);
+            myK = self.Kh(k0+1,l0+1,j0);
+            self.internalModes.normalization = 'max_u';
+            F = self.internalModes.ModesAtWavenumber(myK);
+            
+            F_uConst = F(:,j0);
+            F_Gnorm = self.Sprime(:,j0,k0+1,l0+1);
+            
+            [~, index] = max(abs(F_uConst));
+   
+            F_coefficient = F_Gnorm(index)/F_uConst(index);
+            ratio = sqrt(myH)/F_coefficient;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

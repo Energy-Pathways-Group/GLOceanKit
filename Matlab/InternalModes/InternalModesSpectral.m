@@ -228,7 +228,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.zLobatto = zIn;
                 self.rho_zLobatto = rho;
             else
-                self.zLobatto = FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
+                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
                 self.rho_zLobatto = interp1(zIn, rho, self.zLobatto, 'spline'); % rho, interpolated to that grid
             end
             
@@ -262,7 +262,7 @@ classdef InternalModesSpectral < InternalModesBase
             if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
                 self.zLobatto = zIn;
             else
-                self.zLobatto = FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
+                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
             end
             
             % There's just no reason not to go at least this big since
@@ -461,6 +461,15 @@ classdef InternalModesSpectral < InternalModesBase
             D(1,:)=0.5*D(1,:);
         end
         
+        function value = ValueOfFunctionAtPointOnGrid( x0, x, func_cheb )
+           % We have the Chebyshev coefficents of function func_cheb, defined on grid x, return the value at x0;
+           L = max(x)-min(x);
+           x_norm = (2/L)*(x0-min(x)) - 1;
+           t = acos(x_norm);
+           
+           N_polys = length(func_cheb);
+           value=sum(func_cheb.*cos(t*(0:(N_polys-1))));           
+        end
         
         function [varargout] = ChebyshevPolynomialsOnGrid( x, N_polys )
             %% Chebyshev Polynomials on Grid
@@ -520,6 +529,26 @@ classdef InternalModesSpectral < InternalModesBase
                     T_x(:,j) = (m/(m-2))*T_x(:,j-2) + 2*m*T(:,j-1);
                 end
                 varargout{n+1} = (2/L)*T_x;
+            end
+            
+        end
+        
+        function [z_lobatto_grid] = FindSmallestChebyshevGridWithNoGaps(z)
+            % Want to create a chebyshev grid that never has two or more point between
+            % its points. If that makes sense.
+            if (z(2) - z(1)) > 0 % make z_out decreasing
+                z = flip(z);
+            end
+            
+            L = max(z)-min(z);
+            np = ceil(log2(length(z)));
+            n = 2^np;
+            z_lobatto_grid = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(z);
+            
+            while( length(unique(interp1(z_lobatto_grid,z_lobatto_grid,z,'previous'))) ~= length(z) )
+                np = np + 1;
+                n = 2^np;
+                z_lobatto_grid = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(z);
             end
             
         end

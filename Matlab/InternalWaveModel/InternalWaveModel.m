@@ -175,14 +175,11 @@ classdef InternalWaveModel < handle
             if (k0 < 0)
                 k0 = self.Nx + k0;
             end
-                
-            myH = self.h(k0+1,l0+1,j0);
-            m = j0*pi/self.Lz;
-            g = 9.81;
-            F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
+                            
+            ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
             
             U = zeros(size(self.K));
-            U(k0+1,l0+1,j0) = UAmp*sqrt(myH)/F_coefficient/2;
+            U(k0+1,l0+1,j0) = UAmp*ratio/2;
             if sign > 0
                 A_plus = MakeHermitian(U);
                 A_minus = zeros(size(U));
@@ -197,7 +194,9 @@ classdef InternalWaveModel < handle
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
         end
         
-        
+        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+            error('This must be overriden but a subclass');
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -353,17 +352,17 @@ classdef InternalWaveModel < handle
             denominator = omega.*sqrt(self.h);
             
             % Without calling MakeHermitian, this doesn't deal with l=0.
-            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator ) .* self.F;
-            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator ) .* self.F;
+            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
+            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
             
-            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* self.F;
-            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* self.F;
+            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
+            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
             
-            self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) ) .* self.G;
-            self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) ) .* self.G;
+            self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
+            self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
             
-            self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega ) .* self.G;
-            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega ) .* self.G;  
+            self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
+            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );  
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
