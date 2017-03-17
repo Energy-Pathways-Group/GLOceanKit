@@ -110,6 +110,35 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
             ratio = sqrt(myH)/F_coefficient;
         end
+        
+        function self = SetExternalWavesWithWavenumbers(self, k, l, j, phi, U)
+            self.kExternal = k;
+            self.lExternal = l;
+            self.alphaExternal = atan2(l,k);
+            self.phiExternal = phi;
+            self.uExternal = U;
+            
+            g = 9.81;
+            for iWave=1:length(j)
+                kz = j(iWave)*pi/self.Lz;        % Vertical wavenumber
+                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
+                c2 = (self.N0*self.N0-self.f0*self.f0)./(kz*kz + K2h);
+                self.omegaExternal(iWave) = sqrt( c2 * k2h + self.f0*self.f0 );
+                
+            end
+        end
+        
+        function self = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, U)
+            self.omegaExternal = omega;
+            self.alphaExternal = alpha;
+            self.phiExternal = phi;
+            self.uExternal = U;
+            
+            for iWave=1:length(j)
+                kz = j(iWave)*pi/self.Lz;        % Vertical wavenumber  
+                h = (1/g)*(self.N0*self.N0-self.f0*self.f0)./(kz*kz+self.K2);
+            end
+        end
                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

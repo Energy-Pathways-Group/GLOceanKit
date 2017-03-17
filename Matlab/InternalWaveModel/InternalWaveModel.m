@@ -398,6 +398,56 @@ classdef InternalWaveModel < handle
             zeta = self.TransformToSpatialDomainWithG(zeta_bar);
         end
         
+        function self = SetExternalWavesWithWavenumbers(self, k, l, j, phi, U)
+            self.kExternal = k;
+            self.lExternal = l;
+            self.alphaExternal = atan2(l,k);
+            self.phiExternal = phi;
+            self.uExternal = U;
+            
+            for iWave=1:length(j)
+                
+            end
+        end
+        
+        function self = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, U)
+            self.omegaExternal = omega;
+            self.alphaExternal = alpha;
+            self.phiExternal = phi;
+            self.uExternal = U;
+            
+            for iWave=1:length(j)
+                
+            end
+        end
+        
+        function [u,v] = ExternalVelocityFieldAtTime(self, t)
+            % Return the velocity field associated with the manually added
+            % waves.
+            u_total = zeros(size(self.X));
+            v_total = zeros(size(self.X));
+            for iWave=1:nExternalWaves
+                % Compute the two-dimensional phase vector (note we're
+                % using Xh,Yh---the two-dimensional versions.
+                k0 = self.kExternal(iWave);
+                l0 = self.lExternal(iWave);
+                omega0 = self.omegaExternal(iWave);
+                phi0 = self.phiExternal(iWave);
+                alpha0 = self.alphaExternal(iWave);
+                U = self.uExternal(iWave);
+                F = permute(self.FExternal(:,iWave),[3 2 1]);
+                
+                theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
+                
+                u = U*( cos(alpha0)*cos(theta) + (self.f0/omega)*sin(alpha0)*sin(theta) ) .* F;
+                v = U*( sin(alpha0)*cos(theta) - (self.f0/omega)*cos(alpha0)*sin(theta) ) .* F;
+                
+                u_total = u_total + u;
+                v_total = v_total + v;
+            end
+            
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
