@@ -1,4 +1,38 @@
 classdef InternalWaveModelArbitraryStratification < InternalWaveModel
+    % InternalWaveModelArbitraryStratification This implements a linear
+    % internal wave model with arbitrary stratification.
+    %
+    % To initialize the model call,
+    %   wavemodel = InternalWaveModelArbitraryStratification(dims, n, rho, z, nModes, latitude)
+    % where
+    %   dims        a vector containing the length scales of x,y,z
+    %   n           a vector containing the number of grid points of x,y,z
+    %   rho         a function handle to the density profile valid from -Lz to 0
+    %   z           a vector containing the vertical grid point desired
+    %   nModes      maximum number of vertical modes to be used
+    %   latitude    the latitude of the model.
+    %
+    %   Two very useful stratification profiles are,
+    %       rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+    %   and
+    %       rho = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+    %   although, unless you need a special grid for the z-dimension, you
+    %   should probably be using InternalWaveModelConstantStratification
+    %   for the constant stratification case.
+    %
+    %   The points given in the z-dimension do *not* need to span the
+    %   entire domain, *nor* do they need to be uniform.
+    %
+    %   This method uses the 'slow' transform (aka, matrix multiplication)
+    %   and therefore the computational cost of the method is dominated by
+    %   O(Nx Ny Nz^3). Restricting nModes to only as many modes as
+    %   necessary can help mitigate this cost.
+    %   
+    %   See also INTERNALWAVEMODEL and
+    %   INTERNALWAVEMODELCONSTANTSTRATIFICATION.
+    %
+    % Jeffrey J. Early
+    % jeffrey@jeffreyearly.com
     
     properties
        S

@@ -1,43 +1,48 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% InternalWaveModel
-%
-% This implements a simple internal wave model for constant stratification.
-%
-% The usage is simple. First call,
-%   wavemodel = InternalWaveModel(dims, n, latitude, N0);
-% to initialize the model with,
-%   dims        a vector containing the length scales of x,y,z
-%   n           a vector containing the number of grid points of x,y,z
-%   latitude    the latitude of the model (e.g., 45)
-%   N0          the buoyancy frequency of the stratification
-%
-% You must now intialize the model by calling either,
-%   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
-% or
-%   wavemodel.InitializeWithGMSpectrum(Amp);
-% where Amp sets the relative GM amplitude.
-%
-% Finally, you can compute u,v,w,zeta at time t by calling,
-%   [u,v] = wavemodel.VelocityFieldAtTime(t);
-%   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
-%
-% The vertical dimension must have Nz = 2^n or Nz = 2^n + 1 points. If you
-% request the extra point, then the upper boundary will be returned as
-% well. This is designed to match the DCT used by Kraig Winters' model.
-%
-%
-% Jeffrey J. Early
-% jeffrey@jeffreyearly.com
-%
-% March 25th, 2016      Version 1.0
-% March 30th, 2016      Version 1.1
-% November 17th, 2016   Version 1.2
-% December 9th, 2016    Version 1.3
-% February 9th, 2017    Version 1.4
-% March 20th, 2017      Version 1.5
-
 classdef (Abstract) InternalWaveModel < handle
+    % InternalWaveModel This abstract class models linear internal waves.
+    % There are two subclasses: one for arbitrary stratification profiles
+    % and one for constant stratification profiles (which can therefore use
+    % fast transforms in the vertical).
+    %
+    % The usage is simple. First call,
+    %   wavemodel = InternalWaveModelConstantStratification(dims, n, latitude, N0);
+    % to initialize the model with constant stratification or,
+    %   wavemodel = InternalWaveModelArbitraryStratification(dims, n, rho, z, nModes, latitude)
+    % to initialize the model with artibrary stratification given by rho.
+    %
+    % By default the model will include all possible waves allowed by an FFT
+    % given the horizontal grid size. However, in some cases you may want to
+    % include *additional* waves (of say, longer wavelength) than otherwise
+    % would be allowed. In that case you may call
+    %   wavemodel.SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
+    % or,
+    %   wavemodel.SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+    % to added these additional waves. These additional waves cannot take
+    % advantage of fast transforms, and therefore adding too many will
+    % significantly slow the model.
+    %
+    % You must now intialize the model by calling either,
+    %   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
+    % or
+    %   wavemodel.InitializeWithGMSpectrum(Amp);
+    % where Amp sets the relative GM amplitude.
+    %
+    % Finally, you can compute u,v,w,zeta at time t by calling,
+    %   [u,v] = wavemodel.VelocityFieldAtTime(t);
+    %   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+    %
+    %   See also INTERNALWAVEMODELCONSTANTSTRATIFICATION and
+    %   INTERNALWAVEMODELARBITRARYSTRATIFICATION
+    %
+    % Jeffrey J. Early
+    % jeffrey@jeffreyearly.com
+    %
+    % March 25th, 2016      Version 1.0
+    % March 30th, 2016      Version 1.1
+    % November 17th, 2016   Version 1.2
+    % December 9th, 2016    Version 1.3
+    % February 9th, 2017    Version 1.4
+    % March 20th, 2017      Version 1.5
     properties (Access = public)
         Lx, Ly, Lz % Domain size
         Nx, Ny, Nz % Number of points in each direction

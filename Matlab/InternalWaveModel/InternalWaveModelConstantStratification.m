@@ -1,42 +1,35 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% InternalWaveModel
-%
-% This implements a simple internal wave model for constant stratification.
-%
-% The usage is simple. First call,
-%   wavemodel = InternalWaveModel(dims, n, latitude, N0);
-% to initialize the model with,
-%   dims        a vector containing the length scales of x,y,z
-%   n           a vector containing the number of grid points of x,y,z
-%   latitude    the latitude of the model (e.g., 45)
-%   N0          the buoyancy frequency of the stratification
-%
-% You must now intialize the model by calling either,
-%   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
-% or
-%   wavemodel.InitializeWithGMSpectrum(Amp);
-% where Amp sets the relative GM amplitude.
-%
-% Finally, you can compute u,v,w,zeta at time t by calling,
-%   [u,v] = wavemodel.VelocityFieldAtTime(t);
-%   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
-%
-% The vertical dimension must have Nz = 2^n or Nz = 2^n + 1 points. If you
-% request the extra point, then the upper boundary will be returned as
-% well. This is designed to match the DCT used by Kraig Winters' model.
-%
-%
-% Jeffrey J. Early
-% jeffrey@jeffreyearly.com
-%
-% March 25th, 2016      Version 1.0
-% March 30th, 2016      Version 1.1
-% November 17th, 2016   Version 1.2
-% December 9th, 2016    Version 1.3
-% February 9th, 2017    Version 1.4
-
 classdef InternalWaveModelConstantStratification < InternalWaveModel
+    % InternalWaveModelConstantStratification This implements a simple
+    % internal wave model for constant stratification.
+    %
+    % The usage is simple. First call,
+    %   wavemodel = InternalWaveModelConstantStratification(dims, n, latitude, N0);
+    % to initialize the model with,
+    %   dims        a vector containing the length scales of x,y,z
+    %   n           a vector containing the number of grid points of x,y,z
+    %   latitude    the latitude of the model (e.g., 45)
+    %   N0          the buoyancy frequency of the stratification
+    %
+    % You must now intialize the model by calling either,
+    %   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
+    % or
+    %   wavemodel.InitializeWithGMSpectrum(Amp);
+    % where Amp sets the relative GM amplitude.
+    %
+    % Finally, you can compute u,v,w,zeta at time t by calling,
+    %   [u,v] = wavemodel.VelocityFieldAtTime(t);
+    %   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+    %
+    % The vertical dimension must have Nz = 2^n or Nz = 2^n + 1 points. If
+    % you request the extra point, then the upper boundary will be returned
+    % as well. This is designed to match the DCT used by Kraig Winters'
+    % model.
+    %
+    %   See also INTERNALWAVEMODEL and
+    %   INTERNALWAVEMODELARBITRARYSTRATIFICATION
+    %
+    % Jeffrey J. Early
+    % jeffrey@jeffreyearly.com
     properties (Access = public)
         N0
         F, G, M
