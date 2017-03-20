@@ -64,7 +64,22 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
 %             end
         end
         
+    end
+    
+    methods (Access = protected)
+        
+        function [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
+            self.internalModes.normalization = norm;
+            [F,G,h] = self.internalModes.ModesAtWavenumber(k);
+        end
+        function [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
+            self.internalModes.normalization = norm;
+            [F,G,h] = self.internalModes.ModesAtFrequency(omega);
+        end
+        
         function [F,G,h] = ModesForConstantStratificationAtWavenumber(self, N0, k)
+            % This is a simple utility function that is included here to
+            % help with unit testing.
             kk = k*k;
             z = reshape(self.z,[self.Nz 1 1 1]);
             mode = reshape(1:self.nModes,[1 self.nModes 1 1]);

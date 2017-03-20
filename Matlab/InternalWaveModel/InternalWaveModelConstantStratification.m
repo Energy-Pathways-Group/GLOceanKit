@@ -103,42 +103,48 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.G = signNorm * self.G;
         end
 
+    end
+    
+    methods (Access = protected)
+        
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
             myH = self.h(k0+1,l0+1,j0);
             m = j0*pi/self.Lz;
             g = 9.81;
             F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
             ratio = sqrt(myH)/F_coefficient;
-        end
+        end     
         
-        function self = SetExternalWavesWithWavenumbers(self, k, l, j, phi, U)
-            self.kExternal = k;
-            self.lExternal = l;
-            self.alphaExternal = atan2(l,k);
-            self.phiExternal = phi;
-            self.uExternal = U;
-            
+        function [F,G,h] = ModesAtWavenumber(self, k, norm)
             g = 9.81;
-            for iWave=1:length(j)
-                kz = j(iWave)*pi/self.Lz;        % Vertical wavenumber
-                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
-                c2 = (self.N0*self.N0-self.f0*self.f0)./(kz*kz + K2h);
-                self.omegaExternal(iWave) = sqrt( c2 * k2h + self.f0*self.f0 );
-                
+            k_z = (1:self.nModes)*pi/self.Lz;
+            h = (self.N0*self.N0 - self.f0*self.f0)./(g*(k*k+k_z.*k_z));
+            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega, norm)
+            g = 9.81;
+            k_z = (1:self.nModes)*pi/self.Lz;
+            h = (self.N0*self.N0 - omega*omega)./(g * k_z.*k_z);
+            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
+        end
+        
+        % k_z and h should be of size [1, nModes]
+        % [F,G] will return with size [length(z), nModes]
+        function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h, norm)
+            g = 9.81;
+            if strcmp(norm, 'const_G_norm')
+                G = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * sin(k_z .* self.z);
+                F = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * repmat(h.*k_z,length(self.z),1) .* cos(k_z .* self.z);
+            elseif strcmp(norm, 'const_F_norm')
+                G = sqrt(2) * sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
+                F = sqrt(2) * cos(k_z.*self.z);
+            elseif strcmp(norm, 'max_u')
+                G = sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
+                F = cos(k_z.*self.z);
             end
         end
         
-        function self = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, U)
-            self.omegaExternal = omega;
-            self.alphaExternal = alpha;
-            self.phiExternal = phi;
-            self.uExternal = U;
-            
-            for iWave=1:length(j)
-                kz = j(iWave)*pi/self.Lz;        % Vertical wavenumber  
-                h = (1/g)*(self.N0*self.N0-self.f0*self.f0)./(kz*kz+self.K2);
-            end
-        end
                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

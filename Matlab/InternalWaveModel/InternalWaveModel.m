@@ -35,8 +35,9 @@
 % November 17th, 2016   Version 1.2
 % December 9th, 2016    Version 1.3
 % February 9th, 2017    Version 1.4
+% March 20th, 2017      Version 1.5
 
-classdef InternalWaveModel < handle
+classdef (Abstract) InternalWaveModel < handle
     properties (Access = public)
         Lx, Ly, Lz % Domain size
         Nx, Ny, Nz % Number of points in each direction
@@ -52,8 +53,20 @@ classdef InternalWaveModel < handle
         
         K2, Kh, h, Omega, Omega_plus, Omega_minus, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
+        
+        Xh, Yh
+        kExternal, lExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
+        
         version = 1.5
         performSanityChecks = 0
+    end
+    
+    methods (Abstract, Access = protected)
+        [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
+        [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
+        u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
+        w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
+        ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm
     end
     
     methods
@@ -100,6 +113,7 @@ classdef InternalWaveModel < handle
             
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
+            [self.Xh,self.Yh] = ndgrid(self.x,self.y);
             
             self.L = L; self.K = K; self.J = J;
             self.X = X; self.Y = Y; self.Z = Z;
@@ -107,38 +121,16 @@ classdef InternalWaveModel < handle
             self.f0 = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
             self.K2 = self.K.*self.K + self.L.*self.L;   % Square of the horizontal wavenumber
             self.Kh = sqrt(self.K2);
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Begin initializing the wave field (internal use only)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = SetOmegaFromEigendepths(self, h)
-            % Subclasses *must* call this method as part of intialization.
-            g = 9.81;
-            self.h = h;
-            self.C = sqrt( g*self.h );
-            self.Omega = sqrt(self.C.*self.C.*self.K2 + self.f0*self.f0);         % Mode frequency
             
-            % Create the hermitian conjugates of the phase vectors;
-            self.Omega(:,(self.Ny/2+1):end,:) = -self.Omega(:,(self.Ny/2+1):end,:);
-            self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
+            nothing = zeros(size(self.K));
+            self.h = nothing; self.Omega = nothing; self.Omega_plus = nothing;
+            self.Omega_minus = nothing; self.C = nothing; self.u_plus = nothing;
+            self.u_minus = nothing; self.v_plus = nothing; self.v_minus = nothing;
+            self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
+            self.zeta_minus = nothing;
         end
         
-        function ShowDiagnostics(self)
-            omega = abs(self.Omega);
-            fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', self.x(2)-self.x(1), self.y(2)-self.y(1), self.z(2)-self.z(1));
-            fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
-            fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([self.Lx self.Ly])/max(max(max(self.C)))/3600);
-            sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
-            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
-            dOmega = (sortedOmega(2)-sortedOmega(1))/2;
-            T = 2*pi/dOmega;
-            fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
-            sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
-            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
-        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Create a single wave (public)
@@ -192,10 +184,6 @@ classdef InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
             
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
-        end
-        
-        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
-            error('This must be overriden but a subclass');
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -341,6 +329,145 @@ classdef InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
         end
                
+
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Compute the dynamical fields at a given time (public)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [u,v] = VelocityFieldAtTime(self, t)
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
+            v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
+            
+            if self.performSanityChecks == 1
+                CheckHermitian(u_bar);CheckHermitian(v_bar);
+            end
+            
+            u = self.TransformToSpatialDomainWithF(u_bar);
+            v = self.TransformToSpatialDomainWithF(v_bar);
+            
+            % Add the external waves to the solution
+            if ~isempty(self.uExternal)
+               [u_ext, v_ext] = self.ExternalVelocityFieldsAtTime(t);
+               u = u + u_ext;
+               v = v + v_ext;
+            end
+        end
+        
+        function [w,zeta] = VerticalFieldsAtTime(self, t)
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+            
+            if self.performSanityChecks == 1
+                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+            end
+            
+            w = self.TransformToSpatialDomainWithG(w_bar);
+            zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+            
+            if ~isempty(self.uExternal)
+                [w_ext, zeta_ext] = self.ExternalVerticalFieldsAtTime(t);
+                w = w + w_ext;
+                zeta = zeta + zeta_ext;
+            end
+        end
+        
+        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
+            self.kExternal = k;
+            self.lExternal = l;
+            self.alphaExternal = atan2(l,k);
+            self.phiExternal = phi;
+            self.uExternal = A;
+            
+            if strcmp(type, 'energyDensity')
+                norm = 'const_G_norm';
+            elseif strcmp(type, 'maxU')
+                norm = 'max_u';
+            end
+            
+            g = 9.81;
+            for iWave=1:length(j)
+                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
+                [F_ext,G_ext,h_ext] = self.ModesAtWavenumber(sqrt(K2h), norm);
+                self.FExternal(:,iWave) = F_ext(:,j);
+                self.GExternal(:,iWave) = G_ext(:,j);
+                self.hExternal(iWave) = h_ext(j);
+                self.omegaExternal(iWave) = sqrt( g*h_ext(iWave) * K2h + self.f0*self.f0 );
+                if strcmp(type, 'energyDensity')
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(iWave));
+                end
+            end
+            
+            omega = self.omegaExternal;
+        end
+        
+        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+            self.omegaExternal = omega;
+            self.alphaExternal = alpha;
+            self.phiExternal = phi;
+            self.uExternal = A;
+            
+            if strcmp(type, 'energyDensity')
+                norm = 'const_G_norm';
+            elseif strcmp(type, 'maxU')
+                norm = 'max_u';
+            end
+            
+            g = 9.81;
+            for iWave=1:length(j)
+                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega, norm);
+                self.FExternal(:,iWave) = F_ext(:,j);
+                self.GExternal(:,iWave) = G_ext(:,j);
+                self.hExternal(iWave) = h_ext(j);
+                K_horizontal = sqrt((omega*omega - self.f0*self.f0)/(g*h_ext(j)));
+                self.kExternal(iWave) = K_horizontal*cos(alpha(iWave));
+                self.lExternal(iWave) = K_horizontal*sin(alpha(iWave));
+                if strcmp(type, 'energyDensity')
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(iWave));
+                end
+            end
+            
+            k = sqrt(self.kExternal*self.kExternal + self.lExternal*self.lExternal);
+        end
+    end
+    
+    methods (Access = protected)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Begin initializing the wave field (internal use only)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function self = SetOmegaFromEigendepths(self, h)
+            % Subclasses *must* call this method as part of intialization.
+            g = 9.81;
+            self.h = h;
+            self.C = sqrt( g*self.h );
+            self.Omega = sqrt(self.C.*self.C.*self.K2 + self.f0*self.f0);         % Mode frequency
+            
+            % Create the hermitian conjugates of the phase vectors;
+            self.Omega(:,(self.Ny/2+1):end,:) = -self.Omega(:,(self.Ny/2+1):end,:);
+            self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
+        end
+        
+        function ShowDiagnostics(self)
+            omega = abs(self.Omega);
+            fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', self.x(2)-self.x(1), self.y(2)-self.y(1), self.z(2)-self.z(1));
+            fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
+            fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([self.Lx self.Ly])/max(max(max(self.C)))/3600);
+            sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
+            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+            dOmega = (sortedOmega(2)-sortedOmega(1))/2;
+            T = 2*pi/dOmega;
+            fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
+            sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
+            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -362,70 +489,16 @@ classdef InternalWaveModel < handle
             self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
             
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
-            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );  
+            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
         end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Compute the dynamical fields at a given time (public)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [u,v] = VelocityFieldAtTime(self, t)
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
-            v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(u_bar);CheckHermitian(v_bar);
-            end
-            
-            u = self.TransformToSpatialDomainWithF(u_bar);
-            v = self.TransformToSpatialDomainWithF(v_bar);
-        end
-        
-        function [w,zeta] = VerticalFieldsAtTime(self, t)
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
-            end
-            
-            w = self.TransformToSpatialDomainWithG(w_bar);
-            zeta = self.TransformToSpatialDomainWithG(zeta_bar);
-        end
-        
-        function self = SetExternalWavesWithWavenumbers(self, k, l, j, phi, U)
-            self.kExternal = k;
-            self.lExternal = l;
-            self.alphaExternal = atan2(l,k);
-            self.phiExternal = phi;
-            self.uExternal = U;
-            
-            for iWave=1:length(j)
-                
-            end
-        end
-        
-        function self = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, U)
-            self.omegaExternal = omega;
-            self.alphaExternal = alpha;
-            self.phiExternal = phi;
-            self.uExternal = U;
-            
-            for iWave=1:length(j)
-                
-            end
-        end
-        
-        function [u,v] = ExternalVelocityFieldAtTime(self, t)
+        function [u,v] = ExternalVelocityFieldsAtTime(self, t)
             % Return the velocity field associated with the manually added
             % waves.
-            u_total = zeros(size(self.X));
-            v_total = zeros(size(self.X));
+            nExternalWaves = length(self.uExternal);
+            
+            u = zeros(size(self.X));
+            v = zeros(size(self.X));
             for iWave=1:nExternalWaves
                 % Compute the two-dimensional phase vector (note we're
                 % using Xh,Yh---the two-dimensional versions.
@@ -439,26 +512,42 @@ classdef InternalWaveModel < handle
                 
                 theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
                 
-                u = U*( cos(alpha0)*cos(theta) + (self.f0/omega)*sin(alpha0)*sin(theta) ) .* F;
-                v = U*( sin(alpha0)*cos(theta) - (self.f0/omega)*cos(alpha0)*sin(theta) ) .* F;
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                u_wave = U*( cos(alpha0)*cos(theta) + (self.f0/omega0)*sin(alpha0)*sin(theta) ) .* F;
+                v_wave = U*( sin(alpha0)*cos(theta) - (self.f0/omega0)*cos(alpha0)*sin(theta) ) .* F;
                 
-                u_total = u_total + u;
-                v_total = v_total + v;
+                u = u + u_wave;
+                v = v + v_wave;
             end
+        end
+        
+        function [w,zeta] = ExternalVerticalFieldsAtTime(self, t)
+            % Return the velocity field associated with the manually added
+            % waves.
+            nExternalWaves = length(self.uExternal);
             
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computes the phase information given the amplitudes (internal)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function u = TransformToSpatialDomainWithF(obj, u_bar)
-            error('This must be overridden by the subclass');
-        end
-        
-        function w = TransformToSpatialDomainWithG(obj, w_bar )
-            error('This must be overridden by the subclass');
+            w = zeros(size(self.X));
+            zeta = zeros(size(self.X));
+            for iWave=1:nExternalWaves
+                % Compute the two-dimensional phase vector (note we're
+                % using Xh,Yh---the two-dimensional versions.
+                k0 = self.kExternal(iWave);
+                l0 = self.lExternal(iWave);
+                omega0 = self.omegaExternal(iWave);
+                phi0 = self.phiExternal(iWave);
+                h0 = self.hExternal(iWave);
+                U = self.uExternal(iWave);
+                G = permute(self.GExternal(:,iWave),[3 2 1]);
+                
+                theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
+                
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                w_wave = U * sqrt(k0*k0+l0*l0) * h0 * sin(theta) .* G;
+                zeta_wave = -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * cos(theta) .* G;
+                
+                w = w + w_wave;
+                zeta = zeta + zeta_wave;
+            end
         end
     end
 end
