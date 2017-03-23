@@ -60,7 +60,7 @@ classdef (Abstract) InternalWaveModel < handle
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Xh, Yh
-        kExternal, lExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
+        kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
         
         version = 1.5
         performSanityChecks = 0
@@ -196,7 +196,11 @@ classdef (Abstract) InternalWaveModel < handle
         % Create a full Garrett-Munk spectrum (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function InitializeWithGMSpectrum(self, Amp)
+        function InitializeWithGMSpectrum(self, Amp, shouldRandomizeAmplitude)
+            if ~exist('shouldRandomizeAmplitude', 'var')
+                shouldRandomizeAmplitude = 0;
+            end
+            
             % GM Parameters
             j_star = 3;
             L_gm = 1.3e3; % thermocline exponential scale, meters
@@ -210,16 +214,12 @@ classdef (Abstract) InternalWaveModel < handle
             H_norm = 1/sum(H);
             
             % Do the same for the frequency function.
-            B_norm = 1/atan(sqrt(self.N0*self.N0/(self.f0*self.f0)-1));
+            B_norm = 1/atan(sqrt(self.Nmax*self.Nmax/(self.f0*self.f0)-1));
             
             % This function tells you how much energy you need between two
             % frequencies for a given vertical mode.
             GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) - atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)));
-            
-            GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( self.f0*sqrt(omega1*omega1-self.f0*self.f0)/(2*omega1*omega1) - (3/2)*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - self.f0*sqrt(omega0*omega0-self.f0*self.f0)/(2*omega0*omega0) + (3/2)*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)));
-            GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( self.f0*sqrt(omega1*omega1-self.f0*self.f0) + self.f0*self.f0*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - self.f0*sqrt(omega0*omega0-self.f0*self.f0) - self.f0*self.f0*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)));
-            GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-self.f0*self.f0)^(3/2))/(2*self.f0*omega1*omega1) - (1/2)*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - sqrt(omega1*omega1-self.f0*self.f0)/(2*self.f0) - ((omega0*omega0-self.f0*self.f0)^(3/2))/(2*self.f0*omega0*omega0) + (1/2)*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) + sqrt(omega0*omega0-self.f0*self.f0)/(2*self.f0) );
-            
+
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
             totalEnergy = 0;
@@ -227,32 +227,38 @@ classdef (Abstract) InternalWaveModel < handle
                 totalEnergy = totalEnergy + GM2D_int(self.f0,self.N0,mode);
             end
             fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
-            
-            % Find the *second* lowest frequency
-            [sortedOmegas, indices] = sort(reshape(abs(self.Omega(:,:,max(self.j)/2)),1,[]));
-%             omegaStar = sortedOmegas(2);
-            omegaStar = 1.6*self.f0;
-            
-            wVariancePerMode = [];
-            for mode=1:(max(self.j)/2)
-                wVariancePerMode(mode) = GM2D_w_int(self.f0+(min(min(self.Omega(2:end,2:end,mode)))-self.f0)/2,max(max(self.Omega(:,:,mode))),1);
-                wVariancePerModeStar(mode) = GM2D_w_int(self.f0+(omegaStar-self.f0)/2,max(max(self.Omega(:,:,mode))),1);
-            end
-            
-            shouldUseOmegaStar = 1;
-            shouldUseMaxOmega = 0;
-            
+                        
             % Sort the frequencies (for each mode) and distribute energy.
-            GM3D = zeros(size(self.Kh));
+            % This algorithm is fairly complicated because we are using two
+            % separate lists of frequencies: one for the gridded IW modes
+            % and one for the 'external' modes.
+            internalOmegaLinearIndices = reshape(1:numel(self.Omega),size(self.Omega));
+            externalOmegaLinearIndices = 1:length(self.omegaExternal);
+            GM3Dint = zeros(size(self.Kh));
+            GM3Dext = zeros(size(self.uExternal));
             for iMode = 1:(max(self.j)/1)
-                % Stride to the linear index for the full 3D matrix
-                modeStride = (iMode-1)*size(self.Omega,1)*size(self.Omega,2);
+                % Flatten the internal omegas (and their index)
+                intOmegas = reshape(abs(self.Omega(:,:,iMode)),[],1);
+                intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
                 
-                % Sort the linearized frequencies for this mode.
-                [sortedOmegas, indices] = sort(reshape(abs(self.Omega(:,:,iMode)),1,[]));
+                % Now do the same for the external modes
+                indices = find(self.jExternal == iModes);
+                extOmegas = reshape(abs(self.omegaExternal(indices)),[],1);
+                extOmegasLinearIndicesForIMode = reshape(externalOmegaLinearIndices(indices),[],1);
+                
+                % Make a combined list, but note which list each omega came
+                % from.
+                allOmegas = cat(1,intOmegas,extOmegas);
+                allIndices = cat(1,intOmegasLinearIndicesForIMode,extOmegasLinearIndicesForIMode);
+                allSource = cat(1,zeros(size(intOmegas)), ones(size(extOmegas)));
+                            
+                % Sort the frequencies for this mode.
+                [sortedOmegas, sortedOmegasIndices] = sort(allOmegas);
+                sortedIndices = allIndices(sortedOmegasIndices);
+                sortedSource = allSource(sortedOmegasIndices);
                 
                 % Then find where the omegas differ.
-                omegaDiffIndices = find(diff(sortedOmegas) > 0);
+                omegaDiffIndices = find(diff(sortedOmegas) > 0);               
             
                 lastIdx = 1;
                 omega0 = sortedOmegas(lastIdx);
@@ -260,76 +266,61 @@ classdef (Abstract) InternalWaveModel < handle
                 for idx=omegaDiffIndices
                     currentIdx = idx+1;
                     nOmegas = currentIdx-lastIdx;
-                    
-%                     if omega0 ~= obj.f0
-%                         continue;
-%                     end
-                    
-                    if shouldUseOmegaStar && omega0 == self.f0
-                        omega1 = min(omegaStar,sortedOmegas(idx + 1));
-                    elseif shouldUseMaxOmega == 1
-                        omega1 = min(2.0*omega0,sortedOmegas(idx + 1));
-                    else
-                        omega1 = sortedOmegas(idx + 1);
-                    end
+                                 
+                    omega1 = sortedOmegas(idx + 1);
                     rightDeltaOmega = (omega1-omega0)/2;
-                      energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
-%                     energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
+                    energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
                     
-%                     if omega0 == obj.f0
-%                         energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
-%                     else 
-%                         energyPerFrequency = (GM2D_zeta_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 - obj.f0*obj.f0));
-%                         energyPerFrequency = (GM2D_w_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(1/(omega0*omega0 - obj.f0*obj.f0));
-%                     end
-                    
-%                     energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
-                    
-                    GM3D(indices(lastIdx:(currentIdx-1))+modeStride) = energyPerFrequency;
-                    
-                    if shouldUseOmegaStar && omega0 == self.f0
-                        leftDeltaOmega = sortedOmegas(idx + 1) - (omega0+rightDeltaOmega);
-                        omega0 = sortedOmegas(idx + 1);
-                    elseif shouldUseMaxOmega == 1
-                        omega0 = sortedOmegas(idx + 1);
-                        leftDeltaOmega = rightDeltaOmega;
-                    else
-                        omega0 = omega1;
-                        leftDeltaOmega = rightDeltaOmega;
+                    for iIndex = lastIndex:(currentIdx-1)
+                        if sortedSource(iIndex) == 0
+                            GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
+                        else
+                            GM3Dext(sortedIndices(iIndex)) = energyPerFrequency;
+                        end
                     end
                     
-%                     omega0 = sortedOmegas(idx + 1); % same as omega0 = omega1, except when omega0 == f0
-                     lastIdx = currentIdx;
-%                     leftDeltaOmega = rightDeltaOmega;
+                    omega0 = omega1;
+                    leftDeltaOmega = rightDeltaOmega;
+                    lastIdx = currentIdx;
                 end
                 % Still have to deal with the last point.
             end
-            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*sum(sum(sum(GM3D)))/E);
-            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3D(1,1,1)/sum(sum(sum(GM3D))));
+            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
+            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
             
-            A = sqrt(GM3D/2); % Now split this into even and odd.
+            A = sqrt(GM3Dint/2); % Now split this into even and odd.
             
-            % Randomize phases, but keep unit length
-            A_plus = GenerateHermitianRandomMatrix( size(self.K) );
-            A_minus = GenerateHermitianRandomMatrix( size(self.K) );
+            if shouldRandomizeAmplitude == 1
+                A_plus = A.*GenerateHermitianRandomMatrix( size(self.K) );
+                A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
+                
+                self.uExternal = sqrt(GM3Dext/self.hExternal).*randn( size(self.uExternal) );
+                self.alphaExternal = 2*pi*rand( size(self.uExternal) );
+                self.phiExternal = 2*pi*rand( size(self.uExternal) );
+            else
+                % Randomize phases, but keep unit length
+                A_plus = GenerateHermitianRandomMatrix( size(self.K) );
+                A_minus = GenerateHermitianRandomMatrix( size(self.K) );
+                
+                goodIndices = abs(A_plus) > 0;
+                A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
+                A_plus = A.*A_plus;
+                goodIndices = abs(A_minus) > 0;
+                A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
+                A_minus = A.*A_minus;
+                
+                self.uExternal = sqrt(GM3Dext/self.hExternal);
+                self.alphaExternal = 2*pi*rand( size(self.uExternal) );
+                self.phiExternal = 2*pi*rand( size(self.uExternal) );
+            end
             
-            goodIndices = abs(A_plus) > 0;
-            A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
-            A_plus = A.*A_plus;
-            goodIndices = abs(A_minus) > 0;
-            A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
-            A_minus = A.*A_minus;
-            
-%              A_plus = A;
-%              A_minus = A;        
-            
-%             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
-%             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
             A_minus(1,1,:) = conj(A_plus(1,1,:)); % Intertial motions go only one direction!
             
-            GM_sum = sum(sum(sum(GM3D)))/E;
-            GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            fprintf('The coefficients sum to %.2f%% GM given the scales, and the randomized field sums to %.2f%% GM\n', 100*GM_sum, 100*GM_random_sum);
+            GM_sum_int = sum(sum(sum(GM3Dint)))/E;
+            GM_sum_ext = sum(GM3Dext)/E;
+            GM_random_sum_int = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
+            GM_random_sum_ext = sum(self.uExternal.*self.uExternal.*self.hExternal)/E;
+            fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
         end
@@ -385,6 +376,7 @@ classdef (Abstract) InternalWaveModel < handle
         function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
             self.kExternal = k;
             self.lExternal = l;
+            self.jExternal = j;
             self.alphaExternal = atan2(l,k);
             self.phiExternal = phi;
             self.uExternal = A;
@@ -414,6 +406,7 @@ classdef (Abstract) InternalWaveModel < handle
         function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
             self.omegaExternal = omega;
             self.alphaExternal = alpha;
+            self.jExternal = j;
             self.phiExternal = phi;
             self.uExternal = A;
             
