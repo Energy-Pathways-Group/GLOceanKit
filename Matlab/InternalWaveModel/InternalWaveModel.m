@@ -236,7 +236,7 @@ classdef (Abstract) InternalWaveModel < handle
             externalOmegaLinearIndices = 1:length(self.omegaExternal);
             GM3Dint = zeros(size(self.Kh));
             GM3Dext = zeros(size(self.uExternal));
-            for iMode = 1:(max(self.j)/1)
+            for iMode = 1:self.nModes
                 % Flatten the internal omegas (and their index)
                 intOmegas = reshape(abs(self.Omega(:,:,iMode)),[],1);
                 intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
@@ -325,7 +325,12 @@ classdef (Abstract) InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
         end
                
-
+        function self = FillOutWaveSpectrum(self)
+            for iMode = 1:self.nModes
+                omegas = sort(reshape(abs(self.Omega(:,:,iMode)),[],1));
+                
+            end
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
