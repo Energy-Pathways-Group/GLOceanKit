@@ -118,7 +118,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         function [F,G,h] = ModesAtFrequency(self, omega, norm)
             g = 9.81;
             k_z = (1:self.nModes)*pi/self.Lz;
-            h = (self.N0*self.N0 - omega*omega)./(g * k_z.*k_z);
+            h = (self.N0*self.N0 - omega.*omega)./(g * k_z.*k_z);
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
         end
         

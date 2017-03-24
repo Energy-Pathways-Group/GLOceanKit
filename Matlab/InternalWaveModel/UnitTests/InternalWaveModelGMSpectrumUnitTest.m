@@ -21,12 +21,12 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 800e3;
+Lx = 100e3;
 Ly = 100e3;
 Lz = 5000;
 
-Nx = 512;
-Ny = 512/8;
+Nx = 64;
+Ny = 64;
 Nz = 65; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
 latitude = 31;
@@ -38,7 +38,8 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel.FillOutWaveSpectrum();
 wavemodel.InitializeWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,9 +50,9 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 depth = Lz/2;
-depthIndex = find(wavemodel.z-Lz > -depth,1,'first');
+depthIndex = find(wavemodel.z > -depth,1,'first');
 stride = 4;
-t = 0:15*60:4*86400;
+t = 0:15*60:1*86400;
 xIndices = 1:stride:Nx;
 yIndices = 1:stride:Ny;
 cv_mooring = zeros([length(t) length(xIndices)*length(yIndices)]);

@@ -105,7 +105,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.z = z; % cosine basis (not your usual dct basis, however)
             
             self.N2 = N2;
-            self.Nmax = max(N2);
+            self.Nmax = sqrt(max(N2));
             
             % Spectral domain, in radians
             dk = 1/self.Lx;          % fourier frequency
@@ -223,7 +223,7 @@ classdef (Abstract) InternalWaveModel < handle
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
             totalEnergy = 0;
-            for mode=1:(max(self.j)/1)
+            for mode=1:self.nModes
                 totalEnergy = totalEnergy + GM2D_int(self.f0,self.N0,mode);
             end
             fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
@@ -242,7 +242,7 @@ classdef (Abstract) InternalWaveModel < handle
                 intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
                 
                 % Now do the same for the external modes
-                indices = find(self.jExternal == iModes);
+                indices = find(self.jExternal == iMode);
                 extOmegas = reshape(abs(self.omegaExternal(indices)),[],1);
                 extOmegasLinearIndicesForIMode = reshape(externalOmegaLinearIndices(indices),[],1);
                 
@@ -263,7 +263,7 @@ classdef (Abstract) InternalWaveModel < handle
                 lastIdx = 1;
                 omega0 = sortedOmegas(lastIdx);
                 leftDeltaOmega = 0;
-                for idx=omegaDiffIndices
+                for idx=omegaDiffIndices'
                     currentIdx = idx+1;
                     nOmegas = currentIdx-lastIdx;
                                  
@@ -271,7 +271,7 @@ classdef (Abstract) InternalWaveModel < handle
                     rightDeltaOmega = (omega1-omega0)/2;
                     energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
                     
-                    for iIndex = lastIndex:(currentIdx-1)
+                    for iIndex = lastIdx:(currentIdx-1)
                         if sortedSource(iIndex) == 0
                             GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
                         else
@@ -294,8 +294,7 @@ classdef (Abstract) InternalWaveModel < handle
                 A_plus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 
-                self.uExternal = sqrt(GM3Dext/self.hExternal).*randn( size(self.uExternal) );
-                self.alphaExternal = 2*pi*rand( size(self.uExternal) );
+                self.uExternal = sqrt(2*GM3Dext/self.hExternal).*randn( size(self.uExternal) );
                 self.phiExternal = 2*pi*rand( size(self.uExternal) );
             else
                 % Randomize phases, but keep unit length
@@ -309,8 +308,9 @@ classdef (Abstract) InternalWaveModel < handle
                 A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
                 A_minus = A.*A_minus;
                 
-                self.uExternal = sqrt(GM3Dext/self.hExternal);
-                self.alphaExternal = 2*pi*rand( size(self.uExternal) );
+                % Check this factor of 2!!! Is the correct? squared
+                % velocity to energy, I think.
+                self.uExternal = sqrt(2*GM3Dext./self.hExternal);
                 self.phiExternal = 2*pi*rand( size(self.uExternal) );
             end
             
@@ -319,17 +319,43 @@ classdef (Abstract) InternalWaveModel < handle
             GM_sum_int = sum(sum(sum(GM3Dint)))/E;
             GM_sum_ext = sum(GM3Dext)/E;
             GM_random_sum_int = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            GM_random_sum_ext = sum(self.uExternal.*self.uExternal.*self.hExternal)/E;
+            GM_random_sum_ext = sum(self.uExternal.*self.uExternal.*self.hExternal/2)/E;
             fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
         end
                
-        function self = FillOutWaveSpectrum(self)
+        function self = FillOutWaveSpectrum(self)            
+            dOmegaInitial = 0.05;
+            maxdOmega = 0.5*self.f0;
+            Ln = -1/log(1-dOmegaInitial);
+            dOmegas = (1-exp(-(1:100)'/Ln));
+            gapOmegas = self.f0 + cumsum(self.f0*dOmegas);
+            omegaExt = [];
+            jExt = [];
             for iMode = 1:self.nModes
                 omegas = sort(reshape(abs(self.Omega(:,:,iMode)),[],1));
                 
+                % First fill in the lower triangle
+                indices = find(gapOmegas < omegas(2));
+                jExt = cat(1,jExt,iMode*ones(length(indices),1));
+                omegaExt = cat(1,omegaExt,gapOmegas(indices));
+                
+                % Then fill in overly sized gaps
+                diffOmega = diff(omegas);
+                gapIndices = find(diffOmega>maxdOmega);
+                for i=2:length(gapIndices)
+                    n = ceil(diffOmega(gapIndices(i))/maxdOmega);
+                    newOmegas = linspace(omegas(gapIndices(i)),omegas(gapIndices(i)+1),n+1)';
+                    jExt = cat(1,jExt,iMode*ones(n-1,1));
+                    omegaExt = cat(1,omegaExt,newOmegas(2:end-1));
+                end
             end
+            alphaExt = 2*pi*rand( size(omegaExt) );
+            
+            self.SetExternalWavesWithFrequencies(omegaExt,alphaExt,jExt,zeros(size(omegaExt)),zeros(size(omegaExt)),'energyDensity');
+            
+            fprintf('Added %d external waves to fill out the GM spectrum.\n', length(omegaExt));
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -393,15 +419,16 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             g = 9.81;
+            self.hExternal = zeros(length(j),1);
             for iWave=1:length(j)
                 K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
                 [F_ext,G_ext,h_ext] = self.ModesAtWavenumber(sqrt(K2h), norm);
-                self.FExternal(:,iWave) = F_ext(:,j);
-                self.GExternal(:,iWave) = G_ext(:,j);
-                self.hExternal(iWave) = h_ext(j);
+                self.FExternal(:,iWave) = F_ext(:,j(iWave));
+                self.GExternal(:,iWave) = G_ext(:,j(iWave));
+                self.hExternal(iWave) = h_ext(j(iWave));
                 self.omegaExternal(iWave) = sqrt( g*h_ext(iWave) * K2h + self.f0*self.f0 );
                 if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(iWave));
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
                 end
             end
             
@@ -422,20 +449,21 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             g = 9.81;
+            self.hExternal = zeros(length(j),1);
             for iWave=1:length(j)
-                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega, norm);
-                self.FExternal(:,iWave) = F_ext(:,j);
-                self.GExternal(:,iWave) = G_ext(:,j);
-                self.hExternal(iWave) = h_ext(j);
-                K_horizontal = sqrt((omega*omega - self.f0*self.f0)/(g*h_ext(j)));
+                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
+                self.FExternal(:,iWave) = F_ext(:,j(iWave));
+                self.GExternal(:,iWave) = G_ext(:,j(iWave));
+                self.hExternal(iWave) = h_ext(j(iWave));
+                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
                 self.kExternal(iWave) = K_horizontal*cos(alpha(iWave));
                 self.lExternal(iWave) = K_horizontal*sin(alpha(iWave));
                 if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(iWave));
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
                 end
             end
             
-            k = sqrt(self.kExternal*self.kExternal + self.lExternal*self.lExternal);
+            k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
         end
     end
     
