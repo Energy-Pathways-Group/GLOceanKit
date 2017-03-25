@@ -21,12 +21,14 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+aspectRatio = 1;
+
 Lx = 100e3;
-Ly = 100e3;
+Ly = aspectRatio*100e3;
 Lz = 5000;
 
 Nx = 64;
-Ny = 64;
+Ny = aspectRatio*64;
 Nz = 65; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
 latitude = 31;
