@@ -56,8 +56,10 @@ classdef (Abstract) InternalWaveModel < handle
         
         N2, Nmax
         
-        K2, Kh, h, Omega, Omega_plus, Omega_minus, f0, C
+        K2, Kh, h, Omega, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
+        
+        Amp_plus, Amp_minus % Used for diagnostics only
         
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
@@ -128,8 +130,8 @@ classdef (Abstract) InternalWaveModel < handle
             self.Kh = sqrt(self.K2);
             
             nothing = zeros(size(self.K));
-            self.h = nothing; self.Omega = nothing; self.Omega_plus = nothing;
-            self.Omega_minus = nothing; self.C = nothing; self.u_plus = nothing;
+            self.h = nothing; self.Omega = nothing;
+            self.C = nothing; self.u_plus = nothing;
             self.u_minus = nothing; self.v_plus = nothing; self.v_minus = nothing;
             self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
             self.zeta_minus = nothing;
@@ -189,6 +191,31 @@ classdef (Abstract) InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
             
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
+        end
+        
+        function [omega, alpha, mode, phi, A] = WaveCoefficientsFromGriddedWaves(self)
+            % This returns the properties of the waves being used in the
+            % gridded simulation, as their properly normalized individual
+            % wave components. Very useful for debugging.
+            %
+            % Note that A_plus and A_minus each have half the inertial
+            % energy. This can be misleading, but the phasing is chosen to
+            % make it work.
+            [A_plus,phi_plus,linearIndex] = ExtractNonzeroWaveProperties(self.Amp_plus);
+            omega_plus = self.Omega(linearIndex);
+            mode_plus = self.J(linearIndex);
+            alpha_plus = atan2(self.L(linearIndex),self.K(linearIndex));
+            
+            [A_minus,phi_minus,linearIndex] = ExtractNonzeroWaveProperties(self.Amp_minus);
+            omega_minus = -self.Omega(linearIndex);
+            mode_minus = self.J(linearIndex);
+            alpha_minus = atan2(self.L(linearIndex),self.K(linearIndex));
+            
+            omega = [omega_plus; omega_minus];
+            mode = [mode_plus; mode_minus];
+            alpha = [alpha_plus; alpha_minus];
+            phi = [phi_plus; phi_minus];
+            A = [A_plus; A_minus];
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -288,6 +315,7 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
             fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
             
+            % At this stage GM3Dint contains all the energy
             A = sqrt(GM3Dint/2); % Now split this into even and odd.
             
             if shouldRandomizeAmplitude == 1
@@ -505,6 +533,7 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function GenerateWavePhases(self, U_plus, U_minus)
+            self.Amp_plus = U_plus; self.Amp_minus = U_minus;
             alpha = atan2(self.L,self.K);
             omega = abs(self.Omega); % The following definitions assume omega > 0.
             denominator = omega.*sqrt(self.h);
@@ -606,7 +635,8 @@ for k=1:K
             jj = mod(N-j+1, N) + 1;
             if i == ii && j == jj
                 % A(i,j,k) = real(A(i,j,k)); % self-conjugate term
-                % This is normally what you'd do, but we're being tricky
+                % This is not normally what you'd do, but we're being
+                % tricky by later adding the conjugate
                 if i == 1 && j == 1
                     continue;
                 else
@@ -616,6 +646,55 @@ for k=1:K
                 A(i,j,k) = 0;
             else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay 
                 A(ii,jj,k) = conj(A(i,j,k));
+            end
+        end
+    end
+end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Takes a Hermitian matrix and resets it back to the real amplitude.
+function [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
+M = size(Matrix,1);
+N = size(Matrix,2);
+K = size(Matrix,3);
+
+A = [];
+phi = [];
+linearIndex = [];
+
+% The order of the for-loop is chosen carefully here.
+for k=1:K
+    for j=1:(N/2+1)
+        for i=1:M
+            ii = mod(M-i+1, M) + 1;
+            jj = mod(N-j+1, N) + 1;
+            waveAmp = 0; wavePhase = 0;
+            if i == ii && j == jj
+                % self-conjugate term
+                if i == 1 && j == 1
+                    waveAmp = abs(Matrix(i,j,k));
+                    wavePhase = angle(Matrix(i,j,k));
+                else
+                    continue;
+                end
+            elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
+                waveAmp = abs(Matrix(i,j,k));
+                wavePhase = angle(Matrix(i,j,k));
+            else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay 
+%                 A(ii,jj,k) = conj(A(i,j,k));
+                if j == 1 && i > N/2
+                    continue;
+                end
+                waveAmp = 2*abs(Matrix(i,j,k));
+                wavePhase = angle(Matrix(i,j,k));
+            end
+            if waveAmp > 0
+               A = cat(1,A,waveAmp);
+               phi = cat(1,phi,wavePhase);
+               linearIndex = cat(1,linearIndex,sub2ind(size(Matrix),i,j,k));
             end
         end
     end
