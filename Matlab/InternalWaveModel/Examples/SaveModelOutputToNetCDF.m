@@ -18,13 +18,16 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 800e3;
+N = 64;
+aspectRatio = 1;
+
+Lx = aspectRatio*100e3;
 Ly = 100e3;
 Lz = 5000;
 
-Nx = 2048/2;
-Ny = 256/2;
-Nz = 128;
+Nx = aspectRatio*N;
+Ny = N;
+Nz = (N/2)+1;
 
 % Lx = 15e3;
 % Ly = 15e3;
@@ -62,8 +65,9 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.ShowDiagnostics();
+wavemodel.FillOutWaveSpectrum();
 wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
 
 t = (0:timeStep:maxTime)';
@@ -74,7 +78,7 @@ t = (0:timeStep:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWaveModel_%dx%dx%d@%s.nc', outputfolder,Nx,Ny,Nz,datestr(datetime('now'),'yyyy-mm-dd_HH:MM:SS'));
+filepath = sprintf('%s/InternalWaveModel_%dx%dx%d@%s.nc', outputfolder,Nx,Ny,Nz,datestr(datetime('now'),'yyyy-mm-ddTHHMMSS'));
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;

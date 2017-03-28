@@ -21,7 +21,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-aspectRatio = 1;
+aspectRatio = 8;
 
 Lx = 100e3;
 Ly = aspectRatio*100e3;
@@ -41,7 +41,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-wavemodel.FillOutWaveSpectrum();
+% wavemodel.FillOutWaveSpectrum();
 wavemodel.InitializeWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

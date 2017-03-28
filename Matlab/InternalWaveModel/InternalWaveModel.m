@@ -239,7 +239,7 @@ classdef (Abstract) InternalWaveModel < handle
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
             E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*Amp;
-            E = E*(self.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
+%             E = E*(self.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
                       
             % Compute the proper vertical function normalization
             H = (j_star+(1:1024)).^(-5/2);
@@ -326,19 +326,9 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
             
             % At this stage GM3Dint contains all the energy, E_gm.
-            % Now split this so
+            % Now this needs to be split so that
             %       (1)     E<A_plus^2 + A_minus^2> = E_gm
-            % BUT, note that most wavenumbers (except zeros and nyquist),
-            % contain half the amplitude of the wave. Therefore, the sum of
-            % the square of the wave components is actually half the
-            % squared amplitude of the wave. In other words,
-            %       (2)     (A/2)^2 + (A/2)^2 = (1/2) * (A/2 + A/2)^2
-            % This means that we 'double counted' the number of waves at
-            % each frequency (in most cases) with the above sorting
-            % routine. So while equation (1) suggests A = sqrt(E), we've
-            % actually only put in half the energy.
             A = sqrt(GM3Dint/2); 
-            
             
             % Each standard coefficient a(i,j,k) has equal conjugate, which
             % is already accounted for as having the same frequency. So
@@ -366,6 +356,7 @@ classdef (Abstract) InternalWaveModel < handle
                 self.uExternal = sqrt(2*GM3Dext./self.hExternal);
                 self.phiExternal = 2*pi*rand( size(self.uExternal) );
             end
+            
             
             A_minus(1,1,:) = conj(A_plus(1,1,:)); % Intertial motions go only one direction!
             
@@ -518,6 +509,20 @@ classdef (Abstract) InternalWaveModel < handle
             
             k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
         end
+        
+        function ShowDiagnostics(self)
+            omega = abs(self.Omega);
+            fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', self.x(2)-self.x(1), self.y(2)-self.y(1), self.z(2)-self.z(1));
+            fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
+            fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([self.Lx self.Ly])/max(max(max(self.C)))/3600);
+            sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
+            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+            dOmega = (sortedOmega(2)-sortedOmega(1))/2;
+            T = 2*pi/dOmega;
+            fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
+            sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
+            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+        end
     end
     
     methods (Access = protected)
@@ -538,19 +543,6 @@ classdef (Abstract) InternalWaveModel < handle
             self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
         end
         
-        function ShowDiagnostics(self)
-            omega = abs(self.Omega);
-            fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', self.x(2)-self.x(1), self.y(2)-self.y(1), self.z(2)-self.z(1));
-            fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
-            fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([self.Lx self.Ly])/max(max(max(self.C)))/3600);
-            sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
-            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
-            dOmega = (sortedOmega(2)-sortedOmega(1))/2;
-            T = 2*pi/dOmega;
-            fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
-            sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
-            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
-        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -710,7 +702,7 @@ for k=1:K
                 wavePhase = angle(Matrix(i,j,k));
             else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay 
 %                 A(ii,jj,k) = conj(A(i,j,k));
-                if j == 1 && i > N/2
+                if j == 1 && i > M/2
                     continue;
                 end
                 waveAmp = 2*abs(Matrix(i,j,k));

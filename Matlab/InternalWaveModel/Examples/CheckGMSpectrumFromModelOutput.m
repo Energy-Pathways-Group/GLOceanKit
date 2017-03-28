@@ -11,13 +11,8 @@
 %
 % December 6th, 2016      Version 1.0
 
-
-file = '/Volumes/OceanTransfer/InternalWaveBigLong.nc';
-file = '/Users/jearly/Desktop/InternalWaveBigLong.nc';
-file = '/Users/jearly/Desktop/InternalWaveModel_512x64x64@2016-12-19_11:58:34.nc';
-file = '/Users/jearly/Desktop/InternalWaveModel_512x64x64@2016-12-19_12:00:20.nc';
-file = '/Users/jearly/Desktop/InternalWaveModel_1024x128x128@2016-12-19_14:46:12.nc';
-% file = '/Users/jearly/Desktop/InternalWaveTest.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_64x64x33@2017-03-28T120412.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_512x64x33@2017-03-28T114337.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -86,7 +81,7 @@ hold on, plot(omega,S_gm*0.226)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:12:min(96,length(t)-1); % apparently this is irrelevant. why?
+timeEnsemble = 1:6:min(400,length(t)-1); % apparently this is irrelevant. why?
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
@@ -113,7 +108,7 @@ H0 = 1/sum((j_star+(1:1024)).^(-5/2));
 
 Phi = zeros(length(z),1);
 Gamma = zeros(length(z),1);
-D = max(z); g=9.81; N2=N0*N0; f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
+D = max(abs(z)); g=9.81; N2=N0*N0; f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
 for j=1:1024
    Phi = Phi + (2/D)*H0*((j_star+j).^(-5/2)) * cos(z*j*pi/D).^2;
    Gamma = Gamma + (2/D)*H0*((j_star+j).^(-5/2)) * sin(z*j*pi/D).^2;
