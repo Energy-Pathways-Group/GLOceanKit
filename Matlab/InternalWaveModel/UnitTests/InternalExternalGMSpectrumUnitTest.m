@@ -36,14 +36,21 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-t = 3600;
+t = 0;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-wavemodel.InitializeWithGMSpectrum(1.0)
-% wavemodel.InitializeWithPlaneWave(0,0,1,1.0,1);
+% wavemodel.InitializeWithGMSpectrum(1.0)
+wavemodel.InitializeWithPlaneWave(0,0,1,1.0,1);
 [u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);
 
 [omega, alpha, mode, phi, A] = wavemodel.WaveCoefficientsFromGriddedWaves();
+L_gm = 1.3e3; % thermocline exponential scale, meters
+invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+E_gm = 6.3e-5; % non-dimensional energy parameter
+E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+E = E*(wavemodel.Lz/L_gm);
+
+fprintf('The wave components sum to %.2f%% GM\n', 100*sum(A.*A)/E);
 
 % Now reset the gridded field to zero.
 wavemodel.InitializeWithPlaneWave(1,1,1,0.0,1);

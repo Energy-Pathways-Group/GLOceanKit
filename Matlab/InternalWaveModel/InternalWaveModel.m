@@ -200,13 +200,18 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % Note that A_plus and A_minus each have half the inertial
             % energy. This can be misleading, but the phasing is chosen to
-            % make it work.
-            [A_plus,phi_plus,linearIndex] = ExtractNonzeroWaveProperties(self.Amp_plus);
+            % make it work. Never-the-less, we double/zero that component.
+            A_p = self.Amp_plus;
+            A_p(1,1,:) = 2*A_p(1,1,:);
+            A_m = self.Amp_minus;
+            A_m(1,1,:) = 0*A_m(1,1,:);
+            
+            [A_plus,phi_plus,linearIndex] = ExtractNonzeroWaveProperties(A_p);
             omega_plus = self.Omega(linearIndex);
             mode_plus = self.J(linearIndex);
             alpha_plus = atan2(self.L(linearIndex),self.K(linearIndex));
             
-            [A_minus,phi_minus,linearIndex] = ExtractNonzeroWaveProperties(self.Amp_minus);
+            [A_minus,phi_minus,linearIndex] = ExtractNonzeroWaveProperties(A_m);
             omega_minus = -self.Omega(linearIndex);
             mode_minus = self.J(linearIndex);
             alpha_minus = atan2(self.L(linearIndex),self.K(linearIndex));
@@ -259,6 +264,11 @@ classdef (Abstract) InternalWaveModel < handle
             % This algorithm is fairly complicated because we are using two
             % separate lists of frequencies: one for the gridded IW modes
             % and one for the 'external' modes.
+            %
+            % Note that it would appear that we are double counting the
+            % number of waves at each frequency because we're included the
+            % negative part of the hermitian conjugate. However, we also
+            % have negative frequency waves, so this is justified.
             internalOmegaLinearIndices = reshape(1:numel(self.Omega),size(self.Omega));
             externalOmegaLinearIndices = 1:length(self.omegaExternal);
             GM3Dint = zeros(size(self.Kh));
@@ -315,9 +325,24 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
             fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
             
-            % At this stage GM3Dint contains all the energy
-            A = sqrt(GM3Dint/2); % Now split this into even and odd.
+            % At this stage GM3Dint contains all the energy, E_gm.
+            % Now split this so
+            %       (1)     E<A_plus^2 + A_minus^2> = E_gm
+            % BUT, note that most wavenumbers (except zeros and nyquist),
+            % contain half the amplitude of the wave. Therefore, the sum of
+            % the square of the wave components is actually half the
+            % squared amplitude of the wave. In other words,
+            %       (2)     (A/2)^2 + (A/2)^2 = (1/2) * (A/2 + A/2)^2
+            % This means that we 'double counted' the number of waves at
+            % each frequency (in most cases) with the above sorting
+            % routine. So while equation (1) suggests A = sqrt(E), we've
+            % actually only put in half the energy.
+            A = sqrt(GM3Dint/2); 
             
+            
+            % Each standard coefficient a(i,j,k) has equal conjugate, which
+            % is already accounted for as having the same frequency. So
+            % sum(a^2/2) really is the total energy.
             if shouldRandomizeAmplitude == 1
                 A_plus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
