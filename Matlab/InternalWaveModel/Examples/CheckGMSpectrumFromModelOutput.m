@@ -12,7 +12,7 @@
 % December 6th, 2016      Version 1.0
 
 file = '/Volumes/OceanTransfer/InternalWaveModel_2017-03-28T141543_64x64x33.nc';
-file = '/Volumes/OceanTransfer/InternalWaveModel_2017-03-28T141559_64x64x33.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_2017-03-29T163310_512x64x33.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -31,12 +31,35 @@ f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+% Create the vertical structure functions for constant stratification
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+j_star = 3;
+L_gm = 1.3e3; % thermocline exponential scale, meters
+invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+E_gm = 6.3e-5; % non-dimensional energy parameter
+E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+N2 = N0*N0;
+B0 = 1/(pi/2 - atan( f0/sqrt(N2-f0*f0)));
+H0 = 1/sum((j_star+(1:1024)).^(-5/2));
+
+Phi = zeros(length(z),1);
+Gamma = zeros(length(z),1);
+D = max(z)-min(z); g=9.81; N2=N0*N0;
+for j=1:1024
+   Phi = Phi + (2/D)*H0*((j_star+j).^(-5/2)) * cos(z*j*pi/D).^2;
+   Gamma = Gamma + (2/D)*H0*((j_star+j).^(-5/2)) * sin(z*j*pi/D).^2;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 % Check the frequency spectrum at a given depth, but multiple (x,y)
 % locations.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = 1250;
+depth = -1250;
 [depth_index] = find(z <= depth, 1, 'last');
 
 % This is what is wonderful about NetCDF. We can pull out a slice in time
@@ -58,18 +81,22 @@ for i=1:subsample:M
 	end
 end
 
-taper_bandwidth = 2;
-psi=[];
-%  [psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
-[omega_p, Spp, Snn, Spn] = mspec(t(2)-t(1),cv_mooring,psi);
-
+% Compute the spectrum
+[omega_p, Spp, Snn, Spn] = mspec(t(2)-t(1),cv_mooring,[]);
 omega = [ -flipud(omega_p(2:end)); omega_p];
-[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
 % We want the integral of this to give us the variance back, so we need to
 % divide by 2*pi
 S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
+
+% Create the theoretical spectrum
+B = B0*(f0./abs(omega)).*(1./sqrt(omega.*omega-f0*f0));
+nonHydrostaticFactor = ((N0*N0 - omega.*omega)/(N0*N0-f0*f0));
+S_gm = real((E/2)*B.*((f0 - omega).^2)./(omega.*omega)).*nonHydrostaticFactor * Phi(depth_index);
+S_gm(abs(omega)<f0) = 0;
+
+
 figure, plot(omega,S), ylog
-hold on, plot(omega,S_gm*0.226)
+hold on, plot(omega,S_gm)
 
 xAxisMax = N0;
 ticks = linspace(f0,xAxisMax,5);
@@ -110,24 +137,6 @@ end
 uvVariance = uvVariance/length(timeEnsemble);
 zetaVariance = zetaVariance/length(timeEnsemble);
 wVariance = wVariance/length(timeEnsemble);
-
-
-j_star = 3;
-L_gm = 1.3e3; % thermocline exponential scale, meters
-invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
-E_gm = 6.3e-5; % non-dimensional energy parameter
-E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
-N2 = N0*N0;
-B0 = 1/(pi/2 - atan( f0/sqrt(N2-f0*f0)));
-H0 = 1/sum((j_star+(1:1024)).^(-5/2));
-
-Phi = zeros(length(z),1);
-Gamma = zeros(length(z),1);
-D = max(abs(z)); g=9.81; N2=N0*N0; f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-for j=1:1024
-   Phi = Phi + (2/D)*H0*((j_star+j).^(-5/2)) * cos(z*j*pi/D).^2;
-   Gamma = Gamma + (2/D)*H0*((j_star+j).^(-5/2)) * sin(z*j*pi/D).^2;
-end
 
 ExpectedUV = E*Phi*( 3*N2/2 - f0*f0 - (B0/2)*f0*sqrt(N2-f0*f0) )/(N2-f0*f0);
 ExpectedZeta = E*Gamma*(1/2 - (B0/2)*(f0/N2)*sqrt(N2-f0*f0))/(N2-f0*f0);

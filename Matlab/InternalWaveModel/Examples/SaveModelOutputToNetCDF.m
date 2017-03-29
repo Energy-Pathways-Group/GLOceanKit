@@ -19,7 +19,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 N = 64;
-aspectRatio = 1;
+aspectRatio = 8;
 
 Lx = aspectRatio*100e3;
 Ly = 100e3;
@@ -42,10 +42,10 @@ N0 = 5.2e-3;
 GMReferenceLevel = 1.0;
 
 timeStep = 15*60; % in seconds
-maxTime = 4*86400;
+maxTime = 2*86400;
 
-outputfolder = '/Volumes/OceanTransfer';
-% outputfolder = '/Users/jearly/Desktop';
+% outputfolder = '/Volumes/OceanTransfer';
+outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -67,7 +67,7 @@ end
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.ShowDiagnostics();
-wavemodel.FillOutWaveSpectrum();
+% wavemodel.FillOutWaveSpectrum();
 wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
 
 t = (0:timeStep:maxTime)';
