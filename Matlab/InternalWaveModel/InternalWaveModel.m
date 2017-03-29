@@ -371,7 +371,7 @@ classdef (Abstract) InternalWaveModel < handle
                
         function self = FillOutWaveSpectrum(self)            
             dOmegaInitial = 0.05;
-            maxdOmega = 0.5*self.f0;
+            maxdOmega = 0.25*self.f0; % Gaps will appear with observations longer than T = 2*pi/maxdOmega;
             Ln = -1/log(1-dOmegaInitial);
             dOmegas = (1-exp(-(1:100)'/Ln));
             gapOmegas = self.f0 + cumsum(self.f0*dOmegas);

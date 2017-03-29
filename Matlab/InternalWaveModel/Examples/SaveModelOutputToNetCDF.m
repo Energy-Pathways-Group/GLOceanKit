@@ -45,7 +45,7 @@ timeStep = 15*60; % in seconds
 maxTime = 4*86400;
 
 outputfolder = '/Volumes/OceanTransfer';
-outputfolder = '/Users/jearly/Desktop';
+% outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -78,7 +78,7 @@ t = (0:timeStep:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWaveModel_%dx%dx%d@%s.nc', outputfolder,Nx,Ny,Nz,datestr(datetime('now'),'yyyy-mm-ddTHHMMSS'));
+filepath = sprintf('%s/InternalWaveModel_%s_%dx%dx%d.nc', outputfolder,datestr(datetime('now'),'yyyy-mm-ddTHHMMSS'),Nx,Ny,Nz);
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;

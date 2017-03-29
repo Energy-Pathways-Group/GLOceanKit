@@ -11,8 +11,8 @@
 %
 % December 6th, 2016      Version 1.0
 
-file = '/Users/jearly/Desktop/InternalWaveModel_64x64x33@2017-03-28T120412.nc';
-file = '/Users/jearly/Desktop/InternalWaveModel_512x64x33@2017-03-28T114337.nc';
+file = '/Volumes/OceanTransfer/InternalWaveModel_2017-03-28T141543_64x64x33.nc';
+file = '/Volumes/OceanTransfer/InternalWaveModel_2017-03-28T141559_64x64x33.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -71,6 +71,21 @@ S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 figure, plot(omega,S), ylog
 hold on, plot(omega,S_gm*0.226)
 
+xAxisMax = N0;
+ticks = linspace(f0,xAxisMax,5);
+labels = cell(length(ticks),1);
+labels{1} = 'f_0';
+for i=2:(length(ticks)-1)
+   labels{i} = sprintf('%df_0',round(ticks(i)/f0));
+end
+if xAxisMax == N0
+    labels{length(ticks)} = 'N_0';
+else
+    labels{length(ticks)} = sprintf('%df_0',round(xAxisMax/f0));
+end
+xticks(ticks)
+xticklabels(labels)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -81,7 +96,7 @@ hold on, plot(omega,S_gm*0.226)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:6:min(400,length(t)-1); % apparently this is irrelevant. why?
+timeEnsemble = 1:6:min(400,length(t)-1); % Irrelevant if there are no external modes.
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
