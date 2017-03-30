@@ -21,6 +21,10 @@ classdef (Abstract) InternalWaveModel < handle
     % advantage of fast transforms, and therefore adding too many will
     % significantly slow the model.
     %
+    % Note that if you make the aspect ratio something other than 1, you
+    % want more points in the first (x) dimension. That makes for faster
+    % FFTs.
+    %
     % You must now intialize the model by calling either,
     %   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
     % or
@@ -369,12 +373,19 @@ classdef (Abstract) InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
         end
                
-        function self = FillOutWaveSpectrum(self)            
-            dOmegaInitial = 0.05;
-            maxdOmega = 0.25*self.f0; % Gaps will appear with observations longer than T = 2*pi/maxdOmega;
-            Ln = -1/log(1-dOmegaInitial);
-            dOmegas = (1-exp(-(1:100)'/Ln));
-            gapOmegas = self.f0 + cumsum(self.f0*dOmegas);
+        function self = FillOutWaveSpectrum(self,maxTimeGap)
+            if nargin < 2
+                maxTimeGap = 86140;
+            end
+            
+            % the function dOmegas has an initial gap of dOmegaInitial, and
+            % asymptotes to maxdOmega. Ramp up puts energy in the
+            % lowest/most energetic modes.
+            dOmegaInitial = 0.05*self.f0;
+            maxdOmega = 2*pi/maxTimeGap; % Gaps will appear with observations longer than T = 2*pi/maxdOmega;
+            Ln = -1/log(1-dOmegaInitial/maxdOmega);
+            dOmegas = maxdOmega*(1-exp(-(1:100)'/Ln));
+            gapOmegas = self.f0 + cumsum(dOmegas);
             omegaExt = [];
             jExt = [];
             for iMode = 1:self.nModes
