@@ -418,7 +418,7 @@ classdef (Abstract) InternalWaveModel < handle
         % Compute the dynamical fields at a given time (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [u,v] = VelocityFieldAtTime(self, t)
+        function [u,v,w] = VelocityFieldAtTime(self, t)
             phase_plus = exp(sqrt(-1)*self.Omega*t);
             phase_minus = exp(-sqrt(-1)*self.Omega*t);
             u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
@@ -431,11 +431,21 @@ classdef (Abstract) InternalWaveModel < handle
             u = self.TransformToSpatialDomainWithF(u_bar);
             v = self.TransformToSpatialDomainWithF(v_bar);
             
+            if nargout == 3
+                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+                w = self.TransformToSpatialDomainWithG(w_bar);
+            end
+            
             % Add the external waves to the solution
             if ~isempty(self.uExternal)
-               [u_ext, v_ext] = self.ExternalVelocityFieldsAtTime(t);
-               u = u + u_ext;
-               v = v + v_ext;
+                if nargout == 3
+                    [u_ext, v_ext, w_ext] = self.ExternalVelocityFieldsAtTime(t);
+                    w = w + w_ext;
+                else
+                    [u_ext, v_ext] = self.ExternalVelocityFieldsAtTime(t);
+                end
+                u = u + u_ext;
+                v = v + v_ext;
             end
         end
         
@@ -579,14 +589,15 @@ classdef (Abstract) InternalWaveModel < handle
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
         end
-        
-        function [u,v] = ExternalVelocityFieldsAtTime(self, t)
+                
+        function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
             % Return the velocity field associated with the manually added
             % waves.
             nExternalWaves = length(self.uExternal);
             
             u = zeros(size(self.X));
             v = zeros(size(self.X));
+            w = zeros(size(self.X));
             for iWave=1:nExternalWaves
                 % Compute the two-dimensional phase vector (note we're
                 % using Xh,Yh---the two-dimensional versions.
@@ -595,17 +606,22 @@ classdef (Abstract) InternalWaveModel < handle
                 omega0 = self.omegaExternal(iWave);
                 phi0 = self.phiExternal(iWave);
                 alpha0 = self.alphaExternal(iWave);
+                h0 = self.hExternal(iWave);
                 U = self.uExternal(iWave);
                 F = permute(self.FExternal(:,iWave),[3 2 1]);
                 
                 theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
                 
                 % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                u_wave = U*( cos(alpha0)*cos(theta) + (self.f0/omega0)*sin(alpha0)*sin(theta) ) .* F;
-                v_wave = U*( sin(alpha0)*cos(theta) - (self.f0/omega0)*cos(alpha0)*sin(theta) ) .* F;
+                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
+                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
                 
-                u = u + u_wave;
-                v = v + v_wave;
+                if nargout == 3
+                    G = permute(self.GExternal(:,iWave),[3 2 1]);
+                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                end
             end
         end
         
@@ -630,11 +646,8 @@ classdef (Abstract) InternalWaveModel < handle
                 theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
                 
                 % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                w_wave = U * sqrt(k0*k0+l0*l0) * h0 * sin(theta) .* G;
-                zeta_wave = -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * cos(theta) .* G;
-                
-                w = w + w_wave;
-                zeta = zeta + zeta_wave;
+                w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin(theta) .* G;
+                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * cos(theta) .* G;
             end
         end
     end
