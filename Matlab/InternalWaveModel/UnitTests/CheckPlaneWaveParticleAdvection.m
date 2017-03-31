@@ -24,7 +24,7 @@ phi = 0;
 k0 = 0;
 l0 = 0;
 
-omega = 4*wavemodel.f0;
+omega = wavemodel.f0;
 alpha = 0;
 wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,'maxU');
 
@@ -32,6 +32,8 @@ wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,'maxU');
 
 % initial positions
 p0 = [Lx/2, Ly/2, -Lz/4];
+
+p0 = [0, 0, -Lz/4];
 
 timeStep = 15*60; % in seconds
 maxTime = 2*pi/wavemodel.f0;

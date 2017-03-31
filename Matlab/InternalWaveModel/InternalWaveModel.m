@@ -68,6 +68,8 @@ classdef (Abstract) InternalWaveModel < handle
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
         
+        Xc, Yc, Zc % These may contain 'circular' versions of the grid
+        
         version = 1.5
         performSanityChecks = 0
     end
@@ -374,6 +376,9 @@ classdef (Abstract) InternalWaveModel < handle
         end
                
         function self = FillOutWaveSpectrum(self,maxTimeGap)
+            % Add free/external waves to fill in the gaps of the gridded
+            % solution. No gaps will be larger than 2*pi/maxTimeGap, and
+            % the gaps will be smaller near f0.
             if nargin < 2
                 maxTimeGap = 86140;
             end
@@ -419,6 +424,10 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [u,v,w] = VelocityFieldAtTime(self, t)
+            % Return the velocity field, which is the sum of the gridded
+            % and external/free waves at time t. Note that if you do not
+            % need w, don't request it and it won't be computed.
+            
             % Get the gridded velocity field...
             if nargout == 3
                 [u, v, w] = self.InternalVelocityFieldsAtTime(t);
@@ -440,22 +449,42 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [u] = VelocityAtTimePositionVector(self,t,p)
+            % Return the velocity at time t and position p, where size(p) =
+            % [3 n]. The rows of p represent [x,y,z].
             [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
             u = cat(1,u,v,w);
         end
         
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
+            % Return the velocity at time t, and positions x,y,z.
             [U,V,W] = self.InternalVelocityFieldAtTime(t);
             
             % (x,y) are periodic for the gridded solution
             x_tilde = mod(x,self.Lx);
             y_tilde = mod(y,self.Ly);
             
-            % This will fail when a particle crosses the boundary, because
-            % it doesn't know to treat the end points as periodic.
             u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z);
             v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z);
             w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z);
+            
+            % This will fail when a particle crosses the boundary, because
+            % it doesn't know to treat the end points as periodic.
+            badParticles = isnan(u)|isnan(v)|isnan(w);
+            if any(badParticles)
+                if isempty(self.Xc)
+                    [self.Xc,self.Yc,self.Zc] = ndgrid([self.x;self.Lx],[self.y;self.Ly],self.z);
+                end
+                
+                makeperiodic = @(A) cat(2,cat(1,A,A(1,:,:)), cat(1,A(:,1,:),A(1,1,:)));
+                
+                Uc = makeperiodic(U);
+                Vc = makeperiodic(V);
+                Wc = makeperiodic(W);
+                u(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Uc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
+                v(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Vc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
+                w(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Wc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
+            end
+            
             
             [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
             u = u+u_ext;
@@ -484,6 +513,10 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
+            % Add free waves to the model that are not constrained to the
+            % gridded solution. The amplitude, A, can be given as an energy
+            % density or a maximum U velocity. The type must then be either
+            % 'energyDensity' or 'maxU'.
             self.kExternal = k;
             self.lExternal = l;
             self.jExternal = j;
@@ -515,6 +548,10 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+            % Add free waves to the model that are not constrained to the
+            % gridded solution. The amplitude, A, can be given as an energy
+            % density or a maximum U velocity. The type must then be either
+            % 'energyDensity' or 'maxU'.
             self.omegaExternal = omega;
             self.alphaExternal = alpha;
             self.jExternal = j;
@@ -546,6 +583,7 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function ShowDiagnostics(self)
+            % Display various diagnostics about the simulation.
             omega = abs(self.Omega);
             fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', self.x(2)-self.x(1), self.y(2)-self.y(1), self.z(2)-self.z(1));
             fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
@@ -605,6 +643,7 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [u,v,w] = InternalVelocityFieldAtTime(self, t)
+            % Returns the velocity field from the gridded solution/waves.
             phase_plus = exp(sqrt(-1)*self.Omega*t);
             phase_minus = exp(-sqrt(-1)*self.Omega*t);
             u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
@@ -625,7 +664,7 @@ classdef (Abstract) InternalWaveModel < handle
                 
         function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
             % Return the velocity field associated with the manually added
-            % waves.
+            % free waves on the X,Y,Z grid.
             nExternalWaves = length(self.uExternal);
             
             u = zeros(size(self.X));
@@ -660,7 +699,7 @@ classdef (Abstract) InternalWaveModel < handle
         
         function [u,v,w] = ExternalVelocityAtTimePosition(self,t,x,y,z)
             % Return the velocity field associated with the manually added
-            % waves.
+            % free waves at specified positions.
             nExternalWaves = length(self.uExternal);
             
             u = zeros(size(x));
