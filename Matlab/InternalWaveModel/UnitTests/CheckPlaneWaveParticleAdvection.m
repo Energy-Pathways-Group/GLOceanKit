@@ -26,22 +26,41 @@ l0 = 0;
 
 omega = wavemodel.f0;
 alpha = 0;
-wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,'maxU');
+% wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,'maxU');
 
-% wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-% initial positions
+% initial positions, center of the domain doesn't deal with boundaries
 p0 = [Lx/2, Ly/2, -Lz/4];
 
+% iniital position near zero, requires dealing with the boundary
 p0 = [0, 0, -Lz/4];
 
 timeStep = 15*60; % in seconds
 maxTime = 2*pi/wavemodel.f0;
+t_in = (0:timeStep:maxTime)';
 
-[t,p] = ode23(@(t,y) wavemodel.VelocityAtTimePositionVector(t,y),[0 maxTime], p0);
+% First let's do the adaptive time-stepping integrator
+f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y);
+[t,p] = ode23(f,t_in, p0);
 x = p(:,1);
 y = p(:,2);
 z = p(:,3);
 
+% Next, let's do fixed step size integrator.
+cfl = 0.5;
+deltaT = cfl*(wavemodel.x(2)-wavemodel.x(1))/U;
+if (deltaT < t_in(2)-t_in(1))
+   t_in = (0:60*ceil(deltaT/60):maxTime)';
+end
+
+% Try ode2, ode3, & ode4, depending on required accuracy.
+p2 = ode2(f,t_in, p0');
+x2 = p2(:,1);
+y2 = p2(:,2);
+z2 = p2(:,3);
+
+
 figure
-plot(x,y)
+plot(x,y), hold on, plot(x2,y2)
+legend('adaptive time step', 'fixed time step')

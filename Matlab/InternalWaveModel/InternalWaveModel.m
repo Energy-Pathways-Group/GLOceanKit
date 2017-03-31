@@ -451,8 +451,14 @@ classdef (Abstract) InternalWaveModel < handle
         function [u] = VelocityAtTimePositionVector(self,t,p)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
-            [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
-            u = cat(1,u,v,w);
+            psize = size(p);
+            if psize(1) == 3
+                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
+                u = cat(1,u,v,w);
+            else
+                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,1),p(:,1));
+                u = cat(2,u,v,w);
+            end
         end
         
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
@@ -467,8 +473,8 @@ classdef (Abstract) InternalWaveModel < handle
             v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z);
             w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z);
             
-            % This will fail when a particle crosses the boundary, because
-            % it doesn't know to treat the end points as periodic.
+            % The above will fail (and return nan) when a particle is
+            % between the last point and the first point.
             badParticles = isnan(u)|isnan(v)|isnan(w);
             if any(badParticles)
                 if isempty(self.Xc)
