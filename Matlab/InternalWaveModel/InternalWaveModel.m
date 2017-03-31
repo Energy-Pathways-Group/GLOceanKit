@@ -419,24 +419,14 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [u,v,w] = VelocityFieldAtTime(self, t)
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
-            v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(u_bar);CheckHermitian(v_bar);
-            end
-            
-            u = self.TransformToSpatialDomainWithF(u_bar);
-            v = self.TransformToSpatialDomainWithF(v_bar);
-            
+            % Get the gridded velocity field...
             if nargout == 3
-                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-                w = self.TransformToSpatialDomainWithG(w_bar);
+                [u, v, w] = self.InternalVelocityFieldsAtTime(t);
+            else
+                [u, v] = self.InternalVelocityFieldsAtTime(t);
             end
             
-            % Add the external waves to the solution
+            % ...add the external waves to the gridded solution.
             if ~isempty(self.uExternal)
                 if nargout == 3
                     [u_ext, v_ext, w_ext] = self.ExternalVelocityFieldsAtTime(t);
@@ -447,6 +437,30 @@ classdef (Abstract) InternalWaveModel < handle
                 u = u + u_ext;
                 v = v + v_ext;
             end
+        end
+        
+        function [u] = VelocityAtTimePositionVector(self,t,p)
+            [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
+            u = cat(1,u,v,w);
+        end
+        
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
+            [U,V,W] = self.InternalVelocityFieldAtTime(t);
+            
+            % (x,y) are periodic for the gridded solution
+            x_tilde = mod(x,self.Lx);
+            y_tilde = mod(y,self.Ly);
+            
+            % This will fail when a particle crosses the boundary, because
+            % it doesn't know to treat the end points as periodic.
+            u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z);
+            v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z);
+            w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z);
+            
+            [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+            u = u+u_ext;
+            v = v+v_ext;
+            w = w+w_ext;
         end
         
         function [w,zeta] = VerticalFieldsAtTime(self, t)
@@ -589,6 +603,25 @@ classdef (Abstract) InternalWaveModel < handle
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
         end
+        
+        function [u,v,w] = InternalVelocityFieldAtTime(self, t)
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
+            v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
+            
+            if self.performSanityChecks == 1
+                CheckHermitian(u_bar);CheckHermitian(v_bar);
+            end
+            
+            u = self.TransformToSpatialDomainWithF(u_bar);
+            v = self.TransformToSpatialDomainWithF(v_bar);
+            
+            if nargout == 3
+                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+                w = self.TransformToSpatialDomainWithG(w_bar);
+            end
+        end
                 
         function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
             % Return the velocity field associated with the manually added
@@ -620,6 +653,41 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 if nargout == 3
                     G = permute(self.GExternal(:,iWave),[3 2 1]);
+                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                end
+            end
+        end
+        
+        function [u,v,w] = ExternalVelocityAtTimePosition(self,t,x,y,z)
+            % Return the velocity field associated with the manually added
+            % waves.
+            nExternalWaves = length(self.uExternal);
+            
+            u = zeros(size(x));
+            v = zeros(size(x));
+            w = zeros(size(x));
+            for iWave=1:nExternalWaves
+                % Compute the two-dimensional phase vector (note we're
+                % using Xh,Yh---the two-dimensional versions.
+                k0 = self.kExternal(iWave);
+                l0 = self.lExternal(iWave);
+                omega0 = self.omegaExternal(iWave);
+                phi0 = self.phiExternal(iWave);
+                alpha0 = self.alphaExternal(iWave);
+                h0 = self.hExternal(iWave);
+                U = self.uExternal(iWave);
+                F = interp1(self.z,self.FExternal(:,iWave),z);
+                
+                theta = k0 * x + l0 * y + omega0*t + phi0;
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
+                
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
+                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
+                
+                if nargout == 3
+                    G = interp1(self.z,self.GExternal(:,iWave),z);
                     w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
                 end
             end
