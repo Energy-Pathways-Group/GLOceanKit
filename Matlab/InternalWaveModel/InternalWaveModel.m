@@ -72,6 +72,7 @@ classdef (Abstract) InternalWaveModel < handle
         
         version = 1.5
         performSanityChecks = 0
+        advectionSanityCheck = 0
     end
     
     methods (Abstract, Access = protected)
@@ -462,6 +463,13 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
+            if self.advectionSanityCheck == 0
+               self.advectionSanityCheck = 1;
+               if (self.z(end)-self.z(1)) ~= self.Lz
+                   warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
+               end
+            end
+            
             % Return the velocity at time t, and positions x,y,z.
             [U,V,W] = self.InternalVelocityFieldAtTime(t);
             

@@ -4,7 +4,7 @@ Lz = 5000;
 
 Nx = 64;
 Ny = 64;
-Nz = 64;
+Nz = 65; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -30,11 +30,11 @@ alpha = 0;
 
 wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-% initial positions, center of the domain doesn't deal with boundaries
-p0 = [Lx/2, Ly/2, -Lz/4];
+% initial positions, center of the horizontal domain doesn't deal with boundaries
+p0 = [Lx/2, Ly/2, -0*Lz/4];
 
-% iniital position near zero, requires dealing with the boundary
-p0 = [0, 0, -Lz/4];
+% iniital position near horizontal boundary, requires dealing with the periodicity of the boundary
+% p0 = [0, 0, -0*Lz/4];
 
 timeStep = 15*60; % in seconds
 maxTime = 2*pi/wavemodel.f0;
