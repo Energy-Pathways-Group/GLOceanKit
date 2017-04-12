@@ -54,9 +54,7 @@ U = 0.01; % m/s
 sign = 1;
 phi = 0;
 
-% k0 = 2*pi/5000;
-% l0 = 2*pi/12345;
-% omega = wavemodel.SetExternalWavesWithWavenumbers(k0,l0,j0,phi,U,'maxU');
+
 
 omega = 2*wavemodel.f0;
 alpha = 0;

@@ -431,9 +431,9 @@ classdef (Abstract) InternalWaveModel < handle
             
             % Get the gridded velocity field...
             if nargout == 3
-                [u, v, w] = self.InternalVelocityFieldsAtTime(t);
+                [u, v, w] = self.InternalVelocityFieldAtTime(t);
             else
-                [u, v] = self.InternalVelocityFieldsAtTime(t);
+                [u, v] = self.InternalVelocityFieldAtTime(t);
             end
             
             % ...add the external waves to the gridded solution.
@@ -457,7 +457,7 @@ classdef (Abstract) InternalWaveModel < handle
                 [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
                 u = cat(1,u,v,w);
             else
-                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,1),p(:,1));
+                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3));
                 u = cat(2,u,v,w);
             end
         end
@@ -477,9 +477,10 @@ classdef (Abstract) InternalWaveModel < handle
             x_tilde = mod(x,self.Lx);
             y_tilde = mod(y,self.Ly);
             
-            u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z);
-            v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z);
-            w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z);
+            method = 'spline';
+            u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z,method);
+            v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z,method);
+            w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z,method);
             
             % The above will fail (and return nan) when a particle is
             % between the last point and the first point.
