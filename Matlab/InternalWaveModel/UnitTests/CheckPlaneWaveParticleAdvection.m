@@ -30,7 +30,7 @@ else
     U = 0.01; % m/s
     sign = 1;
     phi = 0;
-    k0 = 31;
+    k0 = 1;
     l0 = 0;
     alpha = atan2(l0,k0);
     k = 2*pi*sqrt(k0^2 + l0^2)/Lx;
@@ -115,6 +115,7 @@ tAdaptive = toc;
 x = p(:,1);
 y = p(:,2);
 z = p(:,3);
+stokes_x = x(end)-x(1);
 fprintf('Adaptive time step took t=%.2f seconds.\n',tAdaptive);
 
 figure
@@ -132,26 +133,30 @@ y_error = error(y45,y);
 z_error = error(z45,z);
 kappa_h_eff45 = kappa_h_effective(x45,x,y45,y);
 kappa_z_eff45 = kappa_z_effective(z45,z);
-fprintf('The ode45 solution for (x,y,z) matches the exact RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff45, kappa_z_eff45, t45);
+stokes_x45 = x45(end)-x45(1);
+fprintf('The ode45 solution for (x,y,z) matches the exact RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). Stokes ratio: %.2f. t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff45, kappa_z_eff45,stokes_x45/stokes_x, t45);
 
 x_error = error(x2,x);
 y_error = error(y2,y);
 z_error = error(z2,z);
 kappa_h_eff2 = kappa_h_effective(x2,x,y2,y);
 kappa_z_eff2 = kappa_z_effective(z2,z);
-fprintf('The ode2 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff2, kappa_z_eff2, t2);
+stokes_x2 = x2(end)-x2(1);
+fprintf('The ode2 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). Stokes ratio: %.2f. t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff2, kappa_z_eff2,stokes_x2/stokes_x, t2);
 
 x_error = error(x3,x);
 y_error = error(y3,y);
 z_error = error(z3,z);
 kappa_h_eff3 = kappa_h_effective(x3,x,y3,y);
 kappa_z_eff3 = kappa_z_effective(z3,z);
-fprintf('The ode3 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff3, kappa_z_eff3, t3);
+stokes_x3 = x3(end)-x3(1);
+fprintf('The ode3 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). Stokes ratio: %.2f. t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff3, kappa_z_eff3,stokes_x3/stokes_x, t3);
 
 x_error = error(x4,x);
 y_error = error(y4,y);
 z_error = error(z4,z);
 kappa_z_eff4 = kappa_z_effective(z4,z);
 kappa_h_eff4 = kappa_h_effective(x4,x,y4,y);
-fprintf('The ode4 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff4, kappa_z_eff4, t4);
+stokes_x4 = x4(end)-x4(1);
+fprintf('The ode4 solution for (x,y,z) matches the RK45 solution to 1 part in (10^%d, 10^%d, 10^%d). K_eff = (%.2g, %.2g). Stokes ratio: %.2f. t=%.2f\n', round((log10(x_error))), round((log10(y_error))), round((log10(z_error))), kappa_h_eff4, kappa_z_eff4,stokes_x4/stokes_x, t4);
 

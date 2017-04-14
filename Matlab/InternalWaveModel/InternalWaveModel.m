@@ -67,6 +67,7 @@ classdef (Abstract) InternalWaveModel < handle
         
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
+        kInternal, lInternal, jInternal, alphaInternal, omegaInternal, phiInternal, uInternal, FInternal, GInternal, hInternal
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
         
@@ -196,6 +197,9 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             self.GenerateWavePhases(A_plus,A_minus);
+            
+            [omega, alpha, mode, phi, A] = self.WaveCoefficientsFromGriddedWaves();
+            self.SetInternalWavesWithFrequencies(omega, alpha, mode, phi, A,'energyDensity');
             
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
         end
@@ -374,6 +378,9 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
+            
+%             [omega, alpha, mode, phi, A] = self.WaveCoefficientsFromGriddedWaves();
+%             self.SetInternalWavesWithFrequencies(omega, alpha, mode, phi, A,'energyDensity');
         end
                
         function self = FillOutWaveSpectrum(self,maxTimeGap)
@@ -462,6 +469,42 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function [u] = DrifterVelocityAtTimePositionVector(self,t,p)
+            % Return the velocity at time t and position p, where size(p) =
+            % [3 n]. The rows of p represent [x,y,z].
+            psize = size(p);
+            if psize(1) == 3
+                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
+                u = cat(1,u,v,zeros(1,psize(2)));
+            else
+                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3));
+                u = cat(2,u,v,zeros(psize(1),1));
+            end
+        end
+        
+        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
+            if self.advectionSanityCheck == 0
+                self.advectionSanityCheck = 1;
+                if (self.z(end)-self.z(1)) ~= self.Lz
+                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
+                end
+            end
+            if nargout == 3
+                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
+                w = w+w_ext;
+            else
+                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
+            end
+        end
+        
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
             if self.advectionSanityCheck == 0
                self.advectionSanityCheck = 1;
@@ -477,14 +520,18 @@ classdef (Abstract) InternalWaveModel < handle
             x_tilde = mod(x,self.Lx);
             y_tilde = mod(y,self.Ly);
             
-            method = 'spline';
+            method = 'linear';
             u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z,method);
             v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z,method);
-            w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z,method);
+            if nargout == 3
+                w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z,method);
+                badParticles = isnan(u)|isnan(v)|isnan(w);
+            else
+                badParticles = isnan(u)|isnan(v);
+            end
             
             % The above will fail (and return nan) when a particle is
             % between the last point and the first point.
-            badParticles = isnan(u)|isnan(v)|isnan(w);
             if any(badParticles)
                 if isempty(self.Xc)
                     [self.Xc,self.Yc,self.Zc] = ndgrid([self.x;self.Lx],[self.y;self.Ly],self.z);
@@ -494,17 +541,24 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 Uc = makeperiodic(U);
                 Vc = makeperiodic(V);
-                Wc = makeperiodic(W);
                 u(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Uc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
                 v(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Vc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
-                w(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Wc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
+                if nargout == 3
+                    Wc = makeperiodic(W);
+                    w(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Wc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
+                end
             end
             
-            
-            [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-            u = u+u_ext;
-            v = v+v_ext;
-            w = w+w_ext;
+            if nargout == 3
+                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                u = u+u_ext;
+                v = v+v_ext;
+                w = w+w_ext;
+            else
+                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                u = u+u_ext;
+                v = v+v_ext;
+            end
         end
         
         function [w,zeta] = VerticalFieldsAtTime(self, t)
@@ -730,7 +784,7 @@ classdef (Abstract) InternalWaveModel < handle
                 alpha0 = self.alphaExternal(iWave);
                 h0 = self.hExternal(iWave);
                 U = self.uExternal(iWave);
-                F = interp1(self.z,self.FExternal(:,iWave),z);
+                F = interp1(self.z,self.FExternal(:,iWave),z,'spline');
                 
                 theta = k0 * x + l0 * y + omega0*t + phi0;
                 cos_theta = cos(theta);
@@ -741,7 +795,7 @@ classdef (Abstract) InternalWaveModel < handle
                 v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
                 
                 if nargout == 3
-                    G = interp1(self.z,self.GExternal(:,iWave),z);
+                    G = interp1(self.z,self.GExternal(:,iWave),z,'spline');
                     w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
                 end
             end
@@ -766,10 +820,81 @@ classdef (Abstract) InternalWaveModel < handle
                 G = permute(self.GExternal(:,iWave),[3 2 1]);
                 
                 theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
                 
                 % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin(theta) .* G;
-                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * cos(theta) .* G;
+                w = w + U * sqrt(k0*k0+l0*l0) * h0 * (sin_theta .* G);
+                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * (cos_theta .* G);
+            end
+        end
+        
+        function SetInternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+            % Add free waves to the model that are not constrained to the
+            % gridded solution. The amplitude, A, can be given as an energy
+            % density or a maximum U velocity. The type must then be either
+            % 'energyDensity' or 'maxU'.
+            self.omegaInternal = omega;
+            self.alphaInternal = alpha;
+            self.jInternal = j;
+            self.phiInternal = phi;
+            self.uInternal = A;
+            
+            if strcmp(type, 'energyDensity')
+                norm = 'const_G_norm';
+            elseif strcmp(type, 'maxU')
+                norm = 'max_u';
+            end
+            
+            g = 9.81;
+            self.hInternal = zeros(length(j),1);
+            for iWave=1:length(j)
+                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
+                self.FInternal(:,iWave) = F_ext(:,j(iWave));
+                self.GInternal(:,iWave) = G_ext(:,j(iWave));
+                self.hInternal(iWave) = h_ext(j(iWave));
+                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
+                self.kInternal(iWave) = K_horizontal*cos(alpha(iWave));
+                self.lInternal(iWave) = K_horizontal*sin(alpha(iWave));
+                if strcmp(type, 'energyDensity')
+                    self.uInternal(iWave) = self.uInternal(iWave)/sqrt(h_ext(j(iWave)));
+                end
+            end            
+        end
+        
+        function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
+            % Return the velocity field associated with the gridded
+            % velocity field, but using spectral interpolation, rather than
+            % the FFT grid.
+            nInternalWaves = length(self.uInternal);
+            
+            u = zeros(size(x));
+            v = zeros(size(x));
+            w = zeros(size(x));
+            for iWave=1:nInternalWaves
+                % Compute the two-dimensional phase vector (note we're
+                % using Xh,Yh---the two-dimensional versions.
+                k0 = self.kInternal(iWave);
+                l0 = self.lInternal(iWave);
+                omega0 = self.omegaInternal(iWave);
+                phi0 = self.phiInternal(iWave);
+                alpha0 = self.alphaInternal(iWave);
+                h0 = self.hInternal(iWave);
+                U = self.uInternal(iWave);
+                F = interp1(self.z,self.FInternal(:,iWave),z,'spline');
+                
+                theta = k0 * x + l0 * y + omega0*t + phi0;
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
+                
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
+                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
+                
+                if nargout == 3
+                    G = interp1(self.z,self.GInternal(:,iWave),z,'spline');
+                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                end
             end
         end
     end

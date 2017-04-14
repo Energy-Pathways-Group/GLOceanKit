@@ -26,6 +26,6 @@ t = (0:timeStep:maxTime)';
 tic
 for iTime=1:length(t)
     [u,v,w]=wavemodel.VelocityFieldAtTime(t(iTime));
-%     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
+    [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
 end
 toc
