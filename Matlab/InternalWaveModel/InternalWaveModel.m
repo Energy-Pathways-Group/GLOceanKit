@@ -505,12 +505,16 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z)
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,method)
             if self.advectionSanityCheck == 0
                self.advectionSanityCheck = 1;
                if (self.z(end)-self.z(1)) ~= self.Lz
                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
                end
+            end
+            
+            if ~exist('method', 'var')
+                method = 'spline';
             end
             
             % Return the velocity at time t, and positions x,y,z.
@@ -520,7 +524,6 @@ classdef (Abstract) InternalWaveModel < handle
             x_tilde = mod(x,self.Lx);
             y_tilde = mod(y,self.Ly);
             
-            method = 'linear';
             u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z,method);
             v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z,method);
             if nargout == 3

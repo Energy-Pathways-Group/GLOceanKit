@@ -95,7 +95,46 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.F = signNorm .* self.F;
             self.G = signNorm * self.G;
         end
-
+        
+        function [u,v,w] = AnalyticalSolutionAtFrequency(self, t, x, y, z, omega, alpha, j0, phi, U)
+            m = j0*pi/self.Lz;
+            gh = m.*m * (self.N0*self.N0 - omega.*omega);
+            K = sqrt( (omega.*omega - self.f0*self.f0)./gh );
+            k0 = K.*cos(alpha);
+            l0 = K.*sin(alpha);
+            
+            [u,v,w] = self.AnalyticalSolution(t, x, y, z, k0, l0, m, K, alpha, omega, phi, U);
+        end
+        
+        function u = AnalyticalSolutionVectorAtWavenumber(self, t, x, k0, l0, j0, phi, U)
+            xsize = size(x);
+            if xsize(1) == 3
+                [u,v,w] = self.AnalyticalSolutionAtWavenumber(t, x(1,:), x(2,:), x(3,:), k0, l0, j0, phi, U);
+                u = cat(1,u,v,w);
+            else
+                [u,v,w] = self.AnalyticalSolutionAtWavenumber(t, x(:,1), x(:,2), x(:,3), k0, l0, j0, phi, U);
+                u = cat(2,u,v,w);
+            end
+        end
+        
+        function [u,v,w] = AnalyticalSolutionAtWavenumber(self, t, x, y, z, k0, l0, j0, phi, U)
+            alpha=atan2(l0,k0);
+            K = sqrt( k0^2 + l0^2);
+            m = j0*pi/self.Lz;
+            gh = (self.N0 * self.N0 - self.f0*self.f0)./( m.*m + K.*K);
+            omega = sqrt( gh .* K.*K + self.f0*self.f0 );
+            
+            [u,v,w] = self.AnalyticalSolution(t, x, y, z, k0, l0, m, K, alpha, omega, phi, U);
+        end
+        
+        function [u,v,w] = AnalyticalSolution(self, t, x, y, z, k0, l0, m, K, alpha, omega, phi, U)
+            theta = k0.*x + l0.*y + omega.*t + phi;
+            cos_theta = cos(theta);
+            sin_theta = sin(theta);
+            u = U*(cos(alpha)*cos_theta + (self.f0/omega)*sin(alpha)*sin_theta).*cos(m*z);
+            v = U*(sin(alpha)*cos_theta - (self.f0/omega)*cos(alpha)*sin_theta).*cos(m*z);
+            w = (U*K/m) * sin_theta .* sin(m*z);
+        end
     end
     
     methods (Access = protected)
@@ -206,6 +245,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % points, it starts generating some small imaginary component.
             w = w(:,:,1:obj.Nz); % Here we use Nz (not nz) because the user may want the end point.
         end
+        
+
     end
 end
 
