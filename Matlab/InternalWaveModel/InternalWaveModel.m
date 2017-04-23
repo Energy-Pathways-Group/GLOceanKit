@@ -67,7 +67,6 @@ classdef (Abstract) InternalWaveModel < handle
         
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
-        kInternal, lInternal, jInternal, alphaInternal, omegaInternal, phiInternal, uInternal, FInternal, GInternal, hInternal
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
         
@@ -197,10 +196,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             self.GenerateWavePhases(A_plus,A_minus);
-            
-            [omega, alpha, mode, phi, A] = self.WaveCoefficientsFromGriddedWaves();
-            self.SetInternalWavesWithFrequencies(omega, alpha, mode, phi, A,'energyDensity');
-            
+                 
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
         end
         
@@ -378,9 +374,6 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
-            
-%             [omega, alpha, mode, phi, A] = self.WaveCoefficientsFromGriddedWaves();
-%             self.SetInternalWavesWithFrequencies(omega, alpha, mode, phi, A,'energyDensity');
         end
                
         function self = FillOutWaveSpectrum(self,maxTimeGap)
@@ -456,15 +449,16 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [u] = VelocityAtTimePositionVector(self,t,p)
+        % Optional argument is the interpolation method.
+        function [u] = VelocityAtTimePositionVector(self,t,p, varargin)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
             psize = size(p);
             if psize(1) == 3
-                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
+                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), varargin{:});
                 u = cat(1,u,v,w);
             else
-                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3));
+                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), varargin{:});
                 u = cat(2,u,v,w);
             end
         end
@@ -505,7 +499,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,method)
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,varargin)
             if self.advectionSanityCheck == 0
                self.advectionSanityCheck = 1;
                if (self.z(end)-self.z(1)) ~= self.Lz
@@ -513,8 +507,10 @@ classdef (Abstract) InternalWaveModel < handle
                end
             end
             
-            if ~exist('method', 'var')
+            if isempty(varargin{1})
                 method = 'spline';
+            else
+                method = varargin{1};                
             end
             
             % Return the velocity at time t, and positions x,y,z.
@@ -830,39 +826,6 @@ classdef (Abstract) InternalWaveModel < handle
                 w = w + U * sqrt(k0*k0+l0*l0) * h0 * (sin_theta .* G);
                 zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * (cos_theta .* G);
             end
-        end
-        
-        function SetInternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
-            % Add free waves to the model that are not constrained to the
-            % gridded solution. The amplitude, A, can be given as an energy
-            % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.
-            self.omegaInternal = omega;
-            self.alphaInternal = alpha;
-            self.jInternal = j;
-            self.phiInternal = phi;
-            self.uInternal = A;
-            
-            if strcmp(type, 'energyDensity')
-                norm = 'const_G_norm';
-            elseif strcmp(type, 'maxU')
-                norm = 'max_u';
-            end
-            
-            g = 9.81;
-            self.hInternal = zeros(length(j),1);
-            for iWave=1:length(j)
-                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
-                self.FInternal(:,iWave) = F_ext(:,j(iWave));
-                self.GInternal(:,iWave) = G_ext(:,j(iWave));
-                self.hInternal(iWave) = h_ext(j(iWave));
-                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
-                self.kInternal(iWave) = K_horizontal*cos(alpha(iWave));
-                self.lInternal(iWave) = K_horizontal*sin(alpha(iWave));
-                if strcmp(type, 'energyDensity')
-                    self.uInternal(iWave) = self.uInternal(iWave)/sqrt(h_ext(j(iWave)));
-                end
-            end            
         end
         
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
