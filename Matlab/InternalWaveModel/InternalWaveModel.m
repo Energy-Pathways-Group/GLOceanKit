@@ -232,6 +232,82 @@ classdef (Abstract) InternalWaveModel < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % These functions add free waves to the model, not constrained to
+        % the FFT grid.
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
+            % Add free waves to the model that are not constrained to the
+            % gridded solution. The amplitude, A, can be given as an energy
+            % density or a maximum U velocity. The type must then be either
+            % 'energyDensity' or 'maxU'.
+            self.kExternal = k;
+            self.lExternal = l;
+            self.jExternal = j;
+            self.alphaExternal = atan2(l,k);
+            self.phiExternal = phi;
+            self.uExternal = A;
+            
+            if strcmp(type, 'energyDensity')
+                norm = 'const_G_norm';
+            elseif strcmp(type, 'maxU')
+                norm = 'max_u';
+            end
+            
+            g = 9.81;
+            self.hExternal = zeros(length(j),1);
+            for iWave=1:length(j)
+                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
+                [F_ext,G_ext,h_ext] = self.ModesAtWavenumber(sqrt(K2h), norm);
+                self.FExternal(:,iWave) = F_ext(:,j(iWave));
+                self.GExternal(:,iWave) = G_ext(:,j(iWave));
+                self.hExternal(iWave) = h_ext(j(iWave));
+                self.omegaExternal(iWave) = sqrt( g*h_ext(iWave) * K2h + self.f0*self.f0 );
+                if strcmp(type, 'energyDensity')
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
+                end
+            end
+            
+            omega = self.omegaExternal;
+        end
+        
+        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+            % Add free waves to the model that are not constrained to the
+            % gridded solution. The amplitude, A, can be given as an energy
+            % density or a maximum U velocity. The type must then be either
+            % 'energyDensity' or 'maxU'.
+            self.omegaExternal = omega;
+            self.alphaExternal = alpha;
+            self.jExternal = j;
+            self.phiExternal = phi;
+            self.uExternal = A;
+            
+            if strcmp(type, 'energyDensity')
+                norm = 'const_G_norm';
+            elseif strcmp(type, 'maxU')
+                norm = 'max_u';
+            end
+            
+            g = 9.81;
+            self.hExternal = zeros(length(j),1);
+            for iWave=1:length(j)
+                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
+                self.FExternal(:,iWave) = F_ext(:,j(iWave));
+                self.GExternal(:,iWave) = G_ext(:,j(iWave));
+                self.hExternal(iWave) = h_ext(j(iWave));
+                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
+                self.kExternal(iWave) = K_horizontal*cos(alpha(iWave));
+                self.lExternal(iWave) = K_horizontal*sin(alpha(iWave));
+                if strcmp(type, 'energyDensity')
+                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
+                end
+            end
+            
+            k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
         % Create a full Garrett-Munk spectrum (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,7 +451,12 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.GenerateWavePhases(A_plus,A_minus);
         end
-               
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Add external waves to the model to fill out the spectrum
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = FillOutWaveSpectrum(self,maxTimeGap)
             % Add free/external waves to fill in the gaps of the gridded
             % solution. No gaps will be larger than 2*pi/maxTimeGap, and
@@ -421,7 +502,8 @@ classdef (Abstract) InternalWaveModel < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Compute the dynamical fields at a given time (public)
+        % Return the dynamical fields on the grid at a given time
+        % (Eulerian)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [u,v,w] = VelocityFieldAtTime(self, t)
@@ -449,10 +531,38 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        % Optional argument is the interpolation method.
+        function [w,zeta] = VerticalFieldsAtTime(self, t)
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+            
+            if self.performSanityChecks == 1
+                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+            end
+            
+            w = self.TransformToSpatialDomainWithG(w_bar);
+            zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+            
+            if ~isempty(self.uExternal)
+                [w_ext, zeta_ext] = self.ExternalVerticalFieldsAtTime(t);
+                w = w + w_ext;
+                zeta = zeta + zeta_ext;
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Return the dynamical fields at a given location and time
+        % (Lagrangian)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function [u] = VelocityAtTimePositionVector(self,t,p, varargin)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
+            % Optional argument is passed to the interpolation method. I
+            % recommend either linear or spline.
             psize = size(p);
             if psize(1) == 3
                 [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), varargin{:});
@@ -475,30 +585,7 @@ classdef (Abstract) InternalWaveModel < handle
                 u = cat(2,u,v,zeros(psize(1),1));
             end
         end
-        
-        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
-            if self.advectionSanityCheck == 0
-                self.advectionSanityCheck = 1;
-                if (self.z(end)-self.z(1)) ~= self.Lz
-                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
-                end
-            end
-            if nargout == 3
-                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                
-                u = u+u_ext;
-                v = v+v_ext;
-                w = w+w_ext;
-            else
-                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                
-                u = u+u_ext;
-                v = v+v_ext;
-            end
-        end
-        
+               
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,varargin)
             if self.advectionSanityCheck == 0
                self.advectionSanityCheck = 1;
@@ -560,94 +647,29 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [w,zeta] = VerticalFieldsAtTime(self, t)
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
-            end
-            
-            w = self.TransformToSpatialDomainWithG(w_bar);
-            zeta = self.TransformToSpatialDomainWithG(zeta_bar);
-            
-            if ~isempty(self.uExternal)
-                [w_ext, zeta_ext] = self.ExternalVerticalFieldsAtTime(t);
-                w = w + w_ext;
-                zeta = zeta + zeta_ext;
-            end
-        end
-        
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
-            % Add free waves to the model that are not constrained to the
-            % gridded solution. The amplitude, A, can be given as an energy
-            % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.
-            self.kExternal = k;
-            self.lExternal = l;
-            self.jExternal = j;
-            self.alphaExternal = atan2(l,k);
-            self.phiExternal = phi;
-            self.uExternal = A;
-            
-            if strcmp(type, 'energyDensity')
-                norm = 'const_G_norm';
-            elseif strcmp(type, 'maxU')
-                norm = 'max_u';
-            end
-            
-            g = 9.81;
-            self.hExternal = zeros(length(j),1);
-            for iWave=1:length(j)
-                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
-                [F_ext,G_ext,h_ext] = self.ModesAtWavenumber(sqrt(K2h), norm);
-                self.FExternal(:,iWave) = F_ext(:,j(iWave));
-                self.GExternal(:,iWave) = G_ext(:,j(iWave));
-                self.hExternal(iWave) = h_ext(j(iWave));
-                self.omegaExternal(iWave) = sqrt( g*h_ext(iWave) * K2h + self.f0*self.f0 );
-                if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
+        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
+            % TODO: Function should use coeffs to add up sines and cosines
+            % for an exact solution.
+            if self.advectionSanityCheck == 0
+                self.advectionSanityCheck = 1;
+                if (self.z(end)-self.z(1)) ~= self.Lz
+                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
                 end
             end
-            
-            omega = self.omegaExternal;
-        end
-        
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
-            % Add free waves to the model that are not constrained to the
-            % gridded solution. The amplitude, A, can be given as an energy
-            % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.
-            self.omegaExternal = omega;
-            self.alphaExternal = alpha;
-            self.jExternal = j;
-            self.phiExternal = phi;
-            self.uExternal = A;
-            
-            if strcmp(type, 'energyDensity')
-                norm = 'const_G_norm';
-            elseif strcmp(type, 'maxU')
-                norm = 'max_u';
+            if nargout == 3
+                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
+                w = w+w_ext;
+            else
+                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
             end
-            
-            g = 9.81;
-            self.hExternal = zeros(length(j),1);
-            for iWave=1:length(j)
-                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
-                self.FExternal(:,iWave) = F_ext(:,j(iWave));
-                self.GExternal(:,iWave) = G_ext(:,j(iWave));
-                self.hExternal(iWave) = h_ext(j(iWave));
-                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
-                self.kExternal(iWave) = K_horizontal*cos(alpha(iWave));
-                self.lExternal(iWave) = K_horizontal*sin(alpha(iWave));
-                if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
-                end
-            end
-            
-            k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
         end
         
         function ShowDiagnostics(self)
