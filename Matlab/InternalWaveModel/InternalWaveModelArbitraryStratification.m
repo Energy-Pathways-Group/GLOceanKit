@@ -36,7 +36,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     
     properties
        S
-       Sprime
+       Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
        internalModes
     end
     
@@ -109,6 +109,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         function [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
             self.internalModes.normalization = norm;
             [F,G,h] = self.internalModes.ModesAtFrequency(omega);
+        end
+        function [F,G] = InternalModeAtDepth(self,z,k0, l0, j0)
+            % return the normal mode
+            F = interp1(self.z,self.Sprime(:,j0,k0+1,l0+1),z,'spline');
+            G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
         
         function [F,G,h] = ModesForConstantStratificationAtWavenumber(self, N0, k)

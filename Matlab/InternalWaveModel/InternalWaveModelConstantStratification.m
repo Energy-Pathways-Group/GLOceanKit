@@ -135,6 +135,29 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             v = U*(sin(alpha)*cos_theta - (self.f0/omega)*cos(alpha)*sin_theta).*cos(m*z);
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computes the phase information given the amplitudes (internal)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function GenerateWavePhases(self, U_plus, U_minus)
+            GenerateWavePhases@InternalWaveModel(self, U_plus, U_minus);
+            
+            % Multiply by the norm coefficients since we're using a
+            % discrete cosine transform directly.
+            self.u_plus = self.u_plus .* self.F;
+            self.u_minus = self.u_minus .* self.F;
+            
+            self.v_plus = self.v_plus .* self.F;
+            self.v_minus = self.v_minus .* self.F;
+            
+            self.w_plus = self.w_plus .* self.G;
+            self.w_minus = self.w_minus .* self.G;
+            
+            self.zeta_plus = self.zeta_plus .* self.G;
+            self.zeta_minus = self.zeta_minus .* self.G;
+        end
     end
     
     methods (Access = protected)
@@ -161,6 +184,15 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
         end
         
+        function [F,G] = InternalModeAtDepth(self, z, k0, l0, j0)
+            % Called by 
+            h = self.h(k0+1,l0+1,j0);
+            k_z = j0*pi/self.Lz;
+            g = 9.81;
+            G = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * sin(k_z * z);
+            F = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * h * k_z * cos(k_z * z);
+        end
+        
         % k_z and h should be of size [1, nModes]
         % [F,G] will return with size [length(z), nModes]
         function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h, norm)
@@ -176,31 +208,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
                 F = cos(k_z.*self.z);
             end
         end
-        
-               
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computes the phase information given the amplitudes (internal)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function GenerateWavePhases(self, U_plus, U_minus)
-            GenerateWavePhases@InternalWaveModel(self, U_plus, U_minus);
-            
-            % Multiply by the norm coefficients since we're using a
-            % discrete cosine transform directly.
-            self.u_plus = self.u_plus .* self.F;
-            self.u_minus = self.u_minus .* self.F;
-            
-            self.v_plus = self.v_plus .* self.F;
-            self.v_minus = self.v_minus .* self.F;
-            
-            self.w_plus = self.w_plus .* self.G;
-            self.w_minus = self.w_minus .* self.G;
-            
-            self.zeta_plus = self.zeta_plus .* self.G;
-            self.zeta_minus = self.zeta_minus .* self.G;
-        end
-        
+                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)

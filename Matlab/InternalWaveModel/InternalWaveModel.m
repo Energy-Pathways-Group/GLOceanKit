@@ -594,7 +594,14 @@ classdef (Abstract) InternalWaveModel < handle
                end
             end
             
-            if isempty(varargin{1})
+            if varargin{1} == 'exact'
+                if nargout == 3
+                    [u,v,w] = self.ExactVelocityAtTimePosition(t,x,y,z);
+                else
+                    [u,v] = self.ExactVelocityAtTimePosition(t,x,y,z);
+                end
+                return
+            elseif isempty(varargin{1})
                 method = 'spline';
             else
                 method = varargin{1};                
@@ -646,32 +653,7 @@ classdef (Abstract) InternalWaveModel < handle
                 v = v+v_ext;
             end
         end
-        
-        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
-            % TODO: Function should use coeffs to add up sines and cosines
-            % for an exact solution.
-            if self.advectionSanityCheck == 0
-                self.advectionSanityCheck = 1;
-                if (self.z(end)-self.z(1)) ~= self.Lz
-                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
-                end
-            end
-            if nargout == 3
-                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
                 
-                u = u+u_ext;
-                v = v+v_ext;
-                w = w+w_ext;
-            else
-                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                
-                u = u+u_ext;
-                v = v+v_ext;
-            end
-        end
-        
         function ShowDiagnostics(self)
             % Display various diagnostics about the simulation.
             omega = abs(self.Omega);
@@ -685,6 +667,35 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
             fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computes the phase information given the amplitudes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function GenerateWavePhases(self, U_plus, U_minus)
+            % Given amplitudes A_plus,A_minus, this initializes the
+            % amplitudes and phases for the dynamical variables. Generally
+            % you don't want to call this directly, unless you have some
+            % very specific use case.
+            self.Amp_plus = U_plus; self.Amp_minus = U_minus;
+            alpha = atan2(self.L,self.K);
+            omega = abs(self.Omega); % The following definitions assume omega > 0.
+            denominator = omega.*sqrt(self.h);
+            
+            % Without calling MakeHermitian, this doesn't deal with l=0.
+            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
+            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
+            
+            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
+            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
+            
+            self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
+            self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
+            
+            self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
+            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
         end
     end
     
@@ -705,33 +716,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.Omega(:,(self.Ny/2+1):end,:) = -self.Omega(:,(self.Ny/2+1):end,:);
             self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
         end
-        
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computes the phase information given the amplitudes (internal)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function GenerateWavePhases(self, U_plus, U_minus)
-            self.Amp_plus = U_plus; self.Amp_minus = U_minus;
-            alpha = atan2(self.L,self.K);
-            omega = abs(self.Omega); % The following definitions assume omega > 0.
-            denominator = omega.*sqrt(self.h);
-            
-            % Without calling MakeHermitian, this doesn't deal with l=0.
-            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
-            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
-            
-            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
-            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
-            
-            self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
-            self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
-            
-            self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
-            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
-        end
-        
+               
         function [u,v,w] = InternalVelocityFieldAtTime(self, t)
             % Returns the velocity field from the gridded solution/waves.
             phase_plus = exp(sqrt(-1)*self.Omega*t);
@@ -853,38 +838,62 @@ classdef (Abstract) InternalWaveModel < handle
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.
-            nInternalWaves = length(self.uInternal);
-            
+            % the FFT grid.      
             u = zeros(size(x));
             v = zeros(size(x));
             w = zeros(size(x));
-            for iWave=1:nInternalWaves
+            nonzeroIndices = find( self.u_plus || self.u_minus );
+            for iIndex=1:length(nonzeroIndices)
+                iWave = nonzeroIndices(iIndex);
+                
                 % Compute the two-dimensional phase vector (note we're
                 % using Xh,Yh---the two-dimensional versions.
-                k0 = self.kInternal(iWave);
-                l0 = self.lInternal(iWave);
-                omega0 = self.omegaInternal(iWave);
-                phi0 = self.phiInternal(iWave);
-                alpha0 = self.alphaInternal(iWave);
-                h0 = self.hInternal(iWave);
-                U = self.uInternal(iWave);
-                F = interp1(self.z,self.FInternal(:,iWave),z,'spline');
+                k0 = self.K(iWave);
+                l0 = self.L(iWave);
+                omega0 = self.Omega(iWave);                
+                alpha0 = atan2(k0,l0);
+                [iK,iL,iJ] = ind2sub([self.Nx self.Ny self.Nz],iWave);
+                [F,G] = InternalModeAtDepth(self, z, iK, iL, iJ);
                 
-                theta = k0 * x + l0 * y + omega0*t + phi0;
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
+                phi0 = [angle(self.u_plus(iWave)) angle(self.u_minus(iWave))];
+                U = [abs(self.u_plus(iWave)) abs(self.u_minus(iWave))];
                 
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
-                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
-                
-                if nargout == 3
-                    G = interp1(self.z,self.GInternal(:,iWave),z,'spline');
-                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                for iSign=1:2
+                    theta = k0 * x + l0 * y + omega0*t + phi0(iSign);
+                    cos_theta = cos(theta);
+                    sin_theta = sin(theta);
+
+                    % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                    u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
+                    v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
+
+                    if nargout == 3
+                        h0 = self.h(iWave);
+                        w = w + U(iSign) * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                    end
                 end
             end
+        end 
+        
+        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
+            % Uses coeffs to add up sines and cosines for an exact
+            % solution.
+            if nargout == 3
+                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
+                w = w+w_ext;
+            else
+                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
+                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
+                
+                u = u+u_ext;
+                v = v+v_ext;
+            end
         end
+        
     end
 end
 
