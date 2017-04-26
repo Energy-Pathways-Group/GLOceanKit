@@ -70,6 +70,8 @@ classdef (Abstract) InternalWaveModel < handle
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
         
+        ConjugateMask % Matrix of size(X) that identifies non-redundant wavenumbers
+        
         version = 1.5
         performSanityChecks = 0
         advectionSanityCheck = 0
@@ -78,6 +80,7 @@ classdef (Abstract) InternalWaveModel < handle
     methods (Abstract, Access = protected)
         [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
         [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
+        [F,G] = InternalModeAtDepth(self, z, k0, l0, j0) 
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
         w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
         ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm
@@ -142,6 +145,14 @@ classdef (Abstract) InternalWaveModel < handle
             self.u_minus = nothing; self.v_plus = nothing; self.v_minus = nothing;
             self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
             self.zeta_minus = nothing;
+            
+            self.ConjugateMask = zeros(size(self.K));
+            self.ConjugateMask(1:end,1:(self.Ny/2+1),1:end) = 2; % Primary conjugates contain half the amplitude
+            self.ConjugateMask((self.Nx/2+1):end,1,:) = 0; % These guys are conjugate to (1:Nx/2,1,:)
+            self.ConjugateMask(1,1,:) = 1; % self-conjugate
+            self.ConjugateMask(self.Nx/2+1,1,:) = 1; % self-conjugate
+            self.ConjugateMask(self.Nx/2+1,self.Ny/2+1,:) = 1; % self-conjugate
+            self.ConjugateMask(1,self.Ny/2+1,:) = 1; % self-conjugate
         end
         
 
@@ -594,7 +605,7 @@ classdef (Abstract) InternalWaveModel < handle
                end
             end
             
-            if varargin{1} == 'exact'
+            if strcmp(varargin{1},'exact')
                 if nargout == 3
                     [u,v,w] = self.ExactVelocityAtTimePosition(t,x,y,z);
                 else
@@ -842,7 +853,7 @@ classdef (Abstract) InternalWaveModel < handle
             u = zeros(size(x));
             v = zeros(size(x));
             w = zeros(size(x));
-            nonzeroIndices = find( self.u_plus || self.u_minus );
+            nonzeroIndices = find( (self.Amp_plus | self.Amp_minus) & self.ConjugateMask );
             for iIndex=1:length(nonzeroIndices)
                 iWave = nonzeroIndices(iIndex);
                 
@@ -851,12 +862,18 @@ classdef (Abstract) InternalWaveModel < handle
                 k0 = self.K(iWave);
                 l0 = self.L(iWave);
                 omega0 = self.Omega(iWave);                
-                alpha0 = atan2(k0,l0);
+                alpha0 = atan2(l0,k0);
+                h0 = self.h(iWave);
                 [iK,iL,iJ] = ind2sub([self.Nx self.Ny self.Nz],iWave);
-                [F,G] = InternalModeAtDepth(self, z, iK, iL, iJ);
+                [F,G] = InternalModeAtDepth(self, z, iK-1, iL-1, iJ);
                 
-                phi0 = [angle(self.u_plus(iWave)) angle(self.u_minus(iWave))];
-                U = [abs(self.u_plus(iWave)) abs(self.u_minus(iWave))];
+                factor = 2;
+                if ((iK==1&&iL==1) || (iK==self.Nx/2+1 &&iL==1 ) || (iK==self.Nx/2+1 &&iL==self.Ny/2+1 ) || (iK==1 &&iL==self.Ny/2+1 ))
+                    factor = 1;
+                end
+                
+                phi0 = [angle(self.Amp_plus(iWave)) angle(self.Amp_minus(iWave))];
+                U = factor*[abs(self.Amp_plus(iWave)) abs(self.Amp_minus(iWave))]/sqrt(h0);
                 
                 for iSign=1:2
                     theta = k0 * x + l0 * y + omega0*t + phi0(iSign);
@@ -868,7 +885,7 @@ classdef (Abstract) InternalWaveModel < handle
                     v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
 
                     if nargout == 3
-                        h0 = self.h(iWave);
+                        
                         w = w + U(iSign) * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
                     end
                 end
