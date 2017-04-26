@@ -584,15 +584,15 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [u] = DrifterVelocityAtTimePositionVector(self,t,p)
+        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, varargin)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
             psize = size(p);
             if psize(1) == 3
-                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:));
+                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), varargin{:});
                 u = cat(1,u,v,zeros(1,psize(2)));
             else
-                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3));
+                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), varargin{:});
                 u = cat(2,u,v,zeros(psize(1),1));
             end
         end
