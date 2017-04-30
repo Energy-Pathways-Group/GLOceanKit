@@ -64,6 +64,7 @@ classdef (Abstract) InternalWaveModel < handle
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Amp_plus, Amp_minus % Used for diagnostics only
+        U_plus, U_minus, phi_plus, phi_minus % derived from Amp as an optimization
         
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
@@ -707,6 +708,15 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
+            
+            % Used as an optimization for advecting particles with exact
+            % solutions
+            self.U_plus = (abs(self.Amp_plus)./sqrt(self.h)).*self.ConjugateMask;
+            self.phi_plus = angle(self.Amp_plus);
+            self.U_minus = (abs(self.Amp_minus)./sqrt(self.h)).*self.ConjugateMask;
+            self.phi_minus = angle(self.Amp_minus);
+            self.U_plus(1,1,:) = 2*self.U_plus(1,1,:);
+            self.U_minus(1,1,:) = 0*self.U_minus(1,1,:);
         end
     end
     
@@ -853,30 +863,21 @@ classdef (Abstract) InternalWaveModel < handle
             u = zeros(size(x));
             v = zeros(size(x));
             w = zeros(size(x));
-            nonzeroIndices = find( (self.Amp_plus | self.Amp_minus) & self.ConjugateMask );
+            nonzeroIndices = find( self.U_plus | self.U_minus );
             for iIndex=1:length(nonzeroIndices)
                 iWave = nonzeroIndices(iIndex);
                 
                 % Compute the two-dimensional phase vector (note we're
                 % using Xh,Yh---the two-dimensional versions.
-                k0 = self.K(iWave);
-                l0 = self.L(iWave);
                 omega0 = self.Omega(iWave);                
-                alpha0 = atan2(l0,k0);
-                h0 = self.h(iWave);
-                [iK,iL,iJ] = ind2sub([self.Nx self.Ny self.Nz],iWave);
-                [F,G] = InternalModeAtDepth(self, z, iK-1, iL-1, iJ);
-                
-                factor = 2;
-                if ((iK==1&&iL==1) || (iK==self.Nx/2+1 &&iL==1 ) || (iK==self.Nx/2+1 &&iL==self.Ny/2+1 ) || (iK==1 &&iL==self.Ny/2+1 ))
-                    factor = 1;
-                end
-                
-                phi0 = [angle(self.Amp_plus(iWave)) angle(self.Amp_minus(iWave))];
-                U = factor*[abs(self.Amp_plus(iWave)) abs(self.Amp_minus(iWave))]/sqrt(h0);
+                alpha0 = atan2(self.L(iWave),self.K(iWave));
+                [F,G] = InternalModeAtDepth(self, z, iWave);
+                                
+                phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
+                U = [self.U_plus(iWave) self.U_minus(iWave)];
                 
                 for iSign=1:2
-                    theta = k0 * x + l0 * y + omega0*t + phi0(iSign);
+                    theta = self.K(iWave) * x + self.L(iWave) * y + omega0*t + phi0(iSign);
                     cos_theta = cos(theta);
                     sin_theta = sin(theta);
 
@@ -884,9 +885,8 @@ classdef (Abstract) InternalWaveModel < handle
                     u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
                     v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
 
-                    if nargout == 3
-                        
-                        w = w + U(iSign) * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
+                    if nargout == 3                  
+                        w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
                     end
                 end
             end

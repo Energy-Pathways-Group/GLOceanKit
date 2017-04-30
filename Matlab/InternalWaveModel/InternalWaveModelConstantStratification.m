@@ -184,13 +184,15 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
         end
         
-        function [F,G] = InternalModeAtDepth(self, z, k0, l0, j0)
-            % Called by 
-            h = self.h(k0+1,l0+1,j0);
-            k_z = j0*pi/self.Lz;
+        
+        function [F,G] = InternalModeAtDepth(self, z, waveIndex)
+            % waveIndex is the linear index
+            k_z = self.J(waveIndex)*pi/self.Lz;
             g = 9.81;
-            G = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * sin(k_z * z);
-            F = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * h * k_z * cos(k_z * z);
+            sin_z = sin(k_z * z);
+            cos_z = cos(k_z * z);
+            G = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * sin_z;
+            F = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * self.h(waveIndex) * k_z * cos_z;
         end
         
         % k_z and h should be of size [1, nModes]

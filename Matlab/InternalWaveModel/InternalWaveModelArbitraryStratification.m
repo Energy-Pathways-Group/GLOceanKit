@@ -110,8 +110,9 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.internalModes.normalization = norm;
             [F,G,h] = self.internalModes.ModesAtFrequency(omega);
         end
-        function [F,G] = InternalModeAtDepth(self,z,k0, l0, j0)
+        function [F,G] = InternalModeAtDepth(self,z,iWave)
             % return the normal mode
+            [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iWave);
             F = interp1(self.z,self.Sprime(:,j0,k0+1,l0+1),z,'spline');
             G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
