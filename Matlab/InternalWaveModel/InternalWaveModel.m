@@ -869,21 +869,22 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 % Compute the two-dimensional phase vector (note we're
                 % using Xh,Yh---the two-dimensional versions.
-                omega0 = self.Omega(iWave);                
+                
                 alpha0 = atan2(self.L(iWave),self.K(iWave));
                 [F,G] = InternalModeAtDepth(self, z, iWave);
-                                
+                
+                omega0 = [1 -1]*self.Omega(iWave);
                 phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
                 U = [self.U_plus(iWave) self.U_minus(iWave)];
                 
                 for iSign=1:2
-                    theta = self.K(iWave) * x + self.L(iWave) * y + omega0*t + phi0(iSign);
+                    theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
                     cos_theta = cos(theta);
                     sin_theta = sin(theta);
 
                     % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                    u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
-                    v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
+                    u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
+                    v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
 
                     if nargout == 3                  
                         w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
