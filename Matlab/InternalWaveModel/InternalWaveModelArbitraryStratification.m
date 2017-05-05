@@ -63,6 +63,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.S = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.internalModes = im;
+            self.rho0 = im.rho0;
             
             K2 = self.K2(:,:,1);
             [K2_unique,~,iK2_unique] = unique(K2);

@@ -60,15 +60,16 @@ classdef (Abstract) InternalWaveModel < handle
         
         N2, Nmax
         
-        K2, Kh, h, Omega, f0, C
+        K2, Kh, h, Omega, f0, C, rho0
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Amp_plus, Amp_minus % Used for diagnostics only
         
-        U_cos, U_sin, V_cos, V_sin, W_sin, Zeta_cos, k_spec, l_spec, j_spec, h_spec, omega_spec, phi_spec
+        U_cos, U_sin, V_cos, V_sin, W_sin, Zeta_cos, Rho_cos, k_spec, l_spec, j_spec, h_spec, omega_spec, phi_spec
 
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
+        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
                 
@@ -82,6 +83,8 @@ classdef (Abstract) InternalWaveModel < handle
         [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
         F = InternalUVModeAtDepth(self, z, h, j)
         G = InternalWModeAtDepth(self, z, j)
+        rho = RhoBarAtDepth(self,z)
+        N2 = N2AtDepth(self,z)
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
         w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
         ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm
@@ -310,6 +313,14 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
+            
+            self.U_cos_ext = self.uExternal .* cos(self.alphaExternal);
+            self.U_sin_ext = self.uExternal .* (self.f0 ./ self.omegaExternal) .* sin(self.alphaExternal);
+            self.V_cos_ext = self.uExternal .* sin(self.alphaExternal);
+            self.V_sin_ext = -self.uExternal .* (self.f0 ./ self.omegaExternal) .* cos(self.alphaExternal);
+            self.W_sin_ext = self.uExternal .* k .* reshape(self.hExternal,[],1);
+            self.Zeta_cos_ext = - self.uExternal .* k .* reshape(self.hExternal,[],1) ./ self.omegaExternal;
+            self.Rho_cos_ext = - (self.rho0/9.81) * self.uExternal .* k .* reshape(self.hExternal,[],1) ./ self.omegaExternal;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -666,6 +677,14 @@ classdef (Abstract) InternalWaveModel < handle
             
             zeta = zeta+zeta_ext;
         end
+        
+        function rho = DensityAtTimePosition(self,t,x,y,z)
+            rho_bar = self.RhoBarAtDepth(z);
+            rho_int = self.InternalDensityPertubationAtTimePositionExact(t,x,y,z);
+            rho_ext = self.ExternalDensityPerturbationAtTimePosition(t,x,y,z);
+            
+            rho = rho_bar + rho_int + rho_ext;
+        end
                 
         function ShowDiagnostics(self)
             % Display various diagnostics about the simulation.
@@ -763,6 +782,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.V_sin = -U .* (self.f0 ./ self.omega_spec) .* cos(alpha0);
             self.W_sin = U .* Kh_ .* self.h_spec;
             self.Zeta_cos = - U .* Kh_ .* self.h_spec ./ self.omega_spec;
+            self.Rho_cos = - (self.rho0/9.81) .* U .* Kh_ .* self.h_spec ./ self.omega_spec;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -928,6 +948,15 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function rho = ExternalDensityPerturbationAtTimePosition(self,t,x,y,z)            
+            theta = x * reshape(self.kExternal,1,[]) + y * reshape(self.lExternal,1,[]) + (reshape(self.omegaExternal,1,[])*t + reshape(self.phiExternal,1,[])); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            G = self.InternalWModeAtDepth(z, reshape(self.jExternal,1,[])); % [N M]
+            N2_ = self.N2AtDepth(z); % [N 1]
+            
+            rho = N2_ .* sum( (self.Rho_cos_ext .* cos_theta) .* G, 2);
+        end
+        
         % size(x) = [N 1]
         % size(phi) = [1 M]
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
@@ -958,6 +987,18 @@ classdef (Abstract) InternalWaveModel < handle
             G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
             
             zeta = sum( (self.Zeta_cos .* cos_theta) .* G, 2);
+        end
+        
+        function rho = InternalDensityPertubationAtTimePositionExact(self,t,x,y,z)
+            % Return the velocity field associated with the gridded
+            % velocity field, but using spectral interpolation, rather than
+            % the FFT grid.   
+            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
+            N2_ = self.N2AtDepth(z); % [N 1]
+            
+            rho = N2_ .* sum( (self.Rho_cos .* cos_theta) .* G, 2);
         end
                 
         function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)

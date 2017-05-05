@@ -74,6 +74,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self@InternalWaveModel(dims, n, z, N2, nModes, latitude);
             
             self.N0 = N0;
+            self.rho0 = 1025;
             self.nz = nz;
             
             % Preallocate this array for a faster dct
@@ -201,7 +202,16 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
             G = coeff * sin(z * k_z); % [N M]
         end
-
+        
+        function rho = RhoBarAtDepth(self,z)
+            g = 9.81;
+            rho = -(self.N0*self.N0*self.rho0/g)*z + self.rho0;
+        end
+        
+        function N2 = N2AtDepth(self,z)
+            N2 = self.N0 * self.N0 * ones(size(z));
+        end
+        
         % k_z and h should be of size [1, nModes]
         % [F,G] will return with size [length(z), nModes]
         function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h, norm)
