@@ -665,6 +665,13 @@ classdef (Abstract) InternalWaveModel < handle
                 v = v+v_ext;
             end
         end
+        
+        function zeta = ZetaAtTimePosition(self,t,x,y,z)
+            [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
+            [~,zeta_ext] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
+            
+            zeta = zeta+zeta_ext;
+        end
                 
         function ShowDiagnostics(self)
             % Display various diagnostics about the simulation.
@@ -856,22 +863,134 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function [w,zeta] = ExternalVerticalFieldsAtTimePosition(self,t,x,y,z)
+            % Return the velocity field associated with the manually added
+            % waves.
+            nExternalWaves = length(self.uExternal);
+            
+            w = zeros(size(x));
+            zeta = zeros(size(x));
+            for iWave=1:nExternalWaves
+                % Compute the two-dimensional phase vector (note we're
+                % using Xh,Yh---the two-dimensional versions.
+                k0 = self.kExternal(iWave);
+                l0 = self.lExternal(iWave);
+                omega0 = self.omegaExternal(iWave);
+                phi0 = self.phiExternal(iWave);
+                h0 = self.hExternal(iWave);
+                U = self.uExternal(iWave);
+                G = interp1(self.z,self.GExternal(:,iWave),z,'spline');
+                
+                theta = k0 * x + l0 * y + omega0*t + phi0;
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
+                
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                w = w + U * sqrt(k0*k0+l0*l0) * h0 * (sin_theta .* G);
+                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * (cos_theta .* G);
+            end
+        end
+        
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
             % the FFT grid.      
-            u = zeros(size(x));
-            v = zeros(size(x));
-            w = zeros(size(x));
+            u = zeros(size(x)); % size(u) = [N 1]
+            v = zeros(size(x)); % size(v) = [N 1]
+            w = zeros(size(x)); % size(w) = [N 1]
+            waveIndices = find( self.U_plus | self.U_minus )'; % size(waveIndices) = [1 M]
+            
+            alpha0 = atan2(self.L(waveIndices),self.K(waveIndices)); % [1 M]
+            [F,G] = self.InternalModeAtDepth(z, waveIndices); % [N M]
+            
+            theta = x * self.K(waveIndices) + y * self.L(waveIndices); % [N M]
+            theta_p = theta + self.Omega(waveIndices)*t + self.phi_plus(waveIndices);
+            cos_theta = cos(theta_p);
+            sin_theta = sin(theta_p);
+            U_p = self.U_plus(waveIndices) * ( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F
+            
+            %%%%
+            % This is an absolute mess. But, what I need to do is the
+            % following:
+            % 1. preallocate a *combined* [u_p u_m] list of coefficients
+            % containing only nonzero modes.
+            % we would then have
+            % u = sum(A * cos(theta) + B * sin(theta),2)
+            % where only cos/sin(theta) has to be computed.
+            
+            self.u_cosalpha_p = self.U_plus(waveIndices) .* cos(alpha0); % [1 M]
+            self.u_sinalpha_p = self.U_plus(waveIndices) .* cos(alpha0); % [1 M]
+            
+            theta_m = theta - self.Omega(waveIndices)*t + self.phi_minus(waveIndices);
+                
+            omega0 = [1 -1]*self.Omega(iWave);
+            phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
+            U = [self.U_plus(iWave) self.U_minus(iWave)];
+            
+            for iSign=1:2
+                theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
+                cos_theta = cos(theta);
+                sin_theta = sin(theta);
+                
+                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+                u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
+                v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
+                
+                if nargout == 3
+                    w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
+                end
+            end
+
+                
+        end
+        
+%         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
+%             % Return the velocity field associated with the gridded
+%             % velocity field, but using spectral interpolation, rather than
+%             % the FFT grid.      
+%             u = zeros(size(x));
+%             v = zeros(size(x));
+%             w = zeros(size(x));
+%             nonzeroIndices = find( self.U_plus | self.U_minus );
+%             for iIndex=1:length(nonzeroIndices)
+%                 iWave = nonzeroIndices(iIndex);
+%                 
+%                 % Compute the two-dimensional phase vector (note we're
+%                 % using Xh,Yh---the two-dimensional versions.
+%                 
+%                 alpha0 = atan2(self.L(iWave),self.K(iWave));
+%                 [F,G] = InternalModeAtDepth(self, z, iWave);
+%                 
+%                 omega0 = [1 -1]*self.Omega(iWave);
+%                 phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
+%                 U = [self.U_plus(iWave) self.U_minus(iWave)];
+%                 
+%                 for iSign=1:2
+%                     theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
+%                     cos_theta = cos(theta);
+%                     sin_theta = sin(theta);
+% 
+%                     % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
+%                     u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
+%                     v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
+% 
+%                     if nargout == 3                  
+%                         w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
+%                     end
+%                 end
+%             end
+%         end
+        
+        function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
+            % Return the velocity field associated with the gridded
+            % velocity field, but using spectral interpolation, rather than
+            % the FFT grid.
+            zeta = zeros(size(x));
             nonzeroIndices = find( self.U_plus | self.U_minus );
             for iIndex=1:length(nonzeroIndices)
                 iWave = nonzeroIndices(iIndex);
                 
-                % Compute the two-dimensional phase vector (note we're
-                % using Xh,Yh---the two-dimensional versions.
-                
-                alpha0 = atan2(self.L(iWave),self.K(iWave));
-                [F,G] = InternalModeAtDepth(self, z, iWave);
+                [~,G] = InternalModeAtDepth(self, z, iWave);
                 
                 omega0 = [1 -1]*self.Omega(iWave);
                 phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
@@ -880,18 +999,10 @@ classdef (Abstract) InternalWaveModel < handle
                 for iSign=1:2
                     theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
                     cos_theta = cos(theta);
-                    sin_theta = sin(theta);
-
-                    % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                    u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
-                    v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
-
-                    if nargout == 3                  
-                        w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
-                    end
+                    zeta = zeta - (U(iSign) * self.Kh(iWave) * self.h(iWave) / omega0(iSign)) * cos_theta .* G;
                 end
             end
-        end 
+        end
         
         function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
             % Uses coeffs to add up sines and cosines for an exact
@@ -911,6 +1022,8 @@ classdef (Abstract) InternalWaveModel < handle
                 v = v+v_ext;
             end
         end
+        
+
         
     end
 end

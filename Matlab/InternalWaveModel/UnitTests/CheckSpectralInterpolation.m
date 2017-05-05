@@ -39,19 +39,23 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 period = wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
 
                 [U,V,W] = wavemodel.VelocityFieldAtTime(0);
+                [~,ZETA] = wavemodel.VerticalFieldsAtTime(0);
                 u = reshape(U,[],1);
                 v = reshape(V,[],1);
                 w = reshape(W,[],1);
+                zeta = reshape(ZETA,[],1);
                 
                 [u_spec, v_spec, w_spec] = wavemodel.VelocityAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'exact');
+                [zeta_spec] = wavemodel.ZetaAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3));
                 
                 
                 
                 u_error = error(u_spec,u);
                 v_error = error(v_spec,v);
                 w_error = error(w_spec,w);
+                zeta_error = error(zeta_spec,zeta);
                 
-                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error)))]);
+                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error)))]);
                 
                 if max_error > -3
                     if sign > 0
@@ -59,7 +63,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                     else
                         fprintf('\nFound at large error at -(k,l,j)=(%d,%d,%d):\n',k_loop,l_loop,j0);
                     end
-                    fprintf('The spectral interpolation for (u,v,w) matches FFT solution to 1 part in (10^%d, 10^%d, 10^%d)\n', round((log10(u_error))), round((log10(v_error))), round((log10(w_error))));
+                    fprintf('The spectral interpolation for (u,v,w,zeta) matches FFT solution to 1 part in (10^%d, 10^%d, 10^%d, 10^%d)\n', round((log10(u_error))), round((log10(v_error))), round((log10(w_error))), round((log10(zeta_error))) );
                 end
             end
         end
@@ -72,14 +76,18 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 wavemodel.FillOutWaveSpectrum();
 
 [U,V,W] = wavemodel.VelocityFieldAtTime(0);
+[~,ZETA] = wavemodel.VerticalFieldsAtTime(0);
 u = reshape(U,[],1);
 v = reshape(V,[],1);
 w = reshape(W,[],1);
+zeta = reshape(ZETA,[],1);
 
 [u_spec, v_spec, w_spec] = wavemodel.VelocityAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'exact');
+[zeta_spec] = wavemodel.ZetaAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3));
 u_error = error(u_spec,u);
 v_error = error(v_spec,v);
 w_error = error(w_spec,w);
+zeta_error = error(zeta_spec,zeta);
 
-max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error)))]);
-fprintf('The spectral interpolation for (u,v,w) matches FFT solution to 1 part in (10^%d, 10^%d, 10^%d)\n', round((log10(u_error))), round((log10(v_error))), round((log10(w_error))));
+max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error)))]);
+fprintf('The spectral interpolation for (u,v,w,zeta) matches FFT solution to 1 part in (10^%d, 10^%d, 10^%d, 10^%d)\n', round((log10(u_error))), round((log10(v_error))), round((log10(w_error))), round((log10(zeta_error))) );
