@@ -186,17 +186,22 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         
         % size(z) = [N 1]
         % size(waveIndices) = [1 M]
-        function [F,G] = InternalModeAtDepth(self, z, waveIndices)
-            % waveIndex is the linear index
-            k_z = self.J(waveIndices)*pi/self.Lz; %[1 M]
+        function F = InternalUVModeAtDepth(self, z, h, j)
+            % Called by the superclass when advecting particles spectrally.
+            k_z = j*pi/self.Lz; %[1 M]
             g = 9.81;
-            sin_z = sin(z * k_z); % [N M]
-            cos_z = cos(z * k_z); % [N M]
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
-            G = coeff * sin_z;
-            F = coeff * ( self.h(waveIndices) .* k_z ) .* cos_z; % [1 M]
+            F = coeff * ( h .* k_z ) .* cos(z * k_z); % [N M]
         end
         
+        function G = InternalWModeAtDepth(self, z, j)
+            % Called by the superclass when advecting particles spectrally.
+            k_z = j*pi/self.Lz; %[1 M]
+            g = 9.81;
+            coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
+            G = coeff * sin(z * k_z); % [N M]
+        end
+
         % k_z and h should be of size [1, nModes]
         % [F,G] will return with size [length(z), nModes]
         function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h, norm)

@@ -32,14 +32,14 @@ y_float = reshape(y_float,[],1);
 z_float = reshape(z_float,[],1);
 
 timeStep = 1; % in seconds
-maxTime = 10;
+maxTime = 5;
 t = (0:timeStep:maxTime)';
 
 tic
 for iTime=1:length(t)
 %     [u,v,w]=wavemodel.VelocityFieldAtTime(t(iTime));
 %     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
-%     isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
-    [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
+    isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
+%     [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
 end
 toc

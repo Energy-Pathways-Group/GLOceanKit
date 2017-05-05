@@ -64,15 +64,14 @@ classdef (Abstract) InternalWaveModel < handle
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Amp_plus, Amp_minus % Used for diagnostics only
-        U_plus, U_minus, phi_plus, phi_minus % derived from Amp as an optimization
         
+        U_cos, U_sin, V_cos, V_sin, W_sin, Zeta_cos, k_spec, l_spec, j_spec, h_spec, omega_spec, phi_spec
+
         Xh, Yh
         kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
-        
-        ConjugateMask % Matrix of size(X) that identifies non-redundant wavenumbers
-        
+                
         version = 1.5
         performSanityChecks = 0
         advectionSanityCheck = 0
@@ -81,7 +80,8 @@ classdef (Abstract) InternalWaveModel < handle
     methods (Abstract, Access = protected)
         [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
         [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
-        [F,G] = InternalModeAtDepth(self, z, k0, l0, j0) 
+        F = InternalUVModeAtDepth(self, z, h, j)
+        G = InternalWModeAtDepth(self, z, j)
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
         w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
         ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm
@@ -147,13 +147,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
             self.zeta_minus = nothing;
             
-            self.ConjugateMask = zeros(size(self.K));
-            self.ConjugateMask(1:end,1:(self.Ny/2+1),1:end) = 2; % Primary conjugates contain half the amplitude
-            self.ConjugateMask((self.Nx/2+1):end,1,:) = 0; % These guys are conjugate to (1:Nx/2,1,:)
-            self.ConjugateMask(1,1,:) = 1; % self-conjugate
-            self.ConjugateMask(self.Nx/2+1,1,:) = 1; % self-conjugate
-            self.ConjugateMask(self.Nx/2+1,self.Ny/2+1,:) = 1; % self-conjugate
-            self.ConjugateMask(1,self.Ny/2+1,:) = 1; % self-conjugate
+
         end
         
 
@@ -716,18 +710,61 @@ classdef (Abstract) InternalWaveModel < handle
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
             
-            % Used as an optimization for advecting particles with exact
-            % solutions
-            self.U_plus = (abs(self.Amp_plus)./sqrt(self.h)).*self.ConjugateMask;
-            self.phi_plus = angle(self.Amp_plus);
-            self.U_minus = (abs(self.Amp_minus)./sqrt(self.h)).*self.ConjugateMask;
-            self.phi_minus = angle(self.Amp_minus);
-            self.U_plus(1,1,:) = 2*self.U_plus(1,1,:);
-            self.U_minus(1,1,:) = 0*self.U_minus(1,1,:);
+            self.GenerateWavePhasesForSpectralAdvection();
         end
     end
     
     methods (Access = protected)
+        
+        function self = GenerateWavePhasesForSpectralAdvection(self)
+            % This mask zeros redundant hermitian conjugates, and doubles
+            % the amplitude where appropriate, in order to extract the
+            % correct amplitude for each wavenumber
+            ConjugateMask = zeros(size(self.K));
+            ConjugateMask(1:end,1:(self.Ny/2+1),1:end) = 2; % Primary conjugates contain half the amplitude
+            ConjugateMask((self.Nx/2+1):end,1,:) = 0; % These guys are conjugate to (1:Nx/2,1,:)
+            ConjugateMask(1,1,:) = 1; % self-conjugate
+            ConjugateMask(self.Nx/2+1,1,:) = 1; % self-conjugate
+            ConjugateMask(self.Nx/2+1,self.Ny/2+1,:) = 1; % self-conjugate
+            ConjugateMask(1,self.Ny/2+1,:) = 1; % self-conjugate
+            
+            % First pull out the nonzero omega+ waves
+            U_plus = (abs(self.Amp_plus)./sqrt(self.h)).*ConjugateMask;
+            U_plus(1,1,:) = 2*U_plus(1,1,:);
+            
+            waveIndices = find( U_plus )';
+            U = U_plus(waveIndices);
+            self.h_spec = self.h(waveIndices);
+            self.phi_spec = angle(self.Amp_plus(waveIndices));
+            self.k_spec = self.K(waveIndices);
+            self.l_spec = self.L(waveIndices);
+            self.j_spec = self.J(waveIndices);
+            self.omega_spec = self.Omega(waveIndices);
+            
+            % Then append the nonzero omega- waves
+            U_minus = (abs(self.Amp_minus)./sqrt(self.h)).*ConjugateMask;
+            U_minus(1,1,:) = 0*U_minus(1,1,:);
+            
+            waveIndices = find( U_minus )';
+            U = cat(2, U, U_minus(waveIndices));
+            self.h_spec = cat(2,self.h_spec,self.h(waveIndices));
+            self.phi_spec = cat(2, self.phi_spec, angle(self.Amp_minus(waveIndices)));
+            self.k_spec = cat(2, self.k_spec, self.K(waveIndices));
+            self.l_spec = cat(2, self.l_spec, self.L(waveIndices));
+            self.j_spec = cat(2, self.j_spec, self.J(waveIndices));
+            self.omega_spec = cat(2, self.omega_spec, -self.Omega(waveIndices));
+            
+            alpha0 = atan2(self.l_spec,self.k_spec);
+            Kh_ = sqrt( self.k_spec .* self.k_spec + self.l_spec .* self.l_spec);
+            
+            self.U_cos = U .* cos(alpha0);
+            self.U_sin = U .* (self.f0 ./ self.omega_spec) .* sin(alpha0);
+            self.V_cos = U .* sin(alpha0);
+            self.V_sin = -U .* (self.f0 ./ self.omega_spec) .* cos(alpha0);
+            self.W_sin = U .* Kh_ .* self.h_spec;
+            self.Zeta_cos = - U .* Kh_ .* self.h_spec ./ self.omega_spec;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Begin initializing the wave field (internal use only)
@@ -891,119 +928,38 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        % size(x) = [N 1]
+        % size(phi) = [1 M]
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
             % the FFT grid.      
-            u = zeros(size(x)); % size(u) = [N 1]
-            v = zeros(size(x)); % size(v) = [N 1]
-            w = zeros(size(x)); % size(w) = [N 1]
-            waveIndices = find( self.U_plus | self.U_minus )'; % size(waveIndices) = [1 M]
+ 
+            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            sin_theta = sin(theta); % [N M]
+            F = self.InternalUVModeAtDepth(z, self.h_spec, self.j_spec); % [N M]
             
-            alpha0 = atan2(self.L(waveIndices),self.K(waveIndices)); % [1 M]
-            [F,G] = self.InternalModeAtDepth(z, waveIndices); % [N M]
-            
-            theta = x * self.K(waveIndices) + y * self.L(waveIndices); % [N M]
-            theta_p = theta + self.Omega(waveIndices)*t + self.phi_plus(waveIndices);
-            cos_theta = cos(theta_p);
-            sin_theta = sin(theta_p);
-            U_p = self.U_plus(waveIndices) * ( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F
-            
-            %%%%
-            % This is an absolute mess. But, what I need to do is the
-            % following:
-            % 1. preallocate a *combined* [u_p u_m] list of coefficients
-            % containing only nonzero modes.
-            % we would then have
-            % u = sum(A * cos(theta) + B * sin(theta),2)
-            % where only cos/sin(theta) has to be computed.
-            
-            self.u_cosalpha_p = self.U_plus(waveIndices) .* cos(alpha0); % [1 M]
-            self.u_sinalpha_p = self.U_plus(waveIndices) .* cos(alpha0); % [1 M]
-            
-            theta_m = theta - self.Omega(waveIndices)*t + self.phi_minus(waveIndices);
-                
-            omega0 = [1 -1]*self.Omega(iWave);
-            phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
-            U = [self.U_plus(iWave) self.U_minus(iWave)];
-            
-            for iSign=1:2
-                theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
-                
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
-                v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
-                
-                if nargout == 3
-                    w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
-                end
-            end
-
-                
+            u = sum( (self.U_cos .* cos_theta + self.U_sin .* sin_theta) .* F, 2);
+            v = sum( (self.V_cos .* cos_theta + self.V_sin .* sin_theta) .* F, 2);
+                        
+            if nargout == 3
+                G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
+                w = sum( (self.W_sin .* sin_theta) .* G, 2);
+            end     
         end
-        
-%         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
-%             % Return the velocity field associated with the gridded
-%             % velocity field, but using spectral interpolation, rather than
-%             % the FFT grid.      
-%             u = zeros(size(x));
-%             v = zeros(size(x));
-%             w = zeros(size(x));
-%             nonzeroIndices = find( self.U_plus | self.U_minus );
-%             for iIndex=1:length(nonzeroIndices)
-%                 iWave = nonzeroIndices(iIndex);
-%                 
-%                 % Compute the two-dimensional phase vector (note we're
-%                 % using Xh,Yh---the two-dimensional versions.
-%                 
-%                 alpha0 = atan2(self.L(iWave),self.K(iWave));
-%                 [F,G] = InternalModeAtDepth(self, z, iWave);
-%                 
-%                 omega0 = [1 -1]*self.Omega(iWave);
-%                 phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
-%                 U = [self.U_plus(iWave) self.U_minus(iWave)];
-%                 
-%                 for iSign=1:2
-%                     theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
-%                     cos_theta = cos(theta);
-%                     sin_theta = sin(theta);
-% 
-%                     % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-%                     u = u + U(iSign)*( cos(alpha0)*cos_theta + (self.f0/omega0(iSign))*sin(alpha0)*sin_theta ) .* F;
-%                     v = v + U(iSign)*( sin(alpha0)*cos_theta - (self.f0/omega0(iSign))*cos(alpha0)*sin_theta ) .* F;
-% 
-%                     if nargout == 3                  
-%                         w = w + U(iSign) * self.Kh(iWave) * self.h(iWave) * sin_theta .* G;
-%                     end
-%                 end
-%             end
-%         end
         
         function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.
-            zeta = zeros(size(x));
-            nonzeroIndices = find( self.U_plus | self.U_minus );
-            for iIndex=1:length(nonzeroIndices)
-                iWave = nonzeroIndices(iIndex);
-                
-                [~,G] = InternalModeAtDepth(self, z, iWave);
-                
-                omega0 = [1 -1]*self.Omega(iWave);
-                phi0 = [self.phi_plus(iWave) self.phi_minus(iWave)];
-                U = [self.U_plus(iWave) self.U_minus(iWave)];
-                
-                for iSign=1:2
-                    theta = self.K(iWave) * x + self.L(iWave) * y + omega0(iSign)*t + phi0(iSign);
-                    cos_theta = cos(theta);
-                    zeta = zeta - (U(iSign) * self.Kh(iWave) * self.h(iWave) / omega0(iSign)) * cos_theta .* G;
-                end
-            end
+            % the FFT grid.   
+            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
+            
+            zeta = sum( (self.Zeta_cos .* cos_theta) .* G, 2);
         end
-        
+                
         function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
             % Uses coeffs to add up sines and cosines for an exact
             % solution.
