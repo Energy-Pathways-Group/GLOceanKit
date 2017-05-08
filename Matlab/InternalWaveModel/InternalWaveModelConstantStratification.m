@@ -38,6 +38,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
     properties (Access = protected)
         dctScratch, dstScratch;
         nz % DCT length in the vertical. This doesn't change if the user requests the value at the surface, but Nz will.
+        F_cos_ext, G_sin_ext
     end
     
     methods
@@ -159,6 +160,19 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.zeta_plus = self.zeta_plus .* self.G;
             self.zeta_minus = self.zeta_minus .* self.G;
         end
+                
+        function PrecomputeExternalWaveCoefficients(self, U)
+            PrecomputeExternalWaveCoefficients@InternalWaveModel(self, U)
+            if strcmp(self.norm_ext,'const_G_norm')
+                g = 9.81;
+                coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
+                self.F_cos_ext = coeff * ( self.h_ext .* self.k_z_ext );
+                self.G_sin_ext = coeff * ones(size(self.h_ext));
+            elseif strcmp(self.norm_ext,'max_u')
+                self.F_cos_ext = ones(size(self.h_ext));
+                self.G_sin_ext = 1./(self.h_ext .* self.k_z_ext);
+            end
+        end
     end
     
     methods (Access = protected)
@@ -187,17 +201,27 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         
         % size(z) = [N 1]
         % size(waveIndices) = [1 M]
-        function F = InternalUVModeAtDepth(self, z, h, j)
+        function F = ExternalUVModesAtDepth(self, z)
             % Called by the superclass when advecting particles spectrally.
-            k_z = j*pi/self.Lz; %[1 M]
-            g = 9.81;
-            coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
-            F = coeff * ( h .* k_z ) .* cos(z * k_z); % [N M]
+            F = self.F_cos_ext .* cos(z * self.k_z_ext); % [N M]
         end
         
-        function G = InternalWModeAtDepth(self, z, j)
+        function G = ExternalWModesAtDepth(self, z)
             % Called by the superclass when advecting particles spectrally.
-            k_z = j*pi/self.Lz; %[1 M]
+            G = self.G_sin_ext .* sin(z * self.k_z_ext); % [N M]
+        end
+        
+        function F = InternalUVModesAtDepth(self, z)
+            % Called by the superclass when advecting particles spectrally.
+            k_z = self.j_int*pi/self.Lz; %[1 M]
+            g = 9.81;
+            coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
+            F = coeff * ( self.h_int .* k_z ) .* cos(z * k_z); % [N M]
+        end
+        
+        function G = InternalWModesAtDepth(self, z)
+            % Called by the superclass when advecting particles spectrally.
+            k_z = self.j_int*pi/self.Lz; %[1 M]
             g = 9.81;
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
             G = coeff * sin(z * k_z); % [N M]

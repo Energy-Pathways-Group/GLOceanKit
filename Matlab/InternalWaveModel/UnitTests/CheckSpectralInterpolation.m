@@ -71,9 +71,8 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
 end
 fprintf('\n');
 
-
-wavemodel.InitializeWithGMSpectrum(1.0);
 wavemodel.FillOutWaveSpectrum();
+wavemodel.InitializeWithGMSpectrum(1.0);
 
 [U,V,W] = wavemodel.VelocityFieldAtTime(0);
 [~,ZETA] = wavemodel.VerticalFieldsAtTime(0);

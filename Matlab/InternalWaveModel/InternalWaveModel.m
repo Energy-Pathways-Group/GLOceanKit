@@ -65,11 +65,9 @@ classdef (Abstract) InternalWaveModel < handle
         
         Amp_plus, Amp_minus % Used for diagnostics only
         
-        U_cos, U_sin, V_cos, V_sin, W_sin, Zeta_cos, Rho_cos, k_spec, l_spec, j_spec, h_spec, omega_spec, phi_spec
+        U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
 
-        Xh, Yh
-        kExternal, lExternal, jExternal, alphaExternal, omegaExternal, phiExternal, uExternal, FExternal, GExternal, hExternal
-        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext
+        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
                 
@@ -81,8 +79,10 @@ classdef (Abstract) InternalWaveModel < handle
     methods (Abstract, Access = protected)
         [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
         [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
-        F = InternalUVModeAtDepth(self, z, h, j)
-        G = InternalWModeAtDepth(self, z, j)
+        F = InternalUVModesAtDepth(self, z) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
+        G = InternalWModesAtDepth(self, z) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
+        F = ExternalUVModesAtDepth(self, z) % Returns normal modes at requested depth, size(F) = [length(z) nExtModes]
+        G = ExternalWModesAtDepth(self, z) % Returns normal modes at requested depth, size(G) = [length(z) nExtModes]
         rho = RhoBarAtDepth(self,z)
         N2 = N2AtDepth(self,z)
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
@@ -134,7 +134,6 @@ classdef (Abstract) InternalWaveModel < handle
             
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            [self.Xh,self.Yh] = ndgrid(self.x,self.y);
             
             self.L = L; self.K = K; self.J = J;
             self.X = X; self.Y = Y; self.Z = Z;
@@ -249,78 +248,95 @@ classdef (Abstract) InternalWaveModel < handle
             % Add free waves to the model that are not constrained to the
             % gridded solution. The amplitude, A, can be given as an energy
             % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.
-            self.kExternal = k;
-            self.lExternal = l;
-            self.jExternal = j;
-            self.alphaExternal = atan2(l,k);
-            self.phiExternal = phi;
-            self.uExternal = A;
-            
+            % 'energyDensity' or 'maxU'.            
+            self.k_ext = reshape(k,1,[]);
+            self.l_ext = reshape(l,1,[]);
+            self.j_ext = reshape(j,1,[]);
+            self.k_z_ext = self.j_ext*pi/self.Lz;
+            self.phi_ext = reshape(phi,1,[]);
+                     
             if strcmp(type, 'energyDensity')
-                norm = 'const_G_norm';
+                self.norm_ext = 'const_G_norm';
             elseif strcmp(type, 'maxU')
-                norm = 'max_u';
+                self.norm_ext = 'max_u';
+            end
+            
+            
+            K2h = self.k_ext.*self.k_ext + self.l_ext.*self.l_ext;
+            
+            self.h_ext = zeros(size(self.j_ext));
+            self.F_ext = zeros(length(self.z),length(self.j_ext));
+            self.G_ext = zeros(length(self.z),length(self.j_ext));
+            for iWave=1:length(j)
+                [FExt,GExt,hExt] = self.ModesAtWavenumber(sqrt(K2h(iWave)), self.norm_ext);
+                self.F_ext(:,iWave) = FExt(:,j(iWave));
+                self.G_ext(:,iWave) = GExt(:,j(iWave));
+                self.h_ext(iWave) = hExt(j(iWave));
+            end
+            
+            U = reshape(A,1,[]);
+            if strcmp(type, 'energyDensity')
+                U = U./sqrt(self.h_ext);
             end
             
             g = 9.81;
-            self.hExternal = zeros(length(j),1);
-            for iWave=1:length(j)
-                K2h = k(iWave)*k(iWave) + l(iWave)*l(iWave);
-                [F_ext,G_ext,h_ext] = self.ModesAtWavenumber(sqrt(K2h), norm);
-                self.FExternal(:,iWave) = F_ext(:,j(iWave));
-                self.GExternal(:,iWave) = G_ext(:,j(iWave));
-                self.hExternal(iWave) = h_ext(j(iWave));
-                self.omegaExternal(iWave) = sqrt( g*h_ext(iWave) * K2h + self.f0*self.f0 );
-                if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
-                end
-            end
+            self.omega_ext = sqrt( g*self.h_ext .* K2h + self.f0*self.f0 );
+            omega = self.omega_ext;
             
-            omega = self.omegaExternal;
+            self.PrecomputeExternalWaveCoefficients(U);           
         end
         
         function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
             % Add free waves to the model that are not constrained to the
             % gridded solution. The amplitude, A, can be given as an energy
             % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.
-            self.omegaExternal = omega;
-            self.alphaExternal = alpha;
-            self.jExternal = j;
-            self.phiExternal = phi;
-            self.uExternal = A;
-            
+            % 'energyDensity' or 'maxU'.                       
+            self.j_ext = reshape(j,1,[]);
+            self.k_z_ext = self.j_ext*pi/self.Lz;
+            self.omega_ext = reshape(omega,1,[]);
+            self.phi_ext = reshape(phi,1,[]);
+
             if strcmp(type, 'energyDensity')
-                norm = 'const_G_norm';
+                self.norm_ext = 'const_G_norm';
             elseif strcmp(type, 'maxU')
-                norm = 'max_u';
+                self.norm_ext = 'max_u';
+            end
+                        
+            self.h_ext = zeros(size(self.j_ext));
+            self.F_ext = zeros(length(self.z),length(self.j_ext));
+            self.G_ext = zeros(length(self.z),length(self.j_ext));
+            for iWave=1:length(j)
+                [FExt,GExt,hExt] = self.ModesAtFrequency(omega(iWave), self.norm_ext);
+                self.F_ext(:,iWave) = FExt(:,j(iWave));
+                self.G_ext(:,iWave) = GExt(:,j(iWave));
+                self.h_ext(iWave) = hExt(j(iWave));
+            end
+            
+            U = reshape(A,1,[]);
+            if strcmp(type, 'energyDensity')
+                U = U./sqrt(self.h_ext);
             end
             
             g = 9.81;
-            self.hExternal = zeros(length(j),1);
-            for iWave=1:length(j)
-                [F_ext,G_ext,h_ext] = self.ModesAtFrequency(omega(iWave), norm);
-                self.FExternal(:,iWave) = F_ext(:,j(iWave));
-                self.GExternal(:,iWave) = G_ext(:,j(iWave));
-                self.hExternal(iWave) = h_ext(j(iWave));
-                K_horizontal = sqrt((omega(iWave)*omega(iWave) - self.f0*self.f0)/(g*h_ext(j(iWave))));
-                self.kExternal(iWave) = K_horizontal*cos(alpha(iWave));
-                self.lExternal(iWave) = K_horizontal*sin(alpha(iWave));
-                if strcmp(type, 'energyDensity')
-                    self.uExternal(iWave) = self.uExternal(iWave)/sqrt(h_ext(j(iWave)));
-                end
-            end
+            k = sqrt((self.omega_ext.*self.omega_ext - self.f0*self.f0)./(g*self.h_ext));
+            alpha0 = reshape(alpha,1,[]);
+            self.k_ext = k .* cos(alpha0);
+            self.l_ext = k .* sin(alpha0);
             
-            k = sqrt(self.kExternal.*self.kExternal + self.lExternal.*self.lExternal);
+            self.PrecomputeExternalWaveCoefficients(U);
+        end
+        
+        function PrecomputeExternalWaveCoefficients(self, U)
+            alpha0 = atan2(self.l_ext,self.k_ext);
+            Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
             
-            self.U_cos_ext = self.uExternal .* cos(self.alphaExternal);
-            self.U_sin_ext = self.uExternal .* (self.f0 ./ self.omegaExternal) .* sin(self.alphaExternal);
-            self.V_cos_ext = self.uExternal .* sin(self.alphaExternal);
-            self.V_sin_ext = -self.uExternal .* (self.f0 ./ self.omegaExternal) .* cos(self.alphaExternal);
-            self.W_sin_ext = self.uExternal .* k .* reshape(self.hExternal,[],1);
-            self.Zeta_cos_ext = - self.uExternal .* k .* reshape(self.hExternal,[],1) ./ self.omegaExternal;
-            self.Rho_cos_ext = - (self.rho0/9.81) * self.uExternal .* k .* reshape(self.hExternal,[],1) ./ self.omegaExternal;
+            self.U_cos_ext = U .* cos(alpha0);
+            self.U_sin_ext = U .* (self.f0 ./ self.omega_ext) .* sin(alpha0);
+            self.V_cos_ext = U .* sin(alpha0);
+            self.V_sin_ext = -U .* (self.f0 ./ self.omega_ext) .* cos(alpha0);
+            self.W_sin_ext = U .* Kh_ .* self.h_ext;
+            self.Zeta_cos_ext = - U .* Kh_ .* self.h_ext ./ self.omega_ext;
+            self.Rho_cos_ext = - (self.rho0/9.81) .* U .* Kh_ .* self.h_ext ./ self.omega_ext;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,17 +386,17 @@ classdef (Abstract) InternalWaveModel < handle
             % negative part of the hermitian conjugate. However, we also
             % have negative frequency waves, so this is justified.
             internalOmegaLinearIndices = reshape(1:numel(self.Omega),size(self.Omega));
-            externalOmegaLinearIndices = 1:length(self.omegaExternal);
+            externalOmegaLinearIndices = 1:length(self.omega_ext);
             GM3Dint = zeros(size(self.Kh));
-            GM3Dext = zeros(size(self.uExternal));
+            GM3Dext = zeros(size(self.k_ext));
             for iMode = 1:self.nModes
                 % Flatten the internal omegas (and their index)
                 intOmegas = reshape(abs(self.Omega(:,:,iMode)),[],1);
                 intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
                 
                 % Now do the same for the external modes
-                indices = find(self.jExternal == iMode);
-                extOmegas = reshape(abs(self.omegaExternal(indices)),[],1);
+                indices = find(self.j_ext == iMode);
+                extOmegas = reshape(abs(self.omega_ext(indices)),[],1);
                 extOmegasLinearIndicesForIMode = reshape(externalOmegaLinearIndices(indices),[],1);
                 
                 % Make a combined list, but note which list each omega came
@@ -437,8 +453,9 @@ classdef (Abstract) InternalWaveModel < handle
                 A_plus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 
-                self.uExternal = sqrt(2*GM3Dext/self.hExternal).*randn( size(self.uExternal) );
-                self.phiExternal = 2*pi*rand( size(self.uExternal) );
+                self.phi_ext = 2*pi*rand( size(self.k_ext) );
+                U = sqrt(2*GM3Dext/self.hExternal).*randn( size(self.uExternal) );
+                self.PrecomputeExternalWaveCoefficients(U);                
             else
                 % Randomize phases, but keep unit length
                 A_plus = GenerateHermitianRandomMatrix( size(self.K) );
@@ -453,8 +470,9 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 % Check this factor of 2!!! Is the correct? squared
                 % velocity to energy, I think.
-                self.uExternal = sqrt(2*GM3Dext./self.hExternal);
-                self.phiExternal = 2*pi*rand( size(self.uExternal) );
+                self.phi_ext = 2*pi*rand( size(self.k_ext) );
+                U = sqrt(2*GM3Dext./self.h_ext);
+                self.PrecomputeExternalWaveCoefficients(U);   
             end
             
             
@@ -463,7 +481,7 @@ classdef (Abstract) InternalWaveModel < handle
             GM_sum_int = sum(sum(sum(GM3Dint)))/E;
             GM_sum_ext = sum(GM3Dext)/E;
             GM_random_sum_int = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            GM_random_sum_ext = sum(self.uExternal.*self.uExternal.*self.hExternal/2)/E;
+            GM_random_sum_ext = sum((self.U_cos_ext.*self.U_cos_ext + self.V_cos_ext.*self.V_cos_ext).*self.h_ext/2)/E;
             fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
@@ -536,7 +554,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
             
             % ...add the external waves to the gridded solution.
-            if ~isempty(self.uExternal)
+            if ~isempty(self.k_ext)
                 if nargout == 3
                     [u_ext, v_ext, w_ext] = self.ExternalVelocityFieldsAtTime(t);
                     w = w + w_ext;
@@ -561,7 +579,7 @@ classdef (Abstract) InternalWaveModel < handle
             w = self.TransformToSpatialDomainWithG(w_bar);
             zeta = self.TransformToSpatialDomainWithG(zeta_bar);
             
-            if ~isempty(self.uExternal)
+            if ~isempty(self.k_ext)
                 [w_ext, zeta_ext] = self.ExternalVerticalFieldsAtTime(t);
                 w = w + w_ext;
                 zeta = zeta + zeta_ext;
@@ -611,17 +629,19 @@ classdef (Abstract) InternalWaveModel < handle
                end
             end
             
-            if strcmp(varargin{1},'exact')
-                if nargout == 3
-                    [u,v,w] = self.ExactVelocityAtTimePosition(t,x,y,z);
-                else
-                    [u,v] = self.ExactVelocityAtTimePosition(t,x,y,z);
-                end
-                return
-            elseif isempty(varargin{1})
+            if nargin == 5
                 method = 'spline';
             else
-                method = varargin{1};                
+                if strcmp(varargin{1},'exact')
+                    if nargout == 3
+                        [u,v,w] = self.ExactVelocityAtTimePosition(t,x,y,z);
+                    else
+                        [u,v] = self.ExactVelocityAtTimePosition(t,x,y,z);
+                    end
+                    return
+                else
+                    method = varargin{1};
+                end
             end
             
             % Return the velocity at time t, and positions x,y,z.
@@ -753,12 +773,12 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_plus )';
             U = U_plus(waveIndices);
-            self.h_spec = self.h(waveIndices);
-            self.phi_spec = angle(self.Amp_plus(waveIndices));
-            self.k_spec = self.K(waveIndices);
-            self.l_spec = self.L(waveIndices);
-            self.j_spec = self.J(waveIndices);
-            self.omega_spec = self.Omega(waveIndices);
+            self.h_int = self.h(waveIndices);
+            self.phi_int = angle(self.Amp_plus(waveIndices));
+            self.k_int = self.K(waveIndices);
+            self.l_int = self.L(waveIndices);
+            self.j_int = self.J(waveIndices);
+            self.omega_int = self.Omega(waveIndices);
             
             % Then append the nonzero omega- waves
             U_minus = (abs(self.Amp_minus)./sqrt(self.h)).*ConjugateMask;
@@ -766,23 +786,23 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_minus )';
             U = cat(2, U, U_minus(waveIndices));
-            self.h_spec = cat(2,self.h_spec,self.h(waveIndices));
-            self.phi_spec = cat(2, self.phi_spec, angle(self.Amp_minus(waveIndices)));
-            self.k_spec = cat(2, self.k_spec, self.K(waveIndices));
-            self.l_spec = cat(2, self.l_spec, self.L(waveIndices));
-            self.j_spec = cat(2, self.j_spec, self.J(waveIndices));
-            self.omega_spec = cat(2, self.omega_spec, -self.Omega(waveIndices));
+            self.h_int = cat(2,self.h_int,self.h(waveIndices));
+            self.phi_int = cat(2, self.phi_int, angle(self.Amp_minus(waveIndices)));
+            self.k_int = cat(2, self.k_int, self.K(waveIndices));
+            self.l_int = cat(2, self.l_int, self.L(waveIndices));
+            self.j_int = cat(2, self.j_int, self.J(waveIndices));
+            self.omega_int = cat(2, self.omega_int, -self.Omega(waveIndices));
             
-            alpha0 = atan2(self.l_spec,self.k_spec);
-            Kh_ = sqrt( self.k_spec .* self.k_spec + self.l_spec .* self.l_spec);
+            alpha0 = atan2(self.l_int,self.k_int);
+            Kh_ = sqrt( self.k_int .* self.k_int + self.l_int .* self.l_int);
             
-            self.U_cos = U .* cos(alpha0);
-            self.U_sin = U .* (self.f0 ./ self.omega_spec) .* sin(alpha0);
-            self.V_cos = U .* sin(alpha0);
-            self.V_sin = -U .* (self.f0 ./ self.omega_spec) .* cos(alpha0);
-            self.W_sin = U .* Kh_ .* self.h_spec;
-            self.Zeta_cos = - U .* Kh_ .* self.h_spec ./ self.omega_spec;
-            self.Rho_cos = - (self.rho0/9.81) .* U .* Kh_ .* self.h_spec ./ self.omega_spec;
+            self.U_cos_int = U .* cos(alpha0);
+            self.U_sin_int = U .* (self.f0 ./ self.omega_int) .* sin(alpha0);
+            self.V_cos_int = U .* sin(alpha0);
+            self.V_sin_int = -U .* (self.f0 ./ self.omega_int) .* cos(alpha0);
+            self.W_sin_int = U .* Kh_ .* self.h_int;
+            self.Zeta_cos_int = - U .* Kh_ .* self.h_int ./ self.omega_int;
+            self.Rho_cos_int = - (self.rho0/9.81) .* U .* Kh_ .* self.h_int ./ self.omega_int;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -823,135 +843,57 @@ classdef (Abstract) InternalWaveModel < handle
         end
                 
         function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
-            % Return the velocity field associated with the manually added
-            % free waves on the X,Y,Z grid.
-            nExternalWaves = length(self.uExternal);
-            
-            u = zeros(size(self.X));
-            v = zeros(size(self.X));
-            w = zeros(size(self.X));
-            for iWave=1:nExternalWaves
-                % Compute the two-dimensional phase vector (note we're
-                % using Xh,Yh---the two-dimensional versions.
-                k0 = self.kExternal(iWave);
-                l0 = self.lExternal(iWave);
-                omega0 = self.omegaExternal(iWave);
-                phi0 = self.phiExternal(iWave);
-                alpha0 = self.alphaExternal(iWave);
-                h0 = self.hExternal(iWave);
-                U = self.uExternal(iWave);
-                F = permute(self.FExternal(:,iWave),[3 2 1]);
-                
-                theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
-                
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
-                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
-                
-                if nargout == 3
-                    G = permute(self.GExternal(:,iWave),[3 2 1]);
-                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
-                end
-            end
+            [u,v,w] = self.ExternalVelocityAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1));
+            u = reshape(u,self.Nx,self.Ny,self.Nz);
+            v = reshape(v,self.Nx,self.Ny,self.Nz);
+            w = reshape(w,self.Nx,self.Ny,self.Nz);
+        end
+        
+        function [w,zeta] = ExternalVerticalFieldsAtTime(self, t)       
+            [w,zeta] = self.ExternalVerticalFieldsAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1));
+            w = reshape(w,self.Nx,self.Ny,self.Nz);
+            zeta = reshape(zeta,self.Nx,self.Ny,self.Nz);
         end
         
         function [u,v,w] = ExternalVelocityAtTimePosition(self,t,x,y,z)
             % Return the velocity field associated with the manually added
             % free waves at specified positions.
-            nExternalWaves = length(self.uExternal);
-            
-            u = zeros(size(x));
-            v = zeros(size(x));
-            w = zeros(size(x));
-            for iWave=1:nExternalWaves
-                % Compute the two-dimensional phase vector (note we're
-                % using Xh,Yh---the two-dimensional versions.
-                k0 = self.kExternal(iWave);
-                l0 = self.lExternal(iWave);
-                omega0 = self.omegaExternal(iWave);
-                phi0 = self.phiExternal(iWave);
-                alpha0 = self.alphaExternal(iWave);
-                h0 = self.hExternal(iWave);
-                U = self.uExternal(iWave);
-                F = interp1(self.z,self.FExternal(:,iWave),z,'spline');
-                
-                theta = k0 * x + l0 * y + omega0*t + phi0;
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
-                
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                u = u + U*( cos(alpha0)*cos_theta + (self.f0/omega0)*sin(alpha0)*sin_theta ) .* F;
-                v = v + U*( sin(alpha0)*cos_theta - (self.f0/omega0)*cos(alpha0)*sin_theta ) .* F;
-                
-                if nargout == 3
-                    G = interp1(self.z,self.GExternal(:,iWave),z,'spline');
-                    w = w + U * sqrt(k0*k0+l0*l0) * h0 * sin_theta .* G;
-                end
+            if isempty(self.k_ext)
+                u = zeros(size(x)); v=u; w=u; return;
             end
-        end
-        
-        function [w,zeta] = ExternalVerticalFieldsAtTime(self, t)
-            % Return the velocity field associated with the manually added
-            % waves.
-            nExternalWaves = length(self.uExternal);
-            
-            w = zeros(size(self.X));
-            zeta = zeros(size(self.X));
-            for iWave=1:nExternalWaves
-                % Compute the two-dimensional phase vector (note we're
-                % using Xh,Yh---the two-dimensional versions.
-                k0 = self.kExternal(iWave);
-                l0 = self.lExternal(iWave);
-                omega0 = self.omegaExternal(iWave);
-                phi0 = self.phiExternal(iWave);
-                h0 = self.hExternal(iWave);
-                U = self.uExternal(iWave);
-                G = permute(self.GExternal(:,iWave),[3 2 1]);
-                
-                theta = k0 * self.Xh + l0 * self.Yh + omega0*t + phi0;
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
-                
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                w = w + U * sqrt(k0*k0+l0*l0) * h0 * (sin_theta .* G);
-                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * (cos_theta .* G);
-            end
-        end
-        
-        function [w,zeta] = ExternalVerticalFieldsAtTimePosition(self,t,x,y,z)
-            % Return the velocity field associated with the manually added
-            % waves.
-            nExternalWaves = length(self.uExternal);
-            
-            w = zeros(size(x));
-            zeta = zeros(size(x));
-            for iWave=1:nExternalWaves
-                % Compute the two-dimensional phase vector (note we're
-                % using Xh,Yh---the two-dimensional versions.
-                k0 = self.kExternal(iWave);
-                l0 = self.lExternal(iWave);
-                omega0 = self.omegaExternal(iWave);
-                phi0 = self.phiExternal(iWave);
-                h0 = self.hExternal(iWave);
-                U = self.uExternal(iWave);
-                G = interp1(self.z,self.GExternal(:,iWave),z,'spline');
-                
-                theta = k0 * x + l0 * y + omega0*t + phi0;
-                cos_theta = cos(theta);
-                sin_theta = sin(theta);
-                
-                % This .* should take [Nx Ny 1] and multiply by [1 1 Nz]
-                w = w + U * sqrt(k0*k0+l0*l0) * h0 * (sin_theta .* G);
-                zeta = zeta + -U * sqrt(k0*k0+l0*l0) * (h0/omega0) * (cos_theta .* G);
-            end
-        end
-        
-        function rho = ExternalDensityPerturbationAtTimePosition(self,t,x,y,z)            
-            theta = x * reshape(self.kExternal,1,[]) + y * reshape(self.lExternal,1,[]) + (reshape(self.omegaExternal,1,[])*t + reshape(self.phiExternal,1,[])); % [N M] + [1 M]
+            theta = x * self.k_ext + y * self.l_ext + (self.omega_ext*t + self.phi_ext); % [N M] + [1 M]
             cos_theta = cos(theta); % [N M]
-            G = self.InternalWModeAtDepth(z, reshape(self.jExternal,1,[])); % [N M]
+            sin_theta = sin(theta); % [N M]
+            F = self.ExternalUVModesAtDepth(z); % [N M]
+            
+            u = sum( (self.U_cos_ext .* cos_theta + self.U_sin_ext .* sin_theta) .* F, 2);
+            v = sum( (self.V_cos_ext .* cos_theta + self.V_sin_ext .* sin_theta) .* F, 2);
+                        
+            if nargout == 3
+                G = self.ExternalWModesAtDepth(z); % [N M]
+                w = sum( (self.W_sin_ext .* sin_theta) .* G, 2);
+            end     
+        end
+   
+        function [w,zeta] = ExternalVerticalFieldsAtTimePosition(self,t,x,y,z)
+            if isempty(self.k_ext)
+                w = zeros(size(x)); zeta=w; return;
+            end
+            theta = x * self.k_ext + y * self.l_ext + (self.omega_ext*t + self.phi_ext); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            sin_theta = sin(theta); % [N M]
+            G = self.ExternalWModesAtDepth(z); % [N M]
+            w = sum( (self.W_sin_ext .* sin_theta) .* G, 2);
+            zeta = sum( (self.Zeta_cos_ext .* cos_theta) .* G, 2);
+        end
+        
+        function rho = ExternalDensityPerturbationAtTimePosition(self,t,x,y,z)
+            if isempty(self.k_ext)
+                rho =  zeros(size(x)); return;
+            end
+            theta = x * self.k_ext + y * self.l_ext + (self.omega_ext*t + self.phi_ext); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            G = self.ExternalWModesAtDepth(z); % [N M]
             N2_ = self.N2AtDepth(z); % [N 1]
             
             rho = N2_ .* sum( (self.Rho_cos_ext .* cos_theta) .* G, 2);
@@ -962,43 +904,48 @@ classdef (Abstract) InternalWaveModel < handle
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.      
+            % the FFT grid.  
+            if isempty(self.k_int)
+                u = zeros(size(x)); v=u; w=u; return;
+            end
  
-            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
+            theta = x * self.k_int + y * self.l_int + (self.omega_int*t + self.phi_int); % [N M] + [1 M]
             cos_theta = cos(theta); % [N M]
             sin_theta = sin(theta); % [N M]
-            F = self.InternalUVModeAtDepth(z, self.h_spec, self.j_spec); % [N M]
+            F = self.InternalUVModesAtDepth(z); % [N M]
             
-            u = sum( (self.U_cos .* cos_theta + self.U_sin .* sin_theta) .* F, 2);
-            v = sum( (self.V_cos .* cos_theta + self.V_sin .* sin_theta) .* F, 2);
+            u = sum( (self.U_cos_int .* cos_theta + self.U_sin_int .* sin_theta) .* F, 2);
+            v = sum( (self.V_cos_int .* cos_theta + self.V_sin_int .* sin_theta) .* F, 2);
                         
             if nargout == 3
-                G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
-                w = sum( (self.W_sin .* sin_theta) .* G, 2);
+                G = self.InternalWModesAtDepth(z); % [N M]
+                w = sum( (self.W_sin_int .* sin_theta) .* G, 2);
             end     
         end
         
         function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
-            % Return the velocity field associated with the gridded
-            % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.   
-            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
-            cos_theta = cos(theta); % [N M]
-            G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
+            if isempty(self.k_int)
+                zeta =  zeros(size(x)); return;
+            end
             
-            zeta = sum( (self.Zeta_cos .* cos_theta) .* G, 2);
+            theta = x * self.k_int + y * self.l_int + (self.omega_int*t + self.phi_int); % [N M] + [1 M]
+            cos_theta = cos(theta); % [N M]
+            G = self.InternalWModesAtDepth(z); % [N M]
+            
+            zeta = sum( (self.Zeta_cos_int .* cos_theta) .* G, 2);
         end
         
         function rho = InternalDensityPertubationAtTimePositionExact(self,t,x,y,z)
-            % Return the velocity field associated with the gridded
-            % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.   
-            theta = x * self.k_spec + y * self.l_spec + (self.omega_spec*t + self.phi_spec); % [N M] + [1 M]
+            if isempty(self.k_int)
+                rho =  zeros(size(x)); return;
+            end
+            
+            theta = x * self.k_int + y * self.l_int + (self.omega_int*t + self.phi_int); % [N M] + [1 M]
             cos_theta = cos(theta); % [N M]
-            G = self.InternalWModeAtDepth(z, self.j_spec); % [N M]
+            G = self.InternalWModesAtDepth(z); % [N M]
             N2_ = self.N2AtDepth(z); % [N 1]
             
-            rho = N2_ .* sum( (self.Rho_cos .* cos_theta) .* G, 2);
+            rho = N2_ .* sum( (self.Rho_cos_int .* cos_theta) .* G, 2);
         end
                 
         function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
