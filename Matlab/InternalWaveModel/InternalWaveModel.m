@@ -646,39 +646,42 @@ classdef (Abstract) InternalWaveModel < handle
             
             % Return the velocity at time t, and positions x,y,z.
             [U,V,W] = self.InternalVelocityFieldAtTime(t);
-            
+
             % (x,y) are periodic for the gridded solution
             x_tilde = mod(x,self.Lx);
             y_tilde = mod(y,self.Ly);
             
-            u = interpn(self.X,self.Y,self.Z,U,x_tilde,y_tilde,z,method);
-            v = interpn(self.X,self.Y,self.Z,V,x_tilde,y_tilde,z,method);
+            dx = self.x(2)-self.x(1);
+            x_index = floor(x_tilde/dx);
+            dy = self.y(2)-self.y(1);
+            y_index = floor(y_tilde/dy);
+            
+            % Identify the particles along the interpolation boundary
+            if strcmp(method,'spline')
+                S = 3; % cubic spline
+            elseif strcmp(method,'linear')
+                S=1;
+            end
+            bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
+            
+            u = zeros(size(x));
+            v = zeros(size(x));
+            
+            % interpolate the particles *not* along the boundary
+            u(~bp) = interpn(self.X,self.Y,self.Z,U,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
+            v(~bp) = interpn(self.X,self.Y,self.Z,V,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
+            
+            % then do the same for particles that along the boundary.
+            x_tildeS = mod(x+S*dx,self.Lx);
+            y_tildeS = mod(y+S*dy,self.Ly);
+            u(bp) = interpn(self.X,self.Y,self.Z,circshift(U,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
+            v(bp) = interpn(self.X,self.Y,self.Z,circshift(V,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
             if nargout == 3
-                w = interpn(self.X,self.Y,self.Z,W,x_tilde,y_tilde,z,method);
-                badParticles = isnan(u)|isnan(v)|isnan(w);
-            else
-                badParticles = isnan(u)|isnan(v);
+                w = zeros(size(x));
+                w(~bp) = interpn(self.X,self.Y,self.Z,W,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
+                w(bp) = interpn(self.X,self.Y,self.Z,circshift(W,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
             end
-            
-            % The above will fail (and return nan) when a particle is
-            % between the last point and the first point.
-            if any(badParticles)
-                if isempty(self.Xc)
-                    [self.Xc,self.Yc,self.Zc] = ndgrid([self.x;self.Lx],[self.y;self.Ly],self.z);
-                end
-                
-                makeperiodic = @(A) cat(2,cat(1,A,A(1,:,:)), cat(1,A(:,1,:),A(1,1,:)));
-                
-                Uc = makeperiodic(U);
-                Vc = makeperiodic(V);
-                u(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Uc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
-                v(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Vc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
-                if nargout == 3
-                    Wc = makeperiodic(W);
-                    w(badParticles) = interpn(self.Xc,self.Yc,self.Zc,Wc,x_tilde(badParticles),y_tilde(badParticles),z(badParticles));
-                end
-            end
-            
+                        
             if nargout == 3
                 [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
                 u = u+u_ext;
