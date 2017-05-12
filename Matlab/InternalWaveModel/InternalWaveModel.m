@@ -65,7 +65,8 @@ classdef (Abstract) InternalWaveModel < handle
         
         Amp_plus, Amp_minus % Used for diagnostics only
         
-        U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
+        didPreallocateAdvectionCoefficients = 0
+        U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, omega_int, phi_int
 
         U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
         
@@ -454,7 +455,7 @@ classdef (Abstract) InternalWaveModel < handle
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 
                 self.phi_ext = 2*pi*rand( size(self.k_ext) );
-                U = sqrt(2*GM3Dext/self.h_ext).*randn( size(self.h_ext) );
+                U = sqrt(2*GM3Dext./self.h_ext).*randn( size(self.h_ext) );
                 self.PrecomputeExternalWaveCoefficients(U);                
             else
                 % Randomize phases, but keep unit length
@@ -750,8 +751,6 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
-            
-            self.GenerateWavePhasesForSpectralAdvection();
         end
     end
     
@@ -775,11 +774,10 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_plus )';
             U = U_plus(waveIndices);
-            self.h_int = self.h(waveIndices);
+            h_int = self.h(waveIndices);
             self.phi_int = angle(self.Amp_plus(waveIndices));
             self.k_int = self.K(waveIndices);
             self.l_int = self.L(waveIndices);
-            self.j_int = self.J(waveIndices);
             self.omega_int = self.Omega(waveIndices);
             
             % Then append the nonzero omega- waves
@@ -788,11 +786,10 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_minus )';
             U = cat(2, U, U_minus(waveIndices));
-            self.h_int = cat(2,self.h_int,self.h(waveIndices));
+            h_int = cat(2,h_int,self.h(waveIndices));
             self.phi_int = cat(2, self.phi_int, angle(self.Amp_minus(waveIndices)));
             self.k_int = cat(2, self.k_int, self.K(waveIndices));
             self.l_int = cat(2, self.l_int, self.L(waveIndices));
-            self.j_int = cat(2, self.j_int, self.J(waveIndices));
             self.omega_int = cat(2, self.omega_int, -self.Omega(waveIndices));
             
             alpha0 = atan2(self.l_int,self.k_int);
@@ -802,9 +799,11 @@ classdef (Abstract) InternalWaveModel < handle
             self.U_sin_int = U .* (self.f0 ./ self.omega_int) .* sin(alpha0);
             self.V_cos_int = U .* sin(alpha0);
             self.V_sin_int = -U .* (self.f0 ./ self.omega_int) .* cos(alpha0);
-            self.W_sin_int = U .* Kh_ .* self.h_int;
-            self.Zeta_cos_int = - U .* Kh_ .* self.h_int ./ self.omega_int;
-            self.Rho_cos_int = - (self.rho0/9.81) .* U .* Kh_ .* self.h_int ./ self.omega_int;
+            self.W_sin_int = U .* Kh_ .* h_int;
+            self.Zeta_cos_int = - U .* Kh_ .* h_int ./ self.omega_int;
+            self.Rho_cos_int = - (self.rho0/9.81) .* U .* Kh_ .* h_int ./ self.omega_int;
+            
+            self.didPreallocateAdvectionCoefficients = 1;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -844,6 +843,12 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
                 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % These functions return various associated with the external modes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
             [u,v,w] = self.ExternalVelocityAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1));
             u = reshape(u,self.Nx,self.Ny,self.Nz);
@@ -901,12 +906,22 @@ classdef (Abstract) InternalWaveModel < handle
             rho = N2_ .* sum( (self.Rho_cos_ext .* cos_theta) .* G, 2);
         end
         
-        % size(x) = [N 1]
-        % size(phi) = [1 M]
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % These functions return the exact/spectral velocity field for the
+        % internal gridded field
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
-            % the FFT grid.  
+            % the FFT grid.
+            % size(x) = [N 1]
+            % size(phi) = [1 M]
+            if self.didPreallocateAdvectionCoefficients == 0
+                self.GenerateWavePhasesForSpectralAdvection();
+            end
             if isempty(self.k_int)
                 u = zeros(size(x)); v=u; w=u; return;
             end
@@ -926,6 +941,9 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
+            if self.didPreallocateAdvectionCoefficients == 0
+                self.GenerateWavePhasesForSpectralAdvection();
+            end
             if isempty(self.k_int)
                 zeta =  zeros(size(x)); return;
             end
@@ -938,6 +956,9 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function rho = InternalDensityPertubationAtTimePositionExact(self,t,x,y,z)
+            if self.didPreallocateAdvectionCoefficients == 0
+                self.GenerateWavePhasesForSpectralAdvection();
+            end
             if isempty(self.k_int)
                 rho =  zeros(size(x)); return;
             end
@@ -985,9 +1006,9 @@ classdef (Abstract) InternalWaveModel < handle
             
             % Identify the particles along the interpolation boundary
             if strcmp(method,'spline')
-                S = 3; % cubic spline
+                S = 3+1; % cubic spline, plus buffer
             elseif strcmp(method,'linear')
-                S = 1;
+                S = 1+1;
             end
             bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
             

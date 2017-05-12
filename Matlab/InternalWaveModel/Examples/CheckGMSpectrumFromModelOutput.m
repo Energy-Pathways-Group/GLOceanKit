@@ -11,8 +11,8 @@
 %
 % December 6th, 2016      Version 1.0
 
-file = '/Volumes/OceanTransfer/InternalWaveModel_2017-03-28T141543_64x64x33.nc';
-file = '/Users/jearly/Desktop/InternalWaveModel_2017-03-29T163310_512x64x33.nc';
+file = '/Volumes/OceanTransfer/InternalWaveModel_2017-05-12T112323_1024x128x129.nc';
+% file = '/Users/jearly/Desktop/InternalWaveModel_2017-05-12T074930_512x64x33.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -123,7 +123,7 @@ xticklabels(labels)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:6:min(400,length(t)-1); % Irrelevant if there are no external modes.
+timeEnsemble = 1:2:(length(t)-1); % 6:min(400,length(t)-1); % Irrelevant if there are no external modes.
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));

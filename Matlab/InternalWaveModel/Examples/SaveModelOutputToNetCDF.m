@@ -18,34 +18,27 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 64;
+N = 256;
 aspectRatio = 8;
+L = 50e3;
 
-Lx = aspectRatio*100e3;
-Ly = 100e3;
+Lx = aspectRatio*L;
+Ly = L;
 Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = (N/2)+1;
-
-% Lx = 15e3;
-% Ly = 15e3;
-% Lz = 5000;
-% 
-% Nx = 32;
-% Ny = 32;
-% Nz = 16;
+Nz = N+1;
 
 latitude = 31;
 N0 = 5.2e-3;
 GMReferenceLevel = 1.0;
 
 timeStep = 15*60; % in seconds
-maxTime = 2*86400;
+maxTime = 2*timeStep;
 
-% outputfolder = '/Volumes/OceanTransfer';
-outputfolder = '/Users/jearly/Desktop';
+outputfolder = '/Volumes/OceanTransfer';
+% outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -68,7 +61,7 @@ end
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.ShowDiagnostics();
 % wavemodel.FillOutWaveSpectrum();
-wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
+wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
 
 t = (0:timeStep:maxTime)';
 
@@ -85,7 +78,9 @@ totalFields = 4;
 totalSize = totalFields*bytePerFloat*length(t)*(wavemodel.Nx)*(wavemodel.Ny)*(wavemodel.Nz)/1e9;
 fprintf('Writing output file to %s\nExpected file size is %.2f GB.\n',filepath,totalSize);
 
-ncid = netcdf.create(filepath, 'CLOBBER');
+cmode = netcdf.getConstant('CLOBBER');
+cmode = bitor(cmode,netcdf.getConstant('SHARE'));
+ncid = netcdf.create(filepath, cmode);
 
 % Define the dimensions
 xDimID = netcdf.defDim(ncid, 'x', wavemodel.Nx);
@@ -136,6 +131,7 @@ netcdf.putVar(ncid, setprecision(zVarID), wavemodel.z);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 startTime = datetime('now');
 fprintf('Starting numerical simulation on %s\n', datestr(startTime));
+profile on
 for iTime=1:length(t)
     if mod(iTime,10) == 0
         timePerStep = (datetime('now')-startTime)/(iTime-1);
@@ -150,6 +146,7 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, setprecision(zetaVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], zeta);
     netcdf.putVar(ncid, setprecision(tVarID), iTime-1, 1, t(iTime));
 end
+profile viewer
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
 
 netcdf.close(ncid);	
