@@ -454,7 +454,7 @@ classdef (Abstract) InternalWaveModel < handle
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 
                 self.phi_ext = 2*pi*rand( size(self.k_ext) );
-                U = sqrt(2*GM3Dext/self.hExternal).*randn( size(self.uExternal) );
+                U = sqrt(2*GM3Dext/self.h_ext).*randn( size(self.h_ext) );
                 self.PrecomputeExternalWaveCoefficients(U);                
             else
                 % Randomize phases, but keep unit length
@@ -643,67 +643,66 @@ classdef (Abstract) InternalWaveModel < handle
                     method = varargin{1};
                 end
             end
-            
-            % Return the velocity at time t, and positions x,y,z.
-            [U,V,W] = self.InternalVelocityFieldAtTime(t);
-
-            % (x,y) are periodic for the gridded solution
-            x_tilde = mod(x,self.Lx);
-            y_tilde = mod(y,self.Ly);
-            
-            dx = self.x(2)-self.x(1);
-            x_index = floor(x_tilde/dx);
-            dy = self.y(2)-self.y(1);
-            y_index = floor(y_tilde/dy);
-            
-            % Identify the particles along the interpolation boundary
-            if strcmp(method,'spline')
-                S = 3; % cubic spline
-            elseif strcmp(method,'linear')
-                S=1;
-            end
-            bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
-            
-            u = zeros(size(x));
-            v = zeros(size(x));
-            
-            % interpolate the particles *not* along the boundary
-            u(~bp) = interpn(self.X,self.Y,self.Z,U,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
-            v(~bp) = interpn(self.X,self.Y,self.Z,V,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
-            
-            % then do the same for particles that along the boundary.
-            x_tildeS = mod(x+S*dx,self.Lx);
-            y_tildeS = mod(y+S*dy,self.Ly);
-            u(bp) = interpn(self.X,self.Y,self.Z,circshift(U,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
-            v(bp) = interpn(self.X,self.Y,self.Z,circshift(V,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
+                                                          
             if nargout == 3
-                w = zeros(size(x));
-                w(~bp) = interpn(self.X,self.Y,self.Z,W,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
-                w(bp) = interpn(self.X,self.Y,self.Z,circshift(W,[S S 0]),x_tildeS(bp),y_tildeS(bp),z(bp),method);
-            end
-                        
-            if nargout == 3
+                [U,V,W] = self.InternalVelocityFieldAtTime(t);
+                [u,v,w] = self.InterpolatedFieldAtPosition(x,y,z,method,U,V,W);
                 [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
                 u = u+u_ext;
                 v = v+v_ext;
                 w = w+w_ext;
             else
+                [U,V] = self.InternalVelocityFieldAtTime(t);
+                [u,v] = self.InterpolatedFieldAtPosition(x,y,z,method,U,V);
                 [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
                 u = u+u_ext;
                 v = v+v_ext;
             end
         end
-        
-        function zeta = ZetaAtTimePosition(self,t,x,y,z)
-            [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
+                
+        function zeta = ZetaAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                Zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+                
+                zeta = self.InterpolatedFieldAtPosition(x,y,z,method,Zeta);
+            end
             [~,zeta_ext] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
             
             zeta = zeta+zeta_ext;
         end
         
-        function rho = DensityAtTimePosition(self,t,x,y,z)
+        function rho = DensityAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                rho_int = self.InternalDensityPertubationAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                Rho = self.TransformToSpatialDomainWithG(zeta_bar);
+                
+                coeff = (self.rho0/9.81)*self.N2AtDepth(z);
+                
+                rho_int = coeff .* self.InterpolatedFieldAtPosition(x,y,z,method,Rho);
+            end
+            
             rho_bar = self.RhoBarAtDepth(z);
-            rho_int = self.InternalDensityPertubationAtTimePositionExact(t,x,y,z);
             rho_ext = self.ExternalDensityPerturbationAtTimePosition(t,x,y,z);
             
             rho = rho_bar + rho_int + rho_ext;
@@ -970,7 +969,41 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-
+        function varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin)
+            if nargin-5 ~= nargout
+                error('You must have the same number of input variables as output variables');
+            end
+            
+            % (x,y) are periodic for the gridded solution
+            x_tilde = mod(x,self.Lx);
+            y_tilde = mod(y,self.Ly);
+            
+            dx = self.x(2)-self.x(1);
+            x_index = floor(x_tilde/dx);
+            dy = self.y(2)-self.y(1);
+            y_index = floor(y_tilde/dy);
+            
+            % Identify the particles along the interpolation boundary
+            if strcmp(method,'spline')
+                S = 3; % cubic spline
+            elseif strcmp(method,'linear')
+                S = 1;
+            end
+            bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
+            
+            % then do the same for particles that along the boundary.
+            x_tildeS = mod(x(bp)+S*dx,self.Lx);
+            y_tildeS = mod(y(bp)+S*dy,self.Ly);
+            
+            varargout = cell(1,nargout);
+            for i = 1:nargout
+                U = varargin{i}; % gridded field
+                u = zeros(size(x)); % interpolated value
+                u(~bp) = interpn(self.X,self.Y,self.Z,U,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
+                u(bp) = interpn(self.X,self.Y,self.Z,circshift(U,[S S 0]),x_tildeS,y_tildeS,z(bp),method);
+                varargout{i} = u;
+            end     
+        end
         
     end
 end

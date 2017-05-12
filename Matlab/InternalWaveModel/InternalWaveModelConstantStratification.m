@@ -274,7 +274,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            u = u(:,:,1:obj.Nz); % Here we use Nz (not nz) because the user may want the end point.
+            u = real(u(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
         
         function w = TransformToSpatialDomainWithG(obj, w_bar )
@@ -294,7 +294,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            w = w(:,:,1:obj.Nz); % Here we use Nz (not nz) because the user may want the end point.
+            w = real(w(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
         
 
