@@ -11,7 +11,7 @@
 %
 % December 6th, 2016      Version 1.0
 
-file = '/Volumes/OceanTransfer/InternalWaveModel_2017-05-12T112323_1024x128x129.nc';
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-12T153409_128x16x65.nc';
 % file = '/Users/jearly/Desktop/InternalWaveModel_2017-05-12T074930_512x64x33.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -34,12 +34,12 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
-rho0 = 1025; g = 9.81;
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-z = (Lz/Nz)*(0:Nz-1)' - Lz;
-wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);
+% rho0 = 1025; g = 9.81;
+% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+% z = (Lz/Nz)*(0:Nz-1)' - Lz;
+% wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -59,6 +59,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 t = 4*86400;
                 [u,v] = wavemodel.VelocityFieldAtTime(t);
                 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+                rho = wavemodel.DensityAtTime(t);
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %
@@ -99,6 +100,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - (f0/omega)*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
                 w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
                 zeta_unit = -(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+                rho_unit = rho0 -(N0*N0*rho0/g)*wavemodel.z -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
                 
                 % Compute the relative error
                 max_speed = max(max(max( sqrt(u.*u + v.*v) )));
@@ -110,8 +112,10 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 w_error = max( [max(max(max(abs(w-w_unit)/max_w))), 1e-15] );
                 max_zeta = max( [max(max(max( zeta ))), 1e-15] );
                 zeta_error = max( [max(max(max(abs(zeta-zeta_unit)/max_zeta))), 1e-15] );
+                max_rho = max( [max(max(max( rho ))), 1e-15] );
+                rho_error = max( [max(max(max(abs(rho-rho_unit)/max_rho))), 1e-15] );
                 
-                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error)))]);
+                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error))) round((log10(rho_error)))]);
                 
                 if max_error > -3
                     if sign > 0
@@ -120,7 +124,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                         fprintf('\nFound at large error at -(k,l,j)=(%d,%d,%d):\n',k_loop,l_loop,j0);
                     end
                     fprintf('The model solution for (u,v) matches the analytical solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(u_error))), round((log10(v_error))),t);
-                    fprintf('The model solution for (w,zeta) matches the analytical solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(w_error))), round((log10(zeta_error))),t);
+                    fprintf('The model solution for (w,zeta,rho) matches the analytical solution to 1 part in (10^%d, 10^%d, 10^%d) at time t=%d\n', round((log10(w_error))), round((log10(zeta_error))), round((log10(rho_error))),t);
                 end
             end
         end

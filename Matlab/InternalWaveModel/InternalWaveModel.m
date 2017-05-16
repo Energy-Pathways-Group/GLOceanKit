@@ -66,7 +66,7 @@ classdef (Abstract) InternalWaveModel < handle
         Amp_plus, Amp_minus % Used for diagnostics only
         
         didPreallocateAdvectionCoefficients = 0
-        U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, omega_int, phi_int
+        U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
 
         U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
         
@@ -587,6 +587,11 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function rho = DensityAtTime(self, t)
+            rho = self.DensityAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1),'linear');
+            rho = reshape(rho,self.Nx,self.Ny,self.Nz);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Return the dynamical fields at a given location and time
@@ -660,7 +665,29 @@ classdef (Abstract) InternalWaveModel < handle
                 v = v+v_ext;
             end
         end
+        
+        function w = VerticalVelocityAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                w = self.InternalVerticalVelocityAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+                W = self.TransformToSpatialDomainWithG(w_bar);
                 
+                w = self.InterpolatedFieldAtPosition(x,y,z,method,W);
+            end
+            [w_ext,~] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
+            
+            w = w+w_ext;
+        end
+        
         function zeta = ZetaAtTimePosition(self,t,x,y,z,varargin)
             if nargin == 5
                 method = 'spline';
@@ -774,10 +801,11 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_plus )';
             U = U_plus(waveIndices);
-            h_int = self.h(waveIndices);
+            self.h_int = self.h(waveIndices);
             self.phi_int = angle(self.Amp_plus(waveIndices));
             self.k_int = self.K(waveIndices);
             self.l_int = self.L(waveIndices);
+            self.j_int = self.J(waveIndices);
             self.omega_int = self.Omega(waveIndices);
             
             % Then append the nonzero omega- waves
@@ -786,10 +814,11 @@ classdef (Abstract) InternalWaveModel < handle
             
             waveIndices = find( U_minus )';
             U = cat(2, U, U_minus(waveIndices));
-            h_int = cat(2,h_int,self.h(waveIndices));
+            self.h_int = cat(2,self.h_int,self.h(waveIndices));
             self.phi_int = cat(2, self.phi_int, angle(self.Amp_minus(waveIndices)));
             self.k_int = cat(2, self.k_int, self.K(waveIndices));
             self.l_int = cat(2, self.l_int, self.L(waveIndices));
+            self.j_int = cat(2, self.j_int, self.J(waveIndices));
             self.omega_int = cat(2, self.omega_int, -self.Omega(waveIndices));
             
             alpha0 = atan2(self.l_int,self.k_int);
@@ -799,9 +828,9 @@ classdef (Abstract) InternalWaveModel < handle
             self.U_sin_int = U .* (self.f0 ./ self.omega_int) .* sin(alpha0);
             self.V_cos_int = U .* sin(alpha0);
             self.V_sin_int = -U .* (self.f0 ./ self.omega_int) .* cos(alpha0);
-            self.W_sin_int = U .* Kh_ .* h_int;
-            self.Zeta_cos_int = - U .* Kh_ .* h_int ./ self.omega_int;
-            self.Rho_cos_int = - (self.rho0/9.81) .* U .* Kh_ .* h_int ./ self.omega_int;
+            self.W_sin_int = U .* Kh_ .* self.h_int;
+            self.Zeta_cos_int = - U .* Kh_ .* self.h_int ./ self.omega_int;
+            self.Rho_cos_int = - (self.rho0/9.81) .* U .* Kh_ .* self.h_int ./ self.omega_int;
             
             self.didPreallocateAdvectionCoefficients = 1;
         end
@@ -891,7 +920,9 @@ classdef (Abstract) InternalWaveModel < handle
             sin_theta = sin(theta); % [N M]
             G = self.ExternalWModesAtDepth(z); % [N M]
             w = sum( (self.W_sin_ext .* sin_theta) .* G, 2);
-            zeta = sum( (self.Zeta_cos_ext .* cos_theta) .* G, 2);
+            if nargout == 2
+                zeta = sum( (self.Zeta_cos_ext .* cos_theta) .* G, 2);
+            end
         end
         
         function rho = ExternalDensityPerturbationAtTimePosition(self,t,x,y,z)
@@ -938,6 +969,21 @@ classdef (Abstract) InternalWaveModel < handle
                 G = self.InternalWModesAtDepth(z); % [N M]
                 w = sum( (self.W_sin_int .* sin_theta) .* G, 2);
             end     
+        end
+        
+        function w = InternalVerticalVelocityAtTimePositionExact(self,t,x,y,z)
+            if self.didPreallocateAdvectionCoefficients == 0
+                self.GenerateWavePhasesForSpectralAdvection();
+            end
+            if isempty(self.k_int)
+                w=zeros(size(x)); return;
+            end
+            
+            theta = x * self.k_int + y * self.l_int + (self.omega_int*t + self.phi_int); % [N M] + [1 M]
+            sin_theta = sin(theta); % [N M]
+            
+            G = self.InternalWModesAtDepth(z); % [N M]
+            w = sum( (self.W_sin_int .* sin_theta) .* G, 2);
         end
         
         function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
