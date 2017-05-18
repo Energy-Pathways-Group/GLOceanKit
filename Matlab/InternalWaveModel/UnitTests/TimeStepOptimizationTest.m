@@ -21,10 +21,10 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
-N = 10;
+N = 64;
 x_float = (1:N)*dx;
 y_float = (1:N)*dy;
-z_float = (0:2)*(-Lz/4);
+z_float = (0:64)*(-Lz/4);
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -39,7 +39,7 @@ tic
 for iTime=1:length(t)
 %     [u,v,w]=wavemodel.VelocityFieldAtTime(t(iTime));
 %     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
-    isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
-%     [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
+%     isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
+    [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
 end
 toc

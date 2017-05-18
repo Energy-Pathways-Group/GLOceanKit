@@ -45,8 +45,8 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 w = reshape(W,[],1);
                 zeta = reshape(ZETA,[],1);
                 
-                [u_spec, v_spec, w_spec] = wavemodel.VelocityAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'spline');
-                [zeta_spec] = wavemodel.ZetaAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'spline');
+                [u_spec, v_spec, w_spec] = wavemodel.VelocityAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'exact');
+                [zeta_spec] = wavemodel.ZetaAtTimePosition(0, p0(:,1), p0(:,2), p0(:,3), 'exact');
                 
                 
                 

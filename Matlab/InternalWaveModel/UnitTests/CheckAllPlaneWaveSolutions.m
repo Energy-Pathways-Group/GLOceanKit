@@ -35,6 +35,8 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+rho0 = wavemodel.rho0;
+g = 9.81;
 
 % rho0 = 1025; g = 9.81;
 % rho = @(z) -(N0*N0*rho0/g)*z + rho0;

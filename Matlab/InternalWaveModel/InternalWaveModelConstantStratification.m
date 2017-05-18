@@ -201,27 +201,27 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         
         % size(z) = [N 1]
         % size(waveIndices) = [1 M]
-        function F = ExternalUVModesAtDepth(self, z)
+        function F = ExternalUVModeAtDepth(self, z, iMode)
             % Called by the superclass when advecting particles spectrally.
-            F = self.F_cos_ext .* cos(z * self.k_z_ext); % [N M]
+            F = self.F_cos_ext(iMode) * cos( z * self.k_z_ext(iMode) );
         end
         
-        function G = ExternalWModesAtDepth(self, z)
+        function G = ExternalWModeAtDepth(self, z, iMode)
             % Called by the superclass when advecting particles spectrally.
-            G = self.G_sin_ext .* sin(z * self.k_z_ext); % [N M]
+            G = self.G_sin_ext(iMode) * sin( z * self.k_z_ext(iMode) );
         end
-        
-        function F = InternalUVModesAtDepth(self, z)
+                
+        function F = InternalUVModeAtDepth(self, z, iMode)
             % Called by the superclass when advecting particles spectrally.
-            k_z = self.j_int*pi/self.Lz; %[1 M]
+            k_z = self.j_int(iMode)*pi/self.Lz;
             g = 9.81;
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
-            F = coeff * ( self.h_int .* k_z ) .* cos(z * k_z); % [N M]
+            F = coeff * ( self.h_int(iMode) * k_z ) .* cos(z * k_z); % [N M]
         end
         
-        function G = InternalWModesAtDepth(self, z)
+        function G = InternalWModeAtDepth(self, z, iMode)
             % Called by the superclass when advecting particles spectrally.
-            k_z = self.j_int*pi/self.Lz; %[1 M]
+            k_z = self.j_int(iMode)*pi/self.Lz;
             g = 9.81;
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
             G = coeff * sin(z * k_z); % [N M]
