@@ -1157,7 +1157,9 @@ classdef (Abstract) InternalWaveModel < handle
                 U = varargin{i}; % gridded field
                 u = zeros(size(x)); % interpolated value
                 u(~bp) = interpn(self.X,self.Y,self.Z,U,x_tilde(~bp),y_tilde(~bp),z(~bp),method);
-                u(bp) = interpn(self.X,self.Y,self.Z,circshift(U,[S S 0]),x_tildeS,y_tildeS,z(bp),method);
+                if any(bp)
+                    u(bp) = interpn(self.X,self.Y,self.Z,circshift(U,[S S 0]),x_tildeS,y_tildeS,z(bp),method);
+                end
                 varargout{i} = u;
             end     
         end
