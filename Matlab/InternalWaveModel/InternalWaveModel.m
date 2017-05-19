@@ -207,6 +207,8 @@ classdef (Abstract) InternalWaveModel < handle
             self.GenerateWavePhases(A_plus,A_minus);
                  
             period = 2*pi/self.Omega(k0+1,l0+1,j0);
+            
+            self.didPreallocateAdvectionCoefficients = 0;
         end
         
         function [omega, alpha, mode, phi, A] = WaveCoefficientsFromGriddedWaves(self)
@@ -486,6 +488,8 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
+            
+            self.didPreallocateAdvectionCoefficients = 0;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -947,8 +951,8 @@ classdef (Abstract) InternalWaveModel < handle
                     cos_theta = cos(theta);
                     sin_theta = sin(theta);
                     F = self.ExternalUVModeAtDepth(z,i);
-                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F(i);
-                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F(i);
+                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F;
+                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F;
                 end
             elseif nargout == 3
                 for i=1:length(self.k_ext)
@@ -957,9 +961,9 @@ classdef (Abstract) InternalWaveModel < handle
                     sin_theta = sin(theta);
                     F = self.ExternalUVModeAtDepth(z,i);
                     G = self.ExternalWModeAtDepth(z,i);
-                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F(i);
-                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F(i);
-                    w = w + (self.W_sin_ext(i) * sin_theta).*G(i);
+                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F;
+                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F;
+                    w = w + (self.W_sin_ext(i) * sin_theta).*G;
                 end
             end     
         end
@@ -975,7 +979,7 @@ classdef (Abstract) InternalWaveModel < handle
                     theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
                     sin_theta = sin(theta);
                     G = self.ExternalWModeAtDepth(z,i);
-                    w = w + (self.W_sin_ext(i) * sin_theta) .* G(i);
+                    w = w + (self.W_sin_ext(i) * sin_theta) .* G;
                 end
             elseif nargout == 2
                 for i=1:length(self.k_ext)
@@ -983,8 +987,8 @@ classdef (Abstract) InternalWaveModel < handle
                     cos_theta = cos(theta);
                     sin_theta = sin(theta);
                     G = self.ExternalWModeAtDepth(z,i);
-                    w = w + (self.W_sin_ext(i) * sin_theta) .* G(i);
-                    zeta = zeta + (self.Zeta_cos_ext(i) * cos_theta) .* G(i);
+                    w = w + (self.W_sin_ext(i) * sin_theta) .* G;
+                    zeta = zeta + (self.Zeta_cos_ext(i) * cos_theta) .* G;
                 end
             end
             
@@ -1002,7 +1006,7 @@ classdef (Abstract) InternalWaveModel < handle
                 theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
                 cos_theta = cos(theta);
                 G = self.ExternalWModeAtDepth(z,i);
-                rho = rho + (self.Rho_cos_ext(i) * cos_theta) .* G(i);
+                rho = rho + (self.Rho_cos_ext(i) * cos_theta) .* G;
             end
             rho = N2_ .* rho;
         end
@@ -1034,8 +1038,8 @@ classdef (Abstract) InternalWaveModel < handle
                     cos_theta = cos(theta);
                     sin_theta = sin(theta);
                     F = self.InternalUVModeAtDepth(z,i);
-                    u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F(i);
-                    v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F(i);
+                    u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F;
+                    v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F;
                 end
             elseif nargout == 3
                 for i=1:length(self.k_int)
@@ -1044,9 +1048,9 @@ classdef (Abstract) InternalWaveModel < handle
                     sin_theta = sin(theta);
                     F = self.InternalUVModeAtDepth(z,i);
                     G = self.InternalWModeAtDepth(z,i);
-                    u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F(i);
-                    v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F(i);
-                    w = w + (self.W_sin_int(i) * sin_theta).*G(i);
+                    u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F;
+                    v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F;
+                    w = w + (self.W_sin_int(i) * sin_theta).*G;
                 end
             end
         end
@@ -1064,7 +1068,7 @@ classdef (Abstract) InternalWaveModel < handle
                 theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
                 sin_theta = sin(theta);
                 G = self.InternalWModeAtDepth(z,i);
-                w = w + (self.W_sin_int(i) * sin_theta).*G(i);
+                w = w + (self.W_sin_int(i) * sin_theta).*G;
             end
         end
         
@@ -1081,7 +1085,7 @@ classdef (Abstract) InternalWaveModel < handle
                 theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
                 cos_theta = cos(theta);
                 G = self.InternalWModeAtDepth(z,i);
-                zeta = zeta + (self.Zeta_cos_int(i) * cos_theta).*G(i);
+                zeta = zeta + (self.Zeta_cos_int(i) * cos_theta).*G;
             end
         end
         
@@ -1098,7 +1102,7 @@ classdef (Abstract) InternalWaveModel < handle
                 theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
                 cos_theta = cos(theta);
                 G = self.InternalWModeAtDepth(z,i);
-                rho = rho + (self.Rho_cos_int(i) * cos_theta).*G(i);
+                rho = rho + (self.Rho_cos_int(i) * cos_theta).*G;
             end
             rho = N2_ .* rho;
         end
