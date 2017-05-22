@@ -1104,6 +1104,7 @@ classdef (Abstract) InternalWaveModel < handle
                 G = self.InternalWModeAtDepth(z,i);
                 rho = rho + (self.Rho_cos_int(i) * cos_theta).*G;
             end
+            N2_ = self.N2AtDepth(z);
             rho = N2_ .* rho;
         end
                 
