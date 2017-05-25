@@ -211,9 +211,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
             % returns the eigendepth, h, given eigenvalue lambda from the GEP.
             [V,D] = eig( A, B );
             
-            [lambda, permutation] = sort(real(diag(D)),1,'ascend');
+            [h, permutation] = sort(real(h_func(diag(D))),'descend');
             G = V(:,permutation);
-            h = h_func(lambda.');
             
             F = zeros(self.n,self.n);
             for j=1:self.n

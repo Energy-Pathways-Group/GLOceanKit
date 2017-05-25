@@ -331,9 +331,8 @@ classdef InternalModesSpectral < InternalModesBase
         function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
             [V,D] = eig( A, B );
             
-            [lambda, permutation] = sort(abs(diag(D)),1,'ascend');
+            [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
             G_cheb=V(:,permutation);
-            h = hFromLambda(lambda.');
             
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);
