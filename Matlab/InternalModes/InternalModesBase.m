@@ -80,7 +80,7 @@ classdef (Abstract) InternalModesBase < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set.normalization(obj,norm)
             if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'const_G_norm') && ~strcmp(norm, 'const_F_norm'))
-                error('Invalid normalization!')
+                error('Invalid normalization! Valid options: max_u, max_w, const_G_norm (default), const_F_norm')
             else
                 obj.normalization = norm;
             end
