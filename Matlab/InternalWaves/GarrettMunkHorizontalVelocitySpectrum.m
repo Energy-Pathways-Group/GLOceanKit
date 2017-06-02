@@ -16,6 +16,7 @@ if length(zOut)>1 && ~iscolumn(zOut)
 end
 
 im = InternalModes(rho,zIn,zOut,latitude);
+im.normalization = 'const_F_norm';
 N2 = im.N2;
 f0 = im.f0;
 
@@ -53,9 +54,25 @@ dOmega = min( [f0/2,dOmega]);
 S = zeros(length(zOut),length(omega));
 for i=1:length(omega)
     Bomega = B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
-    
+        
     S(:,i) = E* ( Bomega .* C(omega(i)) );
+    
+    if (abs(omega(i)) > f0)
+        [F, ~, ~] = im.ModesAtFrequency(omega(i));
+        
+        % Should re-write with bsxfun
+        Phi = 0*z;
+        for j = 1:j_max
+            Phi = Phi + F(:,j).^2*H_norm*(j_star+j).^(-5/2);
+        end
+        
+        S(:,i) = S(:,i).*Phi;
+    end
+    
+    
 end
+
+
 
 end
 
