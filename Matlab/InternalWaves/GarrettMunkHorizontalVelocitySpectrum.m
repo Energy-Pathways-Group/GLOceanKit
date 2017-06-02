@@ -15,7 +15,8 @@ if length(zOut)>1 && ~iscolumn(zOut)
    zOut = reshape(zOut,[],1);
 end
 
-im = InternalModes(rho,zIn,zOut,latitude);
+j_max = 64;
+im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', 128, 'nModes', j_max);
 im.normalization = 'const_F_norm';
 N2 = im.N2;
 f0 = im.f0;
@@ -26,6 +27,9 @@ L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
 E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+
+H = (j_star+(1:3000)).^(-5/2);
+H_norm = 1/sum(H);
 
 
 % This function tells you how much energy you need between two frequencies
@@ -58,20 +62,27 @@ for i=1:length(omega)
     S(:,i) = E* ( Bomega .* C(omega(i)) );
     
     if (abs(omega(i)) > f0)
-        [F, ~, ~] = im.ModesAtFrequency(omega(i));
+        [F, ~, h] = im.ModesAtFrequency(omega(i));
+        j_max = find(h>0,1,'last');
         
-        % Should re-write with bsxfun
-        Phi = 0*z;
-        for j = 1:j_max
-            Phi = Phi + F(:,j).^2*H_norm*(j_star+j).^(-5/2);
+        if ~isempty(j_max)
+            j_max = j_max-5; % Last mode may be bad.
+            H = H_norm*(j_star + (1:j_max)').^(-5/2);
+            Phi = sum( (F(:,1:j_max).^2) * H, 2);
+            
+            S(:,i) = S(:,i).*Phi;
         end
-        
-        S(:,i) = S(:,i).*Phi;
     end
     
     
 end
 
+
+% for the vertical structure function I think we should sort the
+% frequencies, and try to solve with a small nEVP. If the number of valid
+% modes starts to look small, then we up the resolution. We keep the
+% resolution for higher frequencies, and repeat the check. This is good
+% because high resolution is always needed as the frequencies get higher.
 
 
 end
