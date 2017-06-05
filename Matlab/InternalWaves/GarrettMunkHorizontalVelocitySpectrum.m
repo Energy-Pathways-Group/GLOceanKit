@@ -87,6 +87,7 @@ for i = 1:length(sortedOmegas)
         while( isempty(j_max) || j_max < min_j )          
             nEVP = nEVP + 128;
             im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
+            im.normalization = 'const_F_norm';
             [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
             j_max = ceil(find(h>0,1,'last')/2);
         end
