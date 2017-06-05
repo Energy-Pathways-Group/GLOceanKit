@@ -15,8 +15,7 @@ if length(zOut)>1 && ~iscolumn(zOut)
    zOut = reshape(zOut,[],1);
 end
 
-j_max = 64;
-im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', 128, 'nModes', j_max);
+im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', 128);
 im.normalization = 'const_F_norm';
 N2 = im.N2;
 f0 = im.f0;
@@ -30,7 +29,6 @@ E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
 
 H = (j_star+(1:3000)).^(-5/2);
 H_norm = 1/sum(H);
-
 
 % This function tells you how much energy you need between two frequencies
 B_norm = 1./acos(f0./sqrt(N2)); % B_norm *at each depth*.
@@ -61,22 +59,43 @@ for i=1:length(omega)
         
     S(:,i) = E* ( Bomega .* C(omega(i)) );
     
-    if (abs(omega(i)) > f0)
-        [F, ~, h] = im.ModesAtFrequency(omega(i));
-        j_max = find(h>0,1,'last');
-        
-        if ~isempty(j_max)
-            j_max = j_max-5; % Last mode may be bad.
-            H = H_norm*(j_star + (1:j_max)').^(-5/2);
-            Phi = sum( (F(:,1:j_max).^2) * H, 2);
-            
-            S(:,i) = S(:,i).*Phi;
-        end
-    end
+%     if (abs(omega(i)) > f0)
+%         [F, ~, h] = im.ModesAtFrequency(omega(i));
+%         j_max = find(h>0,1,'last');
+%         
+%         if ~isempty(j_max)
+%             j_max = j_max-5; % Last mode may be bad.
+%             H = H_norm*(j_star + (1:j_max)').^(-5/2);
+%             Phi = sum( (F(:,1:j_max).^2) * H, 2);
+%             
+%             S(:,i) = S(:,i).*Phi;
+%         end
+%     end
     
     
 end
 
+nEVP = 128;
+min_j = 64; % minimum number of good modes we require
+[sortedOmegas, indices] = sort(abs(omega));
+for i = 1:length(sortedOmegas)
+    if (sortedOmegas(i) > f0)
+        
+        [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+        j_max = ceil(find(h>0,1,'last')/2);
+        
+        while( isempty(j_max) || j_max < min_j )          
+            nEVP = nEVP + 128;
+            im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
+            [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+            j_max = ceil(find(h>0,1,'last')/2);
+        end
+        
+        H = H_norm*(j_star + (1:j_max)').^(-5/2);
+        Phi = sum( (F(:,1:j_max).^2) * H, 2);
+        S(:,i) = S(:,i).*Phi;
+    end
+end
 
 % for the vertical structure function I think we should sort the
 % frequencies, and try to solve with a small nEVP. If the number of valid

@@ -196,7 +196,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             Ls = max(self.sLobatto)-min(self.sLobatto);
             self.Diff1_xCheb = (2/Ls)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.sLobatto) );
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.sLobatto, length(self.sLobatto) );
-            [self.T_xCheb_zOut, self.doesOutputGridSpanDomain] = InternalModesSpectral.ChebyshevTransformForGrid(self.sLobatto, self.sOut);
+            [self.T_xCheb_zOut, ~] = InternalModesSpectral.ChebyshevTransformForGrid(self.sLobatto, self.sOut);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.
