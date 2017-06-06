@@ -1,4 +1,4 @@
-function [ S ] = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, zIn, zOut )
+function [ S ] = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, zIn, zOut, method )
 %GarrettMunkHorizontalVelocitySpectrum 
 %
 % Returns S where size(S) = [m n] with length(zOut)=m, length(omega) = n;
@@ -6,6 +6,9 @@ function [ S ] = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, zI
 % Rather than simply evaluate the function at the request frequencies, we
 % actually integrate the function, and then divide by delta-frequency. This
 % is because the function is infinite at f, but is integrable.
+%
+% This function does not perform well near turning frequencies (local
+% buoyancy frequency).
 
 if length(omega)>1 && ~isrow(omega)
    omega = reshape(omega,1,[]);
@@ -15,8 +18,7 @@ if length(zOut)>1 && ~iscolumn(zOut)
    zOut = reshape(zOut,[],1);
 end
 
-im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', 128);
-im.normalization = 'const_F_norm';
+im = InternalModesWKBSpectral(rho,zIn,zOut,latitude);
 N2 = im.N2;
 f0 = im.f0;
 
@@ -75,27 +77,53 @@ for i=1:length(omega)
     
 end
 
-nEVP = 128;
-min_j = 64; % minimum number of good modes we require
-[sortedOmegas, indices] = sort(abs(omega));
-for i = 1:length(sortedOmegas)
-    if (sortedOmegas(i) > f0)
-        
-        [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
-        j_max = ceil(find(h>0,1,'last')/2);
-        
-        while( isempty(j_max) || j_max < min_j )          
-            nEVP = nEVP + 128;
-            im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
-            im.normalization = 'const_F_norm';
+if strcmp(method,'exact')
+    nEVP = 128;
+    nEVPMax = 512;
+    min_j = 64; % minimum number of good modes we require
+    
+    im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
+    im.normalization = 'const_F_norm';
+    
+    [sortedOmegas, indices] = sort(abs(omega));
+    for i = 1:length(sortedOmegas)
+        if (sortedOmegas(i) > f0)
+            
             [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
             j_max = ceil(find(h>0,1,'last')/2);
+            
+            while( (isempty(j_max) || j_max < min_j) && nEVP < nEVPMax )
+                nEVP = nEVP + 128;
+                im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
+                im.normalization = 'const_F_norm';
+                [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                j_max = ceil(find(h>0,1,'last')/2);
+            end
+            
+            D = max(zIn)-min(zIn);
+            H = H_norm*(j_star + (1:j_max)').^(-5/2);
+            Phi = sum( (1/D)*(F(:,1:j_max).^2) * H, 2);
+            S(:,indices(i)) = S(:,indices(i)).*Phi;
         end
-        
-        H = H_norm*(j_star + (1:j_max)').^(-5/2);
-        Phi = sum( (F(:,1:j_max).^2) * H, 2);
-        S(:,i) = S(:,i).*Phi;
     end
+elseif strcmp(method,'WKB')
+%     N2 = im.N2_xLobatto;
+%     zInt = im.xLobatto;   
+% 
+%     
+%     
+%     wkb_integral = @(arg) L_gm*( sqrt( N0*N0*exp(2*arg/L_gm) - f0*f0) - f0*atan(sqrt( N0*N0*exp(2*arg/L_gm) - f0*f0)/f0));
+%     d = wkb_integral(0) - wkb_integral(-L);
+%     xi = (wkb_integral(z) - wkb_integral(-L)) / d;
+%     
+%     PhiWKB = 0*z;
+%     GammaWKB = 0*z;
+%     for j = 1:j_max
+%         PhiWKB = PhiWKB + 2 * (cos(j*pi*xi)).^2*H_norm*(j_star+j).^(-5/2);
+%         GammaWKB = GammaWKB + 2*(sin(j*pi*xi)).^2*H_norm*(j_star+j).^(-5/2);
+%     end
+elseif strcmp(method,'GM')
+    S = S .* (sqrt(N2)/(L_gm*invT_gm));
 end
 
 % for the vertical structure function I think we should sort the
