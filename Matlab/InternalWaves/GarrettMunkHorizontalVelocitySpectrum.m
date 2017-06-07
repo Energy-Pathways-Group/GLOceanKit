@@ -83,7 +83,7 @@ if strcmp(method,'exact')
     min_j = 64; % minimum number of good modes we require
     
     im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
-    im.normalization = 'const_F_norm';
+    im.normalization = 'const_G_norm';
     
     [sortedOmegas, indices] = sort(abs(omega));
     for i = 1:length(sortedOmegas)
@@ -95,14 +95,13 @@ if strcmp(method,'exact')
             while( (isempty(j_max) || j_max < min_j) && nEVP < nEVPMax )
                 nEVP = nEVP + 128;
                 im = InternalModes(rho,zIn,zOut,latitude, 'nEVP', nEVP);
-                im.normalization = 'const_F_norm';
+                im.normalization = 'const_G_norm';
                 [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
                 j_max = ceil(find(h>0,1,'last')/2);
             end
             
-            D = max(zIn)-min(zIn);
             H = H_norm*(j_star + (1:j_max)').^(-5/2);
-            Phi = sum( (1/D)*(F(:,1:j_max).^2) * H, 2);
+            Phi = sum( ((1./h(1:j_max)).*(F(:,1:j_max).^2)) * H, 2);
             S(:,indices(i)) = S(:,indices(i)).*Phi;
         end
     end
