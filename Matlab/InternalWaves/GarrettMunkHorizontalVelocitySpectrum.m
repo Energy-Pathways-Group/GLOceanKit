@@ -33,15 +33,15 @@ H = (j_star+(1:3000)).^(-5/2);
 H_norm = 1/sum(H);
 
 % This function tells you how much energy you need between two frequencies
-B_norm = 1./acos(f0./sqrt(N2)); % B_norm *at each depth*.
-B_int = @(omega0,omega1) B_norm.*(atan(f0/sqrt(omega0*omega0-f0*f0)) - atan(f0./sqrt(omega1.*omega1-f0*f0)));
+N_max = max(sqrt(N2));
+B_norm = 1/acos(f0/N_max); % B_norm *at each depth*.
+B_int = @(omega0,omega1) B_norm*(atan(f0/sqrt(omega0*omega0-f0*f0)) - atan(f0/sqrt(omega1*omega1-f0*f0)));
 
 % Assume omega0 & omega1 >=0 and that omega1>omega0;
-% Create a function that integrates from f0 to N(z) at each depth, and is
-% zero outside those bounds.
-B = @(omega0,omega1) (omega1<f0 | omega1 > sqrt(N2)).*zeros(size(zOut)) + (omega0<f0 & omega1>f0)*B_int(f0,omega1) + (omega0>=f0*ones(size(zOut)) & omega1 <= sqrt(N2)).*B_int(omega0,omega1) + (omega0<sqrt(N2) & omega1 > sqrt(N2)).*B_int(omega0,sqrt(N2));
+B = @(omega0,omega1) (omega1<f0 | omega1 > N_max)*0 + (omega0<f0 & omega1>f0)*B_int(f0,omega1) + (omega0>=f0*ones(size(zOut)) & omega1 <= N_max).*B_int(omega0,omega1) + (omega0<N_max & omega1 > N_max).*B_int(omega0,N_max);
 
-C = @(omega) (abs(omega)<f0 | abs(omega) > sqrt(N2)).*zeros(size(zOut)) + (abs(omega) >= f0 & abs(omega) <= sqrt(N2)).*( (1+f0/omega)*(1+f0/omega)*(N2 - omega*omega)./(N2-f0*f0) );
+C = @(omega) (abs(omega)<f0 | abs(omega) > N_max)*0 + (abs(omega) >= f0 & abs(omega) <= N_max)*( (1+f0/omega)*(1+f0/omega) );
+
 dOmegaVector = diff(omega);
 if any(dOmegaVector<0)
     error('omega must be strictly monotonically increasing.')
@@ -101,7 +101,7 @@ if strcmp(method,'exact')
             end
             
             H = H_norm*(j_star + (1:j_max)').^(-5/2);
-            Phi = sum( ((1./h(1:j_max)).*(F(:,1:j_max).^2)) * H, 2);
+            Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
             S(:,indices(i)) = S(:,indices(i)).*Phi;
         end
     end
