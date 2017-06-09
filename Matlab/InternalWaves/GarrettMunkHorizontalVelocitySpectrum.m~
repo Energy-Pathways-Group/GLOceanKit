@@ -127,9 +127,8 @@ elseif strcmp(method,'gm')
     
     zerosMask = zeros(length(zOut),length(omega));
     for iDepth = 1:length(zOut)
-        zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
+        zerosMask(i,:)
     end
-    S = S .* zerosMask;
 end
 
 % for the vertical structure function I think we should sort the
