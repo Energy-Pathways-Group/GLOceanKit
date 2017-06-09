@@ -153,6 +153,8 @@ classdef InternalModes < handle
                     self.internalModes = InternalModesFiniteDifference(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'spectral')
                     self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                elseif strcmp(self.method, 'wkb')
+                    self.internalModes = InternalModesWKB(rho,zIn,zOut,latitude,extraargs{:});
                 else
                     error('Invalid method!')
                 end

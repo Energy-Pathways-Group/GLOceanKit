@@ -105,23 +105,24 @@ if strcmp(method,'exact')
             S(:,indices(i)) = S(:,indices(i)).*Phi;
         end
     end
-elseif strcmp(method,'WKB')
-%     N2 = im.N2_xLobatto;
-%     zInt = im.xLobatto;   
-% 
-%     
-%     
-%     wkb_integral = @(arg) L_gm*( sqrt( N0*N0*exp(2*arg/L_gm) - f0*f0) - f0*atan(sqrt( N0*N0*exp(2*arg/L_gm) - f0*f0)/f0));
-%     d = wkb_integral(0) - wkb_integral(-L);
-%     xi = (wkb_integral(z) - wkb_integral(-L)) / d;
-%     
-%     PhiWKB = 0*z;
-%     GammaWKB = 0*z;
-%     for j = 1:j_max
-%         PhiWKB = PhiWKB + 2 * (cos(j*pi*xi)).^2*H_norm*(j_star+j).^(-5/2);
-%         GammaWKB = GammaWKB + 2*(sin(j*pi*xi)).^2*H_norm*(j_star+j).^(-5/2);
-%     end
-elseif strcmp(method,'GM')
+elseif strcmp(method,'wkb')
+    im = InternalModes(rho,zIn,zOut,latitude, 'method', 'wkb');
+    im.normalization = 'const_G_norm';
+    
+    [sortedOmegas, indices] = sort(abs(omega));
+    for i = 1:length(sortedOmegas)
+        if (sortedOmegas(i) > f0)
+            
+            [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+            j_max = ceil(find(h>0,1,'last')/2);
+                       
+            H = H_norm*(j_star + (1:j_max)').^(-5/2);
+            Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
+            S(:,indices(i)) = S(:,indices(i)).*Phi;
+        end
+    end
+    
+elseif strcmp(method,'gm')
     S = S .* (sqrt(N2)/(L_gm*invT_gm));
 end
 
