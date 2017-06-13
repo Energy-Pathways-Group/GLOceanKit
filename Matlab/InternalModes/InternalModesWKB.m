@@ -61,6 +61,12 @@ classdef InternalModesWKB < InternalModesWKBSpectral
             F = Fsign .* F;
             G = Fsign .* G;
             
+            if strcmp(self.normalization, 'const_F_norm')
+               A = sqrt( self.Lz ./ h);
+               F = A.*F;
+               G = G.*G;
+            end
+            
             if strcmp(self.upperBoundary, 'free_surface')
                 error('Not yet implemented');
             elseif strcmp(self.upperBoundary, 'rigid_lid')
