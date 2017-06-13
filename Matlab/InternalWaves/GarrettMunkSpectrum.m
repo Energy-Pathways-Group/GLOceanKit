@@ -83,7 +83,35 @@ classdef GarrettMunkSpectrum < handle
         % Horizontal Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function S = HorizontalVelocitySpectrumAtFrequencies(self,omega)  
+        function S = HorizontalVelocityVariance(self)
+            
+        end
+        
+        function S = HorizontalVelocitySpectrumAtFrequencies(self,omega,varargin)
+            nargs = length(varargin);
+            if mod(nargs,2) ~= 0
+                error('Arguments must be given as name/value pairs');
+            end
+            
+            for k = 1:2:length(varargin)
+                if strcmp(varargin{k},'approximation')
+                    approximation = varargin{k+1};
+                elseif strcmp(varargin{k},'spectrum_type')
+                    spectrum_type = varargin{k+1};
+                end
+            end
+            
+            if isempty(approximation)
+                approximation = 'exact';
+            end
+            if isempty(spectrum_type)
+                if (any(omega<0))
+                    spectrum_type = 'two-sided';
+                else
+                    spectrum_type = 'one-sided';
+                end
+            end
+            
             dOmegaVector = diff(omega);
             if any(dOmegaVector<0)
                 error('omega must be strictly monotonically increasing.')
@@ -102,13 +130,66 @@ classdef GarrettMunkSpectrum < handle
             
             S = zeros(length(zOut),length(omega));
             for i=1:length(omega)
-                Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;                
-                S(:,i) = self.E* ( Bomega .* C(omega(i)) );           
+                Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
+                S(:,i) = self.E* ( Bomega .* C(omega(i)) );
             end
             
-            
+            if strcmp(approximation,'exact')
+                nEVP = 128;
+                nEVPMax = 512;
+                min_j = 64; % minimum number of good modes we require
+                
+                im = InternalModesWKBSpectral(self.rho,self.z_in,self.z,self.latitude,'nEVP',nEVP);
+                im.normalization = 'const_G_norm';
+                
+                [sortedOmegas, indices] = sort(abs(omega));
+                for i = 1:length(sortedOmegas)
+                    if (sortedOmegas(i) > self.f0)
+                        
+                        [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                        j_max = ceil(find(h>0,1,'last')/2);
+                        
+                        while( (isempty(j_max) || j_max < min_j) && nEVP < nEVPMax )
+                            nEVP = nEVP + 128;
+                            im = InternalModes(self.rho,self.z_in,self.z,self.latitude, 'nEVP', nEVP);
+                            im.normalization = 'const_G_norm';
+                            [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                            j_max = ceil(find(h>0,1,'last')/2);
+                        end
+                        
+                        H = H_norm*(self.j_star + (1:j_max)').^(-5/2);
+                        Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
+                        S(:,indices(i)) = S(:,indices(i)).*Phi;
+                    end
+                end
+            elseif strcmp(approximation,'wkb')
+                im = InternalModes(self.rho,self.z_in,self.z,self.latitude, 'method', 'wkb');
+                im.normalization = 'const_G_norm';
+                
+                [sortedOmegas, indices] = sort(abs(omega));
+                for i = 1:length(sortedOmegas)
+                    if (sortedOmegas(i) > self.f0)
+                        
+                        [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                        j_max = ceil(find(h>0,1,'last')/2);
+                        
+                        H = H_norm*(self.j_star + (1:j_max)').^(-5/2);
+                        Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
+                        S(:,indices(i)) = S(:,indices(i)).*Phi;
+                    end
+                end
+                
+            elseif strcmp(approximation,'gm')
+                S = S .* (sqrt(N2)/(self.L_gm*self.invT_gm));
+                
+                zerosMask = zeros(length(zOut),length(omega));
+                for iDepth = 1:length(zOut)
+                    zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
+                end
+                S = S .* zerosMask;
+            end
         end
-        
+              
         function S = HorizontalVelocitySpectrumAtWavenumbers(self,k)
             if isrow(k)
                 k = k.';
@@ -116,7 +197,8 @@ classdef GarrettMunkSpectrum < handle
             
             f = self.f0;
             Nmax = self.N_max;
-            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f/omega)*(1+f/omega) );
+            % We are using the one-sided version of the spectrum
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+(f/omega)^2) );
             
             nModes = 128;
             nEVP = 128;
@@ -169,9 +251,6 @@ classdef GarrettMunkSpectrum < handle
                 end
                 
             end
-            
-            
-            
             
             S = sum(S,3);
             
