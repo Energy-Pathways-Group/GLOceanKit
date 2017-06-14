@@ -10,16 +10,25 @@ L_gm = 1.3e3;
 rho = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
 L = 5000;
 
-omega = linspace(-N0,N0,200);
-zOut = [-1300; -650; 0];
+
+z = linspace(-L,0,100)';
 
 % S = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, [-L 0], zOut,'exact' );
 % S( S<1e-2 ) = 1e-2;
 % figure, plot(omega,S), ylog
 % ylim([1e0 1.1*max(max(S))])
 
+GM = GarrettMunkSpectrum(rho,[-L 0], z,latitude);
+
+% omega = linspace(-N0,N0,200);
+[E,S,omega] = GM.HorizontalVelocityVariance();
+figure, plot(1e4*E,z)
+xlabel('velocity variance (cm^2/s^2)')
+ylabel('depth (m)')
+
+return
+
 k = linspace(0,pi/10,150)';
-GM = GarrettMunkSpectrum(rho,[-L 0], zOut,latitude);
 S = GM.HorizontalVelocitySpectrumAtWavenumbers(k);
 
 S( S<1e-2 ) = 1e-2;

@@ -13,6 +13,12 @@ classdef GarrettMunkSpectrum < handle
         N_max
         B
         H
+        H_norm
+        
+        omega
+        h_omega
+        F_omega
+        G_omega
     end
         
     properties (Constant)
@@ -64,11 +70,12 @@ classdef GarrettMunkSpectrum < handle
                 error('rho must be a function handle or an array.');
             end
             
+                       
             im = InternalModesWKBSpectral(self.rho,self.z_in,self.z,latitude);
             self.N_max = max(sqrt(im.N2_xLobatto));
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
-            H_norm = 1/sum(H1);
+            self.H_norm = 1/sum(H1);
             self.H = @(j) H_norm*(self.j_star + j).^(-5/2);
             
             f = self.f0;
@@ -76,6 +83,51 @@ classdef GarrettMunkSpectrum < handle
             B_norm = 1/acos(f/Nmax);
             B_int = @(omega0,omega1) B_norm*(atan(f/sqrt(omega0*omega0-f*f)) - atan(f/sqrt(omega1*omega1-f*f)));
             self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax)*0 + (omega0<f & omega1>f)*B_int(f,omega1) + (omega0>=f*ones(size(self.z)) & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax);
+            
+            self.ComputeModes();
+        end
+        
+        function ComputeModes(self)
+            nOmega = 50;
+            self.omega = linspace(self.f0,self.N_max,nOmega);
+            self.h_omega = zeros(nModes,nOmega);
+            self.F_omega = zeros(length(self.z),nModes,nOmega);
+            self.G_omega = zeros(length(self.z),nModes,nOmega);
+            
+            nEVP = 128;
+            nEVPMax = 512;
+            min_j = 64; % minimum number of good modes we require
+            
+            im = InternalModesWKBSpectral(self.rho,self.z_in,self.z,self.latitude,'nEVP',nEVP);
+            im.normalization = 'const_G_norm';
+            
+            for i = 1:length(self.omega)
+                [F, G, h] = im.ModesAtFrequency(self.omega(i));
+                
+                firstIndex = find(sqrt(im.N2_xLobatto) > self.omega(i),1,'first');
+                lastIndex = find(sqrt(im.N2_xLobatto) < self.omega(i),1,'first');
+                if isempty(lastIndex)
+                    lastIndex = length(im.N2_xLobatto);
+                end
+                nPointsBetweenTurningDepths = lastIndex-firstIndex;
+                
+                j_max = ceil(find(h>0,1,'last')/2);
+                
+                while( (isempty(j_max) || j_max < min_j) && nEVP < nEVPMax )
+                    fprintf('Found %d points between turning depths.\n',nPointsBetweenTurningDepths);
+                    nEVP = nEVP + 128;
+                    im = InternalModesWKBSpectral(self.rho,self.z_in,self.z,self.latitude, 'nEVP', nEVP);
+                    im.normalization = 'const_G_norm';
+                    [F, G, h] = im.ModesAtFrequency(self.omega(i));
+                    j_max = ceil(find(h>0,1,'last')/2);
+                end
+                
+                self.h_omega(:,i) = h;
+                self.F_omega(:,:,i) = F;
+                self.G_omega(:,:,i) = G;
+            end
+            
+            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,8 +135,10 @@ classdef GarrettMunkSpectrum < handle
         % Horizontal Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function S = HorizontalVelocityVariance(self)
-            
+        function [E,S,omega] = HorizontalVelocityVariance(self)
+            omega = linspace(0,self.N_max,50);
+            S = self.HorizontalVelocitySpectrumAtFrequencies(omega);
+            E = sum(S,2)*(omega(2)-omega(1));
         end
         
         function S = HorizontalVelocitySpectrumAtFrequencies(self,omega,varargin)
@@ -101,10 +155,10 @@ classdef GarrettMunkSpectrum < handle
                 end
             end
             
-            if isempty(approximation)
+            if ~exist('approximation','var')
                 approximation = 'exact';
             end
-            if isempty(spectrum_type)
+            if ~exist('spectrum_type','var')
                 if (any(omega<0))
                     spectrum_type = 'two-sided';
                 else
@@ -126,12 +180,17 @@ classdef GarrettMunkSpectrum < handle
             % Create the function that converts to energy
             f = self.f0;
             Nmax = self.N_max;
-            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f/omega)*(1+f/omega) );
+            if strcmp(spectrum_type,'two-sided')
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f/omega)*(1+f/omega) );
+            else
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f*f/(omega*omega)) );                
+            end
             
-            S = zeros(length(zOut),length(omega));
+            S = zeros(length(self.z),length(omega));
             for i=1:length(omega)
                 Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
                 S(:,i) = self.E* ( Bomega .* C(omega(i)) );
+                S(isnan(S))=0;
             end
             
             if strcmp(approximation,'exact')
@@ -157,7 +216,7 @@ classdef GarrettMunkSpectrum < handle
                             j_max = ceil(find(h>0,1,'last')/2);
                         end
                         
-                        H = H_norm*(self.j_star + (1:j_max)').^(-5/2);
+                        H = self.H_norm*(self.j_star + (1:j_max)').^(-5/2);
                         Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Phi;
                     end
@@ -173,7 +232,7 @@ classdef GarrettMunkSpectrum < handle
                         [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
                         j_max = ceil(find(h>0,1,'last')/2);
                         
-                        H = H_norm*(self.j_star + (1:j_max)').^(-5/2);
+                        H = self.H_norm*(self.j_star + (1:j_max)').^(-5/2);
                         Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Phi;
                     end
@@ -182,7 +241,7 @@ classdef GarrettMunkSpectrum < handle
             elseif strcmp(approximation,'gm')
                 S = S .* (sqrt(N2)/(self.L_gm*self.invT_gm));
                 
-                zerosMask = zeros(length(zOut),length(omega));
+                zerosMask = zeros(length(self.z),length(omega));
                 for iDepth = 1:length(zOut)
                     zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
                 end
