@@ -18,13 +18,17 @@ z = linspace(-L,0,100)';
 % figure, plot(omega,S), ylog
 % ylim([1e0 1.1*max(max(S))])
 
-GM = GarrettMunkSpectrum(rho,[-L 0], z,latitude);
+GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
 
-% omega = linspace(-N0,N0,200);
-[E,S,omega] = GM.HorizontalVelocityVariance();
+% 
+E = GM.HorizontalVelocityVariance(z);
 figure, plot(1e4*E,z)
 xlabel('velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
+
+omega = linspace(-N0,N0,200);
+S = GM.HorizontalVelocitySpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
+figure,plot(omega,S), ylog
 
 return
 
