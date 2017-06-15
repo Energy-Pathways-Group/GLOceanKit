@@ -1,9 +1,11 @@
-classdef GarrettMunkSpectrum < handle
+classdef GarrettMunkSpectrumConstantStratification < handle
     properties (Access = public)
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         Lz % Depth of the ocean.
         rho0 % Density at the surface of the ocean.
+        
+        B0
         
         z_in
         rho
@@ -11,24 +13,8 @@ classdef GarrettMunkSpectrum < handle
         N_max
         B
         H
-        
-        zInternal % A full depth coordinate used to precompute Phi & Gamma
-        N2internal % N2 at zInternal
-        
-        didPrecomputePhiAndGammaForOmega = 0
-        omega
-        Phi_omega
-        Gamma_omega
-        k_omega
-        
-        didPrecomputePhiAndGammaForK = 0
-        k
-        Phi_k % size(Phi_k) = [nZ,nK,nModes]
-        Gamma_k % size(Gamma_k) = [nZ,nK,nModes]
-        omega_k % size(omega_k) = [nK,nModes]
-        nModes = 64
     end
-        
+    
     properties (Constant)
         g = 9.81;
         L_gm = 1.3e3; % thermocline exponential scale, meters
@@ -43,41 +29,13 @@ classdef GarrettMunkSpectrum < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = GarrettMunkSpectrum(rho, z_in, latitude, varargin)
-            % Make everything a column vector
-            if isrow(z_in)
-                z_in = z_in.';
-            end
-            
+        function self = GarrettMunkSpectrum(N0, z_in, latitude, varargin)
             self.Lz = max(z_in) - min(z_in);
             self.latitude = latitude;
             self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.z_in = z_in;
+            self.N_max = N0;
             
-            % Is density specified as a function handle or as a grid of
-            % values?
-            self.rho = rho;
-            if isa(rho,'function_handle') == true
-                if numel(z_in) ~= 2
-                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
-                end
-                self.rho0 = rho(max(z_in));
-            elseif isa(rho,'numeric') == true
-                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
-                    error('rho must be 1 dimensional and z must have the same length');
-                end
-                if isrow(rho)
-                    rho = rho.';
-                end
-                self.rho0 = min(rho);
-            else
-                error('rho must be a function handle or an array.');
-            end
-                                   
-            im = InternalModesWKBSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',1024);
-            self.N_max = max(sqrt(im.N2_xLobatto));
-            self.zInternal = im.z_xiLobatto;
-            self.N2internal = im.Nz_xLobatto;
+            self.B0 = pi/2 - atan(self.f0/sqrt(self.N_max*self.N_max - self.f0*self.f0));
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
             H_norm = 1/sum(H1);
@@ -87,85 +45,11 @@ classdef GarrettMunkSpectrum < handle
             Nmax = self.N_max;
             B_norm = 1/acos(f/Nmax);
             B_int = @(omega0,omega1) B_norm*(atan(f/sqrt(omega0*omega0-f*f)) - atan(f/sqrt(omega1*omega1-f*f)));
-            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax)*0 + (omega0<f & omega1>f)*B_int(f,omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax);
-            
-            self.PrecomputeComputePhiAndGammaForOmega();
+            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax)*0 + (omega0<f & omega1>f)*B_int(f,omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax); 
         end
         
         function N2 = N2(self,z)
-           N2 = interp1(self.zInternal,self.N2internal,z,'linear');
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Computation of the vertical structure functions Phi and Gamma
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [Phi,Gamma,h] = PhiAndGammaForCoordinate(self,x,methodName)
-            % This will return size(Phi) =
-            % [length(self.zInternal),length(x),nModes]. This is really an
-            % unsummed version of Phi, so Phi = sum(Phi,3) would match the
-            % definition in the manuscript. Entries will contain NaN where
-            % no mode was determined.
-            nX = length(x);
-            nEVP = 128;
-            nEVPMax = 512;
-                                    
-            im = InternalModesWKBSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-            im.normalization = 'const_G_norm';
-            
-            Phi = nan(length(self.zInternal),nX,self.nModes);
-            Gamma = nan(length(self.zInternal),nX,self.nModes);
-            h_out = nan(nX,self.nModes);
-            for i = 1:length(self.omega)
-                [F, G, h] = im.(methodName)(x(i));
-                
-                j_max = ceil(find(h>0,1,'last')/2);
-                
-                while( (isempty(j_max) || j_max < self.nModes) && nEVP < nEVPMax )
-                    nEVP = nEVP + 128;
-                    im = InternalModesWKBSpectral(self.rho,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP);
-                    im.normalization = 'const_G_norm';
-                    [F, G, h] = im.(methodName)(x(i));
-                    j_max = ceil(find(h>0,1,'last')/2);
-                end
-                
-                j0 = min(j_max,self.nModes);
-                
-                h = reshape(h,1,[]);
-                
-                Phi(:,i,1:j0) = (F(:,1:j0).^2) .* (1./h(1:j0) .* self.H(1:j0));
-                Gamma(:,i,1:j0) = (1/self.g)*(G(:,1:j0).^2) .* self.H(1:j0);
-                h_out(i,1:j0)=h(1:j0);             
-            end
-            h = h_out;
-            % Cleanup things outside of any reasonable numerical precision?
-%             Phi(Phi/max(max(Phi))<1e-7) = 0;
-%             Gamma(Gamma/max(max(Gamma))<1e-7) = 0;
-        end
-        
-        function PrecomputeComputePhiAndGammaForOmega(self)
-            if self.didPrecomputePhiAndGammaForOmega==0
-                nOmega = 50;      
-                self.omega = linspace(self.f0,self.N_max,nOmega);
-                self.omega = exp(linspace(log(self.f0),log(self.N_max),nOmega));
-                [Phi,Gamma,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtFrequency');
-                self.Phi_omega = sum(Phi,3,'omitnan');
-                self.Gamma_omega = sum(Gamma,3,'omitnan');
-                self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*h));
-                self.didPrecomputePhiAndGammaForOmega = 1;
-            end
-        end
-        
-        function PrecomputeComputePhiAndGammaForK(self)
-            if self.didPrecomputePhiAndGammaForK==0
-                nK = 50;
-                self.k = exp(linspace(log(2*pi/1e6),log(1e1),nK));
-                [self.Phi_k, self.Gamma_k,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtWavenumber');
-                k2 = reshape(self.k .^2,[],1);
-                self.omega_k = sqrt(self.g * h .* k2 + self.f0*self.f0);
-                self.didPrecomputePhiAndGammaForK = 1;
-            end
+            N2 = self.N_max*self.N_max*ones(size(z));
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,10 +58,17 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalVelocityVariance(self,z)
-            omega = linspace(0,self.N_max,1000);
-            S = self.HorizontalVelocitySpectrumAtFrequencies(z,omega);
-            E = sum(S,2)*(omega(2)-omega(1));
+            z = reshape(z,[],1);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            A = self.E*(3*N2/2 - f2 - (self.B0*f/2)*sqrt(N2-f2))/(N2-f2);
+            j=1:self.nModes;
+            Gamma = (2/self.Lz)*sum(self.H(j).*cos(j*pi*z/D).^2,2);
+            E = A*Gamma;
         end
+        
+        
         
         function S = HorizontalVelocitySpectrumAtFrequencies(self,z,omega,varargin)
             if isrow(z)
@@ -213,7 +104,7 @@ classdef GarrettMunkSpectrum < handle
                 error('omega must be strictly monotonically increasing.')
             end
             
-            dOmega = unique(dOmegaVector);         
+            dOmega = unique(dOmegaVector);
             if max(abs(diff(dOmega))) > 1e-7
                 error('omega must be an evenly spaced grid');
             end
@@ -225,7 +116,7 @@ classdef GarrettMunkSpectrum < handle
             if strcmp(spectrum_type,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f/omega)*(1+f/omega) )*0.5;
             else
-                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f*f/(omega*omega)) );                
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f*f/(omega*omega)) );
             end
             
             S = zeros(length(z),length(omega));
@@ -254,7 +145,7 @@ classdef GarrettMunkSpectrum < handle
                         Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Phi;
                     end
-                end       
+                end
             elseif strcmp(approximation,'gm')
                 S = S .* (sqrt(N2)/(self.L_gm*self.invT_gm));
                 
@@ -265,7 +156,7 @@ classdef GarrettMunkSpectrum < handle
                 S = S .* zerosMask;
             end
         end
-              
+        
         function S = HorizontalVelocitySpectrumAtWavenumbers(self,z,k)
             self.PrecomputeComputePhiAndGammaForK();
             if isrow(k)
@@ -357,7 +248,7 @@ classdef GarrettMunkSpectrum < handle
                 error('omega must be strictly monotonically increasing.')
             end
             
-            dOmega = unique(dOmegaVector);         
+            dOmega = unique(dOmegaVector);
             if max(abs(diff(dOmega))) > 1e-7
                 error('omega must be an evenly spaced grid');
             end
@@ -369,7 +260,7 @@ classdef GarrettMunkSpectrum < handle
             if strcmp(spectrum_type,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) )*0.5;
             else
-                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );                
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );
             end
             
             S = zeros(length(z),length(omega));
@@ -398,7 +289,7 @@ classdef GarrettMunkSpectrum < handle
                         Gamma = sum( (G(:,1:j_max).^2) * (1./self.g .* H), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Gamma;
                     end
-                end       
+                end
             elseif strcmp(approximation,'gm')
                 S = S ./ (sqrt(N2)*(self.L_gm*self.invT_gm));
                 
@@ -455,7 +346,7 @@ classdef GarrettMunkSpectrum < handle
                 error('omega must be strictly monotonically increasing.')
             end
             
-            dOmega = unique(dOmegaVector);         
+            dOmega = unique(dOmegaVector);
             if max(abs(diff(dOmega))) > 1e-7
                 error('omega must be an evenly spaced grid');
             end
@@ -467,7 +358,7 @@ classdef GarrettMunkSpectrum < handle
             if strcmp(spectrum_type,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( omega*omega - f*f )*0.5;
             else
-                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( omega*omega - f*f );                
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( omega*omega - f*f );
             end
             
             S = zeros(length(z),length(omega));
@@ -496,7 +387,7 @@ classdef GarrettMunkSpectrum < handle
                         Gamma = sum( (G(:,1:j_max).^2) * (1./self.g .* H), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Gamma;
                     end
-                end       
+                end
             elseif strcmp(approximation,'gm')
                 S = S ./ (sqrt(N2)*(self.L_gm*self.invT_gm));
                 
