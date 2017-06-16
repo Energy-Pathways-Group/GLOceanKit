@@ -77,7 +77,7 @@ classdef GarrettMunkSpectrum < handle
             im = InternalModesWKBSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',1024);
             self.N_max = max(sqrt(im.N2_xLobatto));
             self.zInternal = im.z_xiLobatto;
-            self.N2internal = im.Nz_xLobatto;
+            self.N2internal = im.N2_xLobatto;
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
             H_norm = 1/sum(H1);

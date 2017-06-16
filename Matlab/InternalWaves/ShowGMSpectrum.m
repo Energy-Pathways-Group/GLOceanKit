@@ -2,8 +2,8 @@ latitude = 33;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 rho0 = 1025;
 g = 9.81;
-N0 = 5.2e-3/4; % 'average' GM bouyancy frequency, sqrt( (1-exp(-L/L_gm))/(exp(L/L_gm-1) -1))
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+% N0 = 5.2e-3/4; % 'average' GM bouyancy frequency, sqrt( (1-exp(-L/L_gm))/(exp(L/L_gm-1) -1))
+% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 
 N0 = 5.2e-3;
 L_gm = 1.3e3;
@@ -24,6 +24,9 @@ Euv = GM.HorizontalVelocityVariance(z);
 Eeta = GM.HorizontalIsopycnalVariance(z);
 Ew = GM.HorizontalVerticalVelocityVariance(z);
 
+N2 = GM.N2(z);
+N = sqrt(N2);
+
 figure
 subplot(1,3,1)
 plot(1e4*Euv,z)
@@ -37,9 +40,10 @@ subplot(1,3,3)
 plot(1e4*Ew,z)
 xlabel('vertical velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
+plot(1e4*(Euv + Ew + N2.*Eeta)/2,z)
+xlabel('total energy (cm^2/s^2)')
+ylabel('depth (m)')
 
-N2 = GM.N2(z);
-N = sqrt(N2);
 figure
 subplot(1,2,1)
 plot(1e4*Euv.*(N0./N),z), hold on
