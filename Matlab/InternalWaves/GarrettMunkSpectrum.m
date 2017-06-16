@@ -174,7 +174,7 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalVelocityVariance(self,z)
-            omega = linspace(0,self.N_max,1000);
+            omega = linspace(0,self.N_max,2000);
             S = self.HorizontalVelocitySpectrumAtFrequencies(z,omega);
             E = sum(S,2)*(omega(2)-omega(1));
         end
@@ -318,9 +318,9 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalIsopycnalVariance(self,z)
-            omega = linspace(0,self.N_max,1000);
-            S = self.HorizontalIsopycnalSpectrumAtFrequencies(z,omega);
-            E = sum(S,2)*(omega(2)-omega(1));
+            omega2 = linspace(0,self.N_max,2000);
+            S = self.HorizontalIsopycnalSpectrumAtFrequencies(z,omega2);
+            E = sum(S,2)*(omega2(2)-omega2(1));
         end
         
         function S = HorizontalIsopycnalSpectrumAtFrequencies(self,z,omega,varargin)
@@ -416,9 +416,9 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalVerticalVelocityVariance(self,z)
-            omega = linspace(0,self.N_max,1000);
-            S = self.HorizontalVerticalVelocitySpectrumAtFrequencies(z,omega);
-            E = sum(S,2)*(omega(2)-omega(1));
+            omega2 = linspace(0,self.N_max,2000);
+            S = self.HorizontalVerticalVelocitySpectrumAtFrequencies(z,omega2);
+            E = sum(S,2)*(omega2(2)-omega2(1));
         end
         
         function S = HorizontalVerticalVelocitySpectrumAtFrequencies(self,z,omega,varargin)
