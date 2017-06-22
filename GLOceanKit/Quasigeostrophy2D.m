@@ -135,11 +135,11 @@
 	GLDimension *xDim = ssh.dimensions[0]; xDim.name = @"x";
 	GLDimension *yDim = ssh.dimensions[1]; yDim.name = @"y";
 	
-	if (shouldDouble)
-	{
-		GLDimension *doubleX = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:2*(xDim.nPoints) domainMin:xDim.domainMin length:xDim.domainLength];
+    NSUInteger shouldDoubleHack = shouldDouble ? 2 : 1;
+    
+		GLDimension *doubleX = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:shouldDoubleHack*(xDim.nPoints) domainMin:xDim.domainMin length:xDim.domainLength];
 		doubleX.name = @"x";
-		GLDimension *doubleY = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:2*(yDim.nPoints) domainMin:yDim.domainMin length:yDim.domainLength];
+		GLDimension *doubleY = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:shouldDoubleHack*(yDim.nPoints) domainMin:yDim.domainMin length:yDim.domainLength];
 		doubleY.name = @"y";
 		
 		GLFunction *sshX2 = [ssh projectOntoDimensions: @[doubleX, doubleY] usingSpectralBasis: @[@(kGLExponentialBasis), @(kGLExponentialBasis)]];
@@ -147,7 +147,8 @@
 		xDim = doubleX;
 		yDim = doubleY;
 		ssh = [sshX2 spatialDomain];
-	}
+    [sshX2 solve];
+	
 	
     NSLog(@"%g, %g", xDim.sampleInterval, [ssh.dimensions[0] sampleInterval ]);
     
