@@ -16,8 +16,8 @@ deltaY = 1/(2*l(1));
 spectrumScale = deltaX*deltaY/( length(k) * length(l) );
 heightPSD = spectrumScale * real( sshFD .* conj(sshFD)); % m^2 * m^2
 KE_PSD = ((g/f0)^2)* ( (2*2*pi*pi) * rhoK .* rhoK .* heightPSD ); % m^2 * m^2 / s
-KEx_PSD = ((g/f0)^2)* ( (2*2*pi*pi) * K .* K .* heightPSD ); % m^2 * m^2 / s
-KEy_PSD = ((g/f0)^2)* ( (2*2*pi*pi) * L .* L .* heightPSD ); % m^2 * m^2 / s
+KEx_PSD = ((g/f0)^2)* ( (2*2*pi*pi) * L .* L .* heightPSD ); % m^2 * m^2 / s
+KEy_PSD = ((g/f0)^2)* ( (2*2*pi*pi) * K .* K .* heightPSD ); % m^2 * m^2 / s
 PE_PSD = ((g/f0)^2)* ( (1/L_R)*(1/L_R) * heightPSD ); % m^2 * m^2 / s
 energyPSD = KE_PSD + PE_PSD; % m^2 * m^2 / s^2
 
