@@ -93,6 +93,10 @@
 // Defaults to NO.
 @property BOOL shouldUseBeta;
 
+// Whether or not the deformation radius should be finite
+// Defaults to YES.
+@property BOOL shouldUseVortexStretching;
+
 // Whether or not to use spectral vanishing viscosity
 // Defaults to YES.
 @property BOOL shouldUseSVV;

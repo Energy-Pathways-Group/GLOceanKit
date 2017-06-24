@@ -86,6 +86,7 @@
 		self.ssh = [GLFunction functionOfRealTypeWithDimensions: self.dimensions forEquation:self.equation];
 		[self.ssh zero];
 		self.shouldUseBeta = NO;
+        self.shouldUseVortexStretching = YES;
 		self.shouldUseSVV = YES;
 		self.shouldAntiAlias = NO;
 		self.shouldWriteSSH = YES;
@@ -229,8 +230,14 @@
 	self.wavenumberDimensions = [self.ssh dimensionsTransformedToBasis: self.ssh.differentiationBasis];
 	
 	self.laplacian = [GLLinearTransform harmonicOperatorFromDimensions: self.wavenumberDimensions forEquation: self.equation];
-	self.laplacianMinusOne = [self.laplacian plus: @(-1.0)];
-	self.inverseLaplacianMinusOne = [self.laplacianMinusOne inverse];
+    if (self.shouldUseVortexStretching == YES) {
+        self.laplacianMinusOne = [self.laplacian plus: @(-1.0)];
+        self.inverseLaplacianMinusOne = [self.laplacianMinusOne inverse];
+    } else {
+        self.laplacianMinusOne = self.laplacian;
+        self.inverseLaplacianMinusOne = [self.laplacianMinusOne inverse];
+        self.inverseLaplacianMinusOne.pointerValue[0] = 0.0;
+    }
 	
 	GLLinearTransform *diff_xxx = [GLLinearTransform differentialOperatorWithDerivatives:@[@(3),@(0)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
 	GLLinearTransform *diff_xyy = [GLLinearTransform differentialOperatorWithDerivatives:@[@(1),@(2)] fromDimensions:self.wavenumberDimensions forEquation:self.equation];
