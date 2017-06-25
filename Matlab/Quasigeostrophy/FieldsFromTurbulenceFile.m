@@ -42,6 +42,8 @@ function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 	latitude = ncreadatt(file, '/', 'latitude');
 	g = 9.81;
 	f0 = 2 * 7.2921E-5 * sin( latitude*pi/180. );
+    R = 6.371e6;
+    beta0 = 2 * 7.2921E-5 * cos( latitude*pi/180. ) / R;
 	
 	% Read in the spatial coordinates
 	x = double(ncread(file, 'x'));
@@ -61,6 +63,8 @@ function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 			varargout{iArg} = latitude;
 		elseif ( strcmp(varargin{iArg}, 'f0') )
 			varargout{iArg} = f0;
+        elseif ( strcmp(varargin{iArg}, 'beta0') )
+            varargout{iArg} = beta0;
 		elseif ( strcmp(varargin{iArg}, 't') )
 			varargout{iArg} = t;
 		elseif ( strcmp(varargin{iArg}, 'x') )
