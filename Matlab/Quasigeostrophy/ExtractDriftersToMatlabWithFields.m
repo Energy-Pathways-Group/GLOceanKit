@@ -1,5 +1,6 @@
-file = '/Users/jearly/Desktop/Isotropy/TurbulenceIsotropic_FloatsOnly2.nc';
-output_file = '/Users/jearly/Desktop/Isotropy/Experiment6Trajectories11500.mat';
+file = '/Volumes/OceanTransfer/IsotropicExperiments/ModerateForcing/TurbulenceIsotropic.nc';
+output_file = '/Volumes/OceanTransfer/IsotropicExperiments/QGfPlaneTurbulenceFloats_ModerateForcing.mat';
+
 shouldSaveStrainAndVorticity = 0;
 
 %addpath('../GLOceanKit/Matlab/')
@@ -11,17 +12,40 @@ shouldSaveStrainAndVorticity = 0;
 xFloat = ncread(file, 'x-float');
 yFloat = ncread(file, 'y-float');
 t = ncread(file, 'time');
+
+height_scale = ncreadatt(file, '/', 'height_scale');
+time_scale = ncreadatt(file, '/', 'time_scale');
+length_scale = ncreadatt(file, '/', 'length_scale');
+vorticity_scale = ncreadatt(file, '/', 'vorticity_scale');
+k_f = ncreadatt(file, '/', 'forcing_wavenumber');
+k_f_width = ncreadatt(file, '/', 'forcing_width');
+k_nu = ncreadatt(file, '/', 'viscous_wavenumber');
+k_alpha = ncreadatt(file, '/', 'thermal_damping_wavenumber');
+k_r = ncreadatt(file, '/', 'frictional_damping_wavenumber');
+f_zeta = ncreadatt(file, '/', 'f_zeta');
 latitude = ncreadatt(file, '/', 'latitude');
+k_max = ncreadatt(file, '/', 'max_resolved_wavenumber');
+uses_beta = ncreadatt(file, '/', 'uses-beta');
+r = ncreadatt(file, '/', 'r')/time_scale;
+nu = ncreadatt(file, '/', 'nu')*length_scale*length_scale/time_scale;
+
+g = 9.81;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180. );
+R = 6.371e6;
+beta0 = 2 * 7.2921E-5 * cos( latitude*pi/180. ) / R;
+
+x = ncread(file, 'x');
+y = ncread(file, 'y');
 
 dt = t(2)-t(1);
+dx = x(2)-x(1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 	The stride indicates how many floats we will skip
 %
 
-stride = 1;
+stride = 32;
 timestride = 1;
 t_days = t/86400;
 day = 11500;
@@ -41,11 +65,13 @@ t = t(timeIndices);
 xpos = xpos(timeIndices,:);
 ypos = ypos(timeIndices,:);
 
+cx = xpos + sqrt(-1)*ypos;
+cv = vdiff(dt,cx,1);
+
 if shouldSaveStrainAndVorticity == 1
 	
 	% need a mesh grid for interp2, y proceeds x in these arrays.
-	x = ncread(file, 'x');
-	y = ncread(file, 'y');
+
 	[X,Y]=meshgrid( x,y  );
 	
 	strain_s = zeros( size(xpos) );
@@ -74,9 +100,9 @@ if shouldSaveStrainAndVorticity == 1
 		enstrophy_drag(iTime,:) = interp2( X, Y, -alpha*rv_eul.*psi_eul, wrappedX, wrappedY );
 	end
 	
-	save(output_file, 'xpos', 'ypos', 'enstrophy_force', 'enstrophy_drag', 'energy_force', 'energy_drag', 'strain_s', 'strain_n', 'rv', 't', 'k_f', 'k_f_width', 'k_nu', 'k_alpha');
+	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file', 'enstrophy_force', 'enstrophy_drag', 'energy_force', 'energy_drag', 'strain_s', 'strain_n', 'rv');
 else
-	save(output_file, 't', 'xpos', 'ypos');
+	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file');
 end
 
 figure, plot(xpos, ypos)
