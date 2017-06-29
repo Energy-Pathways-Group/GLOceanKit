@@ -1,7 +1,9 @@
-file = '/Volumes/OceanTransfer/IsotropicExperiments/ModerateForcing/TurbulenceIsotropic.nc';
-output_file = '/Volumes/OceanTransfer/IsotropicExperiments/QGfPlaneTurbulenceFloats_ModerateForcing.mat';
+file = '/Volumes/OceanTransfer/AnisotropicExperiments/AnisotropicDataAdam/QGBetaPlaneTurbulenceFloats_experiment_05.nc';
+output_file = '/Volumes/OceanTransfer/AnisotropicExperiments/AnisotropicDataAdam/QGBetaPlaneTurbulenceFloats_experiment_05_MoreParams.mat';
 
 shouldSaveStrainAndVorticity = 0;
+
+stride = 32;
 
 %addpath('../GLOceanKit/Matlab/')
 
@@ -29,23 +31,41 @@ uses_beta = ncreadatt(file, '/', 'uses-beta');
 r = ncreadatt(file, '/', 'r')/time_scale;
 nu = ncreadatt(file, '/', 'nu')*length_scale*length_scale/time_scale;
 
+[u,v,F,zeta,ssh, sshFD, k, l, f0, length_scale] = FieldsFromTurbulenceFile(file,length(t),'u','v','force','rv', 'ssh', 'ssh_fd', 'k', 'l', 'f0', 'length_scale');
+u_rms_eulerian = sqrt(mean(mean(u.^2+v.^2)));
+
+% pick of peak of spectrum.
+[kMag, TE, KE, PE, KEx, KEy] = EnergySpectrumFromSSH( sshFD, k, l, 9.81, f0, length_scale );
+[~,index] = max(KE);
+max_kinetic_energy_length = 1/kMag(index);
+[~,index] = max(KEx);
+max_kinetic_energy_u_length = 1/kMag(index);
+[~,index] = max(KEy);
+max_kinetic_energy_v_length = 1/kMag(index);
+
+
+
 g = 9.81;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180. );
 R = 6.371e6;
-beta0 = 2 * 7.2921E-5 * cos( latitude*pi/180. ) / R;
+beta0 = double(uses_beta)*(2 * 7.2921E-5 * cos( latitude*pi/180. ) / R);
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
 
 dt = t(2)-t(1);
 dx = x(2)-x(1);
+dy = y(2)-y(1);
+Lx = dx*length(x);
+Ly = dy*length(y);
+
+eta = -sum(sum(F.*ssh))*dx*dy/(Lx*Ly);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 	The stride indicates how many floats we will skip
 %
 
-stride = 32;
 timestride = 1;
 t_days = t/86400;
 day = 11500;
@@ -54,6 +74,9 @@ timeIndex = find( t_days-1 <= day, 1, 'last');
 
 xPosition = squeeze(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
 yPosition = squeeze(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) 1], [length(yFloat)/stride length(xFloat)/stride timeIndex], [stride stride 1]));
+
+
+return;
 
 % Reshape to [time, float]
 xpos = (reshape(xPosition, [length(yFloat)*length(xFloat)/(stride*stride), timeIndex]))';
@@ -67,6 +90,11 @@ ypos = ypos(timeIndices,:);
 
 cx = xpos + sqrt(-1)*ypos;
 cv = vdiff(dt,cx,1);
+
+[~, ~, q, r] = CenterOfMass( real(cx), imag(cx) );
+x_model = q;
+y_model = r;
+[minD, maxD, theta_model] = SecondMomentMatrix( x_model, y_model, 'eigen' );
 
 if shouldSaveStrainAndVorticity == 1
 	
@@ -100,9 +128,9 @@ if shouldSaveStrainAndVorticity == 1
 		enstrophy_drag(iTime,:) = interp2( X, Y, -alpha*rv_eul.*psi_eul, wrappedX, wrappedY );
 	end
 	
-	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file', 'enstrophy_force', 'enstrophy_drag', 'energy_force', 'energy_drag', 'strain_s', 'strain_n', 'rv');
+	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file', 'u_rms_eulerian', 'eta', 'max_kinetic_energy_length', 'max_kinetic_energy_u_length', 'max_kinetic_energy_v_length', 'enstrophy_force', 'enstrophy_drag', 'energy_force', 'energy_drag', 'strain_s', 'strain_n', 'rv');
 else
-	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file');
+	save(output_file, 't', 'cx','cv','k_f', 'k_nu', 'k_r', 'k_alpha', 'latitude', 'k_max', 'r', 'nu', 'f0', 'beta0', 'dx', 'file', 'u_rms_eulerian', 'eta', 'max_kinetic_energy_length', 'max_kinetic_energy_u_length', 'max_kinetic_energy_v_length');
 end
 
 figure, plot(xpos, ypos)

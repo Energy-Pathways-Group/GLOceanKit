@@ -64,7 +64,7 @@ function [varargout]=FieldsFromTurbulenceFile(file, timeIndex, varargin)
 		elseif ( strcmp(varargin{iArg}, 'f0') )
 			varargout{iArg} = f0;
         elseif ( strcmp(varargin{iArg}, 'beta0') )
-            varargout{iArg} = beta0;
+            varargout{iArg} = double(ncreadatt(file, '/', 'uses-beta'))*beta0;
 		elseif ( strcmp(varargin{iArg}, 't') )
 			varargout{iArg} = t;
 		elseif ( strcmp(varargin{iArg}, 'x') )
