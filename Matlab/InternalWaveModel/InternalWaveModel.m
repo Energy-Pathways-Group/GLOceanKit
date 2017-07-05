@@ -741,8 +741,8 @@ classdef (Abstract) InternalWaveModel < handle
         end
          
         function zIsopycnal = PlaceFloatsOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
-            % The particular will be on the same isopycnal somewhere around
-            % their initial position.
+            % Any floats with the same value of z will be moved to the same
+            % isopycnal.
             %
             % interpolation should probably be 'spline'.
             % tolerance is in meters, 1e-8 should be fine.
