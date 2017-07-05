@@ -739,7 +739,105 @@ classdef (Abstract) InternalWaveModel < handle
             
             rho = rho_bar + rho_int + rho_ext;
         end
+         
+        function zIsopycnal = PlaceFloatsOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
+            % The particular will be on the same isopycnal somewhere around
+            % their initial position.
+            %
+            % interpolation should probably be 'spline'.
+            % tolerance is in meters, 1e-8 should be fine.
+            t = 0;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %
+            % Create the gridded internal density field rho
+            %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+            Rho = (self.rho0/9.81)*self.N2AtDepth(self.Z) .* self.TransformToSpatialDomainWithG(zeta_bar);
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %
+            % Wrap the particle positions, as necessary
+            %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % (x,y) are periodic for the gridded solution
+            x_tilde = mod(x,self.Lx);
+            y_tilde = mod(y,self.Ly);
+            
+            dx = self.x(2)-self.x(1);
+            x_index = floor(x_tilde/dx);
+            dy = self.y(2)-self.y(1);
+            y_index = floor(y_tilde/dy);
+            
+            % Identify the particles along the interpolation boundary
+            if strcmp(interpolationMethod,'spline')
+                S = 3+1; % cubic spline, plus buffer
+            elseif strcmp(interpolationMethod,'linear')
+                S = 1+1;
+            end
+            bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
+            
+            % then do the same for particles that along the boundary.
+            x_tildeS = mod(x(bp)+S*dx,self.Lx);
+            y_tildeS = mod(y(bp)+S*dy,self.Ly);
+            
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %
+            % Create the interpolants
+            %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            RhoInterp = griddedInterpolant(self.X,self.Y,self.Z, Rho,interpolationMethod);
+            if any(bp)
+               RhoInterpS = griddedInterpolant(self.X,self.Y,self.Z, circshift(Rho,[S S 0]),interpolationMethod); 
+            end
+                    
+            
+            % Now let's place the floats along an isopycnal.
+            isopycnalDeviation = self.ZetaAtTimePosition(t,x,y,z,interpolationMethod);
+            zIsopycnal = z + isopycnalDeviation;
+            
+            zUnique = unique(z);
+            rho = zeros(size(zIsopycnal));
+            for zLevel = 1:length(zUnique)
+                iterations = 0;
+                zLevelIndices = (z==zUnique(zLevel));
                 
+                nonboundaryIndices = zLevelIndices & ~bp;
+                rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
+                if any(bp)
+                    boundaryIndices = zLevelIndices & bp;
+                    rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
+                end
+                
+                rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalDensityPerturbationAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices));
+                
+                dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
+                dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
+                zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+dz;
+                
+                while( max(abs(dz)) > tolerance && iterations < 20 )
+                    rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
+                    if any(bp)
+                        rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
+                    end
+                    
+                    rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalDensityPerturbationAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices));
+                    
+                    dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
+                    dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
+                    
+                    zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+dz;
+                    iterations = iterations + 1;
+                end
+                
+                fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z(zLevelIndices)) )
+            end
+        end
+        
         function ShowDiagnostics(self)
             % Display various diagnostics about the simulation.
             omega = abs(self.Omega);
