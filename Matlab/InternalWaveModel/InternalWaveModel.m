@@ -58,9 +58,10 @@ classdef (Abstract) InternalWaveModel < handle
         X,Y,Z
         K,L,J
         
+        rhobar, rho0
         N2, Nmax
         
-        K2, Kh, h, Omega, f0, C, rho0
+        K2, Kh, h, Omega, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Amp_plus, Amp_minus % Used for diagnostics only
@@ -123,6 +124,7 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.N2 = N2;
             self.Nmax = sqrt(max(N2));
+            self.rhobar = self.RhoBarAtDepth(self.z);
             
             % Spectral domain, in radians
             dk = 1/self.Lx;          % fourier frequency

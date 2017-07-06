@@ -3,11 +3,10 @@ Ny = 10;
 t = (0:60:86400)';
 deltaT = t(2)-t(1);
 
-xoffset = -1*dL*Nx/2;
-yoffset = -1*dL*Ny/2;
-
 dL = 100; % sets the artificial grid space
-[x0, y0] = ndgrid( dL*(1:Nx)+xoffset, dL*(1:Ny)+yoffset );
+xOffset = -1*dL*Nx/2;
+yOffset = -1*dL*Ny/2;
+[x0, y0] = ndgrid( dL*(1:Nx)+xOffset, dL*(1:Ny)+yOffset );
 x0 = reshape(x0, [], 1);
 y0 = reshape(y0, [], 1);
 
@@ -74,12 +73,17 @@ xlog, ylog
 xlim([min(xMean) max(xMean)])
 
 % Compute the slope of the powspec data
-[p,S,mu]=polyfit(log(xMean),log(yMean),1);
+[p,S,mu]=polyfit(log(xMean(yMean ~= 0)),log(yMean(yMean ~= 0)),1);
 slope = p(1)/mu(2);
 intercept = p(2)-p(1)*mu(1)/mu(2);
 fprintf('Actual: %.2g x^(%.2f)\n', exp(intercept),slope);
 
 % Using my notes "frequency-spectrum-from-strain-field.pdf"
+% This worked perfectly before I did the whole center of mass thing. That
+% makes no sense.
 expectedSlope = sigma*tanh(sigma*t(end)/4)/16;
 expectedPower = 2;
 fprintf('Expected: %.2g x^(%.2f)\n', expectedSlope,expectedPower);
+
+hold on
+plot(xMean,exp(intercept)*xMean.^slope,'k', 'LineWidth', 2)

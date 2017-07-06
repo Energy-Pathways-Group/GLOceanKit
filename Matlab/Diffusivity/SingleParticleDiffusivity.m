@@ -12,10 +12,12 @@ kappa_a = zeros(nDrifters,1);
 velocities = zeros(length(t)-1,nDrifters);
 dt = t(2)-t(1);
 
+[~, ~, xc, yc] = CenterOfMass( x, y );
+
 stride = 1;
 for iDrifter=1:stride:nDrifters
-    q = x(:,iDrifter);
-    r = y(:,iDrifter);
+    q = xc(:,iDrifter);
+    r = yc(:,iDrifter);
     
     % mean-squared-separation distance over the requested time-interval
     r2(iDrifter) = mean(q.^2 + r.^2,1);
