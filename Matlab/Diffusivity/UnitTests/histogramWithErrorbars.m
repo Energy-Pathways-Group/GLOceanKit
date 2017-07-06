@@ -1,4 +1,4 @@
-function histogramWithErrorbars(x,y,theBins)
+function [xMean, yMean, yStdErr] = histogramWithErrorbars(x,y,theBins)
 [~,edges,bin] = histcounts(x,theBins);
 yMean = zeros(length(edges)-1,1);
 yStdErr = zeros(length(edges)-1,1);

@@ -24,11 +24,19 @@ y0 = reshape(y0, 1, reps);
 x = deltaT*cumsum(dX,1) + repmat(x0,N,1);
 y = deltaT*cumsum(dY,1) + repmat(y0,N,1);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 figure
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%
+subplot(2,1,1)
+%%%%%%%%%%%%%%
 [r2, kappa_r_slope, ~] = PairwiseRelativeDiffusivity( t, x, y, 'slope');
 
 theBins = dL*(1:Nx) + dL/2;
-histogramWithErrorbars(sqrt(r2),kappa_r_slope,theBins);
+[xMean, yMean, yStdErr] = histogramWithErrorbars(sqrt(r2),kappa_r_slope,theBins);
 ylim([0 1.2*max(yMean+yStdErr)])
 
 hold on
@@ -40,5 +48,28 @@ histogramWithErrorbars(sqrt(r2),kappa_r_endpoint,theBins);
 
 [r2, kappa_r_yv, ~] = PairwiseRelativeDiffusivity( t, x, y, 'yv');
 histogramWithErrorbars(sqrt(r2),kappa_r_yv,theBins);
+
+title('Relative diffusivity (random walk)')
+legend('slope','powspec','endpoint','yv')
+
+%%%%%%%%%%%%%%
+subplot(2,1,2)
+%%%%%%%%%%%%%%
+[r2, kappa_a_slope] = SingleParticleDiffusivity( t, x, y, 'slope');
+
+theBins = dL*(1:Nx) + dL/2;
+[xMean, yMean, yStdErr] = histogramWithErrorbars(sqrt(r2),kappa_a_slope,theBins);
+ylim([0 1.2*max(yMean+yStdErr)])
+
+hold on
+[r2, kappa_a_powspec] = SingleParticleDiffusivity( t, x, y, 'powspec');
+histogramWithErrorbars(sqrt(r2),kappa_a_powspec,theBins);
+
+[r2, kappa_a_endpoint] = SingleParticleDiffusivity( t, x, y, 'endpoint');
+histogramWithErrorbars(sqrt(r2),kappa_a_endpoint,theBins);
+
+[r2, kappa_a_yv] = SingleParticleDiffusivity( t, x, y, 'yv');
+histogramWithErrorbars(sqrt(r2),kappa_a_yv,theBins);
+title('Absolute diffusivity(random walk)')
 
 legend('slope','powspec','endpoint','yv')
