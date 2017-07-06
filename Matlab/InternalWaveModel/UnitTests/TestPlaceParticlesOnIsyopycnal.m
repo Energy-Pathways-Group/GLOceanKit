@@ -55,27 +55,54 @@ y_float = reshape(y_float,[],1);
 z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% First try built in, optimized method
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-zIsopycnal = wavemodel.PlaceFloatsOnIsopycnal(x_float,y_float,z_float,interpolationMethod,1e-10);
+zIsopycnal1 = wavemodel.PlaceParticlesOnIsopycnal(x_float,y_float,z_float,interpolationMethod,1e-6);
 totalTime = toc;
 fprintf('Total time %.2f\n',totalTime);
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Try generic implementation
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+tic
+X = wavemodel.X;
+Y = wavemodel.Y;
+Z = wavemodel.Z;
+Rho = wavemodel.DensityAtTime(0);
+drhobardz = -wavemodel.N2*wavemodel.rho0/9.81;
+zIsopycnal2 = PlaceParticlesOnIsopycnal(x_float,y_float,z_float,X,Y,Z,Rho,drhobardz,interpolationMethod,1e-6);
+totalTime = toc;
+fprintf('Total time %.2f\n',totalTime);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Now try manual, slower method
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 % Now let's place the floats along an isopycnal.
-isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
-z_isopycnal = z_float + isopycnalDeviation;
+% isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
+zIsopycnal3 = z_float;% + isopycnalDeviation;
 
 % Iteratively place floats on the isopycnal surface. Overkill, probably.
 for zLevel = 1:nLevels
     zLevelIndices = (zLevel-1)*N*N + (1:(N*N));
-    for i=1:10
-        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices),interpolationMethod);
+    for i=1:2
+        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),zIsopycnal3(zLevelIndices),interpolationMethod);
         dRho = rho - mean(rho);
         dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
-        z_isopycnal(zLevelIndices) = z_isopycnal(zLevelIndices)+dz;
+        zIsopycnal3(zLevelIndices) = zIsopycnal3(zLevelIndices)+dz;
     end
     
-    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),zIsopycnal3(zLevelIndices));
     dRho = rho - mean(rho);
     dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
     fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),z_float((zLevel-1)*N*N+1))

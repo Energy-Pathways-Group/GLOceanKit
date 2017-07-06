@@ -740,7 +740,7 @@ classdef (Abstract) InternalWaveModel < handle
             rho = rho_bar + rho_int + rho_ext;
         end
          
-        function zIsopycnal = PlaceFloatsOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
+        function zIsopycnal = PlaceParticlesOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
             % Any floats with the same value of z will be moved to the same
             % isopycnal.
             %
@@ -797,8 +797,7 @@ classdef (Abstract) InternalWaveModel < handle
                     
             
             % Now let's place the floats along an isopycnal.
-            isopycnalDeviation = self.ZetaAtTimePosition(t,x,y,z,interpolationMethod);
-            zIsopycnal = z + isopycnalDeviation;
+            zIsopycnal = z ;
             
             zUnique = unique(z);
             rho = zeros(size(zIsopycnal));
