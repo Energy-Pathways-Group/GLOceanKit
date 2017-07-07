@@ -117,6 +117,7 @@ classdef InternalModes < handle
         function self = InternalModes(varargin)    
             % Initialize with either a grid or analytical profile.
             self.method = 'wkbSpectral';
+            userSpecifiedMethod = 0;
             
             % First check to see if the user specified some extra arguments
             if nargin >= 5 
@@ -132,6 +133,7 @@ classdef InternalModes < handle
                         self.method = extraargs{k+1};
                         extraargs(k+1) = [];
                         extraargs(k) = [];
+                        userSpecifiedMethod = 1;
                         break;
                     end
                 end      
@@ -145,7 +147,12 @@ classdef InternalModes < handle
                 zOut = varargin{3};
                 latitude = varargin{4};
                 
-                if  strcmp(self.method, 'densitySpectral')
+                isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,zIn);
+                
+                if userSpecifiedMethod == 0 && isStratificationConstant == 1
+                    fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
+                    self.internalModes = InternalModesConstantStratification(rho,zIn,zOut,latitude,extraargs{:});
+                elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')
                     self.internalModes = InternalModesWKBSpectral(rho,zIn,zOut,latitude,extraargs{:});
@@ -184,7 +191,6 @@ classdef InternalModes < handle
             
         end
        
-        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Useful functions

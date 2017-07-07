@@ -119,12 +119,16 @@ classdef (Abstract) InternalModesBase < handle
             self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
             
             % Set properties supplied as name,value pairs
+            userSpecifiedRho0 = 0;
             nargs = length(varargin);
             if mod(nargs,2) ~= 0
                 error('Arguments must be given as name/value pairs');
             end
             for k = 1:2:length(varargin)
                 self.(varargin{k}) = varargin{k+1};
+                if strcmp(varargin{k}, 'rho0')
+                    userSpecifiedRho0 = 1;
+                end
             end
              
             % Is density specified as a function handle or as a grid of
@@ -133,7 +137,9 @@ classdef (Abstract) InternalModesBase < handle
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
-                self.rho0 = rho(max(z_in));
+                if userSpecifiedRho0 == 0
+                    self.rho0 = rho(max(z_in));
+                end
                 self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out);
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
@@ -142,7 +148,9 @@ classdef (Abstract) InternalModesBase < handle
                 if isrow(rho)
                     rho = rho.';
                 end
-                self.rho0 = min(rho);
+                if userSpecifiedRho0 == 0
+                    self.rho0 = min(rho);
+                end
                 self.InitializeWithGrid(rho,z_in);
             else
                 error('rho must be a function handle or an array.');
