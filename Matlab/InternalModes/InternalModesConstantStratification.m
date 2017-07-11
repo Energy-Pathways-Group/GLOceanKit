@@ -1,12 +1,84 @@
 classdef InternalModesConstantStratification < InternalModesBase
     properties (Access = public)
         N0
+        rho
+        N2
+        rho_z
+        rho_zz
     end
     
     methods
         function self = InternalModesConstantStratification(rho, z_in, z_out, latitude, varargin) 
             self@InternalModesBase(rho,z_in,z_out,latitude, varargin{:});
             self.N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z_in,self.rho0,self.g);
+            
+            rhoFunction = @(z) -(self.N0*self.N0*self.rho0/self.g)*z + self.rho0;
+            N2Function = @(z) self.N0*self.N0*ones(size(z));
+            self.rho = rhoFunction(self.z);
+            self.N2 = N2Function(self.z);
+            self.rho_z = -(self.N0*self.N0*self.rho0/self.g)*ones(size(self.z));
+            self.rho_zz = zeros(size(self.z));
+            
+            fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
+        end
+                
+        function [F,G,h] = ModesAtWavenumber(self, k )
+            k_z = (1:self.nModes)*pi/self.Lz;
+            h = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+k_z.*k_z));
+            if strcmp(self.upperBoundary,'free_surface')
+               k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
+               k_z(1) = 0; h(1) = self.Lz;
+            end
+            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
+        end
+        
+        function [F,G,h] = ModesAtFrequency(self, omega )
+            k_z = (1:self.nModes)*pi/self.Lz;
+            h = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
+            if strcmp(self.upperBoundary,'free_surface')
+                k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
+                k_z(1) = 0; h(1) = self.Lz;
+            end
+            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
+        end
+        
+        % k_z and h should be of size [1, nModes]
+        % [F,G] will return with size [length(z), nModes]
+        function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h)
+            N0_ = self.N0; % reference buoyancy frequency, radians/seconds
+            g_ = self.g;
+            if strcmp(self.normalization, 'const_G_norm')
+                G = sqrt(2*g_/(self.Lz*(N0_*N0_-self.f0*self.f0))) * sin(k_z .* self.z);
+                F = sqrt(2*g_/(self.Lz*(N0_*N0_-self.f0*self.f0))) * repmat(h.*k_z,length(self.z),1) .* cos(k_z .* self.z);
+                if strcmp(self.upperBoundary,'free_surface')
+                    A = sqrt(3*g_/( (N0_*N0_ - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
+                    G(:,1) = A*(self.z + self.Lz);
+                    F(:,1) = A*self.Lz*ones(size(self.z));
+                end
+            elseif strcmp(self.normalization, 'const_F_norm')
+                G = sqrt(2) * sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
+                F = sqrt(2) * cos(k_z.*self.z);
+                if strcmp(self.upperBoundary,'free_surface')
+                    A = sqrt(1/(self.Lz*self.Lz));
+                    G(:,1) = A*(self.z + self.Lz);
+                    F(:,1) = A*self.Lz*ones(size(self.z));
+                end
+            end
+        end
+        
+    end
+    
+    methods (Access = protected)
+        function self = InitializeWithGrid(self, rho, zIn)
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = floor(length(self.z));
+            end
+        end
+        
+        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
+            if isempty(self.nModes) || self.nModes < 1
+                self.nModes = floor(length(self.z));
+            end
         end
     end
     

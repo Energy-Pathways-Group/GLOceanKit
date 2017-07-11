@@ -227,7 +227,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 F(:,iMode) = self.T_out(F_norm(:,iMode));
                 G(:,iMode) = self.T_out(G_norm(:,iMode));
             end
-            h = h(1:self.nModes);
+            h = reshape(h(1:self.nModes),1,[]);
         end
     end
     

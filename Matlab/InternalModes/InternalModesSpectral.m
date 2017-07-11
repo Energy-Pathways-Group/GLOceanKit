@@ -336,7 +336,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);
-            h = h(1:self.nModes);
+            h = reshape(h(1:self.nModes),1,[]);
             
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.

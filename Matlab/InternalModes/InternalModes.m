@@ -197,19 +197,19 @@ classdef InternalModes < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function self = ShowLowestModesAtWavenumber( self, k )
+        function ShowLowestModesAtWavenumber( self, k )
             % Quickly visualize the lowest modes at a given wavenumber.
             [F,G,h] = self.internalModes.ModesAtWavenumber( k );
             self.ShowLowestModesFigure(F,G,h);
         end
         
-        function self = ShowLowestModesAtFrequency( self, omega )
+        function ShowLowestModesAtFrequency( self, omega )
             % Quickly visualize the lowest modes at a given frequency.
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             self.ShowLowestModesFigure(F,G,h);
         end
         
-        function self = ShowRelativeErrorAtWavenumber( self, k )
+        function ShowRelativeErrorAtWavenumber( self, k )
             % When using one of the built-in test cases, this method will
             % create a figure showing the relative error of the modes.
             if self.isRunningTestCase == 0
@@ -222,9 +222,10 @@ classdef InternalModes < handle
             errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
             
             if  strcmp(self.stratification, 'constant')
-                [F_analytical,G_analytical,h_analytical] = self.ConstantStratificationModesAtWavenumber(k);
+                imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtWavenumber( k );
             elseif strcmp(self.stratification, 'exponential')
-                imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512);
+                imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512,'nModes',self.nModes);
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
@@ -238,7 +239,7 @@ classdef InternalModes < handle
             self.ShowErrorFigure(h_error,F_error,G_error,title);
         end
         
-        function self = ShowRelativeErrorAtFrequency( self, omega )
+        function ShowRelativeErrorAtFrequency( self, omega )
             % When using one of the built-in test cases, this method will
             % create a figure showing the relative error of the modes.
             if self.isRunningTestCase == 0
@@ -251,9 +252,10 @@ classdef InternalModes < handle
             errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
             
             if  strcmp(self.stratification, 'constant')
-                [F_analytical,G_analytical,h_analytical] = self.ConstantStratificationModesAtFrequency( omega );
+                imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtFrequency( omega );
             elseif strcmp(self.stratification, 'exponential')
-                imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512);
+                imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512,'nModes',self.nModes);
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
@@ -434,53 +436,7 @@ classdef InternalModes < handle
                 error('Invalid method!')
             end
         end
-        
-        function [F,G,h] = ConstantStratificationModesAtWavenumber(self, k)
-            N0 = 5.2e-3; g = 9.81;
-            k_z = (1:self.nModes)*pi/self.Lz;
-            h = (N0*N0 - self.f0*self.f0)./(g*(k*k+k_z.*k_z));
-            if strcmp(self.upperBoundary,'free_surface')
-               k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
-               k_z(1) = 0; h(1) = self.Lz;
-            end
-            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
-        end
-        
-        function [F,G,h] = ConstantStratificationModesAtFrequency(self, omega)
-            N0 = 5.2e-3; g = 9.81;
-            k_z = (1:self.nModes)*pi/self.Lz;
-            h = (N0*N0 - omega*omega)./(g * k_z.*k_z);
-            if strcmp(self.upperBoundary,'free_surface')
-                k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
-                k_z(1) = 0; h(1) = self.Lz;
-            end
-            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
-        end
-        
-        % k_z and h should be of size [1, nModes]
-        % [F,G] will return with size [length(z), nModes]
-        function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h)
-            N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
-            g = 9.81;
-            if strcmp(self.normalization, 'const_G_norm')
-                G = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0))) * sin(k_z .* self.z);
-                F = sqrt(2*g/(self.Lz*(N0*N0-self.f0*self.f0))) * repmat(h.*k_z,length(self.z),1) .* cos(k_z .* self.z);
-                if strcmp(self.upperBoundary,'free_surface')
-                    A = sqrt(3*g/( (N0*N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
-                    G(:,1) = A*(self.z + self.Lz);
-                    F(:,1) = A*self.Lz*ones(size(self.z));
-                end
-            elseif strcmp(self.normalization, 'const_F_norm')
-                G = sqrt(2) * sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
-                F = sqrt(2) * cos(k_z.*self.z);
-                if strcmp(self.upperBoundary,'free_surface')
-                    A = sqrt(1/(self.Lz*self.Lz));
-                    G(:,1) = A*(self.z + self.Lz);
-                    F(:,1) = A*self.Lz*ones(size(self.z));
-                end
-            end
-        end
-        
+                
         function self = ShowLowestModesFigure(self,F,G,h)
             figure
             subplot(1,3,1)
