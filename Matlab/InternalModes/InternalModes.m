@@ -223,9 +223,13 @@ classdef InternalModes < handle
             
             if  strcmp(self.stratification, 'constant')
                 imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imConstant.upperBoundary = self.upperBoundary;
+                imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtWavenumber( k );
             elseif strcmp(self.stratification, 'exponential')
                 imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512,'nModes',self.nModes);
+                imAnalytical.upperBoundary = self.upperBoundary;
+                imAnalytical.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
@@ -253,9 +257,13 @@ classdef InternalModes < handle
             
             if  strcmp(self.stratification, 'constant')
                 imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imConstant.upperBoundary = self.upperBoundary;
+                imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtFrequency( omega );
             elseif strcmp(self.stratification, 'exponential')
                 imAnalytical = InternalModesWKBSpectral(self.rhoFunction,[-5000 0],self.z,self.latitude,'nEVP',512,'nModes',self.nModes);
+                imAnalytical.upperBoundary = self.upperBoundary;
+                imAnalytical.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
