@@ -25,9 +25,31 @@ classdef InternalModesConstantStratification < InternalModesBase
         function [F,G,h] = ModesAtWavenumber(self, k )
             k_z = (1:self.nModes)*pi/self.Lz;
             h = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+k_z.*k_z));
+            
+
             if strcmp(self.upperBoundary,'free_surface')
                k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
                k_z(1) = 0; h(1) = self.Lz;
+               
+               m = zeros(1,self.nModes);
+               h2 = zeros(1,self.nModes);
+               
+               f = @(m) m*(self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k-m*m)) - tanh(m*self.Lz);
+               m(1) = fzero(f, max(k-1/self.Lz,1/self.Lz));
+               h2(1) = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k - m(1)*m(1) ));
+               fprintf('For hyperbolic: (m,h) = (%.2g, %.2g)\n', m(1), h2(1));
+               
+               f = @(m) m*(self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+m*m)) - tan(m*self.Lz);
+               m(1) = fzero(f, max(k-1/self.Lz,1/self.Lz));
+               h2(1) = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + m(1)*m(1) ));
+               fprintf('For trig: (m,h) = (%.2g, %.2g)\n', m(1), h2(1));
+               
+               f = @(m) m*(self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+m*m)) - tan(m*self.Lz);
+               x0 = (pi/self.Lz)*(1:self.nModes);
+               for i=1:self.nModes-1
+                   m(i+1) = fzero(f,x0(i));
+               end
+               h2(2:end) = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k - m(2:end).*m(2:end) ));
             end
             [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h);
         end
