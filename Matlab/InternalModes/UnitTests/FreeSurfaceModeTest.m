@@ -13,14 +13,16 @@ elseif k*k < (N0*N0 - f0*f0)/(g*Lz)
     f = @(q) Lz*(N0*N0 - f0*f0) - (1./q).*(g*(k*k*Lz*Lz+q.*q)).*tan(q);
     h_f = @(m) (N0*N0 - f0*f0)./(g*(k*k + m*m ));
 else
-    fprintf('degenerate');
+    fprintf('lambda=0 case');
+    m = 0;
+    h = Lz;
 end
 
 m = fzero(f, k*Lz)/Lz;
 h = h_f(m);
 fprintf('(m,h) = (%.2g, %.2g)\n', m, h);
 
-f = @(q) Lz*(N0*N0 - f0*f0) - (1./q).*(g*(k*k*Lz*Lz-q.*q)).*tanh(q);
-w = @(q) Lz*(N0*N0 - f0*f0) - (1./q).*(g*(k*k*Lz*Lz+q.*q)).*tan(q);
-q = linspace((1-0.01)*k*Lz,(1+0.01)*k*Lz,100);
-figure, plot(q,f(q)), hold on, plot(q,w(q))
+% f = @(q) Lz*(N0*N0 - f0*f0) - (1./q).*(g*(k*k*Lz*Lz-q.*q)).*tanh(q);
+% w = @(q) Lz*(N0*N0 - f0*f0) - (1./q).*(g*(k*k*Lz*Lz+q.*q)).*tan(q);
+% q = linspace((1-0.01)*k*Lz,(1+0.01)*k*Lz,100);
+% figure, plot(q,f(q)), hold on, plot(q,w(q))

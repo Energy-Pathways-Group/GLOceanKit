@@ -2,17 +2,25 @@
 methods = cell(5,1);
 methods{1} = 'finiteDifference';
 methods{2} = 'wkbSpectral';
-im = InternalModes('constant', 'finiteDifference' , 64);
+im = InternalModes('constant', 'wkbSpectral' , 64);
 
 
 im.upperBoundary = 'free_surface';
-im.normalization = 'const_F_norm';
+% im.upperBoundary = 'rigid_lid';
+im.normalization = 'max_u';
 
+N0 = 5.2e-3;
+f0 = 7.9431e-05;
+g = 9.81;
+Lz = 5000;
+k_star = sqrt( (N0*N0 - f0*f0) / (g*Lz) );
 % im.ShowRelativeErrorAtFrequency(4*im.f0);
-im.ShowRelativeErrorAtWavenumber(0.001);
+im.ShowRelativeErrorAtWavenumber(0.1*k_star);
+im.ShowRelativeErrorAtWavenumber(k_star);
+im.ShowRelativeErrorAtWavenumber(10*k_star);
 
 
-
+return
 
 
 
