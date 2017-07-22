@@ -14,11 +14,12 @@ f0 = 7.9431e-05;
 g = 9.81;
 Lz = 5000;
 k_star = sqrt( (N0*N0 - f0*f0) / (g*Lz) );
-% im.ShowRelativeErrorAtFrequency(4*im.f0);
+
 im.ShowRelativeErrorAtWavenumber(0.1*k_star);
 im.ShowRelativeErrorAtWavenumber(k_star);
 im.ShowRelativeErrorAtWavenumber(10*k_star);
 
+% im.ShowRelativeErrorAtFrequency(4*im.f0);
 
 return
 

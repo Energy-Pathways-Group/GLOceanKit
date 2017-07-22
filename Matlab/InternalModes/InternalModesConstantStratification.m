@@ -23,8 +23,7 @@ classdef InternalModesConstantStratification < InternalModesBase
         end
                 
         function [F,G,h] = ModesAtWavenumber(self, k )
-            j = 1:self.nModes;
-            k_z = j * pi/self.Lz;
+            k_z = (1:self.nModes)*pi/self.Lz;
             if strcmp(self.upperBoundary,'free_surface') % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
                     f = @(xi) (xi+i*pi)*(self.N0*self.N0 - self.f0*self.f0)*self.Lz - self.g*(k*k*self.Lz*self.Lz+(xi+i*pi).*(xi+i*pi)).*tan(xi);
@@ -52,11 +51,13 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         function [F,G,h] = ModesAtFrequency(self, omega )
             k_z = (1:self.nModes)*pi/self.Lz;
-            h = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
-            if strcmp(self.upperBoundary,'free_surface')
-                k_z(2:end) = k_z(1:end-1); h(2:end) = h(1:end-1);
-                k_z(1) = 0; h(1) = self.Lz;
+            if strcmp(self.upperBoundary,'free_surface') % add the free surface correction to the vertical wavenumber
+                for i=1:self.nModes
+                    f = @(xi) self.g*(xi+i*pi)*tan(xi) - (self.N0*self.N0 - self.f0*self.f0)*self.Lz;
+                    k_z(i) = k_z(i) + fzero(f,0)/self.Lz;
+                end
             end
+            h = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
             [F,G] = self.BaroclinicModesWithEigenvalue(k_z,h);
         end
         
