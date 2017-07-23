@@ -107,12 +107,14 @@ classdef InternalModesConstantStratification < InternalModesBase
             elseif k > k_star % hyperbolic solution
                 solutionType = 'hyperbolic';
                 f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz-q.*q)).*tanh(q);
-                k_z = fzero(f, k*self.Lz)/self.Lz;
+                k_initial = sqrt( k*k*self.Lz*self.Lz - self.Lz*(self.N0*self.N0 - self.f0*self.f0)/self.g);
+                k_z = fzero(f, k_initial)/self.Lz;
                 h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k - k_z*k_z ));
             elseif k < k_star % trig solution
                 solutionType = 'trig';
                 f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz+q.*q)).*tan(q);
-                k_z = fzero(f, k*self.Lz)/self.Lz;
+                k_initial = sqrt( - k*k*self.Lz*self.Lz + self.Lz*(self.N0*self.N0 - self.f0*self.f0)/self.g);
+                k_z = fzero(f, k_initial)/self.Lz;
                 h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + k_z*k_z ));        
             end
             

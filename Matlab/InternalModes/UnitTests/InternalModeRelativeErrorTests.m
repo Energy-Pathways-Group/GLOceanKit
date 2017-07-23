@@ -1,9 +1,11 @@
 methods = cell(5,1);
-methods{1} = 'finiteDifference';
+methods{1} = 'densitySpectral';
 methods{2} = 'wkbSpectral';
-im = InternalModes('constant', 'wkbSpectral' , 64);
+methods{3} = 'finiteDifference';
+methods{4} = 'spectral';
+im = InternalModes('constant', 'densitySpectral' , 64);
 
-im.upperBoundary = 'free_surface';
+im.upperBoundary = 'rigid_lid';
 im.normalization = 'const_G_norm';
 
 N0 = 5.2e-3;
