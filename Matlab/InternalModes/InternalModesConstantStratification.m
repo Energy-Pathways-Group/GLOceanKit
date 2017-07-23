@@ -41,7 +41,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F = circshift(F,1,2);
                 G = circshift(G,1,2);
                 
-                [F0,G0,h0] = self.BarotropicModeAtHorizontalWavenumber(k);
+                [F0,G0,h0] = self.BarotropicModeAtWavenumber(k);
                 h(1) = h0;
                 F(:,1) = F0;
                 G(:,1) = G0;
@@ -53,12 +53,29 @@ classdef InternalModesConstantStratification < InternalModesBase
             k_z = (1:self.nModes)*pi/self.Lz;
             if strcmp(self.upperBoundary,'free_surface') % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
-                    f = @(xi) self.g*(xi+i*pi)*tan(xi) - (self.N0*self.N0 - self.f0*self.f0)*self.Lz;
+                    f = @(xi) self.g*tan(xi)/(xi+i*pi) - (self.N0*self.N0 - omega*omega)*self.Lz/((xi+i*pi)^2);
                     k_z(i) = k_z(i) + fzero(f,0)/self.Lz;
                 end
             end
             h = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
+            if (omega >= self.N0)
+               k_z = zeros(size(k_z));
+               h = zeros(size(h));
+            end
+            
             [F,G] = self.BaroclinicModesWithEigenvalue(k_z,h);
+            
+            if strcmp(self.upperBoundary,'free_surface')
+                % Make some room for the barotropic mode
+                h = circshift(h,1);
+                F = circshift(F,1,2);
+                G = circshift(G,1,2);
+                
+                [F0,G0,h0] = self.BarotropicModeAtFrequency(omega);
+                h(1) = h0;
+                F(:,1) = F0;
+                G(:,1) = G0;
+            end
         end
         
         % k_z and h should be of size [1, nModes]
@@ -80,10 +97,52 @@ classdef InternalModesConstantStratification < InternalModesBase
             F = A .*  repmat(h.*k_z,length(self.z),1) .* cos(k_z .* (self.z + self.Lz));
         end
         
-        function [F0,G0,h0] = BarotropicModeAtHorizontalWavenumber(self, k)
+        function [F0,G0,h0] = BarotropicModeAtWavenumber(self, k)
             k_star = sqrt( (self.N0*self.N0 - self.f0*self.f0)/(self.g*self.Lz) );
                 
             if (abs(k-k_star)/k_star < 1e-6) % transition (linear) solution
+                solutionType = 'linear';
+                h0 = self.Lz;
+                k_z = 0;
+            elseif k > k_star % hyperbolic solution
+                solutionType = 'hyperbolic';
+                f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz-q.*q)).*tanh(q);
+                k_z = fzero(f, k*self.Lz)/self.Lz;
+                h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k - k_z*k_z ));
+            elseif k < k_star % trig solution
+                solutionType = 'trig';
+                f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz+q.*q)).*tan(q);
+                k_z = fzero(f, k*self.Lz)/self.Lz;
+                h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + k_z*k_z ));        
+            end
+            
+            [F0,G0] = self.BarotropicMode(solutionType, k_z, h0);
+        end
+        
+        function [F0,G0,h0] = BarotropicModeAtFrequency(self, omega)
+            if (abs(omega-self.N0)/self.N0 < 1e-6)
+                solutionType = 'linear';
+                h0 = self.Lz;
+                k_z = 0;
+            elseif omega > self.N0 % hyperbolic solution
+                solutionType = 'hyperbolic';
+                f = @(q) self.Lz*(omega*omega - self.N0*self.N0) - self.g * q .* tanh(q);
+                k_z = fzero(f, sqrt(self.Lz*(omega*omega - self.N0*self.N0)/self.g) )/self.Lz;
+                h0 = (omega*omega - self.N0*self.N0)./(self.g*k_z*k_z);
+            elseif omega < self.N0 % trig solution
+                solutionType = 'trig';
+                f = @(q) self.Lz*(self.N0*self.N0 - omega*omega) - self.g * q .* tan(q);
+                k_z = fzero(f, sqrt(self.Lz*(self.N0*self.N0 - omega*omega)/self.g) )/self.Lz;
+                h0 = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
+            end
+            
+            [F0,G0] = self.BarotropicMode(solutionType, k_z, h0);
+        end
+        
+        function [F0,G0] = BarotropicMode(self, solutionType, k_z, h0)
+            % It's safer to do a switch on solutionType, rather than check
+            % that omega *or* k are equal to N0, k_star within tolerance.
+            if strcmp(solutionType, 'linear')
                 if strcmp(self.normalization, 'const_G_norm')
                     A = sqrt(3*self.g/( (self.N0*self.N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
                 elseif strcmp(self.normalization, 'const_F_norm')
@@ -93,14 +152,9 @@ classdef InternalModesConstantStratification < InternalModesBase
                 elseif strcmp(self.normalization, 'max_u')
                     A = 1/self.Lz;
                 end
-                h0 = self.Lz;
                 G0 = A*(self.z + self.Lz);
                 F0 = A*self.Lz*ones(size(self.z));
-            elseif k > k_star % hyperbolic solution
-                f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz-q.*q)).*tanh(q);
-                h_f = @(m) (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k - m*m ));
-                k_z = fzero(f, k*self.Lz)/self.Lz;
-                h0 = h_f(k_z);
+            elseif strcmp(solutionType, 'hyperbolic')
                 if strcmp(self.normalization, 'const_G_norm')
                     A = sqrt( self.g/((self.N0*self.N0 - self.f0*self.f0)*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2)) );
                 elseif strcmp(self.normalization, 'const_F_norm')
@@ -112,11 +166,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 end
                 G0 = A*sinh(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cosh(k_z*(self.z + self.Lz));
-            elseif k < k_star % trig solution
-                f = @(q) self.Lz*(self.N0*self.N0 - self.f0*self.f0) - (1./q).*(self.g*(k*k*self.Lz*self.Lz+q.*q)).*tan(q);
-                h_f = @(m) (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + m*m ));
-                k_z = fzero(f, k*self.Lz)/self.Lz;
-                h0 = h_f(k_z);
+            elseif strcmp(solutionType, 'trig')
                 if strcmp(self.normalization, 'const_G_norm')
                     A = sqrt(self.g/((self.N0*self.N0 - self.f0*self.f0) * (self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z))));
                 elseif strcmp(self.normalization, 'const_F_norm')
@@ -130,7 +180,6 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F0 = A*h0*k_z*cos(k_z*(self.z + self.Lz));
             end
         end
-        
     end
     
     methods (Access = protected)

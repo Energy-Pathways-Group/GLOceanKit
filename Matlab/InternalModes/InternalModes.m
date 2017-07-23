@@ -253,7 +253,7 @@ classdef InternalModes < handle
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             
             % y is the true solution, x is the approximated
-            errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
+            errorFunction = @(x,y) max(max(abs(x-y),[],1)./max(abs(y),[],1),1e-15);
             
             if  strcmp(self.stratification, 'constant')
                 imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
