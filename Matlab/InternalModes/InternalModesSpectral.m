@@ -87,6 +87,7 @@ classdef InternalModesSpectral < InternalModesBase
         % These are the grids used for solving the eigenvalue problem.
         % Really x=z, although they may have different numbers of points.
         nEVP = 0           % number of points in the eigenvalue problem
+        nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % Lobatto grid on z with nEVP points. May be the same as zLobatto, may not be.
         N2_xLobatto        % N2 on the z2Lobatto grid
         Diff1_xCheb        % single derivative in spectral space
@@ -267,9 +268,14 @@ classdef InternalModesSpectral < InternalModesBase
             
             % There's just no reason not to go at least this big since
             % this is all fast transforms.
-            if (length(self.zLobatto) < 2^11 + 1)
-                n = 2^11 + 1; % 2^n + 1 for a fast Chebyshev transform
+            if self.nGrid > 0
+                n = self.nGrid; % user specified!
                 self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+            else
+                if (length(self.zLobatto) < 2^11 + 1)
+                    n = 2^11 + 1; % 2^n + 1 for a fast Chebyshev transform
+                    self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+                end
             end
             
             self.rho_zLobatto = rho(self.zLobatto);

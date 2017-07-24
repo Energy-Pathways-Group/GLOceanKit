@@ -41,7 +41,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     end
     
     methods
-        function self = InternalWaveModelArbitraryStratification(dims, n, rho, z, nModes, latitude)
+        function self = InternalWaveModelArbitraryStratification(dims, n, rho, z, nModes, latitude, varargin)
             if length(dims) ~=3
                 error('The dimensions must be given as [Lx Ly Lz] where Lz is the depth of the water column.');
             end
@@ -54,7 +54,12 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 error('Nz must equal length(z)');                
             end
             
-            im = InternalModes(rho,[-dims(3) 0],z,latitude,'nEVP', 64);
+            nargs = length(varargin);
+            if mod(nargs,2) ~= 0
+                error('Arguments must be given as name/value pairs');
+            end
+            
+            im = InternalModes(rho,[-dims(3) 0],z,latitude, varargin{:});
             im.nModes = nModes;
             N2 = im.N2;
             
