@@ -267,8 +267,8 @@ classdef InternalModesSpectral < InternalModesBase
             
             % There's just no reason not to go at least this big since
             % this is all fast transforms.
-            if (length(self.zLobatto) < 1025)
-                n = 1025; % 2^n + 1 for a fast Chebyshev transform
+            if (length(self.zLobatto) < 2^11 + 1)
+                n = 2^11 + 1; % 2^n + 1 for a fast Chebyshev transform
                 self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
             end
             
