@@ -124,7 +124,7 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.N2 = N2;
             self.Nmax = sqrt(max(N2));
-            self.rhobar = self.RhoBarAtDepth(self.z);
+%             self.rhobar = self.RhoBarAtDepth(self.z);
             
             % Spectral domain, in radians
             dk = 1/self.Lx;          % fourier frequency
