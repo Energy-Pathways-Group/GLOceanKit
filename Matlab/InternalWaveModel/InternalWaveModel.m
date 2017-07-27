@@ -83,8 +83,8 @@ classdef (Abstract) InternalWaveModel < handle
         [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
         F = InternalUVModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
         G = InternalWModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
-        F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
-        G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
+%         F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
+%         G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
         rho = RhoBarAtDepth(self,z)
         N2 = N2AtDepth(self,z)
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
@@ -330,7 +330,7 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.PrecomputeExternalWaveCoefficients(U);
         end
-        
+                
         function PrecomputeExternalWaveCoefficients(self, U)
             alpha0 = atan2(self.l_ext,self.k_ext);
             Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
@@ -377,7 +377,7 @@ classdef (Abstract) InternalWaveModel < handle
             % limited vertical resolution.
             totalEnergy = 0;
             for mode=1:self.nModes
-                totalEnergy = totalEnergy + GM2D_int(self.f0,self.N0,mode);
+                totalEnergy = totalEnergy + GM2D_int(self.f0,self.Nmax,mode);
             end
             fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
                         
@@ -846,12 +846,12 @@ classdef (Abstract) InternalWaveModel < handle
             fprintf('The ratio Nmax/f0 is %.1f.\n', self.Nmax/self.f0);
             fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([self.Lx self.Ly])/max(max(max(self.C)))/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
-            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f Nmax, %.4f Nmax)\n', sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
             dOmega = (sortedOmega(2)-sortedOmega(1))/2;
             T = 2*pi/dOmega;
             fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
-            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
+            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f Nmax, %.4f Nmax)\n', self.nModes, sortedOmega(1)/self.f0, sortedOmega(2)/self.f0, sortedOmega(end-1)/self.Nmax, sortedOmega(end)/self.Nmax);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1019,6 +1019,14 @@ classdef (Abstract) InternalWaveModel < handle
         %             c = c + A(i)*cos(k(i)*x);
         %         end
         %         toc
+        
+        function F = ExternalUVModeAtDepth(self, z, iWave)
+            F = interp1(self.z,self.F_ext(:,iWave),z,'linear');
+        end
+        
+        function G = ExternalWModeAtDepth(self, z, iWave)
+            G = interp1(self.z,self.G_ext(:,iWave),z,'linear');
+        end
         
         function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
             % Returns the velocity field from the external waves on the FFT

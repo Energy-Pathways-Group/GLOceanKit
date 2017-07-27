@@ -21,9 +21,9 @@ Lx = 15e3;
 Ly = 15e3;
 Lz = 5000;
 
-Nx = 8;
+Nx = 4;
 Ny = 8;
-Nz = 8;
+Nz = 12;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -34,14 +34,14 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-rho0 = wavemodel.rho0;
-g = 9.81;
+% wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% rho0 = wavemodel.rho0;
+% g = 9.81;
 
-% rho0 = 1025; g = 9.81;
-% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-% z = (Lz/Nz)*(0:Nz-1)' - Lz;
-% wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);
+rho0 = 1025; g = 9.81;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+z = (Lz/Nz)*(0:Nz-1)' - Lz;
+wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude, 'method','wkbSpectral','nEVP',128);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -102,7 +102,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - (f0/omega)*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
                 w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
                 zeta_unit = -(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
-                rho_unit = rho0 -(N0*N0*rho0/g)*wavemodel.z -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+                rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
                 
                 % Compute the relative error
                 max_speed = max(max(max( sqrt(u.*u + v.*v) )));

@@ -95,6 +95,7 @@ classdef InternalModes < handle
         N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
         rho_z % First derivative of density on the z grid.
         rho_zz % Second derivative of density on the z grid.
+        rho0 % density at the surface (or user specified through constructor args)
         
         upperBoundary % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
         normalization % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
@@ -351,7 +352,14 @@ classdef InternalModes < handle
         function value = get.rho_zz(self)
             value = self.internalModes.rho_zz;
         end
-                
+        
+        function set.rho0(~,~)
+            error('This property is readonly.')
+        end
+        function value = get.rho0(self)
+            value = self.internalModes.rho0;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Set the normalization and upper boundary condition

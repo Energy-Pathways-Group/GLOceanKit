@@ -246,7 +246,7 @@ classdef InternalModesSpectral < InternalModesBase
             % We have an analytical function describing density, so lets
             % place points on a Chebyshev grid such that z_out is fully
             % resolved.
-            if (zOut(2) - zOut(1)) > 0 % make z_out decreasing
+            if (length(zOut) > 1 && (zOut(2) - zOut(1)) > 0 )  % make z_out decreasing
                 zOut = flip(zOut);
             end
             
