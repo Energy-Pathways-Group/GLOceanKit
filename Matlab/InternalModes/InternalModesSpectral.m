@@ -81,7 +81,7 @@ classdef InternalModesSpectral < InternalModesBase
         rho_zLobatto        % rho on the above zLobatto
         rho_zCheb           % rho in spectral space
         N2_zCheb            % N2 in spectral space
-        Diff1_zCheb         % single derivative in spectral space
+        Diff1_zCheb         % single derivative in spectral space, *function handle*
         T_zCheb_zOut        % *function* handle that transforms from spectral to z_out
         
         % These are the grids used for solving the eigenvalue problem.
@@ -90,7 +90,7 @@ classdef InternalModesSpectral < InternalModesBase
         nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % Lobatto grid on z with nEVP points. May be the same as zLobatto, may not be.
         N2_xLobatto        % N2 on the z2Lobatto grid
-        Diff1_xCheb        % single derivative in spectral space
+        Diff1_xCheb        % single derivative in spectral space, *function handle*
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
         T_xCheb_zOut
         Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
@@ -117,11 +117,11 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function value = get.rho_z(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.rho_zCheb);
+            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.rho_zCheb));
         end
         
         function value = get.rho_zz(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb * self.Diff1_zCheb * self.rho_zCheb);
+            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.Diff1_zCheb(self.rho_zCheb)));
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,9 +199,9 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InitializeDerivedQuanitites(self)
             self.rho_zCheb = InternalModesSpectral.fct(self.rho_zLobatto);
             self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
-            self.Diff1_zCheb = (2/self.Lz)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.zLobatto) );
-            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb*self.rho_zCheb;
-            
+            self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
+            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
+                        
             N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
             if any(N2_zLobatto < 0)
                 fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
@@ -272,8 +272,8 @@ classdef InternalModesSpectral < InternalModesBase
                 n = self.nGrid; % user specified!
                 self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
             else
-                if (length(self.zLobatto) < 2^11 + 1)
-                    n = 2^11 + 1; % 2^n + 1 for a fast Chebyshev transform
+                if (length(self.zLobatto) < 2^14 + 1)
+                    n = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
                     self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
                 end
             end
@@ -289,7 +289,7 @@ classdef InternalModesSpectral < InternalModesBase
             T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
             
             self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
-            self.Diff1_xCheb = (2/self.Lz)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.xLobatto) );
+            self.Diff1_xCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
             self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
@@ -323,9 +323,9 @@ classdef InternalModesSpectral < InternalModesBase
         function [F,G,h] = ModesFromGEPSpectral(self,A,B)
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
+            FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
             GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb*G_cheb );
+            FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             GNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
@@ -449,6 +449,15 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
+        function v_p = DifferentiateChebyshevVector(v)
+            v_p = zeros(size(v));
+            k = length(v)-1;
+            v_p(k) = 2*k*v(k+1);
+            for k=(length(v)-2):-1:1
+                v_p(k) = 2*k*v(k+1) + v_p(k+2);
+            end
+            v_p(1) = v_p(1)/2;
+        end
         
         function D = ChebyshevDifferentiationMatrix(n)
             %% Chebyshev Differentiation Matrix

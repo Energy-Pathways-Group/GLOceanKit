@@ -57,17 +57,17 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            A(1,:) = T(1,:);
+            B(1,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
             if strcmp(self.upperBoundary, 'free_surface')
                 % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = self.N2_xLobatto(1) * Tz(1,:);
-                B(1,:) = T(1,:);
+                A(n,:) = self.N2_xLobatto(n) * Tz(n,:);
+                B(n,:) = T(n,:);
             elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+                A(n,:) = T(n,:);
+                B(n,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
@@ -83,17 +83,17 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            A(1,:) = T(1,:);
+            B(1,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
             if strcmp(self.upperBoundary, 'free_surface')
                 % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = self.N2_xLobatto(1) * Tz(1,:);
-                B(1,:) = T(1,:);
+                A(n,:) = self.N2_xLobatto(1) * Tz(n,:);
+                B(n,:) = T(n,:);
             elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+                A(n,:) = T(n,:);
+                B(n,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
@@ -173,11 +173,12 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             % We use the fact that we have a function handle to iteratively
             % improve this projection.
             self.z_sLobatto = interp1(s(self.zLobatto), self.zLobatto, self.sLobatto, 'spline');
-            for i=1:5
+            nloops = 0;
+            while ( nloops < 10 && max( abs(s(self.z_sLobatto) - self.sLobatto))/max(abs(self.sLobatto)) > 1e-15)
                 self.z_sLobatto = interp1(s(self.z_sLobatto), self.z_sLobatto, self.sLobatto, 'spline');
-                fprintf('max diff: %g\n', max(s(self.z_sLobatto) - self.sLobatto)/max(self.sLobatto));
-            end
-            
+                nloops = nloops + 1;
+            end   
+    
             self.sOut = s(zOut);
         end
         
@@ -191,10 +192,10 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             % stretched grid
             T_zCheb_sLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_sLobatto);
             self.N2_xLobatto = T_zCheb_sLobatto(self.N2_zCheb);
-            self.N2z_xLobatto = T_zCheb_sLobatto(self.Diff1_zCheb * self.N2_zCheb);
+            self.N2z_xLobatto = T_zCheb_sLobatto(self.Diff1_zCheb(self.N2_zCheb));
             
             Ls = max(self.sLobatto)-min(self.sLobatto);
-            self.Diff1_xCheb = (2/Ls)*InternalModesSpectral.ChebyshevDifferentiationMatrix( length(self.sLobatto) );
+            self.Diff1_xCheb = @(v) (2/Ls)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.sLobatto, length(self.sLobatto) );
             [self.T_xCheb_zOut, ~] = InternalModesSpectral.ChebyshevTransformForGrid(self.sLobatto, self.sOut);
             
@@ -213,9 +214,9 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             % ModesAtWavenumber to establish the various norm functions.
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb*G_cheb);
+            FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
             GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb*G_cheb );
+            FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             GNorm = @(Gj) abs(sum(self.Int_xCheb .*fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);

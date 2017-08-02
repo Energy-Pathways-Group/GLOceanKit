@@ -3,9 +3,9 @@ methods{1} = 'densitySpectral';
 methods{2} = 'wkbSpectral';
 methods{3} = 'finiteDifference';
 methods{4} = 'spectral';
-im = InternalModes('constant', 'densitySpectral' , 64);
+im = InternalModes('constant', methods{1} , 64);
 
-im.upperBoundary = 'rigid_lid';
+im.upperBoundary = 'free_surface';
 im.normalization = 'const_G_norm';
 
 N0 = 5.2e-3;
@@ -13,6 +13,9 @@ f0 = 7.9431e-05;
 g = 9.81;
 Lz = 5000;
 k_star = sqrt( (N0*N0 - f0*f0) / (g*Lz) );
+
+% im.ShowLowestModesAtWavenumber(0.1*k_star);
+% return
 
 im.ShowRelativeErrorAtWavenumber(0.1*k_star);
 im.ShowRelativeErrorAtWavenumber(k_star);
