@@ -408,19 +408,42 @@ classdef InternalModes < handle
             lat = 33;
             N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
             g = 9.81;
-            rho0 = 1025;
+            rho_0 = 1025;
+            zIn = [-5000 0];
+            zOut = linspace(zIn(1),0,n)';
             if  strcmp(stratification, 'constant')
-                self.rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
+                self.rhoFunction = @(z) -(N0*N0*rho_0/g)*z + rho_0;
                 self.N2Function = @(z) N0*N0*ones(size(z));
             elseif strcmp(stratification, 'exponential')
                 L_gm = 1.3e3; % thermocline exponential scale, meters
-                self.rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+                self.rhoFunction = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
                 self.N2Function = @(z) N0*N0*exp(2*z/L_gm);
+            elseif strcmp(stratification, 'pycnocline')
+                % Taken to match the simple test case in Cushman-Roison
+                rho_L=1024.63; % these are reversed from the usual definition
+                rho_0=1026.45;
+                N2_max=2E-3;
+                z_ml=-50;
+                h = 10;
+                L_z = 200;
+                
+                kappa_p = tanh((L_z-z_ml)/h);
+                kappa_m = tanh(-z_ml/h);
+                kappa = kappa_p - kappa_m;
+                
+                beta = (rho_0*(1-h*N2_max*kappa/g) - rho_L)/(L_z - h*kappa);
+                gamma = h*(beta-rho_0*N2_max/g);
+                delta = rho_L - gamma*kappa_p;
+                
+                self.rhoFunction = @(z) delta + beta*(L_z-z)+gamma*tanh((z-z_ml)/h) - L_z;
+                self.N2Function = @(z) -(g/self.rhoFunction(0))*(-beta + (gamma/h)*sech((z-z_ml)/h).^2);
+                
+                zIn = [-L_z 0];
+                zOut = linspace(zIn(1),0,n)';
             else
                 error('Invalid choice of stratification: you must use constant or exponential');
             end
-            zIn = [-5000 0];
-            zOut = linspace(zIn(1),0,n)';
+
             
             if  strcmp(theMethod, 'densitySpectral')
                 self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat);

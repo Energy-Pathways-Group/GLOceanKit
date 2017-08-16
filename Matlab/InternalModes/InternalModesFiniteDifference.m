@@ -6,7 +6,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
     %   The class takes the name/value pair 'orderOfAccuracy' (default
     %   value of 4) in order to set the order of accuracy of the finite
     %   differencing matrix. The matrix is constructed using the weights
-    %   algorithm described by Bengt Fornberg in 'Calaculation of weight in
+    %   algorithm described by Bengt Fornberg in 'Calculation of weight in
     %   finite difference formulas', SIAM review, 1998.
     %
     %   Setting the orderOfAccuracy does tended to improve the quality of
@@ -37,7 +37,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         rho_zz % Second derivative of density on the z grid.
     end
     
-    properties (Access = private)
+    properties (Access = public)
         n                   % length of z_diff
         z_diff              % the z-grid used for differentiation
         rho_z_diff          % rho on the z_diff grid
@@ -193,7 +193,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
 
     end
     
-    methods (Access = private)   
+    methods (Access = public)   
         function self = InitializeOutputTransformation(self, z_out)
             % After the input variables have been initialized, this is used to
             % initialize the output transformation, T_out(f).            
