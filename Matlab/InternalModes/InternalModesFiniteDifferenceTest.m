@@ -47,10 +47,18 @@ classdef InternalModesFiniteDifferenceTest < InternalModesFiniteDifference
             a(a>=0) = 1;
             a(a<0) = 0;
             turningIndex = find(diff(a)~=0);
-            A(turningIndex,:) = 0;
-            B(turningIndex,:) = 0;
-            A(turningIndex,turningIndex-1) = 1;
-            A(turningIndex,turningIndex) = -1;
+%             A(turningIndex,:) = 0;
+%             B(turningIndex,:) = 0;
+%             A(turningIndex,turningIndex-1) = 1;
+%             A(turningIndex,turningIndex) = -1;
+            
+            dz = self.z(2)-self.z(1);
+            A(turningIndex+1,:) = 0;
+            B(turningIndex+1,:) = 0;
+            A(turningIndex+1,turningIndex-2) = 1/dz;
+            A(turningIndex+1,turningIndex-1) = -1/dz;
+            A(turningIndex+1,turningIndex) = -1/dz;
+            A(turningIndex+1,turningIndex+1) = 1/dz;
             
             % Bottom boundary condition (always taken to be G=0)
             % NOTE: we already chose the correct BCs when creating the
