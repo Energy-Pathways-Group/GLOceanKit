@@ -28,8 +28,12 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         z_xiLobatto          % The value of z, at the sLobatto points
         xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
         
-        N_zCheb
-        Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
+        zBoundaries         % z-location of the boundaries (end points plus turning points).
+        xiBoundaries        % xi-location of the boundaries (end points plus turning points).
+        boundaryIndices     % indices of the boundaries into xiLobatto
+        
+        SqrtN2Omega2_xLobatto
+        N2Omega2_xLobatto
     end
     
     methods
@@ -107,8 +111,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             %
             % The superclass will initialize zLobatto and rho_lobatto; this
             % class must initialize the sLobatto, z_sLobatto and sOut.
-            %
-            % Superclass initializes zLobatto and rho_lobatto
             InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
             
             self.InitializeWKBGridWithFrequency(0)
@@ -121,23 +123,47 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             %
             % The superclass will initialize zLobatto and rho_lobatto; this
             % class must initialize the sLobatto, z_sLobatto and sOut.
-            %
-            % Superclass initializes zLobatto and rho_lobatto
             InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
             
-            self.InitializeWKBGridWithFrequency(0)
+            self.InitializeWKBGridWithFrequency(3*self.f0)
         end
         
         function InitializeWKBGridWithFrequency(self,omega)
             self.gridFrequency = omega;
             
             % Create the stretched grid \xi
-            N_zLobatto = sqrt(InternalModesSpectral.ifct(self.N2_zCheb));
-            self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(xi_zLobatto)-min(xi_zLobatto);
-            n = self.nEVP;
-            self.xiLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(xi_zLobatto);
+            N2Omega2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb) - self.gridFrequency*self.gridFrequency;
+            xi_zLobatto = cumtrapz(self.zLobatto,sqrt(abs(N2Omega2_zLobatto)));
+            
+            % Now find (roughly) the turning points, if any
+            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
+            turningIndices = find(diff(a)~=0);
+            nTP = length(turningIndices);
+            zTP = zeros(nTP,1);
+            for i=1:nTP
+                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
+                zTP(i) = fzero(fun,self.zLobatto(turningIndices(i)));
+            end  
+            self.zBoundaries = [self.zLobatto(1); zTP; self.zLobatto(end)];
+            self.xiBoundaries = interp1(self.zLobatto,xi_zLobatto,self.zBoundaries);
+            
+            nBoundaries = length(self.xiBoundaries);
+            nEquations = nTP+1;
+            
+            % We will be coupling nTP+1 EVPs together. We need to
+            % distribute the user requested points to each of these EVPs.
+            % For this first draft, we simply evenly distribute the points.
+            nPoints = floor((self.nEVP-nBoundaries)/nEquations);
+            nInteriorPoints = nPoints*ones(nEquations,1);
+            nInteriorPoints(end) = nInteriorPoints(end) + (self.nEVP-nBoundaries) - nPoints*nEquations; % add the extra points to the end
+            self.boundaryIndices = cumsum( [1; nInteriorPoints+1] );
+            
+            self.xiLobatto = zeros(self.nEVP,1);
+            for i=1:nEquations
+                Lxi = max(self.xiBoundaries(i+1),self.xiBoundaries(i)) - min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+                n = nInteriorPoints(i)+2;
+                self.xiLobatto(self.boundaryIndices(i):self.boundaryIndices(i+1)) = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+            end
             
             % Now we need z on the \xi grid
             self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
@@ -147,9 +173,39 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         end
         
         function self = SetupEigenvalueProblem(self)
+            nEquations = length(self.zBoundaries)-1;
+            
             % We will use the stretched grid to solve the eigenvalue
             % problem.
             self.xLobatto = self.xiLobatto;
+            self.SqrtN2Omega2_xLobatto = zeros(size(self.xLobatto));
+            self.N2Omega2_xLobatto = zeros(size(self.xLobatto));
+            
+            for i=1:nEquations
+                L = abs(self.zBoundaries(i)-self.zBoundaries(i+1));
+                zMin = min(self.zBoundaries(i),self.zBoundaries(i+1));
+                n = self.nGrid;
+                zEqLobatto = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+                rho_zEqLobatto = self.rho_function(zEqLobatto);
+                rho_zEqCheb = InternalModesSpectral.fct(rho_zEqLobatto);
+                rho_zEqCheb = self.SetNoiseFloorToZero(rho_zEqCheb);
+                N2_zEqCheb= -(self.g/self.rho0)*(2/L)*InternalModesSpectral.DifferentiateChebyshevVector(rho_zEqCheb);
+                N2_zEqLobatto = InternalModesSpectral.ifct(N2_zEqCheb);
+                SqrtN2Omega2_zEqLobatto = sqrt(abs(N2_zEqLobatto - self.gridFrequency*self.gridFrequency));
+                SqrtN2Omega2_zEqCheb = InternalModesSpectral.fct(SqrtN2Omega2_zEqLobatto);
+                N2Omega2_zEqCheb = N2_zEqCheb;
+                N2Omega2_zEqCheb(1) = N2Omega2_zEqCheb(1)-self.gridFrequency*self.gridFrequency;
+                
+                indices = self.boundaryIndices(i):self.boundaryIndices(i+1);
+                zEq_xiLobatto = self.z_xiLobatto( indices );
+                T_zEqCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(zEqLobatto, zEq_xiLobatto);
+                
+                self.SqrtN2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(SqrtN2Omega2_zEqCheb);
+                self.N2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(N2Omega2_zEqCheb);
+            end
+            
+            %%%% Current stopping point, Sept 7, 2017
+
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the

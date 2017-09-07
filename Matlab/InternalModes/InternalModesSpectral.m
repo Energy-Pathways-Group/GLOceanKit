@@ -77,6 +77,8 @@ classdef InternalModesSpectral < InternalModesBase
     
 
     properties %(Access = private)
+        rho_function        % function handle to return rho at z (uses interpolation for grids)
+        
         zLobatto            % zIn coordinate, on Chebyshev extrema/Lobatto grid
         rho_zLobatto        % rho on the above zLobatto
         rho_zCheb           % rho in spectral space
@@ -224,7 +226,7 @@ classdef InternalModesSpectral < InternalModesBase
                 zIn = flip(zIn);
                 rho = flip(rho);
             end
-            
+                      
             if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
                 self.zLobatto = zIn;
                 self.rho_zLobatto = rho;
@@ -233,6 +235,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.rho_zLobatto = interp1(zIn, rho, self.zLobatto, 'spline'); % rho, interpolated to that grid
             end
             
+            self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
             self.InitializeDerivedQuanitites();
         end
         
@@ -274,12 +277,14 @@ classdef InternalModesSpectral < InternalModesBase
             else
                 if (length(self.zLobatto) < 2^14 + 1)
                     n = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
+                    self.nGrid = n;
                     self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
                 end
             end
             
             self.rho_zLobatto = rho(self.zLobatto);
             
+            self.rho_function = rho;
             self.InitializeDerivedQuanitites();
         end
         
