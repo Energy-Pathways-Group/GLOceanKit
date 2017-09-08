@@ -28,9 +28,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         z_xiLobatto          % The value of z, at the sLobatto points
         xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
         
-        zBoundaries         % z-location of the boundaries (end points plus turning points).
-        xiBoundaries        % xi-location of the boundaries (end points plus turning points).
-        boundaryIndices     % indices of the boundaries into xiLobatto
+        zBoundaries                 % z-location of the boundaries (end points plus turning points).
+        xiBoundaries                % xi-location of the boundaries (end points plus turning points).
+        boundaryIndicesStart        % indices of the boundaries into xiLobatto
+        boundaryIndicesEnd          % indices of the boundaries into xiLobatto
         
         SqrtN2Omega2_xLobatto
         N2Omega2_xLobatto
@@ -145,24 +146,24 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 zTP(i) = fzero(fun,self.zLobatto(turningIndices(i)));
             end  
             self.zBoundaries = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            self.xiBoundaries = interp1(self.zLobatto,xi_zLobatto,self.zBoundaries);
-            
-            nBoundaries = length(self.xiBoundaries);
-            nEquations = nTP+1;
-            
+            self.xiBoundaries = interp1(self.zLobatto,xi_zLobatto,self.zBoundaries,'spline');
+                                   
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             % For this first draft, we simply evenly distribute the points.
-            nPoints = floor((self.nEVP-nBoundaries)/nEquations);
-            nInteriorPoints = nPoints*ones(nEquations,1);
-            nInteriorPoints(end) = nInteriorPoints(end) + (self.nEVP-nBoundaries) - nPoints*nEquations; % add the extra points to the end
-            self.boundaryIndices = cumsum( [1; nInteriorPoints+1] );
+            nEquations = nTP+1;
+            nPoints = floor(self.nEVP/nEquations);
+            nEVPPoints = nPoints*ones(nEquations,1);
+            nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*nEquations; % add any extra points to the end
+            % A boundary point is repeated at the start of each EVP
+            self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
+            self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;
             
             self.xiLobatto = zeros(self.nEVP,1);
             for i=1:nEquations
                 Lxi = max(self.xiBoundaries(i+1),self.xiBoundaries(i)) - min(self.xiBoundaries(i+1),self.xiBoundaries(i));
-                n = nInteriorPoints(i)+2;
-                self.xiLobatto(self.boundaryIndices(i):self.boundaryIndices(i+1)) = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+                n = nEVPPoints(i);
+                self.xiLobatto(self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i)) = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
             end
             
             % Now we need z on the \xi grid
@@ -182,8 +183,12 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             self.N2Omega2_xLobatto = zeros(size(self.xLobatto));
             
             for i=1:nEquations
-                L = abs(self.zBoundaries(i)-self.zBoundaries(i+1));
-                zMin = min(self.zBoundaries(i),self.zBoundaries(i+1));
+                
+                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
+                zEq_xiLobatto = self.z_xiLobatto( indices );
+                
+                L = max(zEq_xiLobatto)-min(zEq_xiLobatto);
+                zMin = min(zEq_xiLobatto);
                 n = self.nGrid;
                 zEqLobatto = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
                 rho_zEqLobatto = self.rho_function(zEqLobatto);
@@ -196,15 +201,13 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 N2Omega2_zEqCheb = N2_zEqCheb;
                 N2Omega2_zEqCheb(1) = N2Omega2_zEqCheb(1)-self.gridFrequency*self.gridFrequency;
                 
-                indices = self.boundaryIndices(i):self.boundaryIndices(i+1);
-                zEq_xiLobatto = self.z_xiLobatto( indices );
                 T_zEqCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(zEqLobatto, zEq_xiLobatto);
                 
                 self.SqrtN2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(SqrtN2Omega2_zEqCheb);
                 self.N2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(N2Omega2_zEqCheb);
             end
             
-            %%%% Current stopping point, Sept 7, 2017
+            %%%% Current stopping point, Sept 8, 2017
 
             
             % The eigenvalue problem will be solved using N2 and N2z, so

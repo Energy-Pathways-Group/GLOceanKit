@@ -426,6 +426,9 @@ classdef InternalModesSpectral < InternalModesBase
         % transformation function T that goes from spectral to the output
         % grid. This basically gives you spectral interpolation.
         function [T, doesOutputGridSpanDomain] = ChebyshevTransformForGrid(lobatto_grid, output_grid)
+            if(min(output_grid) < min(lobatto_grid) || max(output_grid) > max(lobatto_grid))
+               error('The output grid must be bounded by the lobatto grid'); 
+            end
             if (min(output_grid) == min(lobatto_grid) && max(output_grid) == max(lobatto_grid))
                 doesOutputGridSpanDomain = 1;
             else

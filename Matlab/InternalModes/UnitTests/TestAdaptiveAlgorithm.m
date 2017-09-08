@@ -1,0 +1,10 @@
+n = 64;
+lat = 33;
+N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
+g = 9.81;
+rho_0 = 1025;
+zIn = [-5000 0];
+zOut = linspace(zIn(1),0,n)';
+L_gm = 1.3e3; % thermocline exponential scale, meters
+rho = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+im = InternalModesAdaptiveSpectral(rho,zIn,zOut,lat);
