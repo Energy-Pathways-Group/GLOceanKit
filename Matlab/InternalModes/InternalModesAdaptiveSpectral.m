@@ -30,8 +30,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         
         zBoundaries                 % z-location of the boundaries (end points plus turning points).
         xiBoundaries                % xi-location of the boundaries (end points plus turning points).
+        nEquations
         boundaryIndicesStart        % indices of the boundaries into xiLobatto
         boundaryIndicesEnd          % indices of the boundaries into xiLobatto
+        Lxi                         % array of length(nEquations) with the length of each EVP domain in xi coordinates
         
         SqrtN2Omega2_xLobatto
         N2Omega2_xLobatto
@@ -151,19 +153,38 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             % For this first draft, we simply evenly distribute the points.
-            nEquations = nTP+1;
-            nPoints = floor(self.nEVP/nEquations);
-            nEVPPoints = nPoints*ones(nEquations,1);
-            nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*nEquations; % add any extra points to the end
+            self.nEquations = nTP+1;
+            nPoints = floor(self.nEVP/self.nEquations);
+            nEVPPoints = nPoints*ones(self.nEquations,1);
+            nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
             % A boundary point is repeated at the start of each EVP
             self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
             self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;
             
             self.xiLobatto = zeros(self.nEVP,1);
-            for i=1:nEquations
-                Lxi = max(self.xiBoundaries(i+1),self.xiBoundaries(i)) - min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+            self.Int_xCheb = zeros(self.nEVP,1);
+            self.T_xLobatto = zeros(self.nEVP,self.nEVP);
+            self.Tx_xLobatto = zeros(self.nEVP,self.nEVP);
+            self.Txx_xLobatto = zeros(self.nEVP,self.nEVP);
+            for i=1:self.nEquations
+                self.Lxi(i) = max(self.xiBoundaries(i+1),self.xiBoundaries(i)) - min(self.xiBoundaries(i+1),self.xiBoundaries(i));
                 n = nEVPPoints(i);
-                self.xiLobatto(self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i)) = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
+                xLobatto = (self.Lxi(i)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+                self.xiLobatto(indices) = xLobatto;
+                
+                [T,Tx,Txx] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( xLobatto, length(xLobatto) );
+                self.T_xLobatto(indices,indices) = T;
+                self.Tx_xLobatto(indices,indices) = Tx;
+                self.Txx_xLobatto(indices,indices) = Txx;
+                
+                % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
+                % for all n, except n=1, where the integral is zero.
+                np = (0:(n-1))';
+                Int = -(1+(-1).^np)./(np.*np-1);
+                Int(2) = 0;
+                Int = self.Lxi(i)/2*Int;
+                self.Int_xCheb(indices) = Int;
             end
             
             % Now we need z on the \xi grid
@@ -171,18 +192,31 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             % and z_out on the \xi grid
             self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
+            
+            for i=1:self.nEquations
+                if i == 1 && i == 
+                    
+                end
+            end
         end
         
-        function self = SetupEigenvalueProblem(self)
-            nEquations = length(self.zBoundaries)-1;
-            
+        function vx = Diff1_xCheb( self, v )
+            % differentiate a vector in the compound Chebyshev xi basis
+            vx = zeros(size(v));
+            for iEquation = 1:self.nEquations
+                indices = self.boundaryIndicesStart(iEquation):self.boundaryIndicesEnd(iEquation);
+                vx(indices) = (2/self.Lxi(iEquation))*InternalModesSpectral.DifferentiateChebyshevVector( v(indices) );
+            end
+        end
+        
+        function self = SetupEigenvalueProblem(self)            
             % We will use the stretched grid to solve the eigenvalue
             % problem.
             self.xLobatto = self.xiLobatto;
             self.SqrtN2Omega2_xLobatto = zeros(size(self.xLobatto));
             self.N2Omega2_xLobatto = zeros(size(self.xLobatto));
             
-            for i=1:nEquations
+            for i=1:self.nEquations
                 
                 indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
                 zEq_xiLobatto = self.z_xiLobatto( indices );
@@ -206,29 +240,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 self.SqrtN2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(SqrtN2Omega2_zEqCheb);
                 self.N2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(N2Omega2_zEqCheb);
             end
-            
-            %%%% Current stopping point, Sept 8, 2017
 
-            
-            % The eigenvalue problem will be solved using N2 and N2z, so
-            % now we need transformations to project them onto the
-            % stretched grid
-            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xiLobatto);
-            self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(self.N_zCheb));
-            
-            Lxi = max(self.xiLobatto) - min(self.xiLobatto);
-            self.Diff1_xCheb = @(v) (2/Lxi)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xiLobatto, length(self.xiLobatto) );
-            
+            self.Diff1_xCheb = @(v) self.Diff_xCheb( v );
+                        
             self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
-            
-            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
-            % for all n, except n=1, where the integral is zero.
-            np = (0:(self.nEVP-1))';
-            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
-            self.Int_xCheb(2) = 0;
-            self.Int_xCheb = Lxi/2*self.Int_xCheb;
         end
     end
     
