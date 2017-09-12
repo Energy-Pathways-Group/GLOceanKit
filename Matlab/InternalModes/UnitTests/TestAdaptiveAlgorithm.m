@@ -9,7 +9,7 @@ L_gm = 1.3e3; % thermocline exponential scale, meters
 rho = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
 im = InternalModesAdaptiveSpectral(rho,zIn,zOut,lat);
 
-omega = im.f0;
+omega = 3*im.f0;
 [F,G,h] = im.ModesAtFrequency( omega );
 
 figure

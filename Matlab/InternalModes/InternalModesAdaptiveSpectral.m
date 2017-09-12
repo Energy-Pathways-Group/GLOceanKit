@@ -116,17 +116,19 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             for i=2:self.nEquations
                 eq1indices = self.boundaryIndicesStart(i-1):self.boundaryIndicesEnd(i-1);
                 eq2indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
+                         
                 n = self.boundaryIndicesEnd(i-1);
-                
+                m = self.boundaryIndicesStart(i);
                 % continuity in f
+                
                 A(n,eq1indices) = T(n,eq1indices);
-                A(n,eq2indices) = -T(n,eq2indices);
+                A(n,eq2indices) = -T(m,eq2indices);
                 B(n,:) = 0;
                 
                 % continuity in df/dx
-                A(n+1,eq1indices) = Tz(n+1,eq1indices);
-                A(n+1,eq2indices) = -Tz(n+1,eq2indices);
-                B(n+1,:) = 0;
+                A(m,eq1indices) = Tz(n,eq1indices);
+                A(m,eq2indices) = -Tz(m,eq2indices);
+                B(m,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
@@ -277,12 +279,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             self.T_xCheb_zOut = @(v) self.T_xCheb_zOutFunction(v);
             self.Diff1_xCheb = @(v) self.Diff1_xChebFunction(v);
-        end
-        
-
-        
-        function self = SetupEigenvalueProblem(self)            
-            % We will use the stretched grid to solve the eigenvalue
+            
+                        % We will use the stretched grid to solve the eigenvalue
             % problem.
             self.xLobatto = self.xiLobatto;
             self.SqrtN2Omega2_xLobatto = zeros(size(self.xLobatto));
@@ -305,7 +303,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 N2_zEqCheb= -(self.g/self.rho0)*(2/L)*InternalModesSpectral.DifferentiateChebyshevVector(rho_zEqCheb);
                 N2_zEqLobatto = InternalModesSpectral.ifct(N2_zEqCheb);
                 SqrtN2Omega2_zEqLobatto = sqrt(abs(N2_zEqLobatto - self.gridFrequency*self.gridFrequency));
-                SqrtN2Omega2_zEqCheb = InternalModesSpectral.fct(SqrtN2Omega2_zEqLobatto);
+                SqrtN2Omega2_zEqCheb = self.SetNoiseFloorToZero(InternalModesSpectral.fct(SqrtN2Omega2_zEqLobatto));
                 DzSqrtN2Omega2_zEqCheb = (2/L)*InternalModesSpectral.DifferentiateChebyshevVector(SqrtN2Omega2_zEqCheb);
                 N2Omega2_zEqCheb = N2_zEqCheb;
                 N2Omega2_zEqCheb(1) = N2Omega2_zEqCheb(1)-self.gridFrequency*self.gridFrequency;
@@ -319,6 +317,12 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             self.SqrtN2Omega2_zOut = self.T_xCheb_zOut( self.T_xLobatto_xCheb(self.SqrtN2Omega2_xLobatto) );
+        end
+        
+
+        
+        function self = SetupEigenvalueProblem(self)            
+
             
         end
     end
