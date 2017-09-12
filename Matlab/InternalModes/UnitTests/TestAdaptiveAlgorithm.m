@@ -8,3 +8,26 @@ zOut = linspace(zIn(1),0,n)';
 L_gm = 1.3e3; % thermocline exponential scale, meters
 rho = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
 im = InternalModesAdaptiveSpectral(rho,zIn,zOut,lat);
+
+omega = im.f0;
+[F,G,h] = im.ModesAtFrequency( omega );
+
+figure
+subplot(1,3,1)
+plot(F(:,1:4),im.z, 'LineWidth', 2)
+ylabel('depth (meters)');
+xlabel('(u,v)-modes');
+
+b = subplot(1,3,2);
+plot(G(:,1:4),im.z, 'LineWidth', 2)
+xlabel('w-modes');
+ytick([]);
+
+subplot(1,3,3)
+plot(sqrt(im.N2),im.z, 'LineWidth', 2), hold on
+% if ~isempty(im.N2Function)
+%     plot(sqrt(im.N2Function(self.z)),im.z, 'LineWidth', 2)
+% end
+xlim([0.0 1.1*max(sqrt(im.N2))])
+xlabel('buoyancy frequency');
+ytick([]);
