@@ -23,10 +23,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
     %   March 14th, 2017        Version 1.0
     
     properties %(Access = private)
+        N2_zLobatto         % Needs to be cached, because its used each time we create a new grid
+        xi_zLobatto 
+        
         gridFrequency        % The value of omega used for s = int sqrt(N^2 - omega^2) dz
         xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
         z_xiLobatto          % The value of z, at the sLobatto points
         xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
+        
+        N_zCheb
+        Nz_xLobatto     	% (d/dz)N on the xiLobatto grid
         
         zBoundaries                 % z-location of the boundaries (end points plus turning points).
         xiBoundaries                % xi-location of the boundaries (end points plus turning points).
@@ -39,11 +45,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         T_xCheb_zOut_fromIndices    % cell array with indices into the xLobatto grid
         T_xCheb_zOut_toIndices      % cell array with indices into the xiOut grid
         
-        SqrtN2Omega2_xLobatto
-        DzSqrtN2Omega2_xLobatto
-        N2Omega2_xLobatto
-        
-        SqrtN2Omega2_zOut
+
     end
     
     methods
@@ -68,7 +70,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
                         
-            A = diag(abs(self.N2Omega2_xLobatto))*Tzz + diag(self.DzSqrtN2Omega2_xLobatto)*Tz - k*k*T;
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
@@ -87,17 +89,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
-            
-            self.InitializeWKBGridWithFrequency(omega)
+        function [F,G,h] = ModesAtFrequency(self, omega )        
+            self.CreateGridForFrequency(omega);
             
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
             
-            A = diag(abs(self.N2Omega2_xLobatto))*Tzz + diag(self.DzSqrtN2Omega2_xLobatto)*Tz;
-            B = -diag( self.N2Omega2_xLobatto/self.g )*T;
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
+            B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
             % Lower boundary is rigid, G=0
             A(n,:) = T(n,:);
@@ -181,7 +182,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % class must initialize the sLobatto, z_sLobatto and sOut.
             InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
             
-            self.InitializeWKBGridWithFrequency(0)
+            self.InitializeStretchedCoordinates()
+            self.CreateGridForFrequency(0);
         end
         
 
@@ -193,17 +195,28 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % class must initialize the sLobatto, z_sLobatto and sOut.
             InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
             
-            self.InitializeWKBGridWithFrequency(3*self.f0)
+            self.InitializeStretchedCoordinates()
+            self.CreateGridForFrequency(self.f0);
         end
         
-        function InitializeWKBGridWithFrequency(self,omega)
+        function InitializeStretchedCoordinates(self)
+            self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
+            N_zLobatto = sqrt(self.N2_zLobatto);
+            self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
+            self.xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
+            
+            % Now we need z on the \xi grid
+            self.z_xiLobatto = interp1(self.xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
+            
+            % and z_out on the \xi grid
+            self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
+        end
+        
+        function CreateGridForFrequency(self,omega)
             self.gridFrequency = omega;
             
-            % Create the stretched grid \xi
-            N2Omega2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb) - self.gridFrequency*self.gridFrequency;
-            xi_zLobatto = cumtrapz(self.zLobatto,sqrt(abs(N2Omega2_zLobatto)));
-            
             % Now find (roughly) the turning points, if any
+            N2Omega2_zLobatto = self.N2_zLobatto - self.gridFrequency*self.gridFrequency;
             a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
             turningIndices = find(diff(a)~=0);
             nTP = length(turningIndices);
@@ -213,8 +226,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 zTP(i) = fzero(fun,self.zLobatto(turningIndices(i)));
             end  
             self.zBoundaries = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            self.xiBoundaries = interp1(self.zLobatto,xi_zLobatto,self.zBoundaries,'spline');
-                                   
+            self.xiBoundaries = interp1(self.zLobatto,self.xi_zLobatto,self.zBoundaries,'spline');
+            
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             % For this first draft, we simply evenly distribute the points.
@@ -226,6 +239,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
             self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;
             
+            % Now we walk through the equations, and create a lobatto grid
+            % for each equation.
             self.xiLobatto = zeros(self.nEVP,1);
             self.Int_xCheb = zeros(self.nEVP,1);
             self.T_xLobatto = zeros(self.nEVP,self.nEVP);
@@ -253,10 +268,21 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
+            self.z_xiLobatto = interp1(self.xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
             
             % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
+            self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
+            
+            % We will use the stretched grid to solve the eigenvalue
+            % problem.
+            self.xLobatto = self.xiLobatto;
+            
+            % The eigenvalue problem will be solved using N2 and N2z, so
+            % now we need transformations to project them onto the
+            % stretched grid
+            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xiLobatto);
+            self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
+            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(self.N_zCheb));
             
             self.T_xCheb_zOut_Transforms = cell(0,0);
             self.T_xCheb_zOut_fromIndices = cell(0,0);
@@ -279,48 +305,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             self.T_xCheb_zOut = @(v) self.T_xCheb_zOutFunction(v);
             self.Diff1_xCheb = @(v) self.Diff1_xChebFunction(v);
-            
-                        % We will use the stretched grid to solve the eigenvalue
-            % problem.
-            self.xLobatto = self.xiLobatto;
-            self.SqrtN2Omega2_xLobatto = zeros(size(self.xLobatto));
-            self.DzSqrtN2Omega2_xLobatto = zeros(size(self.xLobatto));
-            self.N2Omega2_xLobatto = zeros(size(self.xLobatto));
-            self.N2_xLobatto = zeros(size(self.xLobatto));
-            
-            for i=1:self.nEquations
-                
-                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
-                zEq_xiLobatto = self.z_xiLobatto( indices );
-                
-                L = max(zEq_xiLobatto)-min(zEq_xiLobatto);
-                zMin = min(zEq_xiLobatto);
-                n = self.nGrid;
-                zEqLobatto = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
-                rho_zEqLobatto = self.rho_function(zEqLobatto);
-                rho_zEqCheb = InternalModesSpectral.fct(rho_zEqLobatto);
-                rho_zEqCheb = self.SetNoiseFloorToZero(rho_zEqCheb);
-                N2_zEqCheb= -(self.g/self.rho0)*(2/L)*InternalModesSpectral.DifferentiateChebyshevVector(rho_zEqCheb);
-                N2_zEqLobatto = InternalModesSpectral.ifct(N2_zEqCheb);
-                SqrtN2Omega2_zEqLobatto = sqrt(abs(N2_zEqLobatto - self.gridFrequency*self.gridFrequency));
-                SqrtN2Omega2_zEqCheb = self.SetNoiseFloorToZero(InternalModesSpectral.fct(SqrtN2Omega2_zEqLobatto));
-                DzSqrtN2Omega2_zEqCheb = (2/L)*InternalModesSpectral.DifferentiateChebyshevVector(SqrtN2Omega2_zEqCheb);
-                N2Omega2_zEqCheb = N2_zEqCheb;
-                N2Omega2_zEqCheb(1) = N2Omega2_zEqCheb(1)-self.gridFrequency*self.gridFrequency;
-                
-                T_zEqCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(zEqLobatto, zEq_xiLobatto);
-                
-                self.SqrtN2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(SqrtN2Omega2_zEqCheb);
-                self.DzSqrtN2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(DzSqrtN2Omega2_zEqCheb);
-                self.N2Omega2_xLobatto(indices) = T_zEqCheb_xiLobatto(N2Omega2_zEqCheb);
-                self.N2_xLobatto(indices) = T_zEqCheb_xiLobatto(N2_zEqCheb);
-            end
-            
-            self.SqrtN2Omega2_zOut = self.T_xCheb_zOut( self.T_xLobatto_xCheb(self.SqrtN2Omega2_xLobatto) );
         end
-        
-
-        
+                      
         function self = SetupEigenvalueProblem(self)            
 
             
@@ -333,9 +319,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % ModesAtWavenumber to establish the various norm functions.
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * self.SqrtN2Omega2_zOut .* self.T_xCheb_zOut(self.Diff1_xChebFunction(G_cheb));
+            FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xChebFunction(G_cheb));
             GFromGCheb = @(G_cheb,h) self.T_xCheb_xLobatto(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * self.SqrtN2Omega2_xLobatto .* self.T_xCheb_xLobatto(self.Diff1_xChebFunction(G_cheb));
+            FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* self.T_xCheb_xLobatto(self.Diff1_xChebFunction(G_cheb));
             GNorm = @(Gj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
