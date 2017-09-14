@@ -44,8 +44,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         T_xCheb_zOut_Transforms     % cell array containing function handles
         T_xCheb_zOut_fromIndices    % cell array with indices into the xLobatto grid
         T_xCheb_zOut_toIndices      % cell array with indices into the xiOut grid
-        
-
     end
     
     methods
@@ -65,6 +63,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h] = ModesAtWavenumber(self, k )
+            self.CreateGridForFrequency(0.0);
+            
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -183,7 +183,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
             
             self.InitializeStretchedCoordinates()
-            self.CreateGridForFrequency(0);
+            self.CreateGridForFrequency(0.0);
         end
         
 
@@ -196,7 +196,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
             
             self.InitializeStretchedCoordinates()
-            self.CreateGridForFrequency(self.f0);
+            self.CreateGridForFrequency(0.0);
         end
         
         function InitializeStretchedCoordinates(self)
@@ -213,6 +213,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         end
         
         function CreateGridForFrequency(self,omega)
+            if self.gridFrequency == omega
+                return
+            end
+            
             self.gridFrequency = omega;
             
             % Now find (roughly) the turning points, if any
@@ -228,10 +232,21 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             self.zBoundaries = [self.zLobatto(1); zTP; self.zLobatto(end)];
             self.xiBoundaries = interp1(self.zLobatto,self.xi_zLobatto,self.zBoundaries,'spline');
             
+            % what's the sign on the EVP in these regions? In this case,
+            % positive indicates oscillatory, negative exponential decay
+            midZ = self.zBoundaries(1:end-1) + diff(self.zBoundaries)/2;
+            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
+            % remove any boundaries of zero length
+            for index = reshape(find( thesign == 0),1,[])
+                thesign(index) = [];
+                self.zBoundaries(index) = [];
+                self.xiBoundaries(index) = [];
+            end
+            
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             % For this first draft, we simply evenly distribute the points.
-            self.nEquations = nTP+1;
+            self.nEquations = length(self.zBoundaries)-1;
             nPoints = floor(self.nEVP/self.nEquations);
             nEVPPoints = nPoints*ones(self.nEquations,1);
             nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end

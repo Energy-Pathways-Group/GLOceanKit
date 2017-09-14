@@ -120,9 +120,9 @@ classdef GarrettMunkSpectrum < handle
             % no mode was determined.
             nX = length(x);
             nEVP = self.nEVP;
-            nEVPMax = 1*nEVP;
+            nEVPMax = 4*nEVP;
                                     
-            im = InternalModesWKBSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
+            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
             im.normalization = 'const_G_norm';
             
             Phi = nan(length(self.zInternal),nX,self.nModes);
@@ -135,7 +135,7 @@ classdef GarrettMunkSpectrum < handle
                 
                 while( (isempty(j_max) || j_max < self.nModes) && nEVP < nEVPMax )
                     nEVP = nEVP + self.nEVP;
-                    im = InternalModesWKBSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
+                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
                     im.normalization = 'const_G_norm';
                     [F, G, h] = im.(methodName)(x(i));
                     j_max = ceil(find(h>0,1,'last')/2);

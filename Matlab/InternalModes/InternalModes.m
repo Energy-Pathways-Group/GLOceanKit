@@ -157,7 +157,7 @@ classdef InternalModes < handle
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')
                     self.internalModes = InternalModesWKBSpectral(rho,zIn,zOut,latitude,extraargs{:});
-                elseif  strcmp(self.method, 'wkbOmegaSpectral')
+                elseif  strcmp(self.method, 'wkbAdaptiveSpectral')
                     self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat);
                 elseif strcmp(self.method, 'finiteDifference')
                     self.internalModes = InternalModesFiniteDifference(rho,zIn,zOut,latitude,extraargs{:});
@@ -451,7 +451,7 @@ classdef InternalModes < handle
                 self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat);
             elseif  strcmp(theMethod, 'wkbSpectral')
                 self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
-            elseif  strcmp(theMethod, 'wkbOmegaSpectral')
+            elseif  strcmp(theMethod, 'wkbAdaptiveSpectral')
                 self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat);
             elseif strcmp(theMethod, 'finiteDifference')
                 self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
@@ -469,7 +469,7 @@ classdef InternalModes < handle
                 methodName = 'Chebyshev polynomials on density coordinates';
             elseif  strcmp(self.method, 'wkbSpectral')
                 methodName = 'Chebyshev polynomials on WKB coordinates';
-            elseif  strcmp(self.method, 'wkbOmegaSpectral')
+            elseif  strcmp(self.method, 'wkbAdaptiveSpectral')
                 methodName = 'Chebyshev polynomials on WKB-omega coordinates';
             elseif strcmp(self.method, 'finiteDifference')
                 methodName = 'finite differencing';

@@ -340,6 +340,9 @@ classdef InternalModesSpectral < InternalModesBase
         % (GEP) and returns F,G,h. The h_func parameter is a function that
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
         function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
+            if ( any(any(isnan(A))) || any(any(isnan(B))) )
+                error('EVP setup fail.');
+            end
             [V,D] = eig( A, B );
             
             [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
