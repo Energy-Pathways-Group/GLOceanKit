@@ -242,14 +242,38 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 self.zBoundaries(index) = [];
                 self.xiBoundaries(index) = [];
             end
+            self.Lxi = abs(diff(self.xiBoundaries));
             
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
-            % For this first draft, we simply evenly distribute the points.
             self.nEquations = length(self.zBoundaries)-1;
-            nPoints = floor(self.nEVP/self.nEquations);
-            nEVPPoints = nPoints*ones(self.nEquations,1);
-            nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
+            if 1 == 1
+                % For this first draft, we simply evenly distribute the points.    
+                nPoints = floor(self.nEVP/self.nEquations);
+                nEVPPoints = nPoints*ones(self.nEquations,1);
+                nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
+            else
+                % Here we try giving oscillatory regions 2/3s of the points
+                % 2017/09/15 ? this appears worse than the above, simpler
+                % method!
+                nNegativePoints = floor( (1/3)*self.nEVP );
+                nPositivePoints = self.nEVP - nNegativePoints;
+                nEVPPoints = zeros(self.nEquations,1);
+                
+                indices = thesign<0;
+                Ltotal = sum(self.Lxi(indices));
+                nEVPPoints(indices) = floor(nNegativePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the oscillatory section
+                nPositivePoints = nPositivePoints + (nNegativePoints - sum(nEVPPoints));
+                
+                indices = thesign>0;
+                Ltotal = sum(self.Lxi(indices));
+                nEVPPoints(indices) = floor(nPositivePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the last oscillatory section
+                nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
+            end
             % A boundary point is repeated at the start of each EVP
             self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
             self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;
@@ -262,7 +286,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             self.Tx_xLobatto = zeros(self.nEVP,self.nEVP);
             self.Txx_xLobatto = zeros(self.nEVP,self.nEVP);
             for i=1:self.nEquations
-                self.Lxi(i) = max(self.xiBoundaries(i+1),self.xiBoundaries(i)) - min(self.xiBoundaries(i+1),self.xiBoundaries(i));
                 n = nEVPPoints(i);
                 indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
                 xLobatto = (self.Lxi(i)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));

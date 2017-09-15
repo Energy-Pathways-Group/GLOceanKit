@@ -5,8 +5,9 @@ methods{3} = 'finiteDifference';
 methods{4} = 'spectral';
 methods{5} = 'wkbAdaptiveSpectral';
 im = InternalModes('exponential', methods{5} , 64);
+% im = InternalModes('constant', methods{5} , 64);
 
-% im.upperBoundary = 'free_surface';
+im.upperBoundary = 'free_surface';
 im.normalization = 'const_G_norm';
 
 N0 = 5.2e-3;

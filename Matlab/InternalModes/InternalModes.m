@@ -448,17 +448,17 @@ classdef InternalModes < handle
 
             
             if  strcmp(theMethod, 'densitySpectral')
-                self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif  strcmp(theMethod, 'wkbSpectral')
-                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif  strcmp(theMethod, 'wkbAdaptiveSpectral')
-                self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif strcmp(theMethod, 'finiteDifference')
-                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif strcmp(theMethod, 'spectral')
-                self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif isempty(theMethod)
-                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat);
+                self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             else
                 error('Invalid method!')
             end
@@ -470,7 +470,7 @@ classdef InternalModes < handle
             elseif  strcmp(self.method, 'wkbSpectral')
                 methodName = 'Chebyshev polynomials on WKB coordinates';
             elseif  strcmp(self.method, 'wkbAdaptiveSpectral')
-                methodName = 'Chebyshev polynomials on WKB-omega coordinates';
+                methodName = 'Chebyshev polynomials on WKB adaptive coordinates';
             elseif strcmp(self.method, 'finiteDifference')
                 methodName = 'finite differencing';
             elseif strcmp(self.method, 'spectral')
