@@ -28,8 +28,8 @@ classdef GarrettMunkSpectrum < handle
         omega_k % size(omega_k) = [nK,nModes]
         nModes = 64
         
-        nEVP = 128 % assumed minimum, can be overriden by the user
-        nGrid = 2^10+1 %assumed minimum
+        nEVPMin = 256 % assumed minimum, can be overriden by the user
+        nEVPMax = 512
     end
         
     properties (Constant)
@@ -85,7 +85,7 @@ classdef GarrettMunkSpectrum < handle
                 self.(varargin{k}) = varargin{k+1};
             end
             
-            im = InternalModesWKBSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',self.nEVP,'nGrid',self.nGrid);
+            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',self.nEVPMin);
             self.N_max = max(sqrt(im.N2_xLobatto));
             self.zInternal = im.z_xiLobatto;
             self.N2internal = im.N2_xLobatto;
@@ -119,10 +119,9 @@ classdef GarrettMunkSpectrum < handle
             % definition in the manuscript. Entries will contain NaN where
             % no mode was determined.
             nX = length(x);
-            nEVP = self.nEVP;
-            nEVPMax = 4*nEVP;
+            nEVP = self.nEVPMin;
                                     
-            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
+            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
             im.normalization = 'const_G_norm';
             
             Phi = nan(length(self.zInternal),nX,self.nModes);
@@ -133,9 +132,9 @@ classdef GarrettMunkSpectrum < handle
                 
                 j_max = ceil(find(h>0,1,'last')/2);
                 
-                while( (isempty(j_max) || j_max < self.nModes) && nEVP < nEVPMax )
-                    nEVP = nEVP + self.nEVP;
-                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP,'nGrid',self.nGrid);
+                while( (isempty(j_max) || j_max < self.nModes) && nEVP < self.nEVPMax )
+                    nEVP = nEVP + 128;
+                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
                     im.normalization = 'const_G_norm';
                     [F, G, h] = im.(methodName)(x(i));
                     j_max = ceil(find(h>0,1,'last')/2);
@@ -157,9 +156,9 @@ classdef GarrettMunkSpectrum < handle
         
         function PrecomputeComputePhiAndGammaForOmega(self)
             if self.didPrecomputePhiAndGammaForOmega==0
-                nOmega = 20;      
-                self.omega = linspace(self.f0,self.N_max,nOmega);
-                self.omega = exp(linspace(log(self.f0),log(self.N_max),nOmega));
+                nOmega = 128;      
+                self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
+                self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
                 [Phi,Gamma,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtFrequency');
                 self.Phi_omega = sum(Phi,3,'omitnan');
                 self.Gamma_omega = sum(Gamma,3,'omitnan');
@@ -170,7 +169,7 @@ classdef GarrettMunkSpectrum < handle
         
         function PrecomputeComputePhiAndGammaForK(self)
             if self.didPrecomputePhiAndGammaForK==0
-                nK = 50;
+                nK = 128;
                 self.k = exp(linspace(log(2*pi/1e6),log(1e1),nK));
                 [self.Phi_k, self.Gamma_k,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtWavenumber');
                 k2 = reshape(self.k .^2,[],1);
@@ -185,12 +184,15 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalVelocityVariance(self,z)
-            omega = linspace(0,self.N_max,2000);
-            S = self.HorizontalVelocitySpectrumAtFrequencies(z,omega);
-            E = sum(S,2)*(omega(2)-omega(1));
+            % The total horizontal velocity at a given depth. [m^2/s^s]
+            om = linspace(0,self.N_max,2000);
+            S = self.HorizontalVelocitySpectrumAtFrequencies(z,om,'spectrum_type','one-sided');
+            E = sum(S,2)*(om(2)-om(1));
         end
         
         function S = HorizontalVelocitySpectrumAtFrequencies(self,z,omega,varargin)
+            % The horizontal velocity frequency spectrum at given depths
+            % and frequencies. [m^2/s]
             if isrow(z)
                 z=z.';
             end
@@ -261,8 +263,7 @@ classdef GarrettMunkSpectrum < handle
                         [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
                         j_max = ceil(find(h>0,1,'last')/2);
                         
-                        H = self.H_norm*(self.j_star + (1:j_max)').^(-5/2);
-                        Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* H), 2);
+                        Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* self.H((1:j_max)')), 2);
                         S(:,indices(i)) = S(:,indices(i)).*Phi;
                     end
                 end       
@@ -271,7 +272,7 @@ classdef GarrettMunkSpectrum < handle
                 S = S .* (sqrt(N2)/(self.L_gm*self.invT_gm));
                 
                 zerosMask = zeros(length(z),length(omega));
-                for iDepth = 1:length(zOut)
+                for iDepth = 1:length(z)
                     zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
                 end
                 S = S .* zerosMask;

@@ -65,14 +65,14 @@ omega = linspace(-N0,N0,200);
 % zOut = [0; -L_gm/2; -L_gm];
 zOut = [0; -L_gm];
 
-S_wkb = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, [-L 0], zOut, 'wkb' );
+GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
+S_wkb = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'wkb');
+S_gm = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'gm');
+S = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega);
+
 S_wkb( S_wkb <1e-6 ) = 1e-6;
-
-S = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, [-L 0], zOut, 'exact' );
-S( S<1e-6 ) = 1e-6;
-
-S_gm = GarrettMunkHorizontalVelocitySpectrum( omega, latitude, rho, [-L 0], zOut, 'gm' );
 S_gm( S_gm <1e-6 ) = 1e-6;
+S( S<1e-6 ) = 1e-6;
 
 %%%%%%
 
