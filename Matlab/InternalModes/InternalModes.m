@@ -420,7 +420,7 @@ classdef InternalModes < handle
                 L_gm = 1.3e3; % thermocline exponential scale, meters
                 self.rhoFunction = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
                 self.N2Function = @(z) N0*N0*exp(2*z/L_gm);
-            elseif strcmp(stratification, 'pycnocline')
+            elseif strcmp(stratification, 'pycnocline-constant')
                 % Taken to match the simple test case in Cushman-Roison
                 rho_L=1024.63; % these are reversed from the usual definition
                 rho_0=1026.45;
@@ -442,8 +442,65 @@ classdef InternalModes < handle
                 
                 zIn = [-L_z 0];
                 zOut = linspace(zIn(1),0,n)';
+            elseif strcmp(stratification, 'pycnocline-exponential')
+                delta_p = 75;
+                z_s = 200;
+                L_s = 500;
+                L_d = 2500; %L_d = 1300;
+                z_p = -500; %z_p = -1;
+                D = 5000;
+                
+                N0 = 0.5e-3; %N0 = 5.2e-3;
+                Np = 10e-3;
+                Nd = 3e-4; %Nd = 1.1e-4;
+                
+                A = Np*Np - Nd*Nd*exp(2*(D+z_p)/L_d);
+                B = (Nd*Nd*exp(2*(D+z_p)/L_d) - N0*N0)/(exp(-2*(z_p-z_s)/L_s) - exp(2*z_s/L_s));
+                C = N0*N0-B*exp(2*z_s/L_s);
+                E = Nd*Nd*exp(2*(D+z_p)/L_d);
+                 
+                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * (exp(2*z_s/L_s) - exp(-2*(z-z_s)/L_s)) - C*z/g);
+                rho_deep = @(z) rho_surface(z_p) + (rho_0*L_d*E/(2*g))*(1-exp(2*(z-z_p)/L_d));
+                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+                
+                self.rhoFunction = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
+                
+                N2_surface = @(z) B*exp(-2*(z-z_s)/L_s) + C;
+                N2_deep = @(z) E*exp(2*(z-z_p)/L_d);
+                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+                
+                self.N2Function = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+            elseif strcmp(stratification, 'latmix-site1')
+                delta_p = 0.9;
+                L_s = 8;
+                L_d = 100;
+                z_p = -17; %z_p = -1;
+                D = 5000;
+                
+                N0 = 2.8e-3; % Surface
+                Nq = 1.4e-2; % Pycnocline portion to exponentials
+                Np = 4.7e-2;
+                Nd = 1.75e-3;
+                
+                A = Np*Np - Nq*Nq;
+                B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
+                C = N0*N0-B*exp(-2*z_p^2/L_s);
+                E = (Nq*Nq - Nd*Nd)/( 1 - exp(-2*(-D-z_p)^2/L_d^2) );
+                F = Nd*Nd - E*exp( -2*(-D-z_p)^2/L_d^2 );
+                
+                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
+                rho_deep = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
+                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+                
+                self.rhoFunction = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p).*rho_deep(z) + rho_p(z);
+                
+                N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
+                N2_deep = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
+                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+                
+                self.N2Function = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
             else
-                error('Invalid choice of stratification: you must use constant or exponential');
+                error('Invalid choice of stratification. Valid options are: constant, exponential, pycnocline-constant, pycnocline-exponential, or latmix-site1.');
             end
 
             
