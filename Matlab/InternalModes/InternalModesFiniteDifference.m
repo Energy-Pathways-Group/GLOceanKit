@@ -80,6 +80,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
         function [F,G,h] = ModesAtWavenumber(self, k )
             % Return the normal modes and eigenvalue at a given wavenumber.
             
+            self.gridFrequency = 0;
+            
             % The eigenvalue equation is,
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \left( \partial_{zz} - K^2*I \right)
@@ -109,6 +111,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
         
         function [F,G,h] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
+            
+            self.gridFrequency = omega;
             
             A = self.Diff2;
             B = -diag(self.N2_z_diff - omega*omega)/self.g;

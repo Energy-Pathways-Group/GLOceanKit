@@ -279,8 +279,7 @@ classdef InternalModes < handle
             title = sprintf('Relative error of internal modes at omega=%.2gf0 with %d grid points using %s',omega/self.f0,length(self.z),self.fullMethodName);
             self.ShowErrorFigure(h_error,F_error,G_error,title);
         end
-        
-        
+                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Useful problem constants, latitude and f0
@@ -398,28 +397,24 @@ classdef InternalModes < handle
         end
     end
     
-    methods (Access = private)
-        
-        function self = InitTestCase(self, stratification, theMethod, n)
-            self.method = theMethod;
-            self.isRunningTestCase = 1;
-            self.stratification = stratification;
-            
-            fprintf('InternalModes intialized with %s stratification, %d grid points using %s.\n', self.stratification, n, self.fullMethodName);
-            
-            lat = 33;
+    methods (Static)
+        function [rhoFunc, N2Func, zIn] = StratificationProfileWithName(stratification)
+            % Returns function handles for several built-in analytical
+            % profiles. Options include 'constant', 'exponential',
+            % 'pycnocline-constant', 'pycnocline-exponential', and
+            % 'latmix-site1'.
             N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
             g = 9.81;
             rho_0 = 1025;
-            zIn = [-5000 0];
-            zOut = linspace(zIn(1),0,n)';
             if  strcmp(stratification, 'constant')
-                self.rhoFunction = @(z) -(N0*N0*rho_0/g)*z + rho_0;
-                self.N2Function = @(z) N0*N0*ones(size(z));
+                rhoFunc = @(z) -(N0*N0*rho_0/g)*z + rho_0;
+                N2Func = @(z) N0*N0*ones(size(z));
+                zIn = [-5000 0];
             elseif strcmp(stratification, 'exponential')
                 L_gm = 1.3e3; % thermocline exponential scale, meters
-                self.rhoFunction = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-                self.N2Function = @(z) N0*N0*exp(2*z/L_gm);
+                rhoFunc = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+                N2Func = @(z) N0*N0*exp(2*z/L_gm);
+                zIn = [-5000 0];
             elseif strcmp(stratification, 'pycnocline-constant')
                 % Taken to match the simple test case in Cushman-Roison
                 rho_L=1024.63; % these are reversed from the usual definition
@@ -437,11 +432,10 @@ classdef InternalModes < handle
                 gamma = h*(beta-rho_0*N2_max/g);
                 delta = rho_L - gamma*kappa_p;
                 
-                self.rhoFunction = @(z) delta + beta*(L_z-z)+gamma*tanh((z-z_ml)/h) - L_z;
-                self.N2Function = @(z) -(g/self.rhoFunction(0))*(-beta + (gamma/h)*sech((z-z_ml)/h).^2);
+                rhoFunc = @(z) delta + beta*(L_z-z)+gamma*tanh((z-z_ml)/h) - L_z;
+                N2Func = @(z) -(g/rhoFunc(0))*(-beta + (gamma/h)*sech((z-z_ml)/h).^2);
                 
                 zIn = [-L_z 0];
-                zOut = linspace(zIn(1),0,n)';
             elseif strcmp(stratification, 'pycnocline-exponential')
                 delta_p = 75;
                 z_s = 200;
@@ -463,13 +457,14 @@ classdef InternalModes < handle
                 rho_deep = @(z) rho_surface(z_p) + (rho_0*L_d*E/(2*g))*(1-exp(2*(z-z_p)/L_d));
                 rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
                 
-                self.rhoFunction = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
+                rhoFunc = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
                 
                 N2_surface = @(z) B*exp(-2*(z-z_s)/L_s) + C;
                 N2_deep = @(z) E*exp(2*(z-z_p)/L_d);
                 N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
                 
-                self.N2Function = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+                zIn = [-D 0];
             elseif strcmp(stratification, 'latmix-site1')
                 delta_p = 0.9;
                 L_s = 8;
@@ -492,18 +487,34 @@ classdef InternalModes < handle
                 rho_deep = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
                 rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
                 
-                self.rhoFunction = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p).*rho_deep(z) + rho_p(z);
+                rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p).*rho_deep(z) + rho_p(z);
                 
                 N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
                 N2_deep = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
                 N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
                 
-                self.N2Function = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+                zIn = [-D 0];
             else
                 error('Invalid choice of stratification. Valid options are: constant, exponential, pycnocline-constant, pycnocline-exponential, or latmix-site1.');
             end
-
+        end
+    end
+    
+    methods (Access = private)
+        
+        function self = InitTestCase(self, stratification, theMethod, n)
+            self.method = theMethod;
+            self.isRunningTestCase = 1;
+            self.stratification = stratification;
             
+            fprintf('InternalModes intialized with %s stratification, %d grid points using %s.\n', self.stratification, n, self.fullMethodName);
+            
+            lat = 33;
+            
+            [self.rhoFunction, self.N2Function, zIn] = InternalModes.StratificationProfileWithName(stratification);
+            zOut = linspace(min(zIn),max(zIn),n)';
+
             if  strcmp(theMethod, 'densitySpectral')
                 self.internalModes = InternalModesDensitySpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif  strcmp(theMethod, 'wkbSpectral')

@@ -26,7 +26,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         N2_zLobatto         % Needs to be cached, because its used each time we create a new grid
         xi_zLobatto 
         
-        gridFrequency        % The value of omega used for s = int sqrt(N^2 - omega^2) dz
         xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
         z_xiLobatto          % The value of z, at the sLobatto points
         xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
@@ -247,16 +246,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             self.nEquations = length(self.zBoundaries)-1;
-            if 1 == 1
+            if 1 == 0
                 % For this first draft, we simply evenly distribute the points.    
                 nPoints = floor(self.nEVP/self.nEquations);
                 nEVPPoints = nPoints*ones(self.nEquations,1);
                 nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
-            else
+            elseif 1 == 2
                 % Here we try giving oscillatory regions 2/3s of the points
                 % 2017/09/15 ? this appears worse than the above, simpler
                 % method!
-                nNegativePoints = floor( (1/3)*self.nEVP );
+                nNegativePoints = floor( (1/7)*self.nEVP );
                 nPositivePoints = self.nEVP - nNegativePoints;
                 nEVPPoints = zeros(self.nEquations,1);
                 
@@ -273,7 +272,33 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 
                 % give any extra points to the last oscillatory section
                 nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
+            elseif 1 == 3
+                nEVPPoints = floor(self.nEVP*self.Lxi/sum(self.Lxi));
+                nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
+            elseif 1 == 4
+                Lrho = diff( self.rho_function(self.zBoundaries) );
+                nEVPPoints = floor(self.nEVP*Lrho/sum(Lrho));
+                nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
+            elseif 1 == 1
+                nEVPPoints = 16*ones(size(self.Lxi));
+                remainingPoints = self.nEVP-sum(nEVPPoints);
+                
+                nNegativePoints = floor( (1/7)*remainingPoints);                
+                indices = thesign<0;
+                Ltotal = sum(self.Lxi(indices));
+                nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the oscillatory section
+                nPositivePoints = self.nEVP - sum(nEVPPoints);
+                indices = thesign>0;
+                Ltotal = sum(self.Lxi(indices));
+                nEVPPoints(indices) = floor(nPositivePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the last oscillatory section
+                nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
             end
+            nEVPPoints
+            
             % A boundary point is repeated at the start of each EVP
             self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
             self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;

@@ -132,6 +132,8 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h] = ModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+            
             % The eigenvalue equation is,
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
@@ -162,6 +164,8 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
+            self.gridFrequency = omega;
+            
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -245,30 +249,7 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
             
             self.validateInitialModeAndEVPSettings();
-            
-            % We have an analytical function describing density, so lets
-            % place points on a Chebyshev grid such that z_out is fully
-            % resolved.
-            if (length(zOut) > 1 && (zOut(2) - zOut(1)) > 0 )  % make z_out decreasing
-                zOut = flip(zOut);
-            end
-            
-            zIn = zOut;
-            % Note that z_out might not span the whole domain, so we may
-            % need to add z_min and z_max to the end points.
-            if zMax > zIn(1)
-                zIn = cat(1,zMax,zIn);
-            end
-            if zMin < zIn(end)
-                zIn = cat(1,zIn,zMin);
-            end
-            
-            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
-                self.zLobatto = zIn;
-            else
-                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
-            end
-            
+                        
             % There's just no reason not to go at least this big since
             % this is all fast transforms.
             if self.nGrid > 0
@@ -354,7 +335,10 @@ classdef InternalModesSpectral < InternalModesBase
             
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.
-            [~,maxIndexZ] = max(self.zLobatto);
+            [maxIndexZ] = find(self.N2_xLobatto-self.gridFrequency*self.gridFrequency>0,1,'first');
+            if maxIndexZ > 1 % grab a point just above the turning point, which should have the right sign.
+                maxIndexZ = maxIndexZ-1;
+            end
             for j=1:self.nModes
                 Fj = FFromGCheb(G_cheb(:,j),h(j));
                 Gj = GFromGCheb(G_cheb(:,j),h(j));

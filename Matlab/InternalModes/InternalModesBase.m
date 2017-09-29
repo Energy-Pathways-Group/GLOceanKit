@@ -47,6 +47,7 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         
+        gridFrequency = 0 % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = 'const_G_norm' % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
         upperBoundary = 'rigid_lid' % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
     end
@@ -176,7 +177,12 @@ classdef (Abstract) InternalModesBase < handle
             % used by the finite differencing algorithm, as the spectral
             % methods can use a superior (more accurate) technique of
             % directly integrating the polynomials.
-            [~,maxIndexZ] = max(z);
+            if z(2)-z(1) > 0
+                direction = 'last';
+            else
+                direction = 'first';
+            end
+            [maxIndexZ] = find(N2-self.gridFrequency*self.gridFrequency>0,1,direction);  
             for j=1:length(G(1,:))
                 if strcmp(self.normalization, 'max_u')
                     A = max( abs(F(:,j)) );
