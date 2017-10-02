@@ -96,6 +96,15 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
             
+            % now couple the equations together
+%             for i=2:self.nEquations                
+%                 n = self.boundaryIndicesEnd(i-1);
+%                 m = self.boundaryIndicesStart(i);
+%                 
+%                 % continuity in f
+%                 T(m,:) = T(n,:);
+%             end
+            
             A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
@@ -119,8 +128,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                          
                 n = self.boundaryIndicesEnd(i-1);
                 m = self.boundaryIndicesStart(i);
-                % continuity in f
                 
+                % continuity in f      
                 A(n,eq1indices) = T(n,eq1indices);
                 A(n,eq2indices) = -T(m,eq2indices);
                 B(n,:) = 0;
@@ -211,15 +220,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
         end
         
-        function CreateGridForFrequency(self,omega)
-            if self.gridFrequency == omega
-                return
-            end
-            
-            self.gridFrequency = omega;
-            
-            % Now find (roughly) the turning points, if any
-            N2Omega2_zLobatto = self.N2_zLobatto - self.gridFrequency*self.gridFrequency;
+        function [zBoundary, thesign] = FindTurningPointBoundariesAtFrequency(self, omega)
+            % This function returns not just the turning points, but also
+            % the top and bottom boundary locations in z.
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
             a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
             turningIndices = find(diff(a)~=0);
             nTP = length(turningIndices);
@@ -227,26 +231,79 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             for i=1:nTP
                 fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
                 zTP(i) = fzero(fun,self.zLobatto(turningIndices(i)));
-            end  
-            self.zBoundaries = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            self.xiBoundaries = interp1(self.zLobatto,self.xi_zLobatto,self.zBoundaries,'spline');
+            end
+            zBoundary = [self.zLobatto(1); zTP; self.zLobatto(end)];
             
             % what's the sign on the EVP in these regions? In this case,
             % positive indicates oscillatory, negative exponential decay
-            midZ = self.zBoundaries(1:end-1) + diff(self.zBoundaries)/2;
+            midZ = zBoundary(1:end-1) + diff(zBoundary)/2;
             thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
             % remove any boundaries of zero length
             for index = reshape(find( thesign == 0),1,[])
                 thesign(index) = [];
-                self.zBoundaries(index) = [];
-                self.xiBoundaries(index) = [];
+                zBoundary(index) = [];
             end
+        end
+        
+        function CreateGridForFrequency(self,omega)
+            if self.gridFrequency == omega
+                return
+            end
+            
+            self.gridFrequency = omega;
+                        
+            [zBoundariesAndTPs, thesign] = self.FindTurningPointBoundariesAtFrequency(self.gridFrequency);
+            xiBoundariesAndTPs = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
+            LxiRegion = abs(diff(xiBoundariesAndTPs));
+            
+            % The equation boundaries are different from the turning point
+            % boundaries. We need to extend the oscillatories regions into
+            % the exponential decay regions.
+            L_osc = 3*sum(LxiRegion(thesign>0));
+                        
+            self.xiBoundaries(1) = xiBoundariesAndTPs(1);
+            newsigns = [];
+            for iInteriorPoint = 2:(length(xiBoundariesAndTPs)-1)
+                % decision tree to see if we keep this interior point
+                if thesign(iInteriorPoint-1) > 0
+                    % positive to left...
+                    if iInteriorPoint == length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc/2
+                        %...and bottom boundary, with non-penetrating region
+                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
+                        newsigns(end+1) = 1;
+                    elseif iInteriorPoint < length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc
+                        %...and interior boundary, with non-penetrating region
+                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
+                        newsigns(end+1) = 1;
+                    end
+                elseif thesign(iInteriorPoint-1) < 0
+                    % negative to the left...
+                    if iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc/2
+                        %...and top boundary, with non-penetrating region
+                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
+                        newsigns(end+1) = -1;
+                    elseif iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc
+                        %...and interior boundary, with non-penetrating region
+                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
+                        newsigns(end+1) = -1;
+                    end
+                end
+            end
+            self.xiBoundaries(end+1) = xiBoundariesAndTPs(end);
+            self.xiBoundaries = reshape(self.xiBoundaries,[],1);
+            if length(newsigns)>1
+                newsigns(end+1) = -1*newsigns(end);
+            else
+                newsigns(end+1) = 1;
+            end
+            
             self.Lxi = abs(diff(self.xiBoundaries));
+            self.zBoundaries = interp1(self.xi_zLobatto,self.zLobatto,self.xiBoundaries,'spline');
             
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             self.nEquations = length(self.zBoundaries)-1;
-            if 1 == 0
+            if 1 == 1
                 % For this first draft, we simply evenly distribute the points.    
                 nPoints = floor(self.nEVP/self.nEquations);
                 nEVPPoints = nPoints*ones(self.nEquations,1);
@@ -259,14 +316,14 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 nPositivePoints = self.nEVP - nNegativePoints;
                 nEVPPoints = zeros(self.nEquations,1);
                 
-                indices = thesign<0;
+                indices = newsigns<0;
                 Ltotal = sum(self.Lxi(indices));
                 nEVPPoints(indices) = floor(nNegativePoints*self.Lxi(indices)./Ltotal);
                 
                 % give any extra points to the oscillatory section
                 nPositivePoints = nPositivePoints + (nNegativePoints - sum(nEVPPoints));
                 
-                indices = thesign>0;
+                indices = newsigns>0;
                 Ltotal = sum(self.Lxi(indices));
                 nEVPPoints(indices) = floor(nPositivePoints*self.Lxi(indices)./Ltotal);
                 
@@ -284,15 +341,15 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 remainingPoints = self.nEVP-sum(nEVPPoints);
                 
                 nNegativePoints = floor( (1/7)*remainingPoints);                
-                indices = thesign<0;
+                indices = newsigns<0;
                 Ltotal = sum(self.Lxi(indices));
                 nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
                 
                 % give any extra points to the oscillatory section
                 nPositivePoints = self.nEVP - sum(nEVPPoints);
-                indices = thesign>0;
+                indices = newsigns>0;
                 Ltotal = sum(self.Lxi(indices));
-                nEVPPoints(indices) = floor(nPositivePoints*self.Lxi(indices)./Ltotal);
+                nEVPPoints(indices) = nEVPPoints(indices) + floor(nPositivePoints*self.Lxi(indices)./Ltotal);
                 
                 % give any extra points to the last oscillatory section
                 nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
