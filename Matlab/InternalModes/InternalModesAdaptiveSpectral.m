@@ -36,9 +36,13 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         zBoundaries                 % z-location of the boundaries (end points plus turning points).
         xiBoundaries                % xi-location of the boundaries (end points plus turning points).
         nEquations
-        boundaryIndicesStart        % indices of the boundaries into xiLobatto
-        boundaryIndicesEnd          % indices of the boundaries into xiLobatto
+%         boundaryIndicesStart        % indices of the boundaries into xiLobatto
+%         boundaryIndicesEnd          % indices of the boundaries into xiLobatto
         Lxi                         % array of length(nEquations) with the length of each EVP domain in xi coordinates
+        
+        eqIndices                   % cell array containing indices into the *rows* for a given EVP
+        polyIndices                 % cell array containing indices into the *coumns* for a given EVP
+        xiIndices
         
         T_xCheb_zOut_Transforms     % cell array containing function handles
         T_xCheb_zOut_fromIndices    % cell array with indices into the xLobatto grid
@@ -95,18 +99,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
+
+            N2 = zeros(self.nEVP,1);
+            Nz = zeros(self.nEVP,1);
+            for i=1:self.nEquations
+                N2(self.eqIndices{i}) = self.N2_xLobatto(self.xiIndices{i});
+                Nz(self.eqIndices{i}) = self.Nz_xLobatto(self.xiIndices{i});
+            end
             
-            % now couple the equations together
-%             for i=2:self.nEquations                
-%                 n = self.boundaryIndicesEnd(i-1);
-%                 m = self.boundaryIndicesStart(i);
-%                 
-%                 % continuity in f
-%                 T(m,:) = T(n,:);
-%             end
-            
-            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
-            B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
+            A = diag(N2)*Tzz + diag(Nz)*Tz;
+            B = diag( (omega*omega - N2)/self.g )*T;
             
             % Lower boundary is rigid, G=0
             A(n,:) = T(n,:);
@@ -122,22 +124,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             % now couple the equations together
-            for i=2:self.nEquations
-                eq1indices = self.boundaryIndicesStart(i-1):self.boundaryIndicesEnd(i-1);
-                eq2indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
-                         
-                n = self.boundaryIndicesEnd(i-1);
-                m = self.boundaryIndicesStart(i);
-                
+            for i=2:self.nEquations                
                 % continuity in f      
-                A(n,eq1indices) = T(n,eq1indices);
-                A(n,eq2indices) = -T(m,eq2indices);
-                B(n,:) = 0;
+                A(max(self.eqIndices{i-1})+1,self.polyIndices{i-1}) = T(max(self.eqIndices{i-1}),self.polyIndices{i-1});
+                A(max(self.eqIndices{i-1})+1,self.polyIndices{i}) = -T(min(self.eqIndices{i}),self.polyIndices{i});
+                B(max(self.eqIndices{i-1})+1,:) = 0;
                 
                 % continuity in df/dx
-                A(m,eq1indices) = Tz(n,eq1indices);
-                A(m,eq2indices) = -Tz(m,eq2indices);
-                B(m,:) = 0;
+                A(max(self.eqIndices{i-1})+2,self.polyIndices{i-1}) = Tz(max(self.eqIndices{i-1}),self.polyIndices{i-1});
+                A(max(self.eqIndices{i-1})+2,self.polyIndices{i}) = -Tz(min(self.eqIndices{i}),self.polyIndices{i});
+                B(max(self.eqIndices{i-1})+2,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
@@ -145,10 +141,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
  
         function v_xCheb = T_xLobatto_xCheb( self, v_xLobatto)
             % transform from xLobatto basis to xCheb basis
-            v_xCheb = zeros(size(self.xiLobatto));
+            v_xCheb = zeros(self.nEVP,1);
             for i=1:self.nEquations
-                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
-                v_xCheb(indices) = InternalModesSpectral.fct(v_xLobatto(indices));
+                v_xCheb(self.polyIndices{i}(1:length(self.xiIndices{i}))) = InternalModesSpectral.fct(v_xLobatto(self.xiIndices{i}));
             end
         end
         
@@ -156,8 +151,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % transform from xCheb basis to xLobatto
             v_xLobatto = zeros(size(self.xiLobatto));
             for i=1:self.nEquations
-                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
-                v_xLobatto(indices) = InternalModesSpectral.ifct(v_xCheb(indices));
+                v_xLobatto(self.xiIndices{i}) = InternalModesSpectral.ifct(v_xCheb(self.polyIndices{i}(1:length(self.xiIndices{i}))));
             end
         end
         
@@ -174,8 +168,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % differentiate a vector in the compound Chebyshev xi basis
             vx = zeros(size(v));
             for iEquation = 1:self.nEquations
-                indices = self.boundaryIndicesStart(iEquation):self.boundaryIndicesEnd(iEquation);
-                vx(indices) = (2/self.Lxi(iEquation))*InternalModesSpectral.DifferentiateChebyshevVector( v(indices) );
+                vx(self.polyIndices{iEquation}) = (2/self.Lxi(iEquation))*InternalModesSpectral.DifferentiateChebyshevVector( v(self.polyIndices{iEquation}) );
             end
         end
         
@@ -289,6 +282,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                     end
                 end
             end
+            
+            % Let's hack in an extra point
+%             self.xiBoundaries(end+1) = min(xiBoundariesAndTPs) + (max(xiBoundariesAndTPs)-min(xiBoundariesAndTPs))/3;
+            
             self.xiBoundaries(end+1) = xiBoundariesAndTPs(end);
             self.xiBoundaries = reshape(self.xiBoundaries,[],1);
             if length(newsigns)>1
@@ -302,7 +299,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
-            self.nEquations = length(self.zBoundaries)-1;
+            self.nEquations = length(self.xiBoundaries)-1;
             if 1 == 1
                 % For this first draft, we simply evenly distribute the points.    
                 nPoints = floor(self.nEVP/self.nEquations);
@@ -332,10 +329,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             elseif 1 == 3
                 nEVPPoints = floor(self.nEVP*self.Lxi/sum(self.Lxi));
                 nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
-            elseif 1 == 4
-                Lrho = diff( self.rho_function(self.zBoundaries) );
-                nEVPPoints = floor(self.nEVP*Lrho/sum(Lrho));
-                nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
             elseif 1 == 1
                 nEVPPoints = 16*ones(size(self.Lxi));
                 remainingPoints = self.nEVP-sum(nEVPPoints);
@@ -356,35 +349,61 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             nEVPPoints
             
-            % A boundary point is repeated at the start of each EVP
-            self.boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
-            self.boundaryIndicesEnd = self.boundaryIndicesStart + nEVPPoints-1;
+                        
+            self.SetupCoupledEquationsAtBoundaries( self.xiBoundaries, nEVPPoints );
+        end
+        
+        function SetupCoupledEquationsAtBoundaries( self, xiBoundaries, nEVPPoints )
+            self.xiBoundaries = xiBoundaries;
             
+            % A boundary point is repeated at the start of each EVP
+            boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
+            boundaryIndicesEnd = boundaryIndicesStart + nEVPPoints-1;
+            
+            self.eqIndices = cell(self.nEquations,1);
+            self.polyIndices = cell(self.nEquations,1);
+            self.xiIndices = cell(self.nEquations,1);
+            endXiIndex = 0;
+            for i=1:self.nEquations
+                self.polyIndices{i} = boundaryIndicesStart(i):boundaryIndicesEnd(i);
+                if i==1
+                    self.eqIndices{i} = boundaryIndicesStart(i):(boundaryIndicesEnd(i)-1);
+                elseif i==self.nEquations
+                    self.eqIndices{i} = (boundaryIndicesStart(i)+1):boundaryIndicesEnd(i);
+                else
+                    self.eqIndices{i} = (boundaryIndicesStart(i)+1):(boundaryIndicesEnd(i)-1);
+                end
+                startXiIndex = endXiIndex + 1;
+                endXiIndex = startXiIndex + length(self.eqIndices{i})-1;
+                self.xiIndices{i} = startXiIndex:endXiIndex;
+            end
+            nGridPoints = self.nEVP - 2*(self.nEquations-1);
+                        
             % Now we walk through the equations, and create a lobatto grid
             % for each equation.
-            self.xiLobatto = zeros(self.nEVP,1);
+            self.xiLobatto = zeros(nGridPoints,1);
             self.Int_xCheb = zeros(self.nEVP,1);
             self.T_xLobatto = zeros(self.nEVP,self.nEVP);
             self.Tx_xLobatto = zeros(self.nEVP,self.nEVP);
             self.Txx_xLobatto = zeros(self.nEVP,self.nEVP);
             for i=1:self.nEquations
-                n = nEVPPoints(i);
-                indices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
+                n = length(self.eqIndices{i});
+                m = length(self.polyIndices{i});
                 xLobatto = (self.Lxi(i)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
-                self.xiLobatto(indices) = xLobatto;
+                self.xiLobatto(self.xiIndices{i}) = xLobatto;
                 
-                [T,Tx,Txx] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( xLobatto, length(xLobatto) );
-                self.T_xLobatto(indices,indices) = T;
-                self.Tx_xLobatto(indices,indices) = Tx;
-                self.Txx_xLobatto(indices,indices) = Txx;
+                [T,Tx,Txx] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( xLobatto, m );
+                self.T_xLobatto(self.eqIndices{i},self.polyIndices{i}) = T;
+                self.Tx_xLobatto(self.eqIndices{i},self.polyIndices{i}) = Tx;
+                self.Txx_xLobatto(self.eqIndices{i},self.polyIndices{i}) = Txx;
                 
                 % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
                 % for all n, except n=1, where the integral is zero.
-                np = (0:(n-1))';
+                np = (0:(m-1))';
                 Int = -(1+(-1).^np)./(np.*np-1);
                 Int(2) = 0;
                 Int = self.Lxi(i)/2*Int;
-                self.Int_xCheb(indices) = Int;
+                self.Int_xCheb(self.polyIndices{i}) = Int;
             end
             
             % Now we need z on the \xi grid
@@ -415,18 +434,17 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 end
                 if ~isempty(toIndices)
                     index = length(self.T_xCheb_zOut_Transforms)+1;
-                    fromIndices = self.boundaryIndicesStart(i):self.boundaryIndicesEnd(i);
                     
-                    self.T_xCheb_zOut_fromIndices{index} = fromIndices;
+                    self.T_xCheb_zOut_fromIndices{index} = self.polyIndices{i}(1:length(self.xiIndices{i}));
                     self.T_xCheb_zOut_toIndices{index} = toIndices;
-                    self.T_xCheb_zOut_Transforms{index} = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto(fromIndices), self.xiOut(toIndices));
+                    self.T_xCheb_zOut_Transforms{index} = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto(self.xiIndices{i}), self.xiOut(toIndices));
                 end
             end
             
             self.T_xCheb_zOut = @(v) self.T_xCheb_zOutFunction(v);
             self.Diff1_xCheb = @(v) self.Diff1_xChebFunction(v);
         end
-                      
+        
         function self = SetupEigenvalueProblem(self)            
 
             
