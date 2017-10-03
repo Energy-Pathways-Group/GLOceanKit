@@ -252,7 +252,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % The equation boundaries are different from the turning point
             % boundaries. We need to extend the oscillatories regions into
             % the exponential decay regions.
-            L_osc = 3*sum(LxiRegion(thesign>0));
+            L_osc = 1.5*sum(LxiRegion(thesign>0));
                         
             self.xiBoundaries(1) = xiBoundariesAndTPs(1);
             newsigns = [];
@@ -288,7 +288,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             self.xiBoundaries(end+1) = xiBoundariesAndTPs(end);
             self.xiBoundaries = reshape(self.xiBoundaries,[],1);
-            if length(newsigns)>1
+            if length(newsigns)>0
                 newsigns(end+1) = -1*newsigns(end);
             else
                 newsigns(end+1) = 1;
@@ -300,7 +300,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % We will be coupling nTP+1 EVPs together. We need to
             % distribute the user requested points to each of these EVPs.
             self.nEquations = length(self.xiBoundaries)-1;
-            if 1 == 1
+            if 1 == 0
                 % For this first draft, we simply evenly distribute the points.    
                 nPoints = floor(self.nEVP/self.nEquations);
                 nEVPPoints = nPoints*ones(self.nEquations,1);
