@@ -310,13 +310,14 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                     end
                 end
             end
-            if ~isempty(newsigns)
+            if totalBoundaryPoints>1 % the last region will always have the opposite sign as the previous
                 newsigns(totalBoundaryPoints) = -1*newsigns(totalBoundaryPoints-1);
             else
                 newsigns(totalBoundaryPoints) = 1;
             end
             totalBoundaryPoints = totalBoundaryPoints + 1;
             newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(end);
+
             
             newsigns = newsigns(1:(totalBoundaryPoints-1));
             newBoundaries = newBoundaries(1:totalBoundaryPoints);
@@ -379,6 +380,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         
         function SetupCoupledEquationsAtBoundaries( self, boundaries, nEVPPoints )
             self.xiBoundaries = boundaries;
+            self.zBoundaries = interp1(self.xi_zLobatto,self.zLobatto,self.xiBoundaries,'spline');
             self.Lxi = abs(diff(boundaries));
             self.nEquations = length(self.xiBoundaries)-1;
             
