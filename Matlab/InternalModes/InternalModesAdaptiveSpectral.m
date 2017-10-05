@@ -252,7 +252,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % The equation boundaries are different from the turning point
             % boundaries. We need to extend the oscillatories regions into
             % the exponential decay regions.
-            L_osc = 1.5*sum(LxiRegion(thesign>0));
+            L_osc = 3*sum(LxiRegion(thesign>0));
+            % all else being equal, increasing this length scale decreases
+            % the quality of the lowest modes, decreases the highest.
                         
             self.xiBoundaries(1) = xiBoundariesAndTPs(1);
             newsigns = [];
@@ -305,6 +307,77 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 nPoints = floor(self.nEVP/self.nEquations);
                 nEVPPoints = nPoints*ones(self.nEquations,1);
                 nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
+            elseif 1 == 1
+                if self.nEquations > 1
+                    ratio = 0.5;
+                    nNegativePoints = floor(ratio*self.nEVP);
+                    nPositivePoints = self.nEVP - nNegativePoints;
+                    nEVPPoints = zeros(self.nEquations,1);
+                                        
+                    indices = newsigns<0;
+                    if ~isempty(indices)
+                        relativeSize = sqrt( self.Lxi(indices)./min(self.Lxi(indices)));
+                        nBase = nNegativePoints/sum( relativeSize );
+                        nEVPPoints(indices) = floor( relativeSize * nBase );
+                        nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nNegativePoints-sum(nEVPPoints(indices));
+                    end
+                    
+                    indices = newsigns>0;
+                    if ~isempty(indices)
+                        relativeSize = sqrt( self.Lxi(indices)./min(self.Lxi(indices)));
+                        nBase = nPositivePoints/sum( relativeSize );
+                        nEVPPoints(indices) = floor( relativeSize * nBase );
+                        nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
+                    end
+                    
+                else
+                    nEVPPoints = self.nEVP;
+                end
+                    
+            elseif 1 == 1
+%                 nEVPPoints = zeros(self.nEquations,1);
+                minN = 10;
+                
+                if sum(newsigns<0) > 0
+                    minLxi = min(self.Lxi(newsigns<0));
+                else
+                    minLxi = min(self.Lxi);
+                end
+                nEVPPoints = floor(minN*sqrt(self.Lxi/minLxi));
+                
+%                 % force the smallest non-oscillatory section to have 12 points, and
+%                 % everthing else proportionally more
+%                 indices = newsigns<0;
+%                 nEVPPoints(indices) = floor(minN*sqrt(self.Lxi(indices)/min(self.Lxi(indices))));
+%                 
+%                 % and then force the smallest oscillatory section to have
+%                 % 12 points as well
+%                 indices = newsigns>0;
+%                 nEVPPoints(indices) = floor(minN*sqrt(self.Lxi(indices)/min(self.Lxi(indices))));
+                
+                % Now distribute the remaining points with some ratio of
+                % non-oscillatory to (oscillatory+non-oscillatory).
+                ratio = 0.1;
+                indices = newsigns<0;
+                remainingPoints = self.nEVP-sum(nEVPPoints);
+                nNegativePoints = floor( ratio*remainingPoints);                
+                
+                Ltotal = sum(self.Lxi(indices));
+                nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the oscillatory section
+                nPositivePoints = self.nEVP - sum(nEVPPoints);
+                indices = newsigns>0;
+                Ltotal = sum(self.Lxi(indices));
+                lastOscIndex = find(newsigns>0,1,'last');
+                nEVPPoints(indices) = nEVPPoints(indices) + floor(nPositivePoints*self.Lxi(indices)./Ltotal);
+                
+                % give any extra points to the last oscillatory section
+                nEVPPoints(lastOscIndex) = nEVPPoints(lastOscIndex) + (self.nEVP - sum(nEVPPoints));
+                
+                if sum(nEVPPoints) > self.nEVP
+                    error('removing turning points, you did not provide enough grid points')
+                end
             elseif 1 == 2
                 % Here we try giving oscillatory regions 2/3s of the points
                 % 2017/09/15 ? this appears worse than the above, simpler
@@ -330,10 +403,22 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 nEVPPoints = floor(self.nEVP*self.Lxi/sum(self.Lxi));
                 nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
             elseif 1 == 1
+                % The accuracy of the lowest mode is controlled by the
+                % minimum grid points in the non-oscillatory region.
+                % With exponential stratification test at 64 and 128 grid
+                % points, we don't drop below 1e-2 error until we use 16
+                % points in each section, and below 1e-3 at 24 grid points.
+                %
+                % The double exponential does great with 12/40/12 (2e-5)
+                % and even better with 16/32/16, although at that
+                % distribution the high modes look basically the same as
+                % the standard wkb method.
+                %
+                % These are all with a decay scale of 3
                 nEVPPoints = 16*ones(size(self.Lxi));
                 remainingPoints = self.nEVP-sum(nEVPPoints);
                 
-                nNegativePoints = floor( (1/7)*remainingPoints);                
+                nNegativePoints = floor( (0/7)*remainingPoints);                
                 indices = newsigns<0;
                 Ltotal = sum(self.Lxi(indices));
                 nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
@@ -342,10 +427,11 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 nPositivePoints = self.nEVP - sum(nEVPPoints);
                 indices = newsigns>0;
                 Ltotal = sum(self.Lxi(indices));
+                lastOscIndex = find(newsigns>0,1,'last');
                 nEVPPoints(indices) = nEVPPoints(indices) + floor(nPositivePoints*self.Lxi(indices)./Ltotal);
                 
                 % give any extra points to the last oscillatory section
-                nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
+                nEVPPoints(lastOscIndex) = nEVPPoints(lastOscIndex) + (self.nEVP - sum(nEVPPoints));
             end
             nEVPPoints
             
@@ -366,7 +452,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             endXiIndex = 0;
             for i=1:self.nEquations
                 self.polyIndices{i} = boundaryIndicesStart(i):boundaryIndicesEnd(i);
-                if i==1
+                if i==1 && i==self.nEquations
+                    self.eqIndices{i} = boundaryIndicesStart(i):boundaryIndicesEnd(i);
+                elseif i==1
                     self.eqIndices{i} = boundaryIndicesStart(i):(boundaryIndicesEnd(i)-1);
                 elseif i==self.nEquations
                     self.eqIndices{i} = (boundaryIndicesStart(i)+1):boundaryIndicesEnd(i);
