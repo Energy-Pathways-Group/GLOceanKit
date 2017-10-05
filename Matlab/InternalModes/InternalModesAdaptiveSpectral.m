@@ -247,200 +247,140 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                         
             [zBoundariesAndTPs, thesign] = self.FindTurningPointBoundariesAtFrequency(self.gridFrequency);
             xiBoundariesAndTPs = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
-            LxiRegion = abs(diff(xiBoundariesAndTPs));
             
-            % The equation boundaries are different from the turning point
-            % boundaries. We need to extend the oscillatories regions into
-            % the exponential decay regions.
-            L_osc = 3*sum(LxiRegion(thesign>0));
-            % all else being equal, increasing this length scale decreases
-            % the quality of the lowest modes, decreases the highest.
+            % Extended the oscillatory regions by some predefined amount
+            % (L_osc)
+            [boundaries, thesign] = self.GrowOscillatoryRegions( xiBoundariesAndTPs, thesign );
+            
+            % Distribute the allowed points in these regions, but remove
+            % regions that end up with too few points.
+            nEVPPoints = self.DistributePointsInRegions( self.nEVP, boundaries, thesign );
+            [minPoints, minIndex] = min(nEVPPoints);
+            while ( minPoints < 5 )
+                [boundaries, thesign] = self.RemoveRegionAtIndex( boundaries, thesign, minIndex );
+                nEVPPoints = self.DistributePointsInRegions( self.nEVP, boundaries, thesign );
+                [minPoints, minIndex] = min(nEVPPoints);
+            end
                         
-            self.xiBoundaries(1) = xiBoundariesAndTPs(1);
-            newsigns = [];
+            self.SetupCoupledEquationsAtBoundaries( boundaries, nEVPPoints );
+            
+            nEVPPoints
+            self.Lxi
+        end
+        
+        function [newBoundaries, newsigns] = GrowOscillatoryRegions(self, xiBoundariesAndTPs, thesign)
+            LxiRegion = abs(diff(xiBoundariesAndTPs));
+            newBoundaries = zeros(size(xiBoundariesAndTPs));
+            newsigns = zeros(size(thesign));
+            
+            % We pick a length scale (in WKB coordinates) over which the
+            % mode decays approximately three orders of magnitude.
+            L_osc = 4*sum(LxiRegion(thesign>0));
+            
+            newBoundaries(1) = xiBoundariesAndTPs(1);
+            totalBoundaryPoints = 1;
             for iInteriorPoint = 2:(length(xiBoundariesAndTPs)-1)
                 % decision tree to see if we keep this interior point
                 if thesign(iInteriorPoint-1) > 0
                     % positive to left...
                     if iInteriorPoint == length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc/2
                         %...and bottom boundary, with non-penetrating region
-                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
-                        newsigns(end+1) = 1;
+                        % so make the positive (oscillatory) region bigger
+                        newsigns(totalBoundaryPoints) = 1;
+                        totalBoundaryPoints = totalBoundaryPoints + 1;
+                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;     
                     elseif iInteriorPoint < length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc
                         %...and interior boundary, with non-penetrating region
-                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
-                        newsigns(end+1) = 1;
+                        newsigns(totalBoundaryPoints) = 1;
+                        totalBoundaryPoints = totalBoundaryPoints + 1;
+                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
                     end
                 elseif thesign(iInteriorPoint-1) < 0
                     % negative to the left...
                     if iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc/2
                         %...and top boundary, with non-penetrating region
-                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
-                        newsigns(end+1) = -1;
+                        newsigns(totalBoundaryPoints) = -1;
+                        totalBoundaryPoints = totalBoundaryPoints + 1;
+                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
                     elseif iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc
                         %...and interior boundary, with non-penetrating region
-                        self.xiBoundaries(end+1) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
-                        newsigns(end+1) = -1;
+                        newsigns(totalBoundaryPoints) = -1;
+                        totalBoundaryPoints = totalBoundaryPoints + 1;
+                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
                     end
                 end
             end
-            
-            % Let's hack in an extra point
-%             self.xiBoundaries(end+1) = min(xiBoundariesAndTPs) + (max(xiBoundariesAndTPs)-min(xiBoundariesAndTPs))/3;
-            
-            self.xiBoundaries(end+1) = xiBoundariesAndTPs(end);
-            self.xiBoundaries = reshape(self.xiBoundaries,[],1);
-            if length(newsigns)>0
-                newsigns(end+1) = -1*newsigns(end);
+            if ~isempty(newsigns)
+                newsigns(totalBoundaryPoints) = -1*newsigns(totalBoundaryPoints-1);
             else
-                newsigns(end+1) = 1;
+                newsigns(totalBoundaryPoints) = 1;
             end
+            totalBoundaryPoints = totalBoundaryPoints + 1;
+            newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(end);
             
-            self.Lxi = abs(diff(self.xiBoundaries));
-            self.zBoundaries = interp1(self.xi_zLobatto,self.zLobatto,self.xiBoundaries,'spline');
-            
-            % We will be coupling nTP+1 EVPs together. We need to
-            % distribute the user requested points to each of these EVPs.
-            self.nEquations = length(self.xiBoundaries)-1;
-            if 1 == 0
-                % For this first draft, we simply evenly distribute the points.    
-                nPoints = floor(self.nEVP/self.nEquations);
-                nEVPPoints = nPoints*ones(self.nEquations,1);
-                nEVPPoints(end) = nEVPPoints(end) + self.nEVP - nPoints*self.nEquations; % add any extra points to the end
-            elseif 1 == 1
-                if self.nEquations > 1
-                    ratio = 0.5;
-                    nNegativePoints = floor(ratio*self.nEVP);
-                    nPositivePoints = self.nEVP - nNegativePoints;
-                    nEVPPoints = zeros(self.nEquations,1);
-                                        
-                    indices = newsigns<0;
-                    if ~isempty(indices)
-                        relativeSize = sqrt( self.Lxi(indices)./min(self.Lxi(indices)));
-                        nBase = nNegativePoints/sum( relativeSize );
-                        nEVPPoints(indices) = floor( relativeSize * nBase );
-                        nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nNegativePoints-sum(nEVPPoints(indices));
-                    end
-                    
-                    indices = newsigns>0;
-                    if ~isempty(indices)
-                        relativeSize = sqrt( self.Lxi(indices)./min(self.Lxi(indices)));
-                        nBase = nPositivePoints/sum( relativeSize );
-                        nEVPPoints(indices) = floor( relativeSize * nBase );
-                        nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
-                    end
-                    
-                else
-                    nEVPPoints = self.nEVP;
-                end
-                    
-            elseif 1 == 1
-%                 nEVPPoints = zeros(self.nEquations,1);
-                minN = 10;
-                
-                if sum(newsigns<0) > 0
-                    minLxi = min(self.Lxi(newsigns<0));
-                else
-                    minLxi = min(self.Lxi);
-                end
-                nEVPPoints = floor(minN*sqrt(self.Lxi/minLxi));
-                
-%                 % force the smallest non-oscillatory section to have 12 points, and
-%                 % everthing else proportionally more
-%                 indices = newsigns<0;
-%                 nEVPPoints(indices) = floor(minN*sqrt(self.Lxi(indices)/min(self.Lxi(indices))));
-%                 
-%                 % and then force the smallest oscillatory section to have
-%                 % 12 points as well
-%                 indices = newsigns>0;
-%                 nEVPPoints(indices) = floor(minN*sqrt(self.Lxi(indices)/min(self.Lxi(indices))));
-                
-                % Now distribute the remaining points with some ratio of
-                % non-oscillatory to (oscillatory+non-oscillatory).
-                ratio = 0.1;
-                indices = newsigns<0;
-                remainingPoints = self.nEVP-sum(nEVPPoints);
-                nNegativePoints = floor( ratio*remainingPoints);                
-                
-                Ltotal = sum(self.Lxi(indices));
-                nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the oscillatory section
-                nPositivePoints = self.nEVP - sum(nEVPPoints);
-                indices = newsigns>0;
-                Ltotal = sum(self.Lxi(indices));
-                lastOscIndex = find(newsigns>0,1,'last');
-                nEVPPoints(indices) = nEVPPoints(indices) + floor(nPositivePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the last oscillatory section
-                nEVPPoints(lastOscIndex) = nEVPPoints(lastOscIndex) + (self.nEVP - sum(nEVPPoints));
-                
-                if sum(nEVPPoints) > self.nEVP
-                    error('removing turning points, you did not provide enough grid points')
-                end
-            elseif 1 == 2
-                % Here we try giving oscillatory regions 2/3s of the points
-                % 2017/09/15 ? this appears worse than the above, simpler
-                % method!
-                nNegativePoints = floor( (1/7)*self.nEVP );
-                nPositivePoints = self.nEVP - nNegativePoints;
-                nEVPPoints = zeros(self.nEquations,1);
-                
-                indices = newsigns<0;
-                Ltotal = sum(self.Lxi(indices));
-                nEVPPoints(indices) = floor(nNegativePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the oscillatory section
-                nPositivePoints = nPositivePoints + (nNegativePoints - sum(nEVPPoints));
-                
-                indices = newsigns>0;
-                Ltotal = sum(self.Lxi(indices));
-                nEVPPoints(indices) = floor(nPositivePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the last oscillatory section
-                nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + (self.nEVP - sum(nEVPPoints));
-            elseif 1 == 3
-                nEVPPoints = floor(self.nEVP*self.Lxi/sum(self.Lxi));
-                nEVPPoints(1) = nEVPPoints(1) + (self.nEVP - sum(nEVPPoints));
-            elseif 1 == 1
-                % The accuracy of the lowest mode is controlled by the
-                % minimum grid points in the non-oscillatory region.
-                % With exponential stratification test at 64 and 128 grid
-                % points, we don't drop below 1e-2 error until we use 16
-                % points in each section, and below 1e-3 at 24 grid points.
-                %
-                % The double exponential does great with 12/40/12 (2e-5)
-                % and even better with 16/32/16, although at that
-                % distribution the high modes look basically the same as
-                % the standard wkb method.
-                %
-                % These are all with a decay scale of 3
-                nEVPPoints = 16*ones(size(self.Lxi));
-                remainingPoints = self.nEVP-sum(nEVPPoints);
-                
-                nNegativePoints = floor( (0/7)*remainingPoints);                
-                indices = newsigns<0;
-                Ltotal = sum(self.Lxi(indices));
-                nEVPPoints(indices) = nEVPPoints(indices) + floor(nNegativePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the oscillatory section
-                nPositivePoints = self.nEVP - sum(nEVPPoints);
-                indices = newsigns>0;
-                Ltotal = sum(self.Lxi(indices));
-                lastOscIndex = find(newsigns>0,1,'last');
-                nEVPPoints(indices) = nEVPPoints(indices) + floor(nPositivePoints*self.Lxi(indices)./Ltotal);
-                
-                % give any extra points to the last oscillatory section
-                nEVPPoints(lastOscIndex) = nEVPPoints(lastOscIndex) + (self.nEVP - sum(nEVPPoints));
-            end
-            nEVPPoints
-            
-                        
-            self.SetupCoupledEquationsAtBoundaries( self.xiBoundaries, nEVPPoints );
+            newsigns = newsigns(1:(totalBoundaryPoints-1));
+            newBoundaries = newBoundaries(1:totalBoundaryPoints);
         end
         
-        function SetupCoupledEquationsAtBoundaries( self, xiBoundaries, nEVPPoints )
-            self.xiBoundaries = xiBoundaries;
+        function [newBoundaries, newSigns] = RemoveRegionAtIndex(self, oldBoundaries, oldSigns, index)
+            newBoundaries = oldBoundaries;
+            newSigns = oldSigns;
+            if length(oldBoundaries) < 3
+                return
+            elseif index == 1
+                newBoundaries(2) = [];
+                newSigns(1) = [];
+            elseif index == length(oldBoundaries)-1
+                newBoundaries(length(oldBoundaries)-1) = [];
+                newSigns(end) = [];
+            else
+                newBoundaries([index;index+1]) = [];
+                newSigns([index-1;index]) = [];
+            end
+        end
+        
+        function nEVPPoints = DistributePointsInRegions(self, nTotalPoints, boundaries, thesign)
+            L = abs(diff(boundaries));
+            totalEquations = length(boundaries)-1;
+            
+            % This algorithm distributes the points/polynomials amongst the
+            % different regions/equations
+            if totalEquations > 1
+                ratio = 1/4;
+                
+                % Never let a region get more points than it would have,
+                % and cap that ratio.
+                ratio = min( sum(L(thesign<0))/sum(L), ratio );
+                
+                nNegativePoints = floor(ratio*nTotalPoints);
+                nPositivePoints = nTotalPoints - nNegativePoints;
+                nEVPPoints = zeros(totalEquations,1);
+                
+                indices = thesign<0;
+                if ~isempty(indices)
+                    relativeSize = sqrt( L(indices)./min(L(indices)));
+                    nBase = nNegativePoints/sum( relativeSize );
+                    nEVPPoints(indices) = floor( relativeSize * nBase );
+                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nNegativePoints-sum(nEVPPoints(indices));
+                end
+                
+                indices = thesign>0;
+                if ~isempty(indices)
+                    relativeSize = sqrt( L(indices)./min(L(indices)));
+                    nBase = nPositivePoints/sum( relativeSize );
+                    nEVPPoints(indices) = floor( relativeSize * nBase );
+                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
+                end
+                
+            else
+                nEVPPoints = nTotalPoints;
+            end
+        end
+        
+        function SetupCoupledEquationsAtBoundaries( self, boundaries, nEVPPoints )
+            self.xiBoundaries = boundaries;
+            self.Lxi = abs(diff(boundaries));
+            self.nEquations = length(self.xiBoundaries)-1;
             
             % A boundary point is repeated at the start of each EVP
             boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
