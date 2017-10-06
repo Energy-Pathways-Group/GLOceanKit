@@ -297,11 +297,8 @@ classdef InternalModesSpectral < InternalModesBase
                 end
             else
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
-            end
-            
-            if isempty(self.nModes) || self.nModes < 1
-                self.nModes = floor(self.nEVP/2);
-            end
+            end            
+
         end
         
         % This function is an intermediary used by ModesAtFrequency and
@@ -329,9 +326,20 @@ classdef InternalModesSpectral < InternalModesBase
             [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
             G_cheb=V(:,permutation);
             
-            F = zeros(length(self.z),self.nModes);
-            G = zeros(length(self.z),self.nModes);
-            h = reshape(h(1:self.nModes),1,[]);
+            if isempty(self.nModes)
+                maxModes = ceil(find(h>0,1,'last')/2); % Have to do ceil, not floor, or we lose the barotropic mode.
+                if maxModes == 0
+                    fprintf('No usable modes found! Try with higher resolution.\n');
+                    return;
+                end
+            else
+                maxModes = self.nModes;
+            end
+            
+            
+            F = zeros(length(self.z),maxModes);
+            G = zeros(length(self.z),maxModes);
+            h = reshape(h(1:maxModes),1,[]);
             
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.
@@ -339,7 +347,7 @@ classdef InternalModesSpectral < InternalModesBase
             if maxIndexZ > 1 % grab a point just above the turning point, which should have the right sign.
                 maxIndexZ = maxIndexZ-1;
             end
-            for j=1:self.nModes
+            for j=1:maxModes
                 Fj = FFromGCheb(G_cheb(:,j),h(j));
                 Gj = GFromGCheb(G_cheb(:,j),h(j));
                 if strcmp(self.normalization, 'max_u')

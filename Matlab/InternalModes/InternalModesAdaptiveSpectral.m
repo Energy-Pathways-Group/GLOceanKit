@@ -223,7 +223,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             zTP = zeros(nTP,1);
             for i=1:nTP
                 fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
-                zTP(i) = fzero(fun,self.zLobatto(turningIndices(i)));
+                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
+                zTP(i) = fzero(fun,z0);
             end
             zBoundary = [self.zLobatto(1); zTP; self.zLobatto(end)];
             
@@ -238,6 +239,98 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
         end
         
+        function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega)
+            requiredDecay = 1e-6; % 1e-6 seems to prevent exp strat from doing any worse... going to 1e-5 will do slightly worse for some frequencies.
+            
+            % This function returns not just the turning points, but also
+            % the top and bottom boundary locations in z.
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
+            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
+            turningIndices = find(diff(a)~=0);
+            nTP = length(turningIndices);
+            zTP = zeros(nTP,1);
+            for i=1:nTP
+                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
+                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
+                zTP(i) = fzero(fun,z0);
+            end
+            boundaryIndices = [1; turningIndices; length(self.zLobatto)];
+            zBoundariesAndTPs = [self.zLobatto(1); zTP; self.zLobatto(end)];
+            
+            % what's the sign on the EVP in these regions? In this case,
+            % positive indicates oscillatory, negative exponential decay
+            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
+            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
+            % remove any boundaries of zero length
+            for index = reshape(find( thesign == 0),1,[])
+                thesign(index) = [];
+                zBoundariesAndTPs(index) = [];
+                boundaryIndices(index) = [];
+            end
+            
+            L_osc = 0.0;
+            for i = 1:length(thesign)
+                if thesign(i) > 0
+                    indices = boundaryIndices(i+1):-1:boundaryIndices(i);
+                    L_osc = L_osc + trapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                end
+            end
+            
+            indicesToRemove = [];
+            for iInteriorPoint = 2:(length(zBoundariesAndTPs)-1)
+               if thesign( iInteriorPoint-1) < 0
+                  % negative (decay) to the left, positive (oscillatory) to
+                  % the right
+                  indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
+                  xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                  decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -pi*xi/L_osc);
+                  decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                  if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
+                      % need to remove this point
+                      indicesToRemove(end+1) = iInteriorPoint;
+                  else
+                      boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                  end
+               else
+                   % positive (oscillatory) to the left, negative (decay) to
+                   % the right
+                   indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
+                   xi = -cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                   decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -pi*xi/L_osc);
+                   decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                   if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
+                       % need to remove this point
+                       indicesToRemove(end+1) = iInteriorPoint;
+                   else
+                       boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                   end
+               end
+
+            end
+            
+                            
+            if ~isempty(indicesToRemove)
+                zBoundariesAndTPs( indicesToRemove ) = [];
+                boundaryIndices( indicesToRemove ) = [];
+                % the sign will always alternate. -1/+1
+                if min(indicesToRemove) == 2
+                    thesign = -1*ones(1,length(boundaryIndices)-1);
+                    thesign(1) = 1;
+                    thesign = cumprod(thesign);
+                else
+                    thesign = thesign(1:(length(boundaryIndices)-1));
+                    if length(thesign)>1
+                        thesign(2:end) = -1;
+                        thesign = cumprod(thesign);
+                    end
+                end
+            end
+            
+            
+            zBoundariesAndTPs = self.zLobatto(boundaryIndices);
+            
+        end
+        
         function CreateGridForFrequency(self,omega)
             if self.gridFrequency == omega
                 return
@@ -245,27 +338,31 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             self.gridFrequency = omega;
                         
-            [zBoundariesAndTPs, thesign] = self.FindTurningPointBoundariesAtFrequency(self.gridFrequency);
-            xiBoundariesAndTPs = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
+%             [zBoundariesAndTPs, thesign] = self.FindTurningPointBoundariesAtFrequency(self.gridFrequency);
+%             xiBoundariesAndTPs = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
+%             
+%             % Extended the oscillatory regions by some predefined amount
+%             % (L_osc)
+%             [boundaries, thesign] = self.GrowOscillatoryRegions( xiBoundariesAndTPs, thesign );
             
-            % Extended the oscillatory regions by some predefined amount
-            % (L_osc)
-            [boundaries, thesign] = self.GrowOscillatoryRegions( xiBoundariesAndTPs, thesign );
+            
+            [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega);
+            boundaries = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
             
             % Distribute the allowed points in these regions, but remove
             % regions that end up with too few points.
-            nEVPPoints = self.DistributePointsInRegions( self.nEVP, boundaries, thesign );
+            nEVPPoints = self.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
             [minPoints, minIndex] = min(nEVPPoints);
             while ( minPoints < 5 )
                 [boundaries, thesign] = self.RemoveRegionAtIndex( boundaries, thesign, minIndex );
-                nEVPPoints = self.DistributePointsInRegions( self.nEVP, boundaries, thesign );
+                nEVPPoints = self.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
                 [minPoints, minIndex] = min(nEVPPoints);
             end
                         
             self.SetupCoupledEquationsAtBoundaries( boundaries, nEVPPoints );
             
             nEVPPoints
-            self.Lxi
+%             self.Lxi
         end
         
         function [newBoundaries, newsigns] = GrowOscillatoryRegions(self, xiBoundariesAndTPs, thesign)
@@ -275,8 +372,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             % We pick a length scale (in WKB coordinates) over which the
             % mode decays approximately three orders of magnitude.
-            L_osc = 4*sum(LxiRegion(thesign>0));
-            
+            L_osc = 6*sum(LxiRegion(thesign>0));
+                        
             newBoundaries(1) = xiBoundariesAndTPs(1);
             totalBoundaryPoints = 1;
             for iInteriorPoint = 2:(length(xiBoundariesAndTPs)-1)
@@ -347,7 +444,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % This algorithm distributes the points/polynomials amongst the
             % different regions/equations
             if totalEquations > 1
-                ratio = 1/4;
+                ratio = 1/6;
                 
                 % Never let a region get more points than it would have,
                 % and cap that ratio.
@@ -365,6 +462,32 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                     nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nNegativePoints-sum(nEVPPoints(indices));
                 end
                 
+                indices = thesign>0;
+                if ~isempty(indices)
+                    relativeSize = sqrt( L(indices)./min(L(indices)));
+                    nBase = nPositivePoints/sum( relativeSize );
+                    nEVPPoints(indices) = floor( relativeSize * nBase );
+                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
+                end
+                
+            else
+                nEVPPoints = nTotalPoints;
+            end
+        end
+        
+        function nEVPPoints = DistributePointsInRegionsWithMinimum(self, nTotalPoints, boundaries, thesign)
+            L = abs(diff(boundaries));
+            totalEquations = length(boundaries)-1;
+            minPoints = 6;
+            
+            % This algorithm distributes the points/polynomials amongst the
+            % different regions/equations
+            if totalEquations > 1
+                nEVPPoints = zeros(totalEquations,1);
+                
+                nEVPPoints(thesign<0) = minPoints;
+                
+                nPositivePoints = nTotalPoints - minPoints*sum(thesign<0);          
                 indices = thesign>0;
                 if ~isempty(indices)
                     relativeSize = sqrt( L(indices)./min(L(indices)));
