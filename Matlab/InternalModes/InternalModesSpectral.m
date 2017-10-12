@@ -83,6 +83,7 @@ classdef InternalModesSpectral < InternalModesBase
         rho_zLobatto        % rho on the above zLobatto
         rho_zCheb           % rho in spectral space
         N2_zCheb            % N2 in spectral space
+        N2_zLobatto         % N2 on the zLobatto grid
         Diff1_zCheb         % single derivative in spectral space, *function handle*
         T_zCheb_zOut        % *function* handle that transforms from spectral to z_out
         
@@ -208,11 +209,11 @@ classdef InternalModesSpectral < InternalModesBase
             self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
                         
-            N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
-            if any(N2_zLobatto < 0)
+            self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
+            if any(self.N2_zLobatto < 0)
                 fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
-                N2_zLobatto(N2_zLobatto <= 0) = min(N2_zLobatto(N2_zLobatto>0));
-                self.N2_zCheb = InternalModesSpectral.fct(N2_zLobatto);
+                self.N2_zLobatto(self.N2_zLobatto <= 0) = min(self.N2_zLobatto(self.N2_zLobatto>0));
+                self.N2_zCheb = InternalModesSpectral.fct(self.N2_zLobatto);
             end
             
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
@@ -299,6 +300,36 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
             end            
 
+        end
+        
+        function [zBoundariesAndTPs, thesign, boundaryIndices] = FindTurningPointBoundariesAtFrequency(self, omega)
+            % This function returns not just the turning points, but also
+            % the top and bottom boundary locations in z. The boundary
+            % indices are the index to the point just *above* the turning
+            % point.
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
+            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
+            turningIndices = find(diff(a)~=0);
+            nTP = length(turningIndices);
+            zTP = zeros(nTP,1);
+            for i=1:nTP
+                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
+                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
+                zTP(i) = fzero(fun,z0);
+            end
+            boundaryIndices = [1; turningIndices; length(self.zLobatto)];
+            zBoundariesAndTPs = [self.zLobatto(1); zTP; self.zLobatto(end)];
+            
+            % what's the sign on the EVP in these regions? In this case,
+            % positive indicates oscillatory, negative exponential decay
+            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
+            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
+            % remove any boundaries of zero length
+            for index = reshape(find( thesign == 0),1,[])
+                thesign(index) = [];
+                zBoundariesAndTPs(index) = [];
+                boundaryIndices(index) = [];
+            end
         end
         
         % This function is an intermediary used by ModesAtFrequency and

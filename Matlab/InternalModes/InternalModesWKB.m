@@ -35,6 +35,26 @@ classdef InternalModesWKB < InternalModesWKBSpectral
             % Return the normal modes and eigenvalue at a given frequency.            
             % Surface boundary condition
             
+            [zBoundary, thesign, boundaryIndices] = self.FindTurningPointBoundariesAtFrequency(omega);
+            
+            L_osc = 0.0;
+            for i = 1:length(thesign)
+                if thesign(i) > 0
+                    indices = boundaryIndices(i+1):-1:boundaryIndices(i);
+                    L_osc = L_osc + trapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                end
+            end
+            
+            if length(thesign) == 1 && thesign(1) < 0
+                indices = boundaryIndices(end):-1:boundaryIndices(1);
+                xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+            elseif length(thesign) == 2 && thesign(1) < 0 && thesign(2) > 0
+                
+            else
+                error('No analytical solution available');
+            end
+            
+            
             N = flip(sqrt(self.N2_xLobatto));
             z = flip(self.z_xiLobatto);
             
@@ -76,6 +96,53 @@ classdef InternalModesWKB < InternalModesWKBSpectral
             h = h';
             
         end
+        
+        function [F,G,h] = ModesAtFrequencyHydrostatic(self, omega )
+            % Return the normal modes and eigenvalue at a given frequency.            
+            % Surface boundary condition
+            
+            N = flip(sqrt(self.N2_xLobatto));
+            z = flip(self.z_xiLobatto);
+            
+            Nzeroed = N-omega;
+            N(Nzeroed <= 0) = 0;
+            
+            xi = cumtrapz(z,N);
+            xi_out = interp1(z,xi,self.z);
+            d = xi(end);
+            
+            Nout = sqrt(self.N2);
+            
+            j = 1:self.nEVP;
+            g = 9.81;
+            G = sqrt(2*g/d) * (sin(xi_out*j*pi/d)./sqrt(Nout));
+            h = ((1/g)*(d./(j*pi)).^2);
+            
+            zeroMask = xi_out > 0;
+            F = sqrt(2*g/d) * (zeroMask .* h .* sqrt(Nout) .* j*pi/d .* cos(xi_out*j*pi/d));
+            
+            % Grab sign of F at the ocean surface
+            Fsign = sign(h .* sqrt(N(end)) .* j*pi/d .* cos(xi(end)*j*pi/d));
+            
+            F = Fsign .* F;
+            G = Fsign .* G;
+            
+            if strcmp(self.normalization, 'const_F_norm')
+               A = sqrt( self.Lz ./ h);
+               F = A.*F;
+               G = G.*G;
+            end
+            
+            if strcmp(self.upperBoundary, 'free_surface')
+                error('Not yet implemented');
+            elseif strcmp(self.upperBoundary, 'rigid_lid')
+
+            end
+            
+            h = h';
+            
+        end
+        
     end
         
 end

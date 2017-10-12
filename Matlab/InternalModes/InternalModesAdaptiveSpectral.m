@@ -201,7 +201,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         end
         
         function InitializeStretchedCoordinates(self)
-            self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
             N_zLobatto = sqrt(self.N2_zLobatto);
             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
             self.xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
@@ -212,61 +211,11 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % and z_out on the \xi grid
             self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
         end
-        
-        function [zBoundary, thesign] = FindTurningPointBoundariesAtFrequency(self, omega)
-            % This function returns not just the turning points, but also
-            % the top and bottom boundary locations in z.
-            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
-            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
-            turningIndices = find(diff(a)~=0);
-            nTP = length(turningIndices);
-            zTP = zeros(nTP,1);
-            for i=1:nTP
-                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
-                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
-                zTP(i) = fzero(fun,z0);
-            end
-            zBoundary = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            
-            % what's the sign on the EVP in these regions? In this case,
-            % positive indicates oscillatory, negative exponential decay
-            midZ = zBoundary(1:end-1) + diff(zBoundary)/2;
-            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
-            % remove any boundaries of zero length
-            for index = reshape(find( thesign == 0),1,[])
-                thesign(index) = [];
-                zBoundary(index) = [];
-            end
-        end
-        
+               
         function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega)
             requiredDecay = 1e-6; % 1e-6 seems to prevent exp strat from doing any worse... going to 1e-5 will do slightly worse for some frequencies.
             
-            % This function returns not just the turning points, but also
-            % the top and bottom boundary locations in z.
-            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
-            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
-            turningIndices = find(diff(a)~=0);
-            nTP = length(turningIndices);
-            zTP = zeros(nTP,1);
-            for i=1:nTP
-                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
-                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
-                zTP(i) = fzero(fun,z0);
-            end
-            boundaryIndices = [1; turningIndices; length(self.zLobatto)];
-            zBoundariesAndTPs = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            
-            % what's the sign on the EVP in these regions? In this case,
-            % positive indicates oscillatory, negative exponential decay
-            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
-            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
-            % remove any boundaries of zero length
-            for index = reshape(find( thesign == 0),1,[])
-                thesign(index) = [];
-                zBoundariesAndTPs(index) = [];
-                boundaryIndices(index) = [];
-            end
+            [zBoundariesAndTPs, thesign, boundaryIndices] = self.FindTurningPointBoundariesAtFrequency(omega);
             
             L_osc = 0.0;
             for i = 1:length(thesign)
