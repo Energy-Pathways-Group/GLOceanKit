@@ -51,17 +51,19 @@ classdef InternalModesWKB < InternalModesWKBSpectral
             
             
             if length(thesign) == 1 && thesign(1) > 0
-                A2 = self.g/(trapz( (self.N2_zLobatto(indices) - self.f0*self.f0)./(abs(N2Omega2_zLobatto(indices)).^(1/2)) ));
+                indices = boundaryIndices(2):-1:boundaryIndices(1);
                 
-                cInv = (j*pi)./L_osc;
-                indices = boundaryIndices(end):-1:boundaryIndices(1);
-                xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                % Normalization A and coordinate xi
+                A2 = 2*self.g/(trapz(self.zLobatto(indices), (self.N2_zLobatto(indices) - self.f0*self.f0)./(abs(N2Omega2_zLobatto(indices)).^(1/2)) ));
+                xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));                             
+                
+                % Interpolate onto the output grid
                 xi_out = interp1(self.zLobatto(indices),xi,self.z);
                 N2Omega2_out = interp1(self.zLobatto,N2Omega2_zLobatto,self.z);
-                q = xi_out*cInv;
-                G = sqrt(A2)*sqrt(1./(N2Omega2_out*cInv)) .* sin(q);
                 
-                
+                %
+                q = xi_out*( (j*pi)./xi(end) );
+                G = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* sin(q));
             elseif length(thesign) == 2 && thesign(1) > 0 && thesign(2) < 0
                 c = L_osc./((j-1/4)*pi);
                 

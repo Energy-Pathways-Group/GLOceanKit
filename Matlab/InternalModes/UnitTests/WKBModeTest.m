@@ -15,6 +15,6 @@ omega = im.f0 + 0.0*(N0-im.f0);
 imAnalytical = InternalModesWKBSpectral(rhoFunction, zIn, zOut, latitude,'nEVP',512);
 [F_analytical, G_analytical, h_analytical] = imAnalytical.ModesAtFrequency(omega);
 
-iMode = 2;
+iMode = 3;
 figure, plot(G(:,iMode),im.z), hold on
 plot(G_analytical(:,iMode),im.z)
