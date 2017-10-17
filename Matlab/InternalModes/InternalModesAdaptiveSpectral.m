@@ -23,7 +23,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
     %   March 14th, 2017        Version 1.0
     
     properties %(Access = private)
-        N2_zLobatto         % Needs to be cached, because its used each time we create a new grid
         xi_zLobatto 
         
         xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
@@ -213,9 +212,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         end
                
         function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega)
-            requiredDecay = 1e-6; % 1e-6 seems to prevent exp strat from doing any worse... going to 1e-5 will do slightly worse for some frequencies.
+            requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
             
             [zBoundariesAndTPs, thesign, boundaryIndices] = self.FindTurningPointBoundariesAtFrequency(omega);
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
             
             L_osc = 0.0;
             for i = 1:length(thesign)
@@ -226,38 +226,44 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             indicesToRemove = [];
+            q = cumtrapz(self.zLobatto, abs(N2Omega2_zLobatto).^(1/2));
             for iInteriorPoint = 2:(length(zBoundariesAndTPs)-1)
-               if thesign( iInteriorPoint-1) < 0
-                  % negative (decay) to the left, positive (oscillatory) to
-                  % the right
-                  indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
-                  xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
-                  decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -pi*xi/L_osc);
-                  decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
-                  if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
-                      % need to remove this point
-                      indicesToRemove(end+1) = iInteriorPoint;
-                  else
-                      boundaryIndices(iInteriorPoint) = indices(decayIndex);
-                  end
-               else
-                   % positive (oscillatory) to the left, negative (decay) to
-                   % the right
-                   indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
-                   xi = -cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
-                   decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -pi*xi/L_osc);
-                   decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
-                   if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
-                       % need to remove this point
-                       indicesToRemove(end+1) = iInteriorPoint;
-                   else
-                       boundaryIndices(iInteriorPoint) = indices(decayIndex);
-                   end
-               end
-
+                % xi is just q, but where its now 0 at the turning point of
+                % interest.
+                xi = abs(q-interp1(self.zLobatto,q,zBoundariesAndTPs(iInteriorPoint)));
+                if thesign( iInteriorPoint-1) < 0
+                    % negative (decay) to the left, positive (oscillatory) to
+                    % the right
+                    indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
+%                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
+                    decay = self.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
+                    
+                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                    if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
+                        % need to remove this point
+                        indicesToRemove(end+1) = iInteriorPoint;
+                    else
+                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                    end
+                else
+                    % positive (oscillatory) to the left, negative (decay) to
+                    % the right
+                    indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
+%                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
+                    decay = self.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
+                    
+                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                    if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
+                        % need to remove this point
+                        indicesToRemove(end+1) = iInteriorPoint;
+                    else
+                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                    end
+                end
+                
             end
             
-                            
+            
             if ~isempty(indicesToRemove)
                 zBoundariesAndTPs( indicesToRemove ) = [];
                 boundaryIndices( indicesToRemove ) = [];
@@ -278,6 +284,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             zBoundariesAndTPs = self.zLobatto(boundaryIndices);
             
+        end
+        
+        function decay = WKBDecaySolution(self, xi, L_osc, N2Omega2)
+            % The decay part of the lowest F-mode. xi should be > 0
+            c = L_osc./((3/4)*pi);
+            q = xi * (1./c);
+            eta = (3*abs(q)/2).^(2/3) ;
+            eta_z = -(sqrt(abs(N2Omega2))*(1./c)) .* (3*abs(q)/2).^(-1/3);
+            decay = (-eta./(N2Omega2)).^(1/4) .* eta_z .* airy(1,eta);         
+%             decay = (abs(N2Omega2).^(1/4)).*exp( -(3/4)*pi*xi/L_osc);
         end
         
         function CreateGridForFrequency(self,omega)

@@ -1,16 +1,23 @@
 n = 64;
-lat = 33;
-N0 = 5.2e-3; % reference buoyancy frequency, radians/seconds
-g = 9.81;
-rho_0 = 1025;
-zIn = [-5000 0];
-zOut = linspace(zIn(1),0,2000)';
-L_gm = 1.3e3; % thermocline exponential scale, meters
-rho = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+latitude = 33;
+f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
+
+stratification = 'pycnocline-constant'; N0 = 0.0498; omega = f0 + 0.80*(N0-f0);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Stratification
+%
+[rhoFunction, N2Function, zIn] = InternalModes.StratificationProfileWithName(stratification);
+
+Lz=min(zIn);
+z = linspace(Lz,0,n)';
+rho = rhoFunction;
+zOut = linspace(min(zIn),max(zIn),5000)';
+
 im = InternalModesAdaptiveSpectral(rho,zIn,zOut,lat);
 
-omega = 3*im.f0;
-[F,G,h] = im.ModesAtFrequency( 0.95*N0 );
+[F,G,h] = im.ModesAtFrequency( omega );
 
 figure
 subplot(1,3,1)
