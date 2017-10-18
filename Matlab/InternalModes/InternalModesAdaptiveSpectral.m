@@ -122,7 +122,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 B(1,:) = 0;
             end
             
-            % now couple the equations together
+            % now couple the equations together, using the gaps we left in
+            % the matrices.
             for i=2:self.nEquations                
                 % continuity in f      
                 A(max(self.eqIndices{i-1})+1,self.polyIndices{i-1}) = T(max(self.eqIndices{i-1}),self.polyIndices{i-1});
@@ -326,8 +327,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                         
             self.SetupCoupledEquationsAtBoundaries( boundaries, nEVPPoints );
             
-            nEVPPoints
-%             self.Lxi
+            if self.nEquations > 1
+                fprintf('Separating the EVP into %d coupled EVPs.\n',self.nEquations);
+            end
         end
         
         function [newBoundaries, newsigns] = GrowOscillatoryRegions(self, xiBoundariesAndTPs, thesign)
@@ -476,6 +478,22 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             boundaryIndicesStart = cumsum( [1; nEVPPoints(1:end-1)] );
             boundaryIndicesEnd = boundaryIndicesStart + nEVPPoints-1;
             
+            % The final matrices in the EVP will be square, with each
+            % column representing a Chebyshev polynomial, and each row
+            % representing an equation (usually the poly at that point).
+            %
+            % The polyIndices are the indices into the column for a given
+            % equation. There are no gaps in the polyIndices, so that an
+            % equation with n points will have n polynomials.
+            %
+            % The eqIndices are the indices into the rows for a given
+            % equations. There are gaps here, as we leave an extra two
+            % rows at each equation coupling so that we can enforcing
+            % continuity of f an df/dx.
+            %
+            % The xiIndices map the unique points in xi into
+            % self.xiLobatto. Each equation index corresponds to a grid
+            % point... this is how we avoid those gaps we created.
             self.eqIndices = cell(self.nEquations,1);
             self.polyIndices = cell(self.nEquations,1);
             self.xiIndices = cell(self.nEquations,1);
