@@ -8,11 +8,10 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     %   s = \int_{-Lz}^0 \sqrt(-(g/rho0)*rho_z) dz
     % to solve the EVP.
     %
-    % Internally, sLobatto is the stretched WKB coordinate on a
+    % Internally, xLobatto is the stretched WKB coordinate on a
     % Chebyshev extrema/Lobatto grid. This is the grid upon which the
     % eigenvalue problem is solved, and therefore the class uses the
-    % superclass properties denoted with 'x' instead of 's' when setting up
-    % the eigenvalue problem.
+    % superclass properties denoted with 'x'.
     %
     %   See also INTERNALMODES, INTERNALMODESBASE, INTERNALMODESSPECTRAL,
     %   INTERNALMODESDENSITYSPECTRAL, and INTERNALMODESFINITEDIFFERENCE.
@@ -22,12 +21,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     %
     %   March 14th, 2017        Version 1.0
     
-    properties %(Access = private)    
-        xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
-        z_xiLobatto          % The value of z, at the sLobatto points
-        xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
-        
-        N_zCheb
+    properties %(Access = private)            
         Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
     end
     
@@ -103,75 +97,35 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
  
     end
     
-    methods (Access = protected)
-        function self = InitializeWithGrid(self, rho, z_in)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in gridded form.
-            %
-            % The superclass will initialize zLobatto and rho_lobatto; this
-            % class must initialize the sLobatto, z_sLobatto and sOut.
-            %
-            % Superclass initializes zLobatto and rho_lobatto
-            InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
-            
-            % Create the stretched grid \xi
-            N_zLobatto = sqrt(InternalModesSpectral.ifct(self.N2_zCheb));
-            self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(xi_zLobatto)-min(xi_zLobatto);
-            n = self.nEVP;
-            self.xiLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(xi_zLobatto);
-            
-            % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
-            
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
-        end
-        
-
-        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in functional form.
-            %
-            % The superclass will initialize zLobatto and rho_lobatto; this
-            % class must initialize the sLobatto, z_sLobatto and sOut.
-            %
-            % Superclass initializes zLobatto and rho_lobatto
-            InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
-            
-            % Create the stretched grid \xi
-            N_zLobatto = sqrt(InternalModesSpectral.ifct(self.N2_zCheb));
-            self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(xi_zLobatto)-min(xi_zLobatto);
-            n = self.nEVP;
-            self.xiLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(xi_zLobatto);
-            
-            % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
-            
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, xi_zLobatto, self.z, 'spline');
-        end
-        
+    methods (Access = protected)        
         function self = SetupEigenvalueProblem(self)
-            % We will use the stretched grid to solve the eigenvalue
-            % problem.
-            self.xLobatto = self.xiLobatto;
+            % Create the stretched WKB grid
+            N_zLobatto = sqrt(self.N2_zLobatto);      
+            x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
+            Lxi = max(x_zLobatto)-min(x_zLobatto);
+            n = self.nEVP;
+            self.xLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(x_zLobatto);
+            
+            % Now we need z on the \xi grid
+            self.z_xLobatto = interp1(x_zLobatto, self.zLobatto, self.xLobatto, 'spline');
+            
+            % and z_out on the \xi grid
+            self.xOut = interp1(self.zLobatto, x_zLobatto, self.z, 'spline');
+            
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
-            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xiLobatto);
+            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xLobatto);
             self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(self.N_zCheb));
+            N_zCheb = InternalModesSpectral.fct(N_zLobatto);
+            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(N_zCheb));
             
-            Lxi = max(self.xiLobatto) - min(self.xiLobatto);
+            Lxi = max(self.xLobatto) - min(self.xLobatto);
             self.Diff1_xCheb = @(v) (2/Lxi)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xiLobatto, length(self.xiLobatto) );
+            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
             
-            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto, self.xiOut);
+            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.xOut);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.

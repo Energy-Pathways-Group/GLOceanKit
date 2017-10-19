@@ -1,6 +1,7 @@
-classdef InternalModesWKB < InternalModesWKBSpectral
+classdef InternalModesWKB < InternalModesSpectral
     % This class returns the hydrostatic WKB approximated internal wave
-    % modes. This class us InternalModesWKBSpectral to compute N2.
+    % modes. This class is a subclass of InternalModesSpectral to compute
+    % N2 spectrally.
     %
     %   See also INTERNALMODES, INTERNALMODESSPECTRAL,
     %   INTERNALMODESDENSITYSPECTRAL, INTERNALMODESWKBSPECTRAL, and
@@ -10,7 +11,8 @@ classdef InternalModesWKB < InternalModesWKBSpectral
     %   Jeffrey J. Early
     %   jeffrey@jeffreyearly.com
     %
-    %   June 8thth, 2017        Version 1.0
+    %   June 8th, 2017        Version 1.0
+    %   October 17th, 2017    Version 1.1, implemented non-hydrostatic vers
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,7 +21,7 @@ classdef InternalModesWKB < InternalModesWKBSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesWKB(rho, z_in, z_out, latitude, varargin)
-            self@InternalModesWKBSpectral(rho,z_in,z_out,latitude, varargin{:});
+            self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

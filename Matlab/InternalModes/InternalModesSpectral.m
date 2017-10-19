@@ -94,7 +94,9 @@ classdef InternalModesSpectral < InternalModesBase
         % This class uses x=z (depth), although they may have different numbers of points.
         nEVP = 0           % number of points in the eigenvalue problem
         nGrid = 0          % number of points used to compute the derivatives of density.
-        xLobatto           % Lobatto grid on z with nEVP points. May be the same as zLobatto, may not be.
+        xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
+        z_xLobatto         % The value of z, at the xLobatto points
+        xOut               % desired locations of the output in x-coordinate (deduced from z_out)
         N2_xLobatto        % N2 on the z2Lobatto grid
         Diff1_xCheb        % single derivative in spectral space, *function handle*
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
@@ -290,7 +292,6 @@ classdef InternalModesSpectral < InternalModesBase
             else
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
             end            
-
         end
         
         function f = SetNoiseFloorToZero(~, f)
