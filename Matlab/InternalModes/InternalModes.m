@@ -219,6 +219,9 @@ classdef InternalModes < handle
                 error('Cannot show relative error for user specified stratification.\n');
             end
             
+            % all test cases should just use all modes possible.
+            self.internalModes.nModes = self.internalModes.nEVP;
+            
             [F,G,h] = self.internalModes.ModesAtWavenumber( k );
             
             % y is the true solution, x is the approximated
@@ -252,6 +255,9 @@ classdef InternalModes < handle
             if self.isRunningTestCase == 0
                 error('Cannot show relative error for user specified stratification.\n');
             end
+            
+            % all test cases should just use all modes possible.
+            self.internalModes.nModes = self.internalModes.nEVP;
             
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             

@@ -79,16 +79,19 @@ classdef InternalModesSpectral < InternalModesBase
     properties %(Access = private)
         rho_function        % function handle to return rho at z (uses interpolation for grids)
         
+        % These properties are initialized with InitializeZLobattoProperties()
+        % Most subclasses would *not* override these initializations.
         zLobatto            % zIn coordinate, on Chebyshev extrema/Lobatto grid
         rho_zLobatto        % rho on the above zLobatto
         rho_zCheb           % rho in spectral space
         N2_zCheb            % N2 in spectral space
         N2_zLobatto         % N2 on the zLobatto grid
-        Diff1_zCheb         % single derivative in spectral space, *function handle*
-        T_zCheb_zOut        % *function* handle that transforms from spectral to z_out
+        Diff1_zCheb         % *function handle*, that takes single derivative in spectral space
+        T_zCheb_zOut        % *function handle*, that transforms from spectral to z_out
         
-        % These are the grids used for solving the eigenvalue problem.
-        % Really x=z, although they may have different numbers of points.
+        % These properties are initialized with InitializeXLobattoProperties()
+        % Most subclasses *will* override these initializations. The 'x' refers to the stretched coordinate being used.
+        % This class uses x=z (depth), although they may have different numbers of points.
         nEVP = 0           % number of points in the eigenvalue problem
         nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % Lobatto grid on z with nEVP points. May be the same as zLobatto, may not be.
@@ -195,15 +198,52 @@ classdef InternalModesSpectral < InternalModesBase
  
     end
     
-    methods (Access = protected)
-        
-        function f = SetNoiseFloorToZero(~, f)
-            f(abs(f)/max(abs(f)) < 1e-15) = 0;
+    methods (Access = protected)       
+        function self = InitializeWithGrid(self, rho, zIn)
+            % Superclass calls this method upon initialization when it
+            % determines that the input is given in gridded form. The goal is
+            % to initialize zLobatto and rho_zLobatto.
+            self.validateInitialModeAndEVPSettings();
+            
+            % Our Chebyshev grids are monotonically decreasing.
+            if (zIn(2) - zIn(1)) > 0
+                zIn = flip(zIn);
+                rho = flip(rho);
+            end
+                      
+            self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
+            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
+                self.zLobatto = zIn;
+                self.rho_zLobatto = rho;
+            else
+                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
+                self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
+            end
+              
+            self.InitializeZLobattoProperties();
         end
+        
+        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
+            % Superclass calls this method upon initialization when it
+            % determines that the input is given in functional form. The goal
+            % is to initialize zLobatto and rho_zLobatto.
+            self.validateInitialModeAndEVPSettings();
+                        
+            if self.nGrid < 65 || isempty(self.nGrid) 
+                self.nGrid = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
+            end
+            
+            n = self.nGrid;
+            self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;  
+            self.rho_zLobatto = rho(self.zLobatto);
+            self.rho_function = rho;
+            
+            self.InitializeZLobattoProperties();
+        end      
         
         % Called by InitializeWithGrid and InitializeWithFunction after
         % they've completed their basic setup.
-        function self = InitializeDerivedQuanitites(self)
+        function self = InitializeZLobattoProperties(self)
             self.rho_zCheb = InternalModesSpectral.fct(self.rho_zLobatto);
             self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
             self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
@@ -219,55 +259,6 @@ classdef InternalModesSpectral < InternalModesBase
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-        end
-        
-        % Superclass calls this method upon initialization when it
-        % determines that the input is given in gridded form. The goal is
-        % to initialize zLobatto and rho_zLobatto.
-        function self = InitializeWithGrid(self, rho, zIn)
-            self.validateInitialModeAndEVPSettings();
-            
-            if (zIn(2) - zIn(1)) > 0
-                zIn = flip(zIn);
-                rho = flip(rho);
-            end
-                      
-            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
-                self.zLobatto = zIn;
-                self.rho_zLobatto = rho;
-            else
-                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
-                self.rho_zLobatto = interp1(zIn, rho, self.zLobatto, 'spline'); % rho, interpolated to that grid
-            end
-            
-            self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
-            self.InitializeDerivedQuanitites();
-        end
-        
-        % Superclass calls this method upon initialization when it
-        % determines that the input is given in functional form. The goal
-        % is to initialize zLobatto and rho_zLobatto.
-        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
-            
-            self.validateInitialModeAndEVPSettings();
-                        
-            % There's just no reason not to go at least this big since
-            % this is all fast transforms.
-            if self.nGrid > 0
-                n = self.nGrid; % user specified!
-                self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
-            else
-                if (length(self.zLobatto) < 2^14 + 1)
-                    n = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
-                    self.nGrid = n;
-                    self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
-                end
-            end
-            
-            self.rho_zLobatto = rho(self.zLobatto);
-            
-            self.rho_function = rho;
-            self.InitializeDerivedQuanitites();
         end
         
         function self = SetupEigenvalueProblem(self)
@@ -300,6 +291,10 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
             end            
 
+        end
+        
+        function f = SetNoiseFloorToZero(~, f)
+            f(abs(f)/max(abs(f)) < 1e-15) = 0;
         end
         
         function [zBoundariesAndTPs, thesign, boundaryIndices] = FindTurningPointBoundariesAtFrequency(self, omega)
@@ -350,7 +345,7 @@ classdef InternalModesSpectral < InternalModesBase
         % returns the eigendepth, h, given eigenvalue lambda from the GEP.
         function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
             if ( any(any(isnan(A))) || any(any(isnan(B))) )
-                error('EVP setup fail.');
+                error('EVP setup fail. Found at least one nan in matrices A and B.\n');
             end
             [V,D] = eig( A, B );
             
