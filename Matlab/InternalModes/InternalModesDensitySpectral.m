@@ -169,6 +169,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
             self.Int_xCheb(2) = 0;
             self.Int_xCheb = Ls/2*self.Int_xCheb;
+            
+            fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
         end
     end
     

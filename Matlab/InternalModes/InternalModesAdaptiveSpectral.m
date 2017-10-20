@@ -147,6 +147,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
     methods (Access = protected)
         
         function self = SetupEigenvalueProblem(self)
+            % Although we use the same stretched coordinate as the
+            % WKBSpectral superclass, we use different point locations, so
+            % we have to override this function.
             N_zLobatto = sqrt(self.N2_zLobatto);      
             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
             self.x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
@@ -178,8 +181,18 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                         
             self.SetupCoupledEquationsAtBoundaries( boundaries, nEVPPoints );
             
-            if self.nEquations > 1
-                fprintf('Separating the EVP into %d coupled EVPs.\n',self.nEquations);
+            if self.nEquations == 1
+                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            else
+                fprintf(' Separating the EVP into %d coupled EVPs with ',self.nEquations);
+                for i=1:length(nEVPPoints)
+                    if i == length(nEVPPoints)
+                        fprintf('%d',nEVPPoints(i));
+                    else
+                        fprintf('%d+',nEVPPoints(i));
+                    end
+                end
+                fprintf(' points.\n');
             end
         end
         

@@ -112,10 +112,7 @@ classdef InternalModesSpectral < InternalModesBase
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesSpectral(rho, zIn, zOut, latitude,varargin)
             self@InternalModesBase(rho,zIn,zOut,latitude,varargin{:});
-
-            self.SetupEigenvalueProblem();
-            
-            fprintf('N2 was computed with %d points. The eigenvalue problem will be computed with %d points.\n',length(self.zLobatto), length(self.xLobatto));
+            self.SetupEigenvalueProblem();            
         end
 
         
@@ -243,9 +240,9 @@ classdef InternalModesSpectral < InternalModesBase
             self.InitializeZLobattoProperties();
         end      
         
-        % Called by InitializeWithGrid and InitializeWithFunction after
-        % they've completed their basic setup.
         function self = InitializeZLobattoProperties(self)
+            % Called by InitializeWithGrid and InitializeWithFunction after
+            % they've completed their basic setup.
             self.rho_zCheb = InternalModesSpectral.fct(self.rho_zLobatto);
             self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
             self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
@@ -261,9 +258,13 @@ classdef InternalModesSpectral < InternalModesBase
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
+            
+            fprintf('All derivatives of density are computed with %d points.', length(self.zLobatto));
         end
         
         function self = SetupEigenvalueProblem(self)
+            % Called during initialization after InitializeZLobattoProperties().
+            % Subclasses will override this function.
             n = self.nEVP;
             self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
             T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
@@ -280,6 +281,8 @@ classdef InternalModesSpectral < InternalModesBase
             self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
             self.Int_xCheb(2) = 0;
             self.Int_xCheb = self.Lz/2*self.Int_xCheb;
+            
+            fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
         end
         
         function self = validateInitialModeAndEVPSettings(self)
@@ -312,8 +315,8 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         % Take matrices A and B from the generalized eigenvalue problem
-        % (GEP) and returns F,G,h. The h_func parameter is a function that
-        % returns the eigendepth, h, given eigenvalue lambda from the GEP.
+        % (GEP) and returns F,G,h. The last seven arguments are all
+        % function handles that do as they say.
         function [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
             if ( any(any(isnan(A))) || any(any(isnan(B))) )
                 error('EVP setup fail. Found at least one nan in matrices A and B.\n');
