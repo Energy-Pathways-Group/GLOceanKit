@@ -112,7 +112,6 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             % and z_out on the \xi grid
             self.xOut = interp1(self.zLobatto, x_zLobatto, self.z, 'spline');
             
-            
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid

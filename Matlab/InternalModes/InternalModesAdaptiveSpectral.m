@@ -35,8 +35,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         zBoundaries                 % z-location of the boundaries (end points plus turning points).
         xiBoundaries                % xi-location of the boundaries (end points plus turning points).
         nEquations
-%         boundaryIndicesStart        % indices of the boundaries into xiLobatto
-%         boundaryIndicesEnd          % indices of the boundaries into xiLobatto
         Lxi                         % array of length(nEquations) with the length of each EVP domain in xi coordinates
         
         eqIndices                   % cell array containing indices into the *rows* for a given EVP
@@ -237,7 +235,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                     % the right
                     indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
 %                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
-                    decay = self.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
+                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
                     
                     decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
                     if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
@@ -251,7 +249,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                     % the right
                     indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
 %                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
-                    decay = self.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
+                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
                     
                     decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
                     if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
@@ -283,18 +281,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             
-            zBoundariesAndTPs = self.zLobatto(boundaryIndices);
-            
-        end
-        
-        function decay = WKBDecaySolution(self, xi, L_osc, N2Omega2)
-            % The decay part of the lowest F-mode. xi should be > 0
-            c = L_osc./((3/4)*pi);
-            q = xi * (1./c);
-            eta = (3*abs(q)/2).^(2/3) ;
-            eta_z = -(sqrt(abs(N2Omega2))*(1./c)) .* (3*abs(q)/2).^(-1/3);
-            decay = (-eta./(N2Omega2)).^(1/4) .* eta_z .* airy(1,eta);         
-%             decay = (abs(N2Omega2).^(1/4)).*exp( -(3/4)*pi*xi/L_osc);
+            zBoundariesAndTPs = self.zLobatto(boundaryIndices); 
         end
         
         function CreateGridForFrequency(self,omega)
@@ -302,26 +289,18 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                 return
             end
             
-            self.gridFrequency = omega;
-                        
-%             [zBoundariesAndTPs, thesign] = self.FindTurningPointBoundariesAtFrequency(self.gridFrequency);
-%             xiBoundariesAndTPs = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
-%             
-%             % Extended the oscillatory regions by some predefined amount
-%             % (L_osc)
-%             [boundaries, thesign] = self.GrowOscillatoryRegions( xiBoundariesAndTPs, thesign );
-            
+            self.gridFrequency = omega;            
             
             [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega);
             boundaries = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
             
             % Distribute the allowed points in these regions, but remove
             % regions that end up with too few points.
-            nEVPPoints = self.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
+            nEVPPoints = InternalModesAdaptiveSpectral.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
             [minPoints, minIndex] = min(nEVPPoints);
             while ( minPoints < 5 )
-                [boundaries, thesign] = self.RemoveRegionAtIndex( boundaries, thesign, minIndex );
-                nEVPPoints = self.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
+                [boundaries, thesign] = InternalModesAdaptiveSpectral.RemoveRegionAtIndex( boundaries, thesign, minIndex );
+                nEVPPoints = InternalModesAdaptiveSpectral.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
                 [minPoints, minIndex] = min(nEVPPoints);
             end
                         
@@ -332,141 +311,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
         end
         
-        function [newBoundaries, newsigns] = GrowOscillatoryRegions(self, xiBoundariesAndTPs, thesign)
-            LxiRegion = abs(diff(xiBoundariesAndTPs));
-            newBoundaries = zeros(size(xiBoundariesAndTPs));
-            newsigns = zeros(size(thesign));
-            
-            % We pick a length scale (in WKB coordinates) over which the
-            % mode decays approximately three orders of magnitude.
-            L_osc = 6*sum(LxiRegion(thesign>0));
-                        
-            newBoundaries(1) = xiBoundariesAndTPs(1);
-            totalBoundaryPoints = 1;
-            for iInteriorPoint = 2:(length(xiBoundariesAndTPs)-1)
-                % decision tree to see if we keep this interior point
-                if thesign(iInteriorPoint-1) > 0
-                    % positive to left...
-                    if iInteriorPoint == length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc/2
-                        %...and bottom boundary, with non-penetrating region
-                        % so make the positive (oscillatory) region bigger
-                        newsigns(totalBoundaryPoints) = 1;
-                        totalBoundaryPoints = totalBoundaryPoints + 1;
-                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;     
-                    elseif iInteriorPoint < length(xiBoundariesAndTPs)-1 &&  LxiRegion(iInteriorPoint) > L_osc
-                        %...and interior boundary, with non-penetrating region
-                        newsigns(totalBoundaryPoints) = 1;
-                        totalBoundaryPoints = totalBoundaryPoints + 1;
-                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) - L_osc/2;
-                    end
-                elseif thesign(iInteriorPoint-1) < 0
-                    % negative to the left...
-                    if iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc/2
-                        %...and top boundary, with non-penetrating region
-                        newsigns(totalBoundaryPoints) = -1;
-                        totalBoundaryPoints = totalBoundaryPoints + 1;
-                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
-                    elseif iInteriorPoint == 2 && LxiRegion(iInteriorPoint-1) > L_osc
-                        %...and interior boundary, with non-penetrating region
-                        newsigns(totalBoundaryPoints) = -1;
-                        totalBoundaryPoints = totalBoundaryPoints + 1;
-                        newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(iInteriorPoint) + L_osc/2;
-                    end
-                end
-            end
-            if totalBoundaryPoints>1 % the last region will always have the opposite sign as the previous
-                newsigns(totalBoundaryPoints) = -1*newsigns(totalBoundaryPoints-1);
-            else
-                newsigns(totalBoundaryPoints) = 1;
-            end
-            totalBoundaryPoints = totalBoundaryPoints + 1;
-            newBoundaries(totalBoundaryPoints) = xiBoundariesAndTPs(end);
 
-            
-            newsigns = newsigns(1:(totalBoundaryPoints-1));
-            newBoundaries = newBoundaries(1:totalBoundaryPoints);
-        end
-        
-        function [newBoundaries, newSigns] = RemoveRegionAtIndex(self, oldBoundaries, oldSigns, index)
-            newBoundaries = oldBoundaries;
-            newSigns = oldSigns;
-            if length(oldBoundaries) < 3
-                return
-            elseif index == 1
-                newBoundaries(2) = [];
-                newSigns(1) = [];
-            elseif index == length(oldBoundaries)-1
-                newBoundaries(length(oldBoundaries)-1) = [];
-                newSigns(end) = [];
-            else
-                newBoundaries([index;index+1]) = [];
-                newSigns([index-1;index]) = [];
-            end
-        end
-        
-        function nEVPPoints = DistributePointsInRegions(self, nTotalPoints, boundaries, thesign)
-            L = abs(diff(boundaries));
-            totalEquations = length(boundaries)-1;
-            
-            % This algorithm distributes the points/polynomials amongst the
-            % different regions/equations
-            if totalEquations > 1
-                ratio = 1/6;
-                
-                % Never let a region get more points than it would have,
-                % and cap that ratio.
-                ratio = min( sum(L(thesign<0))/sum(L), ratio );
-                
-                nNegativePoints = floor(ratio*nTotalPoints);
-                nPositivePoints = nTotalPoints - nNegativePoints;
-                nEVPPoints = zeros(totalEquations,1);
-                
-                indices = thesign<0;
-                if ~isempty(indices)
-                    relativeSize = sqrt( L(indices)./min(L(indices)));
-                    nBase = nNegativePoints/sum( relativeSize );
-                    nEVPPoints(indices) = floor( relativeSize * nBase );
-                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nNegativePoints-sum(nEVPPoints(indices));
-                end
-                
-                indices = thesign>0;
-                if ~isempty(indices)
-                    relativeSize = sqrt( L(indices)./min(L(indices)));
-                    nBase = nPositivePoints/sum( relativeSize );
-                    nEVPPoints(indices) = floor( relativeSize * nBase );
-                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
-                end
-                
-            else
-                nEVPPoints = nTotalPoints;
-            end
-        end
-        
-        function nEVPPoints = DistributePointsInRegionsWithMinimum(self, nTotalPoints, boundaries, thesign)
-            L = abs(diff(boundaries));
-            totalEquations = length(boundaries)-1;
-            minPoints = 6;
-            
-            % This algorithm distributes the points/polynomials amongst the
-            % different regions/equations
-            if totalEquations > 1
-                nEVPPoints = zeros(totalEquations,1);
-                
-                nEVPPoints(thesign<0) = minPoints;
-                
-                nPositivePoints = nTotalPoints - minPoints*sum(thesign<0);          
-                indices = thesign>0;
-                if ~isempty(indices)
-                    relativeSize = sqrt( L(indices)./min(L(indices)));
-                    nBase = nPositivePoints/sum( relativeSize );
-                    nEVPPoints(indices) = floor( relativeSize * nBase );
-                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
-                end
-                
-            else
-                nEVPPoints = nTotalPoints;
-            end
-        end
         
         function SetupCoupledEquationsAtBoundaries( self, boundaries, nEVPPoints )
             self.xiBoundaries = boundaries;
@@ -599,6 +444,72 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             GNorm = @(Gj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %
+    % Static Methods (that do not depend on self)
+    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)
+        function decay = WKBDecaySolution(xi, L_osc, N2Omega2)
+            % The decay part of the lowest F-mode. xi should be > 0
+            c = L_osc./((3/4)*pi);
+            q = xi * (1./c);
+            eta = (3*abs(q)/2).^(2/3) ;
+            eta_z = -(sqrt(abs(N2Omega2))*(1./c)) .* (3*abs(q)/2).^(-1/3);
+            decay = (-eta./(N2Omega2)).^(1/4) .* eta_z .* airy(1,eta);
+            
+            % Here's the simpler, approximated solution that has problems
+            % near 0.
+            % decay = (abs(N2Omega2).^(1/4)).*exp( -(3/4)*pi*xi/L_osc);
+        end
+               
+        function [newBoundaries, newSigns] = RemoveRegionAtIndex(oldBoundaries, oldSigns, index)
+            % Given a list of boundaries (length n), and the signs of the
+            % regions created by the boundaries (length n-1), this removes
+            % the boundary at some index, and returns the appropriate signs
+            newBoundaries = oldBoundaries;
+            newSigns = oldSigns;
+            if length(oldBoundaries) < 3
+                return
+            elseif index == 1
+                newBoundaries(2) = [];
+                newSigns(1) = [];
+            elseif index == length(oldBoundaries)-1
+                newBoundaries(length(oldBoundaries)-1) = [];
+                newSigns(end) = [];
+            else
+                newBoundaries([index;index+1]) = [];
+                newSigns([index-1;index]) = [];
+            end
+        end
+                
+        function nEVPPoints = DistributePointsInRegionsWithMinimum( nTotalPoints, boundaries, thesign )
+            % This algorithm distributes the points/polynomials amongst the
+            % different regions/equations
+            L = abs(diff(boundaries));
+            totalEquations = length(boundaries)-1;
+            minPoints = 6;
+                        
+            if totalEquations > 1
+                nEVPPoints = zeros(totalEquations,1);
+                
+                nEVPPoints(thesign<0) = minPoints;
+                
+                nPositivePoints = nTotalPoints - minPoints*sum(thesign<0);
+                indices = thesign>0;
+                if ~isempty(indices)
+                    relativeSize = sqrt( L(indices)./min(L(indices)));
+                    nBase = nPositivePoints/sum( relativeSize );
+                    nEVPPoints(indices) = floor( relativeSize * nBase );
+                    nEVPPoints(indices(end)) = nEVPPoints(indices(end)) + nPositivePoints-sum(nEVPPoints(indices));
+                end
+                
+            else
+                nEVPPoints = nTotalPoints;
+            end
         end
     end
     
