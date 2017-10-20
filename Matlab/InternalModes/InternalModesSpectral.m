@@ -89,7 +89,7 @@ classdef InternalModesSpectral < InternalModesBase
         Diff1_zCheb         % *function handle*, that takes single derivative in spectral space
         T_zCheb_zOut        % *function handle*, that transforms from spectral to z_out
         
-        % These properties are initialized with InitializeXLobattoProperties()
+        % These properties are initialized with SetupEigenvalueProblem()
         % Most subclasses *will* override these initializations. The 'x' refers to the stretched coordinate being used.
         % This class uses x=z (depth), although they may have different numbers of points.
         nEVP = 0           % number of points in the eigenvalue problem
@@ -297,37 +297,7 @@ classdef InternalModesSpectral < InternalModesBase
         function f = SetNoiseFloorToZero(~, f)
             f(abs(f)/max(abs(f)) < 1e-15) = 0;
         end
-        
-        function [zBoundariesAndTPs, thesign, boundaryIndices] = FindTurningPointBoundariesAtFrequency(self, omega)
-            % This function returns not just the turning points, but also
-            % the top and bottom boundary locations in z. The boundary
-            % indices are the index to the point just *above* the turning
-            % point.
-            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
-            a = N2Omega2_zLobatto; a(a>=0) = 1; a(a<0) = 0;
-            turningIndices = find(diff(a)~=0);
-            nTP = length(turningIndices);
-            zTP = zeros(nTP,1);
-            for i=1:nTP
-                fun = @(z) interp1(self.zLobatto,N2Omega2_zLobatto,z,'spline');
-                z0 = [self.zLobatto(turningIndices(i)+1) self.zLobatto(turningIndices(i))];
-                zTP(i) = fzero(fun,z0);
-            end
-            boundaryIndices = [1; turningIndices; length(self.zLobatto)];
-            zBoundariesAndTPs = [self.zLobatto(1); zTP; self.zLobatto(end)];
-            
-            % what's the sign on the EVP in these regions? In this case,
-            % positive indicates oscillatory, negative exponential decay
-            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
-            thesign = sign( interp1(self.zLobatto,N2Omega2_zLobatto,midZ,'spline') );
-            % remove any boundaries of zero length
-            for index = reshape(find( thesign == 0),1,[])
-                thesign(index) = [];
-                zBoundariesAndTPs(index) = [];
-                boundaryIndices(index) = [];
-            end
-        end
-        
+                
         % This function is an intermediary used by ModesAtFrequency and
         % ModesAtWavenumber to establish the various norm functions.
         function [F,G,h] = ModesFromGEPSpectral(self,A,B)
@@ -397,6 +367,42 @@ classdef InternalModesSpectral < InternalModesBase
     end
     
     methods (Static)
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Methods to find the turning points (used for normalization)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [zBoundariesAndTPs, thesign, boundaryIndices] = FindTurningPointBoundariesAtFrequency(N2, z, omega)
+            % This function returns not just the turning points, but also
+            % the top and bottom boundary locations in z. The boundary
+            % indices are the index to the point just *above* the turning
+            % point.
+            N2Omega2 = N2 - omega*omega;
+            a = N2Omega2; a(a>=0) = 1; a(a<0) = 0;
+            turningIndices = find(diff(a)~=0);
+            nTP = length(turningIndices);
+            zTP = zeros(nTP,1);
+            for i=1:nTP
+                fun = @(depth) interp1(z,N2Omega2,depth,'spline');
+                z0 = [z(turningIndices(i)+1) z(turningIndices(i))];
+                zTP(i) = fzero(fun,z0);
+            end
+            boundaryIndices = [1; turningIndices; length(z)];
+            zBoundariesAndTPs = [z(1); zTP; z(end)];
+            
+            % what's the sign on the EVP in these regions? In this case,
+            % positive indicates oscillatory, negative exponential decay
+            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
+            thesign = sign( interp1(z,N2Omega2,midZ,'spline') );
+            % remove any boundaries of zero length
+            for index = reshape(find( thesign == 0),1,[])
+                thesign(index) = [];
+                zBoundariesAndTPs(index) = [];
+                boundaryIndices(index) = [];
+            end
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

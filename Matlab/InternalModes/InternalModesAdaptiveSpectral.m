@@ -1,18 +1,17 @@
-classdef InternalModesAdaptiveSpectral < InternalModesSpectral
+classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
     % This class solves the vertical eigenvalue problem on a WKB stretched
     % density coordinate grid using Chebyshev polynomials.
     %
     % See InternalModesBase for basic usage information.
     %
     % This class uses the coordinate
-    %   s = \int_{-Lz}^0 \sqrt(-(g/rho0)*rho_z) dz
+    %   xi = \int_{-Lz}^0 \sqrt(-(g/rho0)*rho_z) dz
     % to solve the EVP.
     %
-    % Internally, sLobatto is the stretched WKB coordinate on a
-    % Chebyshev extrema/Lobatto grid. This is the grid upon which the
-    % eigenvalue problem is solved, and therefore the class uses the
-    % superclass properties denoted with 'x' instead of 's' when setting up
-    % the eigenvalue problem.
+    % This uses the same WKB coordinates as its superclass. The difference
+    % is that the collocation points within that coordinate may be
+    % different when more than one equation is used. Specifically, the
+    % xLobatto grid is not actually Gauss-Lobatto.
     %
     %   See also INTERNALMODES, INTERNALMODESBASE, INTERNALMODESSPECTRAL,
     %   INTERNALMODESDENSITYSPECTRAL, and INTERNALMODESFINITEDIFFERENCE.
@@ -23,14 +22,8 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
     %   March 14th, 2017        Version 1.0
     
     properties %(Access = private)
-        xi_zLobatto 
-        
-        xiLobatto            % stretched density coordinate, on Chebyshev extrema/Lobatto grid
-        z_xiLobatto          % The value of z, at the sLobatto points
-        xiOut                % desired locations of the output in s-coordinate (deduced from z_out)
-        
+        x_zLobatto                  % x (xi) coordinate on the zLobatto grid                
         N_zCheb
-        Nz_xLobatto     	% (d/dz)N on the xiLobatto grid
         
         zBoundaries                 % z-location of the boundaries (end points plus turning points).
         xiBoundaries                % xi-location of the boundaries (end points plus turning points).
@@ -43,18 +36,17 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         
         T_xCheb_zOut_Transforms     % cell array containing function handles
         T_xCheb_zOut_fromIndices    % cell array with indices into the xLobatto grid
-        T_xCheb_zOut_toIndices      % cell array with indices into the xiOut grid
+        T_xCheb_zOut_toIndices      % cell array with indices into the xOut grid
     end
     
-    methods
-        
+    methods  
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesAdaptiveSpectral(rho, z_in, z_out, latitude, varargin)
-            self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
+            self@InternalModesWKBSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,30 +55,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h] = ModesAtWavenumber(self, k )
+            % We just need to make sure we're using the right grid,
+            % otherwise we can use the superclass method as is.
             self.CreateGridForFrequency(0.0);
-            
-            T = self.T_xLobatto;
-            Tz = self.Tx_xLobatto;
-            Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
-                        
-            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz - k*k*T;
-            B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
-            
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-            
-            % G=0 or N*G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upperBoundary, 'free_surface')
-                A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
-            end
-            
-            [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            [F,G,h] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )        
@@ -147,7 +119,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         
         function v_xLobatto = T_xCheb_xLobatto( self, v_xCheb)
             % transform from xCheb basis to xLobatto
-            v_xLobatto = zeros(size(self.xiLobatto));
+            v_xLobatto = zeros(size(self.xLobatto));
             for i=1:self.nEquations
                 v_xLobatto(self.xiIndices{i}) = InternalModesSpectral.ifct(v_xCheb(self.polyIndices{i}(1:length(self.xiIndices{i}))));
             end
@@ -155,7 +127,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
         
         function v_zOut = T_xCheb_zOutFunction( self, v_xCheb )
             % transform from xCheb basis to zOut
-            v_zOut = zeros(size(self.xiOut));
+            v_zOut = zeros(size(self.xOut));
             for i = 1:length(self.T_xCheb_zOut_Transforms)
                 T = self.T_xCheb_zOut_Transforms{i};
                 v_zOut(self.T_xCheb_zOut_toIndices{i}) = T( v_xCheb(self.T_xCheb_zOut_fromIndices{i}) );
@@ -173,117 +145,16 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
     end
     
     methods (Access = protected)
-        function self = InitializeWithGrid(self, rho, z_in)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in gridded form.
-            %
-            % The superclass will initialize zLobatto and rho_lobatto; this
-            % class must initialize the sLobatto, z_sLobatto and sOut.
-            InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
-            
-            self.InitializeStretchedCoordinates()
-            self.CreateGridForFrequency(0.0);
-        end
         
-
-        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in functional form.
-            %
-            % The superclass will initialize zLobatto and rho_lobatto; this
-            % class must initialize the sLobatto, z_sLobatto and sOut.
-            InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
-            
-            self.InitializeStretchedCoordinates()
-            self.CreateGridForFrequency(0.0);
-        end
-        
-        function InitializeStretchedCoordinates(self)
-            N_zLobatto = sqrt(self.N2_zLobatto);
+        function self = SetupEigenvalueProblem(self)
+            N_zLobatto = sqrt(self.N2_zLobatto);      
             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            self.xi_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
+            self.x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
+            self.xOut = interp1(self.zLobatto, self.x_zLobatto, self.z, 'spline');
             
-            % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(self.xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
-            
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
+            self.CreateGridForFrequency(0.0);
         end
-               
-        function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega)
-            requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
-            
-            [zBoundariesAndTPs, thesign, boundaryIndices] = self.FindTurningPointBoundariesAtFrequency(omega);
-            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
-            
-            L_osc = 0.0;
-            for i = 1:length(thesign)
-                if thesign(i) > 0
-                    indices = boundaryIndices(i+1):-1:boundaryIndices(i);
-                    L_osc = L_osc + trapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
-                end
-            end
-            
-            indicesToRemove = [];
-            q = cumtrapz(self.zLobatto, abs(N2Omega2_zLobatto).^(1/2));
-            for iInteriorPoint = 2:(length(zBoundariesAndTPs)-1)
-                % xi is just q, but where its now 0 at the turning point of
-                % interest.
-                xi = abs(q-interp1(self.zLobatto,q,zBoundariesAndTPs(iInteriorPoint)));
-                if thesign( iInteriorPoint-1) < 0
-                    % negative (decay) to the left, positive (oscillatory) to
-                    % the right
-                    indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
-%                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
-                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
-                    
-                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
-                    if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
-                        % need to remove this point
-                        indicesToRemove(end+1) = iInteriorPoint;
-                    else
-                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
-                    end
-                else
-                    % positive (oscillatory) to the left, negative (decay) to
-                    % the right
-                    indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
-%                     decay = (abs(N2Omega2_zLobatto(indices)).^(1/4)).*exp( -(3/4)*pi*xi(indices)/L_osc);
-                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2_zLobatto(indices));
-                    
-                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
-                    if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
-                        % need to remove this point
-                        indicesToRemove(end+1) = iInteriorPoint;
-                    else
-                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
-                    end
-                end
-                
-            end
-            
-            
-            if ~isempty(indicesToRemove)
-                zBoundariesAndTPs( indicesToRemove ) = [];
-                boundaryIndices( indicesToRemove ) = [];
-                % the sign will always alternate. -1/+1
-                if min(indicesToRemove) == 2
-                    thesign = -1*ones(1,length(boundaryIndices)-1);
-                    thesign(1) = 1;
-                    thesign = cumprod(thesign);
-                else
-                    thesign = thesign(1:(length(boundaryIndices)-1));
-                    if length(thesign)>1
-                        thesign(2:end) = -1;
-                        thesign = cumprod(thesign);
-                    end
-                end
-            end
-            
-            
-            zBoundariesAndTPs = self.zLobatto(boundaryIndices); 
-        end
-        
+                               
         function CreateGridForFrequency(self,omega)
             if self.gridFrequency == omega
                 return
@@ -291,8 +162,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             
             self.gridFrequency = omega;            
             
-            [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(self, omega);
-            boundaries = interp1(self.zLobatto,self.xi_zLobatto,zBoundariesAndTPs,'spline');
+            requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
+            [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);
+            boundaries = interp1(self.zLobatto,self.x_zLobatto,zBoundariesAndTPs,'spline');
             
             % Distribute the allowed points in these regions, but remove
             % regions that end up with too few points.
@@ -311,11 +183,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
         end
         
-
-        
         function SetupCoupledEquationsAtBoundaries( self, boundaries, nEVPPoints )
             self.xiBoundaries = boundaries;
-            self.zBoundaries = interp1(self.xi_zLobatto,self.zLobatto,self.xiBoundaries,'spline');
+            self.zBoundaries = interp1(self.x_zLobatto,self.zLobatto,self.xiBoundaries,'spline');
             self.Lxi = abs(diff(boundaries));
             self.nEquations = length(self.xiBoundaries)-1;
             
@@ -337,7 +207,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             % continuity of f an df/dx.
             %
             % The xiIndices map the unique points in xi into
-            % self.xiLobatto. Each equation index corresponds to a grid
+            % self.xLobatto. Each equation index corresponds to a grid
             % point... this is how we avoid those gaps we created.
             self.eqIndices = cell(self.nEquations,1);
             self.polyIndices = cell(self.nEquations,1);
@@ -362,7 +232,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
                         
             % Now we walk through the equations, and create a lobatto grid
             % for each equation.
-            self.xiLobatto = zeros(nGridPoints,1);
+            self.xLobatto = zeros(nGridPoints,1);
             self.Int_xCheb = zeros(self.nEVP,1);
             self.T_xLobatto = zeros(self.nEVP,self.nEVP);
             self.Tx_xLobatto = zeros(self.nEVP,self.nEVP);
@@ -370,10 +240,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             for i=1:self.nEquations
                 n = length(self.eqIndices{i});
                 m = length(self.polyIndices{i});
-                xLobatto = (self.Lxi(i)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
-                self.xiLobatto(self.xiIndices{i}) = xLobatto;
+                xLobatto_local = (self.Lxi(i)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.xiBoundaries(i+1),self.xiBoundaries(i));
+                self.xLobatto(self.xiIndices{i}) = xLobatto_local;
                 
-                [T,Tx,Txx] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( xLobatto, m );
+                [T,Tx,Txx] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( xLobatto_local, m );
                 self.T_xLobatto(self.eqIndices{i},self.polyIndices{i}) = T;
                 self.Tx_xLobatto(self.eqIndices{i},self.polyIndices{i}) = Tx;
                 self.Txx_xLobatto(self.eqIndices{i},self.polyIndices{i}) = Txx;
@@ -388,48 +258,37 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
             end
             
             % Now we need z on the \xi grid
-            self.z_xiLobatto = interp1(self.xi_zLobatto, self.zLobatto, self.xiLobatto, 'spline');
-            
-            % and z_out on the \xi grid
-            self.xiOut = interp1(self.zLobatto, self.xi_zLobatto, self.z, 'spline');
-            
-            % We will use the stretched grid to solve the eigenvalue
-            % problem.
-            self.xLobatto = self.xiLobatto;
+            self.z_xLobatto = interp1(self.x_zLobatto, self.zLobatto, self.xLobatto, 'spline');
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
-            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xiLobatto);
-            self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(self.N_zCheb));
+            T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xLobatto);
+            self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
+            self.Nz_xLobatto = T_zCheb_xLobatto(self.Diff1_zCheb(self.N_zCheb));
             
             self.T_xCheb_zOut_Transforms = cell(0,0);
             self.T_xCheb_zOut_fromIndices = cell(0,0);
             self.T_xCheb_zOut_toIndices = cell(0,0);
             for i=1:self.nEquations
                 if i == self.nEquations % upper and lower boundary included
-                    toIndices = find( self.xiOut <= self.xiBoundaries(i) & self.xiOut >= self.xiBoundaries(i+1) );
+                    toIndices = find( self.xOut <= self.xiBoundaries(i) & self.xOut >= self.xiBoundaries(i+1) );
                 else % upper boundary included, lower boundary excluded (default)
-                    toIndices = find( self.xiOut <= self.xiBoundaries(i) & self.xiOut > self.xiBoundaries(i+1) );
+                    toIndices = find( self.xOut <= self.xiBoundaries(i) & self.xOut > self.xiBoundaries(i+1) );
                 end
                 if ~isempty(toIndices)
                     index = length(self.T_xCheb_zOut_Transforms)+1;
                     
                     self.T_xCheb_zOut_fromIndices{index} = self.polyIndices{i}(1:length(self.xiIndices{i}));
                     self.T_xCheb_zOut_toIndices{index} = toIndices;
-                    self.T_xCheb_zOut_Transforms{index} = InternalModesSpectral.ChebyshevTransformForGrid(self.xiLobatto(self.xiIndices{i}), self.xiOut(toIndices));
+                    self.T_xCheb_zOut_Transforms{index} = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto(self.xiIndices{i}), self.xOut(toIndices));
                 end
             end
             
             self.T_xCheb_zOut = @(v) self.T_xCheb_zOutFunction(v);
             self.Diff1_xCheb = @(v) self.Diff1_xChebFunction(v);
         end
-        
-        function self = SetupEigenvalueProblem(self)            
 
-            
-        end
     end
     
     methods (Access = private)             
@@ -453,6 +312,72 @@ classdef InternalModesAdaptiveSpectral < InternalModesSpectral
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Static)
+        function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundaries(N2, z, omega, requiredDecay)
+            % Find the theoretical solution boundaries of the WKB solution.
+            % The requiredDecay is <=1 and find the point at which the
+            % solution has decayed below that value.
+            [zBoundariesAndTPs, thesign, boundaryIndices] = InternalModesSpectral.FindTurningPointBoundariesAtFrequency(N2, z, omega);
+            N2Omega2 = N2 - omega*omega;
+            
+            L_osc = 0.0;
+            for i = 1:length(thesign)
+                if thesign(i) > 0
+                    indices = boundaryIndices(i+1):-1:boundaryIndices(i);
+                    L_osc = L_osc + trapz(z(indices), abs(N2Omega2(indices)).^(1/2));
+                end
+            end
+            
+            indicesToRemove = [];
+            q = cumtrapz(z, abs(N2Omega2).^(1/2));
+            for iInteriorPoint = 2:(length(zBoundariesAndTPs)-1)
+                % xi is just q, but where its now 0 at the turning point of interest.
+                xi = abs(q-interp1(z,q,zBoundariesAndTPs(iInteriorPoint)));
+                if thesign( iInteriorPoint-1) < 0
+                    % negative (decay) to the left, positive (oscillatory) to the right
+                    indices = boundaryIndices(iInteriorPoint):-1:boundaryIndices(iInteriorPoint-1);
+                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2(indices));
+                    
+                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                    if isempty(decayIndex) || indices(decayIndex) < boundaryIndices(iInteriorPoint-1)
+                        indicesToRemove(end+1) = iInteriorPoint;
+                    else
+                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                    end
+                else
+                    % positive (oscillatory) to the left, negative (decay) to the right
+                    indices = (boundaryIndices(iInteriorPoint)+1):boundaryIndices(iInteriorPoint+1);
+                    decay = InternalModesAdaptiveSpectral.WKBDecaySolution(xi(indices), L_osc, N2Omega2(indices));
+                    
+                    decayIndex = find( decay/max(decay) < requiredDecay, 1, 'first');
+                    if isempty(decayIndex) || indices(decayIndex) > boundaryIndices(iInteriorPoint+1)
+                        indicesToRemove(end+1) = iInteriorPoint;
+                    else
+                        boundaryIndices(iInteriorPoint) = indices(decayIndex);
+                    end
+                end
+                
+            end
+                    
+            if ~isempty(indicesToRemove)
+                zBoundariesAndTPs( indicesToRemove ) = [];
+                boundaryIndices( indicesToRemove ) = [];
+                % the sign will always alternate. -1/+1
+                if min(indicesToRemove) == 2
+                    thesign = -1*ones(1,length(boundaryIndices)-1);
+                    thesign(1) = 1;
+                    thesign = cumprod(thesign);
+                else
+                    thesign = thesign(1:(length(boundaryIndices)-1));
+                    if length(thesign)>1
+                        thesign(2:end) = -1;
+                        thesign = cumprod(thesign);
+                    end
+                end
+            end
+            
+            zBoundariesAndTPs = z(boundaryIndices); 
+        end
+        
         function decay = WKBDecaySolution(xi, L_osc, N2Omega2)
             % The decay part of the lowest F-mode. xi should be > 0
             c = L_osc./((3/4)*pi);

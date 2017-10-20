@@ -37,7 +37,7 @@ classdef InternalModesWKB < InternalModesSpectral
             % Return the normal modes and eigenvalue at a given frequency.            
             % Surface boundary condition
             
-            [zBoundary, thesign, boundaryIndices] = self.FindTurningPointBoundariesAtFrequency(omega);
+            [zBoundary, thesign, boundaryIndices] = InternalModesSpectral.FindTurningPointBoundariesAtFrequency(self.N2_zLobatto, self.zLobatto, omega);
             N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
             
             
