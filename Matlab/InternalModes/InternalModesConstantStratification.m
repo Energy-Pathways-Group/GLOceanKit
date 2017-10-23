@@ -98,14 +98,15 @@ classdef InternalModesConstantStratification < InternalModesBase
             N0_ = self.N0; % reference buoyancy frequency, radians/seconds
             g_ = self.g;
             j = 1:self.nModes;
-            if strcmp(self.normalization, 'const_G_norm')
-                A = (-1).^j .* sqrt(g_./((N0_*N0_-self.f0*self.f0) .* (self.Lz/2 - sin(2*k_z*self.Lz)./(4*k_z))));        
-            elseif strcmp(self.normalization, 'const_F_norm')
-                A = (-1).^j./( h .* k_z .* sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
-            elseif strcmp(self.normalization, 'max_w')
-                A = (-1).^j;
-            elseif strcmp(self.normalization, 'max_u')
-                A = (-1).^j./(h.*k_z);
+            switch self.normalization
+                case Normalization.kConstant
+                    A = (-1).^j .* sqrt(g_./((N0_*N0_-self.f0*self.f0) .* (self.Lz/2 - sin(2*k_z*self.Lz)./(4*k_z))));
+                case Normalization.omegaConstant
+                    A = (-1).^j./( h .* k_z .* sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
+                case Normalization.wMax
+                    A = (-1).^j;
+                case Normalization.uMax
+                    A = (-1).^j./(h.*k_z);
             end
             G = A .*  sin(k_z .* (self.z + self.Lz));
             F = A .*  repmat(h.*k_z,length(self.z),1) .* cos(k_z .* (self.z + self.Lz));
@@ -159,38 +160,41 @@ classdef InternalModesConstantStratification < InternalModesBase
             % It's safer to do a switch on solutionType, rather than check
             % that omega *or* k are equal to N0, k_star within tolerance.
             if strcmp(solutionType, 'linear')
-                if strcmp(self.normalization, 'const_G_norm')
-                    A = sqrt(3*self.g/( (self.N0*self.N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
-                elseif strcmp(self.normalization, 'const_F_norm')
-                    A = 1/self.Lz;
-                elseif strcmp(self.normalization, 'max_w')
-                    A = 1/self.Lz;
-                elseif strcmp(self.normalization, 'max_u')
-                    A = 1/self.Lz;
+                switch self.normalization
+                    case Normalization.kConstant
+                        A = sqrt(3*self.g/( (self.N0*self.N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
+                    case Normalization.omegaConstant
+                        A = 1/self.Lz;
+                    case Normalization.wMax
+                        A = 1/self.Lz;
+                    case Normalization.uMax
+                        A = 1/self.Lz;
                 end
                 G0 = A*(self.z + self.Lz);
                 F0 = A*self.Lz*ones(size(self.z));
             elseif strcmp(solutionType, 'hyperbolic')
-                if strcmp(self.normalization, 'const_G_norm')
-                    A = sqrt( self.g/((self.N0*self.N0 - self.f0*self.f0)*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2)) );
-                elseif strcmp(self.normalization, 'const_F_norm')
-                    A = 1/( h0 * k_z * sqrt(1/2 + sinh(2*k_z*self.Lz)./(4*k_z*self.Lz)));
-                elseif strcmp(self.normalization, 'max_w')
-                    A = 1/sinh(k_z*self.Lz);
-                elseif strcmp(self.normalization, 'max_u')
-                    A = 1/(h0*k_z*cosh(k_z*self.Lz));
+                switch self.normalization
+                    case Normalization.kConstant
+                        A = sqrt( self.g/((self.N0*self.N0 - self.f0*self.f0)*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2)) );
+                    case Normalization.omegaConstant
+                        A = 1/( h0 * k_z * sqrt(1/2 + sinh(2*k_z*self.Lz)./(4*k_z*self.Lz)));
+                    case Normalization.wMax
+                        A = 1/sinh(k_z*self.Lz);
+                    case Normalization.uMax
+                        A = 1/(h0*k_z*cosh(k_z*self.Lz));
                 end
                 G0 = A*sinh(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cosh(k_z*(self.z + self.Lz));
             elseif strcmp(solutionType, 'trig')
-                if strcmp(self.normalization, 'const_G_norm')
-                    A = sqrt(self.g/((self.N0*self.N0 - self.f0*self.f0) * (self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z))));
-                elseif strcmp(self.normalization, 'const_F_norm')
-                    A = 1/( h0 * k_z * sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
-                elseif strcmp(self.normalization, 'max_w')
-                    A = 1/sin(k_z*self.Lz);
-                elseif strcmp(self.normalization, 'max_u')
-                    A = 1/(h0*k_z);
+                switch self.normalization
+                    case Normalization.kConstant
+                        A = sqrt(self.g/((self.N0*self.N0 - self.f0*self.f0) * (self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z))));
+                    case Normalization.omegaConstant
+                        A = 1/( h0 * k_z * sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
+                    case Normalization.wMax
+                        A = 1/sin(k_z*self.Lz);
+                    case Normalization.uMax
+                        A = 1/(h0*k_z);
                 end
                 G0 = A*sin(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cos(k_z*(self.z + self.Lz));

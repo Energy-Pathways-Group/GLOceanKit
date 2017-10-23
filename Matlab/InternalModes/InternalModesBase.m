@@ -48,7 +48,7 @@ classdef (Abstract) InternalModesBase < handle
         z % Depth coordinate grid used for all output (same as zOut).
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
-        normalization = 'const_G_norm' % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
+        normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
         upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
     end
     
@@ -80,8 +80,8 @@ classdef (Abstract) InternalModesBase < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set.normalization(obj,norm)
-            if  (~strcmp(norm, 'max_u') && ~strcmp(norm, 'max_w') && ~strcmp(norm, 'const_G_norm') && ~strcmp(norm, 'const_F_norm'))
-                error('Invalid normalization! Valid options: max_u, max_w, const_G_norm (default), const_F_norm')
+            if  (norm ~= Normalization.kConstant && norm ~= Normalization.omegaConstant && norm ~= Normalization.uMax && norm ~= Normalization.wMax)
+                error('Invalid normalization! Valid options: Normalization.kConstant, Normalization.omegaConstant, Normalization.uMax, Normalization.wMax')
             else
                 obj.normalization = norm;
             end
@@ -184,22 +184,23 @@ classdef (Abstract) InternalModesBase < handle
             end
             [maxIndexZ] = find(N2-self.gridFrequency*self.gridFrequency>0,1,direction);  
             for j=1:length(G(1,:))
-                if strcmp(self.normalization, 'max_u')
-                    A = max( abs(F(:,j)) );
-                    G(:,j) = G(:,j) / A;
-                    F(:,j) = F(:,j) / A;
-                elseif strcmp(self.normalization, 'max_w')
-                    A = max( abs(G(:,j)) );
-                    G(:,j) = G(:,j) / A;
-                    F(:,j) = F(:,j) / A;
-                elseif strcmp(self.normalization, 'const_G_norm')
-                    A = abs(trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
-                    G(:,j) = G(:,j) / sqrt(A);
-                    F(:,j) = F(:,j) / sqrt(A);
-                elseif strcmp(self.normalization, 'const_F_norm')
-                    A = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
-                    G(:,j) = G(:,j) / sqrt(A);
-                    F(:,j) = F(:,j) / sqrt(A);
+                switch self.normalization
+                    case Normalization.uMax
+                        A = max( abs(F(:,j)) );
+                        G(:,j) = G(:,j) / A;
+                        F(:,j) = F(:,j) / A;
+                    case Normalization.wMax
+                        A = max( abs(G(:,j)) );
+                        G(:,j) = G(:,j) / A;
+                        F(:,j) = F(:,j) / A;
+                    case Normalization.kConstant
+                        A = abs(trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
+                        G(:,j) = G(:,j) / sqrt(A);
+                        F(:,j) = F(:,j) / sqrt(A);
+                    case Normalization.omegaConstant
+                        A = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
+                        G(:,j) = G(:,j) / sqrt(A);
+                        F(:,j) = F(:,j) / sqrt(A);
                 end
                 
                 if F(maxIndexZ,j)< 0

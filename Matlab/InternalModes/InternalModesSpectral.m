@@ -350,14 +350,15 @@ classdef InternalModesSpectral < InternalModesBase
             for j=1:maxModes
                 Fj = FFromGCheb(G_cheb(:,j),h(j));
                 Gj = GFromGCheb(G_cheb(:,j),h(j));
-                if strcmp(self.normalization, 'max_u')
-                    A = max( abs( Fj ));
-                elseif strcmp(self.normalization, 'max_w')
-                    A = max( abs( Gj ) );
-                elseif strcmp(self.normalization, 'const_G_norm')
-                    A = sqrt(GNorm( Gj ));
-                elseif strcmp(self.normalization, 'const_F_norm')
-                    A = sqrt(FNorm( Fj ));
+                switch self.normalization
+                    case Normalization.uMax
+                        A = max( abs( Fj ));
+                    case Normalization.wMax
+                        A = max( abs( Gj ) );
+                    case Normalization.kConstant
+                        A = sqrt(GNorm( Gj ));
+                    case Normalization.omegaConstant
+                        A = sqrt(FNorm( Fj ));
                 end
                 if Fj(maxIndexZ) < 0
                     A = -A;

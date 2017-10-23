@@ -98,7 +98,7 @@ classdef InternalModes < handle
         rho0 % density at the surface (or user specified through constructor args)
         
         upperBoundary % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
-        normalization % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
+        normalization % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
     end
     
     properties (Access = private)

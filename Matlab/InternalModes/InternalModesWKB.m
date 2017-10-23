@@ -147,6 +147,12 @@ classdef InternalModesWKB < InternalModesSpectral
             
             h = (c.^2)/self.g;
             
+            switch self.normalization
+                case Normalization.kConstant
+                otherwise
+                    error('This normalization is not available for the analytical WKB solution.');
+            end
+            
 %             N = flip(sqrt(self.N2_xLobatto));
 %             z = flip(self.z_xiLobatto);
 %             
@@ -219,10 +225,13 @@ classdef InternalModesWKB < InternalModesSpectral
             F = Fsign .* F;
             G = Fsign .* G;
             
-            if strcmp(self.normalization, 'const_F_norm')
-               A = sqrt( self.Lz ./ h);
-               F = A.*F;
-               G = G.*G;
+            switch self.normalization
+                case Normalization.omegaConstant
+                    A = sqrt( self.Lz ./ h);
+                    F = A.*F;
+                    G = G.*G;
+                otherwise
+                    error('This normalization is not available for the analytical WKB solution.');
             end
             
             if self.upperBoundary == UpperBoundary.freeSurface
