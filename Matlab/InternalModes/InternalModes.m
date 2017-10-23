@@ -97,7 +97,7 @@ classdef InternalModes < handle
         rho_zz % Second derivative of density on the z grid.
         rho0 % density at the surface (or user specified through constructor args)
         
-        upperBoundary % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
+        upperBoundary % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
         normalization % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
     end
     
@@ -220,7 +220,7 @@ classdef InternalModes < handle
             end
             
             % all test cases should just use all modes possible.
-            self.internalModes.nModes = self.internalModes.nEVP;
+            self.internalModes.nModes = length(self.internalModes.z);
             
             [F,G,h] = self.internalModes.ModesAtWavenumber( k );
             
@@ -257,7 +257,7 @@ classdef InternalModes < handle
             end
             
             % all test cases should just use all modes possible.
-            self.internalModes.nModes = self.internalModes.nEVP;
+            self.internalModes.nModes = length(self.internalModes.z);
             
             [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             
@@ -528,7 +528,7 @@ classdef InternalModes < handle
             elseif  strcmp(theMethod, 'wkbAdaptiveSpectral')
                 self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif strcmp(theMethod, 'finiteDifference')
-                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
+                self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
             elseif strcmp(theMethod, 'spectral')
                 self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif isempty(theMethod)
@@ -582,7 +582,7 @@ classdef InternalModes < handle
         function self = ShowErrorFigure(self, h_error, F_error, G_error, theTitle)
             maxModes = length(h_error);
             
-            if strcmp(self.upperBoundary,'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 modes = 0:(maxModes-1);
             else
                 modes = 1:maxModes;

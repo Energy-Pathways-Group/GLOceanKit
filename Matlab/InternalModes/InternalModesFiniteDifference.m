@@ -97,10 +97,10 @@ classdef InternalModesFiniteDifference < InternalModesBase
             
             % Surface boundary condition
             A(end,:) = self.Diff2(end,:);
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
                 B(end,end)=1;
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
+            elseif self.upperBoundary == UpperBoundary.rigidLid
                 % G=0 at the surface (note we chose this BC when creating Diff2)
                 B(end,end)=0;
             end
@@ -124,10 +124,10 @@ classdef InternalModesFiniteDifference < InternalModesBase
             B(1,:) = 0;
             
             % Surface boundary condition
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
                 B(end,end)=1;
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
+            elseif self.upperBoundary == UpperBoundary.rigidLid
                 % G=0 at the surface (note we chose this BC when creating Diff2)
                 A(end,:) = self.Diff2(end,:);
                 B(end,end)=0;
@@ -187,7 +187,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             % This function is called when the user changes the surface
             % boundary condition. By overriding this function, a subclass
             % can respond as necessary.
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 rightBCDerivs = 1;
             else
                 rightBCDerivs = 0;

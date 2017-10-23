@@ -179,9 +179,9 @@ classdef InternalModesWKB < InternalModesSpectral
 %                G = G.*G;
 %             end
 %             
-%             if strcmp(self.upperBoundary, 'free_surface')
+%             if self.upperBoundary == UpperBoundary.freeSurface
 %                 error('Not yet implemented');
-%             elseif strcmp(self.upperBoundary, 'rigid_lid')
+%             elseif self.upperBoundary == UpperBoundary.rigidLid
 % 
 %             end
             
@@ -225,9 +225,9 @@ classdef InternalModesWKB < InternalModesSpectral
                G = G.*G;
             end
             
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 error('Not yet implemented');
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
+            elseif self.upperBoundary == UpperBoundary.rigidLid
 
             end
             

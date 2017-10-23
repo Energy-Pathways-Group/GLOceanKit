@@ -47,9 +47,9 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         
-        gridFrequency = 0 % last requested frequency from the user---set to f0 if a wavenumber was last requested
+        gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = 'const_G_norm' % Normalization used for the modes. Either 'const_G_norm' (default), 'const_F_norm', 'max_u' or 'max_w'.
-        upperBoundary = 'rigid_lid' % Surface boundary condition. Either 'rigid_lid' (default) or 'free_surface'.
+        upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
     end
     
     properties (Abstract)
@@ -88,7 +88,7 @@ classdef (Abstract) InternalModesBase < handle
         end
         
         function set.upperBoundary(self,upperBoundary)
-            if  (~strcmp(upperBoundary, 'free_surface') && ~strcmp(upperBoundary, 'rigid_lid') )
+            if  upperBoundary ~= UpperBoundary.rigidLid && upperBoundary ~= UpperBoundary.freeSurface
                 error('Invalid upper boundary condition!')
             else
                 self.upperBoundary = upperBoundary;

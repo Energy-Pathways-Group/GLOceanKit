@@ -24,7 +24,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 
         function [F,G,h] = ModesAtWavenumber(self, k )
             k_z = (1:self.nModes)*pi/self.Lz;
-            if strcmp(self.upperBoundary,'free_surface') % add the free surface correction to the vertical wavenumber
+            if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
                     f = @(xi) (xi+i*pi)*(self.N0*self.N0 - self.f0*self.f0)*self.Lz - self.g*(k*k*self.Lz*self.Lz+(xi+i*pi).*(xi+i*pi)).*tan(xi);
                     k_z(i) = k_z(i) + fzero(f,0)/self.Lz;
@@ -35,7 +35,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             % Now compute the baroclinic modes
             [F,G] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
-            if strcmp(self.upperBoundary,'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % Make some room for the barotropic mode
                 h = circshift(h,1);
                 F = circshift(F,1,2);
@@ -51,7 +51,7 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         function [F,G,h] = ModesAtFrequency(self, omega )
             k_z = (1:self.nModes)*pi/self.Lz;
-            if strcmp(self.upperBoundary,'free_surface') % add the free surface correction to the vertical wavenumber
+            if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
                     f = @(xi) self.g*tan(xi)/(xi+i*pi) - (self.N0*self.N0 - omega*omega)*self.Lz/((xi+i*pi)^2);
                     k_z(i) = k_z(i) + fzero(f,0)/self.Lz;
@@ -65,7 +65,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             
             [F,G] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
-            if strcmp(self.upperBoundary,'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % Make some room for the barotropic mode
                 h = circshift(h,1);
                 F = circshift(F,1,2);

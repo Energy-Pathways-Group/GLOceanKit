@@ -56,11 +56,11 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B(1,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
                 A(n,:) = self.N2_xLobatto(n) * Tz(n,:);
                 B(n,:) = T(n,:);
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
+            elseif self.upperBoundary == UpperBoundary.rigidLid
                 A(n,:) = T(n,:);
                 B(n,:) = 0;
             end
@@ -84,11 +84,11 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B(1,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if strcmp(self.upperBoundary, 'free_surface')
+            if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
                 A(n,:) = self.N2_xLobatto(1) * Tz(n,:);
                 B(n,:) = T(n,:);
-            elseif strcmp(self.upperBoundary, 'rigid_lid')
+            elseif self.upperBoundary == UpperBoundary.rigidLid
                 A(n,:) = T(n,:);
                 B(n,:) = 0;
             end
