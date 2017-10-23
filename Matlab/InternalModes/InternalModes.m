@@ -158,7 +158,7 @@ classdef InternalModes < handle
                 elseif  strcmp(self.method, 'wkbSpectral')
                     self.internalModes = InternalModesWKBSpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbAdaptiveSpectral')
-                    self.internalModes = InternalModesAdaptiveSpectral(self.rhoFunction,zIn,zOut,lat);
+                    self.internalModes = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'finiteDifference')
                     self.internalModes = InternalModesFiniteDifference(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'spectral')

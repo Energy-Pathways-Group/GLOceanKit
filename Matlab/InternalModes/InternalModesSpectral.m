@@ -346,6 +346,8 @@ classdef InternalModesSpectral < InternalModesBase
             [maxIndexZ] = find(self.N2_xLobatto-self.gridFrequency*self.gridFrequency>0,1,'first');
             if maxIndexZ > 1 % grab a point just above the turning point, which should have the right sign.
                 maxIndexZ = maxIndexZ-1;
+            elseif isempty(maxIndexZ)
+                maxIndexZ = 1;
             end
             for j=1:maxModes
                 Fj = FFromGCheb(G_cheb(:,j),h(j));
