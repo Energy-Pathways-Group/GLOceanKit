@@ -162,6 +162,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             if self.gridFrequency == omega
                 return
             end
+            previousNEquations = self.nEquations;
             
             self.gridFrequency = omega;            
             
@@ -181,18 +182,20 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                         
             self.SetupCoupledEquationsAtBoundaries( boundaries, nEVPPoints );
             
-            if self.nEquations == 1
-                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
-            else
-                fprintf(' Separating the EVP into %d coupled EVPs with ',self.nEquations);
-                for i=1:length(nEVPPoints)
-                    if i == length(nEVPPoints)
-                        fprintf('%d',nEVPPoints(i));
-                    else
-                        fprintf('%d+',nEVPPoints(i));
+            if self.nEquations ~= previousNEquations
+                if self.nEquations == 1
+                    fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+                else
+                    fprintf(' Separating the EVP into %d coupled EVPs with ',self.nEquations);
+                    for i=1:length(nEVPPoints)
+                        if i == length(nEVPPoints)
+                            fprintf('%d',nEVPPoints(i));
+                        else
+                            fprintf('%d+',nEVPPoints(i));
+                        end
                     end
+                    fprintf(' points.\n');
                 end
-                fprintf(' points.\n');
             end
         end
         

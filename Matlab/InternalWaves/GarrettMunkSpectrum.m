@@ -87,7 +87,7 @@ classdef GarrettMunkSpectrum < handle
             
             im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',self.nEVPMin);
             self.N_max = max(sqrt(im.N2_xLobatto));
-            self.zInternal = im.z_xiLobatto;
+            self.zInternal = im.z_xLobatto;
             self.N2internal = im.N2_xLobatto;
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
@@ -122,7 +122,7 @@ classdef GarrettMunkSpectrum < handle
             nEVP = self.nEVPMin;
                                     
             im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-            im.normalization = 'const_G_norm';
+            im.normalization = Normalization.kConstant;
             
             Phi = nan(length(self.zInternal),nX,self.nModes);
             Gamma = nan(length(self.zInternal),nX,self.nModes);
@@ -130,17 +130,18 @@ classdef GarrettMunkSpectrum < handle
             for i = 1:length(self.omega)
                 [F, G, h] = im.(methodName)(x(i));
                 
-                j_max = ceil(find(h>0,1,'last')/2);
-                
-                while( (isempty(j_max) || j_max < self.nModes) && nEVP < self.nEVPMax )
+                % Increase the number of grid points until we get the
+                % desired number of good quality modes (or reach some max).
+                while( (isempty(h) || length(h) < self.nModes) && nEVP < self.nEVPMax )
                     nEVP = nEVP + 128;
                     im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-                    im.normalization = 'const_G_norm';
+                    im.normalization = Normalization.kConstant;
                     [F, G, h] = im.(methodName)(x(i));
-                    j_max = ceil(find(h>0,1,'last')/2);
                 end
-                
-                j0 = min(j_max,self.nModes);
+                if length(h) < self.nModes
+                   fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),self.nModes);
+                end
+                j0 = min(length(h),self.nModes);
                 
                 h = reshape(h,1,[]);
                 
@@ -149,9 +150,6 @@ classdef GarrettMunkSpectrum < handle
                 h_out(i,1:j0)=h(1:j0);             
             end
             h = h_out;
-            % Cleanup things outside of any reasonable numerical precision?
-%             Phi(Phi/max(max(Phi))<1e-7) = 0;
-%             Gamma(Gamma/max(max(Gamma))<1e-7) = 0;
         end
         
         function PrecomputeComputePhiAndGammaForOmega(self)
@@ -254,7 +252,7 @@ classdef GarrettMunkSpectrum < handle
                 S = S.*Phi;
             elseif strcmp(approximation,'wkb')
                 im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = 'const_G_norm';
+                im.normalization = Normalization.kConstant;
                 
                 [sortedOmegas, indices] = sort(abs(omega));
                 for i = 1:length(sortedOmegas)

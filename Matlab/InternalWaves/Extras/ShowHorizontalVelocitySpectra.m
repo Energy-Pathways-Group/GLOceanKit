@@ -1,60 +1,9 @@
 scaleFactor = 1;
 LoadFigureDefaults;
 
-latitude = 33;
-f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
-L = 5000;
-
-j_star = 3;
-L_gm = 1.3e3; % thermocline exponential scale, meters
-invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
-E_gm = 6.3e-5; % non-dimensional energy parameter
-g = 9.81;
-rho0 = 1025;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Constant stratification structure function
-%
-
-N0 = invT_gm/4; % 'average' GM bouyancy frequency, sqrt( (1-exp(-L/L_gm))/(exp(L/L_gm-1) -1))
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Exponential stratification structure function
-%
-N0 = invT_gm;
-rho = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Realistic stratification structure function
-%
-% delta_p = 75;
-% z_s = 200;
-% L_s = 500;
-% L_d = 2500; %L_d = 1300;
-% z_p = -500; %z_p = -1;
-% D = 5000;
-% 
-% N0 = 0.5e-3; %N0 = 5.2e-3;
-% Np = 10e-3;
-% Nd = 3e-4; %Nd = 1.1e-4;
-% 
-% A = Np*Np - Nd*Nd*exp(2*(D+z_p)/L_d);
-% B = (Nd*Nd*exp(2*(D+z_p)/L_d) - N0*N0)/(exp(-2*(z_p-z_s)/L_s) - exp(2*z_s/L_s));
-% C = N0*N0-B*exp(2*z_s/L_s);
-% E = Nd*Nd*exp(2*(D+z_p)/L_d);
-% 
-% 
-% rho_surface = @(z) rho0*(1 - (L_s*B/(2*g)) * (exp(2*z_s/L_s) - exp(-2*(z-z_s)/L_s)) - C*z/g);
-% rho_deep = @(z) rho_surface(z_p) + (rho0*L_d*E/(2*g))*(1-exp(2*(z-z_p)/L_d));
-% rho_p = @(z) -(A*rho0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
-% 
-% rho = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
+[rho, N2, zIn] = InternalModes.StratificationProfileWithName('exponential');
+z = linspace(min(zIn),max(zIn),5000);
+N0 = sqrt(max(N2(z)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -62,10 +11,11 @@ rho = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
 %
 
 omega = linspace(-N0,N0,200);
-% zOut = [0; -L_gm/2; -L_gm];
-zOut = [0; -L_gm];
+zOut = [0; -1300];
 
-GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
+if isempty(GM)
+    GM = GarrettMunkSpectrum(rho,zIn,latitude);
+end
 S_wkb = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'wkb');
 S_gm = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'gm');
 S = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega);

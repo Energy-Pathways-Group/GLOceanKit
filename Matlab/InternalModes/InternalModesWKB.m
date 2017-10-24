@@ -34,12 +34,17 @@ classdef InternalModesWKB < InternalModesSpectral
         end
         
         function [F,G,h] = ModesAtFrequency(self, omega )
-            % Return the normal modes and eigenvalue at a given frequency.            
+            % Return the normal modes and eigenvalue at a given frequency.
             % Surface boundary condition
-            
+            % [F,G,h] = self.ModesAtFrequencyAiry(omega);
+            % [F,G,h] = self.ModesAtFrequencyApproximatedAiry(omega);
+            [F,G,h] = self.ModesAtFrequencyHydrostatic(omega);
+        end
+        
+        function [F,G,h] = ModesAtFrequencyAiry(self, omega )
+                      
             [zBoundary, thesign, boundaryIndices] = InternalModesSpectral.FindTurningPointBoundariesAtFrequency(self.N2_zLobatto, self.zLobatto, omega);
-            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
-            
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega; 
             
             L_osc = 0.0;
             for i = 1:length(thesign)
@@ -51,8 +56,11 @@ classdef InternalModesWKB < InternalModesSpectral
             
             j = 1:self.nEVP;
             
-            
-            if length(thesign) == 1 && thesign(1) > 0
+            if isempty(thesign) || (length(thesign) == 1 && thesign(1) < 0)
+                F = zeros(length(self.z),1);
+                G = zeros(length(self.z),1);
+                c = 0;
+            elseif length(thesign) == 1 && thesign(1) > 0
                 indices = boundaryIndices(2):-1:boundaryIndices(1);
                 
                 % Normalization A and coordinate xi
@@ -101,46 +109,6 @@ classdef InternalModesWKB < InternalModesSpectral
 %                 F = F + (1/4) * (a+b) .* airy(eta);
                 
                 F = sqrt(pi) * A .* h .* F;
-                                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                %
-                % Oscillatory part of the solution
-                %
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                 indices = boundaryIndices(2):-1:boundaryIndices(1); % from turning point to the surface
-%                 outIndices = find( self.z <= zBoundary(1) & self.z > zBoundary(2) );
-%                 
-%                 % Normalization A and coordinate xi
-%                 A2 = 2*self.g/(trapz(self.zLobatto(indices), (self.N2_zLobatto(indices) - self.f0*self.f0)./(abs(N2Omega2_zLobatto(indices)).^(1/2)) ));
-%                 xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));      
-%                 
-%                 % Interpolate onto the output grid
-%                 xi_out = interp1(self.zLobatto(indices),xi,self.z(outIndices));
-%                 N2Omega2_out = interp1(self.zLobatto,N2Omega2_zLobatto,self.z(outIndices));
-%                 
-%                 c = xi(end)./((j-1/4)*pi);
-% 
-%                 q = xi_out ./ c;
-%                 G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (sin(q) + cos(q))/sqrt(2));
-%                 
-%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                 %
-%                 % Exponential decay part of the solution
-%                 %
-%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                 indices = (boundaryIndices(2)+1):boundaryIndices(3); % from turning point to the bottom
-%                 outIndices = find( self.z < zBoundary(2) & self.z >= zBoundary(3) );
-%                 % Normalization A and coordinate xi
-%                 xi = -cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));   
-%                 
-%                 % Interpolate onto the output grid
-%                 xi_out = interp1(self.zLobatto(indices),xi,self.z(outIndices));
-%                 N2Omega2_out = abs(interp1(self.zLobatto,N2Omega2_zLobatto,self.z(outIndices)));
-%                 
-%                 q = xi_out ./ c;
-%                 G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (exp(-q))/2);
-                
-%                 F = G;
             else
                 error('No analytical solution available');
             end
@@ -152,55 +120,110 @@ classdef InternalModesWKB < InternalModesSpectral
                 otherwise
                     error('This normalization is not available for the analytical WKB solution.');
             end
-            
-%             N = flip(sqrt(self.N2_xLobatto));
-%             z = flip(self.z_xiLobatto);
-%             
-%             Nzeroed = N-omega;
-%             N(Nzeroed <= 0) = 0;
-%             
-%             xi = cumtrapz(z,N);
-%             xi_out = interp1(z,xi,self.z);
-%             d = xi(end);
-%             
-%             Nout = sqrt(self.N2);
-%             
-%             j = 1:self.nEVP;
-%             g = 9.81;
-%             G = sqrt(2*g/d) * (sin(xi_out*j*pi/d)./sqrt(Nout));
-%             h = ((1/g)*(d./(j*pi)).^2);
-%             
-%             zeroMask = xi_out > 0;
-%             F = sqrt(2*g/d) * (zeroMask .* h .* sqrt(Nout) .* j*pi/d .* cos(xi_out*j*pi/d));
-%             
-%             % Grab sign of F at the ocean surface
-%             Fsign = sign(h .* sqrt(N(end)) .* j*pi/d .* cos(xi(end)*j*pi/d));
-%             
-%             F = Fsign .* F;
-%             G = Fsign .* G;
-%             
-%             if strcmp(self.normalization, 'const_F_norm')
-%                A = sqrt( self.Lz ./ h);
-%                F = A.*F;
-%                G = G.*G;
-%             end
-%             
-%             if self.upperBoundary == UpperBoundary.freeSurface
-%                 error('Not yet implemented');
-%             elseif self.upperBoundary == UpperBoundary.rigidLid
-% 
-%             end
+  
             
             h = h';
             
+        end
+        
+        function [F,G,h] = ModesAtFrequencyApproximatedAiry(self, omega )
+            [zBoundary, thesign, boundaryIndices] = InternalModesSpectral.FindTurningPointBoundariesAtFrequency(self.N2_zLobatto, self.zLobatto, omega);
+            N2Omega2_zLobatto = self.N2_zLobatto - omega*omega;
+            
+            L_osc = 0.0;
+            for i = 1:length(thesign)
+                if thesign(i) > 0
+                    indices = boundaryIndices(i+1):-1:boundaryIndices(i);
+                    L_osc = L_osc + trapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                end
+            end
+            
+            j = 1:self.nEVP;
+            
+            if isempty(thesign) || (length(thesign) == 1 && thesign(1) < 0)
+                F = zeros(length(self.z),1);
+                G = zeros(length(self.z),1);
+                c = 0;
+            elseif length(thesign) == 1 && thesign(1) > 0
+                indices = boundaryIndices(2):-1:boundaryIndices(1);
+                
+                % Normalization A and coordinate xi
+                A2 = 2*self.g/(trapz(self.zLobatto(indices), (self.N2_zLobatto(indices) - self.f0*self.f0)./(abs(N2Omega2_zLobatto(indices)).^(1/2)) ));
+                xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));
+                
+                % Interpolate onto the output grid
+                xi_out = interp1(self.zLobatto(indices),xi,self.z);
+                N2Omega2_out = interp1(self.zLobatto,N2Omega2_zLobatto,self.z);
+                
+                c = xi(end)./(j*pi);
+
+                q = xi_out ./ c;
+                G = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* sin(q));
+                F = (1/(4*self.rho0)) * (c.^2) .* ( sqrt(A2) * self.rho_zz .* (N2Omega2_out.^(-5/4)) .* sin(q) );
+                F = F + (1/self.g) * c .* ( sqrt(A2)*( N2Omega2_out.^(1/4) ) .* cos(q) );
+                F = ((-1).^j) .* F;
+            elseif length(thesign) == 2 && thesign(1) > 0 && thesign(2) < 0                                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %
+                % Oscillatory part of the solution
+                %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                indices = boundaryIndices(2):-1:boundaryIndices(1); % from turning point to the surface
+                outIndices = find( self.z <= zBoundary(1) & self.z > zBoundary(2) );
+                
+                % Normalization A and coordinate xi
+                A2 = 2*self.g/(trapz(self.zLobatto(indices), (self.N2_zLobatto(indices) - self.f0*self.f0)./(abs(N2Omega2_zLobatto(indices)).^(1/2)) ));
+                xi = cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));      
+                
+                % Interpolate onto the output grid
+                xi_out = interp1(self.zLobatto(indices),xi,self.z(outIndices));
+                N2Omega2_out = interp1(self.zLobatto,N2Omega2_zLobatto,self.z(outIndices));
+                
+                c = xi(end)./((j-1/4)*pi);
+
+                q = xi_out ./ c;
+                G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (sin(q) + cos(q))/sqrt(2));
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %
+                % Exponential decay part of the solution
+                %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                indices = (boundaryIndices(2)+1):boundaryIndices(3); % from turning point to the bottom
+                outIndices = find( self.z < zBoundary(2) & self.z >= zBoundary(3) );
+                % Normalization A and coordinate xi
+                xi = -cumtrapz(self.zLobatto(indices), abs(N2Omega2_zLobatto(indices)).^(1/2));   
+                
+                % Interpolate onto the output grid
+                xi_out = interp1(self.zLobatto(indices),xi,self.z(outIndices));
+                N2Omega2_out = abs(interp1(self.zLobatto,N2Omega2_zLobatto,self.z(outIndices)));
+                
+                q = xi_out ./ c;
+                G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (exp(-q))/2);
+                
+                F = G;
+            else
+                error('No analytical solution available');
+            end
+            
+            h = (c.^2)/self.g;
+            
+            switch self.normalization
+                case Normalization.kConstant
+                otherwise
+                    error('This normalization is not available for the analytical WKB solution.');
+            end
+  
+            
+            h = h';
         end
         
         function [F,G,h] = ModesAtFrequencyHydrostatic(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.            
             % Surface boundary condition
             
-            N = flip(sqrt(self.N2_xLobatto));
-            z = flip(self.z_xiLobatto);
+            N = flip(sqrt(self.N2_zLobatto));
+            z = flip(self.zLobatto);
             
             Nzeroed = N-omega;
             N(Nzeroed <= 0) = 0;
@@ -226,6 +249,8 @@ classdef InternalModesWKB < InternalModesSpectral
             G = Fsign .* G;
             
             switch self.normalization
+                case Normalization.kConstant
+                    %no-op
                 case Normalization.omegaConstant
                     A = sqrt( self.Lz ./ h);
                     F = A.*F;
@@ -235,9 +260,7 @@ classdef InternalModesWKB < InternalModesSpectral
             end
             
             if self.upperBoundary == UpperBoundary.freeSurface
-                error('Not yet implemented');
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-
+                error('No analytical free surface solution.');
             end
             
             h = h';
