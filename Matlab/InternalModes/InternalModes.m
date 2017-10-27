@@ -531,6 +531,8 @@ classdef InternalModes < handle
                 self.internalModes = InternalModesFiniteDifference(self.rhoFunction,zIn,zOut,lat);
             elseif strcmp(theMethod, 'spectral')
                 self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
+            elseif strcmp(self.method, 'wkb')
+                self.internalModes = InternalModesWKB(self.rhoFunction,zIn,zOut,lat);
             elseif isempty(theMethod)
                 self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             else
@@ -549,6 +551,8 @@ classdef InternalModes < handle
                 methodName = 'finite differencing';
             elseif strcmp(self.method, 'spectral')
                 methodName = 'Chebyshev polynomials';
+            elseif strcmp(self.method, 'wkb')
+                methodName = 'WKB approximation';
             elseif isempty(self.method)
                 methodName = 'Chebyshev polynomials on WKB coordinates';
             else

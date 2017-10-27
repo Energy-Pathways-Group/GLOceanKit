@@ -36,9 +36,9 @@ classdef InternalModesWKB < InternalModesSpectral
         function [F,G,h] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
             % Surface boundary condition
-            % [F,G,h] = self.ModesAtFrequencyAiry(omega);
-            % [F,G,h] = self.ModesAtFrequencyApproximatedAiry(omega);
-            [F,G,h] = self.ModesAtFrequencyHydrostatic(omega);
+            [F,G,h] = self.ModesAtFrequencyAiry(omega);
+%             [F,G,h] = self.ModesAtFrequencyApproximatedAiry(omega);
+%             [F,G,h] = self.ModesAtFrequencyHydrostatic(omega);
         end
         
         function [F,G,h] = ModesAtFrequencyAiry(self, omega )
@@ -184,6 +184,9 @@ classdef InternalModesWKB < InternalModesSpectral
                 q = xi_out ./ c;
                 G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (sin(q) + cos(q))/sqrt(2));
                 
+                qz = (N2Omega2_out.^(1/2)) ./ c;
+                h = (c.^2)/self.g;
+                F(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* h .* qz .* (cos(q) - sin(q))/sqrt(2));
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %
                 % Exponential decay part of the solution
@@ -201,7 +204,10 @@ classdef InternalModesWKB < InternalModesSpectral
                 q = xi_out ./ c;
                 G(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* (exp(-q))/2);
                 
-                F = G;
+                qz = (N2Omega2_out.^(1/2)) ./ c;
+                F(outIndices,:) = ((-1).^j) .* (sqrt(A2)*(N2Omega2_out.^(-1/4)) .* h .* qz .* (exp(-q))/2);
+                
+%                 F = G;
             else
                 error('No analytical solution available');
             end

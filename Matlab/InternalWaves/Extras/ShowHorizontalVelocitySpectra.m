@@ -12,8 +12,9 @@ N0 = sqrt(max(N2(z)));
 
 omega = linspace(-N0,N0,200);
 zOut = [0; -1300];
+latitude = 33;
 
-if isempty(GM)
+if ~exist('GM','var')
     GM = GarrettMunkSpectrum(rho,zIn,latitude);
 end
 S_wkb = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'wkb');
@@ -27,6 +28,7 @@ S( S<1e-6 ) = 1e-6;
 %%%%%%
 
 xAxisMax = N0;
+f0 = GM.f0;
 
 ticks = linspace(0,xAxisMax,5);
 ticks = [-flip(ticks), ticks(2:end)];
