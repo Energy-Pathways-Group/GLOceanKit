@@ -176,6 +176,32 @@ classdef GarrettMunkSpectrum < handle
             end
         end
         
+        function Phi = PhiForOmegaWKB(self, z, omega)
+            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb');
+        end
+        
+        function Phi = PhiForOmegaWKBHydrostatic(self, z, omega)
+            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
+        end
+        
+        function Phi = PhiForOmegaWKBApproximation(self, z, omega, approximation)
+            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            Phi = zeros(length(z),length(omega));
+            [sortedOmegas, indices] = sort(abs(omega));
+            for i = 1:length(sortedOmegas)
+                if (sortedOmegas(i) > self.f0)
+                    [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                    Phi(:,indices(i)) = sum( (F.^2) * (1./h .* self.H((1:length(h))')), 2);
+                end
+            end
+        end
+        
+        function Phi = PhiForOmegaGM(self, z, omega)
+            N = sqrt(self.N2(z));
+            Omega = repmat(omega,length(z),1);
+            Phi = (N/(self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Horizontal Velocity Spectra
@@ -249,32 +275,12 @@ classdef GarrettMunkSpectrum < handle
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
                 Phi = interpn(self.zInternal,self.omega,self.Phi_omega,z,abs(omega),'linear',0); % 0 to everything outside
-                S = S.*Phi;
-            elseif strcmp(approximation,'wkb')
-                im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = Normalization.kConstant;
-                
-                [sortedOmegas, indices] = sort(abs(omega));
-                for i = 1:length(sortedOmegas)
-                    if (sortedOmegas(i) > self.f0)
-                        
-                        [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
-                        j_max = ceil(find(h>0,1,'last')/2);
-                        
-                        Phi = sum( (F(:,1:j_max).^2) * (1./h(1:j_max) .* self.H((1:j_max)')), 2);
-                        S(:,indices(i)) = S(:,indices(i)).*Phi;
-                    end
-                end       
+            elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
+                Phi = self.PhiForOmegaWKBApproximation(z, omega);
             elseif strcmp(approximation,'gm')
-                N2 = self.N2(z);
-                S = S .* (sqrt(N2)/(self.L_gm*self.invT_gm));
-                
-                zerosMask = zeros(length(z),length(omega));
-                for iDepth = 1:length(z)
-                    zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
-                end
-                S = S .* zerosMask;
+                Phi = self.PhiForOmegaGM(z, omega);
             end
+            S = S.*Phi;
         end
               
         function S = HorizontalVelocitySpectrumAtWavenumbers(self,z,k)
@@ -322,6 +328,8 @@ classdef GarrettMunkSpectrum < handle
             S = sum(S,3);
             
         end
+        
+
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -396,7 +404,7 @@ classdef GarrettMunkSpectrum < handle
                 S = S.*Gamma;
             elseif strcmp(approximation,'wkb')
                 im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = 'const_G_norm';
+                im.normalization = Normalization.kConstant;
                 
                 [sortedOmegas, indices] = sort(abs(omega));
                 for i = 1:length(sortedOmegas)
@@ -495,7 +503,7 @@ classdef GarrettMunkSpectrum < handle
                 S = S.*Gamma;
             elseif strcmp(approximation,'wkb')
                 im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = 'const_G_norm';
+                im.normalization = Normalization.kConstant;
                 
                 [sortedOmegas, indices] = sort(abs(omega));
                 for i = 1:length(sortedOmegas)

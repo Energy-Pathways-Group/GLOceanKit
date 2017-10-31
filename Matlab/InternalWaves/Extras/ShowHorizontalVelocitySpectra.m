@@ -17,10 +17,12 @@ latitude = 33;
 if ~exist('GM','var')
     GM = GarrettMunkSpectrum(rho,zIn,latitude);
 end
+S_wkb_hs = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'wkb-hydrostatic');
 S_wkb = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'wkb');
 S_gm = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega, 'approximation', 'gm');
 S = GM.HorizontalVelocitySpectrumAtFrequencies(zOut,omega);
 
+S_wkb_hs( S_wkb_hs <1e-6 ) = 1e-6;
 S_wkb( S_wkb <1e-6 ) = 1e-6;
 S_gm( S_gm <1e-6 ) = 1e-6;
 S( S<1e-6 ) = 1e-6;
@@ -79,6 +81,9 @@ plot(omega,S_wkb,'LineStyle', '--', 'LineWidth', 1.0*scaleFactor)
 
 ax.ColorOrderIndex = 1;
 plot(omega,S_gm,'LineStyle', ':', 'LineWidth', 1.0*scaleFactor)
+
+ax.ColorOrderIndex = 1;
+plot(omega,S_wkb_hs,'LineStyle', '-.', 'LineWidth', 1.0*scaleFactor)
 
 % ylim([1e0 1.1*max(max(S))])
 ylim([1e-3 1e2])

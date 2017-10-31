@@ -165,6 +165,8 @@ classdef InternalModes < handle
                     self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif strcmp(self.method, 'wkb')
                     self.internalModes = InternalModesWKB(rho,zIn,zOut,latitude,extraargs{:});
+                elseif strcmp(self.method, 'wkb-hydrostatic')
+                    self.internalModes = InternalModesWKBHydrostatic(rho,zIn,zOut,latitude,extraargs{:});
                 else
                     error('Invalid method!')
                 end
@@ -533,6 +535,8 @@ classdef InternalModes < handle
                 self.internalModes = InternalModesSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             elseif strcmp(self.method, 'wkb')
                 self.internalModes = InternalModesWKB(self.rhoFunction,zIn,zOut,lat);
+            elseif strcmp(self.method, 'wkb-hydrostatic')
+                self.internalModes = InternalModesWKBHydrostatic(self.rhoFunction,zIn,zOut,lat);
             elseif isempty(theMethod)
                 self.internalModes = InternalModesWKBSpectral(self.rhoFunction,zIn,zOut,lat,'nEVP', n);
             else
