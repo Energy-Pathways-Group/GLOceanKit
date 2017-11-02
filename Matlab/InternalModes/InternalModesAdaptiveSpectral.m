@@ -432,7 +432,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             % different regions/equations
             L = abs(diff(boundaries));
             totalEquations = length(boundaries)-1;
-            minPoints = 6;
+            minPoints = 8;
                         
             if totalEquations > 1
                 nEVPPoints = zeros(totalEquations,1);
