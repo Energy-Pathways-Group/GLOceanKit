@@ -456,24 +456,45 @@ classdef InternalModes < handle
                 Np = 10e-3;
                 Nd = 3e-4; %Nd = 1.1e-4;
                 
-                A = Np*Np - Nd*Nd*exp(2*(D+z_p)/L_d);
-                B = (Nd*Nd*exp(2*(D+z_p)/L_d) - N0*N0)/(exp(-2*(z_p-z_s)/L_s) - exp(2*z_s/L_s));
-                C = N0*N0-B*exp(2*z_s/L_s);
-                E = Nd*Nd*exp(2*(D+z_p)/L_d);
-                 
-                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * (exp(2*z_s/L_s) - exp(-2*(z-z_s)/L_s)) - C*z/g);
-                rho_deep = @(z) rho_surface(z_p) + (rho_0*L_d*E/(2*g))*(1-exp(2*(z-z_p)/L_d));
-                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
-                
-                rhoFunc = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
-                
-                N2_surface = @(z) B*exp(-2*(z-z_s)/L_s) + C;
-                N2_deep = @(z) E*exp(2*(z-z_p)/L_d);
-                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
-                
-                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
-                zIn = [-D 0];
+                [rhoFunc, N2Func, zIn] = InternalModes.ProfileWithDoubleExponentialPlusPycnocline(rho_0, D, delta_p, z_p, z_s, L_s, L_d, N0, Np, Nd);
             elseif strcmp(stratification, 'latmix-site1')
+                delta_p = 275;
+                z_s = 200;
+                L_s = 500;
+                L_d = 2500; %L_d = 1300;
+                z_p = -700; %z_p = -1;
+                D = 5000;
+                
+                N0 = 0.5e-3; %N0 = 5.2e-3;
+                Np = 5e-3;
+                Nd = 2.5e-4; %Nd = 1.1e-4;
+                
+                rho_0 = 1024.6;
+                
+                [rho_d, N2_d, zIn] = InternalModes.ProfileWithDoubleExponentialPlusPycnocline(rho_0, D, delta_p, z_p, z_s, L_s, L_d, N0, Np, Nd);
+                [rho_s, N2_s, ~] = InternalModes.StratificationProfileWithName('latmix-site1-surface');
+                
+                rhoFunc = @(z) rho_s(z)-rho_s(0) + rho_d(z);
+                N2Func = @(z) N2_s(z) + N2_d(z);
+            elseif strcmp(stratification, 'latmix-site1-surface')
+                % Recreates the surface mixed layer and associated
+                % pycnocline, and then add the deeper thermocline
+                delta_p = 0.9;
+                L_s = 8;
+                L_d = 20;
+                z_p = -17;
+                z_T = -30;
+                D = 5000;
+                b = 110;
+                
+                N0 = 2.8e-3; % Surface
+                Nq = 1.4e-2; % Pycnocline portion to exponentials
+                Np = 4.7e-2;
+                
+                [rhoFunc, N2Func, zIn] = InternalModes.ProfileWithDoubleGaussianExponentialPlusPycnocline(rho_0, D, delta_p, z_p, L_s, L_d, z_T, b, N0, Nq, Np);
+            elseif strcmp(stratification, 'latmix-site1-exponential')
+                % Recreates the surface mixed layer and associated
+                % pycnocline, and then decays exponentially below 190m.
                 delta_p = 0.9;
                 L_s = 8;
                 L_d = 100;
@@ -486,30 +507,10 @@ classdef InternalModes < handle
                 Nq = 1.4e-2; % Pycnocline portion to exponentials
                 Np = 4.7e-2;
                 
-                A = Np*Np - Nq*Nq;
-                B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
-                C = N0*N0-B*exp(-2*z_p^2/L_s);
-                alpha = -(2*b*(z_T-z_p)/(L_d^2))*exp(-2*(z_T-z_p)^2/(L_d^2) - 2*z_T/b);
-                gamma = alpha*exp(2*z_T/b)-exp(-2*(z_T-z_p)^2/(L_d^2));
-                E = Nq*Nq/( 1 + gamma );
-                F = E*gamma;
-                G = E*alpha;
-                
-                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
-                rho_mid = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
-                rho_deep = @(z) rho_mid(z_T) - (rho_0*b/(2*g))*G*(exp(2*z/b)-exp(2*z_T/b));
-                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
-                
-                rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p & z > z_T).*rho_mid(z) + (z<=z_T).*rho_deep(z) + rho_p(z);
-                
-                N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
-                N2_mid = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
-                N2_deep = @(z) G*exp(2*z/b);
-                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
-                
-                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p & z >z_T).*N2_mid(z) + (z<=z_T).*N2_deep(z) + N2_p(z);
-                zIn = [-D 0];
+                [rhoFunc, N2Func, zIn] = InternalModes.ProfileWithDoubleGaussianExponentialPlusPycnocline(rho_0, D, delta_p, z_p, L_s, L_d, z_T, b, N0, Nq, Np);
             elseif strcmp(stratification, 'latmix-site1-constant')
+                % Recreates the surface mixed layer and associated
+                % pycnocline, but then goes constant below 300m.
                 delta_p = 0.9;
                 L_s = 8;
                 L_d = 100;
@@ -521,27 +522,80 @@ classdef InternalModes < handle
                 Np = 4.7e-2;
                 Nd = 1.75e-3;
                 
-                A = Np*Np - Nq*Nq;
-                B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
-                C = N0*N0-B*exp(-2*z_p^2/L_s);
-                E = (Nq*Nq - Nd*Nd)/( 1 - exp(-2*(-D-z_p)^2/L_d^2) );
-                F = Nd*Nd - E*exp( -2*(-D-z_p)^2/L_d^2 );
-                
-                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
-                rho_deep = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
-                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
-                
-                rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p).*rho_deep(z) + rho_p(z);
-                
-                N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
-                N2_deep = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
-                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
-                
-                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
-                zIn = [-D 0];
+                [rhoFunc, N2Func, zIn] = InternalModes.ProfileWithDoubleGaussianPlusPycnocline(rho_0, D, delta_p, z_p, L_s, L_d, N0, Nq, Np, Nd);
             else
                 error('Invalid choice of stratification. Valid options are: constant, exponential, pycnocline-constant, pycnocline-exponential, or latmix-site1.');
             end
+        end
+        
+        function [rhoFunc, N2Func, zIn] = ProfileWithDoubleExponentialPlusPycnocline(rho_0, D, delta_p, z_p, z_s, L_s, L_d, N0, Np, Nd)            
+            A = Np*Np - Nd*Nd*exp(2*(D+z_p)/L_d);
+            B = (Nd*Nd*exp(2*(D+z_p)/L_d) - N0*N0)/(exp(-2*(z_p-z_s)/L_s) - exp(2*z_s/L_s));
+            C = N0*N0-B*exp(2*z_s/L_s);
+            E = Nd*Nd*exp(2*(D+z_p)/L_d);
+            
+            g = 9.81;
+            rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * (exp(2*z_s/L_s) - exp(-2*(z-z_s)/L_s)) - C*z/g);
+            rho_deep = @(z) rho_surface(z_p) + (rho_0*L_d*E/(2*g))*(1-exp(2*(z-z_p)/L_d));
+            rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+            
+            rhoFunc = @(z) (z>=z_p).*rho_surface(z) + (z<z_p).*rho_deep(z) + rho_p(z);
+            
+            N2_surface = @(z) B*exp(-2*(z-z_s)/L_s) + C;
+            N2_deep = @(z) E*exp(2*(z-z_p)/L_d);
+            N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+            
+            N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+            zIn = [-D 0];
+        end
+        
+        function [rhoFunc, N2Func, zIn] = ProfileWithDoubleGaussianPlusPycnocline(rho_0, D, delta_p, z_p, L_s, L_d, N0, Nq, Np, Nd)
+            A = Np*Np - Nq*Nq;
+            B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
+            C = N0*N0-B*exp(-2*z_p^2/L_s);
+            E = (Nq*Nq - Nd*Nd)/( 1 - exp(-2*(-D-z_p)^2/L_d^2) );
+            F = Nd*Nd - E*exp( -2*(-D-z_p)^2/L_d^2 );
+            
+            g = 9.81;
+            rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
+            rho_deep = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
+            rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+            
+            rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p).*rho_deep(z) + rho_p(z);
+            
+            N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
+            N2_deep = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
+            N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+            
+            N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p).*N2_deep(z) + N2_p(z);
+            zIn = [-D 0];
+        end
+        
+        function [rhoFunc, N2Func, zIn] = ProfileWithDoubleGaussianExponentialPlusPycnocline(rho_0, D, delta_p, z_p, L_s, L_d, z_T, L_deep, N0, Nq, Np)
+            A = Np*Np - Nq*Nq;
+            B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
+            C = N0*N0-B*exp(-2*z_p^2/L_s);
+            alpha = -(2*L_deep*(z_T-z_p)/(L_d^2))*exp(-2*(z_T-z_p)^2/(L_d^2) - 2*z_T/L_deep);
+            gamma = alpha*exp(2*z_T/L_deep)-exp(-2*(z_T-z_p)^2/(L_d^2));
+            E = Nq*Nq/( 1 + gamma );
+            F = E*gamma;
+            G = E*alpha;
+            
+            g = 9.81;
+            rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
+            rho_mid = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
+            rho_deep = @(z) rho_mid(z_T) - (rho_0*L_deep/(2*g))*G*(exp(2*z/L_deep)-exp(2*z_T/L_deep));
+            rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+            
+            rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p & z > z_T).*rho_mid(z) + (z<=z_T).*rho_deep(z) + rho_p(z);
+            
+            N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
+            N2_mid = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
+            N2_deep = @(z) G*exp(2*z/L_deep);
+            N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+            
+            N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p & z >z_T).*N2_mid(z) + (z<=z_T).*N2_deep(z) + N2_p(z);
+            zIn = [-D 0];
         end
     end
     

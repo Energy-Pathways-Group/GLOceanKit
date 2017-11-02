@@ -108,6 +108,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
             % Now we need z on the \xi grid
             self.z_xLobatto = interp1(x_zLobatto, self.zLobatto, self.xLobatto, 'spline');
+            self.z_xLobatto(self.z_xLobatto>max(self.zLobatto)) = max(self.zLobatto);
             
             % and z_out on the \xi grid
             self.xOut = interp1(self.zLobatto, x_zLobatto, self.z, 'spline');
