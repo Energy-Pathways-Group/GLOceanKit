@@ -477,6 +477,42 @@ classdef InternalModes < handle
                 delta_p = 0.9;
                 L_s = 8;
                 L_d = 100;
+                z_p = -17;
+                z_T = -190;
+                D = 5000;
+                b = 1300;
+                
+                N0 = 2.8e-3; % Surface
+                Nq = 1.4e-2; % Pycnocline portion to exponentials
+                Np = 4.7e-2;
+                
+                A = Np*Np - Nq*Nq;
+                B = (Nq*Nq - N0*N0)/(1 - exp(-2*z_p^2/L_s^2));
+                C = N0*N0-B*exp(-2*z_p^2/L_s);
+                alpha = -(2*b*(z_T-z_p)/(L_d^2))*exp(-2*(z_T-z_p)^2/(L_d^2) - 2*z_T/b);
+                gamma = alpha*exp(2*z_T/b)-exp(-2*(z_T-z_p)^2/(L_d^2));
+                E = Nq*Nq/( 1 + gamma );
+                F = E*gamma;
+                G = E*alpha;
+                
+                rho_surface = @(z) rho_0*(1 - (L_s*B/(2*g)) * sqrt(pi/2) *( erf(sqrt(2)*z_p/L_s) - erf(-sqrt(2)*(z-z_p)/L_s) ) - C*z/g);
+                rho_mid = @(z) rho_surface(z_p) - (rho_0*L_d*E/(2*g)) * sqrt(pi/2) * (erf(sqrt(2)*(z-z_p)/L_d)) - rho_0*F*(z-z_p)/g;
+                rho_deep = @(z) rho_mid(z_T) - (rho_0*b/(2*g))*G*(exp(2*z/b)-exp(2*z_T/b));
+                rho_p = @(z) -(A*rho_0*delta_p/g)*(tanh( (z-z_p)/delta_p) - 1);
+                
+                rhoFunc = @(z) (z>=z_p).*rho_surface(max(z,z_p)) + (z<z_p & z > z_T).*rho_mid(z) + (z<=z_T).*rho_deep(z) + rho_p(z);
+                
+                N2_surface = @(z) B*exp(-2*(z-z_p).^2/L_s^2) + C;
+                N2_mid = @(z) E*exp(-2*(z-z_p).^2/L_d^2) + F;
+                N2_deep = @(z) G*exp(2*z/b);
+                N2_p = @(z) A*sech( (z-z_p)/delta_p ).^2;
+                
+                N2Func = @(z) (z>=z_p).*N2_surface(z) + (z<z_p & z >z_T).*N2_mid(z) + (z<=z_T).*N2_deep(z) + N2_p(z);
+                zIn = [-D 0];
+            elseif strcmp(stratification, 'latmix-site1-constant')
+                delta_p = 0.9;
+                L_s = 8;
+                L_d = 100;
                 z_p = -17; %z_p = -1;
                 D = 5000;
                 

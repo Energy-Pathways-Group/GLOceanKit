@@ -175,6 +175,11 @@ classdef GarrettMunkSpectrum < handle
                 self.didPrecomputePhiAndGammaForK = 1;
             end
         end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Approximated versions of the vertical structure functions Phi and Gamma
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
         
         function Phi = PhiForOmegaWKB(self, z, omega)
             Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb');
@@ -195,11 +200,37 @@ classdef GarrettMunkSpectrum < handle
                 end
             end
         end
-        
+                
         function Phi = PhiForOmegaGM(self, z, omega)
             N = sqrt(self.N2(z));
             Omega = repmat(omega,length(z),1);
             Phi = (N/(self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
+        end
+        
+        function Gamma = GammaForOmegaWKB(self, z, omega)
+            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb');
+        end
+        
+        function Gamma = GammaForOmegaWKBHydrostatic(self, z, omega)
+            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
+        end
+        
+        function Gamma = GammaForOmegaWKBApproximation(self, z, omega, approximation)
+            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            Gamma = zeros(length(z),length(omega));
+            [sortedOmegas, indices] = sort(abs(omega));
+            for i = 1:length(sortedOmegas)
+                if (sortedOmegas(i) > self.f0)
+                    [~, G, h] = im.ModesAtFrequency(sortedOmegas(i));
+                    Gamma(:,indices(i)) = (1./self.g)*sum( (G.^2) * self.H((1:length(h))'), 2);
+                end
+            end
+        end
+        
+        function Gamma = GammaForOmegaGM(self, z, omega)
+            N = sqrt(self.N2(z));
+            Omega = repmat(omega,length(z),1);
+            Gamma = (1./(N*self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,7 +307,7 @@ classdef GarrettMunkSpectrum < handle
                 self.PrecomputeComputePhiAndGammaForOmega();
                 Phi = interpn(self.zInternal,self.omega,self.Phi_omega,z,abs(omega),'linear',0); % 0 to everything outside
             elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
-                Phi = self.PhiForOmegaWKBApproximation(z, omega);
+                Phi = self.PhiForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
                 Phi = self.PhiForOmegaGM(z, omega);
             end
@@ -400,34 +431,14 @@ classdef GarrettMunkSpectrum < handle
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
-                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside
-                S = S.*Gamma;
-            elseif strcmp(approximation,'wkb')
-                im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = Normalization.kConstant;
-                
-                [sortedOmegas, indices] = sort(abs(omega));
-                for i = 1:length(sortedOmegas)
-                    if (sortedOmegas(i) > self.f0)
-                        
-                        [F, G, h] = im.ModesAtFrequency(sortedOmegas(i));
-                        j_max = ceil(find(h>0,1,'last')/2);
-                        
-                        H = self.H((1:j_max)');
-                        Gamma = sum( (G(:,1:j_max).^2) * (1./self.g .* H), 2);
-                        S(:,indices(i)) = S(:,indices(i)).*Gamma;
-                    end
-                end       
+                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside  
+            elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
+                Gamma = self.GammaForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
-                N2 = self.N2(z);
-                S = S ./ (sqrt(N2)*(self.L_gm*self.invT_gm));
-                
-                zerosMask = zeros(length(z),length(omega));
-                for iDepth = 1:length(z)
-                    zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
-                end
-                S = S .* zerosMask;
+                Gamma = self.GammaForOmegaGM(z, omega);
             end
+            
+            S = S.*Gamma;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -499,33 +510,15 @@ classdef GarrettMunkSpectrum < handle
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
-                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside
-                S = S.*Gamma;
-            elseif strcmp(approximation,'wkb')
-                im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', 'wkb');
-                im.normalization = Normalization.kConstant;
-                
-                [sortedOmegas, indices] = sort(abs(omega));
-                for i = 1:length(sortedOmegas)
-                    if (sortedOmegas(i) > self.f0)
-                        
-                        [F, G, h] = im.ModesAtFrequency(sortedOmegas(i));
-                        j_max = ceil(find(h>0,1,'last')/2);
-                        
-                        H = self.H((1:j_max)');
-                        Gamma = sum( (G(:,1:j_max).^2) * (1./self.g .* H), 2);
-                        S(:,indices(i)) = S(:,indices(i)).*Gamma;
-                    end
-                end       
+                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside  
+            elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
+                Gamma = self.GammaForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
-                S = S ./ (sqrt(N2)*(self.L_gm*self.invT_gm));
-                
-                zerosMask = zeros(length(z),length(omega));
-                for iDepth = 1:length(zOut)
-                    zerosMask(iDepth,:) = abs(omega) < sqrt(N2(iDepth));
-                end
-                S = S .* zerosMask;
+                Gamma = self.GammaForOmegaGM(z, omega);
             end
+            
+            S = S.*Gamma;
+            
         end
     end
 end
