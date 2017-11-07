@@ -432,7 +432,13 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             % different regions/equations
             L = abs(diff(boundaries));
             totalEquations = length(boundaries)-1;
-            minPoints = 8;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % This is a key parameter that can strongly influence the
+            % results. We never let it drop below 6, and generally try to
+            % keep it at 2^4 (1/16th) the total points).
+            minPoints = max([round(2^(log2(nTotalPoints)-4)) 6]);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         
             if totalEquations > 1
                 nEVPPoints = zeros(totalEquations,1);
