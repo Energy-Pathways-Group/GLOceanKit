@@ -169,7 +169,7 @@ classdef GarrettMunkSpectrum < handle
             if self.didPrecomputePhiAndGammaForK==0
                 nK = 128;
                 self.k = exp(linspace(log(2*pi/1e6),log(1e1),nK));
-                [self.Phi_k, self.Gamma_k,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtWavenumber');
+                [self.Phi_k, self.Gamma_k,h] = self.PhiAndGammaForCoordinate(self.k,'ModesAtWavenumber');
                 k2 = reshape(self.k .^2,[],1);
                 self.omega_k = sqrt(self.g * h .* k2 + self.f0*self.f0);
                 self.didPrecomputePhiAndGammaForK = 1;
@@ -324,15 +324,12 @@ classdef GarrettMunkSpectrum < handle
             Nmax = self.N_max;
             % We are using the one-sided version of the spectrum
             C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+(f/omega)^2) );
-            
-            % Interpolate
-            theOmegas = interpn(self.k,1:self.nModes,self.omega_k,k,1:self.nModes,'linear');
-            
-            S = zeros(length(self.z),length(k),self.nModes);
+
+            S = zeros(length(self.z),length(self.k),self.nModes);
             % Walk through each mode j and frequency omega, distributing
             % energy.
             for iMode = 1:self.nModes
-                omegas = theOmegas(:,iMode);
+                omegas = self.omega_k(:,iMode);
                 
                 lastIdx = 1;
                 omega0 = omegas(lastIdx);
@@ -346,8 +343,7 @@ classdef GarrettMunkSpectrum < handle
                     end
                     dOmega = rightDeltaOmega + leftDeltaOmega;
                     
-                    Phi = interpn(self.zInternal,self.k,self.Phi_k(:,:,iMode),z,abs(omega),'linear',0); % 0 to everything outside
-                    Phi = (F(:,iMode,i).^2)/h(iMode,i);
+                    Phi = interpn(self.zInternal,self.k,self.Phi_k(:,:,iMode),z,abs(omega0),'linear',0); % 0 to everything outside
                     S(:,i,iMode) = self.E * Phi .* (C(omega0) * self.B(omega0-leftDeltaOmega,omega0+rightDeltaOmega) * self.H(iMode) / dOmega);
                     
                     omega0 = omega1;
@@ -358,6 +354,9 @@ classdef GarrettMunkSpectrum < handle
             
             S = sum(S,3);
             
+            
+            % Interpolate to find the values of k the user requested.
+            S = interpn(self.z,self.k,S,self.z,k,'linear');
         end
         
 
