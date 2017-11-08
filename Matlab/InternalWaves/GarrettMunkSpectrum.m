@@ -168,7 +168,8 @@ classdef GarrettMunkSpectrum < handle
         function PrecomputeComputePhiAndGammaForK(self)
             if self.didPrecomputePhiAndGammaForK==0
                 nK = 128;
-                self.k = exp(linspace(log(2*pi/1e6),log(1e1),nK));
+                self.k = zeros(1,nK);
+                self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
                 [self.Phi_k, self.Gamma_k,h] = self.PhiAndGammaForCoordinate(self.k,'ModesAtWavenumber');
                 k2 = reshape(self.k .^2,[],1);
                 self.omega_k = sqrt(self.g * h .* k2 + self.f0*self.f0);
@@ -325,11 +326,24 @@ classdef GarrettMunkSpectrum < handle
             % We are using the one-sided version of the spectrum
             C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+(f/omega)^2) );
 
-            S = zeros(length(self.z),length(self.k),self.nModes);
+            S = zeros(length(z),length(self.k),self.nModes);
             % Walk through each mode j and frequency omega, distributing
-            % energy.
+            % energy. We will distribute energy such that trapezoidal
+            % integration produces the complete sum.
             for iMode = 1:self.nModes
                 omegas = self.omega_k(:,iMode);
+                
+                % trapSum_{i} = dx{i} * ( f(x_{i}) + f(x_{i+1}) )/2
+                trapSum = zeros(length(omegas)-1,1);
+                dOmega = diff(omegas);
+                for i = 1:(length(omegas)-1)
+                    trapSum(i) = self.B(omegas(i),omegas(i+1));
+                end
+                
+                % So, f(x_{i+1}) = 2*trapSum_{i}/dx{i} - f(x_{i})
+                % and, f(x_{i+2}) = 2*trapSum_{i+1}/dx{i+1} - 2*trapSum_{i}/dx{i} + f(x_{i})
+                fx_0 = 2*self.B(omegas(1),omegas(1)+dOmega(1)/2)/dOmega(1);
+                fx_1 = 2*trapSum(1)/dOmega(1) - fx_0;
                 
                 lastIdx = 1;
                 omega0 = omegas(lastIdx);
@@ -343,8 +357,8 @@ classdef GarrettMunkSpectrum < handle
                     end
                     dOmega = rightDeltaOmega + leftDeltaOmega;
                     
-                    Phi = interpn(self.zInternal,self.k,self.Phi_k(:,:,iMode),z,abs(omega0),'linear',0); % 0 to everything outside
-                    S(:,i,iMode) = self.E * Phi .* (C(omega0) * self.B(omega0-leftDeltaOmega,omega0+rightDeltaOmega) * self.H(iMode) / dOmega);
+                    Phi = interpn(self.zInternal,self.k,self.Phi_k(:,:,iMode),z,self.k(i),'linear',0); % 0 to everything outside
+                    S(:,i,iMode) = self.E * Phi .* (C(omega0) * self.B(omega0-leftDeltaOmega,omega0+rightDeltaOmega) / dOmega);
                     
                     omega0 = omega1;
                     leftDeltaOmega = rightDeltaOmega;
@@ -356,7 +370,11 @@ classdef GarrettMunkSpectrum < handle
             
             
             % Interpolate to find the values of k the user requested.
-            S = interpn(self.z,self.k,S,self.z,k,'linear');
+            if length(z) > 1
+                S = interpn(z,self.k,S,z,k,'linear');
+            else
+                S = interp1(self.k,S,k,'linear');
+            end
         end
         
 
