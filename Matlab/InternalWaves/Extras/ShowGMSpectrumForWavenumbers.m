@@ -6,13 +6,39 @@ L = max(zIn)-min(zIn);
 if ~exist('GM','var')
     GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
 end
+GMConst = GarrettMunkSpectrumConstantStratification(5.2e-3,zIn,latitude);
 
 k = linspace(0,pi/10,150)';
-S = GM.HorizontalVelocitySpectrumAtWavenumbers(-500,k);
+S = GM.HorizontalVelocitySpectrumAtWavenumbers(-2500,k);
+S = GM.HorizontalVelocitySpectrumAtWavenumbers(-2500,GM.k);
+figure, plot(GM.k,S), ylog, xlog
 
-% S( S<1e-2 ) = 1e-2;
-figure, plot(k,S), ylog, xlog
-% ylim([1e-2 1.1*max(max(S))])
+S = GMConst.HorizontalVelocitySpectrumAtWavenumbers(-2500,GM.k);
+hold on, plot(GM.k,S)
+
+figure,plot(GM.k(2:end),diff(log10(S))./diff(log10(GM.k))), xlog
+
+return
+
+z = GM.zInternal;
+k = GM.k;
+j=shiftdim(1:GM.nModes,-1);
+
+N2 = GM.N_max*GM.N_max;
+f2 = GM.f0*GM.f0;
+f = GM.f0;
+
+m = j*pi/GM.Lz;
+omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2;
+
+% Phi analytical and numerical are spot on.
+Phi = (2/GM.Lz)*GM.H(j) .* (m.^2./(k.^2 + m.^2)) .* cos(z.*m).^2;
+Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
+C = squeeze(1+f2./omega2);
+
+Nmax = GM.N_max;
+C_function = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax).*( (1+(f./omega).^2) );
+C2 = C_function(GM.omega_k);
 
 return
 

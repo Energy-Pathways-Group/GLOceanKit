@@ -89,6 +89,24 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             S = Phi*A;
         end
         
+        function S = HorizontalVelocitySpectrumAtWavenumbers(self,z,k)
+            z = reshape(z,[],1);
+            k = reshape(k,1,[]);
+            j=shiftdim(1:self.nModes,-1);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            f = self.f0;
+                        
+            m = j*pi/self.Lz;
+            omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2;
+            
+            Phi = (2/self.Lz)*self.H(j) .* (m.^2./(k.^2 + m.^2)) .* cos(z.*m).^2;
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
+            C = 1+f2./omega2;
+            S = self.E * sum( C .* Bfunc .* Phi,3);
+        end
+        
            
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

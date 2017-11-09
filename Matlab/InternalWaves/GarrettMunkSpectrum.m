@@ -26,6 +26,11 @@ classdef GarrettMunkSpectrum < handle
         Phi_k % size(Phi_k) = [nZ,nK,nModes]
         Gamma_k % size(Gamma_k) = [nZ,nK,nModes]
         omega_k % size(omega_k) = [nK,nModes]
+        
+        % We also store a copy of the various wavenumber spectra
+        Suv_k % size(Suv_k) = [Nz,nK];
+        Szeta_k % size(Szeta_k) = [Nz,nK];
+        
         nModes = 64
         
         nEVPMin = 256 % assumed minimum, can be overriden by the user
@@ -97,8 +102,8 @@ classdef GarrettMunkSpectrum < handle
             f = self.f0;
             Nmax = self.N_max;
             B_norm = 1/acos(f/Nmax);
-            B_int = @(omega0,omega1) B_norm*(atan(f/sqrt(omega0*omega0-f*f)) - atan(f/sqrt(omega1*omega1-f*f)));
-            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax)*0 + (omega0<f & omega1>f)*B_int(f,omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax);
+            B_int = @(omega0,omega1) B_norm*(atan(f./sqrt(omega0.*omega0-f*f)) - atan(f./sqrt(omega1.*omega1-f*f)));
+            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax).*zeros(size(omega0)) + (omega0<f & omega1>f).*B_int(f*ones(size(omega0)),omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax*ones(size(omega1)));
             
             self.PrecomputeComputePhiAndGammaForOmega();
         end
@@ -127,7 +132,7 @@ classdef GarrettMunkSpectrum < handle
             Phi = nan(length(self.zInternal),nX,self.nModes);
             Gamma = nan(length(self.zInternal),nX,self.nModes);
             h_out = nan(nX,self.nModes);
-            for i = 1:length(self.omega)
+            for i = 1:length(x)
                 [F, G, h] = im.(methodName)(x(i));
                 
                 % Increase the number of grid points until we get the
@@ -321,60 +326,30 @@ classdef GarrettMunkSpectrum < handle
                 k = k.';
             end
             
-            f = self.f0;
-            Nmax = self.N_max;
-            % We are using the one-sided version of the spectrum
-            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+(f/omega)^2) );
-
-            S = zeros(length(z),length(self.k),self.nModes);
-            % Walk through each mode j and frequency omega, distributing
-            % energy. We will distribute energy such that trapezoidal
-            % integration produces the complete sum.
-            for iMode = 1:self.nModes
-                omegas = self.omega_k(:,iMode);
+            if isempty(self.Suv_k)
+                f = self.f0;
+                Nmax = self.N_max;
                 
-                % trapSum_{i} = dx{i} * ( f(x_{i}) + f(x_{i+1}) )/2
-                trapSum = zeros(length(omegas)-1,1);
-                dOmega = diff(omegas);
-                for i = 1:(length(omegas)-1)
-                    trapSum(i) = self.B(omegas(i),omegas(i+1));
-                end
+                % We are using the one-sided version of the spectrum
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax).*( (1+(f./omega).^2) );
                 
-                % So, f(x_{i+1}) = 2*trapSum_{i}/dx{i} - f(x_{i})
-                % and, f(x_{i+2}) = 2*trapSum_{i+1}/dx{i+1} - 2*trapSum_{i}/dx{i} + f(x_{i})
-                fx_0 = 2*self.B(omegas(1),omegas(1)+dOmega(1)/2)/dOmega(1);
-                fx_1 = 2*trapSum(1)/dOmega(1) - fx_0;
+                % Integrate B across the frequency bands, \int B domega
+                omegaMid = self.omega_k(1:end-1,:) + diff(self.omega_k,1,1)/2;
+                omegaLeft = cat(1,self.omega_k(1,:),omegaMid);
+                omegaRight = cat(1, omegaMid, self.omega_k(end,:));
+                BofK = self.B(omegaLeft,omegaRight);
                 
-                lastIdx = 1;
-                omega0 = omegas(lastIdx);
-                leftDeltaOmega = 0;
-                for i = 1:length(omegas)
-                    if i == length(omegas)
-                        rightDeltaOmega = 0;
-                    else
-                        omega1 = omegas(i + 1);
-                        rightDeltaOmega = (omega1-omega0)/2;
-                    end
-                    dOmega = rightDeltaOmega + leftDeltaOmega;
-                    
-                    Phi = interpn(self.zInternal,self.k,self.Phi_k(:,:,iMode),z,self.k(i),'linear',0); % 0 to everything outside
-                    S(:,i,iMode) = self.E * Phi .* (C(omega0) * self.B(omega0-leftDeltaOmega,omega0+rightDeltaOmega) / dOmega);
-                    
-                    omega0 = omega1;
-                    leftDeltaOmega = rightDeltaOmega;
-                end
+                % Now divide by dk. This is essentially applying the Jacobian.
+                kMid = self.k(1:end-1) + diff(self.k)/2;
+                kLeft = cat(2,self.k(1),kMid);
+                kRight = cat(2,kMid,self.k(end));
+                dk = (kRight-kLeft).';
+                BofK = BofK./dk;
                 
+                self.Suv_k = sum(self.E * self.Phi_k .* shiftdim( C(self.omega_k) .* BofK, -1),3);
             end
             
-            S = sum(S,3);
-            
-            
-            % Interpolate to find the values of k the user requested.
-            if length(z) > 1
-                S = interpn(z,self.k,S,z,k,'linear');
-            else
-                S = interp1(self.k,S,k,'linear');
-            end
+            S = interpn(self.zInternal,self.k,self.Suv_k,z,k,'linear');
         end
         
 
@@ -456,6 +431,38 @@ classdef GarrettMunkSpectrum < handle
             end
             
             S = S.*Gamma;
+        end
+        
+        function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
+            self.PrecomputeComputePhiAndGammaForK();
+            if isrow(k)
+                k = k.';
+            end
+            
+            if isempty(self.Suv_k)
+                f = self.f0;
+                Nmax = self.N_max;
+                
+                % We are using the one-sided version of the spectrum
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax).*( (1-(f./omega).^2) );
+                
+                % Integrate B across the frequency bands, \int B domega
+                omegaMid = self.omega_k(1:end-1,:) + diff(self.omega_k,1,1)/2;
+                omegaLeft = cat(1,self.omega_k(1,:),omegaMid);
+                omegaRight = cat(1, omegaMid, self.omega_k(end,:));
+                BofK = self.B(omegaLeft,omegaRight);
+                
+                % Now divide by dk. This is essentially applying the Jacobian.
+                kMid = self.k(1:end-1) + diff(self.k)/2;
+                kLeft = cat(2,self.k(1),kMid);
+                kRight = cat(2,kMid,self.k(end));
+                dk = (kRight-kLeft).';
+                BofK = BofK./dk;
+                
+                self.Szeta_k = sum(self.E * self.Gamma_k .* shiftdim( C(self.omega_k) .* BofK, -1),3);
+            end
+            
+            S = interpn(self.zInternal,self.k,self.Szeta_k,z,k,'linear');
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
