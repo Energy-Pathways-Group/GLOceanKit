@@ -249,16 +249,37 @@ classdef (Abstract) InternalWaveModel < handle
         % the FFT grid.
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function RemoveAllExternalWaves(self)
+            self.k_ext = [];
+            self.l_ext = [];
+            self.j_ext = [];
+            self.k_z_ext = [];
+            self.phi_ext = [];
+            self.h_ext = [];
+            self.F_ext = [];
+            self.G_ext = [];
+            self.omega_ext = [];
+            self.PrecomputeExternalWaveCoefficients([]); 
+        end
+        
         function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            self.RemoveAllExternalWaves();
+            omega = self.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        end
+        
+        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
             % Add free waves to the model that are not constrained to the
             % gridded solution. The amplitude, A, can be given as an energy
             % density or a maximum U velocity. The type must then be either
-            % Normalization.kConstant (energy density) or Normalization.uMax.         
-            self.k_ext = reshape(k,1,[]);
-            self.l_ext = reshape(l,1,[]);
-            self.j_ext = reshape(j,1,[]);
-            self.k_z_ext = self.j_ext*pi/self.Lz;
-            self.phi_ext = reshape(phi,1,[]);
+            % Normalization.kConstant (energy density) or Normalization.uMax.
+            numExistingWaves = length(self.k_ext);
+            
+            self.k_ext = cat(1,self.k_ext,reshape(k,1,[]));
+            self.l_ext = cat(1,self.l_ext,reshape(l,1,[]));
+            self.j_ext = cat(1,self.j_ext,reshape(j,1,[]));
+            self.k_z_ext = cat(1,self.k_z_ext,j*pi/self.Lz);
+            self.phi_ext = cat(1,self.phi_ext,reshape(phi,1,[]));
             
             switch norm
                 case {Normalization.kConstant, Normalization.uMax}
@@ -267,17 +288,17 @@ classdef (Abstract) InternalWaveModel < handle
                     error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
             end
             
-            K2h = self.k_ext.*self.k_ext + self.l_ext.*self.l_ext;
+            K2h = k.*k + l.*l;
             
-            self.h_ext = zeros(size(self.j_ext));
-            self.F_ext = zeros(length(self.z),length(self.j_ext));
-            self.G_ext = zeros(length(self.z),length(self.j_ext));
+            self.h_ext = cat(1,self.h_ext,zeros(size(j)));
+            self.F_ext = cat(2,self.F_ext,zeros(length(self.z),length(j)));
+            self.G_ext = cat(2,self.G_ext,zeros(length(self.z),length(j)));
             self.internalModes.normalization = self.norm_ext;
             for iWave=1:length(j)
                 [FExt,GExt,hExt] = self.internalModes.ModesAtWavenumber(sqrt(K2h(iWave)));
-                self.F_ext(:,iWave) = FExt(:,j(iWave));
-                self.G_ext(:,iWave) = GExt(:,j(iWave));
-                self.h_ext(iWave) = hExt(j(iWave));
+                self.F_ext(:,numExistingWaves+iWave) = FExt(:,j(iWave));
+                self.G_ext(:,numExistingWaves+iWave) = GExt(:,j(iWave));
+                self.h_ext(numExistingWaves+iWave) = hExt(j(iWave));
             end
             
             U = reshape(A,1,[]);
