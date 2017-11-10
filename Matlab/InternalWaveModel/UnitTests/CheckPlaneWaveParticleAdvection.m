@@ -98,12 +98,12 @@ z45 = p45(:,3);
 if shouldUseGMSpectrum == 1
     [omega, alpha, mode, phi, A] = wavemodel.WaveCoefficientsFromGriddedWaves();
     wavemodel.InitializeWithPlaneWave(1,1,1,0.0,1);
-    wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,'energyDensity');
+    wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);
 else
     wavemodel.InitializeWithPlaneWave(1,1,1,0.0,1);
     k0 = k*cos(alpha);
     l0 = k*sin(alpha);
-    omega = wavemodel.SetExternalWavesWithWavenumbers(k0,l0,j0,phi,U,'maxU');
+    omega = wavemodel.SetExternalWavesWithWavenumbers(k0,l0,j0,phi,U,Normalization.uMax);
 end
 
 % This has to be repeated, to capture the new wavemodel reference.

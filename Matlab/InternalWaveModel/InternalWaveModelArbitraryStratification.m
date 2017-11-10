@@ -37,7 +37,6 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     properties
        S
        Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
-       internalModes
     end
     
     methods
@@ -115,14 +114,6 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     
     methods (Access = protected)
         
-        function [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
-            self.internalModes.normalization = norm;
-            [F,G,h] = self.internalModes.ModesAtWavenumber(k);
-        end
-        function [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
-            self.internalModes.normalization = norm;
-            [F,G,h] = self.internalModes.ModesAtFrequency(omega);
-        end
         function [F,G] = InternalModeAtDepth(self,z,iWave)
             % return the normal mode
             [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iWave);
@@ -133,7 +124,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
             myH = self.h(k0+1,l0+1,j0);
             myK = self.Kh(k0+1,l0+1,j0);
-            self.internalModes.normalization = 'max_u';
+            self.internalModes.normalization = Normalization.uMax;
             F = self.internalModes.ModesAtWavenumber(myK);
             
             F_uConst = F(:,j0);

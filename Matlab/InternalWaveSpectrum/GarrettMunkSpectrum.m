@@ -297,7 +297,7 @@ classdef GarrettMunkSpectrum < handle
             f = self.f0;
             Nmax = self.N_max;
             if strcmp(spectrum_type,'two-sided')
-                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f/omega)*(1+f/omega) )*0.5;
+                C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f/omega)*(1-f/omega) )*0.5;
             else
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f*f/(omega*omega)) );                
             end
@@ -359,13 +359,13 @@ classdef GarrettMunkSpectrum < handle
         % Horizontal Isopycnal Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = HorizontalIsopycnalVariance(self,z)
+        function E = IsopycnalVariance(self,z)
             omega2 = linspace(0,self.N_max,2000);
             S = self.HorizontalIsopycnalSpectrumAtFrequencies(z,omega2);
             E = sum(S,2)*(omega2(2)-omega2(1));
         end
         
-        function S = HorizontalIsopycnalSpectrumAtFrequencies(self,z,omega,varargin)
+        function S = IsopycnalSpectrumAtFrequencies(self,z,omega,varargin)
             if isrow(z)
                 z=z.';
             end

@@ -73,14 +73,14 @@ classdef (Abstract) InternalWaveModel < handle
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
                 
+        internalModes % InternalModes object being used by the model
+        
         version = 1.5
         performSanityChecks = 0
         advectionSanityCheck = 0
     end
     
     methods (Abstract, Access = protected)
-        [F,G,h] = ModesAtWavenumber(self, k, norm ) % Return the normal modes and eigenvalue at a given wavenumber.
-        [F,G,h] = ModesAtFrequency(self, omega, norm ) % Return the normal modes and eigenvalue at a given frequency.
         F = InternalUVModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
         G = InternalWModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
 %         F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
@@ -249,38 +249,39 @@ classdef (Abstract) InternalWaveModel < handle
         % the FFT grid.
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, type)
+        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
             % Add free waves to the model that are not constrained to the
             % gridded solution. The amplitude, A, can be given as an energy
             % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.            
+            % Normalization.kConstant (energy density) or Normalization.uMax.         
             self.k_ext = reshape(k,1,[]);
             self.l_ext = reshape(l,1,[]);
             self.j_ext = reshape(j,1,[]);
             self.k_z_ext = self.j_ext*pi/self.Lz;
             self.phi_ext = reshape(phi,1,[]);
-                     
-            if strcmp(type, 'energyDensity')
-                self.norm_ext = 'const_G_norm';
-            elseif strcmp(type, 'maxU')
-                self.norm_ext = 'max_u';
-            end
             
+            switch norm
+                case {Normalization.kConstant, Normalization.uMax}
+                    self.norm_ext = norm;
+                otherwise
+                    error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
+            end
             
             K2h = self.k_ext.*self.k_ext + self.l_ext.*self.l_ext;
             
             self.h_ext = zeros(size(self.j_ext));
             self.F_ext = zeros(length(self.z),length(self.j_ext));
             self.G_ext = zeros(length(self.z),length(self.j_ext));
+            self.internalModes.normalization = self.norm_ext;
             for iWave=1:length(j)
-                [FExt,GExt,hExt] = self.ModesAtWavenumber(sqrt(K2h(iWave)), self.norm_ext);
+                [FExt,GExt,hExt] = self.internalModes.ModesAtWavenumber(sqrt(K2h(iWave)));
                 self.F_ext(:,iWave) = FExt(:,j(iWave));
                 self.G_ext(:,iWave) = GExt(:,j(iWave));
                 self.h_ext(iWave) = hExt(j(iWave));
             end
             
             U = reshape(A,1,[]);
-            if strcmp(type, 'energyDensity')
+            if norm == Normalization.kConstant
                 U = U./sqrt(self.h_ext);
             end
             
@@ -291,34 +292,36 @@ classdef (Abstract) InternalWaveModel < handle
             self.PrecomputeExternalWaveCoefficients(U);           
         end
         
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, type)
+        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
             % Add free waves to the model that are not constrained to the
             % gridded solution. The amplitude, A, can be given as an energy
             % density or a maximum U velocity. The type must then be either
-            % 'energyDensity' or 'maxU'.                       
+            % Normalization.kConstant (energy density) or Normalization.uMax.                       
             self.j_ext = reshape(j,1,[]);
             self.k_z_ext = self.j_ext*pi/self.Lz;
             self.omega_ext = reshape(omega,1,[]);
             self.phi_ext = reshape(phi,1,[]);
 
-            if strcmp(type, 'energyDensity')
-                self.norm_ext = 'const_G_norm';
-            elseif strcmp(type, 'maxU')
-                self.norm_ext = 'max_u';
+            switch norm
+                case {Normalization.kConstant, Normalization.uMax}
+                    self.norm_ext = norm;
+                otherwise
+                    error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
             end
                         
             self.h_ext = zeros(size(self.j_ext));
             self.F_ext = zeros(length(self.z),length(self.j_ext));
             self.G_ext = zeros(length(self.z),length(self.j_ext));
+            self.internalModes.normalization = self.norm_ext;
             for iWave=1:length(j)
-                [FExt,GExt,hExt] = self.ModesAtFrequency(omega(iWave), self.norm_ext);
+                [FExt,GExt,hExt] = self.internalModes.ModesAtFrequency(omega(iWave));
                 self.F_ext(:,iWave) = FExt(:,j(iWave));
                 self.G_ext(:,iWave) = GExt(:,j(iWave));
                 self.h_ext(iWave) = hExt(j(iWave));
             end
             
             U = reshape(A,1,[]);
-            if strcmp(type, 'energyDensity')
+            if norm == Normalization.kConstant
                 U = U./sqrt(self.h_ext);
             end
             
@@ -537,7 +540,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
             alphaExt = 2*pi*rand( size(omegaExt) );
             
-            self.SetExternalWavesWithFrequencies(omegaExt,alphaExt,jExt,zeros(size(omegaExt)),zeros(size(omegaExt)),'energyDensity');
+            self.SetExternalWavesWithFrequencies(omegaExt,alphaExt,jExt,zeros(size(omegaExt)),zeros(size(omegaExt)),Normalization.kConstant);
             
             fprintf('Added %d external waves to fill out the GM spectrum.\n', length(omegaExt));
         end

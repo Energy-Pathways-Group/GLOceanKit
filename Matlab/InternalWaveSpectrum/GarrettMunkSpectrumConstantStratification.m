@@ -80,7 +80,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             f = self.f0;
             
             B2 = @(omega) (f./abs(omega)).*(self.B0./sqrt(omega.*omega-f*f));
-            C = @(omega) (1 + f./omega).*(1 + f./omega).*(N2-omega.*omega)/(N2-f2);
+            C = @(omega) (1 - f./omega).*(1 - f./omega).*(N2-omega.*omega)/(N2-f2);
             
             A = (self.E/2)*B2(omega).*C(omega);
             A(abs(omega)<f | abs(omega) > self.N_max) = 0;
@@ -113,7 +113,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         % Horizontal Isopycnal Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = HorizontalIsopycnalVariance(self,z)
+        function E = IsopycnalVariance(self,z)
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
@@ -124,7 +124,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             E = A*Gamma;
         end
         
-        function S = HorizontalIsopycnalSpectrumAtFrequencies(self,z,omega)
+        function S = IsopycnalSpectrumAtFrequencies(self,z,omega)
             z = reshape(z,[],1);
             omega = reshape(omega,1,[]);
             

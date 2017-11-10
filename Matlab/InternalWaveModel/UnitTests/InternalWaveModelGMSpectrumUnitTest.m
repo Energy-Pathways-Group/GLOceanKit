@@ -54,7 +54,9 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 depth = Lz/2;
 depthIndex = find(wavemodel.z > -depth,1,'first');
 stride = 4;
-t = 0:15*60:1*86400;
+numInertialPeriods = 2;
+timeStep = 15*60;
+t = 0:timeStep:timeStep*(floor(numInertialPeriods*(2*pi/wavemodel.f0)/timeStep)-1);
 xIndices = 1:stride:Nx;
 yIndices = 1:stride:Ny;
 cv_mooring = zeros([length(t) length(xIndices)*length(yIndices)]);
@@ -85,17 +87,11 @@ omega = [ -flipud(omega_p(2:end)); omega_p];
 S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 figure, semilogy(omega*86400/(2*pi),S, 'LineWidth', 2)
 
-% Compare it to the non-hydrostatic version of the GM spectrum
-L_GM = 1.3e3; % thermocline exponential scale, meters
-N_GM = 5.2e-3; % reference buoyancy frequency, radians/seconds
-E_GM = 6.3e-5; % non-dimensional energy parameter
-f0 = wavemodel.f0;
-nonHydrostaticFactor = ((N0*N0 - omega.*omega)/(N0*N0));
-prefactor = abs(real(L_GM*L_GM*N0*N_GM*E_GM/pi)*(f0./omega).*(1./sqrt(omega.*omega-f0*f0).*nonHydrostaticFactor));
-S_gm = real(prefactor.*((f0 - omega).^2)./(omega.*omega));
-S_gm(abs(omega)<f0) = 0;
+GM = GarrettMunkSpectrumConstantStratification(N0,[-Lz 0],latitude);
+S_theory = GM.HorizontalVelocitySpectrumAtFrequencies(-depth,omega)';
+S_theory( S_theory<1e-6 ) = 1e-6;
 
-hold on, plot(omega*86400/(2*pi),S_gm, 'k' ,'LineWidth', 2)
+hold on, plot(omega*86400/(2*pi),S_theory, 'k' ,'LineWidth', 2)
 xlabel('frequency (cycles per day)'), ylabel('m^2/s^2'), title('horizontal velocity power spectrum')
 legend('model output', 'GM')
 
@@ -121,13 +117,15 @@ figure
 subplot(1,3,1)
 plot([44 44], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
 plot(1e4*uvVariance,z,'LineWidth', 2)
+plot(1e4*GM.HorizontalVelocityVariance(z),z,'LineWidth', 2)
 xlabel('cm^2/s^2'), ylabel('depth (m)'), title('horizontal velocity variance')
 xlim([0 1.05*max(1e4*uvVariance)])
-legend('GM', 'model output')
+legend('GM', 'model output', 'theory')
 
 subplot(1,3,2)
 plot([53 53], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
 plot(zetaVariance,z,'LineWidth', 2)
+plot(GM.IsopycnalVariance(z),z,'LineWidth', 2)
 xlabel('m^2'), set(gca,'YTickLabel',[]), title('isopycnal variance')
 
 subplot(1,3,3)

@@ -70,13 +70,14 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % Number of modes is fixed for this model.
             nModes = nz;
             
-            N2 = N0*N0*ones(size(z));
-            
-            self@InternalWaveModel(dims, n, z, N2, nModes, latitude);
+            self@InternalWaveModel(dims, n, z, N0*N0*ones(size(z)), nModes, latitude);
             
             self.N0 = N0;
             self.rho0 = 1025;
             self.nz = nz;
+            
+            rhoFunction = @(z) -(self.N0*self.N0*self.rho0/9.81)*z + self.rho0;
+            self.internalModes = InternalModesConstantStratification(rhoFunction, [-dims(3) 0],z,latitude);
             
             % Preallocate this array for a faster dct
             self.dctScratch = zeros(self.Nx,self.Ny,2*self.nz);
@@ -163,12 +164,12 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
                 
         function PrecomputeExternalWaveCoefficients(self, U)
             PrecomputeExternalWaveCoefficients@InternalWaveModel(self, U)
-            if strcmp(self.norm_ext,'const_G_norm')
+            if self.norm_ext == Normalization.kConstant
                 g = 9.81;
                 coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
                 self.F_cos_ext = coeff * ( self.h_ext .* self.k_z_ext );
                 self.G_sin_ext = coeff * ones(size(self.h_ext));
-            elseif strcmp(self.norm_ext,'max_u')
+            elseif self.norm_ext == Normalization.uMax
                 self.F_cos_ext = ones(size(self.h_ext));
                 self.G_sin_ext = 1./(self.h_ext .* self.k_z_ext);
             end
@@ -184,21 +185,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
             ratio = sqrt(myH)/F_coefficient;
         end     
-        
-        function [F,G,h] = ModesAtWavenumber(self, k, norm)
-            g = 9.81;
-            k_z = (1:self.nModes)*pi/self.Lz;
-            h = (self.N0*self.N0 - self.f0*self.f0)./(g*(k*k+k_z.*k_z));
-            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
-        end
-        
-        function [F,G,h] = ModesAtFrequency(self, omega, norm)
-            g = 9.81;
-            k_z = (1:self.nModes)*pi/self.Lz;
-            h = (self.N0*self.N0 - omega.*omega)./(g * k_z.*k_z);
-            [F,G] = self.ConstantStratificationModesWithEigenvalue(k_z,h, norm);
-        end
-        
+                
         % size(z) = [N 1]
         % size(waveIndices) = [1 M]
         function F = ExternalUVModeAtDepth(self, z, iMode)
@@ -236,21 +223,6 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             N2 = self.N0 * self.N0 * ones(size(z));
         end
         
-        % k_z and h should be of size [1, nModes]
-        % [F,G] will return with size [length(z), nModes]
-        function [F,G] = ConstantStratificationModesWithEigenvalue(self, k_z, h, norm)
-            g = 9.81;
-            if strcmp(norm, 'const_G_norm')
-                G = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * sin(k_z .* self.z);
-                F = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0))) * repmat(h.*k_z,length(self.z),1) .* cos(k_z .* self.z);
-            elseif strcmp(norm, 'const_F_norm')
-                G = sqrt(2) * sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
-                F = sqrt(2) * cos(k_z.*self.z);
-            elseif strcmp(norm, 'max_u')
-                G = sin(k_z.*self.z) ./ repmat(h.*k_z,length(self.z),1);
-                F = cos(k_z.*self.z);
-            end
-        end
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

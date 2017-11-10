@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = 4;
 Ny = 8;
-Nz = 12;
+Nz = 16;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -34,14 +34,16 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-% rho0 = wavemodel.rho0;
-% g = 9.81;
-
-rho0 = 1025; g = 9.81;
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-z = (Lz/Nz)*(0:Nz-1)' - Lz;
-wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude, 'method','wkbSpectral','nEVP',128);
+if 1 == 0
+    wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+    rho0 = wavemodel.rho0;
+    g = 9.81;
+else
+    rho0 = 1025; g = 9.81;
+    rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+    z = (Lz/Nz)*(0:Nz-1)' - Lz;
+    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude, 'method','wkbSpectral','nEVP',128);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -51,6 +53,8 @@ wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz],
 
 U = 0.01; % m/s
 
+totalErrors = 0;
+totalTests = 0;
 for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
     for l_loop=(-Ny/2 + 1):1:(Ny/2-1)
         fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
@@ -119,7 +123,9 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 
                 max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error))) round((log10(rho_error)))]);
                 
+                totalTests = totalTests + 1;
                 if max_error > -3
+                    totalErrors = totalErrors + 1;
                     if sign > 0
                         fprintf('\nFound at large error at +(k,l,j)=(%d,%d,%d):\n',k_loop,l_loop,j0);
                     else
@@ -132,4 +138,11 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
         end
     end
     fprintf('\n');
+end
+
+fprintf('\n***************************************************\n');
+if totalErrors > 0
+    fprintf('FAILED %d of %d tests.\n',totalErrors, totalTests);
+else
+    fprintf('PASSED all %d tests.\n', totalTests);
 end
