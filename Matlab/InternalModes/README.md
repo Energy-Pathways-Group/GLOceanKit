@@ -22,7 +22,7 @@ im = InternalModes(rho,z,zOut,latitude);
 be given.
 
 ```matlab
-modes = InternalModes(rho,zDomain,zOut,latitude);
+im = InternalModes(rho,zDomain,zOut,latitude);
 ```
 'rho' must be a function handle, e.g.
 ```matlab
@@ -32,15 +32,15 @@ zDomain must be an array with two values: `z_domain = [z_bottom z_surface];`
 
 Once initialized, you can request variations of the density, e.g.,
 ```matlab
-   N2 = modes.N2;
-   rho_zz = modes.rho_zz;
+   N2 = im.N2;
+   rho_zz = im.rho_zz;
    ```
 or you can request the internal modes at a given wavenumber, k,
 where k is 2*pi/wavelength.
 ```matlab
-   [F,G,h] = modes.ModesAtWavenumber(0.01);
+   [F,G,h] = im.ModesAtWavenumber(2*pi/1000);
    ```
 or frequency,
 ```matlab
-   [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
+   [F,G,h] = im.ModesAtWavenumber(5*modes.f0);
    ```
