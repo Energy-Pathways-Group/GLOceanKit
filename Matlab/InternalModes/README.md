@@ -151,6 +151,28 @@ Class Hierarchy
 
 The `InternalModes` class is actually a class cluster, that is used to initialize any one of a number of concrete subclasses which inherit from the `InternalModesBase` class.
 ![Class hierarchy](Extras/ClassHierarchy.png)
+When you initialize the `InternalModes` class, internally it then initializes one of the concrete subclasses and simply passes all (most) calls to the concrete subclasses.
 
+This means that you can choose to initialize one of the concrete subclasses directly, and simply bypass the `InternalModes` class cluster.
 
+Internal Modes Class Cluster
+------------------
+The `InternalModes` class cluster contains several methods that are not in the `InternalModesBase` class.
 
+### Quick Initialization and Test Cases
+The class cluster can be initialized quickly for a test cases with the following syntax,
+```matlab
+im = InternalModes(stratification, method, nPoints)
+```
+where the defaults (if not given) are `stratification='constant'`, `method='wkbAdaptiveSpectral'`, and `nPoints=64`.
+
+If you initialize with this test case method, you can then call either
+```matlab
+im.ShowRelativeErrorAtWavenumber(2*pi/1000)
+```
+or
+
+```matlab
+im.ShowRelativeErrorAtFrequency(5*modes.f0)
+```
+to estimate the error.
