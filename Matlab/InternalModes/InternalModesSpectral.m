@@ -193,9 +193,8 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             [F,G,h] = self.ModesFromGEPSpectral(A,B);
-        end
-        k = self.kFromOmega(h,omega);
- 
+            k = self.kFromOmega(h,omega);
+        end 
     end
     
     methods (Access = protected)       

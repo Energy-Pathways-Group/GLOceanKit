@@ -117,7 +117,7 @@ classdef InternalModes < handle
         
         function self = InternalModes(varargin)    
             % Initialize with either a grid or analytical profile.
-            self.method = 'wkbSpectral';
+            self.method = 'wkbAdaptiveSpectral';
             userSpecifiedMethod = 0;
             
             % First check to see if the user specified some extra arguments
@@ -181,7 +181,7 @@ classdef InternalModes < handle
                     n = varargin{3};
                 end
                 if nargin < 2
-                    theMethod = 'wkbSpectral';
+                    theMethod = 'wkbAdaptiveSpectral';
                 else
                     theMethod = varargin{2};
                 end
