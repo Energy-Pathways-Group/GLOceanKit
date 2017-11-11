@@ -35,7 +35,7 @@ or frequency `omega`,
 ```matlab
    [F,G,h,k] = im.ModesAtWavenumber(5*im.f0);
    ```
-The arrays `F` and `G` contain the vertical modes for U/V and W, respectively. The arrays have dimensions `size(F)=[length(zOut) length(h)]`, meaning that each column `i` is a normal mode, `F(:,i)` with corresponding eigendepth `h(i)`. The associated eigenfrequency or eigenwavenumber are also returned for convenience.
+The arrays `F` and `G` contain the vertical modes for u/v and w/rho, respectively. The arrays have dimensions `size(F)=[length(zOut) length(h)]`, meaning that each column `i` is a normal mode, `F(:,i)` with corresponding eigendepth `h(i)`. The associated eigenfrequency or eigenwavenumber are also returned for convenience.
 
 Note that you can also request variations of the density, e.g.,
 ```matlab
@@ -91,18 +91,19 @@ where the variable `stratification` is a string. The returned values `rho` and `
   
 Normalization and Boundary Conditions
 -------------------
-There are four choices for normalization of the vertical modes. Look in Early, et al. (2018) for details.
+There are four choices for normalization of the vertical modes. See in Early, et al. (2018) for details.
 - `kConstant` (default) Uses the K-constant norm, which is useful for specifying energy density of an internal wave.
 - `omegaConstant` Uses the omega-constant norm, the utility of which isn't exactly clear.
 - `uMax` Sets the maximum of the F modes to 1. Useful if you want to specify the horizontal velocity of a wave.
 - `wMax` Sets the maximum of the G modes to 1. Useful if you want to specify the vertical velocity of a wave.
+
 These constants are defined as an `enumeration` class, and would be called as,
 ```matlab
 im.normalization = Normalization.uMax
 ```
 before you request the modes.
 
-The upper boundary condition can be specified as a rigid lid (default) or as a free surface (no reduced-gravity option yet). For example,
+The upper boundary condition can be specified as a rigid lid (default) or as a free surface (there is no reduced-gravity option yet). For example,
 ```matlab
 im.upperBoundary = UpperBoundary.freeSurface
 ```
@@ -148,5 +149,8 @@ The finite difference matrices are always computed on the given input grid, and 
 Class Hierarchy
 ----------------
 
-Image!
+The `InternalModes` class is actually a class cluster, that is used to initialize any one of a number of concrete subclasses which inherit from the `InternalModesBase` class.
+![Class hierarchy](Extras/ClassHierarchy.png)
+
+
 
