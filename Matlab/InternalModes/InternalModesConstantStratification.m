@@ -22,7 +22,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
         end
                 
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -46,10 +46,10 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F(:,1) = F0;
                 G(:,1) = G0;
             end
-            
+            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -76,6 +76,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F(:,1) = F0;
                 G(:,1) = G0;
             end
+            k = self.kFromOmega(h,omega);
         end
         
         function [psi] = SurfaceModesAtWavenumber(self, k)

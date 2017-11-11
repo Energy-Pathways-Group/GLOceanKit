@@ -23,9 +23,9 @@ classdef (Abstract) InternalModesBase < handle
     %       N2 = modes.N2;
     %       rho_zz = modes.rho_zz;
     %   or you can request the internal modes at a given wavenumber,
-    %       [F,G,h] = modes.ModesAtWavenumber(0.01);
+    %       [F,G,h,omega] = modes.ModesAtWavenumber(0.01);
     %   or frequency,
-    %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
+    %       [F,G,h,k] = modes.ModesAtWavenumber(5*modes.f0);
     %
     %   Jeffrey J. Early
     %   jeffrey@jeffreyearly.com
@@ -61,11 +61,13 @@ classdef (Abstract) InternalModesBase < handle
     
     properties (Access = protected)
         g = 9.81 % 9.81 meters per second.
+        omegaFromK % function handle to compute omega(h,k)
+        kFromOmega % function handle to compute k(h,omega)
     end
     
     methods (Abstract)
-        [F,G,h] = ModesAtWavenumber(self, k ) % Return the normal modes and eigenvalue at a given wavenumber.
-        [F,G,h] = ModesAtFrequency(self, omega ) % Return the normal modes and eigenvalue at a given frequency.
+        [F,G,h,omega] = ModesAtWavenumber(self, k ) % Return the normal modes and eigenvalue at a given wavenumber.
+        [F,G,h,k] = ModesAtFrequency(self, omega ) % Return the normal modes and eigenvalue at a given frequency.
     end
     
     methods (Abstract, Access = protected)
@@ -156,10 +158,11 @@ classdef (Abstract) InternalModesBase < handle
             else
                 error('rho must be a function handle or an array.');
             end   
+            
+            self.kFromOmega = @(h,omega) sqrt((omega^2 - self.f0^2)./(self.g * h));
+            self.omegaFromK = @(h,k) sqrt( self.g * h * k^2 + self.f0^2 );
         end
-        
-
-        
+                
         function self = upperBoundaryDidChange(self)
             % This function is called when the user changes the surface
             % boundary condition. By overriding this function, a subclass

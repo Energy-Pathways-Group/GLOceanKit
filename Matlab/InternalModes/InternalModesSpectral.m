@@ -134,7 +134,7 @@ classdef InternalModesSpectral < InternalModesBase
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             self.gridFrequency = 0;
             
             % The eigenvalue equation is,
@@ -164,9 +164,10 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             [F,G,h] = self.ModesFromGEPSpectral(A,B);
+            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             self.gridFrequency = omega;
             
             T = self.T_xLobatto;
@@ -193,7 +194,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             [F,G,h] = self.ModesFromGEPSpectral(A,B);
         end
-        
+        k = self.kFromOmega(h,omega);
  
     end
     

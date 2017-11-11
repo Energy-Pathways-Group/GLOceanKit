@@ -29,11 +29,11 @@ classdef InternalModesWKBHydrostatic < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             error('Not yet implemented');
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )            
+        function [F,G,h,k] = ModesAtFrequency(self, omega )            
             N = flip(sqrt(self.N2_zLobatto));
             z = flip(self.zLobatto);
             
@@ -76,7 +76,7 @@ classdef InternalModesWKBHydrostatic < InternalModesSpectral
             end
             
             h = h';
-            
+            k = self.kFromOmega(h,omega);
         end
         
     end

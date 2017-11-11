@@ -77,7 +77,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             % Return the normal modes and eigenvalue at a given wavenumber.
             
             self.gridFrequency = 0;
@@ -107,9 +107,10 @@ classdef InternalModesFiniteDifference < InternalModesBase
             
             h_func = @(lambda) 1.0 ./ lambda;
             [F,G,h] = ModesFromGEP(self,A,B,h_func);
+            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
             
             self.gridFrequency = omega;
@@ -135,6 +136,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             
             h_func = @(lambda) 1.0 ./ lambda;
             [F,G,h] = ModesFromGEP(self,A,B,h_func);
+            k = self.kFromOmega(h,omega);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

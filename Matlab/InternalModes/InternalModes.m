@@ -27,9 +27,9 @@ classdef InternalModes < handle
     %       rho_zz = modes.rho_zz;
     %   or you can request the internal modes at a given wavenumber, k,
     %   where k is 2*pi/wavelength.
-    %       [F,G,h] = modes.ModesAtWavenumber(0.01);
+    %       [F,G,h,omega] = modes.ModesAtWavenumber(0.01);
     %   or frequency,
-    %       [F,G,h] = modes.ModesAtWavenumber(5*modes.f0);
+    %       [F,G,h,k] = modes.ModesAtWavenumber(5*modes.f0);
     %
     %   There are two convenience methods,
     %       modes.ShowLowestModesAtWavenumber(0.0);
@@ -394,14 +394,14 @@ classdef InternalModes < handle
         % Primary methods to construct the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             % Return the normal modes and eigenvalue at a given wavenumber.
-            [F,G,h] = self.internalModes.ModesAtWavenumber( k );
+            [F,G,h,omega] = self.internalModes.ModesAtWavenumber( k );
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
-            [F,G,h] = self.internalModes.ModesAtFrequency( omega );
+            [F,G,h,k] = self.internalModes.ModesAtFrequency( omega );
         end
     end
     
