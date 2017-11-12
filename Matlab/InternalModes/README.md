@@ -10,7 +10,18 @@ The classes contain many options, but also try to remain simple to use. Use `hel
 If you use these classes to compute the vertical modes, please cite the following paper,
 - J. Early, M. P. Lelong, K. S. Smith. Fast and accurate computation of vertical modes, Ocean Modelling, In prep.
 
-Quick Start
+[Quick Start](#quick-start)
+[Convenience functions](#convenience-functions)
+[Built-in density profiles](#built-in-density-profiles)
+[Normalization and boundary conditions](#normalization-and-boundary-conditions)
+[Name/value pairs](#Name/value-pairs)
+[Numerical methods](#numerical-methods)
+[Class hierarchy](#class-hierarchy)
+[Internal modes class cluster](#internal-modes-class-cluster)
+
+------------------------
+
+Quick start
 ------------
 
 The preferred method for initializing the InternalModes class is to define density as a function, e.g.,
@@ -75,7 +86,7 @@ im.ShowLowestModesAtFrequency(5*modes.f0)
 to quickly visualize the four lowest modes.
 
 
-Built-in Density Profiles
+Built-in density profiles
 ------------
 
 For testing purposes and convenience, there are a number of pre-defined density profiles that you can access. Simply call,
@@ -92,7 +103,7 @@ where the variable `stratification` is a string. The returned values `rho` and `
  - `'latmix-site1-exponential'` Recreates the surface mixed layer and associated pycnocline, and then decays exponentially below 190m.
   - `'latmix-site1-constant'` Recreates the surface mixed layer and associated pycnocline, but then goes constant below 300m.
   
-Normalization and Boundary Conditions
+Normalization and boundary conditions
 -------------------
 There are four choices for normalization of the vertical modes. See in Early, et al. (2018) for details.
 - `kConstant` (default) Uses the K-constant norm, which is useful for specifying energy density of an internal wave.
@@ -112,7 +123,7 @@ im.upperBoundary = UpperBoundary.freeSurface
 ```
 will use the free surface condition at the upper boundary when solving the EVP.
 
-Name/Value Pairs
+Name/value pairs
 -----------------
 During initialization you can specify options and set properties using a name/value pair syntax. For example, to specify the upper boundary condition during initialization, you could write
 ```matlab
@@ -120,7 +131,7 @@ im = InternalModes(rho,[L 0],zOut,latitude,'upperBoundary',UpperBoundary.freeSur
 ```
 You can add as many name/value pairs as needed.
 
-Numerical Methods
+Numerical methods
 ---------------
 There are multiple different numerical methods for solving the eigenvalue problem (EVP), some of which may work better than others, depending on the density profile in question. During initialization, you can specify which numerical method you want to use to solve the EVP.
 
@@ -149,7 +160,7 @@ The finite difference matrices are always computed on the given input grid, and 
 - `orderOfAccuracy` The lowest appropriate value is 2 (which is the usual approach taken), and the default is 4.
 
 
-Class Hierarchy
+Class hierarchy
 ----------------
 
 The `InternalModes` class is actually a class cluster, that is used to initialize any one of a number of concrete subclasses which inherit from the `InternalModesBase` class.
@@ -158,7 +169,7 @@ When you initialize the `InternalModes` class, internally it then initializes on
 
 This means that you can choose to initialize one of the concrete subclasses directly, and simply bypass the `InternalModes` class cluster.
 
-Internal Modes Class Cluster
+Internal modes class cluster
 ------------------
 The `InternalModes` class cluster contains several methods that are not in the `InternalModesBase` class.
 
