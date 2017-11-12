@@ -14,7 +14,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         B
         H
         
-        nModes = 64
+        nModes = 15000
     end
     
     properties (Constant)
