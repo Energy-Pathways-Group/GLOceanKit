@@ -10,14 +10,14 @@ The classes contain many options, but also try to remain simple to use. Use `hel
 If you use these classes to compute the vertical modes, please cite the following paper,
 - J. Early, M. P. Lelong, K. S. Smith. Fast and accurate computation of vertical modes, Ocean Modelling, In prep.
 
--[Quick Start](#quick-start)
--[Convenience functions](#convenience-functions)
--[Built-in density profiles](#built-in-density-profiles)
--[Normalization and boundary conditions](#normalization-and-boundary-conditions)
--[Name/value pairs](#namevalue-pairs)
--[Numerical methods](#numerical-methods)
--[Class hierarchy](#class-hierarchy)
--[Internal modes class cluster](#internal-modes-class-cluster)
+- [Quick Start](#quick-start)
+- [Convenience functions](#convenience-functions)
+- [Built-in density profiles](#built-in-density-profiles)
+- [Normalization and boundary conditions](#normalization-and-boundary-conditions)
+- [Name/value pairs](#namevalue-pairs)
+- [Numerical methods](#numerical-methods)
+- [Class hierarchy](#class-hierarchy)
+- [Internal modes class cluster](#internal-modes-class-cluster)
 
 ------------------------
 
