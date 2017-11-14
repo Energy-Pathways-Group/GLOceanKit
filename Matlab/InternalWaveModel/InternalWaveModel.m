@@ -289,9 +289,9 @@ classdef (Abstract) InternalWaveModel < handle
             self.PrecomputeExternalWaveCoefficients();
         end
         
-        function omega = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
             self.RemoveAllExternalWaves();
-            omega = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+            k = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
         function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)                  
