@@ -69,7 +69,8 @@ classdef (Abstract) InternalWaveModel < handle
         didPreallocateAdvectionCoefficients = 0
         U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
 
-        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
+        U_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
+        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
                 
@@ -78,6 +79,10 @@ classdef (Abstract) InternalWaveModel < handle
         version = 1.5
         performSanityChecks = 0
         advectionSanityCheck = 0
+    end
+    
+    properties (Constant)
+        g = 9.81;
     end
     
     methods (Abstract, Access = protected)
@@ -151,8 +156,6 @@ classdef (Abstract) InternalWaveModel < handle
             self.u_minus = nothing; self.v_plus = nothing; self.v_minus = nothing;
             self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
             self.zeta_minus = nothing;
-            
-
         end
         
 
@@ -248,103 +251,111 @@ classdef (Abstract) InternalWaveModel < handle
         % These functions add free waves to the model, not constrained to
         % the FFT grid.
         %
+        % Add free waves to the model that are not constrained to the
+        % gridded solution. The amplitude, A, can be given as an energy
+        % density or a maximum U velocity. The type must then be either
+        % Normalization.kConstant (energy density) or Normalization.uMax.
+        %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            % Add free waves to the model that are not constrained to the
-            % gridded solution. The amplitude, A, can be given as an energy
-            % density or a maximum U velocity. The type must then be either
-            % Normalization.kConstant (energy density) or Normalization.uMax.         
-            self.k_ext = reshape(k,1,[]);
-            self.l_ext = reshape(l,1,[]);
-            self.j_ext = reshape(j,1,[]);
-            self.k_z_ext = self.j_ext*pi/self.Lz;
-            self.phi_ext = reshape(phi,1,[]);
-            
-            switch norm
-                case {Normalization.kConstant, Normalization.uMax}
-                    self.norm_ext = norm;
-                otherwise
-                    error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
-            end
-            
-            K2h = self.k_ext.*self.k_ext + self.l_ext.*self.l_ext;
-            
-            self.h_ext = zeros(size(self.j_ext));
-            self.F_ext = zeros(length(self.z),length(self.j_ext));
-            self.G_ext = zeros(length(self.z),length(self.j_ext));
-            self.internalModes.normalization = self.norm_ext;
-            for iWave=1:length(j)
-                [FExt,GExt,hExt] = self.internalModes.ModesAtWavenumber(sqrt(K2h(iWave)));
-                self.F_ext(:,iWave) = FExt(:,j(iWave));
-                self.G_ext(:,iWave) = GExt(:,j(iWave));
-                self.h_ext(iWave) = hExt(j(iWave));
-            end
-            
-            U = reshape(A,1,[]);
-            if norm == Normalization.kConstant
-                U = U./sqrt(self.h_ext);
-            end
-            
-            g = 9.81;
-            self.omega_ext = sqrt( g*self.h_ext .* K2h + self.f0*self.f0 );
-            omega = self.omega_ext;
-            
-            self.PrecomputeExternalWaveCoefficients(U);           
+        
+        function RemoveAllExternalWaves(self)
+            self.U_ext = [];
+            self.k_ext = [];
+            self.l_ext = [];
+            self.j_ext = [];
+            self.k_z_ext = [];
+            self.phi_ext = [];
+            self.h_ext = [];
+            self.F_ext = [];
+            self.G_ext = [];
+            self.omega_ext = [];
+            self.PrecomputeExternalWaveCoefficients(); 
         end
         
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            % Add free waves to the model that are not constrained to the
-            % gridded solution. The amplitude, A, can be given as an energy
-            % density or a maximum U velocity. The type must then be either
-            % Normalization.kConstant (energy density) or Normalization.uMax.                       
-            self.j_ext = reshape(j,1,[]);
-            self.k_z_ext = self.j_ext*pi/self.Lz;
-            self.omega_ext = reshape(omega,1,[]);
-            self.phi_ext = reshape(phi,1,[]);
-
+        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            self.RemoveAllExternalWaves();
+            omega = self.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        end
+        
+        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            K2h = reshape(k.*k + l.*l,1,[]);  
+            h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,sqrt(K2h),'ModesAtWavenumber');
+            omega = self.g*h_ .* K2h + self.f0*self.f0;
+            
+            self.k_ext = cat(1,self.k_ext,reshape(k,1,[]));
+            self.l_ext = cat(1,self.l_ext,reshape(l,1,[]));
+            self.omega_ext = cat(1,self.omega_ext,reshape(omega,1,[]));
+            
+            self.PrecomputeExternalWaveCoefficients();
+        end
+        
+        function omega = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            self.RemoveAllExternalWaves();
+            omega = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+        end
+        
+        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)                  
+            omega = reshape(omega,1,[]);
+            h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,omega,'ModesAtFrequency');
+            k = sqrt((omega.*omega - self.f0*self.f0)./(self.g*h_));
+            alpha0 = reshape(alpha,1,[]);
+            
+            self.k_ext = cat(1,self.k_ext,reshape(k .* cos(alpha0),1,[]));
+            self.l_ext = cat(1,self.l_ext,reshape(k .* sin(alpha0),1,[]));
+            self.omega_ext = cat(1,self.omega_ext,omega);
+            
+            self.PrecomputeExternalWaveCoefficients();
+        end
+        
+        
+        function h = AddExternalWavesWithMethod( self, j, phi, A, norm, kOrOmega, methodName )
+            % appends to j_ext, k_z_ext, phi_ext, F_ext, G_ext, h_ext, and
+            % U_ext. The calling functions are still responsible for
+            % setting k_ext, l_ext, and omega_ext
+            numExistingWaves = length(self.k_ext);
+            
+            self.j_ext = cat(1,self.j_ext,reshape(j,1,[]));
+            self.k_z_ext = cat(1,self.k_z_ext,self.j_ext*pi/self.Lz);
+            self.phi_ext = cat(1,self.phi_ext,reshape(phi,1,[]));
+            
             switch norm
                 case {Normalization.kConstant, Normalization.uMax}
                     self.norm_ext = norm;
                 otherwise
                     error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
             end
-                        
-            self.h_ext = zeros(size(self.j_ext));
-            self.F_ext = zeros(length(self.z),length(self.j_ext));
-            self.G_ext = zeros(length(self.z),length(self.j_ext));
+            
+            h = zeros(size(kOrOmega)); % return just the new
+            self.h_ext = cat(1,self.h_ext,zeros(1,length(j)));
+            self.F_ext = cat(2,self.F_ext,zeros(length(self.z),length(j)));
+            self.G_ext = cat(2,self.G_ext,zeros(length(self.z),length(j)));
             self.internalModes.normalization = self.norm_ext;
-            for iWave=1:length(j)
-                [FExt,GExt,hExt] = self.internalModes.ModesAtFrequency(omega(iWave));
-                self.F_ext(:,iWave) = FExt(:,j(iWave));
-                self.G_ext(:,iWave) = GExt(:,j(iWave));
-                self.h_ext(iWave) = hExt(j(iWave));
+            for iWave=1:length(kOrOmega)
+                [FExt,GExt,hExt] = self.internalModes.(methodName)(kOrOmega(iWave));
+                self.F_ext(:,numExistingWaves+iWave) = FExt(:,j(iWave));
+                self.G_ext(:,numExistingWaves+iWave) = GExt(:,j(iWave));
+                self.h_ext(numExistingWaves+iWave) = hExt(j(iWave));
+                h(iWave) = hExt(j(iWave));
             end
             
             U = reshape(A,1,[]);
             if norm == Normalization.kConstant
                 U = U./sqrt(self.h_ext);
             end
-            
-            g = 9.81;
-            k = sqrt((self.omega_ext.*self.omega_ext - self.f0*self.f0)./(g*self.h_ext));
-            alpha0 = reshape(alpha,1,[]);
-            self.k_ext = k .* cos(alpha0);
-            self.l_ext = k .* sin(alpha0);
-            
-            self.PrecomputeExternalWaveCoefficients(U);
+            self.U_ext = cat(1,self.U_ext,reshape(U,1,[]));
         end
-                
-        function PrecomputeExternalWaveCoefficients(self, U)
+        
+        function PrecomputeExternalWaveCoefficients(self)
             alpha0 = atan2(self.l_ext,self.k_ext);
             Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
             
-            self.U_cos_ext = U .* cos(alpha0);
-            self.U_sin_ext = U .* (self.f0 ./ self.omega_ext) .* sin(alpha0);
-            self.V_cos_ext = U .* sin(alpha0);
-            self.V_sin_ext = -U .* (self.f0 ./ self.omega_ext) .* cos(alpha0);
-            self.W_sin_ext = U .* Kh_ .* self.h_ext;
-            self.Zeta_cos_ext = - U .* Kh_ .* self.h_ext ./ self.omega_ext;
-            self.Rho_cos_ext = - (self.rho0/9.81) .* U .* Kh_ .* self.h_ext ./ self.omega_ext;
+            self.U_cos_ext = self.U_ext .* cos(alpha0);
+            self.U_sin_ext = self.U_ext .* (self.f0 ./ self.omega_ext) .* sin(alpha0);
+            self.V_cos_ext = self.U_ext .* sin(alpha0);
+            self.V_sin_ext = -self.U_ext .* (self.f0 ./ self.omega_ext) .* cos(alpha0);
+            self.W_sin_ext = self.U_ext .* Kh_ .* self.h_ext;
+            self.Zeta_cos_ext = - self.U_ext .* Kh_ .* self.h_ext ./ self.omega_ext;
+            self.Rho_cos_ext = - (self.rho0/9.81) .* self.U_ext .* Kh_ .* self.h_ext ./ self.omega_ext;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -461,9 +472,8 @@ classdef (Abstract) InternalWaveModel < handle
                 A_plus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 A_minus = A.*GenerateHermitianRandomMatrix( size(self.K) );
                 
-                self.phi_ext = 2*pi*rand( size(self.k_ext) );
-                U = sqrt(2*GM3Dext./self.h_ext).*randn( size(self.h_ext) );
-                self.PrecomputeExternalWaveCoefficients(U);                
+                self.U_ext = sqrt(2*GM3Dext./self.h_ext).*randn( size(self.h_ext) );
+                self.PrecomputeExternalWaveCoefficients();                
             else
                 % Randomize phases, but keep unit length
                 A_plus = GenerateHermitianRandomMatrix( size(self.K) );
@@ -478,13 +488,12 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 % Check this factor of 2!!! Is the correct? squared
                 % velocity to energy, I think.
-                self.phi_ext = 2*pi*rand( size(self.k_ext) );
-                U = sqrt(2*GM3Dext./self.h_ext);
-                self.PrecomputeExternalWaveCoefficients(U);   
+                self.U_ext = sqrt(2*GM3Dext./self.h_ext);
+                self.PrecomputeExternalWaveCoefficients();   
             end
             
             
-            A_minus(1,1,:) = conj(A_plus(1,1,:)); % Intertial motions go only one direction!
+            A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial motions go only one direction!
             
             GM_sum_int = sum(sum(sum(GM3Dint)))/E;
             GM_sum_ext = sum(GM3Dext)/E;
@@ -539,8 +548,10 @@ classdef (Abstract) InternalWaveModel < handle
                 end
             end
             alphaExt = 2*pi*rand( size(omegaExt) );
+            phiExt = 2*pi*rand( size(omegaExt) );
+            UExt = zeros(size(omegaExt));
             
-            self.SetExternalWavesWithFrequencies(omegaExt,alphaExt,jExt,zeros(size(omegaExt)),zeros(size(omegaExt)),Normalization.kConstant);
+            self.SetExternalWavesWithFrequencies(omegaExt,alphaExt,jExt,phiExt,UExt,Normalization.kConstant);
             
             fprintf('Added %d external waves to fill out the GM spectrum.\n', length(omegaExt));
         end
@@ -948,9 +959,8 @@ classdef (Abstract) InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = SetOmegaFromEigendepths(self, h)
             % Subclasses *must* call this method as part of intialization.
-            g = 9.81;
             self.h = h;
-            self.C = sqrt( g*self.h );
+            self.C = sqrt( self.g*self.h );
             self.Omega = sqrt(self.C.*self.C.*self.K2 + self.f0*self.f0);         % Mode frequency
             
             % Create the hermitian conjugates of the phase vectors;
