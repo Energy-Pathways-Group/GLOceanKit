@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 wavelength = 1000; % wavelength in meters
 j = 1; % vertical model number
-epsilon = 0.1; % nonlinearity parameter
+epsilon = 0.9; % nonlinearity parameter
 maxOscillations = 100; % Total number of oscillations, in periods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +38,7 @@ u = @(t,x) U*[cos(k*x(1)+omega*t)*cos(m*x(2));  (k/m)*sin(k*x(1)+omega*t)*sin(m*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rho = @(t,x) -(rho0*N2/g)*(x(:,2)-D + (epsilon/m)*cos(k*x(:,1)+omega*t).*sin(m*x(:,2)) );
 
-depths = linspace(0+50,D-50,5)';
+depths = linspace(0+5,D-5,5)';
 x = zeros(length(t),length(depths));
 z = zeros(length(t),length(depths));
 b = zeros(length(t),length(depths));
@@ -63,3 +63,16 @@ plot(x,z), hold on
 z_stokes = linspace(0,D,500);
 plot(U_stokes(z_stokes)*max(t),z_stokes)
 
+figure, plot(t,sin(m*z)./sin(m*z(1,:)))
+
+return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Analytical solution?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i = 2;
+[sn,cn,dn] = ellipj(-(U*k)*t,sin(m*depths(i))^2);
+zeta = asin(sin(m*depths(i))*1./dn)/m;
+figure, plot(t,zeta), hold on, plot(t,z(:,i))
+figure, plot(t, sin(m*z(:,i))), hold on, plot(t, sin(m*depths(i))*cn./dn)
