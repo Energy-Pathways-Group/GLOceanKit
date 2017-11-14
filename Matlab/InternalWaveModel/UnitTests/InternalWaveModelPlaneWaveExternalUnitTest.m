@@ -58,7 +58,7 @@ phi = 0;
 
 omega = 2*wavemodel.f0;
 alpha = 0;
-k = wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,'maxU');
+k = wavemodel.SetExternalWavesWithFrequencies(omega,alpha,j0,phi,U,Normalization.uMax);
 k0 = k*cos(alpha);
 l0 = k*sin(alpha);
 

@@ -162,8 +162,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.zeta_minus = self.zeta_minus .* self.G;
         end
                 
-        function PrecomputeExternalWaveCoefficients(self, U)
-            PrecomputeExternalWaveCoefficients@InternalWaveModel(self, U)
+        function PrecomputeExternalWaveCoefficients(self)
+            PrecomputeExternalWaveCoefficients@InternalWaveModel(self)
             if self.norm_ext == Normalization.kConstant
                 g = 9.81;
                 coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
