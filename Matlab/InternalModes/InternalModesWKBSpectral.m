@@ -41,7 +41,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             self.gridFrequency = 0;
             
             T = self.T_xLobatto;
@@ -66,9 +66,10 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             end
             
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             self.gridFrequency = omega;
             
             T = self.T_xLobatto;
@@ -93,6 +94,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             end
             
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            k = self.kFromOmega(h,omega);
         end
  
     end

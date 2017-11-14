@@ -40,7 +40,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             self.gridFrequency = 0;
             
             T = self.T_xLobatto;
@@ -66,9 +66,10 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
+            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             self.gridFrequency = omega;
             
             T = self.T_xLobatto;
@@ -94,6 +95,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
+            k = self.kFromOmega(h,omega);
         end
 
     end

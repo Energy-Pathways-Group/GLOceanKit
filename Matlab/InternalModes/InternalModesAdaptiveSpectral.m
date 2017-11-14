@@ -54,14 +54,14 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             % We just need to make sure we're using the right grid,
             % otherwise we can use the superclass method as is.
             self.CreateGridForFrequency(0.0);
-            [F,G,h] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+            [F,G,h,omega] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )        
+        function [F,G,h,k] = ModesAtFrequency(self, omega )        
             self.CreateGridForFrequency(omega);
             
             T = self.T_xLobatto;
@@ -107,6 +107,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             end
             
             [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            k = self.kFromOmega(h,omega);
         end
  
         function v_xCheb = T_xLobatto_xCheb( self, v_xLobatto)

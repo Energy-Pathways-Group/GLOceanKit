@@ -29,15 +29,16 @@ classdef InternalModesWKB < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
             error('Not yet implemented');
         end
         
-        function [F,G,h] = ModesAtFrequency(self, omega )
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
             % Surface boundary condition
             [F,G,h] = self.ModesAtFrequencyAiry(omega);
-%             [F,G,h] = self.ModesAtFrequencyApproximatedAiry(omega);
+            %[F,G,h] = self.ModesAtFrequencyApproximatedAiry(omega);
+            k = self.kFromOmega(h,omega);
         end
         
         function [F,G,h] = ModesAtFrequencyAiry(self, omega )
