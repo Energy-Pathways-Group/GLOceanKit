@@ -6,17 +6,20 @@ L = max(zIn)-min(zIn);
 if ~exist('GM','var')
     GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
 end
-GMConst = GarrettMunkSpectrumConstantStratification(5.2e-3,zIn,latitude);
+if ~exist('GMConst','var')
+    GMConst = GarrettMunkSpectrumConstantStratification(5.2e-3,zIn,latitude);
+end
+
 
 k = linspace(0,pi/10,150)';
 S = GM.HorizontalVelocitySpectrumAtWavenumbers(-2500,k);
 S = GM.HorizontalVelocitySpectrumAtWavenumbers(-2500,GM.k);
-figure, plot(GM.k,S), ylog, xlog
+figure, plot(GM.k/2/pi,S), ylog, xlog
 
 S = GMConst.HorizontalVelocitySpectrumAtWavenumbers(-2500,GM.k);
-hold on, plot(GM.k,S)
+hold on, plot(GM.k/2/pi,S)
 
-figure,plot(GM.k(2:end),diff(log10(S))./diff(log10(GM.k))), xlog
+figure,plot(GM.k(2:end)/2/pi,diff(log10(S))./diff(log10(GM.k))), xlog
 
 return
 
