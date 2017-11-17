@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 wavelength = 1000; % wavelength in meters
 j = 1; % vertical model number
-epsilon = 0.1; % nonlinearity parameter
+epsilon = 0.2; % nonlinearity parameter
 maxOscillations = 100; % Total number of oscillations, in periods
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,6 +62,21 @@ figure
 plot(x,z), hold on
 z_stokes = linspace(-D,0,500);
 plot(U_stokes(z_stokes)*max(t),z_stokes)
+
+zeta_theory = zeros(size(z));
+for i=1:length(depths)
+    s = m*(depths(i)-D);
+    A = (U*k/(m*omega))*sin(s)*(1+epsilon*cos(s))/(1*(1-epsilon^2 * cos(s)));
+    omega_theory = omega*sqrt(1-epsilon*epsilon*cos(2*s));
+    zeta_theory(:,i) = A*(1-cos(t*omega_theory)) + depths(i);
+    
+    xi_theory(:,i) = (acos( (m*omega/(U*k))*(depths(i)-zeta_theory(:,i) + epsilon*sin(s))./sin(m*zeta_theory(:,i) )) - omega*t)/k;
+end
+figure, plot(t,zeta_theory)
+hold on, plot(t,z)
+
+figure, plot(t,xi_theory)
+hold on, plot(t,x)
 
 return
 
