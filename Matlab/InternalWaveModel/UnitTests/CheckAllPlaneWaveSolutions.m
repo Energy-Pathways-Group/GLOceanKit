@@ -25,7 +25,7 @@ Nx = 4;
 Ny = 8;
 Nz = 16;
 
-latitude = 31;
+latitude = 0;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,11 +102,26 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 
                 alpha=atan2(l(l0+1),k(k0+1));
                 K = sqrt( k(k0+1)^2 + l(l0+1)^2);
-                u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) + (f0/omega)*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
-                v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - (f0/omega)*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
+                if latitude == 0
+                    f0OverOmega = 0;
+                    if K == 0
+                        kOverOmega = 0;
+                    else
+                        kOverOmega = K/omega;
+                    end
+                else
+                    f0OverOmega = f0/omega;
+                    kOverOmega = K/omega;
+                end
+                u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) + f0OverOmega*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
+                v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - f0OverOmega*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
                 w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
-                zeta_unit = -(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+                zeta_unit = -(U/m) * kOverOmega * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
                 rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+                
+                if any(any(any(isnan(zeta_unit))))
+                   error('nan') 
+                end
                 
                 % Compute the relative error
                 max_speed = max(max(max( sqrt(u.*u + v.*v) )));
@@ -121,10 +136,10 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 max_rho = max( [max(max(max( rho ))), 1e-15] );
                 rho_error = max( [max(max(max(abs(rho-rho_unit)/max_rho))), 1e-15] );
                 
-                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error))) round((log10(rho_error)))]);
+                max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error))) round((log10(rho_error)))],[],'includenan');
                 
                 totalTests = totalTests + 1;
-                if max_error > -3
+                if isnan(max_error) || max_error > -3
                     totalErrors = totalErrors + 1;
                     if sign > 0
                         fprintf('\nFound at large error at +(k,l,j)=(%d,%d,%d):\n',k_loop,l_loop,j0);

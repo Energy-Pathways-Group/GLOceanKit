@@ -881,14 +881,17 @@ classdef (Abstract) InternalWaveModel < handle
             self.Amp_plus = U_plus; self.Amp_minus = U_minus;
             alpha = atan2(self.L,self.K);
             omega = abs(self.Omega); % The following definitions assume omega > 0.
-            denominator = omega.*sqrt(self.h);
+            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+                omega(omega == 0) = 1;
+            end
+            fOverOmega = self.f0 ./ omega;
             
             % Without calling MakeHermitian, this doesn't deal with l=0.
-            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
-            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*self.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator );
+            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
+            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
             
-            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
-            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*self.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator );
+            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
+            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
             
             self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
             self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
