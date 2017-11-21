@@ -81,23 +81,28 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function ComputeModesForNonzeroWavenumbers(self, A)
-            % This is complicated for 2 reasons:
+            % We go to great lengths to avoid solving the eigenvalue
+            % problem, because it's so darned expensive.
+            
+            % This is algorithm is complicated for 2 reasons:
             % 1) We only do the eigenvalue problem for some wavenumber if
-            % there's a nonzero amplitude and,
+            % there's a nonzero amplitude associated with it and,
             % 2) We only do the computation for unique wavenumbers
             K2 = self.K2(:,:,1);
-            [K2_unique,~,iK2_unique] = unique(K2); % iK2_unique is the same length as K2 and has the indices into K2_unique
-            K2needed = K2( A & ~self.didPrecomputedModesForWavenumber ); % For any nonzero amplitudes, where we haven't computed for yet
+            [K2_unique,~,iK2_unique] = unique(K2);
+            K2needed = K2( A & ~self.didPrecomputedModesForWavenumber ); % Nonzero amplitudes that we haven't yet computed
+            nEVPNeeded = length(K2needed);
             
-            if isempty(K2needed)
+            if nEVPNeeded == 0
                 return
-            elseif length(K2needed) > 1
+            elseif nEVPNeeded > 1
                 fprintf('Solving the EVP for %d unique wavenumbers.\n',length(K2needed));
             end
-                       
+            
+            self.internalModes.normalization = Normalization.kConstant;
+            
             startTime = datetime('now');
             iSolved = 0; % total number of EVPs solved
-            nEVPNeeded = length(K2needed);
             for iUnique=1:length(K2_unique)
                 kk = K2_unique(iUnique);
                 if ~ismember(kk, K2needed)
