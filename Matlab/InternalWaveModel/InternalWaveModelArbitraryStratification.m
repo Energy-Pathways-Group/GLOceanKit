@@ -37,6 +37,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     properties
        S
        Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
+       didPrecomputedModesForWavenumber
     end
     
     methods
@@ -68,48 +69,67 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.internalModes = im;
             self.rho0 = im.rho0;
+            self.internalModes = im;
+            self.h = ones(size(self.K2)); % we do this to prevent divide by zero when uninitialized.
             
+            self.didPrecomputedModesForWavenumber = zeros(size(self.K2(:,:,1)));
+        end
+        
+        function GenerateWavePhases(self, U_plus, U_minus)
+            GenerateWavePhases@InternalWaveModel(self, U_plus, U_minus );
+            self.ComputeModesForNonzeroWavenumbers( any( (U_plus ~= 0) | (U_minus ~= 0),3) );
+        end
+        
+        function ComputeModesForNonzeroWavenumbers(self, A)
+            % This is complicated for 2 reasons:
+            % 1) We only do the eigenvalue problem for some wavenumber if
+            % there's a nonzero amplitude and,
+            % 2) We only do the computation for unique wavenumbers
             K2 = self.K2(:,:,1);
-            [K2_unique,~,iK2_unique] = unique(K2);
-            fprintf('Solving the EVP for %d unique wavenumbers.\n',length(K2_unique));
-            startTime = datetime('now'); 
+            [K2_unique,~,iK2_unique] = unique(K2); % iK2_unique is the same length as K2 and has the indices into K2_unique
+            K2needed = K2( A & ~self.didPrecomputedModesForWavenumber ); % For any nonzero amplitudes, where we haven't computed for yet
+            
+            if isempty(K2needed)
+                return
+            elseif length(K2needed) > 1
+                fprintf('Solving the EVP for %d unique wavenumbers.\n',length(K2needed));
+            end
+                       
+            startTime = datetime('now');
+            iSolved = 0; % total number of EVPs solved
+            nEVPNeeded = length(K2needed);
             for iUnique=1:length(K2_unique)
                 kk = K2_unique(iUnique);
-                
-                [F,G,h] = im.ModesAtWavenumber(sqrt(kk));
+                if ~ismember(kk, K2needed)
+                    continue
+                end
+
+                [F,G,h] = self.internalModes.ModesAtWavenumber(sqrt(kk));
                 h = reshape(h,[1 1 self.nModes]);
                 
+                % indices contains the indices into K2, corresponding to
+                % the wavenumber under consideration
                 indices = find(iK2_unique==iUnique);
+                
                 for iIndex=1:length(indices)
                     currentIndex = indices(iIndex);
                     [i,j] = ind2sub([self.Nx self.Ny], currentIndex);
+                    self.didPrecomputedModesForWavenumber(i,j) = 1;
                     self.h(i,j,:) = h;
                     self.S(:,:,i,j) = G;
                     self.Sprime(:,:,i,j) = F;
                 end
                 
-                if iUnique == 1 || mod(iUnique,10) == 0
-                    timePerStep = (datetime('now')-startTime)/iUnique;
-                    timeRemaining = (length(K2_unique)-iUnique)*timePerStep;
-                    fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iUnique, length(K2_unique), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+                iSolved = iSolved+1;
+                if (iSolved == 1 && nEVPNeeded >1) || mod(iSolved,10) == 0
+                    timePerStep = (datetime('now')-startTime)/iSolved;
+                    timeRemaining = (nEVPNeeded-iSolved)*timePerStep;
+                    fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iUnique, nEVPNeeded, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
                 end
             end
             
             self.SetOmegaFromEigendepths(self.h);
-            
-            % Slower algoritm
-%             for i=1:self.Nx
-%                 for j=1:self.Ny
-%                     kk = self.K2(i,j,1);
-%                                          
-%                     [F,G,h] = im.ModesAtWavenumber(sqrt(kk));
-%                     self.h(i,j,:) = reshape(h,[1 1 self.nModes]);
-%                     self.S(:,:,i,j) = G;
-%                     self.Sprime(:,:,i,j) = F;
-%                 end
-%             end
         end
-        
     end
     
     methods (Access = protected)
@@ -122,6 +142,10 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
                 
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+            A = zeros(size(self.didPrecomputedModesForWavenumber));
+            A(k0+1,l0+1) = 1;
+            self.ComputeModesForNonzeroWavenumbers(A)
+            
             myH = self.h(k0+1,l0+1,j0);
             myK = self.Kh(k0+1,l0+1,j0);
             self.internalModes.normalization = Normalization.uMax;
