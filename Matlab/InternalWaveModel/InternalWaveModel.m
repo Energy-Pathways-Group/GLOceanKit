@@ -85,13 +85,16 @@ classdef (Abstract) InternalWaveModel < handle
         g = 9.81;
     end
     
+    methods(Abstract, Access = public)
+        N2 = N2AtDepth(self,z)
+        rho = RhoBarAtDepth(self,z)
+    end
+    
     methods (Abstract, Access = protected)
         F = InternalUVModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
         G = InternalWModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
 %         F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
-%         G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
-        rho = RhoBarAtDepth(self,z)
-        N2 = N2AtDepth(self,z)
+%         G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth 
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
         w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
         ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm

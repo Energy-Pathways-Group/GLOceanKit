@@ -38,28 +38,76 @@ U = epsilon*(omega/k);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute the nonlinear correction
+% We use much higher resolution modes than the model.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-wavemodel.internalModes.normalization = Normalization.kConstant;
-[F_2k_out,G_2k_out,h_2k_out,omega_2k_out] = wavemodel.internalModes.ModesAtWavenumber(2*k);
-f = -wavemodel.internalModes.rho_zz .* G .* G / wavemodel.internalModes.rho0;
-% a = G_2k_out \ f;
+zHR = linspace(min(zIn),max(zIn),5000)';
+im = InternalModesWKBSpectral(rho,zIn,zHR,latitude);
+im.normalization = Normalization.uMax;
+[F_hr_out,G_hr_out,~,~] = im.ModesAtWavenumber(k);
+F_hr = F_hr_out(:,j);
+G_hr = G_hr_out(:,j);
+
+f = -im.rho_zz .* G_hr .* G_hr / wavemodel.internalModes.rho0;
+
+im.normalization = Normalization.kConstant;
+[F_2k_out,G_2k_out,h_2k_out,~] = im.ModesAtWavenumber(2*k);
 a = zeros(size(h_2k_out));
-for j=1:120% size(G_2k_out,2)
-    a(j) = trapz(wavemodel.z,f.*G_2k_out(:,j));
+for i=1:size(G_2k_out,2)
+    a(i) = trapz(zHR,f.*G_2k_out(:,i));
 end
-
 gamma = ((h*h./(h-h_2k_out))).*a;
-u_coeff = gamma* epsilon/4;
 
-u_correction = F_2k_out*(u_coeff.');
+% im.normalization = Normalization.omegaConstant;
+% [F_2k_out,G_2k_out,h_2k_out,omega_2k_out] = im.ModesAtFrequency(2*omega);
+% a = zeros(size(h_2k_out));
+% for i=1:size(G_2k_out,2)
+%     a(i) = trapz(zHR,f.*G_2k_out(:,i));
+% end
+% gamma = h_2k_out/(9.81*(max(zIn)-min(zIn))) .* ((h*h./(h-h_2k_out))).*a;
 
 figure
-plot(U*F,wavemodel.z), hold on
-plot(u_correction,wavemodel.z)
+subplot(1,2,1)
+plot(F_hr,zHR), hold on
+plot(F_2k_out*gamma.',zHR)
+title('U-mode')
+subplot(1,2,2)
+plot(G_hr,zHR), hold on
+plot(G_2k_out*gamma.',zHR)
+title('W-mode')
+legend('O(\epsilon)','O(\epsilon^2)')
 
-return
+wavemodel.internalModes.normalization = Normalization.kConstant;
+[F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*k);
+
+u_coeff = U*gamma*epsilon/4;
+w_coeff = U*k*h*gamma*epsilon/2;
+rho_coeff = h*gamma*epsilon*epsilon/4;
+
+X = wavemodel.X;
+Y = wavemodel.Y;
+Z = wavemodel.Z;
+RhoBarDz = -(wavemodel.rho0/9.81)*wavemodel.N2AtDepth(Z);
+
+u_correction = cos(2*k*X) .* repmat(permute((F_2k_out*(u_coeff.')),[3 2 1]),size(X,1),size(X,2));
+w_correction = sin(2*k*X) .* repmat(permute((G_2k_out*(w_coeff.')),[3 2 1]),size(X,1),size(X,2));
+rho_correction = cos(2*k*X) .* RhoBarDz .* repmat(permute((G_2k_out*(rho_coeff.')),[3 2 1]),size(X,1),size(X,2));
 
 period = wavemodel.InitializeWithPlaneWave(wavenumber,0,j,U,1);
+
+[u_i,v_i] = wavemodel.VelocityFieldAtTime(0);
+w_i = wavemodel.VerticalFieldsAtTime(0);
+rho_i = wavemodel.DensityAtTime(0);
+
+figure, plot(squeeze(u_i(1,1,:)),wavemodel.z), hold on
+plot(squeeze(u_correction(1,1,:)),wavemodel.z)
+
+figure, plot(squeeze(w_i(Nx/2,1,:)),wavemodel.z), hold on
+plot(squeeze(w_correction(Nx/2,1,:)),wavemodel.z)
+
+figure, plot(squeeze(rho_i(1,1,:))-wavemodel.RhoBarAtDepth(wavemodel.z),wavemodel.z), hold on
+plot(squeeze(rho_correction(1,1,:)),wavemodel.z)
+
+return
 
 t = (0:(1/40):maxOscillations)'*period;
 fprintf('The wave period is set to %.1f hours.\n', period/3600)

@@ -65,6 +65,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             self@InternalWaveModel(dims, n, z, N2, nModes, latitude);
             
+            self.nModes = nModes;
             self.S = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.internalModes = im;
@@ -100,6 +101,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             self.internalModes.normalization = Normalization.kConstant;
+            self.internalModes.nModes = self.nModes;
             
             startTime = datetime('now');
             iSolved = 0; % total number of EVPs solved
@@ -134,6 +136,14 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             self.SetOmegaFromEigendepths(self.h);
+        end
+        
+        function rho = RhoBarAtDepth(self,z)
+            rho = interp1(self.internalModes.z,self.internalModes.rho,z,'spline');
+        end
+        
+        function N2 = N2AtDepth(self,z)
+            N2 = interp1(self.internalModes.z,self.internalModes.N2,z,'spline');
         end
     end
     
@@ -180,15 +190,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iMode);
             G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
-        
-        function rho = RhoBarAtDepth(self,z)
-            rho = interp1(self.internalModes.z,self.internalModes.rho,z,'spline');
-        end
-        
-        function N2 = N2AtDepth(self,z)
-            N2 = interp1(self.internalModes.z,self.internalModes.N2,z,'spline');
-        end
-        
+                        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)

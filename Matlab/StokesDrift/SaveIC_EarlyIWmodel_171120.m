@@ -62,11 +62,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % set basic directory for research
-basedir = '/Users/cwortham/Documents/research/';
+basedir = '/Users/pascale/Desktop/Generate_ICS/';
 % basedir = '/home/cwortham/research/';
 
 % add GLOceanKit directory to path
-addpath(genpath( [basedir 'GLOceanKit/Matlab'] ))
+addpath(genpath( ['/Users/pascale/Dropbox/NSF_IWV/GLOceanKit/Matlab/'] ))
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,12 +75,12 @@ addpath(genpath( [basedir 'GLOceanKit/Matlab'] ))
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-runDIR = [basedir 'nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s/'];
+runDIR = basedir ;
 pp = load_problem_params(runDIR);
 
 % Jeffrey's code needs latitude, but it's not used in Winters'
 % problem_params.  Just calculate it from f.
-latitude = asind(pp.f(1)/2/7.2921E-5);
+latitude = 0.0;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,17 +138,17 @@ sign = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % set frequencies at which to force, rad s^-1
-omega_forcing = [pp.f(1), 2*pi/(12*3600)];
+%omega_forcing = [pp.f(1), 2*pi/(12*3600)];
 
 % set amplitude as relative weight of various modes.  Should sum to 1.  
 % it's modified to actual amplitude below.
-amp_forcing = [0.5,0.5];
+%amp_forcing = [0.5,0.5];
 
-omega_forcing = [];
-amp_forcing = [];
+%omega_forcing = [];
+%amp_forcing = [];
 
 % set random phase offset for each forcing frequency
-phase = 2*pi*rand(size(omega_forcing)); 
+%phase = 2*pi*rand(size(omega_forcing)); 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,52 +166,52 @@ drhobar_dz = modes.rho_z';
 drhobar_dzdz = modes.rho_zz';
 
 % compute the mode shape at each frequency
-F = nan(length(z),length(omega_forcing));
-G = F;
-h = nan(size(omega_forcing));
-for i = 1:length(omega_forcing)
-    [F_temp,G_temp,h_temp] = modes.ModesAtFrequency(omega_forcing(i));
+%F = nan(length(z),length(omega_forcing));
+%G = F;
+%h = nan(size(omega_forcing));
+%for i = 1:length(omega_forcing)
+%    [F_temp,G_temp,h_temp] = modes.ModesAtFrequency(omega_forcing(i));
     % save lowest vertical mode F, G in array    
-    F(:,i) = F_temp(:,1);
-    G(:,i) = G_temp(:,1);
-    h(i) = h_temp(1);
-end
+%    F(:,i) = F_temp(:,1);
+%    G(:,i) = G_temp(:,1);
+%    h(i) = h_temp(1);
+%end
 
 % compute forcing vertical structures, based on Early et al. manuscript
 % draft eq. 29 and notebook for 3/23/2017.
 
 % K, k, l from omega... from dispersion relation
-K = sqrt( (omega_forcing.^2 - pp.f(1)^2)./(pp.g*h) );
-l_over_k = 0; % ratio l/k.  Assume it's zero below.
-k = sqrt( K.^2/(1+l_over_k^2) );
-l = sqrt( K.^2 - k.^2 );
-
-% time-independent part of forcing terms.  
+% = sqrt( (omega_forcing.^2 - pp.f(1)^2)./(pp.g*h) );
+%l_over_k = 0; % ratio l/k.  Assume it's zero below.
+%k = sqrt( K.^2/(1+l_over_k^2) );
+%l = sqrt( K.^2 - k.^2 );
+%
+%% time-independent part of forcing terms.  
 % This simpler form applies only for l=0.  Would have to include
 % extra terms for arbitrary wave direction.
-u_forcing = bsxfun(@times, 1./sqrt(h), F);
-v_forcing = bsxfun(@times, -pp.f(1)./omega_forcing./sqrt(h), F);
-w_forcing = bsxfun(@times, K.*sqrt(h), G);
-rho_forcing = bsxfun(@times, K.*sqrt(h)./omega_forcing, bsxfun(@times, drhobar_dz', G));
+%u_forcing = bsxfun(@times, 1./sqrt(h), F);
+%v_forcing = bsxfun(@times, -pp.f(1)./omega_forcing./sqrt(h), F);
+%w_forcing = bsxfun(@times, K.*sqrt(h), G);
+%rho_forcing = bsxfun(@times, K.*sqrt(h)./omega_forcing, bsxfun(@times, drhobar_dz', G));
 
 % full domain vectors
-[X,Y,Z] = ndgrid( linspace(0,pp.Lx,pp.nx), linspace(0,pp.Ly,pp.ny), linspace(-pp.Lz,0,pp.nz));
+%[X,Y,Z] = ndgrid( linspace(0,pp.Lx,pp.nx), linspace(0,pp.Ly,pp.ny), linspace(-pp.Lz,0,pp.nz));
 
 % amplitude and energy partition between modes
 % This is a simplified version of the Sugiyama et al. (2009) formulation
 % with one amplitude factor (alpha=beta).  See notebook for 3/24/2017.
-gamma = amp_forcing/sum(amp_forcing); % fraction of energy put into each mode
-Gamma = 0.2; % Osborn (1980) dissipation constant
-kappa_rho = 1e-5; % typical eddy diffusivity coefficient
+%gamma = amp_forcing/sum(amp_forcing); % fraction of energy put into each mode
+%Gamma = 0.2; % Osborn (1980) dissipation constant
+%kappa_rho = 1e-5; % typical eddy diffusivity coefficient
 % epsilon = kappa_rho * mean(N2)/Gamma; % energy dissipation rate
-epsilon = 3.5e-10; % dissipation rate based on unforced run of cim_dev
-for ii=1:length(omega_forcing)
-    u_temp = bsxfun(@times, cos(k(ii)*X + l(ii)*Y), permute(u_forcing(:,ii), [3 2 1]));
-    v_temp = bsxfun(@times, sin(k(ii)*X + l(ii)*Y), permute(v_forcing(:,ii), [3 2 1]));
-    w_temp = bsxfun(@times, sin(k(ii)*X + l(ii)*Y), permute(w_forcing(:,ii), [3 2 1]));
-    rho_temp = bsxfun(@times, cos(k(ii)*X + l(ii)*Y), permute(rho_forcing(:,ii), [3 2 1]));
-    amp_forcing(ii) = gamma(ii)*pp.rho_0*epsilon./ ( pp.rho_0* (mean(mean(u_temp(:,:,ii).^2,1),2) + mean(mean(v_temp(:,:,ii).^2,1),2) + mean(mean(w_temp(:,:,ii).^2,1),2) ) + pp.g^2*mean(mean(rho_temp(:,:,ii).^2,1),2)/pp.rho_0/mean(N2) );
-end
+%epsilon = 3.5e-10; % dissipation rate based on unforced run of cim_dev
+%for ii=1:length(omega_forcing)
+%    u_temp = bsxfun(@times, cos(k(ii)*X + l(ii)*Y), permute(u_forcing(:,ii), [3 2 1]));
+%    v_temp = bsxfun(@times, sin(k(ii)*X + l(ii)*Y), permute(v_forcing(:,ii), [3 2 1]));
+%    w_temp = bsxfun(@times, sin(k(ii)*X + l(ii)*Y), permute(w_forcing(:,ii), [3 2 1]));
+%    rho_temp = bsxfun(@times, cos(k(ii)*X + l(ii)*Y), permute(rho_forcing(:,ii), [3 2 1]));
+%    amp_forcing(ii) = gamma(ii)*pp.rho_0*epsilon./ ( pp.rho_0* (mean(mean(u_temp(:,:,ii).^2,1),2) + mean(mean(v_temp(:,:,ii).^2,1),2) + mean(mean(w_temp(:,:,ii).^2,1),2) ) + pp.g^2*mean(mean(rho_temp(:,:,ii).^2,1),2)/pp.rho_0/mean(N2) );
+%end
 
 % check that amplitudes satisfy Sugiyama et al (2009) eq. 6
 % for ii=1:length(omega_forcing)
@@ -230,15 +230,18 @@ end
 
 % initialize the model
 % wavemodel = InternalWaveModelConstantStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], latitude, N0);
-wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rho, z, pp.nz-1, latitude);
+
+
 
 % create a wave realization
 if strcmp( wave_type, 'GM')
     % GM spectrum
+    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunc, z, pp.nz-10, latitude);
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,0); % 1=shouldRandomizeAmplitude, 0 keeps same amplitude for all waves of given wavenumber 
 elseif strcmp( wave_type, 'plane')
     % single plane wave
-    wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
+    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunc, z, j0+1, latitude);
+     wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
 else
     error('Invalid wave_type specified.  Must be "GM" or "plane".');
 end
@@ -382,29 +385,29 @@ disp('Checking whether or not the forcing wavelengths fit in the model domain...
 tolerance = .1; 
 
 % how close do the zonal wavenumbers fit in the domain?
-k_misfit = mod( pp.Lx./( 2*pi./k ), 1);
+% k_misfit = mod( pp.Lx./( 2*pi./k ), 1);
 
 % how close do the meridional wavenumbers fit in the domain?
-l_misfit = mod( pp.Ly./( 2*pi./l ), 1);
+% l_misfit = mod( pp.Ly./( 2*pi./l ), 1);
 
 % report
-no_misfit = true; % just keeping track of whether any wavenumbers don't fit.
-for ii=1:length(omega_forcing)
-    if k_misfit(ii)>tolerance && k_misfit(ii)<1-tolerance
-        warning('Zonal wavenumber for mode %d does not fit well in the domain. \n I recommend making the domain an integer multiple of forcing wavelength. \n 2*pi/k=%1.0fm and Lx=%1.0fm', ii, 2*pi/k(ii), pp.Lx )
-        no_misfit = false;
-    end
-end
-for ii=1:length(omega_forcing)
-    if l_misfit(ii)>tolerance && l_misfit(ii)<1-tolerance
-        warning('Meridional wavenumber for mode %d does not fit well in the domain. \n I recommend making the domain an integer multiple of forcing wavelength. \n 2*pi/l=%1.0fm and Ly=%1.0fm', ii, 2*pi/l(ii), pp.Ly )
-        no_misfit = false;
-    end
-end
-if no_misfit
-    disp('...all forcing wavenumbers fit well in the domain.')
-end
-
+% no_misfit = true; % just keeping track of whether any wavenumbers don't fit.
+% for ii=1:length(omega_forcing)
+%     if k_misfit(ii)>tolerance && k_misfit(ii)<1-tolerance
+%         warning('Zonal wavenumber for mode %d does not fit well in the domain. \n I recommend making the domain an integer multiple of forcing wavelength. \n 2*pi/k=%1.0fm and Lx=%1.0fm', ii, 2*pi/k(ii), pp.Lx )
+%         no_misfit = false;
+%     end
+% end
+% for ii=1:length(omega_forcing)
+%     if l_misfit(ii)>tolerance && l_misfit(ii)<1-tolerance
+%         warning('Meridional wavenumber for mode %d does not fit well in the domain. \n I recommend making the domain an integer multiple of forcing wavelength. \n 2*pi/l=%1.0fm and Ly=%1.0fm', ii, 2*pi/l(ii), pp.Ly )
+%         no_misfit = false;
+%     end
+% end
+% if no_misfit
+%     disp('...all forcing wavenumbers fit well in the domain.')
+% end
+% 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -434,7 +437,7 @@ iDimID = netcdf.defDim(ncid, 'idimension', wavemodel.Nx);
 jDimID = netcdf.defDim(ncid, 'jdimension', wavemodel.Ny);
 kDimID = netcdf.defDim(ncid, 'kdimension', wavemodel.Nz);
 tDimID = netcdf.defDim(ncid, 'timedimension', netcdf.getConstant('NC_UNLIMITED'));
-fDimID = netcdf.defDim(ncid, 'forcedimension', length(omega_forcing));
+%fDimID = netcdf.defDim(ncid, 'forcedimension', length(omega_forcing));
 pDimID = netcdf.defDim(ncid, 'particledimension', nFloats);
 
 % Define the coordinate variables
@@ -442,17 +445,17 @@ iVarID = netcdf.defVar(ncid, 'x', ncPrecision, iDimID);
 jVarID = netcdf.defVar(ncid, 'y', ncPrecision, jDimID);
 kVarID = netcdf.defVar(ncid, 'z', ncPrecision, kDimID);
 tVarID = netcdf.defVar(ncid, 't', ncPrecision, tDimID);
-fVarID = netcdf.defVar(ncid, 'mode', ncPrecision, fDimID);
+% fVarID = netcdf.defVar(ncid, 'mode', ncPrecision, fDimID);
 netcdf.putAtt(ncid,iVarID, 'long_name', 'x coordinate');
 netcdf.putAtt(ncid,jVarID, 'long_name', 'y coordinate');
 netcdf.putAtt(ncid,kVarID, 'long_name', 'z coordinate');
 netcdf.putAtt(ncid,tVarID, 'long_name', 'time coordinate');
-netcdf.putAtt(ncid,fVarID, 'long_name', 'forcing mode number');
+% netcdf.putAtt(ncid,fVarID, 'long_name', 'forcing mode number');
 netcdf.putAtt(ncid,iVarID, 'units', 'm');
 netcdf.putAtt(ncid,jVarID, 'units', 'm');
 netcdf.putAtt(ncid,kVarID, 'units', 'm');
 netcdf.putAtt(ncid,tVarID, 'units', 's');
-netcdf.putAtt(ncid,fVarID, 'units', 'unitless');
+% netcdf.putAtt(ncid,fVarID, 'units', 'unitless');
 
 % Define the dynamical variables
 uVarID = netcdf.defVar(ncid, 'u', ncPrecision, [iDimID,jDimID,kDimID,tDimID]);
@@ -463,15 +466,15 @@ rhobarVarID = netcdf.defVar(ncid, 'rhobar', ncPrecision, kDimID);
 drhobardzVarID = netcdf.defVar(ncid, 'drhobar_dz', ncPrecision, kDimID);
 drhobardzdzVarID = netcdf.defVar(ncid, 'drhobar_dzdz', ncPrecision, kDimID);
 % zetaVarID = netcdf.defVar(ncid, 'zeta', ncPrecision, [iDimID,jDimID,kDimID,tDimID]);
-omegaForceVarID = netcdf.defVar(ncid, 'omega_forcing', ncPrecision, fDimID);
-ampForceVarID = netcdf.defVar(ncid, 'amp_forcing', ncPrecision, fDimID);
-phaseForceVarID = netcdf.defVar(ncid, 'phase_forcing', ncPrecision, fDimID);
-kForceVarID = netcdf.defVar(ncid, 'k_forcing', ncPrecision, fDimID);
-lForceVarID = netcdf.defVar(ncid, 'l_forcing', ncPrecision, fDimID);
-uForceVarID = netcdf.defVar(ncid, 'u_forcing', ncPrecision, [kDimID, fDimID]);
-vForceVarID = netcdf.defVar(ncid, 'v_forcing', ncPrecision, [kDimID, fDimID]);
-wForceVarID = netcdf.defVar(ncid, 'w_forcing', ncPrecision, [kDimID, fDimID]);
-rhoForceVarID = netcdf.defVar(ncid, 'rho_forcing', ncPrecision, [kDimID, fDimID]);
+% omegaForceVarID = netcdf.defVar(ncid, 'omega_forcing', ncPrecision, fDimID);
+% ampForceVarID = netcdf.defVar(ncid, 'amp_forcing', ncPrecision, fDimID);
+% phaseForceVarID = netcdf.defVar(ncid, 'phase_forcing', ncPrecision, fDimID);
+% kForceVarID = netcdf.defVar(ncid, 'k_forcing', ncPrecision, fDimID);
+% lForceVarID = netcdf.defVar(ncid, 'l_forcing', ncPrecision, fDimID);
+% uForceVarID = netcdf.defVar(ncid, 'u_forcing', ncPrecision, [kDimID, fDimID]);
+% vForceVarID = netcdf.defVar(ncid, 'v_forcing', ncPrecision, [kDimID, fDimID]);
+% wForceVarID = netcdf.defVar(ncid, 'w_forcing', ncPrecision, [kDimID, fDimID]);
+% rhoForceVarID = netcdf.defVar(ncid, 'rho_forcing', ncPrecision, [kDimID, fDimID]);
 xfloatVarID = netcdf.defVar(ncid,  'x_float', ncPrecision, pDimID);
 yfloatVarID = netcdf.defVar(ncid,  'y_float', ncPrecision, pDimID);
 zfloatVarID = netcdf.defVar(ncid,  'z_float', ncPrecision, pDimID);
@@ -484,15 +487,15 @@ netcdf.putAtt(ncid,rhobarVarID, 'long_name', 'time-independent density anomaly')
 netcdf.putAtt(ncid,drhobardzVarID, 'long_name', 'time-independent density derivative');
 netcdf.putAtt(ncid,drhobardzdzVarID, 'long_name', 'time-independent density second derivative');
 % netcdf.putAtt(ncid,zetaVarID, 'units', 'm');
-netcdf.putAtt(ncid,omegaForceVarID, 'long_name', 'forcing frequencies');
-netcdf.putAtt(ncid,ampForceVarID, 'long_name', 'forcing amplitudes');
-netcdf.putAtt(ncid,phaseForceVarID, 'long_name', 'forcing phase offset');
-netcdf.putAtt(ncid,kForceVarID, 'long_name', 'forcing zonal wavenumber');
-netcdf.putAtt(ncid,lForceVarID, 'long_name', 'forcing meridional wavenumber');
-netcdf.putAtt(ncid,uForceVarID, 'long_name', 'vertical structure function for u');
-netcdf.putAtt(ncid,vForceVarID, 'long_name', 'vertical structure function for v');
-netcdf.putAtt(ncid,wForceVarID, 'long_name', 'vertical structure function for w');
-netcdf.putAtt(ncid,rhoForceVarID, 'long_name', 'vertical structure function for rho');
+% netcdf.putAtt(ncid,omegaForceVarID, 'long_name', 'forcing frequencies');
+% netcdf.putAtt(ncid,ampForceVarID, 'long_name', 'forcing amplitudes');
+% netcdf.putAtt(ncid,phaseForceVarID, 'long_name', 'forcing phase offset');
+% netcdf.putAtt(ncid,kForceVarID, 'long_name', 'forcing zonal wavenumber');
+% netcdf.putAtt(ncid,lForceVarID, 'long_name', 'forcing meridional wavenumber');
+% netcdf.putAtt(ncid,uForceVarID, 'long_name', 'vertical structure function for u');
+% netcdf.putAtt(ncid,vForceVarID, 'long_name', 'vertical structure function for v');
+% netcdf.putAtt(ncid,wForceVarID, 'long_name', 'vertical structure function for w');
+% netcdf.putAtt(ncid,rhoForceVarID, 'long_name', 'vertical structure function for rho');
 netcdf.putAtt(ncid,xfloatVarID, 'long_name', 'float/particle zonal position');
 netcdf.putAtt(ncid,yfloatVarID, 'long_name', 'float/particle meridional position');
 netcdf.putAtt(ncid,zfloatVarID, 'long_name', 'float/particle vertical position');
@@ -505,15 +508,15 @@ netcdf.putAtt(ncid,rhobarVarID, 'units', 'kg m^-3');
 netcdf.putAtt(ncid,drhobardzVarID, 'units', 'kg m^-4');
 netcdf.putAtt(ncid,drhobardzdzVarID, 'units', 'kg m^-5');
 % netcdf.putAtt(ncid,zetaVarID, 'units', 'm');
-netcdf.putAtt(ncid,omegaForceVarID, 'units', 'rad/s');
-netcdf.putAtt(ncid,ampForceVarID, 'units', 's^-1');
-netcdf.putAtt(ncid,phaseForceVarID, 'units', 'dimensionless');
-netcdf.putAtt(ncid,kForceVarID, 'units', 'rad/m');
-netcdf.putAtt(ncid,lForceVarID, 'units', 'rad/m');
-netcdf.putAtt(ncid,uForceVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,vForceVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,wForceVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,rhoForceVarID, 'units', 'kg m^-3');
+% netcdf.putAtt(ncid,omegaForceVarID, 'units', 'rad/s');
+% netcdf.putAtt(ncid,ampForceVarID, 'units', 's^-1');
+% netcdf.putAtt(ncid,phaseForceVarID, 'units', 'dimensionless');
+% netcdf.putAtt(ncid,kForceVarID, 'units', 'rad/m');
+% netcdf.putAtt(ncid,lForceVarID, 'units', 'rad/m');
+% netcdf.putAtt(ncid,uForceVarID, 'units', 'm/s');
+% netcdf.putAtt(ncid,vForceVarID, 'units', 'm/s');
+% netcdf.putAtt(ncid,wForceVarID, 'units', 'm/s');
+% netcdf.putAtt(ncid,rhoForceVarID, 'units', 'kg m^-3');
 netcdf.putAtt(ncid,xfloatVarID, 'units', 'm');
 netcdf.putAtt(ncid,yfloatVarID, 'units', 'm');
 netcdf.putAtt(ncid,zfloatVarID, 'units', 'm');
@@ -536,8 +539,8 @@ netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from Inter
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalWaveModel version', wavemodel.version);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes method', modes.method);
-netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes upper boundary', modes.upperBoundary);
-netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes normalization', modes.normalization);
+% netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes upper boundary', modes.upperBoundary);
+% netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes normalization', modes.normalization);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'number of particles or floats', nFloats);
 
 % End definition mode
@@ -565,15 +568,15 @@ netcdf.putVar(ncid, setprecision(drhobardzVarID), 0, wavemodel.Nz, drhobar_dz);
 netcdf.putVar(ncid, setprecision(drhobardzdzVarID), 0, wavemodel.Nz, drhobar_dzdz);
 % netcdf.putVar(ncid, setprecision(zetaVarID), [0 0 0 0], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], zeta);
 netcdf.putVar(ncid, setprecision(tVarID), 0, 1, time);
-netcdf.putVar(ncid, setprecision(omegaForceVarID), 0, length(omega_forcing), omega_forcing);
-netcdf.putVar(ncid, setprecision(ampForceVarID), 0, length(omega_forcing), amp_forcing);
-netcdf.putVar(ncid, setprecision(kForceVarID), 0, length(omega_forcing), k);
-netcdf.putVar(ncid, setprecision(lForceVarID), 0, length(omega_forcing), l);
-netcdf.putVar(ncid, setprecision(phaseForceVarID), 0, length(omega_forcing), phase);
-netcdf.putVar(ncid, setprecision(uForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], u_forcing);
-netcdf.putVar(ncid, setprecision(vForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], v_forcing);
-netcdf.putVar(ncid, setprecision(wForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], w_forcing);
-netcdf.putVar(ncid, setprecision(rhoForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], rho_forcing);
+% netcdf.putVar(ncid, setprecision(omegaForceVarID), 0, length(omega_forcing), omega_forcing);
+% netcdf.putVar(ncid, setprecision(ampForceVarID), 0, length(omega_forcing), amp_forcing);
+% netcdf.putVar(ncid, setprecision(kForceVarID), 0, length(omega_forcing), k);
+% netcdf.putVar(ncid, setprecision(lForceVarID), 0, length(omega_forcing), l);
+% netcdf.putVar(ncid, setprecision(phaseForceVarID), 0, length(omega_forcing), phase);
+% netcdf.putVar(ncid, setprecision(uForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], u_forcing);
+% netcdf.putVar(ncid, setprecision(vForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], v_forcing);
+% netcdf.putVar(ncid, setprecision(wForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], w_forcing);
+% netcdf.putVar(ncid, setprecision(rhoForceVarID), [0 0], [wavemodel.Nz length(omega_forcing)], rho_forcing);
 netcdf.putVar(ncid, setprecision(xfloatVarID), 0, nFloats, x_float);
 netcdf.putVar(ncid, setprecision(yfloatVarID), 0, nFloats, y_float);
 netcdf.putVar(ncid, setprecision(zfloatVarID), 0, nFloats, z_float);

@@ -174,6 +174,15 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
                 self.G_sin_ext = 1./(self.h_ext .* self.k_z_ext);
             end
         end
+        
+        function rho = RhoBarAtDepth(self,z)
+            g = 9.81;
+            rho = -(self.N0*self.N0*self.rho0/g)*z + self.rho0;
+        end
+        
+        function N2 = N2AtDepth(self,z)
+            N2 = self.N0 * self.N0 * ones(size(z));
+        end
     end
     
     methods (Access = protected)
@@ -213,16 +222,6 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             coeff = sqrt(2*g/(self.Lz*(self.N0*self.N0-self.f0*self.f0)));
             G = coeff * sin(z * k_z); % [N M]
         end
-        
-        function rho = RhoBarAtDepth(self,z)
-            g = 9.81;
-            rho = -(self.N0*self.N0*self.rho0/g)*z + self.rho0;
-        end
-        
-        function N2 = N2AtDepth(self,z)
-            N2 = self.N0 * self.N0 * ones(size(z));
-        end
-        
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
