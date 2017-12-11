@@ -55,31 +55,24 @@ a = zeros(size(h_2k_out));
 for i=1:size(G_2k_out,2)
     a(i) = trapz(zHR,f.*G_2k_out(:,i));
 end
-gamma = ((h*h./(h-h_2k_out))).*a;
-
-% im.normalization = Normalization.omegaConstant;
-% [F_2k_out,G_2k_out,h_2k_out,omega_2k_out] = im.ModesAtFrequency(2*omega);
-% a = zeros(size(h_2k_out));
-% for i=1:size(G_2k_out,2)
-%     a(i) = trapz(zHR,f.*G_2k_out(:,i));
-% end
-% gamma = h_2k_out/(9.81*(max(zIn)-min(zIn))) .* ((h*h./(h-h_2k_out))).*a;
+gamma = ((h*h_2k_out./(h-h_2k_out))).*a;
 
 figure
 subplot(1,2,1)
 plot(F_hr,zHR), hold on
-plot(F_2k_out*gamma.',zHR)
+plot(F_2k_out*((h./h_2k_out).*gamma).',zHR)
 title('U-mode')
 subplot(1,2,2)
 plot(G_hr,zHR), hold on
 plot(G_2k_out*gamma.',zHR)
+plot(h* (im.rho_zz./im.rho_z) .* G_hr .* G_hr, zHR)
 title('W-mode')
-legend('O(\epsilon)','O(\epsilon^2)')
+legend('O(\epsilon)','O(\epsilon^2)','O(\epsilon^2)')
 
 wavemodel.internalModes.normalization = Normalization.kConstant;
 [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*k);
 
-u_coeff = U*gamma*epsilon/4;
+u_coeff = U*epsilon/4;
 w_coeff = U*k*h*gamma*epsilon/2;
 rho_coeff = h*gamma*epsilon*epsilon/4;
 
@@ -88,9 +81,13 @@ Y = wavemodel.Y;
 Z = wavemodel.Z;
 RhoBarDz = -(wavemodel.rho0/9.81)*wavemodel.N2AtDepth(Z);
 
-u_correction = cos(2*k*X) .* repmat(permute((F_2k_out*(u_coeff.')),[3 2 1]),size(X,1),size(X,2));
-w_correction = sin(2*k*X) .* repmat(permute((G_2k_out*(w_coeff.')),[3 2 1]),size(X,1),size(X,2));
-rho_correction = cos(2*k*X) .* RhoBarDz .* repmat(permute((G_2k_out*(rho_coeff.')),[3 2 1]),size(X,1),size(X,2));
+Phi = repmat(permute((F_2k_out*(((h./h_2k_out).*gamma).')),[3 2 1]),size(X,1),size(X,2));
+Gamma = repmat(permute((G_2k_out*(gamma.')),[3 2 1]),size(X,1),size(X,2));
+Rho_zzTerm = repmat(permute((h*wavemodel.internalModes.rho_zz.*G.*G),[3 2 1]),size(X,1),size(X,2));
+
+u_correction = (U * epsilon / 4) * cos(2*k*X) .* Phi;
+w_correction = (U*k*h*epsilon/2) * sin(2*k*X) .* Gamma;
+rho_correction = (h*epsilon*epsilon/4) * cos(2*k*X) .* ( Rho_zzTerm +  RhoBarDz .* Gamma );
 
 period = wavemodel.InitializeWithPlaneWave(wavenumber,0,j,U,1);
 

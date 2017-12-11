@@ -239,22 +239,22 @@ elseif strcmp( wave_type, 'plane')
     period = wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
     
     if 1 % Add the next order correction term
-        k = wavemodel.k(k0+1);
+        kk = wavemodel.k(k0+1);
         h = wavemodel.h(k0+1,l0+1,j0);
         omega = 2*pi/period;
-        epsilon = UAmp/(omega/k);
+        epsilon = UAmp/(omega/kk);
         
         zHR = linspace(min(z),max(z),5000)';
         im = InternalModesWKBSpectral(rhoFunc,[min(z) max(z)],zHR,latitude);
         im.normalization = Normalization.uMax;
-        [F_hr_out,G_hr_out,~,~] = im.ModesAtWavenumber(k);
+        [F_hr_out,G_hr_out,~,~] = im.ModesAtWavenumber(kk);
         F_hr = F_hr_out(:,j0);
         G_hr = G_hr_out(:,j0);
         
         f = -im.rho_zz .* G_hr .* G_hr / wavemodel.internalModes.rho0;
         
         im.normalization = Normalization.kConstant;
-        [~,G_2k_out,h_2k_out,~] = im.ModesAtWavenumber(2*k);
+        [~,G_2k_out,h_2k_out,~] = im.ModesAtWavenumber(2*kk);
         a = zeros(size(h_2k_out));
         for i=1:size(G_2k_out,2)
             a(i) = trapz(zHR,f.*G_2k_out(:,i));
@@ -262,10 +262,11 @@ elseif strcmp( wave_type, 'plane')
         gamma = ((h*h./(h-h_2k_out))).*a;
         
         wavemodel.internalModes.normalization = Normalization.kConstant;
-        [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*k);
+        wavemodel.internalModes.nModes = length(a);
+        [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*kk);
         
         u_coeff = UAmp*gamma*epsilon/4;
-        w_coeff = UAmp*k*h*gamma*epsilon/2;
+        w_coeff = UAmp*kk*h*gamma*epsilon/2;
         rho_coeff = h*gamma*epsilon*epsilon/4;
         
         X = wavemodel.X;
@@ -273,9 +274,10 @@ elseif strcmp( wave_type, 'plane')
         Z = wavemodel.Z;
         RhoBarDz = -(wavemodel.rho0/9.81)*wavemodel.N2AtDepth(Z);
         
-        u_correction = cos(2*k*X) .* repmat(permute((F_2k_out*(u_coeff.')),[3 2 1]),size(X,1),size(X,2));
-        w_correction = sin(2*k*X) .* repmat(permute((G_2k_out*(w_coeff.')),[3 2 1]),size(X,1),size(X,2));
-        rho_correction = cos(2*k*X) .* RhoBarDz .* repmat(permute((G_2k_out*(rho_coeff.')),[3 2 1]),size(X,1),size(X,2));
+%         indices=1:length(a);
+        u_correction = cos(2*kk*X) .* repmat(permute((F_2k_out*(u_coeff.')),[3 2 1]),size(X,1),size(X,2));
+        w_correction = sin(2*kk*X) .* repmat(permute((G_2k_out*(w_coeff.')),[3 2 1]),size(X,1),size(X,2));
+        rho_correction = cos(2*kk*X) .* RhoBarDz .* repmat(permute((G_2k_out*(rho_coeff.')),[3 2 1]),size(X,1),size(X,2));
 
     end
     
@@ -294,7 +296,7 @@ rhoprime = - DRHODBAR_DZ .* zeta;
 
 wavemodel.z = wavemodel.z+pp.Lz; % add Lz to z for compatibility with flow_solve z=0 level which is at the bottom.
 
-if exist(u_correction)
+if exist('u_correction')
    u = u + u_correction;
    w = w + w_correction;
    rhoprime = rhoprime + rho_correction;
@@ -583,8 +585,8 @@ netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from Inter
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalWaveModel version', wavemodel.version);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes method', modes.method);
-netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes upper boundary', modes.upperBoundary);
-netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes normalization', modes.normalization);
+% netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes upper boundary', modes.upperBoundary);
+% netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'InternalModes normalization', modes.normalization);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'number of particles or floats', nFloats);
 
 % End definition mode
