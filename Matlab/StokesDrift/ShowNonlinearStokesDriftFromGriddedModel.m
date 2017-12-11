@@ -72,10 +72,6 @@ legend('O(\epsilon)','O(\epsilon^2)','O(\epsilon^2)')
 wavemodel.internalModes.normalization = Normalization.kConstant;
 [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*k);
 
-u_coeff = U*epsilon/4;
-w_coeff = U*k*h*gamma*epsilon/2;
-rho_coeff = h*gamma*epsilon*epsilon/4;
-
 X = wavemodel.X;
 Y = wavemodel.Y;
 Z = wavemodel.Z;

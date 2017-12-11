@@ -259,26 +259,24 @@ elseif strcmp( wave_type, 'plane')
         for i=1:size(G_2k_out,2)
             a(i) = trapz(zHR,f.*G_2k_out(:,i));
         end
-        gamma = ((h*h./(h-h_2k_out))).*a;
+        gamma = ((h*h_2k_out./(h-h_2k_out))).*a;
         
         wavemodel.internalModes.normalization = Normalization.kConstant;
         wavemodel.internalModes.nModes = length(a);
         [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*kk);
-        
-        u_coeff = UAmp*gamma*epsilon/4;
-        w_coeff = UAmp*kk*h*gamma*epsilon/2;
-        rho_coeff = h*gamma*epsilon*epsilon/4;
         
         X = wavemodel.X;
         Y = wavemodel.Y;
         Z = wavemodel.Z;
         RhoBarDz = -(wavemodel.rho0/9.81)*wavemodel.N2AtDepth(Z);
         
-%         indices=1:length(a);
-        u_correction = cos(2*kk*X) .* repmat(permute((F_2k_out*(u_coeff.')),[3 2 1]),size(X,1),size(X,2));
-        w_correction = sin(2*kk*X) .* repmat(permute((G_2k_out*(w_coeff.')),[3 2 1]),size(X,1),size(X,2));
-        rho_correction = cos(2*kk*X) .* RhoBarDz .* repmat(permute((G_2k_out*(rho_coeff.')),[3 2 1]),size(X,1),size(X,2));
-
+        Phi = repmat(permute((F_2k_out*(((h./h_2k_out).*gamma).')),[3 2 1]),size(X,1),size(X,2));
+        Gamma = repmat(permute((G_2k_out*(gamma.')),[3 2 1]),size(X,1),size(X,2));
+        Rho_zzTerm = repmat(permute((h*wavemodel.internalModes.rho_zz.*G.*G),[3 2 1]),size(X,1),size(X,2));
+        
+        u_correction = (U * epsilon / 4) * cos(2*kk*X) .* Phi;
+        w_correction = (U*k*h*epsilon/2) * sin(2*kk*X) .* Gamma;
+        rho_correction = (h*epsilon*epsilon/4) * cos(2*kk*X) .* ( Rho_zzTerm +  RhoBarDz .* Gamma );
     end
     
 else
@@ -296,7 +294,7 @@ rhoprime = - DRHODBAR_DZ .* zeta;
 
 wavemodel.z = wavemodel.z+pp.Lz; % add Lz to z for compatibility with flow_solve z=0 level which is at the bottom.
 
-if exist('u_correction')
+if exist('u_correction','var')
    u = u + u_correction;
    w = w + w_correction;
    rhoprime = rhoprime + rho_correction;
