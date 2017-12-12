@@ -62,12 +62,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % set basic directory for research
-basedir = '/Users/pascale/Desktop/Generate_ICS/';
-% basedir = '/Users/jearly/Documents/ProjectRepositories/GLOceanKit/Matlab/StokesDrift/Scratch/';
+% basedir = '/Users/pascale/Desktop/Generate_ICS/';
+basedir = '/Users/jearly/Documents/ProjectRepositories/GLOceanKit/Matlab/StokesDrift/Scratch/';
 % basedir = '/home/cwortham/research/';
 
 % add GLOceanKit directory to path
-addpath(genpath( ['/Users/pascale/Dropbox/NSF_IWV/GLOceanKit/Matlab/'] ))
+% addpath(genpath( ['/Users/pascale/Dropbox/NSF_IWV/GLOceanKit/Matlab/'] ))
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

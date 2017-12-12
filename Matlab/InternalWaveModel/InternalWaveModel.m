@@ -366,9 +366,12 @@ classdef (Abstract) InternalWaveModel < handle
         % Create a full Garrett-Munk spectrum (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function InitializeWithGMSpectrum(self, Amp, shouldRandomizeAmplitude)
+        function InitializeWithGMSpectrum(self, Amp, shouldRandomizeAmplitude, maxDeltaOmega)
             if ~exist('shouldRandomizeAmplitude', 'var')
                 shouldRandomizeAmplitude = 0;
+            end
+            if ~exist('maxDeltaOmega', 'var')
+                maxDeltaOmega = self.Nmax-self.f0;
             end
             
             % GM Parameters
@@ -444,6 +447,11 @@ classdef (Abstract) InternalWaveModel < handle
                                  
                     omega1 = sortedOmegas(idx + 1);
                     rightDeltaOmega = (omega1-omega0)/2;
+                    
+                    % This enforces our maximum allowed gap.
+                    if rightDeltaOmega > maxDeltaOmega/2
+                        rightDeltaOmega = maxDeltaOmega/2;
+                    end
                     energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
                     
                     for iIndex = lastIdx:(currentIdx-1)
@@ -558,7 +566,7 @@ classdef (Abstract) InternalWaveModel < handle
             
             fprintf('Added %d external waves to fill out the GM spectrum.\n', length(omegaExt));
         end
-        
+                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Return the dynamical fields on the grid at a given time
@@ -901,6 +909,206 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Diagnostic shows a plot of all resolved wave modes, both gridded
+        % and external
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+        function ShowResolvedModesPlot(self,maxDeltaOmega)
+            xAxisMax = 15*self.f0;
+            omegaAxis = linspace(self.f0,xAxisMax,1000)';
+            modeAxis = (1:15);
+            if ~exist('maxDeltaOmega', 'var')
+                maxDeltaOmega = self.Nmax-self.f0;
+            end
+            
+            j_star = 3; % vertical mode roll-off
+            L_gm = 1.3e3; % thermocline exponential scale, meters
+            invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+            E_gm = 6.3e-5; % non-dimensional energy parameter
+            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+            N0 = invT_gm;
+            
+            H = (j_star+(1:3000)).^(-5/2);
+            H_norm = 1/sum(H);
+            B_norm = 1/atan(sqrt(N0*N0/(self.f0*self.f0)-1));
+            
+            GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) - atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)));
+            GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( self.f0*sqrt(omega1*omega1-self.f0*self.f0)/(2*omega1*omega1) - (3/2)*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - self.f0*sqrt(omega0*omega0-self.f0*self.f0)/(2*omega0*omega0) + (3/2)*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)));
+            GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( self.f0*sqrt(omega1*omega1-self.f0*self.f0) + self.f0*self.f0*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - self.f0*sqrt(omega0*omega0-self.f0*self.f0) - self.f0*self.f0*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)));
+            GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-self.f0*self.f0)^(3/2))/(2*self.f0*omega1*omega1) - (1/2)*atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)) - sqrt(omega1*omega1-self.f0*self.f0)/(2*self.f0) - ((omega0*omega0-self.f0*self.f0)^(3/2))/(2*self.f0*omega0*omega0) + (1/2)*atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) + sqrt(omega0*omega0-self.f0*self.f0)/(2*self.f0) );
+            
+            TE = zeros(length(omegaAxis),length(modeAxis));
+            HKE = zeros(length(omegaAxis),length(modeAxis));
+            VKE = zeros(length(omegaAxis),length(modeAxis));
+            IE = zeros(length(omegaAxis),length(modeAxis));
+            for jMode = modeAxis
+                for iOmega = 1:(length(omegaAxis)-1)
+                    TE(iOmega,jMode) = GM2D_int(omegaAxis(iOmega),omegaAxis(iOmega+1),jMode);
+                    HKE(iOmega,jMode) = GM2D_uv_int(omegaAxis(iOmega),omegaAxis(iOmega+1),jMode);
+                    VKE(iOmega,jMode) = GM2D_w_int(omegaAxis(iOmega),omegaAxis(iOmega+1),jMode);
+                    IE(iOmega,jMode) = GM2D_zeta_int(omegaAxis(iOmega),omegaAxis(iOmega+1),jMode);
+                end
+            end
+            
+            % This shift is applied to the points along the omega axis for visual aid.
+            omega_epsilon = 0.0;
+            
+            ticks = linspace(self.f0,xAxisMax,5);
+            
+            labels = cell(length(ticks),1);
+            labels{1} = 'f_0';
+            for i=2:(length(ticks)-1)
+                labels{i} = sprintf('%df_0',round(ticks(i)/self.f0));
+            end
+            if xAxisMax == N0
+                labels{length(ticks)} = 'N_0';
+            else
+                labels{length(ticks)} = sprintf('%df_0',round(xAxisMax/self.f0));
+            end
+            
+            vticks = (1.5:1:max(modeAxis))';
+            vlabels = cell(length(vticks),1);
+            for i=1:length(vticks)
+                vlabels{i} = sprintf('%d',floor(vticks(i)));
+            end
+            
+            scale = @(a) log10(a);
+            
+            figHandle = figure('Position',[100 100 700 600]);
+            
+            sp1 = subplot(2,2,1);
+            pcolor(omegaAxis,modeAxis,scale(TE/max(max(TE)))'), hold on
+            caxis([-2 0])
+            shading flat
+            for jMode = modeAxis
+                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+            end
+            scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
+            for iMode = 1:self.nModes
+                omega = abs(self.omega_ext(self.j_ext==iMode));
+                omega = sort(unique(cat(2,omega,reshape(abs(self.Omega(:,:,iMode)),1,[]))));
+                dOmega = diff(omega);
+                indices = find(dOmega>maxDeltaOmega);
+                for iBox=indices
+                    rectangle('Position',[omega(iBox)+omega_epsilon+maxDeltaOmega/2 iMode dOmega(iBox)-maxDeltaOmega 1]);
+                end
+            end
+            title('total')
+            ylabel('vertical mode')
+            xticks([])
+            yticks(vticks)
+            yticklabels(vlabels)
+            
+            sp2 = subplot(2,2,2);
+            pcolor(omegaAxis,modeAxis,scale(HKE/max(max(HKE)))'), hold on
+            caxis([-2 0])
+            shading flat
+            for jMode = modeAxis
+                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+            end
+            scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
+            for iMode = 1:self.nModes
+                omega = abs(self.omega_ext(self.j_ext==iMode));
+                omega = sort(unique(cat(2,omega,reshape(abs(self.Omega(:,:,iMode)),1,[]))));
+                dOmega = diff(omega);
+                indices = find(dOmega>maxDeltaOmega);
+                for iBox=indices
+                    rectangle('Position',[omega(iBox)+omega_epsilon+maxDeltaOmega/2 iMode dOmega(iBox)-maxDeltaOmega 1]);
+                end
+            end
+            title('horizontal')
+            % ylabel('vertical mode')
+            yticks([])
+            % xlabel('frequency')
+            xticks([])
+            % xticklabels(labels)
+            
+            sp3 = subplot(2,2,3);
+            pcolor(omegaAxis,modeAxis,scale(VKE/max(max(VKE)))'), hold on
+            caxis([-2 0])
+            shading flat
+            for jMode = modeAxis
+                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+            end
+            scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
+            for iMode = 1:self.nModes
+                omega = abs(self.omega_ext(self.j_ext==iMode));
+                omega = sort(unique(cat(2,omega,reshape(abs(self.Omega(:,:,iMode)),1,[]))));
+                dOmega = diff(omega);
+                indices = find(dOmega>maxDeltaOmega);
+                for iBox=indices
+                    rectangle('Position',[omega(iBox)+omega_epsilon+maxDeltaOmega/2 iMode dOmega(iBox)-maxDeltaOmega 1]);
+                end
+            end
+            title('vertical')
+            ylabel('vertical mode')
+            xlabel('frequency')
+            xticks(ticks)
+            xticklabels(labels)
+            yticks(vticks)
+            yticklabels(vlabels)
+            
+            sp4 = subplot(2,2,4);
+            pcolor(omegaAxis,modeAxis,scale(IE/max(max(IE)))'), hold on
+            caxis([-2 0])
+            shading flat
+            for jMode = modeAxis
+                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+            end
+            scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
+            for iMode = 1:self.nModes
+                omega = abs(self.omega_ext(self.j_ext==iMode));
+                omega = sort(unique(cat(2,omega,reshape(abs(self.Omega(:,:,iMode)),1,[]))));
+                dOmega = diff(omega);
+                indices = find(dOmega>maxDeltaOmega);
+                for iBox=indices
+                    rectangle('Position',[omega(iBox)+omega_epsilon+maxDeltaOmega/2 iMode dOmega(iBox)-maxDeltaOmega 1]);
+                end
+            end
+            title('isopycnal')
+            % ylabel('vertical mode')
+            yticks([])
+            xlabel('frequency')
+            xticks(ticks)
+            xticklabels(labels)
+            % c = colorbar;
+            
+            dy = 0.045;
+            sp1.Position(2) = sp1.Position(2) - dy;
+            sp1.Position(4) = sp1.Position(4) + dy;
+            sp3.Position(4) = sp3.Position(4) + dy;
+            sp2.Position(2) = sp2.Position(2) - dy;
+            sp2.Position(4) = sp2.Position(4) + dy;
+            sp4.Position(4) = sp4.Position(4) + dy;
+            
+            dx = 0.045;
+            sp1.Position(3) = sp1.Position(3) + dx;
+            sp3.Position(3) = sp3.Position(3) + dx;
+            sp2.Position(1) = sp2.Position(1) - dx;
+            sp2.Position(3) = sp2.Position(3) + dx;
+            sp4.Position(1) = sp4.Position(1) - dx;
+            sp4.Position(3) = sp4.Position(3) + dx;
+            
+            figHandle.NextPlot = 'add';
+            a = axes;
+            
+            %// Set the title and get the handle to it
+            ht = title(sprintf('%dkm x %dkm x %dkm (%dx%dx%d)',round(self.Lx/1e3),round(self.Ly/1e3),round(self.Lz/1e3),self.Nx,self.Ny,self.Nz),'FontSize', 24);
+            ht.Position = [0.5 1.04 0.5];
+            
+            %// Turn the visibility of the axes off
+            a.Visible = 'off';
+            
+            %// Turn the visibility of the title on
+            ht.Visible = 'on';
         end
     end
     
