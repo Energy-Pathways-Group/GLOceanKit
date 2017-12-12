@@ -1,0 +1,38 @@
+tg_3d                ! runlabel
+.TRUE.               ! Solve nonlinear eqns of motion?
+.FALSE.               ! Compute evolution a second scalar field?
+.FALSE.              ! Use full rotation vector? i.e. include "non-traditional" Coriolis terms?
+1                    ! MPI decomposition parameter p1, splits (nx)  
+1                    ! MPI decomposition parameter p2, splits (ny,nz)  p1*p2=numprocs=np
+128                   ! nx    split by (p1)
+4                   ! ny    split by (p1,p2)  
+513                   ! nz    split by (p2)     
+18.                  ! dt       (s)                 
+0.                    ! t_start  (s)  
+8.64e4                ! t_end    (s)          
+4.e3                 ! Lx       (m) 1.e6
+4.e3                 ! Ly       (m) 1.e6
+5000.                 ! Lz       (m) 2000.
+r                    ! defn of scalar s1 ( r = Boussinesq density, i.e. rho )
+p                    ! defn of scalar s2 ( p =  passive tracer )
+.FALSE.              ! Call user forcing routine?
+.FALSE.              ! Is an immersed boundary specified?
+9.81                 ! g   gravity (m/s2)
+0.0              ! f0  Coriolis parameter  (1/s)    
+(0.d0,0.d0)          ! (beta,pivot point for beta plane) (1/ms),(m)    (1.0053,0.125)
+1025.               ! rho_0  constant reference density (kg/m3)
+2.5e-6                ! nu     viscosity                  (m2/s) 
+2.5e-7                ! kappa  diffusivity for s1         (m2/s) 
+2.5e-7                ! kappa  diffusivity for s2         (m2/s) 
+.TRUE.              ! Use high order diffusion operators? (see input/high_order_diffusion_params)
+5.4e-5                  ! characteristic val of drho/dz  (kg/m4) (used within code for scaling)  
+0.01                  ! characteristic val of s1 fluctuations ===> (used within code for scaling)
+1.0                  ! characteristic val of s2 fluctuations ===> (consistent dimensions w/ defns)
+0.05                  ! characteristic velocity  (m/s)        ===> (used within code for scaling)
+3                 ! number of particles satisfying Lagrangian eqn Dx/Dt = u  (x,u, vectors)
+5                    ! number of time steps btwn output points for writing particle data
+----------------------------------------------------------------------------------------------------
+can keep notes below here...
+----------------------------------------------------------------------------------------------------
+
+initializing a mixed layer...

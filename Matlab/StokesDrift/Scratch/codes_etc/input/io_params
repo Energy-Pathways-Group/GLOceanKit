@@ -1,0 +1,19 @@
+1            !!===>  num of filesets to process
+XYZ          !!===>  rootname for this file-set, 3D 
+new          !!===>  append w/ each write or create new file
+25         !!===>  steps between writes  
+1          !!===>  istart
+128          !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+1          !!===>  jend
+1            !!===>  j inc
+1            !!===>  kstart
+512          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v 
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+

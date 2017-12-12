@@ -1,0 +1,28 @@
+make[1]: Entering directory `/home/pascale/WAVES'
+
+host:                  heron
+                       Linux 3.10.0-693.11.1.el7.x86_64
+user:                  pascale
+compile date:          2017-12-08T00:43:29Z
+VENDOR:                gcc
+LD_LIBRARY_PATH:      
+DYLD_LIBRARY_PATH:    
+BASE:                  /home/pascale/WAVES
+OUTPUT_ROOT:           /home/pascale/WAVES/output
+F90:                   /usr/lib64/openmpi/bin/mpif90
+F77:                   /usr/lib64/openmpi/bin/mpif77
+DFLAGS:               
+FOPTFLAGS:             -g -O2 -ffree-form -ffree-line-length-none
+F77OPTFLAGS:           -g -O2 -ffixed-form
+FLINKER:               /usr/lib64/openmpi/bin/mpif90
+NETCDF_INC:            -I/usr/include
+NETCDF_LIB:            -L/usr/lib64 -lnetcdff
+FFTW_INC:              -I/usr/include
+FFTW_LIB:              -L/usr/lib64 -lfftw3
+LAPACK_LIB:            /usr/lib64/liblapack.a
+BLAS_LIB:              /usr/lib64/libblas.a
+TRANSPOSE_LIB:        
+ALL_EXTERNAL_LIBS:     -L/usr/lib64 -lnetcdff /usr/lib64/liblapack.a /usr/lib64/libblas.a -L/usr/lib64 -lfftw3
+ALL_INCLUDES:          -I/usr/include -I/usr/include
+XTRA_LIBS:            
+make[1]: Leaving directory `/home/pascale/WAVES'

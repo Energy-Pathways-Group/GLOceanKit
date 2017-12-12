@@ -1,0 +1,281 @@
+subroutine InitialConditions  
+ use etc,                    only: logfile
+ use independent_variables,  only: x,y,z,nz
+ use methods_params,         only: do_second_scalar
+ use decomposition_params 
+ use intermediate_variables
+ use dependent_variables
+ use dimensional_scales
+ use mpi_params
+ implicit none 
+ 
+ real(kind=8),allocatable   :: my_xvals(:)
+ real(kind=8),allocatable   :: my_yvals(:)
+ real(kind=8),allocatable   :: my_zvals(:)
+ integer                    :: id,m1,m2,m3,i,j,k 
+ real(kind=8)               :: scale_factor,zval
+ 
+ real(kind=4)               :: umax,umin
+ real(kind=4)               :: vmax,vmin
+ real(kind=4)               :: wmax,wmin
+ real(kind=4)               :: s1max,s1min
+ real(kind=4)               :: s2max,s2min
+ real(kind=4)               :: pdmax,pdmin
+ real(kind=4)               :: s1_bar_max(3),s1_bar_min(3)
+ real(kind=4)               :: s2_bar_max(3),s2_bar_min(3)
+ 
+ if(myid==0) then
+  write(0,*) ' ................'
+  write(0,*) ' ................     hello world from InitialConditions'
+  open(1,file=logfile,position='append') 
+  write(1,*) '  '
+  write(1,*) '  '
+  write(1,*) ' =========================================================== '
+  write(1,*) ' =========================================================== '
+  write(1,*) '                  InitialConditions Report:'
+  write(1,*) ' =========================================================== '
+  write(1,*) ' =========================================================== '
+  write(1,*) '  '
+  close(1)
+ endif
+  		 
+ !------------------------------------------------
+ !    YBLOCK arranged as data(y,x,z)
+ !    data(m2,m1,m3)
+ !------------------------------------------------
+ m1=array_size(JDIM,YBLOCK,myid)   ! num of x data points in YBLOCK format (index=2=JDIM)
+ m2=array_size(IDIM,YBLOCK,myid)   ! num of y data points in YBLOCK format (index=1=IDIM)
+ m3=array_size(KDIM,YBLOCK,myid)   ! num of z data points in YBLOCK format
+ allocate( my_xvals(m1) )
+ allocate( my_yvals(m2) )
+ allocate( my_zvals(m3) )
+ 
+ my_xvals(1:m1) = length_scale * x(global_x_indices(START,YBLOCK,myid):   &
+                                   global_x_indices(END,YBLOCK,myid))
+ my_yvals(1:m2) = length_scale * y(global_y_indices(START,YBLOCK,myid):   &
+                                   global_y_indices(END,YBLOCK,myid))
+ my_zvals(1:m3) = length_scale * z(global_z_indices(START,YBLOCK,myid):   &
+                                   global_z_indices(END,YBLOCK,myid))
+  		 
+ id=1
+ scale_factor=1.d0/velocity_scale
+ call user_ics(my_xvals,my_yvals,my_zvals,u,id,m1,m2,m3)
+ umax=maxval(u(:,:,:))
+ umin=minval(u(:,:,:))
+
+ do i=1,array_size(JDIM,YBLOCK,myid)*array_size(KDIM,YBLOCK,myid)
+  call get_2d_indices(i,array_size(JDIM,YBLOCK,myid),j,k)
+  u(:,j,k)=u(:,j,k)*scale_factor 
+ enddo
+
+ 
+ id=2
+ call user_ics(my_xvals,my_yvals,my_zvals,v,id,m1,m2,m3)
+ vmax=maxval(v(:,:,:))
+ vmin=minval(v(:,:,:))
+
+ do i=1,array_size(JDIM,YBLOCK,myid)*array_size(KDIM,YBLOCK,myid)
+  call get_2d_indices(i,array_size(JDIM,YBLOCK,myid),j,k)
+  v(:,j,k)=v(:,j,k)*scale_factor 
+ enddo
+
+ 
+ 
+ id=3
+ call user_ics(my_xvals,my_yvals,my_zvals,w,id,m1,m2,m3)
+ wmax=maxval(w(:,:,:))
+ wmin=minval(w(:,:,:))
+
+ do i=1,array_size(JDIM,YBLOCK,myid)*array_size(KDIM,YBLOCK,myid)
+  call get_2d_indices(i,array_size(JDIM,YBLOCK,myid),j,k)
+  w(:,j,k)=w(:,j,k)*scale_factor 
+ enddo
+ 
+  
+ id=4
+ scale_factor=1.d0/scalar_scale(1)
+ call user_ics(my_xvals,my_yvals,my_zvals,s1,id,m1,m2,m3)
+ s1max=maxval(s1(:,:,:))
+ s1min=minval(s1(:,:,:))
+
+ do i=1,array_size(JDIM,YBLOCK,myid)*array_size(KDIM,YBLOCK,myid)
+  call get_2d_indices(i,array_size(JDIM,YBLOCK,myid),j,k)
+  s1(:,j,k)=s1(:,j,k)*scale_factor 
+ enddo
+
+ 
+ !! evaluate global profiles of s1, s1_z, s1_zz
+ do k=1,nz
+  zval = z(k)*length_scale  ! [m]
+  call eval_s1_bar(zval,s1_bar(k,1),s1_bar(k,2),s1_bar(k,3))
+ enddo
+ do k=1,3
+  s1_bar_max(k) = maxval( s1_bar(:,k) )
+  s1_bar_min(k) = minval( s1_bar(:,k) )
+ enddo
+ 
+ !!nondimensionalize 		 
+ s1_bar(1:nz,1) = s1_bar(1:nz,1)/(scalar_scale(1))
+
+!! d/dz of s1
+ s1_bar(1:nz,2) = s1_bar(1:nz,2)/(scalar_scale(1)/length_scale)
+
+!! d2/dz2 of s1
+ s1_bar(1:nz,3) = s1_bar(1:nz,3)/(scalar_scale(1)/length_scale**2)
+ 
+ 
+ 
+if( do_second_scalar ) then 
+  id=5
+  scale_factor=1.d0/scalar_scale(2)
+  call user_ics(my_xvals,my_yvals,my_zvals,s2,id,m1,m2,m3)
+  s2max=maxval(s2(:,:,:))
+  s2min=minval(s2(:,:,:))
+
+ do i=1,array_size(JDIM,YBLOCK,myid)*array_size(KDIM,YBLOCK,myid)
+  call get_2d_indices(i,array_size(JDIM,YBLOCK,myid),j,k)
+  s2(:,j,k)=s2(:,j,k)*scale_factor 
+ enddo
+
+ 
+  !! evaluate global profiles of s2, s2_z, s2_zz
+  do k=1,nz
+   zval = z(k)*length_scale  ! [m]
+   call eval_s2_bar(zval,s2_bar(k,1),s2_bar(k,2),s2_bar(k,3))
+  enddo
+  do k=1,3
+   s2_bar_max(k) = maxval( s2_bar(:,k) )
+   s2_bar_min(k) = minval( s2_bar(:,k) )
+  enddo
+    		 
+  !!nondimensionalize 		 
+  s2_bar(1:nz,1) = s2_bar(1:nz,1)/(scalar_scale(2))
+
+  !! d/dz of s2
+  s2_bar(1:nz,2) = s2_bar(1:nz,2)/(scalar_scale(2)/length_scale)
+
+  !! d2/dz2 of s2
+  s2_bar(1:nz,3) = s2_bar(1:nz,3)/(scalar_scale(2)/length_scale**2)
+ endif
+ 
+ deallocate( my_xvals )
+ deallocate( my_yvals )
+ deallocate( my_zvals )
+ 
+ ! evaluate eqn of state
+ call equation_of_state
+ 
+ ! place particles
+ call InitializeParticles
+ 
+ 
+ 
+ if(myid==0) then
+  open(1,file=logfile,position='append')
+  write(1,*) ' ................      initialization of slab arrays u,v,w,s1,s2:  '
+  write(1,*) ' ................      initialization via flow_solve_user.f90/user_ics '
+  write(1,*) ' ................        dimensional max/min u  on processor 0:  ',umax,umin
+  write(1,*) ' ................        dimensional max/min v  on processor 0:  ',vmax,vmin
+  write(1,*) ' ................        dimensional max/min w  on processor 0:  ',wmax,wmin
+  write(1,*) ' ................        dimensional max/min s1 on processor 0:  ',s1max,s1min
+  write(1,*) ' ................        dimensional max/min s2 on processor 0:  ',s2max,s2min  
+  !write(1,*) ' ................        dimensional max/min pd on processor 0:  ',pdmax,pdmin
+  write(1,*) ' ................      initialization of s1_bar, ddz and d2dz2 s1_bar ==> s1_bar(:,1:3)'
+  write(1,*) ' ................        dimensional max/min s1_bar                       :  ', &
+                                        s1_bar_max(1),s1_bar_min(1)
+  write(1,*) ' ................        dimensional max/min d/dz s1_bar                  :  ', &
+                                        s1_bar_max(2),s1_bar_min(2)
+  write(1,*) ' ................        dimensional max/min d2/dz2 s1_bar                :  ', &
+                                        s1_bar_max(3),s1_bar_min(3)
+  write(1,*) ' ................      initialization of s2_bar, ddz and d2dz2 s2_bar ==> s2_bar(:,1:3)'
+  write(1,*) ' ................        dimensional max/min s1_bar                       :  ', &
+                                        s2_bar_max(1),s2_bar_min(1)
+  write(1,*) ' ................        dimensional max/min d/dz s1_bar                  :  ', &
+                                        s2_bar_max(2),s2_bar_min(2)
+  write(1,*) ' ................        dimensional max/min d2/dz2 s1_bar                :  ', &
+                                        s2_bar_max(3),s2_bar_min(3)
+  write(1,*) ' ................      nondimensional scaling of initial conditions: '
+  write(1,*) ' ................          velocity scale [m/s]                           :  ',velocity_scale
+  write(1,*) ' ................          length   scale   [m]                           :  ',length_scale
+  write(1,*) ' ................          s1       scale   [-]                           :  ',scalar_scale(1)
+  write(1,*) ' ................          s2       scale   [-]                           :  ',scalar_scale(2)
+  write(1,*) ' ................      ===> u,v,w,s1,s2,s1_bar,s2_bar arrays all contain dimensionless values '
+  write(1,*) ' -----> InitialConditions routine exiting normally  <---------- '
+  close(1)
+ endif
+ 
+ call mpi_barrier(comm,ierr)
+ return
+end subroutine InitialConditions
+
+
+subroutine InitializeParticles
+ use etc,                   only: logfile
+ use independent_variables, only: x,y,z,Lx,Ly,Lz,nx,ny,nz
+ use particles
+ use mpi_params
+ use dimensional_scales,    only: length_scale
+ 
+    
+ implicit none
+ integer        :: i, j, npts         
+ real(kind=8)   :: urv
+ real(kind=8)   :: sides(3) 
+ 
+ !call random_seed  ! I'm using the f90 intrinsic functions
+                    ! random_seed, random_number here
+ j_particle_time = 1
+ npts = nparticles
+ 
+ !----------------------------------------------
+ !  these simply define the range of particle
+ !  ids that each processor will write, 
+ !  independent of spatial location
+ !---------------------------------------------- 
+ my_first = myid*(nparticles/numprocs) + 1
+ my_last = my_first + (nparticles/numprocs) - 1
+ if( myid==numprocs-1 ) my_last = nparticles
+ 
+ user_defines_particles = .TRUE.
+ allocate( positions(npts,3) ) !! x,y,z
+ allocate( uvels(npts,4) )     !! 4 time levels
+ allocate( vvels(npts,4) )
+ allocate( wvels(npts,4) )   
+ allocate( my_labels(npts) )
+ sides(:)=(/Lx,Ly,Lz/)
+ 
+ if(nx==1) sides(1)=0.d0
+ if(ny==1) sides(2)=0.d0
+ if(nz==1) sides(3)=0.d0
+ 
+ 
+ if (user_defines_particles) then 
+  call particle_positions(positions,npts,Lx,Ly,Lz)  
+ else !! I'll distribute them uniformly
+ 
+  do i=1,npts
+   do j=1,3
+     call RANDOM_NUMBER( urv )  ! random_seed already called in initialize
+     positions(i,j) = sides(j)*urv
+   enddo
+  enddo 
+  
+ endif
+ 
+ positions=positions/length_scale
+ uvels(:,:) = 0.d0
+ vvels(:,:) = 0.d0
+ wvels(:,:) = 0.d0
+
+ if(myid==0) then
+   open(1,file=logfile,position='append')
+   write(1,*) ' -----> InitializeParticles routine exiting normally  <---------- '
+   write(0,*) ' -----> InitializeParticles routine exiting normally  <---------- '
+   close(1)
+ endif
+
+ call mpi_barrier(comm,ierr)
+return  
+end subroutine InitializeParticles 
+
+

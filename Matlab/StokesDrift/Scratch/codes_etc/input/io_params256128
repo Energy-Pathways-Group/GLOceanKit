@@ -1,0 +1,72 @@
+4            !!===>  num of filesets to process
+XYZ          !!===>  rootname for this file-set, 3D 
+new          !!===>  append w/ each write or create new file
+150         !!===>  steps between writes  
+1          !!===>  istart
+256          !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+256          !!===>  jend
+1            !!===>  j inc
+1            !!===>  kstart
+128          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v 
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+
+Z          !!===>  rootname for this file-set, 3D
+new          !!===>  append w/ each write or create new file
+12         !!===>  steps between writes
+128          !!===>  istart
+128          !!===>  iend
+1            !!===>  i inc
+128            !!===>  jstart
+128          !!===>  jend
+1            !!===>  j inc
+1            !!===>  kstart
+128          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+
+XY          !!===>  rootname for this file-set, 3D
+new          !!===>  append w/ each write or create new file
+300         !!===>  steps between writes
+1          !!===>  istart
+128          !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+128          !!===>  jend
+1            !!===>  j inc
+64            !!===>  kstart
+64          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+XZ          !!===>  rootname for this file-set, 3D
+new          !!===>  append w/ each write or create new file
+300         !!===>  steps between writes
+1          !!===>  istart
+128          !!===>  iend
+1            !!===>  i inc
+64            !!===>  jstart
+64          !!===>  jend
+1            !!===>  j inc
+1            !!===>  kstart
+64          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+

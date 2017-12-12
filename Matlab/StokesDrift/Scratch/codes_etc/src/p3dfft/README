@@ -1,0 +1,63 @@
+	2D Transpose module
+----------------------------------------------------------
+
+Arrays in real numbers. Kind can be set at compile time.
+
+----------------------------------------------------------
+Start with setting up communication parameters. Do it once for 
+a given p1 x p2 processor grid and global grid dimensions. 
+
+        subroutine mpisetup_2D(p1,p2,dims,plan)
+
+INPUT:
+	integer dims(3),p1,p2
+OUTPUT: 
+	integer plan
+
+This is the "lower level" initialization routine. It initializes 
+'plan' which is an integer index of the given problem definition, 
+used to avoid multiple calls to this setup routine. Plan is 
+specific to p1 x p2 geometry and global dimensions, but not 
+processor layout or memory ordering. Global dimensions here 
+are in the order ot storage, NOT X,Y,Z. 
+
+----------------------------------------------------------
+      subroutine par_transpose2D_init(gdims,layout_in,layout_out,mem_order_in,mem_order_out, plan)
+
+INPUT:  
+	integer gdims(3),layout_in(3),layout_out(3),mem_order_in(3),mem_order_out(3)
+OUTPUT: 
+	plan
+
+This is an alternative to mpisetup_2D. It will extract p1 and p2 from layout, 
+and also will transform gdims from logical (X,Y,Z) to physical storage,
+expected by mpisetup.  Then it calls mpisetup. 
+
+----------------------------------------------------------
+      subroutine get_dims(layout,mem_order,ext,start,dp,plan)
+
+INPUT:
+	integer layout(3),mem_order(3),plan
+OUTPUT:
+	integer ext(3),start(3),dp(3)
+
+This routine returns local array dimensions (extent and starting indices)
+for a given scheme index (plan), processor layout and memory ordering. 
+The dimensions returned are with respect to actual array storage, 
+NOT X,Y,Z. dp is the processor grid in the form (p1,p2,1), where 
+p1 is the number of columns, p2 is the number of rows, and the 
+MPI task IDs change the fastest in the rows. 
+
+----------------------------------------------------------
+      subroutine par_transpose2D(IN,OUT,gdims,mem_order_in,mem_order_out,
+     &  layout_in,layout_out, plan)
+----------------------------------------------------------
+INPUT:  
+	integer gdims(3),layout_in(3),layout_out(3),mem_order_in(3),mem_order_out(3)
+	real IN
+OUTPUT: 
+	plan
+	real OUT
+
+This is the main transpose routine, supposed to be called with a scheme number 
+'plan', after that scheme has been initialized. 

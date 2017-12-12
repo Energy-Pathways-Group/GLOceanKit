@@ -1,0 +1,14 @@
+This is a simple initial value problem for a stratified shear flow in which the shear and stritification
+profiles have unequal and vertically offset characteristic thicknesses. It is motivated by the work of 
+Greg Lawrence, Neil Balmforth and their students at UBC. 
+
+The "test setup" is configured for a 2d flow in the yz plane and uses 2 processors. An extra passive
+scalar is carried along as are 1000 Lagrangian particles.
+
+The flow is periodic in y with free-slip rigid lids in z.
+
+The initial conditions are unstable and an initial perturbation grows to finite amplitude. The
+instability is vertically asymmetric and has a finite horizontal phase speed.
+
+This configuration runs to completion on my dual core MacBook Pro in about 25 minutes though the solution is
+"interesting" after about 5 or so if you don't want to run it that long.

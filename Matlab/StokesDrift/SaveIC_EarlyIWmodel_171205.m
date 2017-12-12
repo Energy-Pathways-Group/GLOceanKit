@@ -63,6 +63,7 @@
 
 % set basic directory for research
 basedir = '/Users/pascale/Desktop/Generate_ICS/';
+% basedir = '/Users/jearly/Documents/ProjectRepositories/GLOceanKit/Matlab/StokesDrift/Scratch/';
 % basedir = '/home/cwortham/research/';
 
 % add GLOceanKit directory to path
@@ -265,6 +266,10 @@ elseif strcmp( wave_type, 'plane')
         wavemodel.internalModes.nModes = length(a);
         [F_2k_out,G_2k_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(2*kk);
         
+        wavemodel.internalModes.normalization = Normalization.uMax;
+        [~,G_out,~,~] = wavemodel.internalModes.ModesAtWavenumber(kk);
+        G = G_out(:,j0);
+        
         X = wavemodel.X;
         Y = wavemodel.Y;
         Z = wavemodel.Z;
@@ -274,8 +279,8 @@ elseif strcmp( wave_type, 'plane')
         Gamma = repmat(permute((G_2k_out*(gamma.')),[3 2 1]),size(X,1),size(X,2));
         Rho_zzTerm = repmat(permute((h*wavemodel.internalModes.rho_zz.*G.*G),[3 2 1]),size(X,1),size(X,2));
         
-        u_correction = (U * epsilon / 4) * cos(2*kk*X) .* Phi;
-        w_correction = (U*k*h*epsilon/2) * sin(2*kk*X) .* Gamma;
+        u_correction = (UAmp * epsilon / 4) * cos(2*kk*X) .* Phi;
+        w_correction = (UAmp*kk*h*epsilon/2) * sin(2*kk*X) .* Gamma;
         rho_correction = (h*epsilon*epsilon/4) * cos(2*kk*X) .* ( Rho_zzTerm +  RhoBarDz .* Gamma );
     end
     

@@ -1,0 +1,37 @@
+ periodic       ! u   x=0     2d in yz plane, x periodic ok
+ periodic       !  u  x=Lx    2d in yz plane, x periodic ok
+ periodic       !  u  y=0     free slip
+ periodic       !  u  y=Ly    free slip
+ periodic        !  u  z=0     free slip bottom
+ periodic        !  u  z=Lz    free slip rigid lid
+ periodic       ! v   x=0     2d in yz plane, x periodic ok
+ periodic       !  v  x=Lx    2d in yz plane, x periodic ok
+ periodic       !  v  y=0     solid wall, no penetration
+ periodic       !  v  y=Ly    solid wall, no penetration
+ periodic        !  v  z=0     free slip bottom
+ periodic        !  v  z=Lz    free slip rigid lid
+ periodic       ! w   x=0     2d in yz plane, x periodic ok
+ periodic       !  w  x=Lx    2d in yz plane, x periodic ok
+ periodic       !  w  y=0     free slip
+ periodic       !  w  y=Ly    free slip
+ periodic      !  w  z=0     solid wall, no penetration
+ periodic      !  w  z=Lz    solid wall, no penetration
+ periodic       ! s1   x=0    2d in yz plane, x periodic ok
+ periodic       !  s1  x=Lx   2d in yz plane, x periodic ok
+ periodic       !  s1  y=0    solid wall, density perturbation=0
+ periodic       !  s1  y=Ly   solid wall, density perturbation=0
+ periodic      !  s1  z=0    solid wall, density perturbation=0 at bottom
+ periodic      !  s1  z=Lz   solid wall, density perturbation=0 at top
+ periodic       ! s2   x=0    2d in yz plane, x periodic ok
+ periodic       !  s2  x=Lx   2d in yz plane, x periodic ok
+ periodic       !  s2  y=0    periodic
+ periodic       !  s2  y=Ly   periodic
+ periodic        !  s2  z=0    solid wall, scalar flux = 0
+ periodic        !  s2  z=Lz   solid wall, scalar flux = 0 
+ periodic       ! phi   x=0   2d in yz plane, x periodic ok
+ periodic       !  phi  x=Lx  2d in yz plane, x periodic ok
+ periodic       !  phi  y=0   
+ periodic       !  phi  y=Ly  
+ periodic        !  phi  z=0   rigid lid w/ w=w*=0
+ periodic        !  phi  z=Lz  rigid lid w/ w=w*=0
+ 

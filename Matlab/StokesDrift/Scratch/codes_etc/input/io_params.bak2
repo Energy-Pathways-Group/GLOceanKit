@@ -1,0 +1,77 @@
+4            !!===>  num of filesets to process
+YZplane      !!===>  rootname for this file-set, 2D XZ planes
+new          !!===>  append w/ each write or create new file
+200          !!===>  steps between writes  
+256          !!===>  istart
+256          !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+512          !!===>  jend
+1            !!===>  j inc
+2            !!===>  kstart
+129          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v 
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+0            !!===>  write divstar (don't write if 0, write if 1)
+1            !!===>  write phi (pressure) don't write if 0, write if 1
+XZplane      !!===>  rootname for this file-set, 2D XZ planes
+new          !!===>  append w/ each write or create new file
+200          !!===>  steps between writes
+1            !!===>  istart
+1            !!===>  iend
+1            !!===>  i inc
+256            !!===>  jstart
+256          !!===>  jend
+1            !!===>  j inc
+2            !!===>  kstart
+129          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_b
+0            !!===>  write divstar (don't write if 0, write if 1)
+1            !!===>  write phi (pressure) don't write if 0, write if 1
+XYplane1      !!===>  rootname for this file-set, 2D XZ planes
+new          !!===>  append w/ each write or create new file
+200          !!===>  steps between writes
+1            !!===>  istart
+512          !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+512          !!===>  jend
+1            !!===>  j inc
+128          !!===>  kstart
+128          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if 2)
+0            !!===>  write divstar (don't write if 0, write if 1)
+1            !!===>  write phi (pressure) don't write if 0, write if 1
+XYplane2      !!===>  rootname for this file-set, 2D XZ planes
+new          !!===>  append w/ each write or create new file
+200          !!===>  steps between writes
+1            !!===>  istart
+512            !!===>  iend
+1            !!===>  i inc
+1            !!===>  jstart
+512          !!===>  jend
+1            !!===>  j inc
+128          !!===>  kstart
+128          !!===>  kend
+1            !!===>  k inc
+1            !!===>  write u  (don't write if 0, write if 1)
+1            !!===>  write v
+1            !!===>  write w
+2            !!===>  write s1 (don't write if 0, write s1' if 1, s1' + s1_bar if 2)
+0            !!===>  write s2 (don't write if 0, write s2' if 1, s2' + s2_bar if
+0            !!===>  write divstar (don't write if 0, write if 1)
+1            !!===>  write phi (pressure) don't write if 0, write if 1
