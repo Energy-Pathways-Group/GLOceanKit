@@ -2,9 +2,10 @@ Lx = 150e3;
 Ly = 150e3;
 Lz = 5000;
 
-Nx = 64;
-Ny = 64;
-Nz = 64+1;
+N = 128;
+Nx = N;
+Ny = N;
+Nz = N+1;
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
@@ -38,8 +39,16 @@ t = (0:timeStep:maxTime)';
 tic
 for iTime=1:length(t)
 %     [u,v,w]=wavemodel.VelocityFieldAtTime(t(iTime));
+%     zeta = wavemodel.IsopycnalDisplacementFieldAtTime(t(iTime));
+
+% [u,v,w] = wavemodel.ExternalVelocityAtTimePosition(t(iTime),x_float,y_float,z_float);
+[u,v] = wavemodel.ExternalVariablesAtTimePosition(t(iTime),x_float,y_float,z_float,'u','v');
+
+%     or
+% [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
 %     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
-%     isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
-    [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
+
+%     isopycnalDeviation = wavemodel.IsopycnalDisplacementAtTimePosition(0,x_float,y_float,z_float);
+%     [u,v,w] = wavemodel.VelocityAtTimePosition(t(iTime),x_float,y_float,z_float,'exact');
 end
 toc

@@ -65,7 +65,7 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 t = 4*86400;
                 [u,v] = wavemodel.VelocityFieldAtTime(t);
                 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
-                rho = wavemodel.DensityAtTime(t);
+                rho = wavemodel.DensityFieldAtTime(t);
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %

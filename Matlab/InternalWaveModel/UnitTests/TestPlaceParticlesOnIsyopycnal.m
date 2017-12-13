@@ -76,7 +76,7 @@ tic
 X = wavemodel.X;
 Y = wavemodel.Y;
 Z = wavemodel.Z;
-Rho = wavemodel.DensityAtTime(0);
+Rho = wavemodel.DensityFieldAtTime(0);
 drhobardz = -wavemodel.N2*wavemodel.rho0/9.81;
 zIsopycnal2 = PlaceParticlesOnIsopycnal(x_float,y_float,z_float,X,Y,Z,Rho,drhobardz,interpolationMethod,1e-6);
 totalTime = toc;
@@ -89,7 +89,7 @@ fprintf('Total time %.2f\n',totalTime);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 % Now let's place the floats along an isopycnal.
-% isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
+% isopycnalDeviation = wavemodel.IsopycnalDisplacementAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
 zIsopycnal3 = z_float;% + isopycnalDeviation;
 
 % Iteratively place floats on the isopycnal surface. Overkill, probably.

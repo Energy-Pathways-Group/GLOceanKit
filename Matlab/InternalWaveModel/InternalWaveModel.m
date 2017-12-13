@@ -569,64 +569,346 @@ classdef (Abstract) InternalWaveModel < handle
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Return the dynamical fields on the grid at a given time
-        % (Eulerian)
+        % Eulerian?the dynamical fields on the grid at a given time
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [varargout] = VariableFieldsAtTime(self, t, varargin)
+            varargout = self.InternalVariableFieldsAtTime(t, varargin);
+            if ~isempty(self.k_ext)
+                varargoutExt = self.ExternalVariableFieldsAtTime(t, varargin);
+                for iArg=1:length(varargout)
+                    varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
+                end
+            end
+        end
+        
         function [u,v,w] = VelocityFieldAtTime(self, t)
             % Return the velocity field, which is the sum of the gridded
             % and external/free waves at time t. Note that if you do not
             % need w, don't request it and it won't be computed.
-            
-            % Get the gridded velocity field...
             if nargout == 3
-                [u, v, w] = self.InternalVelocityFieldAtTime(t);
+                [u,v,w] = self.VariableFieldsAtTime(t,'u','v','w');
             else
-                [u, v] = self.InternalVelocityFieldAtTime(t);
-            end
-            
-            % ...add the external waves to the gridded solution.
-            if ~isempty(self.k_ext)
-                if nargout == 3
-                    [u_ext, v_ext, w_ext] = self.ExternalVelocityFieldsAtTime(t);
-                    w = w + w_ext;
-                else
-                    [u_ext, v_ext] = self.ExternalVelocityFieldsAtTime(t);
-                end
-                u = u + u_ext;
-                v = v + v_ext;
+                [u,v] = self.VariableFieldsAtTime(t,'u','v');
             end
         end
         
-        function [w,zeta] = VerticalFieldsAtTime(self, t)
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
-            end
-            
-            w = self.TransformToSpatialDomainWithG(w_bar);
-            zeta = self.TransformToSpatialDomainWithG(zeta_bar);
-            
-            if ~isempty(self.k_ext)
-                [w_ext, zeta_ext] = self.ExternalVerticalFieldsAtTime(t);
-                w = w + w_ext;
-                zeta = zeta + zeta_ext;
-            end
+        function rho = DensityFieldAtTime(self, t)
+            % Return the density field, which is the sum of the density
+            % mean field (variable in z) and the perturbation field
+            % (variable in time and space).
+            rho_bar = self.DensityMeanField;
+            rho_prime = self.VariableFieldsAtTime(self,t,'rho_prime');
+            rho = rho_bar + rho_prime;
         end
         
-        function rho = DensityAtTime(self, t)
-            rho = self.DensityAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1),'linear');
-            rho = reshape(rho,self.Nx,self.Ny,self.Nz);
+        function rho_bar = DensityMeanField(self)
+            % Return the mean density field, which is a function of z only.
+           rho_bar = self.RhoBarAtDepth(self.Z); 
         end
         
+        function rho_prime = DensityPerturbationFieldAtTime(self, t)
+            % Return the density perturbation field, which is computed as
+            % the sum of gridded and external waves.
+            rho_prime = self.VariableFieldsAtTime(self,t,'rho_prime');
+        end
+        
+        function zeta = IsopycnalDisplacementFieldAtTime(self, t)
+            % Returns the linear estimate of the isopycnal displacement,
+            % commonly denote eta or zeta.
+            zeta = self.VariableFieldsAtTime(self,t,'zeta');
+        end
+                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Return the dynamical fields at a given location and time
         % (Lagrangian)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                       
+        function [varargout] = VariablesAtTimePosition(self,t,x,y,z,method,varargin)
+            varargout = self.InternalVariablesAtTimePosition(t,x,y,z,method,varargin);
+            if ~isempty(self.k_ext)
+                varargoutExt = self.ExternalVariableFieldsAtTime(t,x,y,z,varargin);
+                for iArg=1:length(varargout)
+                    varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
+                end
+            end
+        end
+        
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,method)
+            % Returns the velocity field at any time or position. The
+            % argument specifies how off-grid values should be
+            % interpolated. Use 'exact' for the slow, but accurate,
+            % spectral interpolation. Otherwise use 'spline' or some other
+            % method used by Matlab's interp function.
+            if nargout == 3
+                [u,v,w] = self.VariableFieldsVariablesAtTimePositionAtTime(t,x,y,z,method,'u','v','w');
+            else
+                [u,v] = self.VariableFieldsVariablesAtTimePositionAtTime(t,x,y,z,method,'u','v');
+            end
+        end
+                
+        function rho = DensityAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                rho_int = self.InternalDensityPerturbationAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                Rho = self.TransformToSpatialDomainWithG(zeta_bar);
+                
+                coeff = (self.rho0/9.81)*self.N2AtDepth(z);
+                
+                rho_int = coeff .* self.InterpolatedFieldAtPosition(x,y,z,method,Rho);
+            end
+            
+            rho_bar = self.RhoBarAtDepth(z);
+            rho_ext = self.ExternalDensityPerturbationAtTimePosition(t,x,y,z);
+            
+            rho = rho_bar + rho_int + rho_ext;
+        end
+        
+        function rho = DensityMeanAtDepth(self, z)
+            % Return the mean density field, which is a function of z only.
+            rho = self.RhoBarAtDepth(z);
+        end
+        
+        function rho = DensityPerturbationAtTimePosition(self, t)
+            % Return the density perturbation field, which is computed as
+            % the sum of gridded and external waves.
+            rhoprime_int = self.InternalDensityPerturbationFieldAtTime(t);
+            rhoprime_ext = self.ExternalDensityPerturbationFieldAtTime(t);
+            rho = rhoprime_int + rhoprime_ext;
+        end
+        
+        function zeta = IsopycnalDisplacementAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                Zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+                
+                zeta = self.InterpolatedFieldAtPosition(x,y,z,method,Zeta);
+            end
+            [~,zeta_ext] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
+            
+            zeta = zeta+zeta_ext;
+        end
+        
+        function w = VerticalVelocityAtTimePosition(self,t,x,y,z,varargin)
+            if nargin == 5
+                method = 'spline';
+            else
+                method = varargin{1};
+            end
+            
+            if strcmp(method,'exact')
+                w = self.InternalVerticalVelocityAtTimePositionExact(t,x,y,z);
+            else
+                phase_plus = exp(sqrt(-1)*self.Omega*t);
+                phase_minus = exp(-sqrt(-1)*self.Omega*t);
+                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+                W = self.TransformToSpatialDomainWithG(w_bar);
+                
+                w = self.InterpolatedFieldAtPosition(x,y,z,method,W);
+            end
+            [w_ext,~] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
+            
+            w = w+w_ext;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Internal/gridded wave modes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [varargout] = InternalVariableFieldsAtTime(self, t, varargin)
+            if length(varargin) < 1
+                return;
+            end
+            
+            u = []; v = []; w = []; zeta = [];
+            
+            phase_plus = exp(sqrt(-1)*self.Omega*t);
+            phase_minus = exp(-sqrt(-1)*self.Omega*t);
+            
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                if ( strcmp(varargin{iArg}, 'u') )
+                    if isempty(u)
+                        u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
+                        if self.performSanityChecks == 1
+                            CheckHermitian(u_bar);
+                        end
+                        u = self.TransformToSpatialDomainWithF(u_bar);
+                    end
+                    varargout{iArg} = u;
+                elseif ( strcmp(varargin{iArg}, 'v') )
+                    if isempty(v)
+                        v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
+                        if self.performSanityChecks == 1
+                            CheckHermitian(v_bar);
+                        end
+                        v = self.TransformToSpatialDomainWithF(v_bar);
+                    end
+                    varargout{iArg} = v;
+                elseif ( strcmp(varargin{iArg}, 'w') )
+                    if isempty(w)
+                        w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
+                        if self.performSanityChecks == 1
+                            CheckHermitian(w_bar);
+                        end
+                        w = self.TransformToSpatialDomainWithG(w_bar);
+                    end
+                    varargout{iArg} = w;
+                elseif ( strcmp(varargin{iArg}, 'rho_prime') || strcmp(varargin{iArg}, 'zeta') )
+                    if isempty(zeta)
+                        zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                        if self.performSanityChecks == 1
+                            CheckHermitian(zeta_bar);
+                        end
+                        zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+                    end
+                    
+                    if strcmp(varargin{iArg}, 'zeta')
+                        varargout{iArg} = zeta;
+                    elseif strcmp(varargin{iArg}, 'rho_prime')
+                        varargout{iArg} = (self.rho0/9.81)*self.N2AtDepth(self.Z) .* zeta;
+                    end
+                else
+                    error('Invalid option. You may request u, v, w, rho_prime, or zeta.');
+                end
+            end
+        end
+        
+        function [varargout] = InternalVariablesAtTimePosition(self,t,x,y,z,method,varargin)
+            % Returns the velocity field at any time or position. The
+            % argument specifies how off-grid values should be
+            % interpolated. Use 'exact' for the slow, but accurate,
+            % spectral interpolation. Otherwise use 'spline' or some other
+            % method used by Matlab's interp function.
+            if self.advectionSanityCheck == 0
+                self.advectionSanityCheck = 1;
+                if (self.z(end)-self.z(1)) ~= self.Lz
+                    warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
+                end
+            end
+            
+            if strcmp(method,'exact')
+                varargout = self.InternalVariablesAtTimePositionExact(t,x,y,z,varargin);
+            else
+                griddedVars = self.InternalVariableFieldsAtTime(t,varargin);
+                varargout = self.InterpolatedFieldAtPosition(x,y,z,method,griddedVars);
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % External wave modes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
+            varargout = self.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin);
+            for iArg=1:length(varargout)
+                varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
+            end
+        end
+        
+        function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
+            isU = 0; isV = 0; isW = 0; isZeta= 0; isRho = 0;
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                isU = isU | strcmp(varargin{iArg}, 'u');
+                isV = isV | strcmp(varargin{iArg}, 'v');
+                isW = isW | strcmp(varargin{iArg}, 'w');
+                isZeta = isZeta | strcmp(varargin{iArg}, 'zeta');
+                isRho = isRho | strcmp(varargin{iArg}, 'rho_prime');
+            end
+            
+            if isU
+                u = zeros(size(x));
+            end
+            if isV
+                v=zeros(size(x));
+            end
+            if isW
+                w=zeros(size(x));
+            end
+            if isZeta || isRho
+                zeta = zeros(size(x));
+            end
+            
+            for i=1:length(self.k_ext)
+                % Compute the phase
+                theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
+                
+                % Compute the cosine & sine of the phase, if necessary
+                if ( isU || isV || isZeta || isRho )
+                    cos_theta = cos(theta);
+                end
+                if ( isU || isV || isW )
+                    sin_theta = sin(theta);
+                end
+                
+                % Compute the necessary vertical structure functions
+                if ( isU || isV )
+                    F = self.ExternalUVModeAtDepth(z,i);
+                end
+                if ( isW || isZeta || isRho )
+                    G = self.ExternalWModeAtDepth(z,i);
+                end
+                
+                % Now compute the requested variables
+                if isU
+                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F;
+                end
+                if isV
+                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F;
+                end
+                if isW
+                    w = w + (self.W_sin_ext(i) * sin_theta).*G;
+                end
+                if isZeta || isRho
+                    zeta = zeta + (self.Zeta_cos_ext(i) * cos_theta) .* G;
+                end
+            end
+            
+            for iArg=1:length(varargin)
+                if strcmp(varargin{iArg}, 'u')
+                    varargout{iArg} = u;
+                elseif strcmp(varargin{iArg}, 'v')
+                    varargout{iArg} = v;
+                elseif strcmp(varargin{iArg}, 'w')
+                    varargout{iArg} = w;
+                elseif strcmp(varargin{iArg}, 'zeta')
+                    varargout{iArg} = zeta;
+                elseif strcmp(varargin{iArg}, 'rho_prime')
+                    varargout{iArg} = -(self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
+                end
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Useful methods for advecting particles
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -657,116 +939,7 @@ classdef (Abstract) InternalWaveModel < handle
                 u = cat(2,u,v,zeros(psize(1),1));
             end
         end
-               
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,varargin)
-            if self.advectionSanityCheck == 0
-               self.advectionSanityCheck = 1;
-               if (self.z(end)-self.z(1)) ~= self.Lz
-                   warning('Vertical domain does not span the full depth of the ocean. This will lead to NaNs when advected particles leave the resolved domain.')
-               end
-            end
-            
-            if nargin == 5
-                method = 'spline';
-            else
-                if strcmp(varargin{1},'exact')
-                    if nargout == 3
-                        [u,v,w] = self.ExactVelocityAtTimePosition(t,x,y,z);
-                    else
-                        [u,v] = self.ExactVelocityAtTimePosition(t,x,y,z);
-                    end
-                    return
-                else
-                    method = varargin{1};
-                end
-            end
-                                                          
-            if nargout == 3
-                [U,V,W] = self.InternalVelocityFieldAtTime(t);
-                [u,v,w] = self.InterpolatedFieldAtPosition(x,y,z,method,U,V,W);
-                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                u = u+u_ext;
-                v = v+v_ext;
-                w = w+w_ext;
-            else
-                [U,V] = self.InternalVelocityFieldAtTime(t);
-                [u,v] = self.InterpolatedFieldAtPosition(x,y,z,method,U,V);
-                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                u = u+u_ext;
-                v = v+v_ext;
-            end
-        end
         
-        function w = VerticalVelocityAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                w = self.InternalVerticalVelocityAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-                W = self.TransformToSpatialDomainWithG(w_bar);
-                
-                w = self.InterpolatedFieldAtPosition(x,y,z,method,W);
-            end
-            [w_ext,~] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
-            
-            w = w+w_ext;
-        end
-        
-        function zeta = ZetaAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-                Zeta = self.TransformToSpatialDomainWithG(zeta_bar);
-                
-                zeta = self.InterpolatedFieldAtPosition(x,y,z,method,Zeta);
-            end
-            [~,zeta_ext] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
-            
-            zeta = zeta+zeta_ext;
-        end
-        
-        function rho = DensityAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                rho_int = self.InternalDensityPertubationAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-                Rho = self.TransformToSpatialDomainWithG(zeta_bar);
-                
-                coeff = (self.rho0/9.81)*self.N2AtDepth(z);
-                
-                rho_int = coeff .* self.InterpolatedFieldAtPosition(x,y,z,method,Rho);
-            end
-            
-            rho_bar = self.RhoBarAtDepth(z);
-            rho_ext = self.ExternalDensityPerturbationAtTimePosition(t,x,y,z);
-            
-            rho = rho_bar + rho_int + rho_ext;
-        end
-         
         function zIsopycnal = PlaceParticlesOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
             % Any floats with the same value of z will be moved to the same
             % isopycnal.
@@ -1110,6 +1283,9 @@ classdef (Abstract) InternalWaveModel < handle
             %// Turn the visibility of the title on
             ht.Visible = 'on';
         end
+        
+        
+        
     end
     
     methods (Access = protected)
@@ -1182,25 +1358,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
         end
                
-        function [u,v,w] = InternalVelocityFieldAtTime(self, t)
-            % Returns the velocity field from the gridded solution/waves.
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
-            v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
-            
-            if self.performSanityChecks == 1
-                CheckHermitian(u_bar);CheckHermitian(v_bar);
-            end
-            
-            u = self.TransformToSpatialDomainWithF(u_bar);
-            v = self.TransformToSpatialDomainWithF(v_bar);
-            
-            if nargout == 3
-                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-                w = self.TransformToSpatialDomainWithG(w_bar);
-            end
-        end
+
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1255,104 +1413,15 @@ classdef (Abstract) InternalWaveModel < handle
             G = interp1(self.z,self.G_ext(:,iWave),z,'linear');
         end
         
-        function [u,v,w] = ExternalVelocityFieldsAtTime(self, t)
-            % Returns the velocity field from the external waves on the FFT
-            % grid.
-            [u,v,w] = self.ExternalVelocityAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1));
-            u = reshape(u,self.Nx,self.Ny,self.Nz);
-            v = reshape(v,self.Nx,self.Ny,self.Nz);
-            w = reshape(w,self.Nx,self.Ny,self.Nz);
-        end
-        
-        function [w,zeta] = ExternalVerticalFieldsAtTime(self, t)
-            % Returns the fields from the external waves on the FFT grid.
-            [w,zeta] = self.ExternalVerticalFieldsAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1));
-            w = reshape(w,self.Nx,self.Ny,self.Nz);
-            zeta = reshape(zeta,self.Nx,self.Ny,self.Nz);
-        end
-        
-        function [u,v,w] = ExternalVelocityAtTimePosition(self,t,x,y,z)
-            % Return the velocity field associated with the manually added
-            % free waves at specified positions.
-            u = zeros(size(x)); v=zeros(size(x)); w=zeros(size(x));
-            if isempty(self.k_ext)
-                return;
-            end
-            
-            if nargout == 2
-                for i=1:length(self.k_ext)
-                    theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
-                    cos_theta = cos(theta);
-                    sin_theta = sin(theta);
-                    F = self.ExternalUVModeAtDepth(z,i);
-                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F;
-                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F;
-                end
-            elseif nargout == 3
-                for i=1:length(self.k_ext)
-                    theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
-                    cos_theta = cos(theta);
-                    sin_theta = sin(theta);
-                    F = self.ExternalUVModeAtDepth(z,i);
-                    G = self.ExternalWModeAtDepth(z,i);
-                    u = u + (self.U_cos_ext(i) * cos_theta + self.U_sin_ext(i) * sin_theta).*F;
-                    v = v + (self.V_cos_ext(i) * cos_theta + self.V_sin_ext(i) * sin_theta).*F;
-                    w = w + (self.W_sin_ext(i) * sin_theta).*G;
-                end
-            end     
-        end
    
-        function [w,zeta] = ExternalVerticalFieldsAtTimePosition(self,t,x,y,z)
-            w = zeros(size(x)); zeta=zeros(size(x));
-            if isempty(self.k_ext)
-                return;
-            end
-
-            if nargout == 1
-                for i=1:length(self.k_ext)
-                    theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
-                    sin_theta = sin(theta);
-                    G = self.ExternalWModeAtDepth(z,i);
-                    w = w + (self.W_sin_ext(i) * sin_theta) .* G;
-                end
-            elseif nargout == 2
-                for i=1:length(self.k_ext)
-                    theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
-                    cos_theta = cos(theta);
-                    sin_theta = sin(theta);
-                    G = self.ExternalWModeAtDepth(z,i);
-                    w = w + (self.W_sin_ext(i) * sin_theta) .* G;
-                    zeta = zeta + (self.Zeta_cos_ext(i) * cos_theta) .* G;
-                end
-            end
-            
-
-        end
-        
-        function rho = ExternalDensityPerturbationAtTimePosition(self,t,x,y,z)
-            rho =  zeros(size(x));
-            if isempty(self.k_ext)
-                return;
-            end
-            
-            N2_ = self.N2AtDepth(z); % [N 1]
-            for i=1:length(self.k_ext)
-                theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
-                cos_theta = cos(theta);
-                G = self.ExternalWModeAtDepth(z,i);
-                rho = rho + (self.Rho_cos_ext(i) * cos_theta) .* G;
-            end
-            rho = N2_ .* rho;
-        end
-                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % These functions return the exact/spectral velocity field for the
         % internal gridded field
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function [u,v,w] = InternalVelocityAtTimePositionExact(self,t,x,y,z)
+        
+        function [varargout] = InternalVariablesAtTimePositionExact(self,t,x,y,z,varargin)
             % Return the velocity field associated with the gridded
             % velocity field, but using spectral interpolation, rather than
             % the FFT grid.
@@ -1361,106 +1430,80 @@ classdef (Abstract) InternalWaveModel < handle
             if self.didPreallocateAdvectionCoefficients == 0
                 self.GenerateWavePhasesForSpectralAdvection();
             end
-            u = zeros(size(x)); v=zeros(size(x)); w=zeros(size(x)); 
-            if isempty(self.k_int)
-                return;
+            
+            isU = 0; isV = 0; isW = 0; isZeta= 0; isRho = 0;
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                isU = isU | strcmp(varargin{iArg}, 'u');
+                isV = isV | strcmp(varargin{iArg}, 'v');
+                isW = isW | strcmp(varargin{iArg}, 'w');
+                isZeta = isZeta | strcmp(varargin{iArg}, 'zeta');
+                isRho = isRho | strcmp(varargin{iArg}, 'rho_prime');
             end
-             
-            if nargout == 2
-                for i=1:length(self.k_int)
-                    theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
+            
+            if isU
+                u = zeros(size(x));
+            end
+            if isV
+                v=zeros(size(x));
+            end
+            if isW
+                w=zeros(size(x));
+            end
+            if isZeta || isRho
+                zeta = zeros(size(x));
+            end
+            
+            for i=1:length(self.k_int)
+                % Compute the phase
+                theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
+                
+                % Compute the cosine & sine of the phase, if necessary
+                if ( isU || isV || isZeta || isRho )
                     cos_theta = cos(theta);
+                end
+                if ( isU || isV || isW )
                     sin_theta = sin(theta);
+                end
+                
+                % Compute the necessary vertical structure functions
+                if ( isU || isV )
                     F = self.InternalUVModeAtDepth(z,i);
+                end
+                if ( isW || isZeta || isRho )
+                    G = self.InternalWModeAtDepth(z,i);
+                end
+                
+                % Now compute the requested variables
+                if isU
                     u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F;
+                end
+                if isV
                     v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F;
                 end
-            elseif nargout == 3
-                for i=1:length(self.k_int)
-                    theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
-                    cos_theta = cos(theta);
-                    sin_theta = sin(theta);
-                    F = self.InternalUVModeAtDepth(z,i);
-                    G = self.InternalWModeAtDepth(z,i);
-                    u = u + (self.U_cos_int(i) * cos_theta + self.U_sin_int(i) * sin_theta).*F;
-                    v = v + (self.V_cos_int(i) * cos_theta + self.V_sin_int(i) * sin_theta).*F;
+                if isW
                     w = w + (self.W_sin_int(i) * sin_theta).*G;
                 end
-            end
-        end
-        
-        function w = InternalVerticalVelocityAtTimePositionExact(self,t,x,y,z)
-            if self.didPreallocateAdvectionCoefficients == 0
-                self.GenerateWavePhasesForSpectralAdvection();
-            end
-            w=zeros(size(x));
-            if isempty(self.k_int)
-                return;
+                if isZeta || isRho
+                    zeta = zeta + (self.Zeta_cos_int(i) * cos_theta) .* G;
+                end
             end
             
-            for i=1:length(self.k_int)
-                theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
-                sin_theta = sin(theta);
-                G = self.InternalWModeAtDepth(z,i);
-                w = w + (self.W_sin_int(i) * sin_theta).*G;
+            for iArg=1:length(varargin)
+                if strcmp(varargin{iArg}, 'u')
+                    varargout{iArg} = u;
+                elseif strcmp(varargin{iArg}, 'v')
+                    varargout{iArg} = v;
+                elseif strcmp(varargin{iArg}, 'w')
+                    varargout{iArg} = w;
+                elseif strcmp(varargin{iArg}, 'zeta')
+                    varargout{iArg} = zeta;
+                elseif strcmp(varargin{iArg}, 'rho_prime')
+                    varargout{iArg} = -(self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
+                end
             end
-        end
-        
-        function zeta = InternalZetaAtTimePositionExact(self,t,x,y,z)
-            if self.didPreallocateAdvectionCoefficients == 0
-                self.GenerateWavePhasesForSpectralAdvection();
-            end
-            zeta =  zeros(size(x));
-            if isempty(self.k_int)
-                return;
-            end
-            
-            for i=1:length(self.k_int)
-                theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
-                cos_theta = cos(theta);
-                G = self.InternalWModeAtDepth(z,i);
-                zeta = zeta + (self.Zeta_cos_int(i) * cos_theta).*G;
-            end
-        end
-        
-        function rho = InternalDensityPertubationAtTimePositionExact(self,t,x,y,z)
-            if self.didPreallocateAdvectionCoefficients == 0
-                self.GenerateWavePhasesForSpectralAdvection();
-            end
-            rho =  zeros(size(x));
-            if isempty(self.k_int)
-                return;
-            end
-                        
-            for i=1:length(self.k_int)
-                theta = x * self.k_int(i) + y * self.l_int(i) + (self.omega_int(i)*t + self.phi_int(i));
-                cos_theta = cos(theta);
-                G = self.InternalWModeAtDepth(z,i);
-                rho = rho + (self.Rho_cos_int(i) * cos_theta).*G;
-            end
-            N2_ = self.N2AtDepth(z);
-            rho = N2_ .* rho;
         end
                 
-        function [u,v,w] = ExactVelocityAtTimePosition(self,t,x,y,z)
-            % Uses coeffs to add up sines and cosines for an exact
-            % solution.
-            if nargout == 3
-                [u,v,w] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext,w_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                
-                u = u+u_ext;
-                v = v+v_ext;
-                w = w+w_ext;
-            else
-                [u,v] = self.InternalVelocityAtTimePositionExact(t,x,y,z);
-                [u_ext,v_ext] = self.ExternalVelocityAtTimePosition(t,x,y,z);
-                
-                u = u+u_ext;
-                v = v+v_ext;
-            end
-        end
-        
         function varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin)
             if nargin-5 ~= nargout
                 error('You must have the same number of input variables as output variables');
