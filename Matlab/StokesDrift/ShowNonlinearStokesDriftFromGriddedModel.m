@@ -1,11 +1,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Adjustable parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-wavelength = 1e3; % wavelength in meters
+wavelength = 10e3; % wavelength in meters
 j = 1; % vertical mode number
-epsilon = 0.2; % nonlinearity parameter
+epsilon = 0.05; % nonlinearity parameter
 maxOscillations = 5; % Total number of oscillations, in periods
-stratification = 'exponential';
+stratification = 'constant';
 z0 = [-10; -250; -625]; % initial particle positions
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
