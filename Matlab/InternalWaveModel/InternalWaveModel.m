@@ -219,7 +219,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.didPreallocateAdvectionCoefficients = 0;
         end
         
-        function [omega, alpha, mode, phi, A] = WaveCoefficientsFromGriddedWaves(self)
+        function [omega, alpha, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self)
             % This returns the properties of the waves being used in the
             % gridded simulation, as their properly normalized individual
             % wave components. Very useful for debugging.
@@ -247,6 +247,7 @@ classdef (Abstract) InternalWaveModel < handle
             alpha = [alpha_plus; alpha_minus];
             phi = [phi_plus; phi_minus];
             A = [A_plus; A_minus];
+            norm = Normalization.kConstant;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -655,11 +656,11 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,method)
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,interpolationMethod)
             if nargout == 3
-                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,method,'u','v','w');
+                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w');
             else
-                [u,v] = self.VariablesAtTimePosition(t,x,y,z,method,'u','v');
+                [u,v] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v');
             end
         end
                 
