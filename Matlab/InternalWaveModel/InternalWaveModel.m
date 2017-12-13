@@ -579,9 +579,11 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
             % 'zeta'.
-            varargout = self.InternalVariableFieldsAtTime(t, varargin);
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.InternalVariableFieldsAtTime(t, varargin{:});
             if ~isempty(self.k_ext)
-                varargoutExt = self.ExternalVariableFieldsAtTime(t, varargin);
+                varargoutExt = cell(size(varargin));
+                [varargoutExt{:}] = self.ExternalVariableFieldsAtTime(t, varargin{:});
                 for iArg=1:length(varargout)
                     varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
                 end
@@ -642,9 +644,11 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
             % 'zeta'.
-            varargout = self.InternalVariablesAtTimePosition(t,x,y,z,interpolationMethod,varargin);
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.InternalVariablesAtTimePosition(t,x,y,z,interpolationMethod,varargin{:});
             if ~isempty(self.k_ext)
-                varargoutExt = self.ExternalVariableFieldsAtTime(t,x,y,z,varargin);
+                varargoutExt = cell(size(varargin));
+                [varargoutExt{:}] = self.ExternalVariableFieldsAtTime(t,x,y,z,varargin{:});
                 for iArg=1:length(varargout)
                     varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
                 end
@@ -763,11 +767,12 @@ classdef (Abstract) InternalWaveModel < handle
                 end
             end
             
+            varargout = cell(size(varargin));
             if strcmp(method,'exact')
-                varargout = self.InternalVariablesAtTimePositionExact(t,x,y,z,varargin);
+                [varargout{:}] = self.InternalVariablesAtTimePositionExact(t,x,y,z,varargin{:});
             else
-                griddedVars = self.InternalVariableFieldsAtTime(t,varargin);
-                varargout = self.InterpolatedFieldAtPosition(x,y,z,method,griddedVars);
+                [varargout{:}] = self.InternalVariableFieldsAtTime(t,varargin{:});
+                [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,method,varargout{:});
             end
         end
         
@@ -779,7 +784,8 @@ classdef (Abstract) InternalWaveModel < handle
         
         function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
             % Returns the external wave modes at the grid points.
-            varargout = self.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin);
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin{:});
             for iArg=1:length(varargout)
                 varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
             end
