@@ -569,11 +569,16 @@ classdef (Abstract) InternalWaveModel < handle
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Eulerian?the dynamical fields on the grid at a given time
+        % Eulerian---the dynamical fields on the grid at a given time
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function [varargout] = VariableFieldsAtTime(self, t, varargin)
+            % Primary method for accessing the dynamical variables on the
+            % internal grid.
+            %
+            % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+            % 'zeta'.
             varargout = self.InternalVariableFieldsAtTime(t, varargin);
             if ~isempty(self.k_ext)
                 varargoutExt = self.ExternalVariableFieldsAtTime(t, varargin);
@@ -599,7 +604,7 @@ classdef (Abstract) InternalWaveModel < handle
             % mean field (variable in z) and the perturbation field
             % (variable in time and space).
             rho_bar = self.DensityMeanField;
-            rho_prime = self.VariableFieldsAtTime(self,t,'rho_prime');
+            rho_prime = self.VariableFieldsAtTime(t,'rho_prime');
             rho = rho_bar + rho_prime;
         end
         
@@ -611,24 +616,33 @@ classdef (Abstract) InternalWaveModel < handle
         function rho_prime = DensityPerturbationFieldAtTime(self, t)
             % Return the density perturbation field, which is computed as
             % the sum of gridded and external waves.
-            rho_prime = self.VariableFieldsAtTime(self,t,'rho_prime');
+            rho_prime = self.VariableFieldsAtTime(t,'rho_prime');
         end
         
         function zeta = IsopycnalDisplacementFieldAtTime(self, t)
             % Returns the linear estimate of the isopycnal displacement,
             % commonly denote eta or zeta.
-            zeta = self.VariableFieldsAtTime(self,t,'zeta');
+            zeta = self.VariableFieldsAtTime(t,'zeta');
         end
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Return the dynamical fields at a given location and time
-        % (Lagrangian)
+        % Lagrangian---return the dynamical fields at a given location and time
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                        
-        function [varargout] = VariablesAtTimePosition(self,t,x,y,z,method,varargin)
-            varargout = self.InternalVariablesAtTimePosition(t,x,y,z,method,varargin);
+        function [varargout] = VariablesAtTimePosition(self,t,x,y,z,interpolationMethod,varargin)
+            % Primary method for accessing the dynamical variables on the
+            % at any position or time.
+            %
+            % The method argument specifies how off-grid values should be
+            % interpolated. Use 'exact' for the slow, but accurate,
+            % spectral interpolation. Otherwise use 'spline' or some other
+            % method used by Matlab's interp function.
+            %
+            % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+            % 'zeta'.
+            varargout = self.InternalVariablesAtTimePosition(t,x,y,z,interpolationMethod,varargin);
             if ~isempty(self.k_ext)
                 varargoutExt = self.ExternalVariableFieldsAtTime(t,x,y,z,varargin);
                 for iArg=1:length(varargout)
@@ -638,101 +652,32 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,method)
-            % Returns the velocity field at any time or position. The
-            % argument specifies how off-grid values should be
-            % interpolated. Use 'exact' for the slow, but accurate,
-            % spectral interpolation. Otherwise use 'spline' or some other
-            % method used by Matlab's interp function.
             if nargout == 3
-                [u,v,w] = self.VariableFieldsVariablesAtTimePositionAtTime(t,x,y,z,method,'u','v','w');
+                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,method,'u','v','w');
             else
-                [u,v] = self.VariableFieldsVariablesAtTimePositionAtTime(t,x,y,z,method,'u','v');
+                [u,v] = self.VariablesAtTimePosition(t,x,y,z,method,'u','v');
             end
         end
                 
-        function rho = DensityAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                rho_int = self.InternalDensityPerturbationAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-                Rho = self.TransformToSpatialDomainWithG(zeta_bar);
-                
-                coeff = (self.rho0/9.81)*self.N2AtDepth(z);
-                
-                rho_int = coeff .* self.InterpolatedFieldAtPosition(x,y,z,method,Rho);
-            end
-            
-            rho_bar = self.RhoBarAtDepth(z);
-            rho_ext = self.ExternalDensityPerturbationAtTimePosition(t,x,y,z);
-            
-            rho = rho_bar + rho_int + rho_ext;
+        function rho = DensityAtTimePosition(self,t,x,y,z,interpolationMethod)
+            rho_bar = self.DensityMeanField;
+            rho_prime = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
+            rho = rho_bar + rho_prime;
         end
         
-        function rho = DensityMeanAtDepth(self, z)
+        function rho_bar = DensityMeanAtDepth(self, z)
             % Return the mean density field, which is a function of z only.
-            rho = self.RhoBarAtDepth(z);
+            rho_bar = self.RhoBarAtDepth(z);
         end
         
-        function rho = DensityPerturbationAtTimePosition(self, t)
-            % Return the density perturbation field, which is computed as
-            % the sum of gridded and external waves.
-            rhoprime_int = self.InternalDensityPerturbationFieldAtTime(t);
-            rhoprime_ext = self.ExternalDensityPerturbationFieldAtTime(t);
-            rho = rhoprime_int + rhoprime_ext;
+        function rho_prime = DensityPerturbationAtTimePosition(self, t,x,y,z,interpolationMethod)
+            rho_prime = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
         end
         
-        function zeta = IsopycnalDisplacementAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                [zeta] = self.InternalZetaAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-                Zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+        function zeta = IsopycnalDisplacementAtTimePosition(self,t,x,y,z,interpolationMethod)
+            zeta = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'zeta');
+        end
                 
-                zeta = self.InterpolatedFieldAtPosition(x,y,z,method,Zeta);
-            end
-            [~,zeta_ext] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
-            
-            zeta = zeta+zeta_ext;
-        end
-        
-        function w = VerticalVelocityAtTimePosition(self,t,x,y,z,varargin)
-            if nargin == 5
-                method = 'spline';
-            else
-                method = varargin{1};
-            end
-            
-            if strcmp(method,'exact')
-                w = self.InternalVerticalVelocityAtTimePositionExact(t,x,y,z);
-            else
-                phase_plus = exp(sqrt(-1)*self.Omega*t);
-                phase_minus = exp(-sqrt(-1)*self.Omega*t);
-                w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
-                W = self.TransformToSpatialDomainWithG(w_bar);
-                
-                w = self.InterpolatedFieldAtPosition(x,y,z,method,W);
-            end
-            [w_ext,~] = self.ExternalVerticalFieldsAtTimePosition(t,x,y,z);
-            
-            w = w+w_ext;
-        end
-        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Internal/gridded wave modes
@@ -740,6 +685,13 @@ classdef (Abstract) InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function [varargout] = InternalVariableFieldsAtTime(self, t, varargin)
+            % This is the primary function for computing the internal
+            % gridded dynamical variables. It tries to be somewhat
+            % optimized, by only computing the phase once, and only
+            % computing the requested variables.
+            %
+            % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+            % 'zeta'.
             if length(varargin) < 1
                 return;
             end
@@ -799,11 +751,11 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [varargout] = InternalVariablesAtTimePosition(self,t,x,y,z,method,varargin)
-            % Returns the velocity field at any time or position. The
-            % argument specifies how off-grid values should be
-            % interpolated. Use 'exact' for the slow, but accurate,
-            % spectral interpolation. Otherwise use 'spline' or some other
-            % method used by Matlab's interp function.
+            % Returns the gridded/internal dynamical variables at any point in
+            % space or time. Because these waves are gridded, we can use
+            % interpolation (e.g, spline, linear) to deduce the variable
+            % values off grid, or we can use spectral interpolation to get
+            % 'exact' values.
             if self.advectionSanityCheck == 0
                 self.advectionSanityCheck = 1;
                 if (self.z(end)-self.z(1)) ~= self.Lz
@@ -826,6 +778,7 @@ classdef (Abstract) InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
+            % Returns the external wave modes at the grid points.
             varargout = self.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin);
             for iArg=1:length(varargout)
                 varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
@@ -833,6 +786,13 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
+            % This is the primary function for computing the external
+            % dynamical variables. It tries to be somewhat
+            % optimized, by only computing the phase once, and only
+            % computing the requested variables.
+            %
+            % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+            % 'zeta'.
             isU = 0; isV = 0; isW = 0; isZeta= 0; isRho = 0;
             varargout = cell(size(varargin));
             for iArg=1:length(varargin)

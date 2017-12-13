@@ -48,6 +48,12 @@ rho_bar = wavemodel.DensityMeanField;
 rho_prime = wavemodel.DensityPerturbationFieldAtTime(t);
 ```
 
+Fundamentally these routines are just calling `VariableFieldsAtTime`, which lets you request any of the dynamical variables you want at a given time. If you are going for speed, it is best to call this function once for a given time point. You could request all variables like this,
+
+```matlab
+[u,v,w,rho_prime,zeta] = wavemodel.VariablesFieldsAtTime(t,'u','v','w','rho_prime','zeta');
+```
+
 ### Lagrangian
 
 These methods will return values at any point in space and time. The argument specifies how off-grid values should be interpolated. Use `'exact'` for the slow, but accurate, spectral interpolation. Otherwise use `'spline'` or some other method accepted by Matlab's `interp` function.
@@ -62,7 +68,7 @@ x = (0:N-1)*dx;
 y = (0:N-1)*dy;
 z = (0:nLevels-1)*(-wavemodel.Lz/(2*(nLevels-1)));
 ```
-Now we can call the various Lagrangian methods to return the dynamical fields at those positions,
+Now we can call the various Lagrangian methods to return the dynamical fields at those positions. First, we need to specify how we want to interpolate the gridded dynamical fields. The two most obvious choices are `'exact'`, if we want to use spectral interpolation, or `'spline'`, if we wan
 
 ```matlab
 [u,v,w] = wavemodel.VelocityAtTimePosition(t,x,y,z);
