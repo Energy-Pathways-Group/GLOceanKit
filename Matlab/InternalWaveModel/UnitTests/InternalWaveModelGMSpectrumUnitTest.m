@@ -102,8 +102,7 @@ legend('model output', 'GM')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 t = 0;
-[u,v]=wavemodel.VelocityFieldAtTime(t);
-[w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+[u,v,w,zeta]=wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
 
 z = wavemodel.z;
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));

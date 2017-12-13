@@ -46,7 +46,7 @@ p0 = [Lx/2, Ly/2, -1*Lz/4];
 % iniital position near horizontal boundary, requires dealing with the periodicity of the boundary
 % p0 = [0, 0, -0*Lz/4];
 
-f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y);
+f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y,'spline');
 
 % Let's do fixed step size integrator.
 cfl = 0.25;
@@ -109,6 +109,8 @@ end
 % This has to be repeated, to capture the new wavemodel reference.
 % f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y);
 
+% f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y,'exact');
+
 tic
 [t,p] = ode45(f,t_in, p0,odeset('RelTol',1e-11,'AbsTol',1e-8)); % ,odeset('RelTol',1e-11,'AbsTol',1e-11)
 tAdaptive = toc;
@@ -119,7 +121,7 @@ stokes_x = x(end)-x(1);
 fprintf('Adaptive time step took t=%.2f seconds.\n',tAdaptive);
 
 figure
-plot(x,y), hold on, plot(x45,y45), plot(x2,y2), plot(x3,y3), plot(x4,y4)
+plot(x,y,'LineWidth',2), hold on, plot(x45,y45), plot(x2,y2), plot(x3,y3), plot(x4,y4)
 legend('adaptive time step (exact)', 'adaptive time step (gridded)', 'fixed time step (ode2)', 'fixed time step (ode3)', 'fixed time step (ode4)')
 
 % This is a measure of relative error useful for position.

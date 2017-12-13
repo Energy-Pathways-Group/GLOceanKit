@@ -63,8 +63,8 @@ k0 = k*cos(alpha);
 l0 = k*sin(alpha);
 
 t = 4*86400;
-[u,v] = wavemodel.VelocityFieldAtTime(t);
-[w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+[u,v,w] = wavemodel.VelocityFieldAtTime(t);
+zeta = wavemodel.IsopycnalDisplacementFieldAtTime(t);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
