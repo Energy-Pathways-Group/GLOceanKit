@@ -110,8 +110,8 @@ restart = false; % boolean
 % for arbitrary stratification, have to specify a function handle.
 z = linspace(-pp.Lz,0,pp.nz);
 [rhoFunc, ~, zIn] = InternalModes.StratificationProfileWithName('exponential');
-rhobar = rhoFunc(z);
-rhobar = rhobar - rhobar(end) + pp.rho_0;
+rhoFunction = @(z) rhoFunc(z) - rhoFunc(max(zIn)) + pp.rho_0;
+rhobar = rhoFunction(z);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -156,7 +156,7 @@ phase = 2*pi*rand(size(omega_forcing));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the vertical modes code
-modes = InternalModes(rhobar,z,z,latitude);
+modes = InternalModes(rhoFunction,zIn,z,latitude);
 
 % take advantage of the density derivatives offered
 N2 = modes.N2;
@@ -232,11 +232,11 @@ end
 % create a wave realization
 if strcmp( wave_type, 'GM')
     % GM spectrum
-    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunc, z, pp.nz-10, latitude);
+    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunction, z, pp.nz-10, latitude);
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,0); % 1=shouldRandomizeAmplitude, 0 keeps same amplitude for all waves of given wavenumber
 elseif strcmp( wave_type, 'plane')
     % single plane wave
-    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunc, z, j0+1, latitude);
+    wavemodel = InternalWaveModelArbitraryStratification([pp.Lx, pp.Ly, pp.Lz], [pp.nx, pp.ny, pp.nz], rhoFunction, z, j0+1, latitude);
     period = wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
     
     if 1 % Add the next order correction term
@@ -246,7 +246,7 @@ elseif strcmp( wave_type, 'plane')
         epsilon = UAmp/(omega/kk);
         
         zHR = linspace(min(z),max(z),5000)';
-        im = InternalModesWKBSpectral(rhoFunc,[min(z) max(z)],zHR,latitude);
+        im = InternalModesWKBSpectral(rhoFunction,[min(z) max(z)],zHR,latitude);
         im.normalization = Normalization.uMax;
         [F_hr_out,G_hr_out,~,~] = im.ModesAtWavenumber(kk);
         F_hr = F_hr_out(:,j0);
