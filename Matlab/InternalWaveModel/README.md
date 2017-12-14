@@ -89,8 +89,8 @@ Gridded wave modes
 
 The gridded wave modes by individually added or set by specifying the mode number and amplitude,
 ```matlab
-period = wavemodel.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
-period = wavemodel.SetGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.SetGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
 ```
 where  `-Nx/2 < kMode < Nx/2` and `-Ny/2 < lMode < Ny/2` are integers specifying which modes you want to initialize. The `Set` method will remove all gridded modes and then add the list you give it, and the `Add` method will append these modes to the existing list.
 
