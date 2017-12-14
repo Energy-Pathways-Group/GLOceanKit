@@ -17,7 +17,7 @@ classdef GarrettMunkSpectrum < handle
         
         didPrecomputePhiAndGammaForOmega = 0
         omega
-        Phi_omega
+        Phi_omega % size(Phi_omega) = [nZ,nOmega,nModes]
         Gamma_omega
         k_omega
         
@@ -162,9 +162,7 @@ classdef GarrettMunkSpectrum < handle
                 nOmega = 128;      
                 self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
                 self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
-                [Phi,Gamma,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtFrequency');
-                self.Phi_omega = sum(Phi,3,'omitnan');
-                self.Gamma_omega = sum(Gamma,3,'omitnan');
+                [self.Phi_omega,self.Gamma_omega,h] = self.PhiAndGammaForCoordinate(self.omega,'ModesAtFrequency');
                 self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*h));
                 self.didPrecomputePhiAndGammaForOmega = 1;
             end
@@ -286,11 +284,11 @@ classdef GarrettMunkSpectrum < handle
             if any(dOmegaVector<0)
                 error('omega must be strictly monotonically increasing.')
             end
-            
-            dOmega = unique(dOmegaVector);         
-            if max(abs(diff(dOmega))) > 1e-7
+    
+            if max(abs(diff(unique(dOmegaVector)))) > 1e-7
                 error('omega must be an evenly spaced grid');
             end
+            dOmega = dOmegaVector(1);    
             dOmega = min( [self.f0/2,dOmega]);
             
             % Create the function that converts to energy
@@ -311,11 +309,13 @@ classdef GarrettMunkSpectrum < handle
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
-                Phi = interpn(self.zInternal,self.omega,self.Phi_omega,z,abs(omega),'linear',0); % 0 to everything outside
+                Phi = interpn(self.zInternal,self.omega,sum(self.Phi_omega,3,'omitnan'),z,abs(omega),'linear',0); % 0 to everything outside
             elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
                 Phi = self.PhiForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
                 Phi = self.PhiForOmegaGM(z, omega);
+            elseif strcmp(approximation,'unsummed')
+                Phi = ones(size(S));
             end
             S = S.*Phi;
         end
@@ -423,7 +423,7 @@ classdef GarrettMunkSpectrum < handle
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
-                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside  
+                Gamma = interpn(self.zInternal,self.omega,sum(self.Gamma_omega,3,'omitnan'),z,abs(omega),'linear',0); % 0 to everything outside  
             elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
                 Gamma = self.GammaForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
@@ -534,7 +534,7 @@ classdef GarrettMunkSpectrum < handle
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputePhiAndGammaForOmega();
-                Gamma = interpn(self.zInternal,self.omega,self.Gamma_omega,z,abs(omega),'linear',0); % 0 to everything outside  
+                Gamma = interpn(self.zInternal,self.omega,sum(self.Gamma_omega,3,'omitnan'),z,abs(omega),'linear',0); % 0 to everything outside  
             elseif strcmp(approximation,'wkb') || strcmp(approximation,'wkb-hydrostatic')
                 Gamma = self.GammaForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
