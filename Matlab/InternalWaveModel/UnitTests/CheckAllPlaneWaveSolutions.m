@@ -52,7 +52,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 U = 0.01; % m/s
-phi = 0.232; % random, just to see if its doing the right thing
+phi = 0*0.232; % random, just to see if its doing the right thing
 
 totalErrors = 0;
 totalTests = 0;
@@ -61,18 +61,6 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
         fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
         for j0=1:Nz/2
             for sign=-1:2:1
-%                 period = wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
-                period = wavemodel.SetGriddedWavesWithWavemodes(k_loop,l_loop,j0,phi,U,sign);
-                
-                t = 4*86400;
-                [u,v,w,zeta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
-                rho = wavemodel.DensityFieldAtTime(t);
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                %
-                % Create a single plane-wave with the known analytical solution
-                %
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 
                 f0 = wavemodel.f0;
                 k = wavemodel.k;
@@ -94,15 +82,32 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 else
                     l0 = l_loop;
                 end
-                omega = sign*2*pi/period;
-                m = j0*pi/Lz;
-                % u_unit = U*cos( k(k0+1)*X + omega*t ).*cos(m*Z);
-                % v_unit = -(f0/omega)*U*sin( k(k0+1)*X + omega*t ) .* cos(m*Z);
-                % w_unit = (U*k(k0+1)/m) * sin(k(k0+1)*X + omega*t) .* sin(m*Z);
-                % zeta_unit = -(U*k(k0+1)/m/omega) * cos(k(k0+1)*X + omega*t) .* sin(m*Z);
                 
-                alpha=atan2(l(l0+1),k(k0+1));
-                K = sqrt( k(k0+1)^2 + l(l0+1)^2);
+                m = j0*pi/Lz;
+                
+                if 1 == 1
+                    period = wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
+                    omega = sign*2*pi/period;
+                    kk = k(k0+1);
+                    ll = l(l0+1);
+                else
+                    [omega,kk,ll] = wavemodel.SetGriddedWavesWithWavemodes(k_loop,l_loop,j0,phi,U,sign);
+                    period = 2*pi/abs(omega);
+                end
+                
+                alpha=atan2(ll,kk);
+                K = sqrt( kk^2 + ll^2);
+                
+                t = 4*86400;
+                [u,v,w,zeta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
+                rho = wavemodel.DensityFieldAtTime(t);
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %
+                % Create a single plane-wave with the known analytical solution
+                %
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%              
+
                 if latitude == 0
                     f0OverOmega = 0;
                     if K == 0
@@ -114,11 +119,12 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                     f0OverOmega = f0/omega;
                     kOverOmega = K/omega;
                 end
-                u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t + phi ) + f0OverOmega*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t + phi )).*cos(m*Z);
-                v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t + phi ) - f0OverOmega*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t + phi )).*cos(m*Z);
-                w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
-                zeta_unit = -(U/m) * kOverOmega * cos(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
-                rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
+                theta = kk*X + ll*Y + omega*t + phi;
+                u_unit = U*(cos(alpha)*cos( theta ) + f0OverOmega*sin(alpha)*sin( theta )).*cos(m*Z);
+                v_unit = U*(sin(alpha)*cos( theta ) - f0OverOmega*cos(alpha)*sin( theta )).*cos(m*Z);
+                w_unit = (U*K/m) * sin( theta ) .* sin(m*Z);
+                zeta_unit = -(U/m) * kOverOmega * cos( theta ) .* sin(m*Z);
+                rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos( theta ) .* sin(m*Z);
                 
                 if any(any(any(isnan(zeta_unit))))
                    error('nan') 

@@ -169,7 +169,8 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function period = InitializeWithPlaneWave(self, k0, l0, j0, UAmp, sign)
-            period = self.SetGriddedWavesWithWavemodes(k0,l0,j0,0,UAmp,sign);
+            omega = self.SetGriddedWavesWithWavemodes(k0,l0,j0,0,UAmp,sign);
+            period = 2*pi/abs(omega);
         end
         
         function RemoveAllGriddedWaves(self)
@@ -177,12 +178,12 @@ classdef (Abstract) InternalWaveModel < handle
             self.didPreallocateAdvectionCoefficients = 0;
         end
         
-        function period = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+        function [omega,k,l] = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
             self.RemoveAllGriddedWaves();
-            period = self.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+            [omega,k,l] = self.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
         end
         
-        function period = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+        function [omega,k,l] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
             % Add wavemodes on the gridded field.
             % The values given must meet the following requirements:
             % (k0 > -Nx/2 && k0 < Nx/2)
@@ -193,7 +194,9 @@ classdef (Abstract) InternalWaveModel < handle
             % sign is +/-1, indicating the sign of the frequency.
             A_minus_total = zeros(size(self.K));
             A_plus_total = zeros(size(self.K));
-            period = zeros(size(kMode));
+            omega = zeros(size(kMode));
+            k = zeros(size(kMode));
+            l = zeros(size(kMode));
             for iMode = 1:length(kMode)
                 k0 = kMode(iMode);
                 l0 = lMode(iMode);
@@ -254,7 +257,22 @@ classdef (Abstract) InternalWaveModel < handle
                 A_minus_total = A_minus_total + A_minus;
                 A_plus_total = A_plus_total + A_plus;
                 
-                period(iMode) = 2*pi/self.Omega(k0+1,l0+1,j0);
+                % When we hand back the actual frequency and wavenumbers,
+                % we honor the users original intent and the match the
+                % signs they provided.
+                if (kMode(iMode) < 0)
+                    k_out = self.Nx + kMode(iMode);
+                else
+                    k_out = kMode(iMode);
+                end
+                if (lMode(iMode) < 0)
+                    l_out = self.Ny + lMode(iMode);
+                else
+                    l_out = lMode(iMode);
+                end
+                omega(iMode) = signs(iMode)*abs(self.Omega(k0+1,l0+1,j0));
+                k(iMode) = self.K(k_out+1,l_out+1,j0);
+                l(iMode) = self.L(k_out+1,l_out+1,j0);
             end
             
             % We literally just add this wave to the existing waves.
