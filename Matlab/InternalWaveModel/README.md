@@ -12,9 +12,9 @@ If you use these classes, please cite the following paper,
 4. [Gridded wave modes](#gridded-wave-modes)
 5. [External wave modes](#external-wave-modes)
 6. [Dynamical variables](#dynamical-variables)
-    1.[Eulerian](#eulerian)
-    2.[Lagrangian](#lagrangian)
-    3.[Internal and external variables](#internal-and-external-variables)
+    1. [Eulerian](#eulerian)
+    2. [Lagrangian](#lagrangian)
+    3. [Internal and external variables](#internal-and-external-variables)
 
 
 ------------------------
