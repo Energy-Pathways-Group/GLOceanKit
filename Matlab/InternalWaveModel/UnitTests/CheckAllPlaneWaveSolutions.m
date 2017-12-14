@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = 4;
 Ny = 8;
-Nz = 16;
+Nz = 2;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -52,6 +52,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 U = 0.01; % m/s
+phi = 0.232; % random, just to see if its doing the right thing
 
 totalErrors = 0;
 totalTests = 0;
@@ -60,7 +61,8 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
         fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
         for j0=1:Nz/2
             for sign=-1:2:1
-                period = wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
+%                 period = wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
+                period = wavemodel.SetGriddedWavesWithWavemodes(k_loop,l_loop,j0,phi,U,sign);
                 
                 t = 4*86400;
                 [u,v,w,zeta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
@@ -112,11 +114,11 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                     f0OverOmega = f0/omega;
                     kOverOmega = K/omega;
                 end
-                u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) + f0OverOmega*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
-                v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - f0OverOmega*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
-                w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
-                zeta_unit = -(U/m) * kOverOmega * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
-                rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+                u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t + phi ) + f0OverOmega*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t + phi )).*cos(m*Z);
+                v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t + phi ) - f0OverOmega*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t + phi )).*cos(m*Z);
+                w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
+                zeta_unit = -(U/m) * kOverOmega * cos(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
+                rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) -(rho0/g)*N0*N0*(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t + phi) .* sin(m*Z);
                 
                 if any(any(any(isnan(zeta_unit))))
                    error('nan') 
@@ -125,9 +127,9 @@ for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
                 % Compute the relative error
                 max_speed = max(max(max( sqrt(u.*u + v.*v) )));
                 max_u = max( [max(max(max( u ))), 1e-15] );
-                u_error = max(max(max(abs(u-u_unit)/max_u)));
+                u_error = max(max(max(abs(u-u_unit)/max_speed)));
                 max_v = max( [max(max(max( v ))), 1e-15] );
-                v_error = max(max(max(abs(v-v_unit)/max_v)));
+                v_error = max(max(max(abs(v-v_unit)/max_speed)));
                 max_w = max( [max(max(max( abs(w) ))), 1e-15] );
                 w_error = max( [max(max(max(abs(w-w_unit)/max_w))), 1e-15] );
                 max_zeta = max( [max(max(max( zeta ))), 1e-15] );

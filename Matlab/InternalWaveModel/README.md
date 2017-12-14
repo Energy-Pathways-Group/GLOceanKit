@@ -8,7 +8,14 @@ If you use these classes, please cite the following paper,
 
 ### Table of contents
 1. [Quick Start](#quick-start)
-2. [Dynamical variable accessor methods](#dynamical-variable-accessor-methods)
+2. [Introduction](#introduction)
+4. [Gridded wave modes](#gridded-wave-modes)
+5. [External wave modes](#external-wave-modes)
+6. [Dynamical variables](#dynamical-variables)
+  1.[Eulerian](#eulerian)
+  2.[Lagrangian](#lagrangian)
+  3.[Internal and external variables](#internal-and-external-variables)
+
 
 ------------------------
 
@@ -68,10 +75,40 @@ zeta = wavemodel.IsopycnalDisplacementFieldAtTime(t);
 
 The model also supports external/free wave modes that do not fit in the gridded domain, as well as a series of functions for advecting particles.
 
-External wave modes
+Introduction
 ------------
 
-The evenly-spaced, periodic grid that is initialized with the model is useful because it allows wave modes to be computed with the Fast Fourier Transform (FFT) algorithm. However, such a grid limits the wavelengths of each wave to be integer multiples of the grid spacing. To get around this limitation, the linear wave model supports an arbitrary number of *external* (or free) wave modes that are not required to fit in the gridded model. These wave modes are linearly added to the gridded modes, but must be computed using the slower discrete fourier transform.
+The linear internal wave model adds together an arbitrary number single-mode plane-wave solutions to the linearized equations of motion on the f-plane. The model is entirely analytical---there is no numerical time-stepping routine---and the solutions are simply evaluated at the requested time.
+
+The `InternalWaveModel` class is divided into two subclasses, depending on the stratification. The constant stratification model `InternalWaveModelConstantStratification` takes advantage of the fact that the vertical modes in constant stratification are simply sines and cosines, and uses the fast fourier transform to sum the vertical modes. For more general stratification profiles, the class `InternalWaveModelArbitraryStratification` computes the vertical modes using the [`InternalModes` class](../InternalModes/) and then sums them with a (slow) matrix multiplication. This technique will often be *slower* than simplying time-stepping the linearized equations of motion using a Runge-Kutta time stepping routine, but comes with the advantage that the vertical extent of the model can be arbitrarily defined. This allows a model to be constructed with high resolution in regions of interested.
+
+Initializing the model creates a user-specified standard evenly-spaced, periodic grid. This grid useful because it allows wave modes to be computed with the Fast Fourier Transform (FFT) algorithm and both the constant and arbitrary stratification classes use this grid to quickly compute the horizontal component of the solution. However, such a grid limits the wavelengths of each wave to be integer multiples of the grid spacing. To get around this limitation, the linear wave model supports an arbitrary number of [external (or free) wave modes](#external-wave-modes) that are not required to fit in the gridded model. These wave modes are linearly added to the gridded modes, but must be computed using the slower discrete fourier transform.
+
+Gridded wave modes
+------------
+
+The gridded wave modes by individually added or set by specifying the mode number and amplitude,
+```matlab
+period = wavemodel.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+period = wavemodel.SetGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+```
+where  `-Nx/2 < kMode < Nx/2` and `-Ny/2 < lMode < Ny/2` are integers specifying which modes you want to initialize. The `Set` method will remove all gridded modes and then add the list you give it, and the `Add` method will append these modes to the existing list.
+
+Equivalently, you can call
+```matlab
+period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+```
+which just calls `SetGriddedWavesWithWavemodes` with a phase of 0.
+
+The clear the gridded wave modes, call
+```matlab
+wavemodel.RemoveAllGriddedWaves();
+```
+and they will be set to 0 amplitude.
+
+
+External wave modes
+------------
 
 The external wave modes can be added or set either by specifying the wavelength of the modes,
 ```matlab
@@ -98,7 +135,7 @@ wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
 ```
 but of course now have you external waves with the exact same values as the gridded waves, which isn't likely very helpful.
 
-Dynamical variable accessor methods
+Dynamical variables
 ------------
 Once the `InternalWaveModel` object is initialized there are a few useful accessor methods for access the velocity and density at different times and positions. The API uses the following terminology:
 

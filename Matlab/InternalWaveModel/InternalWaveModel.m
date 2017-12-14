@@ -159,6 +159,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.u_minus = nothing; self.v_plus = nothing; self.v_minus = nothing;
             self.w_plus = nothing; self.w_minus = nothing; self.zeta_plus = nothing;
             self.zeta_minus = nothing;
+            self.Amp_minus = nothing; self.Amp_plus = nothing;
         end
         
 
@@ -168,53 +169,96 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function period = InitializeWithPlaneWave(self, k0, l0, j0, UAmp, sign)
-            % User input sanity checks. We don't deal with the Nyquist.
-            if (k0 <= -self.Nx/2 || k0 >= self.Nx/2)
-                error('Invalid choice for k0 (%d). Must be an integer %d < k0 < %d',k0,-self.Nx/2+1,self.Nx/2-1);
-            end
-            if (l0 <= -self.Ny/2 || l0 >= self.Ny/2)
-                error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
-            end
-            if (j0 < 1 || j0 >= self.nModes)
-                error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, self.nModes);
+            period = self.SetGriddedWavesWithWavemodes(k0,l0,j0,0,UAmp,sign);
+        end
+        
+        function RemoveAllGriddedWaves(self)
+            self.GenerateWavePhases(zeros(size(self.K)),zeros(size(self.K)));            
+            self.didPreallocateAdvectionCoefficients = 0;
+        end
+        
+        function period = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+            self.RemoveAllGriddedWaves();
+            period = self.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+        end
+        
+        function period = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+            % Add wavemodes on the gridded field.
+            % The values given must meet the following requirements:
+            % (k0 > -Nx/2 && k0 < Nx/2)
+            % (l0 > -Ny/2 && l0 < Ny/2)
+            % (j0 < 1 || j0 >= nModes)
+            % phi is in radians, from 0-2pi
+            % Amp is the fluid velocity U
+            % sign is +/-1, indicating the sign of the frequency.
+            A_minus_total = zeros(size(self.K));
+            A_plus_total = zeros(size(self.K));
+            period = zeros(size(kMode));
+            for iMode = 1:length(kMode)
+                k0 = kMode(iMode);
+                l0 = lMode(iMode);
+                j0 = jMode(iMode);
+                phi0 = phi(iMode);
+                A = Amp(iMode);
+                sign = signs(iMode);
+                
+                % User input sanity checks. We don't deal with the Nyquist.
+                if (k0 <= -self.Nx/2 || k0 >= self.Nx/2)
+                    error('Invalid choice for k0 (%d). Must be an integer %d < k0 < %d',k0,-self.Nx/2+1,self.Nx/2-1);
+                end
+                if (l0 <= -self.Ny/2 || l0 >= self.Ny/2)
+                    error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
+                end
+                if (j0 < 1 || j0 >= self.nModes)
+                    error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, self.nModes);
+                end
+                
+                % Deal with the negative wavenumber cases (and inertial)
+                if l0 == 0 && k0 == 0 % inertial
+                    if sign < 1
+                        sign=1;   
+                        phi0 = -phi0;
+                    end
+                elseif l0 == 0 && k0 < 0
+                    k0 = -k0;
+                    sign = -1*sign;
+                    A = -1*A;
+                    phi0 = -phi0;
+                elseif l0 < 0
+                    l0 = -l0;
+                    k0 = -k0;
+                    sign = -1*sign;
+                    A = -1*A;
+                    phi0 = -phi0;
+                end
+                
+                % Rewrap (k0,l0) to follow standard FFT wrapping. l0 should
+                % already be correct.
+                if (k0 < 0)
+                    k0 = self.Nx + k0;
+                end
+                
+                ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
+                
+                U = zeros(size(self.K));
+                U(k0+1,l0+1,j0) = A*ratio/2*exp(sqrt(-1)*phi0);
+                if sign > 0
+                    A_plus = MakeHermitian(U);
+                    A_minus = zeros(size(U));
+                    A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial oscillations are created using this trick.
+                else
+                    A_plus = zeros(size(U));
+                    A_minus = MakeHermitian(U);
+                end
+                
+                A_minus_total = A_minus_total + A_minus;
+                A_plus_total = A_plus_total + A_plus;
+                
+                period(iMode) = 2*pi/self.Omega(k0+1,l0+1,j0);
             end
             
-            % Deal with the negative wavenumber cases (and inertial)
-            if l0 == 0 && k0 == 0 % inertial
-                sign=1;
-            elseif l0 == 0 && k0 < 0
-                k0 = -k0;
-                sign = -1*sign;
-                UAmp = -1*UAmp;
-            elseif l0 < 0
-                l0 = -l0;
-                k0 = -k0;
-                sign = -1*sign;
-                UAmp = -1*UAmp;
-            end
-            
-            % Rewrap (k0,l0) to follow standard FFT wrapping. l0 should
-            % already be correct.
-            if (k0 < 0)
-                k0 = self.Nx + k0;
-            end
-                            
-            ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
-            
-            U = zeros(size(self.K));
-            U(k0+1,l0+1,j0) = UAmp*ratio/2;
-            if sign > 0
-                A_plus = MakeHermitian(U);
-                A_minus = zeros(size(U));
-                A_minus(1,1,:) = A_plus(1,1,:); % Inertial oscillations are created using this trick.                
-            else
-                A_plus = zeros(size(U));
-                A_minus = MakeHermitian(U);
-            end
-            
-            self.GenerateWavePhases(A_plus,A_minus);
-                 
-            period = 2*pi/self.Omega(k0+1,l0+1,j0);
+            % We literally just add this wave to the existing waves.
+            self.GenerateWavePhases(self.Amp_plus + A_plus_total,self.Amp_minus + A_minus_total);
             
             self.didPreallocateAdvectionCoefficients = 0;
         end
