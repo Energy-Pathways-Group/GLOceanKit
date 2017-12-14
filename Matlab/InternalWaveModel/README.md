@@ -9,7 +9,6 @@ If you use these classes, please cite the following paper,
 ### Table of contents
 1. [Quick Start](#quick-start)
 2. [Dynamical variable accessor methods](#dynamical-variable-accessor-methods)
-3. [Built-in density profiles](#built-in-density-profiles)
 
 ------------------------
 
@@ -69,22 +68,42 @@ zeta = wavemodel.IsopycnalDisplacementFieldAtTime(t);
 
 The model also supports external/free wave modes that do not fit in the gridded domain, as well as a series of functions for advecting particles.
 
-Initialization
+External wave modes
 ------------
 
+The evenly-spaced, periodic grid that is initialized with the model is useful because it allows wave modes to be computed with the Fast Fourier Transform (FFT) algorithm. However, such a grid limits the wavelengths of each wave to be integer multiples of the grid spacing. To get around this limitation, the linear wave model supports an arbitrary number of *external* (or free) wave modes that are not required to fit in the gridded model. These wave modes are linearly added to the gridded modes, but must be computed using the slower discrete fourier transform.
 
+The external wave modes can be added or set either by specifying the wavelength of the modes,
+```matlab
+omega = wavemodel.AddExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+omega = wavemodel.SetExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+```
+or by specifying the frequency of the modes,
+```matlab
+k = wavemodel.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+k = wavemodel.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+```
+The `Set` methods will remove all external modes and then add the list you give it, and the `Add` methods will append these modes to the existing list. You can call,
+```matlab
+wavemodel.RemoveAllExternalWaves();
+```
+to remove all external modes.
 
+The amplitude of the waves is set with respect to a given norm of the internal mode (see [`InternalModes` class](../InternalModes/) for more details). Typically, one would want to use `Normalization.uMax`  if you are simply setting the maximum wave velocity.
+
+You can extract the nonzero *gridded* wave components, and feed those directly into the external wave modes. The amplitude in this case uses `Normalization.kConstant`. This can be done with two lines of code,
+```matlab
+[omega, alpha, mode, phi, A, norm] = wavemodel.WaveCoefficientsFromGriddedWaves();
+wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
+```
+but of course now have you external waves with the exact same values as the gridded waves, which isn't likely very helpful.
 
 Dynamical variable accessor methods
 ------------
 Once the `InternalWaveModel` object is initialized there are a few useful accessor methods for access the velocity and density at different times and positions. The API uses the following terminology:
 
-- *Eulerian* methods return values on the build in grid. They will contain the word `Field` in the name, such as `VelocityFieldAtTime` and will always return variables in arrays that match the grid dimensions.
+- *Eulerian* methods return values on the built-in grid. They will contain the word `Field` in the name, such as `VelocityFieldAtTime` and will always return variables in arrays that match the grid dimensions.
 - *Lagrangian* methods return values at arbitrary, user-specified positions. They will contain the phrase `Position` in the name, such as `VelocityAtTimePosition`.
-- *Internal*, or *gridded*, refers to the portion of the wave field defined on the gridded field. For example,  `InternalVelocityFieldAtTime`.
-- *External* refers to external wave modes; for example,  `ExternalVelocityFieldAtTime`.
-
-The internal and external variables always sum to the total, which is what is returned by default.
 
 The density is decomposed into two parts such that density = mean + perturbation. The mean is strictly a function of z and does not vary in time.
 
@@ -125,7 +144,7 @@ x = (0:N-1)*dx;
 y = (0:N-1)*dy;
 z = (0:nLevels-1)*(-wavemodel.Lz/(2*(nLevels-1)));
 ```
-Now we can call the various Lagrangian methods to return the dynamical fields at those positions. First, we need to specify how we want to interpolate the gridded dynamical fields. The two most obvious choices are `'exact'`, if we want to use spectral interpolation, or `'spline'`, if we want a good accuracy speed tradeoff. It may also being worth using `'linear'` interpolation if accuracy is less important.
+Now we can call the various Lagrangian methods to return the dynamical fields at those positions. First, we need to specify how we want to interpolate the gridded dynamical fields. The two most obvious choices are `'exact'`, if we want to use spectral interpolation, or `'spline'`, if we want a good accuracy speed tradeoff. It may also being worth using `'linear'` interpolation if accuracy is less important. The following code returns the values of the dynamical variables at the positions we requested,
 
 ```matlab
 interpolationMethod = 'spline';
@@ -141,6 +160,12 @@ which provides the optimal speed advantage.
 
 ### Internal and external variables
 
+As explained in the introduction, the model is composed of *gridded* or *internal* wave modes and *external* or *free* wave modes. The API uses the following terminology,
+- *Internal*, or *gridded*, refers to the portion of the wave field defined on the gridded field. For example,  `InternalVelocityFieldAtTime`.
+- *External* refers to external wave modes; for example,  `ExternalVelocityFieldAtTime`.
+
+The internal and external variables always sum to the total, which is what is returned by default.
+
 If you so choose, you can also access the dynamical variables associated with the internal and external wave modes separately. The following code accesses the Eulerian and Lagrangian versions of the internal wave modes,
 ```matlab
 [u,v,w,rho_prime,zeta] = wavemodel.InternalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
@@ -155,21 +180,6 @@ The external dynamical variables can be access with,
 ```
 Notice that interpolation is not an option, because these values are always exact.
 
-Built-in density profiles
-------------
 
-For testing purposes and convenience, there are a number of pre-defined density profiles that you can access. Simply call,
-```matlab
-[rho,N2,zIn] = InternalModes.StratificationProfileWithName(stratification)
-```
-where the variable `stratification` is a string. The returned values `rho` and `zIn` can be used directly as the first two arguments in initialization. The following options are available:
- - `'constant'` A constant stratification profile.
- - `'exponential'` The standard Garrett-Munk exponential profile.
- - `'pycnocline-constant'` Constant stratification with a pycnocline, taken from Cushman-Roisin & Beckers.
- - `'pycnocline-exponential'` Exponential profile with a deep pycnocline.
- - `'latmix-site1'` Attempts to recreate the full stratification profile (down to 5000 meters) at Latmix site 1, with an intense surface mixed layer and deep pycnocline.
- - `'latmix-site1-surface'` Recreates just the near surface features at Latmix Site 1.
- - `'latmix-site1-exponential'` Recreates the surface mixed layer and associated pycnocline, and then decays exponentially below 190m.
-  - `'latmix-site1-constant'` Recreates the surface mixed layer and associated pycnocline, but then goes constant below 300m.
   
 

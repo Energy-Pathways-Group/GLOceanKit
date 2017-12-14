@@ -263,6 +263,7 @@ classdef (Abstract) InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function RemoveAllExternalWaves(self)
+            % Remove all external waves.
             self.U_ext = [];
             self.k_ext = [];
             self.l_ext = [];
@@ -282,6 +283,14 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            % Adds external modes with horizontal wavenumbers (k,l), in
+            % radians per meter.
+            %
+            % j indicates the vertical mode number (j>=1)
+            % phi indicates the phase of the wave, in radians
+            % A indicates the amplitude of the wave, with respect to the
+            % given norm, which should be either Normalization.uMax or
+            % Normalization.kConstant.
             K2h = reshape(k.*k + l.*l,1,[]);  
             h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,sqrt(K2h),'ModesAtWavenumber');
             omega = sqrt(self.g*h_ .* K2h + self.f0*self.f0);
@@ -298,7 +307,15 @@ classdef (Abstract) InternalWaveModel < handle
             k = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
-        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)                  
+        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            % Adds external modes with frequency omega (radians/second) and
+            % phase angle alpha (radians).
+            %
+            % j indicates the vertical mode number (j>=1)
+            % phi indicates the phase of the wave, in radians
+            % A indicates the amplitude of the wave, with respect to the
+            % given norm, which should be either Normalization.uMax or
+            % Normalization.kConstant.
             omega = reshape(omega,1,[]);
             h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,omega,'ModesAtFrequency');
             k = sqrt((omega.*omega - self.f0*self.f0)./(self.g*h_));
@@ -313,7 +330,11 @@ classdef (Abstract) InternalWaveModel < handle
         
         
         function h = AddExternalWavesWithMethod( self, j, phi, A, norm, kOrOmega, methodName )
-            % appends to j_ext, k_z_ext, phi_ext, F_ext, G_ext, h_ext, and
+            % This function is called by AddExternalWavesWithFrequencies
+            % and AddExternalWavesWithWavenumbers and should not be used
+            % directly.
+            %
+            % Appends to j_ext, k_z_ext, phi_ext, F_ext, G_ext, h_ext, and
             % U_ext. The calling functions are still responsible for
             % setting k_ext, l_ext, and omega_ext
             numExistingWaves = length(self.k_ext);
