@@ -800,7 +800,7 @@ classdef (Abstract) InternalWaveModel < handle
         end
                 
         function rho = DensityAtTimePosition(self,t,x,y,z,interpolationMethod)
-            rho_bar = self.DensityMeanField;
+            rho_bar = self.RhoBarAtDepth(z);
             rho_prime = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
             rho = rho_bar + rho_prime;
         end
@@ -1051,17 +1051,7 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % interpolation should probably be 'spline'.
             % tolerance is in meters, 1e-8 should be fine.
-            t = 0;
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %
-            % Create the gridded internal density field rho
-            %
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            phase_plus = exp(sqrt(-1)*self.Omega*t);
-            phase_minus = exp(-sqrt(-1)*self.Omega*t);
-            zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
-            Rho = (self.rho0/9.81)*self.N2AtDepth(self.Z) .* self.TransformToSpatialDomainWithG(zeta_bar);
+            t = 0;            
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %
@@ -1089,12 +1079,12 @@ classdef (Abstract) InternalWaveModel < handle
             x_tildeS = mod(x(bp)+S*dx,self.Lx);
             y_tildeS = mod(y(bp)+S*dy,self.Ly);
             
-            
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %
-            % Create the interpolants
+            % Create the gridded internal density field rho and the interpolants
             %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            Rho = self.InternalVariableFieldsAtTime(t,'rho_prime');
             RhoInterp = griddedInterpolant(self.X,self.Y,self.Z, Rho,interpolationMethod);
             if any(bp)
                RhoInterpS = griddedInterpolant(self.X,self.Y,self.Z, circshift(Rho,[S S 0]),interpolationMethod); 
@@ -1102,7 +1092,7 @@ classdef (Abstract) InternalWaveModel < handle
                     
             
             % Now let's place the floats along an isopycnal.
-            zIsopycnal = z ;
+            zIsopycnal = z;
             
             zUnique = unique(z);
             rho = zeros(size(zIsopycnal));
@@ -1117,7 +1107,8 @@ classdef (Abstract) InternalWaveModel < handle
                     rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                 end
                 
-                rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalDensityPerturbationAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices));
+                % rho = gridded rho_prime + rho_bar + external rho_prime
+                rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 
                 dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
                 dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
@@ -1129,7 +1120,7 @@ classdef (Abstract) InternalWaveModel < handle
                         rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                     end
                     
-                    rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalDensityPerturbationAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices));
+                    rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                     
                     dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
                     dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);

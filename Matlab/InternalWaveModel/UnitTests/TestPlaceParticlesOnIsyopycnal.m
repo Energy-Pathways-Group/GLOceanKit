@@ -25,7 +25,7 @@ wavemodel.ShowDiagnostics();
 
 [u,v] = wavemodel.VelocityFieldAtTime(0.0);
 U = max(max(max( sqrt(u.*u + v.*v) )));
-[w,zeta] = wavemodel.VerticalFieldsAtTime(0.0);
+zeta = wavemodel.IsopycnalDisplacementFieldAtTime(0.0);
 Zeta = max(max(max( zeta )));
 fprintf('Max fluid velocity: %.2f cm/s, max isopycnal deviation: %.2f m\n',U*100, Zeta);
 
@@ -102,7 +102,7 @@ for zLevel = 1:nLevels
         zIsopycnal3(zLevelIndices) = zIsopycnal3(zLevelIndices)+dz;
     end
     
-    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),zIsopycnal3(zLevelIndices));
+    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),zIsopycnal3(zLevelIndices),interpolationMethod);
     dRho = rho - mean(rho);
     dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
     fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),z_float((zLevel-1)*N*N+1))

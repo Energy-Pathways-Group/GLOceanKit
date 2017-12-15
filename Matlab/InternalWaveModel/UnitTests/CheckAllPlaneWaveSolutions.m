@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = 4;
 Ny = 8;
-Nz = 2;
+Nz = 4;
 
 latitude = [0 31];
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
