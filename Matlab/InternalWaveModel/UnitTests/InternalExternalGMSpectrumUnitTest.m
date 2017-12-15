@@ -53,7 +53,7 @@ E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
 fprintf('The wave components sum to %.2f%% GM\n', 100*sum(A.*A/2)/E);
 
 % Now reset the gridded field to zero.
-wavemodel.InitializeWithPlaneWave(1,1,1,0.0,1);
+wavemodel.RemoveAllGriddedWaves();
 
 % wavemodel.SetExternalWavesWithFrequencies(omega,alpha,J,phi_plus,A_plus,Normalization.kConstant);
 wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);

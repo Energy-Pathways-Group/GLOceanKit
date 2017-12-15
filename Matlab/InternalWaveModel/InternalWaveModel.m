@@ -194,6 +194,10 @@ classdef (Abstract) InternalWaveModel < handle
             % phi is in radians, from 0-2pi
             % Amp is the fluid velocity U
             % sign is +/-1, indicating the sign of the frequency.
+            
+            if ~isequal(size(kMode), size(lMode), size(jMode), size(phi), size(Amp), size(signs))
+                error('All input array must be of equal size');
+            end
             A_minus_total = zeros(size(self.K));
             A_plus_total = zeros(size(self.K));
             omega = zeros(size(kMode));
@@ -363,6 +367,9 @@ classdef (Abstract) InternalWaveModel < handle
             % A indicates the amplitude of the wave, with respect to the
             % given norm, which should be either Normalization.uMax or
             % Normalization.kConstant.
+            if ~isequal(size(k), size(l), size(j), size(phi), size(A))
+                error('All input array must be of equal size');
+            end
             K2h = reshape(k.*k + l.*l,1,[]);  
             [h_, validIndices] = self.AddExternalWavesWithMethod(j,phi,A,norm,sqrt(K2h),'ModesAtWavenumber');
             K2h = K2h(validIndices);
@@ -403,6 +410,9 @@ classdef (Abstract) InternalWaveModel < handle
             % A indicates the amplitude of the wave, with respect to the
             % given norm, which should be either Normalization.uMax or
             % Normalization.kConstant.
+            if ~isequal(size(omega), size(alpha), size(j), size(phi), size(A))
+                error('All input array must be of equal size');
+            end
             omega = reshape(omega,1,[]);
             [h_, validIndices] = self.AddExternalWavesWithMethod(j,phi,A,norm,omega,'ModesAtFrequency');
             
