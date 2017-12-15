@@ -197,13 +197,9 @@ which provides the optimal speed advantage.
 
 ### Internal and external variables
 
-As explained in the introduction, the model is composed of *gridded* or *internal* wave modes and *external* or *free* wave modes. The API uses the following terminology,
-- *Internal*, or *gridded*, refers to the portion of the wave field defined on the gridded field. For example,  `InternalVelocityFieldAtTime`.
-- *External* refers to external wave modes; for example,  `ExternalVelocityFieldAtTime`.
+As explained in the introduction, the model is composed of *gridded* or *internal* wave modes and *external* or *free* wave modes.
 
-The internal and external variables always sum to the total, which is what is returned by default.
-
-If you so choose, you can also access the dynamical variables associated with the internal and external wave modes separately. The following code accesses the Eulerian and Lagrangian versions of the internal wave modes,
+If you so choose, you can also access the dynamical variables associated with the internal and external wave modes separately (which always sum to the total). The following code accesses the Eulerian and Lagrangian versions of the internal wave modes,
 ```matlab
 [u,v,w,rho_prime,zeta] = wavemodel.InternalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
 [u,v,w,rho_prime,zeta] = wavemodel.InternalVariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w','rho_prime','zeta');

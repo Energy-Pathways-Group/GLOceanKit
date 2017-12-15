@@ -31,9 +31,9 @@ classdef (Abstract) InternalWaveModel < handle
     %   wavemodel.InitializeWithGMSpectrum(Amp);
     % where Amp sets the relative GM amplitude.
     %
-    % Finally, you can compute u,v,w,zeta at time t by calling,
-    %   [u,v] = wavemodel.VelocityFieldAtTime(t);
-    %   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+    % Finally, you can compute u,v,w,rho at time t by calling,
+    %   [u,v,w] = wavemodel.VelocityFieldAtTime(t);
+    %   rho = wavemodel.DensityFieldAtTime(t);
     %
     %   See also INTERNALWAVEMODELCONSTANTSTRATIFICATION and
     %   INTERNALWAVEMODELARBITRARYSTRATIFICATION
@@ -47,6 +47,7 @@ classdef (Abstract) InternalWaveModel < handle
     % December 9th, 2016    Version 1.3
     % February 9th, 2017    Version 1.4
     % March 20th, 2017      Version 1.5
+    % December 15th, 2017   Version 1.6
     properties (Access = public)
         Lx, Ly, Lz % Domain size
         Nx, Ny, Nz % Number of points in each direction
@@ -68,7 +69,8 @@ classdef (Abstract) InternalWaveModel < handle
         
         didPreallocateAdvectionCoefficients = 0
         U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
-
+        
+        % These are all row vectors, e.g. size(U_ext)=[1 length(U_ext)], except F_ext, G_ext which are size(F_ext) = [length(z) length(U_ext)];
         U_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
         U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext
         
@@ -76,7 +78,7 @@ classdef (Abstract) InternalWaveModel < handle
                 
         internalModes % InternalModes object being used by the model
         
-        version = 1.5
+        version = 1.6
         performSanityChecks = 0
         advectionSanityCheck = 0
     end
@@ -340,6 +342,14 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            % Replaces the existing set of external modes with new ones
+            % given with horizontal wavenumbers (k,l), in radians per
+            % meter.
+            %
+            % j indicates the vertical mode number (j>=1) phi indicates the
+            % phase of the wave, in radians A indicates the amplitude of
+            % the wave, with respect to the given norm, which should be
+            % either Normalization.uMax or Normalization.kConstant.
             self.RemoveAllExternalWaves();
             omega = self.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
         end
@@ -354,17 +364,32 @@ classdef (Abstract) InternalWaveModel < handle
             % given norm, which should be either Normalization.uMax or
             % Normalization.kConstant.
             K2h = reshape(k.*k + l.*l,1,[]);  
-            h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,sqrt(K2h),'ModesAtWavenumber');
-            omega = sqrt(self.g*h_ .* K2h + self.f0*self.f0);
+            [h_, validIndices] = self.AddExternalWavesWithMethod(j,phi,A,norm,sqrt(K2h),'ModesAtWavenumber');
+            K2h = K2h(validIndices);
+            k = k(validIndices);
+            l = l(validIndices);
             
-            self.k_ext = cat(1,self.k_ext,reshape(k,1,[]));
-            self.l_ext = cat(1,self.l_ext,reshape(l,1,[]));
-            self.omega_ext = cat(1,self.omega_ext,reshape(omega,1,[]));
-            
-            self.PrecomputeExternalWaveCoefficients();
+            if ~isempty(k)
+                omega = sqrt(self.g*h_ .* K2h + self.f0*self.f0);
+                
+                self.k_ext = cat(2,self.k_ext,reshape(k,1,[]));
+                self.l_ext = cat(2,self.l_ext,reshape(l,1,[]));
+                self.omega_ext = cat(2,self.omega_ext,reshape(omega,1,[]));
+                
+                self.PrecomputeExternalWaveCoefficients();
+            end
         end
         
         function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            % Replaces the existing set of external modes with new ones
+            % given with frequency omega (radians/second) and phase angle
+            % alpha (radians).
+            %
+            % j indicates the vertical mode number (j>=1)
+            % phi indicates the phase of the wave, in radians
+            % A indicates the amplitude of the wave, with respect to the
+            % given norm, which should be either Normalization.uMax or
+            % Normalization.kConstant.
             self.RemoveAllExternalWaves();
             k = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
@@ -379,31 +404,39 @@ classdef (Abstract) InternalWaveModel < handle
             % given norm, which should be either Normalization.uMax or
             % Normalization.kConstant.
             omega = reshape(omega,1,[]);
-            h_ = self.AddExternalWavesWithMethod(j,phi,A,norm,omega,'ModesAtFrequency');
-            k = sqrt((omega.*omega - self.f0*self.f0)./(self.g*h_));
-            alpha0 = reshape(alpha,1,[]);
+            [h_, validIndices] = self.AddExternalWavesWithMethod(j,phi,A,norm,omega,'ModesAtFrequency');
             
-            self.k_ext = cat(1,self.k_ext,reshape(k .* cos(alpha0),1,[]));
-            self.l_ext = cat(1,self.l_ext,reshape(k .* sin(alpha0),1,[]));
-            self.omega_ext = cat(1,self.omega_ext,omega);
+            omega = omega(validIndices);
+            alpha = alpha(validIndices);
             
-            self.PrecomputeExternalWaveCoefficients();
+            if ~isempty(omega)
+                k = sqrt((omega.*omega - self.f0*self.f0)./(self.g*h_));
+                alpha0 = reshape(alpha,1,[]);
+                
+                self.k_ext = cat(2,self.k_ext,reshape(k .* cos(alpha0),1,[]));
+                self.l_ext = cat(2,self.l_ext,reshape(k .* sin(alpha0),1,[]));
+                self.omega_ext = cat(2,self.omega_ext,omega);
+                
+                self.PrecomputeExternalWaveCoefficients();
+            end
         end
         
         
-        function h = AddExternalWavesWithMethod( self, j, phi, A, norm, kOrOmega, methodName )
+        function [h, validIndices] = AddExternalWavesWithMethod( self, j, phi, A, norm, kOrOmega, methodName )
             % This function is called by AddExternalWavesWithFrequencies
             % and AddExternalWavesWithWavenumbers and should not be used
             % directly.
+            %
+            % The function returns a culled list of h thats contain only
+            % valid values, and a list of the validIndices from the
+            % original set.
             %
             % Appends to j_ext, k_z_ext, phi_ext, F_ext, G_ext, h_ext, and
             % U_ext. The calling functions are still responsible for
             % setting k_ext, l_ext, and omega_ext
             numExistingWaves = length(self.k_ext);
-            
-            self.j_ext = cat(1,self.j_ext,reshape(j,1,[]));
-            self.k_z_ext = cat(1,self.k_z_ext,self.j_ext*pi/self.Lz);
-            self.phi_ext = cat(1,self.phi_ext,reshape(phi,1,[]));
+            validIndices = zeros(size(kOrOmega));
+            h = zeros(size(kOrOmega));
             
             switch norm
                 case {Normalization.kConstant, Normalization.uMax}
@@ -412,36 +445,55 @@ classdef (Abstract) InternalWaveModel < handle
                     error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
             end
             
-            h = zeros(size(kOrOmega)); % return just the new
-            self.h_ext = cat(1,self.h_ext,zeros(1,length(j)));
-            self.F_ext = cat(2,self.F_ext,zeros(length(self.z),length(j)));
-            self.G_ext = cat(2,self.G_ext,zeros(length(self.z),length(j)));
             self.internalModes.normalization = self.norm_ext;
+            numValidIndices = 0;
             for iWave=1:length(kOrOmega)
                 [FExt,GExt,hExt] = self.internalModes.(methodName)(kOrOmega(iWave));
-                self.F_ext(:,numExistingWaves+iWave) = FExt(:,j(iWave));
-                self.G_ext(:,numExistingWaves+iWave) = GExt(:,j(iWave));
-                self.h_ext(numExistingWaves+iWave) = hExt(j(iWave));
-                h(iWave) = hExt(j(iWave));
+                if (hExt(j(iWave)) <= 0)
+                    warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
+                    continue;
+                end
+                numValidIndices = numValidIndices + 1;
+                validIndices(numValidIndices) = iWave;
+                h(numValidIndices) = hExt(j(iWave));
+                
+                index = numExistingWaves + numValidIndices;
+                                
+                self.F_ext(:,index) = FExt(:,j(iWave));
+                self.G_ext(:,index) = GExt(:,j(iWave));
+                self.h_ext = cat(2,self.h_ext,hExt(j(iWave)));
+                self.j_ext = cat(2,self.j_ext,j(iWave));
+                self.k_z_ext = cat(2,self.k_z_ext,j(iWave)*pi/self.Lz);
+                self.phi_ext = cat(2,self.phi_ext,phi(iWave));
+                if norm == Normalization.kConstant
+                    self.U_ext = cat(2,self.U_ext,A(iWave)/sqrt(hExt(j(iWave))));
+                elseif norm == Normalization.uMax
+                    self.U_ext = cat(2,self.U_ext,A(iWave));
+                end
             end
             
-            U = reshape(A,1,[]);
-            if norm == Normalization.kConstant
-                U = U./sqrt(self.h_ext);
-            end
-            self.U_ext = cat(1,self.U_ext,reshape(U,1,[]));
+            validIndices = validIndices(1:numValidIndices);
+            h = h(1:numValidIndices);
         end
         
         function PrecomputeExternalWaveCoefficients(self)
             alpha0 = atan2(self.l_ext,self.k_ext);
             Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
             
+            kOverOmega = Kh_ ./ self.omega_ext;
+            if self.latitude == 0
+                f0OverOmega = 0;
+                kOverOmega( Kh_ == 0 ) = 0;
+            else
+                f0OverOmega = (self.f0 ./ self.omega_ext);  
+            end
+            
             self.U_cos_ext = self.U_ext .* cos(alpha0);
-            self.U_sin_ext = self.U_ext .* (self.f0 ./ self.omega_ext) .* sin(alpha0);
+            self.U_sin_ext = self.U_ext .* f0OverOmega .* sin(alpha0);
             self.V_cos_ext = self.U_ext .* sin(alpha0);
-            self.V_sin_ext = -self.U_ext .* (self.f0 ./ self.omega_ext) .* cos(alpha0);
+            self.V_sin_ext = -self.U_ext .* f0OverOmega .* cos(alpha0);
             self.W_sin_ext = self.U_ext .* Kh_ .* self.h_ext;
-            self.Zeta_cos_ext = - self.U_ext .* Kh_ .* self.h_ext ./ self.omega_ext;
+            self.Zeta_cos_ext = - self.U_ext .* kOverOmega .* self.h_ext;
             self.Rho_cos_ext = - (self.rho0/9.81) .* self.U_ext .* Kh_ .* self.h_ext ./ self.omega_ext;
         end
         
@@ -883,6 +935,9 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
             % 'zeta'.
+            if (~isscalar(t) || ~iscolumn(x) || ~iscolumn(y) || ~iscolumn(z))
+                error('t must be a scalar and (x,y,z) must be column vectors.\n');
+            end
             isU = 0; isV = 0; isW = 0; isZeta= 0; isRho = 0;
             varargout = cell(size(varargin));
             for iArg=1:length(varargin)
