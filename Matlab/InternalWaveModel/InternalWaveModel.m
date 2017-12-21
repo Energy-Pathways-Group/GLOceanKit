@@ -428,6 +428,8 @@ classdef (Abstract) InternalWaveModel < handle
                 self.omega_ext = cat(2,self.omega_ext,omega);
                 
                 self.PrecomputeExternalWaveCoefficients();
+            else
+                k = [];
             end
         end
         
@@ -1027,7 +1029,7 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function [u] = VelocityAtTimePositionVector(self,t,p, interpolationMethod)
+        function [u] = VelocityAtTimePositionVector(self,t,p, interpolationMethod,shouldUseW)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
             % Optional argument is passed to the interpolation method. I
@@ -1035,22 +1037,30 @@ classdef (Abstract) InternalWaveModel < handle
             psize = size(p);
             if psize(1) == 3
                 [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
-                u = cat(1,u,v,w);
+                if exist('shouldUseW','var')
+                    u = cat(1,u,v,shouldUseW.*w);
+                else
+                    u = cat(1,u,v,w);
+                end
             else
                 [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
-                u = cat(2,u,v,w);
+                if exist('shouldUseW','var')
+                    u = cat(2,u,v,shouldUseW.*w);
+                else
+                    u = cat(2,u,v,w);
+                end
             end
         end
         
-        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, varargin)
+        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, interpolationMethod)
             % Return the velocity at time t and position p, where size(p) =
             % [3 n]. The rows of p represent [x,y,z].
             psize = size(p);
             if psize(1) == 3
-                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), varargin{:});
+                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
                 u = cat(1,u,v,zeros(1,psize(2)));
             else
-                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), varargin{:});
+                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
                 u = cat(2,u,v,zeros(psize(1),1));
             end
         end

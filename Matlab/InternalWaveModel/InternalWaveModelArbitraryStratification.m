@@ -81,6 +81,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.ComputeModesForNonzeroWavenumbers( any( (U_plus ~= 0) | (U_minus ~= 0),3) );
         end
         
+        function FillOutWaveSpectrum(self)
+            self.ComputeModesForNonzeroWavenumbers( ones(size(self.didPrecomputedModesForWavenumber)) );
+            FillOutWaveSpectrum@InternalWaveModel(self);
+        end
+        
         function ComputeModesForNonzeroWavenumbers(self, A)
             % We go to great lengths to avoid solving the eigenvalue
             % problem, because it's so darned expensive.

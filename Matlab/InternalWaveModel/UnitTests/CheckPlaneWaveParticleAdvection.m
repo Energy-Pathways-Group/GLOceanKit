@@ -88,6 +88,14 @@ y4 = p4(:,2);
 z4 = p4(:,3);
 
 tic
+integrator = Integrator(f,p0',deltaT);
+pI = integrator.IntegrateAlongDimension(t_in);
+tI = toc;
+xI = pI(:,1);
+yI = pI(:,2);
+zI = pI(:,3);
+
+tic
 [~,p45] = ode45(f,t_in, p0); % ,odeset('RelTol',1e-11,'AbsTol',1e-11)
 t45 = toc;
 x45 = p45(:,1);
