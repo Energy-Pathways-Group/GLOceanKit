@@ -42,7 +42,8 @@ t = 3600;
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.InitializeWithGMSpectrum(1.0)
 % wavemodel.InitializeWithPlaneWave(0,0,1,1.0,1);
-[u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);
+% [u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);
+[u_gridded,v_gridded,w_gridded,rho_prime_gridded] = wavemodel.VariableFieldsAtTime(t,'u','v','w','rho_prime');
 
 [omega, alpha, mode, phi, A] = wavemodel.WaveCoefficientsFromGriddedWaves();
 L_gm = 1.3e3; % thermocline exponential scale, meters
@@ -58,9 +59,12 @@ wavemodel.RemoveAllGriddedWaves();
 % wavemodel.SetExternalWavesWithFrequencies(omega,alpha,J,phi_plus,A_plus,Normalization.kConstant);
 wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);
 
-[u_ext,v_ext] = wavemodel.VelocityFieldAtTime(t);
+[u_ext,v_ext,w_ext,rho_prime_ext] = wavemodel.VariableFieldsAtTime(t,'u','v','w','rho_prime');
 
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( u ))), 1e-15] )))), 1e-15]);
 u_error = error(u_ext,u_gridded);
 v_error = error(v_ext,v_gridded);
+w_error = error(w_ext,w_gridded);
+rho_error = error(rho_prime_ext,rho_prime_gridded);
 fprintf('The gridded solution for (u,v) matches the external solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(u_error))), round((log10(v_error))),t);
+fprintf('The gridded solution for (w,rho_prime) matches the external solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(w_error))), round((log10(rho_error))),t);
