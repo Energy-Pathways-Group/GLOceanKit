@@ -361,7 +361,7 @@ classdef GarrettMunkSpectrum < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = IsopycnalVariance(self,z)
             omega2 = linspace(0,self.N_max,2000);
-            S = self.HorizontalIsopycnalSpectrumAtFrequencies(z,omega2);
+            S = self.IsopycnalSpectrumAtFrequencies(z,omega2);
             E = sum(S,2)*(omega2(2)-omega2(1));
         end
         

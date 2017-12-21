@@ -10,10 +10,11 @@ L = 4000;
 
 z = linspace(-L,0,100)';
 
-
-GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
+if ~exist('GM','var')
+    GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
+end
 Euv = GM.HorizontalVelocityVariance(z);
-Eeta = GM.HorizontalIsopycnalVariance(z);
+Eeta = GM.IsopycnalVariance(z);
 Ew = GM.HorizontalVerticalVelocityVariance(z);
 N2 = GM.N2(z);
 N = sqrt(N2);
@@ -22,7 +23,7 @@ N0_const = N0/2;
 GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L 0],latitude);
 EnergyScale = L/L_gm/2;
 Euv_const = EnergyScale*GMConst.HorizontalVelocityVariance(z);
-Eeta_const = EnergyScale*GMConst.HorizontalIsopycnalVariance(z);
+Eeta_const = EnergyScale*GMConst.IsopycnalVariance(z);
 Ew_const = EnergyScale*GMConst.HorizontalVerticalVelocityVariance(z);
 
 figure
