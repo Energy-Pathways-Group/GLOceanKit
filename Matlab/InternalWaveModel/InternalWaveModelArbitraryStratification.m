@@ -82,7 +82,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function FillOutWaveSpectrum(self)
-            self.ComputeModesForNonzeroWavenumbers( ones(size(self.didPrecomputedModesForWavenumber)) );
+            self.ComputeModesForNonzeroWavenumbers( 1 );
             FillOutWaveSpectrum@InternalWaveModel(self);
         end
         
@@ -96,7 +96,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             % 2) We only do the computation for unique wavenumbers
             K2 = self.K2(:,:,1);
             [K2_unique,~,iK2_unique] = unique(K2);
-            K2needed = K2( A & ~self.didPrecomputedModesForWavenumber ); % Nonzero amplitudes that we haven't yet computed
+            K2needed = unique(K2( A & ~self.didPrecomputedModesForWavenumber )); % Nonzero amplitudes that we haven't yet computed
             nEVPNeeded = length(K2needed);
             
             if nEVPNeeded == 0
