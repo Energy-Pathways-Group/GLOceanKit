@@ -514,13 +514,29 @@ classdef (Abstract) InternalWaveModel < handle
         % Create a full Garrett-Munk spectrum (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function InitializeWithGMSpectrum(self, Amp, shouldRandomizeAmplitude, maxDeltaOmega)
-                        % GM Parameters
+        function InitializeWithGMSpectrum(self, GMAmplitude, varargin)
+            if mod(length(varargin),2) ~= 0
+                error('Arguments must be given as name/value pairs.');
+            end
+            
+            % Set defaults
             j_star = 3;
+            
+            % Now override the defaults with user settings
+            for iArg = 1:2:length(varargin)
+                if strcmp(varargin{iArg}, 'j_star')
+                    j_star = varargin{iArg+1};
+                    varargin(iArg+1) = [];
+                    varargin(iArg) = [];
+                    break;
+                end
+            end
+            
+            % GM Parameters
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
-            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*Amp;
+            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*GMAmplitude;
 %             E = E*(self.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
                       
             % Compute the proper vertical function normalization
@@ -540,10 +556,39 @@ classdef (Abstract) InternalWaveModel < handle
             for mode=1:self.nModes
                 totalEnergy = totalEnergy + GM2D_int(self.f0,self.Nmax,mode);
             end
-            fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
+            fprintf('You will miss %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
+            
+            [GM3Dint,GM3Dext] = self.InitializeWithSpectralFunction(GM2D_int,varargin{:});
+            
+            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
+            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
+            
+            GM_sum_int = sum(sum(sum(GM3Dint)))/E;
+            GM_sum_ext = sum(GM3Dext)/E;
+            GM_random_sum_int = sum(sum(sum(self.Amp_plus.*conj(self.Amp_plus) + self.Amp_minus.*conj(self.Amp_minus)  )))/E;
+            GM_random_sum_ext = sum((self.U_cos_ext.*self.U_cos_ext + self.V_cos_ext.*self.V_cos_ext).*self.h_ext/2)/E;
+            fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
         end
         
-        function InitializeWithSpectralFunction(self, GM2D_int, varargin)   
+        function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   
+            % The GM2D_int function is used to assign variance to a given
+            % wave mode. It has three arguments, omega0, omega1, and j and
+            % should return the amount of variance you want assigned to a
+            % wave mode between omega0 and omega1 at vertical mode j.
+            %
+            % The returned values GM3Dint are the results of distributing
+            % this variance. size(GM3Dint) = size(self.Kh), so you can see
+            % how much energy was assigned to each internal mode and
+            % similarly size(GM3Dext) = size(self.k_ext).
+            %
+            % The function takes the (optional) name/value pairs:
+            %
+            % shouldRandomizeAmplitude = 1 or 0 will randomize the
+            % energy in each mode such that the expected value matches that
+            % assigned. Default 0 (amplitudes will not be randomized)
+            %
+            % maxDeltaOmega is the maximum width in frequency that will be
+            % integrated over for assigned energy. By default it is self.Nmax-self.f0
             if nargin(GM2D_int) ~= 3
                 error('The spectral function must take three inputs: omega0, omega1, and j.\n');
             end
@@ -556,11 +601,11 @@ classdef (Abstract) InternalWaveModel < handle
             shouldRandomizeAmplitude = 0;
             maxDeltaOmega = self.Nmax-self.f0;
             
-            % Now override with user settings
+            % Now override the defaults with user settings
             for iArg = 1:2:length(varargin)
                 if strcmp(varargin{iArg}, 'shouldRandomizeAmplitude')
                     shouldRandomizeAmplitude = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'shouldRandomizeAmplitude')
+                elseif strcmp(varargin{iArg}, 'maxDeltaOmega')
                     maxDeltaOmega = varargin{iArg+1};
                 end
             end
@@ -632,8 +677,7 @@ classdef (Abstract) InternalWaveModel < handle
                 end
                 % Still have to deal with the last point.
             end
-            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
-            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
+
             
             % At this stage GM3Dint contains all the energy, E_gm.
             % Now this needs to be split so that
@@ -666,15 +710,8 @@ classdef (Abstract) InternalWaveModel < handle
                 self.U_ext = sqrt(2*GM3Dext./self.h_ext);
                 self.PrecomputeExternalWaveCoefficients();   
             end
-            
-            
+                        
             A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial motions go only one direction!
-            
-            GM_sum_int = sum(sum(sum(GM3Dint)))/E;
-            GM_sum_ext = sum(GM3Dext)/E;
-            GM_random_sum_int = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            GM_random_sum_ext = sum((self.U_cos_ext.*self.U_cos_ext + self.V_cos_ext.*self.V_cos_ext).*self.h_ext/2)/E;
-            fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
             
             self.GenerateWavePhases(A_plus,A_minus);
             
