@@ -515,14 +515,7 @@ classdef (Abstract) InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithGMSpectrum(self, Amp, shouldRandomizeAmplitude, maxDeltaOmega)
-            if ~exist('shouldRandomizeAmplitude', 'var')
-                shouldRandomizeAmplitude = 0;
-            end
-            if ~exist('maxDeltaOmega', 'var')
-                maxDeltaOmega = self.Nmax-self.f0;
-            end
-            
-            % GM Parameters
+                        % GM Parameters
             j_star = 3;
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
@@ -540,7 +533,7 @@ classdef (Abstract) InternalWaveModel < handle
             % This function tells you how much energy you need between two
             % frequencies for a given vertical mode.
             GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) - atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)));
-
+            
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
             totalEnergy = 0;
@@ -548,7 +541,30 @@ classdef (Abstract) InternalWaveModel < handle
                 totalEnergy = totalEnergy + GM2D_int(self.f0,self.Nmax,mode);
             end
             fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
-                        
+        end
+        
+        function InitializeWithSpectralFunction(self, GM2D_int, varargin)   
+            if nargin(GM2D_int) ~= 3
+                error('The spectral function must take three inputs: omega0, omega1, and j.\n');
+            end
+            
+            if mod(length(varargin),2) ~= 0
+                error('Arguments must be given as name/value pairs.');
+            end
+            
+            % Set defaults
+            shouldRandomizeAmplitude = 0;
+            maxDeltaOmega = self.Nmax-self.f0;
+            
+            % Now override with user settings
+            for iArg = 1:2:length(varargin)
+                if strcmp(varargin{iArg}, 'shouldRandomizeAmplitude')
+                    shouldRandomizeAmplitude = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'shouldRandomizeAmplitude')
+                    maxDeltaOmega = varargin{iArg+1};
+                end
+            end
+                  
             % Sort the frequencies (for each mode) and distribute energy.
             % This algorithm is fairly complicated because we are using two
             % separate lists of frequencies: one for the gridded IW modes
