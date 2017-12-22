@@ -63,11 +63,9 @@ title('wkb scaled')
 E = 0.5*(Euv + Ew + N2.*Eeta);
 Etotal = trapz(z,E);
 
-return
-
 figure
 
-subplot(2,2,[1 2])
+subplot(2,1,1)
 omega = linspace(-N0,N0,200);
 S = GM.HorizontalVelocitySpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
 plot(omega,S), ylog
@@ -76,25 +74,25 @@ xlim(1.05*[-N0 N0])
 title('horizontal velocity spectra')
 xlabel('radians per second')
 
-subplot(2,2,3)
+subplot(2,1,2)
 omega = linspace(0,N0,500);
-Siso = GM.HorizontalIsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
+Siso = GM.IsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
 plot(omega,Siso), ylog, xlog
 Sref = omega.^(-2); Sref(omega<f0) = 0; refIndex = find(omega>f0,1,'first'); Sref = Sref * (Siso(2,refIndex)/Sref(refIndex))*10;
 hold on, plot(omega,Sref,'k','LineWidth',2)
 ylim([1e1 3e6])
 xlim(1.05*[0 N0])
-title('horizontal isopycnal spectra')
+title('isopycnal spectra')
 xlabel('radians per second')
 
-subplot(2,2,4)
-omega = linspace(0,N0,500);
-Sw = GM.HorizontalVerticalVelocitySpectrumAtFrequencies(linspace(-500,0,20),omega);
-plot(omega,Sw), ylog, xlog
-ylim([1e-6 1e-1])
-xlim(1.05*[0 N0])
-title('horizontal vertical velocity spectra')
-xlabel('radians per second')
+% subplot(2,2,4)
+% omega = linspace(0,N0,500);
+% Sw = GM.HorizontalVerticalVelocitySpectrumAtFrequencies(linspace(-500,0,20),omega);
+% plot(omega,Sw), ylog, xlog
+% ylim([1e-6 1e-1])
+% xlim(1.05*[0 N0])
+% title('horizontal vertical velocity spectra')
+% xlabel('radians per second')
 
 
 return
