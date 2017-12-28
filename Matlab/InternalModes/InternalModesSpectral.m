@@ -195,6 +195,28 @@ classdef InternalModesSpectral < InternalModesBase
             [F,G,h] = self.ModesFromGEPSpectral(A,B);
             k = self.kFromOmega(h,omega);
         end 
+        
+        function psi = SurfaceModesAtWavenumber(self, k)
+            % No, need to dynamically set the number of points/polynomials
+            % based on estimated penetration depth... several bad lines of
+            % code below here.
+            [T_zLobatto,Tz_zLobatto,Tzz_zLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.zLobatto, length(self.xLobatto) );
+            N2_z = -(self.g/self.rho0)*self.T_zCheb_zOut(self.Diff1_zCheb(self.Diff1_zCheb(self.rho_zCheb)));
+            A = self.N2_zLobatto .*T_zz - N2_z.*T_z;
+            B = - (1/(self.f0*self.f0))*self.N2_zLobatto.*self.N2_zLobatto.*T;
+            
+            M = A + k*k*B;
+            b = zeros(size(self.zLobatto));
+            
+            M(1,:) = self.f0*Tz_zLobatto(1,:)
+            b(1) = 1;
+            
+            M(end,:) = self.f0*Tz_zLobatto(1,:)
+            b(end) = 0;
+            
+            psi_cheb = M\b;
+            psi = self.T_zCheb_zOut(psi_cheb);
+        end
     end
     
     methods (Access = protected)       
