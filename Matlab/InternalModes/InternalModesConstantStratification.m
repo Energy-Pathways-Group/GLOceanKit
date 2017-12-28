@@ -81,16 +81,24 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         function [psi] = SurfaceModesAtWavenumber(self, k)
             % size(psi) = [size(k); length(z)]
-            % Check out Tulloch and Smith (2009) for the general solution
-            % in constant stratification.
             sizeK = size(k);
             zShape = ones(1,length(sizeK)+1);
             zShape(length(sizeK)+1) = length(self.z);
             zCoord = reshape(self.z,zShape) - max(self.z);
             
             lambda = k * (self.N0/self.f0);
-            psi = (self.f0/self.N0) * exp( zCoord .* lambda ) ./ k;
-            % This soln is only valid for no bottom boundary.
+            psi = (1/self.N0) * cosh( (zCoord + self.Lz) .* lambda ) ./ (k .* sinh(lambda*self.Lz));
+        end
+        
+        function [psi] = BottomModesAtWavenumber(self, k)
+            % size(psi) = [size(k); length(z)]
+            sizeK = size(k);
+            zShape = ones(1,length(sizeK)+1);
+            zShape(length(sizeK)+1) = length(self.z);
+            zCoord = reshape(self.z,zShape) - max(self.z);
+            
+            lambda = k * (self.N0/self.f0);
+            psi = (1/self.N0) * ( sinh( (zCoord + self.Lz) .* lambda ) -  cosh( (zCoord + self.Lz) .* lambda ) ./ tanh(lambda*self.Lz)) ./k;
         end
         
         % k_z and h should be of size [1, nModes]

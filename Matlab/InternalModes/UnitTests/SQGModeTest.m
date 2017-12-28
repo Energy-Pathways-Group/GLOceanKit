@@ -13,6 +13,11 @@ N2 = @(z) N0*N0*ones(size(z));
 im = InternalModesConstantStratification( rho, zIn, z, lat );
 
 k = 10.^linspace(log10(1e-5),log10(1e-1),10);
-psi = im.SurfaceModesAtWavenumber( k );
+psi_t = im.SurfaceModesAtWavenumber( k );
+psi_b = im.BottomModesAtWavenumber( k );
 
-figure, plot(squeeze(psi),z)
+figure
+subplot(2,1,1)
+plot(im.f0*squeeze(psi_t),z)
+subplot(2,1,2)
+plot(im.f0*squeeze(psi_b),z)
