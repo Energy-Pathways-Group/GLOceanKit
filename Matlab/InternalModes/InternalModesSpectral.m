@@ -196,26 +196,39 @@ classdef InternalModesSpectral < InternalModesBase
             k = self.kFromOmega(h,omega);
         end 
         
-        function psi = SurfaceModesAtWavenumber(self, k)
-            % No, need to dynamically set the number of points/polynomials
-            % based on estimated penetration depth... several bad lines of
-            % code below here.
-            [T_zLobatto,Tz_zLobatto,Tzz_zLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.zLobatto, length(self.xLobatto) );
-            N2_z = -(self.g/self.rho0)*self.T_zCheb_zOut(self.Diff1_zCheb(self.Diff1_zCheb(self.rho_zCheb)));
-            A = self.N2_zLobatto .*T_zz - N2_z.*T_z;
-            B = - (1/(self.f0*self.f0))*self.N2_zLobatto.*self.N2_zLobatto.*T;
+        function psi = SurfaceModesAtWavenumber(self, k)            
+            % Estimate the grid resolution necessary to resolve the
+            % smallest mode.
+            K = k(:);
+            maxK = max(K(K>0));
+            maxN = max(self.N2(1),self.N2(end));
+            minDz = self.f0/(maxK*maxN)/10;
+            n = max(128,(pi/2)*sqrt(self.Lz/minDz)+1);
+            fprintf('Using %d grid points for the SQG mode\n',n);
+            
+            % Now create this new grid
+            yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            T_zCheb_yLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, yLobatto);
+            T_yCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(yLobatto, self.z);
+            
+            [T,Ty,Tyy] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( yLobatto, length(yLobatto) );
+            N2_yLobatto = T_zCheb_yLobatto(self.N2_zCheb);
+            N2_z_yLobatto = T_zCheb_yLobatto(self.Diff1_zCheb(self.N2_zCheb));
+            
+            A = N2_yLobatto .* Tyy - N2_z_yLobatto.*Ty;
+            B = - (1/(self.f0*self.f0))* (N2_yLobatto.*N2_yLobatto) .*T;
             
             M = A + k*k*B;
-            b = zeros(size(self.zLobatto));
+            b = zeros(size(yLobatto));
             
-            M(1,:) = self.f0*Tz_zLobatto(1,:)
+            M(1,:) = self.f0*Ty(1,:);
             b(1) = 1;
             
-            M(end,:) = self.f0*Tz_zLobatto(1,:)
+            M(end,:) = self.f0*Ty(end,:);
             b(end) = 0;
             
             psi_cheb = M\b;
-            psi = self.T_zCheb_zOut(psi_cheb);
+            psi = T_yCheb_zOut(psi_cheb);
         end
     end
     
