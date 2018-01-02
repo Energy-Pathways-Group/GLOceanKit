@@ -12,12 +12,14 @@ N2 = @(z) N0*N0*ones(size(z));
 
 im = InternalModesConstantStratification( rho, zIn, z, lat );
 
-k = 10.^linspace(log10(1e-5),log10(1e-1),10);
+k = 10.^linspace(log10(1e-5),log10(1e-1),10)';
 psi_t = im.SurfaceModesAtWavenumber( k );
 psi_b = im.BottomModesAtWavenumber( k );
 
-im_spec = InternalModesSpectral( rho, zIn, z, lat );
-psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(end) );
+im_spec = InternalModesFiniteDifference( rho, zIn, z, lat );
+psi_t_spec = im_spec.SurfaceModesAtWavenumber( k );
+psi_b_spec = im_spec.BottomModesAtWavenumber( k );
+
 
 figure
 subplot(2,1,1)
@@ -25,5 +27,5 @@ plot(im.f0*squeeze(psi_t),z)
 hold on, plot(im.f0*psi_t_spec,z)
 subplot(2,1,2)
 plot(im.f0*squeeze(psi_b),z)
-
+hold on, plot(im.f0*psi_b_spec,z)
 

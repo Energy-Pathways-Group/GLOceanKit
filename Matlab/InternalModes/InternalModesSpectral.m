@@ -196,14 +196,26 @@ classdef InternalModesSpectral < InternalModesBase
             k = self.kFromOmega(h,omega);
         end 
         
-        function psi = SurfaceModesAtWavenumber(self, k)            
+        function psi = SurfaceModesAtWavenumber(self, k) 
+            psi = self.BoundaryModesAtWavenumber(k,1);
+        end
+        
+        function psi = BottomModesAtWavenumber(self, k) 
+            psi = self.BoundaryModesAtWavenumber(k,0);
+        end
+        
+        function psi = BoundaryModesAtWavenumber(self, k, isSurface)            
             % Estimate the grid resolution necessary to resolve the
             % smallest mode.
+            sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
             K = k(:);
             maxK = max(K(K>0));
-            maxN = max(self.N2(1),self.N2(end));
+            maxN = sqrt(max(self.N2(1),self.N2(end)));
             minDz = self.f0/(maxK*maxN)/10;
-            n = max(128,(pi/2)*sqrt(self.Lz/minDz)+1);
+            n = max(128,2^ceil(log2((pi/2)*sqrt(self.Lz/minDz)+1))+1);
             fprintf('Using %d grid points for the SQG mode\n',n);
             
             % Now create this new grid
@@ -218,17 +230,25 @@ classdef InternalModesSpectral < InternalModesBase
             A = N2_yLobatto .* Tyy - N2_z_yLobatto.*Ty;
             B = - (1/(self.f0*self.f0))* (N2_yLobatto.*N2_yLobatto) .*T;
             
-            M = A + k*k*B;
             b = zeros(size(yLobatto));
+            if isSurface == 1
+                b(1) = 1;
+            else
+                b(end) = 1;
+            end
             
-            M(1,:) = self.f0*Ty(1,:);
-            b(1) = 1;
+            psi = zeros(length(k),length(self.z));
+            for ii = 1:length(k)
+                M = A + k(ii)*k(ii)*B;
+                M(1,:) = self.f0*Ty(1,:);
+                M(end,:) = self.f0*Ty(end,:);
+                
+                psi_cheb = M\b;
+                psi(ii,:) = T_yCheb_zOut(psi_cheb);
+            end
             
-            M(end,:) = self.f0*Ty(end,:);
-            b(end) = 0;
-            
-            psi_cheb = M\b;
-            psi = T_yCheb_zOut(psi_cheb);
+            sizeK(end+1) = length(self.z);
+            psi = reshape(psi,sizeK);
         end
     end
     

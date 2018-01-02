@@ -82,6 +82,9 @@ classdef InternalModesConstantStratification < InternalModesBase
         function [psi] = SurfaceModesAtWavenumber(self, k)
             % size(psi) = [size(k); length(z)]
             sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
             k = reshape(k,[],1);
             zCoord = reshape(self.z,1,[]);
             
@@ -89,11 +92,17 @@ classdef InternalModesConstantStratification < InternalModesBase
             % dividing by sinh is not well conditioned.
             % psi = (1/self.N0) * cosh( (zCoord + self.Lz) .* lambda ) ./ (k .* sinh(lambda*self.Lz));
             psi = (1/self.N0) * (exp( zCoord .* lambda ) + exp( -(zCoord + 2*self.Lz) .* lambda ) ) ./ (k .* (1-exp(-2*lambda*self.Lz)));
+            
+            sizeK(end+1) = length(self.z);
+            psi = reshape(psi,sizeK);
         end
         
         function [psi] = BottomModesAtWavenumber(self, k)
             % size(psi) = [size(k); length(z)]
             sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
             k = reshape(k,[],1);
             zCoord = reshape(self.z,1,[]);
             
@@ -104,7 +113,9 @@ classdef InternalModesConstantStratification < InternalModesBase
             A = -exp( -lambda*self.Lz )./(1-exp( -2*lambda*self.Lz ));
             B = -exp( -2*lambda*self.Lz )./(1-exp( -2*lambda*self.Lz )) - 1;
             psi = (A.*exp( lambda*zCoord ) + B.*exp( -lambda*(zCoord + self.Lz) ))./(self.N0 * k);
-            
+           
+            sizeK(end+1) = length(self.z);
+            psi = reshape(psi,sizeK);
         end
         
         % k_z and h should be of size [1, nModes]

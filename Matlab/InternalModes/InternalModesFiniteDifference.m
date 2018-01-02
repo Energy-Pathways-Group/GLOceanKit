@@ -139,6 +139,45 @@ classdef InternalModesFiniteDifference < InternalModesBase
             k = self.kFromOmega(h,omega);
         end
         
+        function psi = SurfaceModesAtWavenumber(self, k)
+            psi = self.BoundaryModesAtWavenumber(k,01);
+        end
+        
+        function psi = BottomModesAtWavenumber(self, k)
+            psi = self.BoundaryModesAtWavenumber(k,0);
+        end
+        
+        function psi = BoundaryModesAtWavenumber(self, k, isSurface)
+            sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
+            
+            % f'' finite diff matrix with f' at the boundaries
+            diff2 = InternalModesFiniteDifference.FiniteDifferenceMatrix(2, self.z_diff, 1, 1, self.orderOfAccuracy);
+            N2z_z_diff = -(self.g/self.rho0) * diff2 * self.rho_z_diff;
+            A = self.N2_z_diff .* diff2 - N2z_z_diff .* self.Diff1;
+            B = - (1/(self.f0*self.f0))* (self.N2_z_diff.*self.N2_z_diff) .* eye(self.n);
+            
+            b = zeros(self.n,1);
+            if isSurface == 1
+                b(end) = 1;
+            else
+                b(1) = 1;
+            end
+
+            psi = zeros(length(k),self.n);
+            for ii = 1:length(k)
+                M = A + k(ii)*k(ii)*B;
+                M(1,:) = self.f0*diff2(1,:);
+                M(end,:) = self.f0*diff2(end,:);
+                psi(ii,:) = M\b;
+            end
+            
+            sizeK(end+1) = self.n;
+            psi = reshape(psi,sizeK);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computed (dependent) properties

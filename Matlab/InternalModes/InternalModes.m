@@ -401,6 +401,14 @@ classdef InternalModes < handle
             % Return the normal modes and eigenvalue at a given frequency.
             [F,G,h,k] = self.internalModes.ModesAtFrequency( omega );
         end
+        
+        function psi = SurfaceModesAtWavenumber(self, k)
+            psi = self.internalModes.SurfaceModesAtWavenumber(k);
+        end
+        
+        function psi = BottomModesAtWavenumber(self, k)
+            psi = self.internalModes.BottomModesAtWavenumber(k);
+        end
     end
     
     methods (Static)
