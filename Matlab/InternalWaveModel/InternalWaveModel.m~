@@ -600,7 +600,6 @@ classdef (Abstract) InternalWaveModel < handle
             % Set defaults
             shouldRandomizeAmplitude = 0;
             maxDeltaOmega = self.Nmax-self.f0;
-            initializeModes = 0;
             
             % Now override the defaults with user settings
             for iArg = 1:2:length(varargin)
@@ -608,18 +607,7 @@ classdef (Abstract) InternalWaveModel < handle
                     shouldRandomizeAmplitude = varargin{iArg+1};
                 elseif strcmp(varargin{iArg}, 'maxDeltaOmega')
                     maxDeltaOmega = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'initializeModes')
-                    if strcmp(varargin{iArg+1}, 'all')
-                        initializeModes = 0;
-                    elseif strcmp(varargin{iArg+1}, 'internalOnly')
-                        initializeModes = 1;
-                    elseif strcmp(varargin{iArg+1}, 'externalOnly')
-                        initializeModes = 2;
-                    else
-                        error('Invalid option for initializeModes');
-                    end
-                else
-                    error('Invalid argument');
+                elseif strcmp(varargin{iArg}, 'maxDeltaOmega')
                 end
             end
                   
@@ -648,19 +636,9 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 % Make a combined list, but note which list each omega came
                 % from.
-                if initializeModes == 0
-                    allOmegas = cat(1,intOmegas,extOmegas);
-                    allIndices = cat(1,intOmegasLinearIndicesForIMode,extOmegasLinearIndicesForIMode);
-                    allSource = cat(1,zeros(size(intOmegas)), ones(size(extOmegas)));
-                elseif initializeModes == 1
-                    allOmegas = intOmegas;
-                    allIndices = intOmegasLinearIndicesForIMode;
-                    allSource = zeros(size(intOmegas));
-                else
-                    allOmegas = extOmegas;
-                    allIndices = extOmegasLinearIndicesForIMode;
-                    allSource = ones(size(extOmegas));
-                end
+                allOmegas = cat(1,intOmegas,extOmegas);
+                allIndices = cat(1,intOmegasLinearIndicesForIMode,extOmegasLinearIndicesForIMode);
+                allSource = cat(1,zeros(size(intOmegas)), ones(size(extOmegas)));
                             
                 % Sort the frequencies for this mode.
                 [sortedOmegas, sortedOmegasIndices] = sort(allOmegas);
