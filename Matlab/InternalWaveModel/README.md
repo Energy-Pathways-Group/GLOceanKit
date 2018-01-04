@@ -15,7 +15,7 @@ If you use these classes, please cite the following paper,
     1. [Eulerian](#eulerian)
     2. [Lagrangian](#lagrangian)
     3. [Internal and external variables](#internal-and-external-variables)
-
+7. [Initialization](#initialization)
 
 ------------------------
 
@@ -213,6 +213,16 @@ The external dynamical variables can be access with,
 ```
 Notice that interpolation is not an option, because these values are always exact.
 
+Initialization
+------------
 
-  
+  The model can be initialized with a Garrett-Munk spectrum by calling,
+  ```matlab
+  wavemodel.InitializeWithGMSpectrum(1.0);
+  ```
+where the only required argument indicates the GM reference level. This function also takes the following name/value pairs.
 
+- `'j_star'` takes any integer value, default is 3.
+- `'shouldRandomizeAmplitude'` takes a 0 or 1 to indicate whether or not the amplitude should be randomized with a Gaussian random variable with expectation matching the GM value. The default is 0.
+- `'maxDeltaOmega'` is the maximum width in frequency that will be integrated over for assigned energy. By default it is self.Nmax-self.f0.
+- `'initializeModes'`  is used to determine which modes get initialized. Possible values are `'all'` , `'internalOnly'` , or `'externalOnly'` . Default is `'all'`
