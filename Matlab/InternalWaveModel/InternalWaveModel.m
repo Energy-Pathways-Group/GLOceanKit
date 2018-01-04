@@ -702,7 +702,44 @@ classdef (Abstract) InternalWaveModel < handle
                     leftDeltaOmega = rightDeltaOmega;
                     lastIdx = currentIdx;
                 end
+                
                 % Still have to deal with the last point.
+                if lastIdx == 1
+                    % There is only one point for this entire iMode!
+                   leftDeltaOmega = omega0 - self.f0;
+                   if leftDeltaOmega > maxDeltaOmega/2
+                        leftDeltaOmega = maxDeltaOmega/2;
+                   end
+                   rightDeltaOmega = self.Nmax-omega0;
+                   if rightDeltaOmega > maxDeltaOmega/2
+                       rightDeltaOmega = maxDeltaOmega/2;
+                   end
+                else
+                    % okay, so there's more than one point.
+                    % so just be symmetric about this point,
+                    rightDeltaOmega = leftDeltaOmega;
+                    
+                    % but don't let it exceed the buoyancy frequency
+                    if omega0+rightDeltaOmega > self.Nmax
+                        rightDeltaOmega = self.Nmax-omega0;
+                    end
+                    
+                    % This enforces our maximum allowed gap.
+                    if rightDeltaOmega > maxDeltaOmega/2
+                        rightDeltaOmega = maxDeltaOmega/2;
+                    end
+                end
+
+                nOmegas = length(sortedOmegas)+1-lastIdx;
+                energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+                for iIndex = lastIdx:length(sortedOmegas)
+                    if sortedSource(iIndex) == 0
+                        GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
+                    else
+                        GM3Dext(sortedIndices(iIndex)) = energyPerFrequency;
+                    end
+                end
+
             end
 
             
