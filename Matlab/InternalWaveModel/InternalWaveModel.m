@@ -661,7 +661,11 @@ classdef (Abstract) InternalWaveModel < handle
                     allIndices = extOmegasLinearIndicesForIMode;
                     allSource = ones(size(extOmegas));
                 end
-                            
+                
+                if isempty(allOmegas)
+                    continue;
+                end
+                
                 % Sort the frequencies for this mode.
                 [sortedOmegas, sortedOmegasIndices] = sort(allOmegas);
                 sortedIndices = allIndices(sortedOmegasIndices);
