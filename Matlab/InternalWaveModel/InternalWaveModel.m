@@ -601,6 +601,7 @@ classdef (Abstract) InternalWaveModel < handle
             shouldRandomizeAmplitude = 0;
             maxDeltaOmega = self.Nmax-self.f0;
             initializeModes = 0;
+            energyWarningThreshold = 0.5;
             
             % Now override the defaults with user settings
             for iArg = 1:2:length(varargin)
@@ -608,6 +609,8 @@ classdef (Abstract) InternalWaveModel < handle
                     shouldRandomizeAmplitude = varargin{iArg+1};
                 elseif strcmp(varargin{iArg}, 'maxDeltaOmega')
                     maxDeltaOmega = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'energyWarningThreshold')
+                    energyWarningThreshold = varargin{iArg+1};
                 elseif strcmp(varargin{iArg}, 'initializeModes')
                     if strcmp(varargin{iArg+1}, 'all')
                         initializeModes = 0;
@@ -673,7 +676,11 @@ classdef (Abstract) InternalWaveModel < handle
                 
                 % Then find where the omegas differ.
                 omegaDiffIndices = find(diff(sortedOmegas) > 0);               
-            
+                
+                % Let's do a sanity check for users to make sure they don't
+                % put too much energy in a single mode
+                totalEnergyInThisMode = GM2D_int(self.f0,self.Nmax,iMode);
+                
                 lastIdx = 1;
                 omega0 = sortedOmegas(lastIdx);
                 leftDeltaOmega = 0;
@@ -689,6 +696,10 @@ classdef (Abstract) InternalWaveModel < handle
                         rightDeltaOmega = maxDeltaOmega/2;
                     end
                     energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+                    
+                    if energyPerFrequency/totalEnergyInThisMode > energyWarningThreshold
+                        warning('A j=%d mode has %d%% of the GM energy in a single mode',iMode,round(100*energyPerFrequency/totalEnergyInThisMode));
+                    end
                     
                     for iIndex = lastIdx:(currentIdx-1)
                         if sortedSource(iIndex) == 0
@@ -729,9 +740,12 @@ classdef (Abstract) InternalWaveModel < handle
                         rightDeltaOmega = maxDeltaOmega/2;
                     end
                 end
-
+                
                 nOmegas = length(sortedOmegas)+1-lastIdx;
                 energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+                if energyPerFrequency/totalEnergyInThisMode > energyWarningThreshold
+                    warning('A j=%d mode has %d%% of the GM energy in a single mode',iMode,round(100*energyPerFrequency/totalEnergyInThisMode));
+                end
                 for iIndex = lastIdx:length(sortedOmegas)
                     if sortedSource(iIndex) == 0
                         GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
@@ -739,7 +753,10 @@ classdef (Abstract) InternalWaveModel < handle
                         GM3Dext(sortedIndices(iIndex)) = energyPerFrequency;
                     end
                 end
-
+                
+                
+                
+                
             end
 
             
