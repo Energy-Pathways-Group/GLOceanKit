@@ -20,6 +20,8 @@ im_spec = InternalModesFiniteDifference( rho, zIn, z, lat );
 psi_t_spec = im_spec.SurfaceModesAtWavenumber( k );
 psi_b_spec = im_spec.BottomModesAtWavenumber( k );
 
+im_wkb = InternalModesWKB( rho, zIn, z, lat );
+psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(1));
 
 figure
 subplot(2,1,1)
@@ -29,3 +31,13 @@ subplot(2,1,2)
 plot(im.f0*squeeze(psi_b),z)
 hold on, plot(im.f0*psi_b_spec,z)
 
+[rho, N2Func, zIn] = InternalModes.StratificationProfileWithName('exponential');
+im_spec = InternalModesSpectral( rho, zIn, z, lat );
+im_wkb = InternalModesWKB( rho, zIn, z, lat );
+
+psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(1) );
+psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(1));
+figure
+plot(im.f0*squeeze(psi_t_spec),z),
+hold on
+plot(im.f0*squeeze(psi_t_wkb),z)
