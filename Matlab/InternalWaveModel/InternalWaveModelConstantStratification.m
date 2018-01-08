@@ -185,7 +185,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
     end
     
-    methods (Access = protected)
+    methods %(Access = protected)
         
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
             myH = self.h(k0+1,l0+1,j0);
@@ -268,6 +268,11 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = real(w(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
         
+        function w_bar = TransformFromSpatialDomainWithG(self, w)
+            self.dstScratch = ifft(cat(3,w, zeros(self.Nx,self.Ny),-w(:,:,self.nz:-1:2)),2*self.nz,3);
+            w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+        end
 
     end
 end
