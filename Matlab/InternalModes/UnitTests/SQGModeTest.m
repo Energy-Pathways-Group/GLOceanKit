@@ -7,37 +7,40 @@ rho_0 = 1025;
 zIn = [-5000 0];
 z = linspace(zIn(1),0,n)';
 
-rho = @(z) -(N0*N0*rho_0/g)*z + rho_0;
-N2 = @(z) N0*N0*ones(size(z));
-
-im = InternalModesConstantStratification( rho, zIn, z, lat );
-
+% rho = @(z) -(N0*N0*rho_0/g)*z + rho_0;
+% N2 = @(z) N0*N0*ones(size(z));
+% 
+% im = InternalModesConstantStratification( rho, zIn, z, lat );
+% 
 k = 10.^linspace(log10(1e-5),log10(1e-1),10)';
-psi_t = im.SurfaceModesAtWavenumber( k );
-psi_b = im.BottomModesAtWavenumber( k );
-
-im_spec = InternalModesFiniteDifference( rho, zIn, z, lat );
-psi_t_spec = im_spec.SurfaceModesAtWavenumber( k );
-psi_b_spec = im_spec.BottomModesAtWavenumber( k );
-
-im_wkb = InternalModesWKB( rho, zIn, z, lat );
-psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(1));
-
-figure
-subplot(2,1,1)
-plot(im.f0*squeeze(psi_t),z)
-hold on, plot(im.f0*psi_t_spec,z)
-subplot(2,1,2)
-plot(im.f0*squeeze(psi_b),z)
-hold on, plot(im.f0*psi_b_spec,z)
+% psi_t = im.SurfaceModesAtWavenumber( k );
+% psi_b = im.BottomModesAtWavenumber( k );
+% 
+% im_spec = InternalModesFiniteDifference( rho, zIn, z, lat );
+% psi_t_spec = im_spec.SurfaceModesAtWavenumber( k );
+% psi_b_spec = im_spec.BottomModesAtWavenumber( k );
+% 
+% im_wkb = InternalModesWKB( rho, zIn, z, lat );
+% psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(1));
+% 
+% figure
+% subplot(2,1,1)
+% plot(im.f0*squeeze(psi_t),z)
+% hold on, plot(im.f0*psi_t_spec,z)
+% subplot(2,1,2)
+% plot(im.f0*squeeze(psi_b),z)
+% hold on, plot(im.f0*psi_b_spec,z)
 
 [rho, N2Func, zIn] = InternalModes.StratificationProfileWithName('exponential');
 im_spec = InternalModesSpectral( rho, zIn, z, lat );
 im_wkb = InternalModesWKB( rho, zIn, z, lat );
 
-psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(1) );
-psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(1));
+psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(3) );
+psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(3));
 figure
-plot(im.f0*squeeze(psi_t_spec),z),
+plot(im_spec.f0*squeeze(psi_t_spec),z),
 hold on
-plot(im.f0*squeeze(psi_t_wkb),z)
+plot(im_spec.f0*squeeze(psi_t_wkb),z)
+
+figure, plot(im_spec.f0*diff(squeeze(psi_t_spec)')./diff(z),z(2:end))
+hold on, plot(im_spec.f0*diff(squeeze(psi_t_wkb))./diff(z),z(2:end))
