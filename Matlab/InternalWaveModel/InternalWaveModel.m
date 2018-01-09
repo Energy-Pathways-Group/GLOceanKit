@@ -92,7 +92,7 @@ classdef (Abstract) InternalWaveModel < handle
         rho = RhoBarAtDepth(self,z)
     end
     
-    methods (Abstract) %, Access = protected)
+    methods (Abstract, Access = protected)
         F = InternalUVModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
         G = InternalWModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
 %         F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
@@ -1538,7 +1538,7 @@ classdef (Abstract) InternalWaveModel < handle
         
     end
     
-    methods %(Access = protected)
+    methods (Access = protected)
         
         function self = GenerateWavePhasesForSpectralAdvection(self)
             % This mask zeros redundant hermitian conjugates, and doubles

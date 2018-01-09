@@ -139,6 +139,18 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
         
+        function InitializeWithIsopycnalDisplacementField(self, zeta)
+            % Note that you will lose any 'mean' zeta, because technically
+            % this is the perturbation *from* a mean.
+            zeta_bar = self.TransformFromSpatialDomainWithG(zeta);
+            
+            Kh = self.Kh;
+            Kh(Kh<1e-14) = 1;
+            negate_zeta = abs(self.Omega)./(Kh .* sqrt(self.h));
+            A_plus = -zeta_bar .* negate_zeta ./ self.G; % extra factor from constant stratification case.
+            self.GenerateWavePhases(A_plus,zeros(size(self.K)));
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -185,7 +197,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
     end
     
-    methods %(Access = protected)
+    methods (Access = protected)
         
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
             myH = self.h(k0+1,l0+1,j0);

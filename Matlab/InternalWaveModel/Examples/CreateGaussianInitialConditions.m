@@ -2,29 +2,40 @@ Lx = 15e3;
 Ly = 15e3;
 Lz = 5000;
 
-Nx = 6;
-Ny = 8;
-Nz = 4;
+Nx = 64;
+Ny = 64;
+Nz = 64;
 
 latitude = 31;
-N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
-U = 0.01; % m/s
-phi = 0*0.232; % random, just to see if its doing the right thing
+N0 = 5.2e-3/2;
 t = 0*86400;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
-k_loop = 2;
-l_loop = 2;
-j0 = 3;
-sign = 1;
-wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
+Lh = Lx/8;
+Lv = Lz/8;
+x0 = Lx/2;
+y0 = Ly/2;
+z0 = -Lz/2;
 
-zeta = wavemodel.IsopycnalDisplacementFieldAtTime(t);
-zeta_bar = wavemodel.TransformFromSpatialDomainWithG(zeta);
-zeta_bar(abs(zeta_bar)/(max(max(max(abs(zeta_bar))))) < 1e-7) = 0;
+X = wavemodel.X;
+Y = wavemodel.Y;
+Z = wavemodel.Z;
 
-Kh = wavemodel.Kh;
-Kh(Kh<1e-14) = 1;
-negate_zeta = abs(wavemodel.Omega)./(Kh .* sqrt(wavemodel.h));
-A_plus = -zeta_bar .* negate_zeta ./ wavemodel.G; % extra factor from constant stratification case.
+zeta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 );
+% zeta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/4));
+
+wavemodel.InitializeWithIsopycnalDisplacementField(zeta0);
+
+[u, v, w, rho_prime, zeta]= wavemodel.VariableFieldsAtTime(t, 'u', 'v', 'w', 'rho_prime', 'zeta');
+
+maxU = max(max(max(abs(u))));
+maxV = max(max(max(abs(v))));
+maxW = max(max(max(abs(w))));
+fprintf('Maximum fluid velocity (u,v,w)=(%.2f,%.2f,%.2f) cm/s\n',100*maxU,100*maxV,100*maxW);
+
+dispvar = zeta;
+figure
+pcolor(wavemodel.x,wavemodel.z,squeeze(dispvar(:,Ny/2,:))'),shading flat
+figure
+plot(wavemodel.x,squeeze(dispvar(:,Ny/2,Nz/2)));
