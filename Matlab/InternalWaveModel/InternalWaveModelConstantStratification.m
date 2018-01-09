@@ -139,6 +139,18 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
         
+        function InitializeWithIsopycnalDisplacementField(self, zeta)
+            % Note that you will lose any 'mean' zeta, because technically
+            % this is the perturbation *from* a mean.
+            zeta_bar = self.TransformFromSpatialDomainWithG(zeta);
+            
+            Kh = self.Kh;
+            Kh(Kh<1e-14) = 1;
+            negate_zeta = abs(self.Omega)./(Kh .* sqrt(self.h));
+            A_plus = -zeta_bar .* negate_zeta ./ self.G; % extra factor from constant stratification case.
+            self.GenerateWavePhases(A_plus,zeros(size(self.K)));
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -268,6 +280,11 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = real(w(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
         
+        function w_bar = TransformFromSpatialDomainWithG(self, w)
+            self.dstScratch = ifft(cat(3,w, zeros(self.Nx,self.Ny),-w(:,:,self.nz:-1:2)),2*self.nz,3);
+            w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+        end
 
     end
 end
