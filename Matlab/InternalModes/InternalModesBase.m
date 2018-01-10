@@ -197,7 +197,12 @@ classdef (Abstract) InternalModesBase < handle
                         G(:,j) = G(:,j) / A;
                         F(:,j) = F(:,j) / A;
                     case Normalization.kConstant
-                        A = abs(trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
+                        if z(2)-z(1) > 0
+                            G20 = G(end,j)^2;
+                        else
+                            G20 = G(1,j)^2;
+                        end
+                        A = abs(G20 + trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
                         G(:,j) = G(:,j) / sqrt(A);
                         F(:,j) = F(:,j) / sqrt(A);
                     case Normalization.omegaConstant

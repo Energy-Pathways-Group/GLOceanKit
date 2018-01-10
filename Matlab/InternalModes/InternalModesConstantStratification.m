@@ -127,6 +127,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             switch self.normalization
                 case Normalization.kConstant
                     A = (-1).^j .* sqrt(g_./((N0_*N0_-self.f0*self.f0) .* (self.Lz/2 - sin(2*k_z*self.Lz)./(4*k_z))));
+                    A = (-1).^j .* (sin(k_z*self.Lz).^2 + (self.Lz/(2*self.g))*(self.N0*self.N0 - self.f0*self.f0)*(1-sin(2*k_z*self.Lz)./(2*k_z*self.Lz))).^(-1/2);
                 case Normalization.omegaConstant
                     A = (-1).^j./( h .* k_z .* sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
                 case Normalization.wMax
@@ -189,6 +190,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 switch self.normalization
                     case Normalization.kConstant
                         A = sqrt(3*self.g/( (self.N0*self.N0 - self.f0*self.f0)*self.Lz*self.Lz*self.Lz));
+                        A = 1/(self.Lz * sqrt(1 + (self.N0*self.N0 - self.f0*self.f0)*self.Lz/(2*self.g)));
                     case Normalization.omegaConstant
                         A = 1/self.Lz;
                     case Normalization.wMax
@@ -202,6 +204,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 switch self.normalization
                     case Normalization.kConstant
                         A = sqrt( self.g/((self.N0*self.N0 - self.f0*self.f0)*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2)) );
+                        A = (sinh(k_z*self.Lz)^2 + (self.Lz/(2*self.g))*(self.N0*self.N0 - self.f0*self.f0)*(sinh(2*k_z*self.Lz)/(2*k_z*self.Lz)-1)).^(-1/2);
                     case Normalization.omegaConstant
                         A = 1/( h0 * k_z * sqrt(1/2 + sinh(2*k_z*self.Lz)./(4*k_z*self.Lz)));
                     case Normalization.wMax
@@ -215,6 +218,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 switch self.normalization
                     case Normalization.kConstant
                         A = sqrt(self.g/((self.N0*self.N0 - self.f0*self.f0) * (self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z))));
+                        A = (sin(k_z*self.Lz)^2 + (self.Lz/(2*self.g))*(self.N0*self.N0 - self.f0*self.f0)*(1-sin(2*k_z*self.Lz)/(2*k_z*self.Lz))).^(-1/2);
                     case Normalization.omegaConstant
                         A = 1/( h0 * k_z * sqrt(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz)));
                     case Normalization.wMax
