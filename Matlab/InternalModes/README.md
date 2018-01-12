@@ -1,14 +1,14 @@
 InternalModes
 ==============
 
-The InternalModes class can be used to quickly and accurately compute the vertical modes from arbitrary stratification.
+The InternalModes class can be used to quickly and accurately compute the vertical modes and SQG modes from arbitrary stratification.
 
 The complete class hierarchy contains several implementations that include spectral methods, finite differencing, WKB approximated solutions, as well as the analytical solutions for constant stratification. The details are documented in Early, Lelong, and Smith (2018).
 
 The classes contain many options, but also try to remain simple to use. Use `help InternalModes` in Matlab for a complete description, or use the Quick Start below.
 
 If you use these classes to compute the vertical modes, please cite the following paper,
-- J. Early, M. P. Lelong, K. S. Smith. Fast and accurate computation of vertical modes, Ocean Modelling, In prep.
+- J. Early, M. P. Lelong, K. S. Smith. Fast and accurate computation of vertical modes using Chebyshev polynomials, Ocean Modelling, In prep.
 
 ### Table of contents
 1. [Quick Start](#quick-start)
@@ -51,6 +51,13 @@ or frequency `omega`,
    [F,G,h,k] = im.ModesAtWavenumber(5*im.f0);
    ```
 The arrays `F` and `G` contain the vertical modes for u/v and w/rho, respectively. The arrays have dimensions `size(F)=[length(zOut) length(h)]`, meaning that each column `i` is a normal mode, `F(:,i)` with corresponding eigendepth `h(i)`. The associated eigenfrequency or eigenwavenumber are also returned for convenience.
+
+You can also request the surface quasigeostrophy (SQG) modes,
+```matlab
+psi_t = SurfaceModesAtWavenumber(2*pi/1000);
+psi_b = BottomModesAtWavenumber(2*pi/1000);
+```
+The functions can also take arrays of wavenumbers of any shape or size.
 
 Note that you can also request variations of the density, e.g.,
 ```matlab
