@@ -32,15 +32,35 @@ k = 10.^linspace(log10(1e-5),log10(1e-1),10)';
 % hold on, plot(im.f0*psi_b_spec,z)
 
 [rho, N2Func, zIn] = InternalModes.StratificationProfileWithName('exponential');
+
+L_gm = 1*1.3e3; % thermocline exponential scale, meters
+rho = @(z) rho_0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
+N2Func = @(z) N0*N0*exp(2*z/L_gm);
+zIn = [-5000 0];
+
 im_spec = InternalModesSpectral( rho, zIn, z, lat );
 im_wkb = InternalModesWKB( rho, zIn, z, lat );
 
-psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(3) );
-psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(3));
+ik = 1;
+alpha = 2/L_gm;
+eta = N0*k(ik)/(alpha*im.f0);
+H = max(zIn)-min(zIn);
+
+numerator = besselk(0,2*eta*exp(-alpha*H/2))*besseli(1,2*eta*exp(alpha*z/2)) + besseli(0,2*eta*exp(-alpha*H/2))*besselk(1,2*eta*exp(alpha*z/2));
+denominator = besseli(0,2*eta)*besselk(0,2*eta*exp(-alpha*H/2)) - besselk(0,2*eta)*besseli(0,2*eta*exp(-alpha*H/2));
+psi_exp = (exp(alpha*z/2)/(eta*alpha)) .* numerator ./ denominator;
+
+psi_t_spec = im_spec.SurfaceModesAtWavenumber( k(ik) );
+psi_t_wkb = im_wkb.SurfaceModesAtWavenumber(k(ik));
 figure
 plot(im_spec.f0*squeeze(psi_t_spec),z),
 hold on
 plot(im_spec.f0*squeeze(psi_t_wkb),z)
+plot(psi_exp,z)
 
 figure, plot(im_spec.f0*diff(squeeze(psi_t_spec)')./diff(z),z(2:end))
 hold on, plot(im_spec.f0*diff(squeeze(psi_t_wkb))./diff(z),z(2:end))
+
+
+
+figure, plot(psi_exp,z)

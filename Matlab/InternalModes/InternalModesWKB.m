@@ -224,6 +224,32 @@ classdef InternalModesWKB < InternalModesSpectral
             h = h';
         end
         
+        function psi = SurfaceModesAtWavenumberAlt(self, k)
+            N_zLobatto = abs(self.N2_zLobatto).^(1/2);
+            N_zCheb = InternalModesSpectral.fct(N_zLobatto);
+            Nz_zLobatto = InternalModesSpectral.ifct(self.Diff1_zCheb(N_zCheb));
+            Nz2_zLobatto = Nz_zLobatto.^2;
+            
+            N0 = N_zLobatto(1);
+            Nz0 = Nz_zLobatto(1);
+            
+            ND = N_zLobatto(end);
+            NzD = Nz_zLobatto(end);
+            
+            s = cumtrapz(self.zLobatto, sqrt(Nz2_zLobatto./self.N2_zLobatto + k*k*self.N2_zLobatto/(self.f0^2)) );
+            L_s = s(end);
+            s_out = interp1(self.zLobatto,s,self.z);
+            
+            a = self.f0*NzD/(k*ND*ND);
+            b = self.f0*Nz0/(k*N0*N0);
+            alpha = (sqrt(1+a*a) - a)/(sqrt(1+a*a) + a);
+            numerator = alpha*exp(s_out) + exp(-s_out+2*L_s);
+            denominator = alpha*(b+sqrt(1+b*b)) + (b-sqrt(1+b*b))*exp(2*L_s);
+            scale = sqrt(self.N2)/N0/(k*N0);
+            
+            psi = scale.*numerator./denominator;
+        end
+        
         function psi = SurfaceModesAtWavenumber(self, k) 
             N_zLobatto = abs(self.N2_zLobatto).^(1/2);
             N_zCheb = InternalModesSpectral.fct(N_zLobatto);
