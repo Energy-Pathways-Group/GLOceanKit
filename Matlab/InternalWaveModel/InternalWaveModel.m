@@ -287,7 +287,8 @@ classdef (Abstract) InternalWaveModel < handle
             self.didPreallocateAdvectionCoefficients = 0;
         end
         
-        function [omega, alpha, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self)
+        function [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self)
+
             % This returns the properties of the waves being used in the
             % gridded simulation, as their properly normalized individual
             % wave components. Very useful for debugging.
@@ -310,6 +311,13 @@ classdef (Abstract) InternalWaveModel < handle
             mode_minus = self.J(linearIndex);
             alpha_minus = atan2(self.L(linearIndex),self.K(linearIndex));
             
+            k_plus = self.K(linearIndex);
+            k_minus = self.K(linearIndex);
+            k = [k_plus; k_minus];
+            l_plus = self.L(linearIndex);
+            l_minus = self.L(linearIndex);
+            l = [l_plus; l_minus];
+
             omega = [omega_plus; omega_minus];
             mode = [mode_plus; mode_minus];
             alpha = [alpha_plus; alpha_minus];
@@ -1199,12 +1207,15 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function zIsopycnal = PlaceParticlesOnIsopycnal(self,x,y,z,interpolationMethod,tolerance)
+        function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,interpolationMethod,tolerance,intext)
+            % MAS 1/10/18 - added intext ('int' or 'both') to give option of using int vs. int+ext fields for rho_prime
+            % Also added rhoIsopycnal as output.
             % Any floats with the same value of z will be moved to the same
             % isopycnal.
             %
             % interpolation should probably be 'spline'.
             % tolerance is in meters, 1e-8 should be fine.
+            figHandle = figure('Position',[100 100 700 600]);
             t = 0;            
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1229,10 +1240,14 @@ classdef (Abstract) InternalWaveModel < handle
             end
             bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
             
-            % then do the same for particles that along the boundary.
-            x_tildeS = mod(x(bp)+S*dx,self.Lx);
-            y_tildeS = mod(y(bp)+S*dy,self.Ly);
-            
+            % then do the same for particles along the boundary.
+            % MAS 1/10/18 - Note, here length(x_tildeS) < length(x_tilde), since only 'bp' points are included
+            %x_tildeS = mod(x(bp)+S*dx,self.Lx);
+            %y_tildeS = mod(y(bp)+S*dy,self.Ly);
+            % MAS 1/10/18 - to minimize confusion, compute x_tildeS, y_tildeS for all x,y points, but only use 'bp' points henceforth
+            x_tildeS = mod(x+S*dx,self.Lx);
+            y_tildeS = mod(y+S*dy,self.Ly);
+
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %
             % Create the gridded internal density field rho and the interpolants
@@ -1244,47 +1259,96 @@ classdef (Abstract) InternalWaveModel < handle
                RhoInterpS = griddedInterpolant(self.X,self.Y,self.Z, circshift(Rho,[S S 0]),interpolationMethod); 
             end
                     
-            
             % Now let's place the floats along an isopycnal.
             zIsopycnal = z;
-            
             zUnique = unique(z);
-            rho = zeros(size(zIsopycnal));
+            
+            % MAS 1/10/18: create scale factor (<=1.0) to avoid overshoot when trying to converge to isopycnal
+            fac = 0.3;
+            maxiterations = 200;                                % max number of iterations to attempt to converge
+
+            rho = zeros(size(zIsopycnal));                      % initialize rho array
             for zLevel = 1:length(zUnique)
                 iterations = 0;
-                zLevelIndices = (z==zUnique(zLevel));
+                zLevelIndices = (z==zUnique(zLevel));           % 1 if this is a zLevel, 0 if not
                 
-                nonboundaryIndices = zLevelIndices & ~bp;
+                nonboundaryIndices = zLevelIndices & ~bp;       % 1 if this is not a boundary index, 0 if it is
+                % get rho for all non-boundary float locations
                 rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
+                % now get rho for all boundary float locations
                 if any(bp)
                     boundaryIndices = zLevelIndices & bp;
                     rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                 end
                 
-                % rho = gridded rho_prime + rho_bar + external rho_prime
-                rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
+                if strcmp(intext,'int')==1
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
+                elseif strcmp(intext,'both')==1
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                end
                 
                 dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
                 dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
                 zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+dz;
                 
-                while( max(abs(dz)) > tolerance && iterations < 20 )
+                while( max(abs(dz)) > tolerance && iterations < maxiterations )
                     rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
-                    if any(bp)
+                   if any(bp)
                         rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                     end
-                    
-                    rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
-                    
+
+                    % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
+                    if strcmp(intext,'int')==1
+                      rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
+                    elseif strcmp(intext,'both')==1
+                      rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                    end
+
                     dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
                     dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
-                    
-                    zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+dz;
+                    zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+fac*dz;
                     iterations = iterations + 1;
+
+                    disp( sprintf('  PlaceParticlesOnIsopycnal: Iteration = %d. Mean dz=%3d m of isopycnal at z=%.1f m\n',iterations,mean(abs(dz)),mean(z(zLevelIndices))) );
+                    if iterations==1
+                      subplot(2,1,1)
+                      plot(zIsopycnal(zLevelIndices),'ro')
+                      hold on
+                      subplot(2,1,2)
+                      plot(rho(zLevelIndices),'ro')
+                      hold on
+                    else
+                      subplot(2,1,1)
+                      plot(zIsopycnal(zLevelIndices),'bo')
+                      subplot(2,1,2)
+                      plot(rho(zLevelIndices),'bo')
+                    end
                 end
-                
-                fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z(zLevelIndices)) )
+                % Do this one more time now that out of 'while' loop to get final rho - we'll pass this back along with zIsopycnal
+                rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
+                if any(bp)
+                  rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
+                end
+
+                % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
+                if strcmp(intext,'int')==1
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
+                elseif strcmp(intext,'both')==1
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                end
+
+                subplot(2,1,1)
+                plot(zIsopycnal(zLevelIndices),'m*')
+                ylabel('float depth (m)')
+                subplot(2,1,2)
+                plot(rho(zLevelIndices),'m*')
+                xlabel('Float #')
+                ylabel('float \rho (kg/m^3)')
+
+                fprintf('Num iterations=%d. All floats within %.2g m of isopycnal at z=%.1f meters\n',iterations,max(abs(dz)),mean(z(zLevelIndices)) )
             end
+            rhoIsopycnal = rho;                 
         end
         
         function ShowDiagnostics(self)
@@ -1534,8 +1598,81 @@ classdef (Abstract) InternalWaveModel < handle
             ht.Visible = 'on';
         end
         
-        
-        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Diagnostic shows a plot of all resolved wave modes, both gridded
+        % and external
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function ShowResolvedWavenumbersPlot(self)              % MAS 12/15/17
+            figHandle = figure('Position',[100 100 700 600]);
+
+            m_ext = self.j_ext*pi/self.Lz;
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % make some plots
+            subplot(3,2,1)
+            scatter(abs(self.Omega(:)/self.f0),self.J(:),'k.')
+            hold on
+            scatter(abs(self.omega_ext(:)/self.f0),self.j_ext(:),'r.')
+            xlabel('\omega/f')
+            ylabel('Vert. Mode')
+            title('All Modes (int(k) + ext(r))')
+            axis([1 max(abs(self.Omega(:)/self.f0)) 0.5+[0 self.nModes]])
+            grid on
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            subplot(3,2,2)
+            scatter3(self.Kh(:),self.M(:),abs(self.Omega(:)/self.f0),'k.')
+            hold on
+            scatter3(sqrt(self.k_ext(:).^2 + self.l_ext(:).^2),m_ext(:),abs(self.omega_ext(:)/self.f0),'rx')
+            xlabel('K (rad/m)')
+            ylabel('m (rad/m)')
+            zlabel('\omega/f')
+            title('All Modes (int(k) + ext(r))')
+            axis tight
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            subplot(3,2,3)
+            scatter(self.Kh(:),self.M(:),'k.')
+            hold on
+            scatter(sqrt(self.k_ext(:).^2 + self.l_ext(:).^2),m_ext(:),'r.')
+            xlabel('K_h (rad/m)')
+            ylabel('m (rad/m)')
+            axis tight
+            ax = axis;
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            subplot(3,2,4)
+            scatter(abs(self.K(:)),self.M(:),'k.')
+            hold on
+            scatter(abs(self.k_ext(:)),m_ext(:),'r.')
+            xlabel('k (rad/m)')
+            ylabel('m (rad/m)')
+            axis tight
+            ax = axis;
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            subplot(3,2,5)
+            scatter(abs(self.K(:)),abs(self.L(:)),'k.')
+            hold on
+            scatter(abs(self.k_ext(:)),abs(self.l_ext(:)),'r.')
+
+            xlabel('k (rad/m)')
+            ylabel('l (rad/m)')
+            axis tight
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            subplot(3,2,6)
+            scatter(abs(self.L(:)),self.M(:),'k.')
+            hold on
+            scatter(abs(self.l_ext(:)),m_ext(:),'r.')
+            xlabel('l (rad/m)')
+            ylabel('m (rad/m)')
+            axis tight
+            ax = axis;
+        end
+
     end
     
     methods (Access = protected)
