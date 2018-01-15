@@ -48,7 +48,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalWaveModelConstantStratification(dims, n, latitude, N0)
+        function self = InternalWaveModelConstantStratification(dims, n, latitude, N0, rho0)    % MAS 1/11/18
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
@@ -73,7 +73,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self@InternalWaveModel(dims, n, z, N0*N0*ones(size(z)), nModes, latitude);
             
             self.N0 = N0;
-            self.rho0 = 1025;
+            %self.rho0 = 1025;
             self.nz = nz;
             
             rhoFunction = @(z) -(self.N0*self.N0*self.rho0/9.81)*z + self.rho0;
