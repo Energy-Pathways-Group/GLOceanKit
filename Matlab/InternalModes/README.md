@@ -54,8 +54,8 @@ The arrays `F` and `G` contain the vertical modes for u/v and w/rho, respectivel
 
 You can also request the surface quasigeostrophy (SQG) modes,
 ```matlab
-psi_t = SurfaceModesAtWavenumber(2*pi/1000);
-psi_b = BottomModesAtWavenumber(2*pi/1000);
+psi_t = im.SurfaceModesAtWavenumber(2*pi/1000);
+psi_b = im.BottomModesAtWavenumber(2*pi/1000);
 ```
 The functions can also take arrays of wavenumbers of any shape or size.
 

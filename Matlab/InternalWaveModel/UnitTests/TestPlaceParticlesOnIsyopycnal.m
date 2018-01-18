@@ -47,8 +47,8 @@ zUnique = unique(z_float);
 % nudge towards the center of the domain. This isn't necessary, but does
 % prevent the spline interpolation from having to worry about the
 % boundaries.
-% x_float = x_float + (max(wavemodel.x) - max(x_float))/2;
-% y_float = y_float + (max(wavemodel.y) - max(y_float))/2;
+x_float = x_float + (max(wavemodel.x) - max(x_float))/2;
+y_float = y_float + (max(wavemodel.y) - max(y_float))/2;
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -66,11 +66,18 @@ zIsopycnal1 = wavemodel.PlaceParticlesOnIsopycnal(x_float,y_float,z_float, 'shou
 totalTime = toc;
 fprintf('Total time %.2f\n',totalTime);
 
+% Note the discrepency between interp_local and interp is likely because
+% interp is only using rho_prime for the interpolation algorithm, and
+% interp_local is using rho_bar+rho_prime. This will matter a little bit.
+rho_particle_interp_local = interpn(wavemodel.X,wavemodel.Y,wavemodel.Z,wavemodel.DensityFieldAtTime(0),x_float,y_float,zIsopycnal1,'spline');
 rho_particle_interp = wavemodel.DensityAtTimePosition(0,x_float,y_float,zIsopycnal1,'spline');
 rho_particle_exact = wavemodel.DensityAtTimePosition(0,x_float,y_float,zIsopycnal1,'exact');
 for zLevel = 1:length(zUnique)
     zLevelIndices = (z_float==zUnique(zLevel));
     dzdRho = 9.81./(wavemodel.N2AtDepth(zIsopycnal1(zLevelIndices))*wavemodel.rho0);
+    dRho = rho_particle_interp_local(zLevelIndices) - mean(rho_particle_interp_local(zLevelIndices));
+    dz = dRho.*dzdRho;
+    fprintf('Interp local---all floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z_float(zLevelIndices)) )
     dRho = rho_particle_interp(zLevelIndices) - mean(rho_particle_interp(zLevelIndices));
     dz = dRho.*dzdRho;
     fprintf('Interp---all floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z_float(zLevelIndices)) )
