@@ -1934,7 +1934,7 @@ classdef (Abstract) InternalWaveModel < handle
                 elseif strcmp(varargin{iArg}, 'zeta')
                     varargout{iArg} = zeta;
                 elseif strcmp(varargin{iArg}, 'rho_prime')
-                    varargout{iArg} = -(self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
+                    varargout{iArg} = (self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
                 end
             end
         end

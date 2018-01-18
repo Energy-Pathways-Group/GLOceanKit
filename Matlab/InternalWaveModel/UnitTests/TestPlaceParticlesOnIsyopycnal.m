@@ -56,11 +56,6 @@ y_float = reshape(y_float,[],1);
 z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
-rho_particle_interp = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float,'spline');
-rho_particle_exact = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float,'exact');
-max(abs(rho_particle_interp-rho_particle_exact))
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % First try built in, optimized method
