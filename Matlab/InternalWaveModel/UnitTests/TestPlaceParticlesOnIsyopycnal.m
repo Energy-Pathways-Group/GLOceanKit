@@ -42,12 +42,13 @@ N = floor(N/3);
 x_float = (0:N-1)*dx;
 y_float = (0:N-1)*dy;
 z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
+zUnique = unique(z_float);
 
 % nudge towards the center of the domain. This isn't necessary, but does
 % prevent the spline interpolation from having to worry about the
 % boundaries.
-x_float = x_float + (max(wavemodel.x) - max(x_float))/2;
-y_float = y_float + (max(wavemodel.y) - max(y_float))/2;
+% x_float = x_float + (max(wavemodel.x) - max(x_float))/2;
+% y_float = y_float + (max(wavemodel.y) - max(y_float))/2;
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -55,16 +56,33 @@ y_float = reshape(y_float,[],1);
 z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
+rho_particle_interp = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float,'spline');
+rho_particle_exact = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float,'exact');
+max(abs(rho_particle_interp-rho_particle_exact))
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % First try built in, optimized method
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-zIsopycnal1 = wavemodel.PlaceParticlesOnIsopycnal(x_float,y_float,z_float,interpolationMethod,1e-6);
+zIsopycnal1 = wavemodel.PlaceParticlesOnIsopycnal(x_float,y_float,z_float, 'shouldShowDiagnostics', 0);
 totalTime = toc;
 fprintf('Total time %.2f\n',totalTime);
 
+rho_particle_interp = wavemodel.DensityAtTimePosition(0,x_float,y_float,zIsopycnal1,'spline');
+rho_particle_exact = wavemodel.DensityAtTimePosition(0,x_float,y_float,zIsopycnal1,'exact');
+for zLevel = 1:length(zUnique)
+    zLevelIndices = (z_float==zUnique(zLevel));
+    dzdRho = 9.81./(wavemodel.N2AtDepth(zIsopycnal1(zLevelIndices))*wavemodel.rho0);
+    dRho = rho_particle_interp(zLevelIndices) - mean(rho_particle_interp(zLevelIndices));
+    dz = dRho.*dzdRho;
+    fprintf('Interp---all floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z_float(zLevelIndices)) )
+    dRho = rho_particle_exact(zLevelIndices) - mean(rho_particle_exact(zLevelIndices));
+    dz = dRho.*dzdRho;
+    fprintf('Exact---all floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),mean(z_float(zLevelIndices)) )
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -72,15 +90,15 @@ fprintf('Total time %.2f\n',totalTime);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tic
-X = wavemodel.X;
-Y = wavemodel.Y;
-Z = wavemodel.Z;
-Rho = wavemodel.DensityFieldAtTime(0);
-drhobardz = -wavemodel.N2*wavemodel.rho0/9.81;
-zIsopycnal2 = PlaceParticlesOnIsopycnal(x_float,y_float,z_float,X,Y,Z,Rho,drhobardz,interpolationMethod,1e-6);
-totalTime = toc;
-fprintf('Total time %.2f\n',totalTime);
+% tic
+% X = wavemodel.X;
+% Y = wavemodel.Y;
+% Z = wavemodel.Z;
+% Rho = wavemodel.DensityFieldAtTime(0);
+% drhobardz = -wavemodel.N2*wavemodel.rho0/9.81;
+% zIsopycnal2 = PlaceParticlesOnIsopycnal(x_float,y_float,z_float,X,Y,Z,Rho,drhobardz,interpolationMethod,1e-6);
+% totalTime = toc;
+% fprintf('Total time %.2f\n',totalTime);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
