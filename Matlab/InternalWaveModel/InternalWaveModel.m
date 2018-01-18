@@ -72,7 +72,7 @@ classdef (Abstract) InternalWaveModel < handle
         
         % These are all row vectors, e.g. size(U_ext)=[1 length(U_ext)], except F_ext, G_ext which are size(F_ext) = [length(z) length(U_ext)];
         U_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
-        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext, Rho_cos_ext
+        U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
                 
@@ -147,7 +147,7 @@ classdef (Abstract) InternalWaveModel < handle
             
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            
+                        
             self.L = L; self.K = K; self.J = J;
             self.X = X; self.Y = Y; self.Z = Z;
             
@@ -190,7 +190,7 @@ classdef (Abstract) InternalWaveModel < handle
             % The values given must meet the following requirements:
             % (k0 > -Nx/2 && k0 < Nx/2)
             % (l0 > -Ny/2 && l0 < Ny/2)
-            % (j0 < 1 || j0 >= nModes)
+            % (j0 >= 1 && j0 < nModes)
             % phi is in radians, from 0-2pi
             % Amp is the fluid velocity U
             % sign is +/-1, indicating the sign of the frequency.
@@ -305,19 +305,18 @@ classdef (Abstract) InternalWaveModel < handle
             omega_plus = self.Omega(linearIndex);
             mode_plus = self.J(linearIndex);
             alpha_plus = atan2(self.L(linearIndex),self.K(linearIndex));
+            k_plus = self.K(linearIndex);
+            l_plus = self.L(linearIndex);
             
             [A_minus,phi_minus,linearIndex] = ExtractNonzeroWaveProperties(A_m);
             omega_minus = -self.Omega(linearIndex);
             mode_minus = self.J(linearIndex);
             alpha_minus = atan2(self.L(linearIndex),self.K(linearIndex));
-            
-            k_plus = self.K(linearIndex);
             k_minus = self.K(linearIndex);
-            k = [k_plus; k_minus];
-            l_plus = self.L(linearIndex);
             l_minus = self.L(linearIndex);
+            
+            k = [k_plus; k_minus];
             l = [l_plus; l_minus];
-
             omega = [omega_plus; omega_minus];
             mode = [mode_plus; mode_minus];
             alpha = [alpha_plus; alpha_minus];
@@ -514,7 +513,6 @@ classdef (Abstract) InternalWaveModel < handle
             self.V_sin_ext = -self.U_ext .* f0OverOmega .* cos(alpha0);
             self.W_sin_ext = self.U_ext .* Kh_ .* self.h_ext;
             self.Zeta_cos_ext = - self.U_ext .* kOverOmega .* self.h_ext;
-            self.Rho_cos_ext = - (self.rho0/9.81) .* self.U_ext .* Kh_ .* self.h_ext ./ self.omega_ext;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -610,6 +608,7 @@ classdef (Abstract) InternalWaveModel < handle
             maxDeltaOmega = self.Nmax-self.f0;
             initializeModes = 0;
             energyWarningThreshold = 0.5;
+            excludeNyquist = 1;
             
             % Now override the defaults with user settings
             for iArg = 1:2:length(varargin)
@@ -619,6 +618,8 @@ classdef (Abstract) InternalWaveModel < handle
                     maxDeltaOmega = varargin{iArg+1};
                 elseif strcmp(varargin{iArg}, 'energyWarningThreshold')
                     energyWarningThreshold = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'excludeNyquist')
+                    excludeNyquist = varargin{iArg+1};
                 elseif strcmp(varargin{iArg}, 'initializeModes')
                     if strcmp(varargin{iArg+1}, 'all')
                         initializeModes = 0;
@@ -634,6 +635,12 @@ classdef (Abstract) InternalWaveModel < handle
                 end
             end
                   
+            if excludeNyquist == 1
+                nyquistIndicesForK = sub2ind(size(self.Omega),(ceil(self.Nx/2)+1)*ones(1,self.Ny),1:self.Ny);
+                nyquistIndicesForL = sub2ind(size(self.Omega),1:self.Nx,(ceil(self.Ny/2)+1)*ones(1,self.Nx));
+                nyquistIndices = union(nyquistIndicesForK,nyquistIndicesForL);
+            end
+            
             % Sort the frequencies (for each mode) and distribute energy.
             % This algorithm is fairly complicated because we are using two
             % separate lists of frequencies: one for the gridded IW modes
@@ -651,6 +658,11 @@ classdef (Abstract) InternalWaveModel < handle
                 % Flatten the internal omegas (and their index)
                 intOmegas = reshape(abs(self.Omega(:,:,iMode)),[],1);
                 intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
+                
+                if excludeNyquist == 1
+                    intOmegas(nyquistIndices) = [];
+                    intOmegasLinearIndicesForIMode(nyquistIndices) = [];
+                end
                 
                 % Now do the same for the external modes
                 indices = find(self.j_ext == iMode);
@@ -1160,7 +1172,7 @@ classdef (Abstract) InternalWaveModel < handle
                 elseif strcmp(varargin{iArg}, 'zeta')
                     varargout{iArg} = zeta;
                 elseif strcmp(varargin{iArg}, 'rho_prime')
-                    varargout{iArg} = -(self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
+                    varargout{iArg} = (self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
                 end
             end
         end
@@ -1207,7 +1219,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,interpolationMethod,tolerance,intext)
+        function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,varargin)
             % MAS 1/10/18 - added intext ('int' or 'both') to give option of using int vs. int+ext fields for rho_prime
             % Also added rhoIsopycnal as output.
             % Any floats with the same value of z will be moved to the same
@@ -1215,7 +1227,35 @@ classdef (Abstract) InternalWaveModel < handle
             %
             % interpolation should probably be 'spline'.
             % tolerance is in meters, 1e-8 should be fine.
-            figHandle = figure('Position',[100 100 700 600]);
+
+            if mod(length(varargin),2) ~= 0
+                error('Arguments must be given as name/value pairs.');
+            end
+            interpolationMethod = 'spline';
+            tolerance = 1e-8;
+            maxIterations = 200; % max number of iterations to attempt to converge
+            useModes = 'all';
+            shouldShowDiagnostics = 0;
+            for iArg = 1:2:length(varargin)
+                if strcmp(varargin{iArg}, 'interpolationMethod')
+                    interpolationMethod = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'tolerance')
+                    tolerance = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'maxIterations')
+                    maxIterations = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'shouldShowDiagnostics')
+                    shouldShowDiagnostics = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'useModes')
+                    if strcmp(varargin{iArg+1}, 'all') || strcmp(varargin{iArg+1}, 'internalOnly') || strcmp(varargin{iArg+1}, 'externalOnly')
+                        useModes = varargin{iArg+1};
+                    else
+                        error('Invalid option for initializeModes');
+                    end
+                else
+                    error('Invalid argument');
+                end
+            end
+            
             t = 0;            
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1241,10 +1281,6 @@ classdef (Abstract) InternalWaveModel < handle
             bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
             
             % then do the same for particles along the boundary.
-            % MAS 1/10/18 - Note, here length(x_tildeS) < length(x_tilde), since only 'bp' points are included
-            %x_tildeS = mod(x(bp)+S*dx,self.Lx);
-            %y_tildeS = mod(y(bp)+S*dy,self.Ly);
-            % MAS 1/10/18 - to minimize confusion, compute x_tildeS, y_tildeS for all x,y points, but only use 'bp' points henceforth
             x_tildeS = mod(x+S*dx,self.Lx);
             y_tildeS = mod(y+S*dy,self.Ly);
 
@@ -1263,10 +1299,13 @@ classdef (Abstract) InternalWaveModel < handle
             zIsopycnal = z;
             zUnique = unique(z);
             
+            if shouldShowDiagnostics == 1
+                figure('Position',[100 100 700 600]);
+            end
+            
             % MAS 1/10/18: create scale factor (<=1.0) to avoid overshoot when trying to converge to isopycnal
             fac = 0.3;
-            maxiterations = 200;                                % max number of iterations to attempt to converge
-
+            
             rho = zeros(size(zIsopycnal));                      % initialize rho array
             for zLevel = 1:length(zUnique)
                 iterations = 0;
@@ -1282,9 +1321,11 @@ classdef (Abstract) InternalWaveModel < handle
                 end
                 
                 % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
-                if strcmp(intext,'int')==1
+                if strcmp(useModes,'internalOnly')==1
                   rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
-                elseif strcmp(intext,'both')==1
+                  elseif strcmp(useModes,'externalOnly')==1
+                  rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                elseif strcmp(useModes,'all')==1
                   rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 end
                 
@@ -1292,63 +1333,70 @@ classdef (Abstract) InternalWaveModel < handle
                 dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
                 zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+dz;
                 
-                while( max(abs(dz)) > tolerance && iterations < maxiterations )
+                while( max(abs(dz)) > tolerance && iterations < maxIterations )
                     rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
                    if any(bp)
                         rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                     end
 
                     % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
-                    if strcmp(intext,'int')==1
-                      rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
-                    elseif strcmp(intext,'both')==1
-                      rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                    if strcmp(useModes,'internalOnly')==1
+                        rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
+                    elseif strcmp(useModes,'externalOnly')==1
+                        rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                    elseif strcmp(useModes,'all')==1
+                        rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                     end
 
                     dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
                     dz = dRho * 9.81./(self.N2AtDepth(zIsopycnal(zLevelIndices))*self.rho0);
                     zIsopycnal(zLevelIndices) = zIsopycnal(zLevelIndices)+fac*dz;
                     iterations = iterations + 1;
-
-                    disp( sprintf('  PlaceParticlesOnIsopycnal: Iteration = %d. Mean dz=%3d m of isopycnal at z=%.1f m\n',iterations,mean(abs(dz)),mean(z(zLevelIndices))) );
-                    if iterations==1
-                      subplot(2,1,1)
-                      plot(zIsopycnal(zLevelIndices),'ro')
-                      hold on
-                      subplot(2,1,2)
-                      plot(rho(zLevelIndices),'ro')
-                      hold on
-                    else
-                      subplot(2,1,1)
-                      plot(zIsopycnal(zLevelIndices),'bo')
-                      subplot(2,1,2)
-                      plot(rho(zLevelIndices),'bo')
+                    if shouldShowDiagnostics == 1
+                        fprintf('  PlaceParticlesOnIsopycnal: Iteration = %d. Mean dz=%3d m of isopycnal at z=%.1f m\n',iterations,mean(abs(dz)),mean(z(zLevelIndices)));
+                        if iterations==1
+                            subplot(2,1,1)
+                            plot(zIsopycnal(zLevelIndices),'ro')
+                            hold on
+                            subplot(2,1,2)
+                            plot(rho(zLevelIndices),'ro')
+                            hold on
+                        else
+                            subplot(2,1,1)
+                            plot(zIsopycnal(zLevelIndices),'bo')
+                            subplot(2,1,2)
+                            plot(rho(zLevelIndices),'bo')
+                        end
                     end
                 end
-                % Do this one more time now that out of 'while' loop to get final rho - we'll pass this back along with zIsopycnal
+                % Do this one more time now that out of 'while' loop to get final rho - we'll pass this back along with zIsopycnal
                 rho(nonboundaryIndices) = RhoInterp(x_tilde(nonboundaryIndices),y_tilde(nonboundaryIndices),zIsopycnal(nonboundaryIndices));
                 if any(bp)
                   rho(boundaryIndices) = RhoInterpS(x_tildeS(boundaryIndices),y_tildeS(boundaryIndices),zIsopycnal(boundaryIndices));
                 end
 
                 % MAS 1/10/18: now make rho = gridded rho_prime + rho_bar (+ external rho_prime)
-                if strcmp(intext,'int')==1
-                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
-                elseif strcmp(intext,'both')==1
+                if strcmp(useModes,'internalOnly')==1
+                    rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
+                elseif strcmp(useModes,'externalOnly')==1
+                    rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                elseif strcmp(useModes,'all')==1
                   rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 end
 
-                subplot(2,1,1)
-                plot(zIsopycnal(zLevelIndices),'m*')
-                ylabel('float depth (m)')
-                subplot(2,1,2)
-                plot(rho(zLevelIndices),'m*')
-                xlabel('Float #')
-                ylabel('float \rho (kg/m^3)')
-
+                if shouldShowDiagnostics == 1
+                    subplot(2,1,1)
+                    plot(zIsopycnal(zLevelIndices),'m*')
+                    ylabel('float depth (m)')
+                    subplot(2,1,2)
+                    plot(rho(zLevelIndices),'m*')
+                    xlabel('Float #')
+                    ylabel('float \rho (kg/m^3)')
+                end
+                
                 fprintf('Num iterations=%d. All floats within %.2g m of isopycnal at z=%.1f meters\n',iterations,max(abs(dz)),mean(z(zLevelIndices)) )
             end
-            rhoIsopycnal = rho;                 
+            rhoIsopycnal = rho;
         end
         
         function ShowDiagnostics(self)

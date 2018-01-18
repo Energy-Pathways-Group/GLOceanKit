@@ -45,7 +45,7 @@ wavemodel.InitializeWithGMSpectrum(1.0)
 % [u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);
 [u_gridded,v_gridded,w_gridded,rho_prime_gridded] = wavemodel.VariableFieldsAtTime(t,'u','v','w','rho_prime');
 
-[omega, alpha, mode, phi, A] = wavemodel.WaveCoefficientsFromGriddedWaves();
+[omega, alpha, k, l, mode, phi, A] = wavemodel.WaveCoefficientsFromGriddedWaves();
 L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
