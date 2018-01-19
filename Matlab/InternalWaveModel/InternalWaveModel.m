@@ -83,6 +83,10 @@ classdef (Abstract) InternalWaveModel < handle
         advectionSanityCheck = 0
     end
     
+    properties (Dependent)
+        Rho_cos_ext % Don't remove. Cim uses this.
+    end
+    
     properties (Constant)
         g = 9.81;
     end
@@ -1175,6 +1179,10 @@ classdef (Abstract) InternalWaveModel < handle
                     varargout{iArg} = (self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
                 end
             end
+        end
+        
+        function value = get.Rho_cos_ext(self)
+            value = (self.rho0/self.g)*self.Zeta_cos_ext;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
