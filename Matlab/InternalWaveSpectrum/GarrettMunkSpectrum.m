@@ -19,12 +19,14 @@ classdef GarrettMunkSpectrum < handle
         omega    % size(omega) = nOmega
         F_omega  % size(F_omega) = [nZ,nOmega,nModes]
         G_omega  % size(G_omega) = [nZ,nOmega,nModes]
+        h_omega  % size(h_omega) = [nOmega,nModes]
         k_omega  % size(k_omega) = [nOmega,nModes]
         
         didPrecomputePhiAndGammaForK = 0
         k    % size(k) = nK
         F_k  % size(F_k) = [nZ,nK,nModes]
         G_k  % size(G_k) = [nZ,nK,nModes]
+        h_k  % size(h_k) = [nK,nModes]
         omega_k % size(omega_k) = [nK,nModes]
         
         % We also store a copy of the various wavenumber spectra
@@ -59,12 +61,12 @@ classdef GarrettMunkSpectrum < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = GarrettMunkSpectrum(rho, z_in, latitude, varargin)
-            if isa(rho,'string') == true
-                filepath = sprintf('PrecomputedProfiles/%s',rho);
+            if isa(rho,'char') == true
+                filepath = sprintf('../PrecomputedProfiles/%s.mat',rho);
                 if ~exist(filepath,'file')
                     error('Cannot find precomputed file at path %s\n',filepath);
                 end
-                file = load(filename);
+                file = load(filepath);
                 self.z_in = file.zIn;        
                 self.latitude = self.latitude;
                 self.zInternal = file.zInternal;
@@ -74,16 +76,21 @@ classdef GarrettMunkSpectrum < handle
                 self.omega = file.omega;
                 self.F_omega = file.F_omega;
                 self.G_omega = file.G_omega;
+                self.h_omega = file.h_omega;
                 self.k_omega = file.k_omega;
                 
                 self.didPrecomputePhiAndGammaForOmega = 1;
                 self.k = file.k;
                 self.F_k = file.F_k;
                 self.G_k = file.G_k;
+                self.h_k = file.h_k;
                 self.omega_k = file.omega_k;
                 
                 self.Lz = max(self.z_in) - min(self.z_in);
-                self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
+                self.latitude = file.latitude;
+                self.f0 = 2*(7.2921e-5)*sin(file.latitude*pi/180);
+                self.N_max = file.N_max;
+                self.nModes = size(self.F_omega,3);
             else
                 % Make everything a column vector
                 if isrow(z_in)
@@ -196,8 +203,8 @@ classdef GarrettMunkSpectrum < handle
                 nOmega = 128;      
                 self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
                 self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
-                [self.F_omega,self.G_omega,h] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
-                self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*h));
+                [self.F_omega,self.G_omega,self.h_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
+                self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*self.h_omega));
                 self.didPrecomputePhiAndGammaForOmega = 1;
             end
         end
@@ -207,46 +214,46 @@ classdef GarrettMunkSpectrum < handle
                 nK = 128;
                 self.k = zeros(1,nK);
                 self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
-                [self.F_k, self.G_k,h] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
+                [self.F_k, self.G_k,self.h_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
                 k2 = reshape(self.k .^2,[],1);
-                self.omega_k = sqrt(self.g * h .* k2 + self.f0*self.f0);
+                self.omega_k = sqrt(self.g * self.h_k .* k2 + self.f0*self.f0);
                 self.didPrecomputePhiAndGammaForK = 1;
             end
         end
         
         function Phi = get.Phi_omega(self)
             self.PrecomputeComputeInternalModesForOmega;
-            Phi = nan(length(self.zInternal),nX,self.nModes);
+            Phi = nan(length(self.zInternal),length(self.omega),self.nModes);
             for i=1:length(self.omega)
                 j0 = sum(~isnan(self.F_omega(1,i,:)));
-                Phi(:,i,1:j0) = (self.F_omega(:,1:j0).^2) .* (1./h_omega(1:j0) .* self.H(1:j0));
+                Phi(:,i,1:j0) = (squeeze(self.F_omega(:,i,1:j0).^2)) .* (1./squeeze(self.h_omega(i,1:j0)) .* self.H(1:j0));
             end
         end
         
         function Gamma = get.Gamma_omega(self)
             self.PrecomputeComputeInternalModesForOmega;
-            Gamma = nan(length(self.zInternal),nX,self.nModes);
+            Gamma = nan(length(self.zInternal),length(self.omega),self.nModes);
             for i=1:length(self.omega)
                 j0 = sum(~isnan(self.G_omega(1,i,:)));
-                Gamma(:,i,1:j0) = (1/self.g)*(self.G_omega(:,1:j0).^2) .* self.H(1:j0);
+                Gamma(:,i,1:j0) = (1/self.g)*(squeeze(self.G_omega(:,i,1:j0).^2)) .* self.H(1:j0);
             end
         end
         
         function Phi = get.Phi_k(self)
             self.PrecomputeComputeInternalModesForK;
-            Phi = nan(length(self.zInternal),nX,self.nModes);
-            for i=1:length(self.omega)
+            Phi = nan(length(self.zInternal),length(self.k),self.nModes);
+            for i=1:length(self.k)
                 j0 = sum(~isnan(self.F_k(1,i,:)));
-                Phi(:,i,1:j0) = (self.F_k(:,1:j0).^2) .* (1./h_k(1:j0) .* self.H(1:j0));
+                Phi(:,i,1:j0) = (squeeze(self.F_k(:,i,1:j0).^2)) .* (1./squeeze(self.h_k(i,1:j0)) .* self.H(1:j0));
             end
         end
         
         function Gamma = get.Gamma_k(self)
             self.PrecomputeComputeInternalModesForK;
-            Gamma = nan(length(self.zInternal),nX,self.nModes);
-            for i=1:length(self.omega)
+            Gamma = nan(length(self.zInternal),length(self.k),self.nModes);
+            for i=1:length(self.k)
                 j0 = sum(~isnan(self.G_k(1,i,:)));
-                Gamma(:,i,1:j0) = (1/self.g)*(self.G_k(:,1:j0).^2) .* self.H(1:j0);
+                Gamma(:,i,1:j0) = (1/self.g)*(self.G_k(:,i,1:j0).^2) .* self.H(1:j0);
             end
         end
         
@@ -504,6 +511,50 @@ classdef GarrettMunkSpectrum < handle
             S = S.*Gamma;
         end
         
+        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+            % Create the function that converts to energy
+            f = self.f0;
+            Nmax = self.N_max;
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );    
+            
+            om = linspace(0,self.N_max,2000);
+            z = linspace(min(self.z_in),max(self.z_in),513).';
+            z(end) = [];
+            
+            dOmegaVector = diff(om);
+            if any(dOmegaVector<0)
+                error('omega must be strictly monotonically increasing.')
+            end
+            
+            dOmega = unique(dOmegaVector);         
+            if max(abs(diff(dOmega))) > 1e-7
+                error('omega must be an evenly spaced grid');
+            end
+            dOmega = min( [self.f0/2,dOmega]);
+            
+            M = zeros(length(om),self.nModes);
+            for i=1:length(om)
+                Bomega = self.B( abs( om(i) ) - dOmega/2, abs( om(i) ) + dOmega/2 )/dOmega;
+                M(i,:) = self.E* ( Bomega .* C(om(i)) ) * self.H(1:self.nModes);
+                M(isnan(M))=0;
+            end
+            M = sqrt(M/9.81);
+            
+            [Z,OMEGA,J] = ndgrid(reshape(self.zInternal,1,[]),reshape(self.omega,1,[]),reshape(1:self.nModes,1,[]));
+            [Zo,OMEGAo,Jo] = ndgrid(reshape(z,1,[]),reshape(om,1,[]),reshape(1:self.nModes,1,[]));
+            G = interpn(Z,OMEGA,J,self.G_omega,Zo,OMEGAo,Jo,'linear',0);
+            
+            iso = G .* shiftdim(M,-1);
+            dz = z(2)-z(1);
+            N = length(z);
+            dm = 1/(N*dz);
+            m = ([0:ceil(N/2)-1 -floor(N/2):-1]*dm)';
+            
+            isobar = fft(iso)/N;
+            S = isobar.*conj(isobar);
+            S = sum(sum(S, 3, 'omitnan'), 2, 'omitnan');
+        end
+        
         function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
             self.PrecomputeComputeInternalModesForK();
             if isrow(k)
@@ -538,7 +589,7 @@ classdef GarrettMunkSpectrum < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Horizontal Vertical Velocity Spectra
+        % Vertical Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = VerticalVelocityVariance(self,z)

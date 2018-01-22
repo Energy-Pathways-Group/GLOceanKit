@@ -1,10 +1,19 @@
-[rho, N2, zIn] = InternalModes.StratificationProfileWithName('exponential');
-z = linspace(min(zIn),max(zIn),5000);
-N0 = sqrt(max(N2(z)));
+if 1 == 0
+    [rho, N2, zIn] = InternalModes.StratificationProfileWithName('exponential');
+    z = linspace(min(zIn),max(zIn),5000);
+    N0 = sqrt(max(N2(z)));
+else
+    GM = GarrettMunkSpectrum('constant');
+    z = GM.zInternal;
+    N0 = GM.N_max;
+end
 
 if ~exist('GM','var')
     GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
 end
+
+L_gm = 1300;
+f0 = GM.f0;
 
 Euv = GM.HorizontalVelocityVariance(z);
 Eeta = GM.IsopycnalVariance(z);
@@ -60,7 +69,7 @@ xlabel('radians per second')
 
 subplot(2,2,3)
 omega = linspace(0,N0,500);
-Siso = GM.HorizontalIsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
+Siso = GM.IsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
 plot(omega,Siso), ylog, xlog
 Sref = omega.^(-2); Sref(omega<f0) = 0; refIndex = find(omega>f0,1,'first'); Sref = Sref * (Siso(2,refIndex)/Sref(refIndex))*10;
 hold on, plot(omega,Sref,'k','LineWidth',2)
@@ -71,7 +80,7 @@ xlabel('radians per second')
 
 subplot(2,2,4)
 omega = linspace(0,N0,500);
-Sw = GM.HorizontalVerticalVelocitySpectrumAtFrequencies(linspace(-500,0,20),omega);
+Sw = GM.VerticalVelocitySpectrumAtFrequencies(linspace(-500,0,20),omega);
 plot(omega,Sw), ylog, xlog
 ylim([1e-6 1e-1])
 xlim(1.05*[0 N0])

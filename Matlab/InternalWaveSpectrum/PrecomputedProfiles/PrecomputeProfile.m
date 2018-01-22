@@ -1,11 +1,11 @@
-profilename = 'exponential';
+profilename = 'constant';
 latitude = 31;
 nOmega = 128;
 nK = 128;
 
-nEVPMin = 1024; % assumed minimum, can be overriden by the user
-nEVPMax = 2048;
-nModes = 512;
+nEVPMin = 256; % assumed minimum, can be overriden by the user
+nEVPMax = 512;
+nModes = 64;
 
 [rho, N2, zIn] = InternalModes.StratificationProfileWithName(profilename);
 z = linspace(min(zIn),max(zIn),5000);
@@ -101,4 +101,4 @@ k2 = reshape(k .^2,[],1);
 omega_k = sqrt(g * h_k .* k2 + im.f0*im.f0);
 
 filename = sprintf('%s.mat',profilename);
-save(filename,'F_omega','G_omega','h_omega', 'k_omega', 'F_k','G_k','h_k', 'omega_k', 'latitude','zIn','N_max','zInternal','N2internal');
+save(filename,'F_omega','G_omega','omega', 'h_omega', 'k_omega', 'F_k','G_k','h_k', 'k', 'omega_k', 'latitude','zIn','N_max','zInternal','N2internal');
