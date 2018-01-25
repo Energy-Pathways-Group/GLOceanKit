@@ -1,5 +1,5 @@
 if 1 == 0
-    [rho, N2, zIn] = InternalModes.StratificationProfileWithName('exponential');
+    [rho, N2, zIn] = InternalModes.StratificationProfileWithName('constant');
     z = linspace(min(zIn),max(zIn),5000);
     N0 = sqrt(max(N2(z)));
 else
@@ -87,6 +87,20 @@ xlim(1.05*[0 N0])
 title('horizontal vertical velocity spectra')
 xlabel('radians per second')
 
+
+figure
+plot(GM.IsopycnalVariance(z),z)
+
+GMConst = GarrettMunkSpectrumConstantStratification(N0,GM.z_in,GM.latitude);
+[S, m] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
+[S_const, m_const] = GMConst.IsopycnalSpectrumAtVerticalWavenumbers();
+figure
+plot(m,S),ylog, xlog, hold on
+plot(m_const,S_const)
+
+trapz(z,GMConst.IsopycnalVariance(z))/GM.Lz
+sum(S_const)*m_const(1)
+sum(S)*m(2)
 
 return
 

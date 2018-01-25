@@ -14,7 +14,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         B
         H
         
-        nModes = 5000*1000
+        nModes = 5000
     end
     
     properties (Constant)
@@ -114,6 +114,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = IsopycnalVariance(self,z)
+            % depth averaged variance should be around 13.7 m^2
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
@@ -140,6 +141,22 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             j=1:self.nModes;
             Gamma = (2/self.Lz)*sum(self.H(j).*sin(z*j*pi/self.Lz).^2,2);
             S = Gamma*A;
+        end
+        
+        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+            j = 1:self.nModes;
+            H1 = (1+j/self.j_star).^(-5/2);
+            H_norm = 1/sum(H1);
+            
+            m_star = self.j_star*pi/self.Lz;
+            m = j*pi/self.Lz;
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            A = self.E*(1/2 - (self.B0*self.f0/2/N2)*sqrt(N2-f2))/(N2-f2);
+            
+            S = A*H_norm/pi;
+            S = S*(1+m/m_star).^(-5/2);
         end
                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

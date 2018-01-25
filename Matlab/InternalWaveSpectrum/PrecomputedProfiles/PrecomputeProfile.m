@@ -1,4 +1,4 @@
-profilename = 'constant';
+profilename = 'exponential';
 latitude = 31;
 nOmega = 128;
 nK = 128;

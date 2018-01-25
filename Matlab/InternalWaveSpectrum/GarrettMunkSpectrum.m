@@ -534,11 +534,11 @@ classdef GarrettMunkSpectrum < handle
             
             M = zeros(length(om),self.nModes);
             for i=1:length(om)
-                Bomega = self.B( abs( om(i) ) - dOmega/2, abs( om(i) ) + dOmega/2 )/dOmega;
+                Bomega = self.B( abs( om(i) ) - dOmega/2, abs( om(i) ) + dOmega/2 );
                 M(i,:) = self.E* ( Bomega .* C(om(i)) ) * self.H(1:self.nModes);
                 M(isnan(M))=0;
             end
-            M = sqrt(M/9.81);
+            M = sqrt(M/9.81); % Units of sqrt(self.E/g) is meters
             
             [Z,OMEGA,J] = ndgrid(reshape(self.zInternal,1,[]),reshape(self.omega,1,[]),reshape(1:self.nModes,1,[]));
             [Zo,OMEGAo,Jo] = ndgrid(reshape(z,1,[]),reshape(om,1,[]),reshape(1:self.nModes,1,[]));
@@ -547,12 +547,21 @@ classdef GarrettMunkSpectrum < handle
             iso = G .* shiftdim(M,-1);
             dz = z(2)-z(1);
             N = length(z);
-            dm = 1/(N*dz);
+            dm = pi/(N*dz);
             m = ([0:ceil(N/2)-1 -floor(N/2):-1]*dm)';
             
-            isobar = fft(iso)/N;
-            S = isobar.*conj(isobar);
-            S = sum(sum(S, 3, 'omitnan'), 2, 'omitnan');
+            dstScratch = ifft(cat(1,iso,shiftdim(zeros(length(om),self.nModes),-1),-iso(N:-1:2,:,:)),2*N,1);
+            isobar = dstScratch(2:N+1,:,:);
+            
+%             isobar = fft(iso)/N;
+            S = N*dz*isobar.*conj(isobar);
+            S = sum(sum(S, 3, 'omitnan'), 2, 'omitnan')/pi;
+            
+            % convert to one-sided spectrum
+            S(2:ceil(N/2)) = S(2:ceil(N/2)) + flip( S( (ceil(N/2)+2):N) );
+            S((ceil(N/2)+1):end) = [];
+            m((ceil(N/2)+1):end) = [];
+            m = abs(m);
         end
         
         function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
