@@ -100,7 +100,7 @@ plot(m_const,S_const)
 
 trapz(z,GMConst.IsopycnalVariance(z))/GM.Lz
 sum(S_const)*m_const(1)
-sum(S)*m(2)
+sum(S)*m(1)
 
 return
 

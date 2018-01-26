@@ -548,20 +548,13 @@ classdef GarrettMunkSpectrum < handle
             dz = z(2)-z(1);
             N = length(z);
             dm = pi/(N*dz);
-            m = ([0:ceil(N/2)-1 -floor(N/2):-1]*dm)';
+            m = ((1:N)*dm)';
             
+            % compute the discrete sine transform (DST), [f(1:N), 0, -f(N:-1:2)]
             dstScratch = ifft(cat(1,iso,shiftdim(zeros(length(om),self.nModes),-1),-iso(N:-1:2,:,:)),2*N,1);
-            isobar = dstScratch(2:N+1,:,:);
+            isobar = 2*imag(dstScratch(2:N+1,:,:));
             
-%             isobar = fft(iso)/N;
-            S = N*dz*isobar.*conj(isobar);
-            S = sum(sum(S, 3, 'omitnan'), 2, 'omitnan')/pi;
-            
-            % convert to one-sided spectrum
-            S(2:ceil(N/2)) = S(2:ceil(N/2)) + flip( S( (ceil(N/2)+2):N) );
-            S((ceil(N/2)+1):end) = [];
-            m((ceil(N/2)+1):end) = [];
-            m = abs(m);
+            S = N*dz*sum(sum(isobar.*conj(isobar), 3, 'omitnan'), 2, 'omitnan')/2/pi;
         end
         
         function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
