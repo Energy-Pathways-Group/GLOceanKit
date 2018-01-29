@@ -62,7 +62,7 @@ Approximations
 ------------
 
 By default, the variances and spectra are computed using the *exact* variance relations for the Garrett-Munk spectrum. However, it is often useful to consider the various approximations that are used. The three variance and three spectral functions above can all be given an optional argument specifying the approximation to be used, wit the following valid values,
--`'exact'` Uses the exact modal summation.
--`'wkb'` Uses wkb approximated vertical modes.
--`'wkb-hydrostatic'` Uses wkb approximated modes with the hydrostatic approximation, following Levine (2002).
--`'gm'` Uses the standard Garrett-Munk scalings, often referred to as the 'wkb scaled' variance relations.
+- `'exact'` Uses the exact modal summation.
+- `'wkb'` Uses wkb approximated vertical modes.
+- `'wkb-hydrostatic'` Uses wkb approximated modes with the hydrostatic approximation, following Levine (2002).
+- `'gm'` Uses the standard Garrett-Munk scalings, often referred to as the 'wkb scaled' variance relations.
