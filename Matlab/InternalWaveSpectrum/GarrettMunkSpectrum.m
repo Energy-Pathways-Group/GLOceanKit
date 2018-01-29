@@ -52,7 +52,7 @@ classdef GarrettMunkSpectrum < handle
         invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
         E_gm = 6.3e-5; % non-dimensional energy parameter
         E = (1.3e3)*(1.3e3)*(1.3e3)*(5.2e-3)*(5.2e-3)*(6.3e-5);
-    end
+     end
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,74 +153,12 @@ classdef GarrettMunkSpectrum < handle
            N2 = interp1(self.zInternal,self.N2internal,z,'linear');
         end
         
+ 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Computation of the vertical structure functions Phi and Gamma
+        % Optimized setters and getters
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F_out,G_out,h] = InternalModesForCoordinate(self,x,methodName)
-            % This will return size(Phi) =
-            % [length(self.zInternal),length(x),nModes]. This is really an
-            % unsummed version of Phi, so Phi = sum(Phi,3) would match the
-            % definition in the manuscript. Entries will contain NaN where
-            % no mode was determined.
-            nX = length(x);
-            nEVP = self.nEVPMin;
-                                    
-            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-            im.normalization = Normalization.kConstant;
-            
-            F_out = nan(length(self.zInternal),nX,self.nModes);
-            G_out = nan(length(self.zInternal),nX,self.nModes);
-            h_out = nan(nX,self.nModes);
-            for i = 1:length(x)
-                [F, G, h] = im.(methodName)(x(i));
-                
-                % Increase the number of grid points until we get the
-                % desired number of good quality modes (or reach some max).
-                while( (isempty(h) || length(h) < self.nModes) && nEVP < self.nEVPMax )
-                    nEVP = nEVP + 128;
-                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-                    im.normalization = Normalization.kConstant;
-                    [F, G, h] = im.(methodName)(x(i));
-                end
-                if length(h) < self.nModes
-                   fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),self.nModes);
-                end
-                j0 = min(length(h),self.nModes);
-                
-                h = reshape(h,1,[]);
-                
-                F_out(:,i,1:j0) = F(:,1:j0);
-                G_out(:,i,1:j0) = G(:,1:j0);
-                h_out(i,1:j0)=h(1:j0);             
-            end
-            h = h_out;
-        end
-        
-        function PrecomputeComputeInternalModesForOmega(self)
-            if self.didPrecomputePhiAndGammaForOmega==0
-                nOmega = 128;      
-                self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
-                self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
-                [self.F_omega,self.G_omega,self.h_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
-                self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*self.h_omega));
-                self.didPrecomputePhiAndGammaForOmega = 1;
-            end
-        end
-        
-        function PrecomputeComputeInternalModesForK(self)
-            if self.didPrecomputePhiAndGammaForK==0
-                nK = 128;
-                self.k = zeros(1,nK);
-                self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
-                [self.F_k, self.G_k,self.h_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
-                k2 = reshape(self.k .^2,[],1);
-                self.omega_k = sqrt(self.g * self.h_k .* k2 + self.f0*self.f0);
-                self.didPrecomputePhiAndGammaForK = 1;
-            end
-        end
-        
         function Phi = get.Phi_omega(self)
             self.PrecomputeComputeInternalModesForOmega;
             Phi = nan(length(self.zInternal),length(self.omega),self.nModes);
@@ -256,123 +194,50 @@ classdef GarrettMunkSpectrum < handle
                 Gamma(:,i,1:j0) = (1/self.g)*(self.G_k(:,i,1:j0).^2) .* self.H(1:j0);
             end
         end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Approximated versions of the vertical structure functions Phi and Gamma
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-        
-        function Phi = PhiForOmegaWKB(self, z, omega)
-            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb');
-        end
-        
-        function Phi = PhiForOmegaWKBHydrostatic(self, z, omega)
-            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
-        end
-        
-        function Phi = PhiForOmegaWKBApproximation(self, z, omega, approximation)
-            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
-            Phi = zeros(length(z),length(omega));
-            [sortedOmegas, indices] = sort(abs(omega));
-            for i = 1:length(sortedOmegas)
-                if (sortedOmegas(i) > self.f0)
-                    [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
-                    Phi(:,indices(i)) = sum( (F.^2) * (1./h .* self.H((1:length(h))')), 2);
-                end
-            end
-        end
-                
-        function Phi = PhiForOmegaGM(self, z, omega)
-            N = sqrt(self.N2(z));
-            Omega = repmat(omega,length(z),1);
-            Phi = (N/(self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
-        end
-        
-        function Gamma = GammaForOmegaWKB(self, z, omega)
-            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb');
-        end
-        
-        function Gamma = GammaForOmegaWKBHydrostatic(self, z, omega)
-            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
-        end
-        
-        function Gamma = GammaForOmegaWKBApproximation(self, z, omega, approximation)
-            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
-            Gamma = zeros(length(z),length(omega));
-            [sortedOmegas, indices] = sort(abs(omega));
-            for i = 1:length(sortedOmegas)
-                if (sortedOmegas(i) > self.f0)
-                    [~, G, h] = im.ModesAtFrequency(sortedOmegas(i));
-                    Gamma(:,indices(i)) = (1./self.g)*sum( (G.^2) * self.H((1:length(h))'), 2);
-                end
-            end
-        end
-        
-        function Gamma = GammaForOmegaGM(self, z, omega)
-            N = sqrt(self.N2(z));
-            Omega = repmat(omega,length(z),1);
-            Gamma = (1./(N*self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
-        end
+
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Horizontal Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = HorizontalVelocityVariance(self,z)
-            % The total horizontal velocity at a given depth. [m^2/s^s]
+        function E = HorizontalVelocityVariance(self, z, varargin)
+            % Returns the total horizontal velocity variance at a given depth. [m^2/s^s]
+            %
+            %    z                          array of depths, in meters
+            %    appoximation (optional)   'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+
+            [z,approximation] = self.validateVarianceArguments(z,varargin{:});
+            
+            % Compute the total variance by grabbing the one-sided
+            % spectrum, and summing over all frequencies.
             om = linspace(0,self.N_max,2000);
-            S = self.HorizontalVelocitySpectrumAtFrequencies(z,om,'spectrum_type','one-sided');
+            S = self.HorizontalVelocitySpectrumAtFrequencies(z,om,approximation,'one-sided');
             E = sum(S,2)*(om(2)-om(1));
         end
         
         function S = HorizontalVelocitySpectrumAtFrequencies(self,z,omega,varargin)
             % The horizontal velocity frequency spectrum at given depths
             % and frequencies. [m^2/s]
-            if isrow(z)
-                z=z.';
-            end
+            %
+            %   z                            array of depths, in meters
+            %   omega                        array of frequencies, in radians/second
+            %   appoximation (optional)     'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            %   spectrumType (optional)     'one-sided', or 'two-sided'.
             
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
+            [z,omega,approximation,spectrumType] = self.validateSpectrumArguments(z,omega,varargin{:});
             
-            for i = 1:2:length(varargin)
-                if strcmp(varargin{i},'approximation')
-                    approximation = varargin{i+1};
-                elseif strcmp(varargin{i},'spectrum_type')
-                    spectrum_type = varargin{i+1};
-                end
-            end
-            
-            if ~exist('approximation','var')
-                approximation = 'exact';
-            end
-            if ~exist('spectrum_type','var')
-                if (any(omega<0))
-                    spectrum_type = 'two-sided';
-                else
-                    spectrum_type = 'one-sided';
-                end
-            end
-            
-            dOmegaVector = diff(omega);
-            if any(dOmegaVector<0)
-                error('omega must be strictly monotonically increasing.')
-            end
-    
-            if max(abs(diff(unique(dOmegaVector)))) > 1e-7
-                error('omega must be an evenly spaced grid');
-            end
-            dOmega = dOmegaVector(1);    
+            % Make sure it's a column vector
+            z = reshape(z,[],1);
+                        
+            % Choose a small increment
+            dOmega = omega(2)-omega(1);    
             dOmega = min( [self.f0/2,dOmega]);
-            
+                        
             % Create the function that converts to energy
             f = self.f0;
             Nmax = self.N_max;
-            if strcmp(spectrum_type,'two-sided')
+            if strcmp(spectrumType,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f/omega)*(1-f/omega) )*0.5;
             else
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1+f*f/(omega*omega)) );                
@@ -382,8 +247,8 @@ classdef GarrettMunkSpectrum < handle
             for i=1:length(omega)
                 Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
                 S(:,i) = self.E* ( Bomega .* C(omega(i)) );
-                S(isnan(S))=0;
             end
+            S(isnan(S))=0;
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputeInternalModesForOmega();
@@ -392,8 +257,6 @@ classdef GarrettMunkSpectrum < handle
                 Phi = self.PhiForOmegaWKBApproximation(z, omega, approximation);
             elseif strcmp(approximation,'gm')
                 Phi = self.PhiForOmegaGM(z, omega);
-            elseif strcmp(approximation,'unsummed')
-                Phi = ones(size(S));
             end
             S = S.*Phi;
         end
@@ -437,56 +300,41 @@ classdef GarrettMunkSpectrum < handle
         % Horizontal Isopycnal Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = IsopycnalVariance(self,z)
-            omega2 = linspace(0,self.N_max,2000);
-            S = self.IsopycnalSpectrumAtFrequencies(z,omega2);
-            E = sum(S,2)*(omega2(2)-omega2(1));
+        function E = IsopycnalVariance(self, z, varargin)
+            % Returns the total isopycnal variance at a given depth. [m^2]
+            %
+            %    z                          array of depths, in meters
+            %    appoximation (optional)   'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            
+            [z,approximation] = self.validateVarianceArguments(z,varargin{:});
+            
+            om = linspace(0,self.N_max,2000);
+            S = self.IsopycnalSpectrumAtFrequencies(z,om,approximation,'one-sided');
+            E = sum(S,2)*(om(2)-om(1));
         end
         
         function S = IsopycnalSpectrumAtFrequencies(self,z,omega,varargin)
-            if isrow(z)
-                z=z.';
-            end
+            % The isopycnal variance frequency spectrum at given depths
+            % and frequencies. [m^2 s]
+            %
+            %   z                            array of depths, in meters
+            %   omega                        array of frequencies, in radians/second
+            %   appoximation (optional)     'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            %   spectrumType (optional)     'one-sided', or 'two-sided'.
             
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
+            [z,omega,approximation,spectrumType] = self.validateSpectrumArguments(z,omega,varargin{:});
             
-            for i = 1:2:length(varargin)
-                if strcmp(varargin{i},'approximation')
-                    approximation = varargin{i+1};
-                elseif strcmp(varargin{i},'spectrum_type')
-                    spectrum_type = varargin{i+1};
-                end
-            end
-            
-            if ~exist('approximation','var')
-                approximation = 'exact';
-            end
-            if ~exist('spectrum_type','var')
-                if (any(omega<0))
-                    spectrum_type = 'two-sided';
-                else
-                    spectrum_type = 'one-sided';
-                end
-            end
-            
-            dOmegaVector = diff(omega);
-            if any(dOmegaVector<0)
-                error('omega must be strictly monotonically increasing.')
-            end
-            
-            dOmega = unique(dOmegaVector);         
-            if max(abs(diff(dOmega))) > 1e-7
-                error('omega must be an evenly spaced grid');
-            end
+            % Make sure it's a column vector
+            z = reshape(z,[],1);
+                        
+            % Choose a small increment
+            dOmega = omega(2)-omega(1);    
             dOmega = min( [self.f0/2,dOmega]);
             
             % Create the function that converts to energy
             f = self.f0;
             Nmax = self.N_max;
-            if strcmp(spectrum_type,'two-sided')
+            if strcmp(spectrumType,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) )*0.5;
             else
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );                
@@ -496,8 +344,8 @@ classdef GarrettMunkSpectrum < handle
             for i=1:length(omega)
                 Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
                 S(:,i) = self.E* ( Bomega .* C(omega(i)) );
-                S(isnan(S))=0;
             end
+            S(isnan(S))=0;
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputeInternalModesForOmega();
@@ -512,6 +360,10 @@ classdef GarrettMunkSpectrum < handle
         end
         
         function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+            % Isopycnal vertical wavenumber spectrum. Because the domain is
+            % finite, the vertical wavenumbers are pre-determined and are
+            % returned as m.
+            
             % Create the function that converts to energy
             f = self.f0;
             Nmax = self.N_max;
@@ -594,56 +446,41 @@ classdef GarrettMunkSpectrum < handle
         % Vertical Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = VerticalVelocityVariance(self,z)
-            omega2 = linspace(0,self.N_max,2000);
-            S = self.VerticalVelocitySpectrumAtFrequencies(z,omega2);
-            E = sum(S,2)*(omega2(2)-omega2(1));
+        function E = VerticalVelocityVariance(self,z, varargin)
+            % Returns the total vertical velocity variance at a given depth. [m^2/s^s]
+            %
+            %    z                          array of depths, in meters
+            %    appoximation (optional)   'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            
+            [z,approximation] = self.validateVarianceArguments(z,varargin{:});
+            
+            om = linspace(0,self.N_max,2000);
+            S = self.VerticalVelocitySpectrumAtFrequencies(z,om,approximation,'one-sided');
+            E = sum(S,2)*(om(2)-om(1));
         end
         
         function S = VerticalVelocitySpectrumAtFrequencies(self,z,omega,varargin)
-            if isrow(z)
-                z=z.';
-            end
+            % The vertical velocity frequency spectrum at given depths
+            % and frequencies. [m^2/s]
+            %
+            %   z                            array of depths, in meters
+            %   omega                        array of frequencies, in radians/second
+            %   appoximation (optional)     'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            %   spectrumType (optional)     'one-sided', or 'two-sided'.
+
+            [z,omega,approximation,spectrumType] = self.validateSpectrumArguments(z,omega,varargin{:});
             
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
-            
-            for i = 1:2:length(varargin)
-                if strcmp(varargin{i},'approximation')
-                    approximation = varargin{i+1};
-                elseif strcmp(varargin{i},'spectrum_type')
-                    spectrum_type = varargin{i+1};
-                end
-            end
-            
-            if ~exist('approximation','var')
-                approximation = 'exact';
-            end
-            if ~exist('spectrum_type','var')
-                if (any(omega<0))
-                    spectrum_type = 'two-sided';
-                else
-                    spectrum_type = 'one-sided';
-                end
-            end
-            
-            dOmegaVector = diff(omega);
-            if any(dOmegaVector<0)
-                error('omega must be strictly monotonically increasing.')
-            end
-            
-            dOmega = unique(dOmegaVector);         
-            if max(abs(diff(dOmega))) > 1e-7
-                error('omega must be an evenly spaced grid');
-            end
+            % Make sure it's a column vector
+            z = reshape(z,[],1);
+                        
+            % Choose a small increment
+            dOmega = omega(2)-omega(1);    
             dOmega = min( [self.f0/2,dOmega]);
             
             % Create the function that converts to energy
             f = self.f0;
             Nmax = self.N_max;
-            if strcmp(spectrum_type,'two-sided')
+            if strcmp(spectrumType,'two-sided')
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( omega*omega - f*f )*0.5;
             else
                 C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( omega*omega - f*f );                
@@ -653,8 +490,8 @@ classdef GarrettMunkSpectrum < handle
             for i=1:length(omega)
                 Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
                 S(:,i) = self.E* ( Bomega .* C(omega(i)) );
-                S(isnan(S))=0;
             end
+            S(isnan(S))=0;
             
             if strcmp(approximation,'exact')
                 self.PrecomputeComputeInternalModesForOmega();
@@ -667,6 +504,197 @@ classdef GarrettMunkSpectrum < handle
             
             S = S.*Gamma;
             
+        end
+    end
+    
+    methods  (Access = protected)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Error checking and validation
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function isValid = validateOmega(~, omega)
+            dOmegaVector = diff(omega);
+            if any(dOmegaVector<0)
+                error('omega must be strictly monotonically increasing.')
+            end
+            if max(abs(diff(unique(dOmegaVector)))) > 1e-7
+                error('omega must be an evenly spaced grid');
+            end
+            isValid = 1;
+        end
+                
+        function isValid = validateSpectrumType(~, omega, spectrumType)
+            if (any(omega<0)) && strcmp(approximation,'one-sided')
+                error('omega contains negative frequencies, yet you requested a one-sided spectrum. This makes no sense. Try again.');
+            end
+            isValid = any(validatestring(spectrumType,{'one-sided','two-sided'}));
+        end
+        
+        function isValid = validateApproximations(~, x)
+            isValid = any(validatestring(x,{'exact','wkb', 'wkb-hydrostatic', 'gm'}));
+        end
+        
+        function isValid = validateZ(self, z)
+            isValid = all( z >= min(self.z_in) ) && all(z <= max(self.z_in));
+        end
+        
+        function [z,approximation] = validateVarianceArguments(self,z,varargin)
+            p = inputParser;
+            addRequired(p,'z',@(x) self.validateZ(x));
+            addOptional(p,'approximation','exact',@(x) self.validateApproximations(x));
+            parse(p,z,varargin{:})
+            z = p.Results.z;
+            approximation = p.Results.approximation;
+        end
+        
+        function [z,omega,approximation,spectrumType] = validateSpectrumArguments(self,z,omega,varargin)
+            if length(varargin) < 2 && all(omega>=0)
+                spectrumTypeDefault = 'one-sided';
+            else
+                spectrumTypeDefault = 'two-sided';
+            end
+            
+            p = inputParser;
+            addRequired(p,'z',@(x) self.validateZ(x));
+            addRequired(p,'omega',@(x) self.validateOmega(x));
+            addOptional(p,'approximation','exact',@(x) self.validateApproximations(x));
+            addOptional(p,'spectrumType',spectrumTypeDefault,@(x) self.validateSpectrumType(omega,x));
+            parse(p,z,omega,varargin{:})
+            
+            z = p.Results.z;
+            omega = p.Results.omega;
+            approximation = p.Results.approximation;
+            spectrumType = p.Results.spectrumType;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computation of the vertical structure functions Phi and Gamma
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [F_out,G_out,h] = InternalModesForCoordinate(self,x,methodName)
+            % This will return size(Phi) =
+            % [length(self.zInternal),length(x),nModes]. This is really an
+            % unsummed version of Phi, so Phi = sum(Phi,3) would match the
+            % definition in the manuscript. Entries will contain NaN where
+            % no mode was determined.
+            nX = length(x);
+            nEVP = self.nEVPMin;
+                                    
+            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
+            im.normalization = Normalization.kConstant;
+            
+            F_out = nan(length(self.zInternal),nX,self.nModes);
+            G_out = nan(length(self.zInternal),nX,self.nModes);
+            h_out = nan(nX,self.nModes);
+            for i = 1:length(x)
+                [F, G, h] = im.(methodName)(x(i));
+                
+                % Increase the number of grid points until we get the
+                % desired number of good quality modes (or reach some max).
+                while( (isempty(h) || length(h) < self.nModes) && nEVP < self.nEVPMax )
+                    nEVP = nEVP + 128;
+                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
+                    im.normalization = Normalization.kConstant;
+                    [F, G, h] = im.(methodName)(x(i));
+                end
+                if length(h) < self.nModes
+                   fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),self.nModes);
+                end
+                j0 = min(length(h),self.nModes);
+                
+                h = reshape(h,1,[]);
+                
+                F_out(:,i,1:j0) = F(:,1:j0);
+                G_out(:,i,1:j0) = G(:,1:j0);
+                h_out(i,1:j0)=h(1:j0);             
+            end
+            h = h_out;
+        end
+        
+        function PrecomputeComputeInternalModesForOmega(self)
+            if self.didPrecomputePhiAndGammaForOmega==0
+                nOmega = 128;      
+                self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
+                self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
+                [self.F_omega,self.G_omega,self.h_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
+                self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*self.h_omega));
+                self.didPrecomputePhiAndGammaForOmega = 1;
+            end
+        end
+        
+        function PrecomputeComputeInternalModesForK(self)
+            if self.didPrecomputePhiAndGammaForK==0
+                nK = 128;
+                self.k = zeros(1,nK);
+                self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
+                [self.F_k, self.G_k,self.h_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
+                k2 = reshape(self.k .^2,[],1);
+                self.omega_k = sqrt(self.g * self.h_k .* k2 + self.f0*self.f0);
+                self.didPrecomputePhiAndGammaForK = 1;
+            end
+        end
+        
+
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Approximated versions of the vertical structure functions Phi and Gamma
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+        
+        function Phi = PhiForOmegaWKB(self, z, omega)
+            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb');
+        end
+        
+        function Phi = PhiForOmegaWKBHydrostatic(self, z, omega)
+            Phi = self.PhiForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
+        end
+        
+        function Phi = PhiForOmegaWKBApproximation(self, z, omega, approximation)
+            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            Phi = zeros(length(z),length(omega));
+            [sortedOmegas, indices] = sort(abs(omega));
+            for i = 1:length(sortedOmegas)
+                if (sortedOmegas(i) > self.f0)
+                    [F, ~, h] = im.ModesAtFrequency(sortedOmegas(i));
+                    Phi(:,indices(i)) = sum( (F.^2) * (1./h .* self.H((1:length(h))')), 2);
+                end
+            end
+        end
+                
+        function Phi = PhiForOmegaGM(self, z, omega)
+            N = sqrt(self.N2(z));
+%             Omega = repmat(omega,length(z),1);
+            Phi = (N/(self.L_gm*self.invT_gm)); % .* (abs(Omega) < N);
+        end
+        
+        function Gamma = GammaForOmegaWKB(self, z, omega)
+            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb');
+        end
+        
+        function Gamma = GammaForOmegaWKBHydrostatic(self, z, omega)
+            Gamma = self.GammaForOmegaWKBApproximation( z, omega, 'wkb-hydrostatic');
+        end
+        
+        function Gamma = GammaForOmegaWKBApproximation(self, z, omega, approximation)
+            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            Gamma = zeros(length(z),length(omega));
+            [sortedOmegas, indices] = sort(abs(omega));
+            for i = 1:length(sortedOmegas)
+                if (sortedOmegas(i) > self.f0)
+                    [~, G, h] = im.ModesAtFrequency(sortedOmegas(i));
+                    Gamma(:,indices(i)) = (1./self.g)*sum( (G.^2) * self.H((1:length(h))'), 2);
+                end
+            end
+        end
+        
+        function Gamma = GammaForOmegaGM(self, z, omega)
+            N = sqrt(self.N2(z));
+%             Omega = repmat(omega,length(z),1);
+            Gamma = (1./(N*self.L_gm*self.invT_gm)); % .* (abs(Omega) < N);
         end
     end
 end

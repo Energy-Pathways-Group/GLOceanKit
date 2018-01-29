@@ -15,7 +15,7 @@ if ~exist('GM','var')
 end
 Euv = GM.HorizontalVelocityVariance(z);
 Eeta = GM.IsopycnalVariance(z);
-Ew = GM.HorizontalVerticalVelocityVariance(z);
+Ew = GM.VerticalVelocityVariance(z);
 N2 = GM.N2(z);
 N = sqrt(N2);
 
