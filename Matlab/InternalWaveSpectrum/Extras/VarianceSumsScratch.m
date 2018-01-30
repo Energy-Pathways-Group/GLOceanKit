@@ -9,7 +9,7 @@ sum(H1(j))
 
 sum(H1(j/j_star)/j_star)
 
-return
+% return
 
 H2 = (j+1).^(-5/2);
 H2_norm = 1/sum(H2);
@@ -24,7 +24,7 @@ Hm = (H1_norm/m_star)*(1+m/m_star).^(-5/2);
 
 sum(Hm(3:end))*m(1)
 
-return
+% return
 
 % figure
 % plot(j,H1), hold on, plot(j,H2)

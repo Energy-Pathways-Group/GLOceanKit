@@ -1,11 +1,12 @@
-profilename = 'exponential';
+profilename = 'constant';
 latitude = 31;
 nOmega = 128;
 nK = 128;
 
-nEVPMin = 256; % assumed minimum, can be overriden by the user
-nEVPMax = 512;
-nModes = 64;
+% m = 4;
+nEVPMin = 2*256; % assumed minimum, can be overriden by the user
+nEVPMax = 4*512;
+nModes = 4*64;
 
 [rho, N2, zIn] = InternalModes.StratificationProfileWithName(profilename);
 z = linspace(min(zIn),max(zIn),5000);
