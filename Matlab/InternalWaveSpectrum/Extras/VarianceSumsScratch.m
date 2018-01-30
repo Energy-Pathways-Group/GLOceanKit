@@ -3,9 +3,13 @@ j = 1:300;
 j_star = 3;
 H1 = (1+j).^(-5/2);
 H1_norm = 1/sum(H1);
-H1 = H1_norm*(1+j).^(-5/2);
+H1 = @(j) H1_norm*(1+j).^(-5/2);
 
-sum(H1)
+sum(H1(j))
+
+sum(H1(j/j_star)/j_star)
+
+return
 
 H2 = (j+1).^(-5/2);
 H2_norm = 1/sum(H2);

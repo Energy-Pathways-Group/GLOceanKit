@@ -50,7 +50,7 @@ N0 = sqrt(max(N2(z)));
 N = sqrt(GM.N2(z));
 
 figure
-subplot(1,2,1)
+subplot(1,3,1)
 plot(1e4*Euv.*(N0./N),z), hold on
 vlines(44,'k--')
 xlabel('velocity variance (cm^2/s^2)')
@@ -59,13 +59,22 @@ title('wkb scaled')
 legend('actual', 'gm ref','Location', 'northeast')
 xlim([0 max(1e4*Euv.*(N0./N))*1.1]);
 
-subplot(1,2,2)
+subplot(1,3,2)
 plot(Eeta.*(N/N0),z)
 vlines(53,'k--')
 xlabel('isopycnal variance (m^2)')
-ylabel('depth (m)')
+set(gca,'YTickLabel',[]);
 title('wkb scaled')
 xlim([0 max(Eeta.*(N/N0))*1.1]);
+
+subplot(1,3,3)
+plot(1e4*Ew.*(N/N0),z)
+wGM = GM.E*GM.f0*2/pi/GM.L_gm/GM.invT_gm;
+vlines(1e4*wGM,'k--')
+xlabel('vertical velocity variance (cm^2/s^2)')
+set(gca,'YTickLabel',[]);
+title('wkb scaled')
+xlim([0 max(1e4*Ew.*(N/N0))*1.1]);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,7 +108,7 @@ Sref = omega.^(-2); Sref(omega<f0) = 0; refIndex = find(omega>f0,1,'first'); Sre
 hold on, plot(omega,Sref,'k','LineWidth',2)
 ylim([1e1 3e6])
 xlim(1.05*[0 N0])
-title('horizontal isopycnal spectra')
+title('isopycnal spectra')
 xlabel('radians per second')
 
 subplot(2,2,4)

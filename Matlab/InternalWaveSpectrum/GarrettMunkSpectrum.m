@@ -667,8 +667,9 @@ classdef GarrettMunkSpectrum < handle
                 
         function Phi = PhiForOmegaGM(self, z, omega)
             N = sqrt(self.N2(z));
-%             Omega = repmat(omega,length(z),1);
-            Phi = (N/(self.L_gm*self.invT_gm)); % .* (abs(Omega) < N);
+            renormalization = acos(self.f0/self.N_max)./acos(self.f0./N);
+            Omega = repmat(omega,length(z),1);
+            Phi = renormalization .* (N/(self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
         end
         
         function Gamma = GammaForOmegaWKB(self, z, omega)
@@ -693,8 +694,10 @@ classdef GarrettMunkSpectrum < handle
         
         function Gamma = GammaForOmegaGM(self, z, omega)
             N = sqrt(self.N2(z));
-%             Omega = repmat(omega,length(z),1);
-            Gamma = (1./(N*self.L_gm*self.invT_gm)); % .* (abs(Omega) < N);
+            renormalization = acos(self.f0/self.N_max)./acos(self.f0./N);
+            
+            Omega = repmat(omega,length(z),1);
+            Gamma = renormalization.*(1./(N*self.L_gm*self.invT_gm)) .* (abs(Omega) < N);
         end
     end
 end
