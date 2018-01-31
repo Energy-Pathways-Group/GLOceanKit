@@ -17,3 +17,7 @@ The Matlab directory contains the following subdirectories of models and tools,
 [Objective-C](GLOceanKit/)
 -------
 Contains internal modes routines, internal wave model, and a QG model.
+
+git-lfs
+--------
+This repo links to the lfs for some precomputed internal wave modes, but does not download them by default. To override these settings, see [this comment](https://github.com/git-lfs/git-lfs/issues/2717)
