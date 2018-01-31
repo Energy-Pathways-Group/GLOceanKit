@@ -20,4 +20,6 @@ Contains internal modes routines, internal wave model, and a QG model.
 
 git-lfs
 --------
-This repo links to the lfs for some precomputed internal wave modes, but does not download them by default. To override these settings, see [this comment](https://github.com/git-lfs/git-lfs/issues/2717)
+This repo links to the lfs for some precomputed internal wave modes, but does not download them by default. To override these settings, see [this comment](https://github.com/git-lfs/git-lfs/issues/2717). I think, that if you just do,
+`git config lfs.fetchexclude ""`
+then it'll remove the exclusion and you can started to download those big files.
