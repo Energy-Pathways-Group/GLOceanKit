@@ -12,6 +12,8 @@ classdef GarrettMunkSpectrum < handle
         B
         H
         
+        N2 % *function handle* of z
+        
         zInternal % A full depth coordinate used to precompute Phi & Gamma
         N2internal % N2 at zInternal
         
@@ -91,6 +93,9 @@ classdef GarrettMunkSpectrum < handle
                 self.f0 = 2*(7.2921e-5)*sin(file.latitude*pi/180);
                 self.N_max = file.N_max;
                 self.nModes = size(self.F_omega,3);
+                
+                self.rho = file.rho;
+                self.N2 = file.N2;
             else
                 % Make everything a column vector
                 if isrow(z_in)
@@ -134,6 +139,7 @@ classdef GarrettMunkSpectrum < handle
                 self.N_max = max(sqrt(im.N2_xLobatto));
                 self.zInternal = im.z_xLobatto;
                 self.N2internal = im.N2_xLobatto;
+                self.N2 = @(z) interp1(self.zInternal,self.N2internal,z,'linear');
             end
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
@@ -145,12 +151,8 @@ classdef GarrettMunkSpectrum < handle
             B_norm = 1/acos(f/Nmax);
             B_int = @(omega0,omega1) B_norm*(atan(f./sqrt(omega0.*omega0-f*f)) - atan(f./sqrt(omega1.*omega1-f*f)));
             self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax).*zeros(size(omega0)) + (omega0<f & omega1>f).*B_int(f*ones(size(omega0)),omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax*ones(size(omega1)));
-            
+                        
             self.PrecomputeComputeInternalModesForOmega();
-        end
-        
-        function N2 = N2(self,z)
-           N2 = interp1(self.zInternal,self.N2internal,z,'linear');
         end
         
  
@@ -359,10 +361,15 @@ classdef GarrettMunkSpectrum < handle
             S = S.*Gamma;
         end
         
-        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self,varargin)
             % Isopycnal vertical wavenumber spectrum. Because the domain is
             % finite, the vertical wavenumbers are pre-determined and are
             % returned as m.
+            if length(varargin) == 1
+                shouldStretch = varargin{1};
+            else
+                shouldStretch = 1;
+            end
             
             % Create the function that converts to energy
             f = self.f0;
@@ -370,7 +377,21 @@ classdef GarrettMunkSpectrum < handle
             C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );    
             
             om = linspace(0,self.N_max,2000);
-            z = linspace(min(self.z_in),max(self.z_in),513).';
+            
+            if shouldStretch == 1
+                zHD = linspace(min(self.z_in),max(self.z_in),2^14 + 1).';
+                xi = cumtrapz(zHD,sqrt(self.N2(zHD)));
+                Lxi = max(xi)-min(xi);
+                s = (self.L_gm/Lxi)*xi;
+                
+                s_grid = linspace(min(s),max(s),513).';
+                dgrid = s_grid(2)-s_grid(1);
+                z = interp1(s,zHD,s_grid); % positions in z, of the evenly spaced stretched coordinate
+            else
+                z = linspace(min(self.z_in),max(self.z_in),513).';
+                dgrid = z(2)-z(1);
+            end
+            
             z(end) = [];
             
             dOmegaVector = diff(om);
@@ -388,25 +409,88 @@ classdef GarrettMunkSpectrum < handle
             for i=1:length(om)
                 Bomega = self.B( abs( om(i) ) - dOmega/2, abs( om(i) ) + dOmega/2 );
                 M(i,:) = self.E* ( Bomega .* C(om(i)) ) * self.H(1:self.nModes);
-                M(isnan(M))=0;
             end
+            M(isnan(M))=0;
             M = sqrt(M/9.81); % Units of sqrt(self.E/g) is meters
             
             [Z,OMEGA,J] = ndgrid(reshape(self.zInternal,1,[]),reshape(self.omega,1,[]),reshape(1:self.nModes,1,[]));
             [Zo,OMEGAo,Jo] = ndgrid(reshape(z,1,[]),reshape(om,1,[]),reshape(1:self.nModes,1,[]));
             G = interpn(Z,OMEGA,J,self.G_omega,Zo,OMEGAo,Jo,'linear',0);
-            
-            iso = G .* shiftdim(M,-1);
-            dz = z(2)-z(1);
-            N = length(z);
-            dm = pi/(N*dz);
+                        
+            N = length(z); 
+            if shouldStretch == 1
+                rescale = sqrt(self.N2(z))/self.invT_gm;
+                iso = rescale .* G .* shiftdim(M,-1);
+                dm = pi/self.L_gm;
+            else
+                dm = pi/(N*dgrid);
+                iso = G .* shiftdim(M,-1);
+            end
             m = ((1:N)*dm)';
             
             % compute the discrete sine transform (DST), [f(1:N), 0, -f(N:-1:2)]
             dstScratch = ifft(cat(1,iso,shiftdim(zeros(length(om),self.nModes),-1),-iso(N:-1:2,:,:)),2*N,1);
             isobar = 2*imag(dstScratch(2:N+1,:,:));
             
-            S = N*dz*sum(sum(isobar.*conj(isobar), 3, 'omitnan'), 2, 'omitnan')/2/pi;
+            S = N*dgrid*sum(sum(isobar.*conj(isobar), 3, 'omitnan'), 2, 'omitnan')/2/pi;
+        end
+        
+        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbersWKB(self)
+            % Isopycnal vertical wavenumber spectrum. Because the domain is
+            % finite, the vertical wavenumbers are pre-determined and are
+            % returned as m.
+            
+            % Create the function that converts to energy
+            f = self.f0;
+            Nmax = self.N_max;
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );
+            
+            
+            zHD = linspace(min(self.z_in),max(self.z_in),2^14 + 1).';
+            xi = cumtrapz(zHD,sqrt(self.N2(zHD)));
+            Lxi = max(xi)-min(xi);
+            s = (self.L_gm/Lxi)*xi;
+            
+            s_grid = linspace(min(s),max(s),513).';
+            z = interp1(s,zHD,s_grid); % positions in z, of the evenly spaced stretched coordinate
+            
+            om = linspace(0,self.N_max,2000);
+            z(end) = [];
+            
+            dOmegaVector = diff(om);
+            if any(dOmegaVector<0)
+                error('omega must be strictly monotonically increasing.')
+            end
+            
+            dOmega = unique(dOmegaVector);
+            if max(abs(diff(dOmega))) > 1e-7
+                error('omega must be an evenly spaced grid');
+            end
+            dOmega = min( [self.f0/2,dOmega]);
+            
+            M = zeros(length(om),self.nModes);
+            for i=1:length(om)
+                Bomega = self.B( abs( om(i) ) - dOmega/2, abs( om(i) ) + dOmega/2 );
+                M(i,:) = self.E* ( Bomega .* C(om(i)) ) * self.H(1:self.nModes);
+            end
+            M(isnan(M))=0;
+            M = sqrt(M/9.81); % Units of sqrt(self.E/g) is meters
+            
+            [Z,OMEGA,J] = ndgrid(reshape(self.zInternal,1,[]),reshape(self.omega,1,[]),reshape(1:self.nModes,1,[]));
+            [Zo,OMEGAo,Jo] = ndgrid(reshape(z,1,[]),reshape(om,1,[]),reshape(1:self.nModes,1,[]));
+            G = interpn(Z,OMEGA,J,self.G_omega,Zo,OMEGAo,Jo,'linear',0);
+            
+            rescale = sqrt(self.N2(z))/self.invT_gm;
+            iso = rescale .* G .* shiftdim(M,-1);
+            N = length(z);
+            dm = pi/self.L_gm;
+            m = ((1:N)*dm)';
+            
+            % compute the discrete sine transform (DST), [f(1:N), 0, -f(N:-1:2)]
+            dstScratch = ifft(cat(1,iso,shiftdim(zeros(length(om),self.nModes),-1),-iso(N:-1:2,:,:)),2*N,1);
+            isobar = 2*imag(dstScratch(2:N+1,:,:));
+            
+            S = N*(s_grid(2)-s_grid(1))*sum(sum(isobar.*conj(isobar), 3, 'omitnan'), 2, 'omitnan')/2/pi;
         end
         
         function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
@@ -451,6 +535,14 @@ classdef GarrettMunkSpectrum < handle
             %
             %    z                          array of depths, in meters
             %    appoximation (optional)   'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            %
+            % NOTE: You'll notice that there are oscillations near the
+            % surface. What's happening is that each peak occurs near the
+            % turn depth of the highest frequencies that have been
+            % computed. In other words, I need to compute a more dense
+            % frequency spectrum near the buoyancy frequency. OR, to smooth
+            % over this, we just coarsen the z grid near the surface to
+            % match those peaks
             
             [z,approximation] = self.validateVarianceArguments(z,varargin{:});
             

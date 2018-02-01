@@ -161,10 +161,10 @@ classdef GarrettMunkSpectrumConstantStratification < handle
                
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Horizontal Vertical Velocity Spectra
+        %  Vertical Velocity Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function E = HorizontalVerticalVelocityVariance(self,z)
+        function E = VerticalVelocityVariance(self,z)
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
@@ -176,7 +176,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             E = A*Gamma;
         end
         
-        function S = HorizontalVerticalVelocitySpectrumAtFrequencies(self,z,omega)
+        function S = VerticalVelocitySpectrumAtFrequencies(self,z,omega)
             z = reshape(z,[],1);
             omega = reshape(omega,1,[]);
             

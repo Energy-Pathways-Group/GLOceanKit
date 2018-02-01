@@ -102,4 +102,4 @@ k2 = reshape(k .^2,[],1);
 omega_k = sqrt(g * h_k .* k2 + im.f0*im.f0);
 
 filename = sprintf('%s.mat',profilename);
-save(filename,'F_omega','G_omega','omega', 'h_omega', 'k_omega', 'F_k','G_k','h_k', 'k', 'omega_k', 'latitude','zIn','N_max','zInternal','N2internal');
+save(filename,'F_omega','G_omega','omega', 'h_omega', 'k_omega', 'F_k','G_k','h_k', 'k', 'omega_k', 'latitude','zIn','N_max','zInternal','N2internal', 'rho', 'N2');

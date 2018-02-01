@@ -87,6 +87,24 @@ xlim(1.05*[0 N0])
 title('horizontal vertical velocity spectra')
 xlabel('radians per second')
 
+[S, m] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
+
+H_wkb = S*2*pi*GM.invT_gm*GM.invT_gm/GM.E;
+j_wkb = m*GM.L_gm/pi;
+
+j = 1:100;
+figure
+scatter(j_wkb(j), H_wkb(j) ), hold on
+scatter(j,GM.H(j)), xlog, ylog
+
+% These give the same answer for constant stratification, yet the spectrum
+% sits a factor 2 higher. So, am I just multiplying by too much?
+% For exponential stratification there's another factor of 2, but it shows
+% up in the sum as well.
+trapz(z,Eeta.*(N/N0).^2)/GM.Lz
+sum(S)*m(1)
+
+return
 
 figure
 plot(GM.IsopycnalVariance(z),z)
@@ -94,13 +112,16 @@ plot(GM.IsopycnalVariance(z),z)
 GMConst = GarrettMunkSpectrumConstantStratification(N0,GM.z_in,GM.latitude);
 [S, m] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
 [S_const, m_const] = GMConst.IsopycnalSpectrumAtVerticalWavenumbers();
+[S_wkb, m_wkb] = GM.IsopycnalSpectrumAtVerticalWavenumbersWKB();
 figure
 plot(m,S),ylog, xlog, hold on
 plot(m_const,S_const)
+plot(m_wkb*5000/GM.L_gm,S_wkb)
 
 trapz(z,GMConst.IsopycnalVariance(z))/GM.Lz
 sum(S_const)*m_const(1)
 sum(S)*m(1)
+sum(S_wkb)*m_wkb(1)
 
 return
 

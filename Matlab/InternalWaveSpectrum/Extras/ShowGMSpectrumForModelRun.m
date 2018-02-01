@@ -24,7 +24,7 @@ GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L 0],latitude);
 EnergyScale = L/L_gm/2;
 Euv_const = EnergyScale*GMConst.HorizontalVelocityVariance(z);
 Eeta_const = EnergyScale*GMConst.IsopycnalVariance(z);
-Ew_const = EnergyScale*GMConst.HorizontalVerticalVelocityVariance(z);
+Ew_const = EnergyScale*GMConst.VerticalVelocityVariance(z);
 
 figure
 subplot(1,3,1)

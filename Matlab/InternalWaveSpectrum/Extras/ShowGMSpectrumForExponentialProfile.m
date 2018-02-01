@@ -3,6 +3,8 @@
 [rho, N2, zIn] = InternalModes.StratificationProfileWithName('exponential');
 latitude = 33;
 
+GM = GarrettMunkSpectrum('exponential');
+
 % Initialize the GarrettMunkSpectrum class with the profile, but do *not*
 % reinitialize it if it already exists. Recomputing the modes can take a
 % while.
@@ -85,7 +87,7 @@ L_gm = 1300;
 f0 = GM.f0;
 
 omega = linspace(-N0,N0,200);
-depths = [0 -L_gm/2 -L_gm];
+depths = [-18 -L_gm/2 -L_gm];
 depthlabels = {sprintf('%d m',depths(1)), sprintf('%d m',depths(2)), sprintf('%d m',depths(3))};
 
 Suv = GM.HorizontalVelocitySpectrumAtFrequencies(depths,omega,approximation);
