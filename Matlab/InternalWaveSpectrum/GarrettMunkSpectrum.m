@@ -361,7 +361,7 @@ classdef GarrettMunkSpectrum < handle
             S = S.*Gamma;
         end
         
-        function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self,varargin)
+        function [S, m, s_grid] = IsopycnalSpectrumAtVerticalWavenumbers(self,varargin)
             % Isopycnal vertical wavenumber spectrum. Because the domain is
             % finite, the vertical wavenumbers are pre-determined and are
             % returned as m.

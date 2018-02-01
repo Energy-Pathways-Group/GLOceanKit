@@ -1,4 +1,4 @@
-profilename = 'constant';
+profilename = 'latmix-site1';
 latitude = 31;
 nOmega = 128;
 nK = 128;

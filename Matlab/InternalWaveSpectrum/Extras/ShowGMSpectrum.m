@@ -3,8 +3,8 @@ if 1 == 0
     z = linspace(min(zIn),max(zIn),5000);
     N0 = sqrt(max(N2(z)));
 else
-    GM = GarrettMunkSpectrum('constant');
-    z = GM.zInternal;
+    GM = GarrettMunkSpectrum('exponential');
+    z = flip(GM.zInternal);
     N0 = GM.N_max;
 end
 
@@ -87,9 +87,10 @@ xlim(1.05*[0 N0])
 title('horizontal vertical velocity spectra')
 xlabel('radians per second')
 
-[S, m] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
+[S, m, s_grid] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
 
-H_wkb = S*2*pi*GM.invT_gm*GM.invT_gm/GM.E;
+scale = 5000/1300;
+H_wkb = scale*S*2*pi*GM.invT_gm*GM.invT_gm/GM.E;
 j_wkb = m*GM.L_gm/pi;
 
 j = 1:100;
@@ -97,10 +98,9 @@ figure
 scatter(j_wkb(j), H_wkb(j) ), hold on
 scatter(j,GM.H(j)), xlog, ylog
 
-% These give the same answer for constant stratification, yet the spectrum
-% sits a factor 2 higher. So, am I just multiplying by too much?
-% For exponential stratification there's another factor of 2, but it shows
-% up in the sum as well.
+% Using the 5000/1300 multiplier, constant stratification is
+% consistent---the total variance sums are equal. For exponential
+% stratification, the spectrum and it's sum are exactly 2x too big.
 trapz(z,Eeta.*(N/N0).^2)/GM.Lz
 sum(S)*m(1)
 
