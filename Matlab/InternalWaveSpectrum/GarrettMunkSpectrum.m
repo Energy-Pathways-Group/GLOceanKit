@@ -419,12 +419,16 @@ classdef GarrettMunkSpectrum < handle
                         
             N = length(z); 
             if shouldStretch == 1
-                rescale = sqrt(self.N2(z))/self.invT_gm;
+                rescale = sqrt(Lxi/self.invT_gm/self.invT_gm/self.Lz)*(self.N2(z)).^(1/4);
                 iso = rescale .* G .* shiftdim(M,-1);
                 dm = pi/self.L_gm;
+                % This gives us 13.8
+                % trapz(s_grid(1:512),sqrt(self.invT_gm*self.invT_gm./self.N2(z)).*sum(sum(iso.^2,3),2))/5000
             else
                 dm = pi/(N*dgrid);
                 iso = G .* shiftdim(M,-1);
+                % This gives 13.7, as it should
+                % trapz(z(1:512),(self.N2(z)/self.invT_gm/self.invT_gm).*sum(sum(iso.^2,3),2))/5000
             end
             m = ((1:N)*dm)';
             
@@ -432,6 +436,9 @@ classdef GarrettMunkSpectrum < handle
             dstScratch = ifft(cat(1,iso,shiftdim(zeros(length(om),self.nModes),-1),-iso(N:-1:2,:,:)),2*N,1);
             isobar = 2*imag(dstScratch(2:N+1,:,:));
             
+            % This definition of the spectrum means that,
+            % (1/L)*sum(iso.*iso)*dz== sum(S)*dm
+            % The units of S are then in meters^3.
             S = N*dgrid*sum(sum(isobar.*conj(isobar), 3, 'omitnan'), 2, 'omitnan')/2/pi;
         end
         

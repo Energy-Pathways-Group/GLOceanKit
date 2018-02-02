@@ -89,8 +89,7 @@ xlabel('radians per second')
 
 [S, m, s_grid] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
 
-scale = 5000/1300;
-H_wkb = scale*S*2*pi*GM.invT_gm*GM.invT_gm/GM.E;
+H_wkb = S*2*pi*GM.invT_gm*GM.invT_gm*GM.Lz/GM.E/GM.L_gm;
 j_wkb = m*GM.L_gm/pi;
 
 j = 1:100;
@@ -103,6 +102,7 @@ scatter(j,GM.H(j)), xlog, ylog
 % stratification, the spectrum and it's sum are exactly 2x too big.
 trapz(z,Eeta.*(N/N0).^2)/GM.Lz
 sum(S)*m(1)
+GM.E/(2*GM.invT_gm*GM.invT_gm*GM.Lz)
 
 return
 
