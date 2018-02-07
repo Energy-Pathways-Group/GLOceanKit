@@ -87,7 +87,10 @@ xlim(1.05*[0 N0])
 title('horizontal vertical velocity spectra')
 xlabel('radians per second')
 
-[S, m, s_grid] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
+% [S, m, s_grid] = GM.IsopycnalSpectrumAtVerticalWavenumbers();
+
+
+[S, m, s_grid] = GM.IsopycnalSpectrumAtVerticalWavenumbersSummed();
 
 H_wkb = S*2*pi*GM.invT_gm*GM.invT_gm*GM.Lz/GM.E/GM.L_gm;
 j_wkb = m*GM.L_gm/pi;
