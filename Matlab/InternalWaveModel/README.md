@@ -227,3 +227,6 @@ where the only required argument indicates the GM reference level. This function
 - `'maxDeltaOmega'` is the maximum width in frequency that will be integrated over for assigned energy. By default it is self.Nmax-self.f0.
 - `'initializeModes'`  is used to determine which modes get initialized. Possible values are `'all'`, `'internalOnly'`, or `'externalOnly'` . Default is `'all'`
 - `'energyWarningThreshold'` will provide a warning if the energy of a single mode exceeds a certain value of the total energy in that modal band. Values between 0 and 1. Default is 0.5 (e.g., you get a warning if the energy in a single mode exceeds 50% of the total energy).
+- `'excludeNyquist'` takes a 0 or 1 to indicate whether or not to include the Nyquist wavenumbers in initialization. Default 1.
+- `'maxK'` and `'minK'` can be set to limit the wavenumbers that will be initialized. By default all resolved wavenumbers are initialized (other than the Nyquist, as above).
+- `'minMode'` and `'maxMode'` can be set to limit the vertical modes that will be initialized. By default all resolved vertical modes are initialized.

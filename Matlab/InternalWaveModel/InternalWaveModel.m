@@ -613,6 +613,10 @@ classdef (Abstract) InternalWaveModel < handle
             initializeModes = 0;
             energyWarningThreshold = 0.5;
             excludeNyquist = 1;
+            minK = 0;
+            maxK = max(max(max(abs(self.K))));
+            minMode = 1;
+            maxMode = self.nModes;
             
             % Now override the defaults with user settings
             for iArg = 1:2:length(varargin)
@@ -634,14 +638,22 @@ classdef (Abstract) InternalWaveModel < handle
                     else
                         error('Invalid option for initializeModes');
                     end
+                elseif strcmp(varargin{iArg}, 'minK')
+                    minK = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'maxK')
+                    maxK = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'minMode')
+                    minMode = varargin{iArg+1};
+                elseif strcmp(varargin{iArg}, 'maxMode')
+                    maxMode = varargin{iArg+1};
                 else
                     error('Invalid argument');
                 end
             end
                   
             if excludeNyquist == 1
-                nyquistIndicesForK = sub2ind(size(self.Omega),(ceil(self.Nx/2)+1)*ones(1,self.Ny),1:self.Ny);
-                nyquistIndicesForL = sub2ind(size(self.Omega),1:self.Nx,(ceil(self.Ny/2)+1)*ones(1,self.Nx));
+                nyquistIndicesForK = sub2ind(size(self.Omega),repmat((ceil(self.Nx/2)+1)*ones(1,self.Ny),[1 self.nModes]),repmat(1:self.Ny,[1 self.nModes]),reshape(ones(1,self.Ny)'*(1:self.nModes),1,[]));
+                nyquistIndicesForL = sub2ind(size(self.Omega),repmat(1:self.Nx,[1 self.nModes]),repmat((ceil(self.Ny/2)+1)*ones(1,self.Nx),[1 self.nModes]),reshape(ones(1,self.Nx)'*(1:self.nModes),1,[]));
                 nyquistIndices = union(nyquistIndicesForK,nyquistIndicesForL);
             end
             
@@ -658,16 +670,17 @@ classdef (Abstract) InternalWaveModel < handle
             externalOmegaLinearIndices = 1:length(self.omega_ext);
             GM3Dint = zeros(size(self.Kh));
             GM3Dext = zeros(size(self.k_ext));
-            for iMode = 1:self.nModes
-                % Flatten the internal omegas (and their index)
-                intOmegas = reshape(abs(self.Omega(:,:,iMode)),[],1);
-                intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1);
-                
+            indicesToSkip = reshape(internalOmegaLinearIndices(abs(self.K) < minK | abs(self.K) > maxK),[],1);
+            for iMode = minMode:maxMode
+                intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1); % Find the indices of everything with this iMode
                 if excludeNyquist == 1
-                    intOmegas(nyquistIndices) = [];
-                    intOmegasLinearIndicesForIMode(nyquistIndices) = [];
+                    intOmegasLinearIndicesForIMode = setdiff( intOmegasLinearIndicesForIMode, nyquistIndices); % Now remove indices associated with the Nyquist
                 end
+                intOmegasLinearIndicesForIMode = setdiff( intOmegasLinearIndicesForIMode, indicesToSkip); % And remove indices outside the user specified wavenumber threshold.
                 
+                % Flatten the internal omegas (and their index)
+                intOmegas = abs(self.Omega(intOmegasLinearIndicesForIMode));
+                                
                 % Now do the same for the external modes
                 indices = find(self.j_ext == iMode);
                 extOmegas = reshape(abs(self.omega_ext(indices)),[],1);
