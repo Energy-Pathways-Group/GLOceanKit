@@ -1,4 +1,5 @@
 profilename = 'latmix-site1';
+boundaryCondition = UpperBoundary.freeSurface;
 latitude = 31;
 nOmega = 128;
 nK = 128;
@@ -21,6 +22,7 @@ g = 9.81;
 nEVP = nEVPMin;
 im = InternalModesAdaptiveSpectral(rho,zIn,zInternal,latitude,'nEVP',nEVP);
 im.normalization = Normalization.kConstant;
+im.upperBoundary = boundaryCondition;
 
 % 
 omega = exp(linspace(log(im.f0),log(0.99*N_max),nOmega));
@@ -44,11 +46,18 @@ for i = 1:length(x)
         nEVP = nEVP + 128;
         im = InternalModesAdaptiveSpectral(rho,zIn,zInternal,latitude,'nEVP',nEVP);
         im.normalization = Normalization.kConstant;
+        im.upperBoundary = boundaryCondition;
         [F, G, h] = im.(methodName)(x(i));
+    end
+    if boundaryCondition == UpperBoundary.freeSurface
+        F = F(:,2:end);
+        G = G(:,2:end);
+        h = h(2:end);
     end
     if length(h) < nModes
         fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),nModes);
     end
+
     j0 = min(length(h),nModes);
     
     h = reshape(h,1,[]);
@@ -81,7 +90,13 @@ for i = 1:length(x)
         nEVP = nEVP + 128;
         im = InternalModesAdaptiveSpectral(rho,zIn,zInternal,latitude,'nEVP',nEVP);
         im.normalization = Normalization.kConstant;
+        im.upperBoundary = boundaryCondition;
         [F, G, h] = im.(methodName)(x(i));
+    end
+    if boundaryCondition == UpperBoundary.freeSurface
+        F = F(:,2:end);
+        G = G(:,2:end);
+        h = h(2:end);
     end
     if length(h) < nModes
         fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),nModes);
@@ -101,5 +116,10 @@ h_k = h_out;
 k2 = reshape(k .^2,[],1);
 omega_k = sqrt(g * h_k .* k2 + im.f0*im.f0);
 
-filename = sprintf('%s.mat',profilename);
+if boundaryCondition == UpperBoundary.freeSurface
+    filename = sprintf('%s-free-surface.mat',profilename);
+else
+    filename = sprintf('%s.mat',profilename);
+end
+
 save(filename,'F_omega','G_omega','omega', 'h_omega', 'k_omega', 'F_k','G_k','h_k', 'k', 'omega_k', 'latitude','zIn','N_max','zInternal','N2internal', 'rho', 'N2');

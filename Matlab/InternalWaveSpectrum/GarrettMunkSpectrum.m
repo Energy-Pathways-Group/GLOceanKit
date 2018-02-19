@@ -64,7 +64,8 @@ classdef GarrettMunkSpectrum < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = GarrettMunkSpectrum(rho, z_in, latitude, varargin)
             if isa(rho,'char') == true
-                filepath = sprintf('../PrecomputedProfiles/%s.mat',rho);
+%                 filepath = sprintf('../PrecomputedProfiles/%s.mat',rho);
+                filepath = sprintf('%s.mat',rho);
                 if ~exist(filepath,'file')
                     error('Cannot find precomputed file at path %s\n',filepath);
                 end
@@ -81,7 +82,7 @@ classdef GarrettMunkSpectrum < handle
                 self.h_omega = file.h_omega;
                 self.k_omega = file.k_omega;
                 
-                self.didPrecomputePhiAndGammaForOmega = 1;
+                self.didPrecomputePhiAndGammaForK = 1;
                 self.k = file.k;
                 self.F_k = file.F_k;
                 self.G_k = file.G_k;
@@ -193,7 +194,7 @@ classdef GarrettMunkSpectrum < handle
             Gamma = nan(length(self.zInternal),length(self.k),self.nModes);
             for i=1:length(self.k)
                 j0 = sum(~isnan(self.G_k(1,i,:)));
-                Gamma(:,i,1:j0) = (1/self.g)*(self.G_k(:,i,1:j0).^2) .* self.H(1:j0);
+                Gamma(:,i,1:j0) = (1/self.g)*(squeeze(self.G_k(:,i,1:j0)).^2) .* self.H(1:j0);
             end
         end
 
