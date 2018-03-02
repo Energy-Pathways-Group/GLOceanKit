@@ -287,11 +287,17 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nGrid = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
             end
             
-            n = self.nGrid;
-            self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;  
-            self.rho_zLobatto = rho(self.zLobatto);
-            self.rho_function = rho;
-            
+            if 0
+                [self.zLobatto, rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-16);
+                self.rho_zLobatto = rho(self.zLobatto);
+                self.rho_function = rho;
+                self.nGrid = length(self.zLobatto);
+            else
+                n = self.nGrid;
+                self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+                self.rho_zLobatto = rho(self.zLobatto);
+                self.rho_function = rho;
+            end
             self.InitializeZLobattoProperties();
         end      
         
@@ -471,6 +477,34 @@ classdef InternalModesSpectral < InternalModesBase
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        function [zLobatto, rho_zCheb] = ProjectOntoChebyshevPolynomialsWithTolerance(zIn, rhoFunc, tol)
+            m = 3;
+            m_max = 15;
+            
+            Lz = max(zIn)-min(zIn);
+            zMin = min(zIn);
+            
+            n = 2^m + 1;
+            cutoff = n;
+            while (cutoff == n && m <= m_max)
+                m = m + 1;
+                n = 2^m + 1;
+                
+                zLobatto = (Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+                rho_zCheb = InternalModesSpectral.fct(rhoFunc(zLobatto));
+                cutoff = InternalModesSpectral.standardChop(rho_zCheb, tol);
+            end
+            
+            if cutoff < n
+                n = cutoff;
+                zLobatto = (Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
+            else
+                disp('Unable to project density function within requested tolerance! Using maximum allowed length.');
+            end
+            
+            rho_zCheb = rho_zCheb(1:n);
+        end
+        
         % Fast Chebyshev Transform
         % By Allan P. Engsig-Karup, apek@imm.dtu.dk.
         function uh = fct(u)
@@ -554,6 +588,28 @@ classdef InternalModesSpectral < InternalModesBase
                 v_p(k) = 2*k*v(k+1) + v_p(k+2);
             end
             v_p(1) = v_p(1)/2;
+        end
+        
+        function v_p = IntegrateChebyshevVector(v)
+            % Taken from cumsum as part of chebfun
+            %
+            % Copyright 2017 by The University of Oxford and The Chebfun Developers.
+            % See http://www.chebfun.org/ for Chebfun information.
+            
+            % integration target
+            n = length(v);
+            v_p = zeros(n+1,1);
+            
+            % zero-pad coefficients
+            v = reshape(v,[],1);
+            v = [v; zeros(2,1)];
+            
+            % Compute b_(2) ... b_(n+1):
+            v_p(3:n+1,:) = (v(2:n,:) - v(4:n+2,:)) ./ (2*(2:n).');
+            v_p(2,:) = v(1,:) - v(3,:)/2;        % Compute b_1
+            t = ones(1, n);
+            t(2:2:end) = -1;
+            v_p(1,:) = t*v_p(2:end,:);             % Compute b_0 (satisfies f(-1) = 0)
         end
         
         function D = ChebyshevDifferentiationMatrix(n)
@@ -660,6 +716,60 @@ classdef InternalModesSpectral < InternalModesBase
                 np = np + 1;
                 n = 2^np;
                 z_lobatto_grid = (L/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(z);
+            end
+        end
+        
+        function cutoff = standardChop(coeffs, tol)
+            % Copyright 2017 by The University of Oxford and The Chebfun Developers. 
+            % See http://www.chebfun.org/ for Chebfun information.
+            %
+            % This is taken, without comments and safe checks, from the
+            % above developers. They get sole credit. Jared Aurentz and Nick Trefethen, July 2015.
+            n = length(coeffs);
+            cutoff = n;
+            if ( n < 17 )
+                return
+            end
+            
+            envelope = cummax(abs(coeffs),'reverse');
+            if envelope(1) == 0
+                cutoff = 1;
+                return
+            else
+                envelope = envelope/envelope(1);
+            end
+            
+            for j = 2:n
+                j2 = round(1.25*j + 5);
+                if ( j2 > n )
+                    % there is no plateau: exit
+                    return
+                end
+                e1 = envelope(j);
+                e2 = envelope(j2);
+                r = 3*(1 - log(e1)/log(tol));
+                plateau = (e1 == 0) | (e2/e1 > r);
+                if ( plateau )
+                    % a plateau has been found: go to Step 3
+                    plateauPoint = j - 1;
+                    break
+                end
+            end
+            
+            
+            if ( envelope(plateauPoint) == 0 )
+                cutoff = plateauPoint;
+            else
+                j3 = sum(envelope >= tol^(7/6));
+                if ( j3 < j2 )
+                    j2 = j3 + 1;
+                    envelope(j2) = tol^(7/6);
+                end
+                cc = log10(envelope(1:j2));
+                cc = cc(:);
+                cc = cc + linspace(0, (-1/3)*log10(tol), j2)';
+                [~, d] = min(cc);
+                cutoff = max(d - 1, 1);
             end
             
         end
