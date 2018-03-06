@@ -229,7 +229,7 @@ classdef InternalModes < handle
             % y is the true solution, x is the approximated
             errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
             
-            if  strcmp(self.stratification, 'constant')
+            if strcmp(self.stratification, 'constant')
                 imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
                 imConstant.upperBoundary = self.upperBoundary;
                 imConstant.normalization = self.normalization;
@@ -270,6 +270,11 @@ classdef InternalModes < handle
                 imConstant.upperBoundary = self.upperBoundary;
                 imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtFrequency( omega );
+            elseif  strcmp(self.stratification, 'exponential')
+                imExponential = InternalModesExponentialStratification([5.2e-3 1300],[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imExponential.upperBoundary = self.upperBoundary;
+                imExponential.normalization = self.normalization;
+                [F_analytical,G_analytical,h_analytical] = imExponential.ModesAtFrequency( omega );
             else
                 [rhoFunc, ~, zIn] = InternalModes.StratificationProfileWithName(self.stratification);
                 imAnalytical = InternalModesAdaptiveSpectral(rhoFunc,zIn,self.z,self.latitude,'nEVP',512,'nModes',self.nModes);
