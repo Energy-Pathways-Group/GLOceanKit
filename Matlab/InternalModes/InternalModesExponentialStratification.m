@@ -6,6 +6,10 @@ classdef InternalModesExponentialStratification < InternalModesBase
         N2
         rho_z
         rho_zz
+        
+        om
+        s
+        shouldTruncate
     end
     
     methods
@@ -32,6 +36,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
             self.rho_z = -(self.rho0*self.N0*self.N0/self.g)*exp(2*self.z/self.b);
             self.rho_zz = -(2*self.rho0*self.N0*self.N0/self.g/self.b)*exp(2*self.z/self.b);
             
+            
+            self.om = @(omega,c) omega*self.b./c;
+            self.s = @(z,c) self.N0*self.b*exp(z/self.b)./c;
+            self.shouldTruncate = @(omega,c,zT) (abs(bessely(self.om(omega,c),self.s(zT,c))/bessely(self.om(omega,c),self.s(-self.Lz,c) ))>1e-7);
+            
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
@@ -45,25 +54,24 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 error('Not yet implemented.');
             end
             
+            zT = max(self.b*log(omega/self.N0),-self.Lz);
             if omega > self.N0*exp(-self.Lz/self.b)
                 eta = (sqrt(self.N0^2 - omega^2) - omega*acos(omega/self.N0))/pi;
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [3/4 nModes-1/4]
                 omega_bar = omega/eta;
                 N_bar = self.N0/eta;
-                zT = self.b*log(omega/self.N0);
-                f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).*bessely(omega_bar.*x,N_bar.*x)./bessely(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x) - besselj(omega_bar.*x,N_bar.*x);
-                Gfunc = @(z,c) besselj(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c)*bessely(omega*self.b./c,self.N0*self.b./c) - (abs(bessely(omega*self.b./c,self.N0*self.b*exp(zT/self.b)./c)/bessely(omega*self.b./c,self.N0*self.b*exp(-self.Lz/self.b)./c))>1e-7) * bessely(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c) .* besselj(omega*self.b./c,self.N0*self.b./c);
                 
-%                 f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).* ( besselj(omega.*x,N_bar.*x).*cos(omega.*x*pi)-besselj(-omega.*x,N_bar.*x) ) - besselj(omega_bar.*x,N_bar.*x).*( besselj(omega.*x,N_bar*exp(-self.Lz/self.b).*x).*cos(omega.*x*pi)-besselj(-omega.*x,N_bar*exp(-self.Lz/self.b).*x) );
-%                 Gfunc = @(z,c) besselj(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c).* ( besselj(omega*self.b./c,self.N0*self.b./c).*cos(omega*self.b./c*pi)-besselj(-omega*self.b./c,self.N0*self.b./c) ) - besselj(omega*self.b./c,self.N0*self.b./c).*( besselj(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c).*cos(omega*self.b./c*pi)-besselj(-omega*self.b./c,self.N0*self.b*exp(-z/self.b)./c) );
-
+                
+                % This is the function that we use to find the eigenvalues,
+                % by finding its roots.
+                f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).*bessely(omega_bar.*x,N_bar.*x)./bessely(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x) - besselj(omega_bar.*x,N_bar.*x);
+                
             else
                 eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
                 omega_bar = omega/eta;
                 N_bar = self.N0/eta;
                 f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).*bessely(omega_bar.*x,N_bar.*x) - besselj(omega_bar.*x,N_bar.*x).*bessely(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x);
-                Gfunc = @(z,c) besselj(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c) .* bessely(omega*self.b./c,self.N0*self.b./c) - besselj(omega*self.b./c,self.N0*self.b./c).*bessely(omega*self.b./c,self.N0*self.b*exp(z/self.b)./c);
             end
             
             % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
@@ -75,29 +83,25 @@ classdef InternalModesExponentialStratification < InternalModesBase
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);
             
-            bounds = [-self.Lz 0];
-            w = chebfun(@(z) self.N0^2*exp(2*z/self.b) - self.f0^2,bounds);
+            lowerIntegrationBound = max(5*zT,-self.Lz);
             for j=1:self.nModes
-                Gtmp = @(z) Gfunc(z,sqrt(self.g*h(j)));
-                Gj = chebfun(Gtmp,bounds,'splitting','on');
-                Fj = h(j)*diff(Gj);
+                c = sqrt(self.g*h(j));
+                [Ffunc,Gfunc] = self.ModeFunctionsForOmegaAndC(omega,c,zT);
                 switch self.normalization
                     case Normalization.uMax
-                        r = roots(diff(Fj));
-                        A = max( abs( Fj(r) ) );
+                        A = max( abs( Ffunc(linspace(lowerIntegrationBound,0,5000),c ) ) );
                     case Normalization.wMax
-                        r = roots(Fj);
-                        A = max( abs( Gj(r) ) );
+                        A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000),c ) )  );
                     case Normalization.kConstant           
-                        A = sqrt(sum(w.*Gj.^2)/self.g);
+                        A = sqrt(integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,c).^2,lowerIntegrationBound,0)/self.g);
                     case Normalization.omegaConstant
-                        A = sqrt(sum(Fj.^2)/self.Lz);
+                        A = sqrt(integral( @(z) Ffunc(z,c).^2,lowerIntegrationBound,0)/self.Lz);
                 end
-                if Fj(0) < 0
+                if Ffunc(0,c) < 0
                     A = -A;
                 end
-                F(:,j) = Fj(self.z)/A;
-                G(:,j) = Gj(self.z)/A;
+                F(:,j) = Ffunc(self.z,c)/A;
+                G(:,j) = Gfunc(self.z,c)/A;
             end
             
             k = self.kFromOmega(h,omega);
@@ -111,6 +115,21 @@ classdef InternalModesExponentialStratification < InternalModesBase
         function [psi] = BottomModesAtWavenumber(self, k)
             % size(psi) = [size(k); length(z)]
             error('Not yet implemented. See LaCasce 2012.');
+        end
+        
+        function [F,G] = ModeFunctionsForOmegaAndC(self,omega,c,zT)
+            if nargin == 2
+                zT = -self.Lz;
+            end
+            omega_bar = @(c) self.om(omega,c);
+            s_bar = self.s;
+            if self.shouldTruncate(omega,c,zT) == 0
+                G = @(z,c) besselj( omega_bar(c),s_bar(z,c) )*bessely(omega_bar(c),s_bar(0,c));
+                F = @(z,c) (self.N0*exp(z/self.b)*c/2/self.g) .* ( (besselj(omega_bar(c)-1,s_bar(z,c)) - besselj(omega_bar(c) + 1,s_bar(z,c))) .*bessely(omega_bar(c),s_bar(0,c)) );
+            else
+                G = @(z,c) besselj( omega_bar(c),s_bar(z,c) )*bessely(omega_bar(c),s_bar(0,c)) - bessely(omega_bar(c),s_bar(z,c)) .* besselj(omega_bar(c),s_bar(0,c));
+                F = @(z,c) (self.N0*exp(z/self.b)*c/2/self.g) .* ( (besselj(omega_bar(c)-1,s_bar(z,c)) - besselj(omega_bar(c) + 1,s_bar(z,c))) .*bessely(omega_bar(c),s_bar(0,c)) - (bessely(omega_bar(c)-1,s_bar(z,c))-bessely(omega_bar(c)+1,s_bar(z,c))) .* besselj(omega_bar(c),s_bar(0,c)) );
+            end
         end
         
         % k_z and h should be of size [1, nModes]
