@@ -94,8 +94,16 @@ classdef InternalModesExponentialStratification < InternalModesBase
             x = linspace(bounds(1),bounds(2),self.nInitialSearchModes); % the choice of nInitialModes is somewhat arbitrary here.
             
             omega = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
-            f_smallnu = @(x) besselj(omega(x),exp(-self.Lz/self.b)*x).*bessely(omega(x),x) - besselj(omega(x),x).*bessely(omega(x),exp(-self.Lz/self.b)*x);
-            f_bignu = @(x) besselj(omega(x),exp(-self.Lz/self.b)*x).*bessely(omega(x),x)./bessely(omega(x),exp(-self.Lz/self.b)*x) - besselj(omega(x),x);
+            if self.upperBoundary == UpperBoundary.rigidLid
+                A = @(x) bessely(omega(x),x);
+                B = @(x) - besselj(omega(x),x);
+            elseif self.upperBoundary == UpperBoundary.freeSurface
+                alpha = self.b*self.N0*self.N0/(2*self.g);
+                A = @(x) bessely(omega(x),x) - (alpha./x) .* ( bessely(omega(x)-1,x) - bessely(omega(x)+1,x) );
+                B = @(x) - besselj(omega(x),x) + (alpha./x) .* ( besselj(omega(x)-1,x) - besselj(omega(x)+1,x) );
+            end
+            f_smallnu = @(x) A(x) .* besselj(omega(x),exp(-self.Lz/self.b)*x) + B(x) .* bessely(omega(x),exp(-self.Lz/self.b)*x);
+            f_bignu = @(x) (A(x) ./ bessely(omega(x),exp(-self.Lz/self.b)*x) ) .* besselj(omega(x),exp(-self.Lz/self.b)*x) + B(x);
             
             % The function omega(x)./(exp(-D/b)*x) will monotonically decay with x.
             % We want to find where it first drops below 5, and use the appropriate
