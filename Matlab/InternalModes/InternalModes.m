@@ -234,6 +234,11 @@ classdef InternalModes < handle
                 imConstant.upperBoundary = self.upperBoundary;
                 imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtWavenumber( k );
+            elseif  strcmp(self.stratification, 'exponential')
+                imExponential = InternalModesExponentialStratification([5.2e-3 1300],[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imExponential.upperBoundary = self.upperBoundary;
+                imExponential.normalization = self.normalization;
+                [F_analytical,G_analytical,h_analytical] = imExponential.ModesAtWavenumber( k );
             else
                 [rhoFunc, ~, zIn] = InternalModes.StratificationProfileWithName(self.stratification);
                 imAnalytical = InternalModesAdaptiveSpectral(rhoFunc,zIn,self.z,self.latitude,'nEVP',512,'nModes',self.nModes);

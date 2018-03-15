@@ -13,7 +13,7 @@ N0 = 5.2e-3;
 n = 2*64;
 latitude = 33;
 [rhoFunction, N2Function, zIn] = InternalModes.StratificationProfileWithName('exponential');
-z = linspace(min(zIn),max(zIn),n)';
+z = linspace(min(zIn),max(zIn),10*n)';
 imAnalytical = InternalModesExponentialStratification([N0 1300], zIn, z, latitude,'nModes',n);
 imAnalytical.upperBoundary = upperBoundary;
 imAnalytical.normalization = Normalization.kConstant;
@@ -36,7 +36,7 @@ omega = 0.2*N0;
 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
 max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
 
-iModes = 1;
+iModes = [1;32];
 figure
 subplot(1,2,1)
 plot(F(:,iModes),z), hold on,
