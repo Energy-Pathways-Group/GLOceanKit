@@ -57,6 +57,9 @@ classdef InternalModesExponentialStratification < InternalModesBase
             epsilon = self.f0/self.N0;
             lambda = k*self.b;
             
+            % These are our "low frequency" (lf) and "high frequency" (hf)
+            % estimates of the ceigenvalues, taken from Desaubies 1975. We
+            % use these as bounds in our root finding algorithm.
             x_lf = @(j,lambda) (j-1/4)*pi + lambda*pi/2;
             x_hf = @(j,lambda) lambda.*(1+0.5*(3*pi*(4*j-1)./(lambda*8*sqrt(2))).^(2/3));
             
@@ -91,6 +94,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
         end
         
         function r = FindRootsInRange(self, epsilon, lambda, bounds)
+            % epsilon = f0/N0, lambda = b*k, and x = N0*b/sqrt(g*h)
             x = linspace(bounds(1),bounds(2),self.nInitialSearchModes); % the choice of nInitialModes is somewhat arbitrary here.
             
             omega = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
@@ -130,6 +134,10 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 f_cheb = chebfun(f,[x(xcutoffIndex) bounds(2)] ,'splitting','on');
                 r = [r; roots(f_cheb)];
             end
+        end
+        
+        function [F0,G0,h0] = BarotropicModeAtWavenumber(self, k)
+            
         end
         
         function [F,G,h,k] = ModesAtFrequency(self, omega )
