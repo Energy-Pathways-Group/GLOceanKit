@@ -41,8 +41,14 @@ classdef InternalModesExponentialStratification < InternalModesBase
             self.rho_z = -(self.rho0*self.N0*self.N0/self.g)*exp(2*self.z/self.b);
             self.rho_zz = -(2*self.rho0*self.N0*self.N0/self.g/self.b)*exp(2*self.z/self.b);
             
+            D = self.Lz;
+            alpha = @(omega,c) besselj(omega*b./c,N0*b*exp(-D/b)./c) ./ bessely(omega*b./c,N0*b*exp(-D/b)./c );
+            
             % A test to see which version of the solution to use             
             self.shouldApproximate = @(omega,c) (abs(bessely(b*omega/c,max(b*omega/c,(b*N0/c)*exp(-self.Lz/self.b)))/bessely(b*omega/c,(b*N0/c)*exp(-self.Lz/self.b) ))<1e-7);
+            self.shouldApproximate = @(omega,c) abs( alpha(omega,c) * bessely(b*omega/c,max(b*omega/c,(b*omega/c)*exp(-D/b))) / besselj(b*omega/c,max(b*omega/c,(b*omega/c)*exp(-D/b))) ) < 1e-15;
+            
+            self.shouldApproximate = @(omega,c) abs( alpha(omega,c) ) < 1e-20;
             
             self.GSolutionFull = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) )*bessely(b*(omega/c),(b*N0/c)) - bessely(b*(omega/c),(b*N0/c)*exp(z/self.b)) .* besselj(b*(omega/c),(b*N0/c));
             self.GSolutionApprox = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) )*bessely(b*(omega/c),(b*N0/c));
@@ -50,6 +56,12 @@ classdef InternalModesExponentialStratification < InternalModesBase
             self.FSolutionFull = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) .*bessely(b*(omega/c),b*N0/c) - (bessely(b*(omega/c)-1,(b*N0/c)*exp(z/b))-bessely(b*(omega/c)+1,(b*N0/c)*exp(z/b))) .* besselj(b*(omega/c),b*N0/c) );
             self.FSolutionApprox = @(z,omega,c) (N0*exp(z/b)*c/2/g) .*  (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) .*bessely(b*(omega/c),b*N0/c);
 
+
+%             
+%             self.GSolution = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) ) - alpha(omega,c) .* bessely(b*(omega/c),(b*N0/c)*exp(z/self.b));
+%             self.FSolution = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) -  alpha(omega,c) .* (bessely(b*(omega/c)-1,(b*N0/c)*exp(z/b))-bessely(b*(omega/c)+1,(b*N0/c)*exp(z/b))) );
+
+            
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
