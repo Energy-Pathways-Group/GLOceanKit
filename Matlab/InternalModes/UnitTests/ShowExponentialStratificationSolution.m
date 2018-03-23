@@ -31,7 +31,7 @@ end
 im.upperBoundary = upperBoundary;
 im.normalization = Normalization.kConstant;
 
-omega = 0.2*N0;
+omega = 0.8*N0;
 [F,G,h] = im.ModesAtFrequency( omega );
 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
 max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);

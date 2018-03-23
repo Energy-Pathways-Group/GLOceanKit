@@ -221,6 +221,8 @@ classdef InternalModesExponentialStratification < InternalModesBase
                         A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) ) )  );
                     case Normalization.kConstant
                         A = sqrt(integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
+                        A2 = self.kConstantNormalizationForOmegaAndC(omega(j), c(j));
+                        A2/A
                     case Normalization.omegaConstant
                         A = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
                 end
@@ -230,6 +232,16 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 F(:,j) = Ffunc(self.z,omega(j),c(j))/A;
                 G(:,j) = Gfunc(self.z,omega(j),c(j))/A;
             end
+        end
+       
+        function A = kConstantNormalizationForOmegaAndC(self,omega,c)
+            nu = self.b*omega/c;
+            f = @(s) s*s*(besselj(nu,s).^2 - besselj(nu-1,s)*besselj(nu+1,s))/2;
+            g = @(s) (((s/2).^(2*nu))/(2*(nu^3)*gamma(nu)^2)) * genHyper([nu, nu+1/2],[nu+1,nu+1,2*nu+1],-s*s);
+            s0 = self.N0 * self.b / c;
+            sD = s0 * exp(-self.Lz/self.b);
+            A2inv = (c*c/self.b * (f(s0)-f(sD)) - self.b*self.f0*self.f0 * (g(s0)-g(sD)) )/self.g;
+            A = sqrt(A2inv);
         end
         
     end
