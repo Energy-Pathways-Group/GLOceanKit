@@ -10,10 +10,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
         nInitialSearchModes = 128
         
         % analytical solutions
+        GSolution
+        FSolution
+        
         shouldApproximate
-        GSolutionFull
         GSolutionApprox
-        FSolutionFull
         FSolutionApprox
     end
     
@@ -43,25 +44,14 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             D = self.Lz;
             alpha = @(omega,c) besselj(omega*b./c,N0*b*exp(-D/b)./c) ./ bessely(omega*b./c,N0*b*exp(-D/b)./c );
+                        
+            self.GSolution = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) ) - alpha(omega,c) .* bessely(b*(omega/c),(b*N0/c)*exp(z/self.b));
+            self.FSolution = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) -  alpha(omega,c) .* (bessely(b*(omega/c)-1,(b*N0/c)*exp(z/b))-bessely(b*(omega/c)+1,(b*N0/c)*exp(z/b))) );
             
-            % A test to see which version of the solution to use             
-            self.shouldApproximate = @(omega,c) (abs(bessely(b*omega/c,max(b*omega/c,(b*N0/c)*exp(-self.Lz/self.b)))/bessely(b*omega/c,(b*N0/c)*exp(-self.Lz/self.b) ))<1e-7);
-            self.shouldApproximate = @(omega,c) abs( alpha(omega,c) * bessely(b*omega/c,max(b*omega/c,(b*omega/c)*exp(-D/b))) / besselj(b*omega/c,max(b*omega/c,(b*omega/c)*exp(-D/b))) ) < 1e-15;
-            
-            self.shouldApproximate = @(omega,c) abs( alpha(omega,c) ) < 1e-20;
-            
-            self.GSolutionFull = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) )*bessely(b*(omega/c),(b*N0/c)) - bessely(b*(omega/c),(b*N0/c)*exp(z/self.b)) .* besselj(b*(omega/c),(b*N0/c));
-            self.GSolutionApprox = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) )*bessely(b*(omega/c),(b*N0/c));
-            
-            self.FSolutionFull = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) .*bessely(b*(omega/c),b*N0/c) - (bessely(b*(omega/c)-1,(b*N0/c)*exp(z/b))-bessely(b*(omega/c)+1,(b*N0/c)*exp(z/b))) .* besselj(b*(omega/c),b*N0/c) );
-            self.FSolutionApprox = @(z,omega,c) (N0*exp(z/b)*c/2/g) .*  (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) .*bessely(b*(omega/c),b*N0/c);
-
-
-%             
-%             self.GSolution = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) ) - alpha(omega,c) .* bessely(b*(omega/c),(b*N0/c)*exp(z/self.b));
-%             self.FSolution = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) -  alpha(omega,c) .* (bessely(b*(omega/c)-1,(b*N0/c)*exp(z/b))-bessely(b*(omega/c)+1,(b*N0/c)*exp(z/b))) );
-
-            
+            self.shouldApproximate = @(omega,c) abs( alpha(omega,c) ) < 1e-15;
+            self.GSolutionApprox = @(z,omega,c) besselj(b*(omega/c),(b*N0/c)*exp(z/self.b) );
+            self.FSolutionApprox = @(z,omega,c) (N0*exp(z/b)*c/2/g) .* ( (besselj(b*(omega/c)-1,(b*N0/c)*exp(z/b)) - besselj(b*(omega/c) + 1,(b*N0/c)*exp(z/b))) );
+    
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
@@ -86,14 +76,18 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 x_upperbound = @(lambda) x_hf(self.nInitialSearchModes*5,lambda);
             end
             
+            nu = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
+            s = @(x) x;
+            x_nu = lambda/sqrt(5*5*exp(-2*self.Lz/self.b) - epsilon*epsilon);
+            
             bounds = [x_lowerbound(lambda) x_upperbound(lambda)];
-            r = FindRootsInRange(self, epsilon, lambda, bounds);
+            r = FindRootsInRange(self, nu, s, bounds, x_nu);
             
             while length(r) < self.nModes
                 % the roots get closer together
                 dr = r(end)-r(end-1);
                 bounds = [bounds(2) bounds(2)+dr*self.nInitialModes];
-                more_roots = FindRootsInRange(self, epsilon, lambda, bounds);
+                more_roots = FindRootsInRange(self, nu, s, bounds, x_nu);
                 r = [r; more_roots];
             end
             
@@ -105,26 +99,28 @@ classdef InternalModesExponentialStratification < InternalModesBase
             [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
         end
         
-        function r = FindRootsInRange(self, epsilon, lambda, bounds)
-            % epsilon = f0/N0, lambda = b*k, and x = N0*b/sqrt(g*h)
+        function r = FindRootsInRange(self, nu, s, bounds, x_nu)
+            % nu(x) is a function of x
+            % bounds is the [xmin xmax] of the region to search for roots
+            % x_nu is where the solution transitions from big_nu to
+            % small_nu
             x = linspace(bounds(1),bounds(2),self.nInitialSearchModes); % the choice of nInitialModes is somewhat arbitrary here.
             
-            omega = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
             if self.upperBoundary == UpperBoundary.rigidLid
-                A = @(x) bessely(omega(x),x);
-                B = @(x) - besselj(omega(x),x);
+                A = @(x) bessely(nu(x),s(x));
+                B = @(x) - besselj(nu(x),s(x));
             elseif self.upperBoundary == UpperBoundary.freeSurface
                 alpha = self.b*self.N0*self.N0/(2*self.g);
-                A = @(x) bessely(omega(x),x) - (alpha./x) .* ( bessely(omega(x)-1,x) - bessely(omega(x)+1,x) );
-                B = @(x) - besselj(omega(x),x) + (alpha./x) .* ( besselj(omega(x)-1,x) - besselj(omega(x)+1,x) );
+                A = @(x) bessely(nu(x),s(x)) - (alpha./s(x)) .* ( bessely(nu(x)-1,s(x)) - bessely(nu(x)+1,s(x)) );
+                B = @(x) - besselj(nu(x),s(x)) + (alpha./s(x)) .* ( besselj(nu(x)-1,s(x)) - besselj(nu(x)+1,s(x)) );
             end
-            f_smallnu = @(x) A(x) .* besselj(omega(x),exp(-self.Lz/self.b)*x) + B(x) .* bessely(omega(x),exp(-self.Lz/self.b)*x);
-            f_bignu = @(x) (A(x) ./ bessely(omega(x),exp(-self.Lz/self.b)*x) ) .* besselj(omega(x),exp(-self.Lz/self.b)*x) + B(x);
+            f_smallnu = @(x) A(x) .* besselj(nu(x),exp(-self.Lz/self.b)*s(x)) + B(x) .* bessely(nu(x),exp(-self.Lz/self.b)*s(x));
+            f_bignu = @(x) (A(x) ./ bessely(nu(x),exp(-self.Lz/self.b)*s(x)) ) .* besselj(nu(x),exp(-self.Lz/self.b)*s(x)) + B(x);
             
             % The function omega(x)./(exp(-D/b)*x) will monotonically decay with x.
             % We want to find where it first drops below 5, and use the appropriate
             % form of the equation.
-            xcutoffIndex = find( omega(x)./(exp(-self.Lz/self.b)*x) < 5,1,'first');
+            xcutoffIndex = find( x >= x_nu,1,'first' );
             
             if xcutoffIndex == 1
                 % nu is small for all values of x
@@ -161,23 +157,19 @@ classdef InternalModesExponentialStratification < InternalModesBase
             % by finding its roots.
             if omega > self.N0*exp(-self.Lz/self.b)
                 eta = (sqrt(self.N0^2 - omega^2) - omega*acos(omega/self.N0))/pi;
+                x_nu = Inf;   
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [3/4 nModes-1/4]
-                omega_bar = omega/eta;
-                N_bar = self.N0/eta;
-                
-                f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).*bessely(omega_bar.*x,N_bar.*x)./bessely(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x) - besselj(omega_bar.*x,N_bar.*x);
             else
                 eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;
+                x_nu = 0;
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
-                omega_bar = omega/eta;
-                N_bar = self.N0/eta;
-                
-                f = @(x) besselj(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x).*bessely(omega_bar.*x,N_bar.*x) - besselj(omega_bar.*x,N_bar.*x).*bessely(omega_bar.*x,N_bar*exp(-self.Lz/self.b).*x);
             end
             
+            nu = @(x) omega*x/eta;
+            s = @(x) self.N0*x/eta;
+            r = FindRootsInRange(self, nu, s, bounds, x_nu);
+            
             % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
-            f_cheb = chebfun(f,bounds,'splitting','on');
-            r = roots(f_cheb);
             h = reshape((self.b*eta./r).^2/self.g,1,[]);
             h = h(1:self.nModes);
             
@@ -201,8 +193,8 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 G = self.GSolutionApprox;
                 F = self.FSolutionApprox;
             else
-                G = self.GSolutionFull;
-                F = self.FSolutionFull;
+                G = self.GSolution;
+                F = self.FSolution;
             end
         end
         
@@ -221,8 +213,6 @@ classdef InternalModesExponentialStratification < InternalModesBase
                         A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) ) )  );
                     case Normalization.kConstant
                         A = sqrt(integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
-                        A2 = self.kConstantNormalizationForOmegaAndC(omega(j), c(j));
-                        A2/A
                     case Normalization.omegaConstant
                         A = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
                 end

@@ -36,7 +36,7 @@ omega = 0.8*N0;
 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
 max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
 
-iModes = [1;32];
+iModes = [10];
 figure
 subplot(1,2,1)
 plot(F(:,iModes),z), hold on,

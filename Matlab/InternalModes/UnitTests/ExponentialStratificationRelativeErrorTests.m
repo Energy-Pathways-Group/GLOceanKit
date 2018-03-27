@@ -18,6 +18,14 @@ imAnalytical.upperBoundary = upperBoundary;
 imAnalytical.normalization = Normalization.kConstant;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute k_star, the wavenumber at which the free surface solution changes
+N0 = 5.2e-3;
+f0 = 7.9431e-05;
+g = 9.81;
+Lz = max(zIn)-min(zIn);
+k_star = sqrt( (N0*N0 - f0*f0) / (g*Lz) );
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define the error function: y is the true solution, x is the approximated
 errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
 errorTolerance = 1e-2;
@@ -30,6 +38,12 @@ for iMethod=1:length(methods)
     end
     im.upperBoundary = upperBoundary;
     im.normalization = Normalization.kConstant;
+    
+    k = 0.1*k_star;
+    [F,G,h] = im.ModesAtWavenumber( k );
+    [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
+    max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+    fprintf('%s has %d good modes at k=0.1*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
     
     omega = 0.1*N0;
     [F,G,h] = im.ModesAtFrequency( omega );
