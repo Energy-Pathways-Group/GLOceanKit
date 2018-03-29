@@ -60,7 +60,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             lambda = k*self.b;
             
             % These are our "low frequency" (lf) and "high frequency" (hf)
-            % estimates of the ceigenvalues, taken from Desaubies 1975. We
+            % estimates of the eigenvalues, taken from Desaubies 1975. We
             % use these as bounds in our root finding algorithm.
             x_lf = @(j,lambda) (j-1/4)*pi + lambda*pi/2;
             x_hf = @(j,lambda) lambda.*(1+0.5*(3*pi*(4*j-1)./(lambda*8*sqrt(2))).^(2/3));
@@ -99,8 +99,35 @@ classdef InternalModesExponentialStratification < InternalModesBase
             [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
         end
         
+        function [F,G,h,k] = ModesAtFrequency(self, omega )            
+            % This is the function that we use to find the eigenvalues,
+            % by finding its roots.
+            if omega > self.N0*exp(-self.Lz/self.b)
+                eta = (sqrt(self.N0^2 - omega^2) - omega*acos(omega/self.N0))/pi;
+                x_nu = Inf;
+                bounds = [0.5 self.nModes+1]; % the WKB solution should range from [3/4 nModes-1/4]
+            else
+                eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;
+                x_nu = 0;
+                bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
+            end
+            
+            nu = @(x) omega*x/eta;
+            s = @(x) self.N0*x/eta;
+            r = FindRootsInRange(self, nu, s, bounds, x_nu);
+            
+            % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
+            h = reshape((self.b*eta./r).^2/self.g,1,[]);
+            h = h(1:self.nModes);
+            
+            [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+            
+            k = self.kFromOmega(h,omega);
+        end
+        
         function r = FindRootsInRange(self, nu, s, bounds, x_nu)
-            % nu(x) is a function of x
+            % nu(x) is a function of x [used in the solution J_\nu(s)]
+            % s(x) is a function of x [used in the solution J_\nu(s)]
             % bounds is the [xmin xmax] of the region to search for roots
             % x_nu is where the solution transitions from big_nu to
             % small_nu
@@ -147,37 +174,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
         function [F0,G0,h0] = BarotropicModeAtWavenumber(self, k)
             
         end
-        
-        function [F,G,h,k] = ModesAtFrequency(self, omega )
-            if self.upperBoundary == UpperBoundary.freeSurface
-                error('Not yet implemented.');
-            end
-              
-            % This is the function that we use to find the eigenvalues,
-            % by finding its roots.
-            if omega > self.N0*exp(-self.Lz/self.b)
-                eta = (sqrt(self.N0^2 - omega^2) - omega*acos(omega/self.N0))/pi;
-                x_nu = Inf;   
-                bounds = [0.5 self.nModes+1]; % the WKB solution should range from [3/4 nModes-1/4]
-            else
-                eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;
-                x_nu = 0;
-                bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
-            end
-            
-            nu = @(x) omega*x/eta;
-            s = @(x) self.N0*x/eta;
-            r = FindRootsInRange(self, nu, s, bounds, x_nu);
-            
-            % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
-            h = reshape((self.b*eta./r).^2/self.g,1,[]);
-            h = h(1:self.nModes);
-            
-            [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
-            
-            k = self.kFromOmega(h,omega);
-        end
-        
+                
         function [psi] = SurfaceModesAtWavenumber(self, k)
             % size(psi) = [size(k); length(z)]
             error('Not yet implemented. See LaCasce 2012.');
