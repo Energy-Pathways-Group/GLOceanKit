@@ -87,7 +87,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
             if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
-                A(n,:) = self.N2_xLobatto(1) * Tz(n,:);
+                A(n,:) = self.N2_xLobatto(n) * Tz(n,:);
                 B(n,:) = T(n,:);
             elseif self.upperBoundary == UpperBoundary.rigidLid
                 A(n,:) = T(n,:);
@@ -185,7 +185,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
             GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
-            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
+            GNorm = @(Gj) abs(Gj(end)*Gj(end) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
         end

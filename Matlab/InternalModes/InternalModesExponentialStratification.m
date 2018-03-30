@@ -94,6 +94,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
             h = reshape((self.b*self.N0./r).^2/self.g,1,[]);
             h = h(1:self.nModes);
             
+            if self.upperBoundary == UpperBoundary.freeSurface
+                h0 = self.BarotropicEquivalentDepthAtWavenumber(k);
+                h = cat(2,h0,h(1:self.nModes-1));
+            end
+            
             omega = self.omegaFromK(h,k);
             
             [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
@@ -112,13 +117,25 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
             end
             
-            nu = @(x) omega*x/eta;
-            s = @(x) self.N0*x/eta;
-            r = FindRootsInRange(self, nu, s, bounds, x_nu);
+            if omega < self.N0
+                nu = @(x) omega*x/eta;
+                s = @(x) self.N0*x/eta;
+                r = FindRootsInRange(self, nu, s, bounds, x_nu);
+                
+                % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
+                h = reshape((self.b*eta./r).^2/self.g,1,[]);   
+            else
+                h = [];
+            end
             
-            % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
-            h = reshape((self.b*eta./r).^2/self.g,1,[]);
-            h = h(1:self.nModes);
+            if self.upperBoundary == UpperBoundary.freeSurface
+                h0 = self.BarotropicEquivalentDepthAtFrequency(omega);
+                h = cat(2,h0,h);
+            end
+            
+            if length(h) > self.nModes
+                h = h(1:self.nModes);
+            end
             
             [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
             
@@ -160,7 +177,6 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 f_cheb = chebfun(f,bounds,'splitting','on');
                 r = roots(f_cheb);
             else
-                fprintf('big nu/small nu\n');
                 % we need to subdivide the interval into small and large.
                 f = f_bignu;
                 f_cheb = chebfun(f,[bounds(1) x(xcutoffIndex)] ,'splitting','on');
@@ -171,8 +187,30 @@ classdef InternalModesExponentialStratification < InternalModesBase
             end
         end
         
-        function [F0,G0,h0] = BarotropicModeAtWavenumber(self, k)
+        function h0 = BarotropicEquivalentDepthAtWavenumber(self, k)
+            % this function estimates the location of the root
+            f = @(k) self.b*self.N0./sqrt(self.g*tanh(k*self.Lz)./k);
             
+            epsilon = self.f0/self.N0;
+            lambda = k*self.b;
+            nu = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
+            s = @(x) x;
+            x_nu = lambda/sqrt(5*5*exp(-2*self.Lz/self.b) - epsilon*epsilon);
+            
+            r = self.FindRootsInRange(nu,s,[0.95 1.05]*f(k),x_nu);
+            h0 = (self.b*self.N0./r).^2/self.g;
+        end
+        
+        function h0 = BarotropicEquivalentDepthAtFrequency(self, omega)
+            % this function estimates the location of the root
+            f = @(omega) max( self.b*self.N0*omega/self.g, self.b*self.N0/sqrt(self.g*self.Lz));
+            
+            nu = @(x) omega*x/self.N0;
+            s = @(x) x;
+            x_nu = Inf;
+            
+            r = self.FindRootsInRange(nu, s, [0.95 1.5]*f(omega), x_nu);
+            h0 = (self.b*self.N0./r).^2/self.g;
         end
                 
         function [psi] = SurfaceModesAtWavenumber(self, k)
@@ -196,11 +234,15 @@ classdef InternalModesExponentialStratification < InternalModesBase
         end
         
         function [F,G] = NormalizedModesForOmegaAndC(self,omega,c)
-            F = zeros(length(self.z),self.nModes);
-            G = zeros(length(self.z),self.nModes);
+            F = zeros(length(self.z),length(c));
+            G = zeros(length(self.z),length(c));
             
             for j=1:length(c)
-                lowerIntegrationBound = max(5*self.b*log(omega(j)/self.N0),-self.Lz);
+                if omega(j) < self.N0
+                    lowerIntegrationBound = max(5*self.b*log(omega(j)/self.N0),-self.Lz);
+                else
+                    lowerIntegrationBound = max(-self.Lz,-4*c(j)/omega(j));
+                end
                 [Ffunc,Gfunc] = self.ModeFunctionsForOmegaAndC(omega(j),c(j));
                 switch self.normalization
                     case Normalization.uMax
@@ -209,7 +251,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
                     case Normalization.wMax
                         A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) ) )  );
                     case Normalization.kConstant
-                        A = sqrt(integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
+                        A = sqrt(Gfunc(0,omega(j),c(j))^2 + integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
                     case Normalization.omegaConstant
                         A = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
                 end

@@ -3,59 +3,56 @@ im = InternalModesExponentialStratification([5.2e-3 1300], [-5000 0], z, 33);
 im.upperBoundary = UpperBoundary.freeSurface;
 
 g = 9.81;
-% kArray = 10.^linspace(-7,1,9);
-% % kArray = 1e1;
-% 
-% % Two relevant scales.
+
+
+% Two relevant scales.
 % sqrt(g*im.Lz);
 % im.N0*im.b;
-% 
-% for k = kArray
-%     if k > sqrt(im.N0^2 - im.f0^2)/sqrt(g*im.Lz)
-%        c = sqrt(g*im.Lz/((2*k*k*(g*im.Lz)/(im.N0^2 - im.f0^2))-1));
-%        c = sqrt(g*tanh(k*im.Lz)/k); % can't find roots past N0*b, so just use this approximation.
-%     else
-%        c = sqrt(g*im.Lz);
-%     end
-%     h_guess = c*c/g
-%     
-%     x = im.b*im.N0/c;
-%     
-%     epsilon = im.f0/im.N0;
-%     lambda = k*im.b;
-%     nu = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
-%     s = @(x) x;
-%     x_nu = lambda/sqrt(5*5*exp(-2*im.Lz/im.b) - epsilon*epsilon);
-%     
-%     r = im.FindRootsInRange(nu,s,[0.95*x 1.05*x],x_nu);
-%     fprintf('Found %d roots.\n',length(r));
-%     if length(r)>0
-%         h = (im.b*im.N0./r(1)).^2/g
-%     end
-% end
 
+f = @(k) im.b*im.N0./sqrt(g*tanh(k*im.Lz)./k);
 
-omega = 10*im.N0;
-nu = @(x) omega*x/im.N0;
-s = @(x) im.N0*x/im.N0;
+kArray = 10.^linspace(-7,-1,9);
+xFound = zeros(size(kArray));
+for i = 1:length(kArray)
+    k = kArray(i)
+    x = f(k);
+    
+    epsilon = im.f0/im.N0;
+    lambda = k*im.b;
+    nu = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
+    s = @(x) x;
+    x_nu = lambda/sqrt(5*5*exp(-2*im.Lz/im.b) - epsilon*epsilon);
+    
+    r = im.FindRootsInRange(nu,s,[0.95*x 1.05*x],x_nu);
 
-c = sqrt(g*im.Lz);
-x = im.b*im.N0/c;
-x_nu = Inf;
-
-x = (im.b*im.N0/(omega*im.Lz)) * sqrt((3/2)*(1 - sqrt(1-4*omega*omega*im.Lz*im.Lz/(3*g*im.Lz)) ))
-im.b*im.N0*omega/g
-
-r = im.FindRootsInRange(nu, s, [0.95*x 1.05*x], x_nu);
-fprintf('Found %d roots.\n',length(r));
-if length(r)>0
-    h = (im.b*im.N0./r(1)).^2/g
+    if ~isempty(r)
+        xFound(i) = r(1);
+    end
 end
 
-omegaArray = im.N0*linspace(0.1,15,1000)';
-f = @(omega) (im.b*im.N0./(omega*im.Lz)) .* sqrt((3/2)*(1 - sqrt(1-4*omega.*omega*im.Lz*im.Lz/(3*g*im.Lz)) ));
-f2 = @(omega) im.b*im.N0*omega/g;
+
 figure
-plot(omegaArray,real(f(omegaArray))), hold on
-plot(omegaArray,imag(f(omegaArray)))
-plot(omegaArray,f2(omegaArray))
+plot(kArray,f(kArray)), hold on
+scatter(kArray,xFound)
+
+
+x_nu = Inf;
+f = @(omega) max( im.b*im.N0*omega/g, im.b*im.N0/sqrt(g*im.Lz));
+
+omegaArray = im.N0*linspace(0.5,30,100)';
+xFound = zeros(size(omegaArray));
+
+for i = 1:length(omegaArray)
+    omega = omegaArray(i);
+    x = f(omega);
+    nu = @(x) omega*x/im.N0;
+    s = @(x) im.N0*x/im.N0;
+    r = im.FindRootsInRange(nu, s, [0.95*x 1.5*x], x_nu);
+    if ~isempty(r)
+        xFound(i) = r(1);
+    end
+end
+
+figure
+plot(omegaArray,f(omegaArray)), hold on
+scatter(omegaArray,xFound)

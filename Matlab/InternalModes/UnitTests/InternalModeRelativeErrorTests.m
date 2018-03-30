@@ -5,7 +5,7 @@ methods{3} = 'densitySpectral';
 methods{4} = 'spectral';
 methods{5} = 'wkbAdaptiveSpectral';
 
-upperBoundary = UpperBoundary.freeSurface;
+upperBoundary = UpperBoundary.rigidLid;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize the analytical solution
