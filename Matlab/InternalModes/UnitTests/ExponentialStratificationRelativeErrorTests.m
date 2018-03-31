@@ -9,7 +9,7 @@ upperBoundary = UpperBoundary.freeSurface;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize the analytical solution
-n = 128;
+n = 64;
 latitude = 33;
 [rhoFunction, N2Function, zIn] = InternalModes.StratificationProfileWithName('exponential');
 z = linspace(min(zIn),max(zIn),n)';

@@ -51,18 +51,21 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
+            iSurface = 1;
+            iBottom = n;
+            
             % Lower boundary is rigid, G=0
-            A(1,:) = T(1,:);
-            B(1,:) = 0;
+            A(iBottom,:) = T(iBottom,:);
+            B(iBottom,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
             if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
-                A(n,:) = self.N2_xLobatto(n) * Tz(n,:);
-                B(n,:) = T(n,:);
+                A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
+                B(iSurface,:) = T(iSurface,:);
             elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(n,:) = T(n,:);
-                B(n,:) = 0;
+                A(iSurface,:) = T(iSurface,:);
+                B(iSurface,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
@@ -80,18 +83,21 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz;
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
+            iSurface = 1;
+            iBottom = n;
+            
             % Lower boundary is rigid, G=0
-            A(1,:) = T(1,:);
-            B(1,:) = 0;
+            A(iBottom,:) = T(iBottom,:);
+            B(iBottom,:) = 0;
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
             if self.upperBoundary == UpperBoundary.freeSurface
                 % G_z = \frac{1}{h_j} G at the surface
-                A(n,:) = self.N2_xLobatto(n) * Tz(n,:);
-                B(n,:) = T(n,:);
+                A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
+                B(iSurface,:) = T(iSurface,:);
             elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(n,:) = T(n,:);
-                B(n,:) = 0;
+                A(iSurface,:) = T(iSurface,:);
+                B(iSurface,:) = 0;
             end
             
             [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
@@ -112,7 +118,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
                         
             n = self.nEVP;
-            s = -self.g*rho/self.rho0;
+            s = -self.g*rho/self.rho0 + self.g;
             Ls = max(s)-min(s);
             self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(s);
             self.z_xLobatto = interp1(s, z_in, self.xLobatto, 'spline'); % z, evaluated on that s grid
@@ -130,11 +136,11 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
             
             % Create a stretched grid that includes all the points of z_out
-            s = @(z) -self.g*rho(z)/self.rho0;   
+            s = @(z) -self.g*rho(z)/self.rho0 + self.g;   
             
             n = self.nEVP;
-            sMin = s(zMax);
-            sMax = s(zMin);
+            sMin = min([s(zMax), s(zMin)]);
+            sMax = max([s(zMax), s(zMin)]);
             Ls = sMax-sMin;
             self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;
             
@@ -142,12 +148,12 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             % z_lobatto to (spectrally) take them into s_lobatto.
             % We use the fact that we have a function handle to iteratively
             % improve this projection.
-            self.z_xLobatto = interp1(s(self.zLobatto), self.zLobatto, self.xLobatto, 'spline');
+            self.z_xLobatto = interp1(s(self.zLobatto), self.zLobatto, self.xLobatto, 'linear', self.zLobatto(1));
             nloops = 0;
             while ( nloops < 10 && max( abs(s(self.z_xLobatto) - self.xLobatto))/max(abs(self.xLobatto)) > 1e-15)
-                self.z_xLobatto = interp1(s(self.z_xLobatto), self.z_xLobatto, self.xLobatto, 'spline');
+                self.z_xLobatto = interp1(s(self.z_xLobatto), self.z_xLobatto, self.xLobatto, 'linear', self.zLobatto(1));
                 nloops = nloops + 1;
-            end   
+            end
     
             self.xOut = s(zOut);
         end
@@ -185,7 +191,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
             GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
             FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
-            GNorm = @(Gj) abs(Gj(end)*Gj(end) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
+            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
             [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
         end

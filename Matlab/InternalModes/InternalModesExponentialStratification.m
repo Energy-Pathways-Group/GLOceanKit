@@ -189,7 +189,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
         
         function h0 = BarotropicEquivalentDepthAtWavenumber(self, k)
             % this function estimates the location of the root
-            f = @(k) self.b*self.N0./sqrt(self.g*tanh(k*self.Lz)./k);
+            f = @(k) self.b*self.N0./sqrt(self.g*tanh(max(k,1e-15)*self.Lz)./max(k,1e-15));
             
             epsilon = self.f0/self.N0;
             lambda = k*self.b;

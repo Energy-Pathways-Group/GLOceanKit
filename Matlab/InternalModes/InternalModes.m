@@ -265,7 +265,7 @@ classdef InternalModes < handle
             % all test cases should just use all modes possible.
             self.internalModes.nModes = length(self.internalModes.z);
             
-            [F,G,h] = self.internalModes.ModesAtFrequency( omega );
+            
             
             % y is the true solution, x is the approximated
             errorFunction = @(x,y) max(max(abs(x-y),[],1)./max(abs(y),[],1),1e-15);
@@ -287,6 +287,9 @@ classdef InternalModes < handle
                 imAnalytical.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
             end
+            
+            self.internalModes.nModes = length(h_analytical);
+            [F,G,h] = self.internalModes.ModesAtFrequency( omega );
             
             h_error = errorFunction(h,h_analytical);
             F_error = errorFunction(F,F_analytical);

@@ -1,0 +1,308 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epstopdf}
+\usepackage{mathtools}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Vertical modes in exponential stratification, simplified}
+\author{Jeffrey J. Early}
+\date{March 16th, 2018}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Eigenvalue problem}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+We want to solve
+\begin{equation}
+\label{vertical-eigenvalue-G-with-omega}
+\tag{$\omega$-constant EVP}
+G_{zz} +\frac{1}{gh} \left( N^2 - \omega^2 \right)G = 0
+\end{equation}
+and
+\begin{equation}
+\label{vertical-eigenvalue-G-with-K}
+\tag{$K$-constant EVP}
+G_{zz} - k^2 G +\frac{1}{gh} \left( N^2 - f_0^2 \right)G = 0
+\end{equation}
+with stratification profile $N^2 = N_0^2 e^{2z/b}$ and boundary conditions $G\rvert_{z=0}=0$ or $G\rvert_{z=0}=F\rvert_{z=0}$ at the surface and $G\rvert_{z=-D}=0$ at the bottom.
+
+The analytical solution to appears to have first been found by Garrett and Munk, 1972.
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Bessel's equation and solution}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+Let's use the coordinate $s = \frac{N_0b}{c}  e^{z/b}$---this stretched coordinate can be pulled straight from the manuscript. So,
+\begin{align}
+z =& b\ln \left( \frac{\sqrt{gh}}{N_0 b} s \right) \\
+z_s =& \frac{b}{s} \\
+z_{ss} =& -\frac{b}{s^2}
+\end{align} So this means that we have,
+\begin{align}
+s^2 G_{ss} + s G_s + \left( s^2 - \nu^2 \right)G = 0.
+\end{align}
+This is exactly Bessel's equation and is solved with,
+\begin{equation}
+\label{general_solution}
+G(s) = B J_{\nu} \left( s \right) + C Y_{\nu} \left( s \right)
+\end{equation}
+where $\nu \equiv \frac{b}{c} \omega$ and $s= \frac{N_0b}{c}  e^{z/b}$. Thus, $\nu$ is a non-dimensionalized frequency and $s$ is a frequency-coordinate. The parameters $s$ is the same as $\nu$ at the turning point, $s(z_T)=\nu$.
+
+The Bessel function $Y_\nu(s)$ has a singularity at the origin, and although the coordinate $s$ never goes to zero, for small enough values this causes numerical issues that require special considerations, highlighted at several points below. We therefore choose coefficients to satisfy the lower boundary condition and effectively normalize $Y_\nu(s)$ by its maximum value. The solution is thus,
+\begin{equation}
+G(s) = A \left[ J_{\nu} \left( s \right) -   \alpha Y_{\nu} \left( s \right) \right]
+\end{equation}
+where
+\begin{equation}
+\alpha =   J_\nu\left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right) / Y_\nu\left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right) 
+\end{equation}
+becomes very small for some values of $\nu$. In fact, $Y_\nu(s)$ will overflow for some values, and the term must be manually dropped from the computation. We therefore simply drop the last term from the computation if it gets even remotely close to overflowing.
+\begin{align}
+  \alpha < 10^{-15}
+\end{align}
+The other way to look at this is that the maximum variance of $G(s)$ occurs near the near the turning point, but the maximum variance of $Y_\nu(s)$ occurs at the bottom boundary. And because both $J_\nu(s)$ and $Y_\nu(s)$ terms contribute equal amounts of variance at the top and the bottom boundaries, it is safe to neglect the $Y_\nu(s)$ term if its variance at the turning point drops below some threshold.
+
+The other eigenmodes is $F=hG_z$, or $F=\frac{h}{b} s F_s$, which means that,
+\begin{equation}
+F(s) = A \frac{h}{ 2 b }s  \left[   \left( J_{\nu-1} \left( s\right) - J_{\nu+1} \left( s \right) \right) - \alpha \left(Y_{\nu-1} \left( s \right) - Y_{\nu+1} \left( s \right) \right) \right]
+\end{equation}
+
+In terms of $k$, $\omega = \sqrt{c^2 k^2 + f_0^2}$, so $\nu = \sqrt{b^2 k^2 + \frac{b^2 f_0^2}{gh}}$.
+
+$\nu$ can be thought of as a wavenumber, when the frequency is bigger than $f_0$. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Surface boundary condition}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+Going back to equation \ref{general_solution} and requiring that $G\rvert_{z=0}=0$, we have the coefficients
+\begin{align}
+B_{RL} =& A Y_\nu \left(\frac{N_0 b}{c}\right)\\
+ C_{RL} =& - A J_\nu\left(\frac{N_0 b}{c}\right)
+\end{align}
+where $\nu \equiv \frac{b}{c} \omega$ while for the free-surface boundary condition, $G\rvert_{z=0}=F\rvert_{z=0}$, we set the coefficients to,
+\begin{align}
+B_{FS} =& A \left[Y_{\nu} \left(\frac{N_0 b}{c}\right) - \frac{c N_0}{2 g } \left(Y_{\nu-1} \left(\frac{N_0 b}{c}\right) - Y_{\nu+1} \left(\frac{N_0 b}{c}\right) \right) \right] \\
+C_{FS} =& A \left[-J_{\nu} \left(\frac{N_0 b}{c}\right) +  \frac{c N_0}{2 g } \left( J_{\nu-1} \left(\frac{N_0 b}{c}\right) - J_{\nu+1} \left(\frac{N_0 b}{c}\right) \right) \right].
+\end{align}
+The bottom boundary condition, $G\rvert_{z=-D}=0$ then requires that,
+\begin{equation}
+\label{small_nu_root_equation}
+0 = B J_{\nu} \left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right) + C Y_{\nu} \left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right)
+\end{equation}
+which places restrictions on $c$, which appears both in $B$ and $C$, as well as $\nu$. This cannot be done analytically as there are no closed form solutions for the zeros of Bessel functions, but only asymptotic estimates.
+
+Finding the roots of this equation can only be done numerically, but as with the mode solution itself, the function $Y_\nu(s)$ causes problems for small arguments. Roughly speaking as long as $\nu < \gamma s(-D)$ where $\gamma \approx 5$ , then we use equation \ref{small_nu_root_equation}, otherwise we use
+\begin{equation}
+\label{big_nu_root_equation}
+0 = B J_{\nu} \left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right) / Y_{\nu} \left(\frac{N_0 b}{c}e^{-\frac{D}{b}} \right) + C 
+\end{equation}
+to find the roots.
+
+If we let $x=\eta b/c$ (scaled the buoyancy frequency at the surface), then the two terms are,
+\begin{align}
+\nu =& \frac{\omega}{\eta} x \\
+\frac{N_0 b}{c} =& \frac{N_0}{\eta} x
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$K$-constant}
+%%%%%%%%%%%%%%%%%%%%%%%%
+When solving the \ref{vertical-eigenvalue-G-with-K}, we simply take $\eta = N_0$ so that,
+\begin{equation}
+0 =  B J_{\nu(x)} \left(  x e^{-D/b} \right) -   C Y_{\nu(x)} \left(  x e^{-D/b} \right) 
+\end{equation}
+where $\nu(x) = \sqrt{b^2 k^2 + \epsilon^2 x^2}$ and $\epsilon=\frac{f_0}{N_0}$.
+
+The requirement that $\nu$ be about $\gamma$ times less than the argument mean that we want,
+\begin{align}
+\sqrt{b^2 k^2 + \epsilon^2 x^2} <& \gamma x e^{-D/b} \\
+\epsilon^2 x^2 - \gamma^2 x^2 e^{-2 D/b} + b^2 k^2<& 0 \\
+ b^2 k^2 <& \left( \gamma^2 e^{-2 D/b} - \epsilon^2\right) x^2 \\
+ \frac{ b k }{ \sqrt{\gamma^2 e^{-2 D/b} - \epsilon^2} } < x
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\omega$-constant}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+When solving the \ref{vertical-eigenvalue-G-with-omega} we then use the WKB solution from Desaubies as a hint and take,
+\begin{equation}
+\eta \equiv \frac{1}{\pi} \int_{z_T}^0 \sqrt{N_0^2 e^{2 z/b}-\omega^2}\,dz
+\end{equation}
+where $z_T = \max\left(-D, b \ln \left(\omega/N_0\right) \right)$. In this case,
+\begin{equation}
+0 =  B J_{\nu(x)} \left(  \bar{N}_0 x e^{-D/b} \right) -   C Y_{\nu(x)} \left(  \bar{N}_0 x e^{-D/b} \right) 
+\end{equation}
+where $\nu(x) = \omega x / \eta$.
+
+The requirement that $\nu$ be about 5 times less than the argument mean that we want,
+\begin{align}
+\frac{ \omega x}{ \eta } <& \gamma  \frac{N_0}{\eta} x e^{-D/b} \\
+\omega < \gamma N_0 e^{-D/b}
+\end{align}
+which, unlike the $K$-constant case, has no dependence on $x$.
+
+The question now is where in $x$-space to search for the roots to these equations.
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Search bounds for the eigenvalues}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+To solve the above equations numerically, we need estimates of where the solutions (roots) of the equations are. For the $\omega$-constant case this is simply,
+\begin{equation}
+\sqrt{gh_j} = \frac{1}{\left(j-\frac{1}{4}\right)\pi}\left| \int_{z_T}^0 \sqrt{|N^2-\omega^2|}\,dz \right|
+\end{equation}
+and
+\begin{equation}
+\sqrt{gh_j} = \frac{1}{j \pi}\left| \int_{-D}^0 \sqrt{|N^2-\omega^2|}\,dz \right|
+\end{equation}
+which, in terms of $x$, is just
+\begin{equation}
+x_j = j \textrm{ and } x_j = j-\frac{1}{4}
+\end{equation}
+
+It's a bit trickier to find appropriate bounds for the $K$-constant equations, because the frequency changes for each mode. What appears to be the best approach is to take the high frequency and low frequency limits from Desaubies 1973 (top of page147), 
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{high frequency limit}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+Taking $\lambda = bk$ and $\epsilon = \frac{f_0}{N_0}$, 
+\begin{align}
+\frac{\omega b}{c} \left(1-\frac{\omega^2}{N_0^2} \right)^{3/2} =& \frac{3\pi(4j-1)}{8\sqrt{2}} \\
+\left( \lambda^2 + \epsilon^2 x^2 \right) \left(1 - \frac{\lambda^2}{x^2} + \epsilon^2 \right)^3 =& \left( \frac{3\pi(4j-1)}{8\sqrt{2}} \right)^2 
+\end{align}
+Assuming that $\epsilon$ is small, which it is, then
+\begin{align}
+\left( \lambda^2 + \epsilon^2 x^2 \right) \left(1 - \frac{\lambda^2}{x^2} + \epsilon^2 \right)^3 =& \left( \frac{3\pi(4j-1)}{8\sqrt{2}} \right)^2 \\
+\lambda^2\left(1 - \frac{\lambda^2}{x^2}  \right)^3 =& \left( \frac{3\pi(4j-1)}{8\sqrt{2}} \right)^2 \\
+\left(1 - \frac{\lambda^2}{x^2}  \right)^3 =& \left( \frac{3\pi(4j-1)}{\lambda 8\sqrt{2}} \right)^2 \\
+1 - \frac{\lambda^2}{x^2} =& \left( \frac{3\pi(4j-1)}{\lambda 8\sqrt{2}} \right)^{2/3} \\
+1 -  \left( \frac{3\pi(4j-1)}{\lambda 8\sqrt{2}} \right)^{2/3} =&  \frac{\lambda^2}{x^2} \\
+x =& \frac{\lambda}{ \sqrt{1 -  \left( \frac{3\pi(4j-1)}{\lambda 8\sqrt{2}} \right)^{2/3} }}
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{low frequency limit}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+top of page 147,
+\begin{align}
+\frac{N_0 b}{c} =& \left(j-\frac{1}{4}+\frac{\omega b}{2c}\right)\pi \\
+\frac{N_0 b}{c} =& \left(j-\frac{1}{4}+\frac{b \sqrt{c^2 k^2 + f_0^2} }{2c}\right)\pi \\
+x =& \left(j-\frac{1}{4}+\frac{\sqrt{\lambda^2 + \epsilon^2 x^2 } }{2}\right)\pi \\
+x \approx& \left(j-\frac{1}{4} \right) \pi + \lambda \pi 
+\end{align}
+
+But what, in terms of $k$, separates high-frequency from low-frequency? $\lambda \approx 1$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Barotropic Mode}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+The barotropic mode should roughly follow the constant stratification case,
+\begin{align}
+c = \sqrt{g \frac{\tanh(kD)}{k} }
+\end{align}
+serves as a good guess for where the $k$ constant case.
+
+For the low-frequency limit, we just use $c = \sqrt{gD}$ as a guess, but for the high-frequency limit we consider the large $k$ limit,
+\begin{align}
+c^2 =  \frac{g}{k}
+\end{align}
+and the dispersion relation (in this limit) just says that,
+\begin{align}
+c =  \frac{\omega}{k}
+\end{align}
+so then
+\begin{align}
+c =  \frac{\omega c^2}{g} \\
+c = \frac{g}{\omega}
+\end{align}
+which means,
+\begin{align}
+x = \frac{N_0 b \omega }{g}
+\end{align}.
+Thus, we bound $x$ from below by taking
+\begin{equation}
+x = \max \left(\frac{N_0 b \omega }{g}, \frac{N_0 b }{\sqrt{gD}} \right)
+\end{equation}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$K$-constant}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+From the manuscript, for small $k$
+\[
+g h_0 = \frac{N_0^2 - f_0^2}{k^2+m_j^2}.
+\]
+where
+\[
+m_0^2 = (N_0^2-f_0^2)/gD - k^2
+\]
+which suggested that $c_0 = \sqrt{gD}$. However, for large $k$,
+\[
+m_0^2 = k^2 - (N_0^2-f_0^2)/gD
+\]
+which means that,
+\[
+c_0^2 = \frac{gD}{ 2\frac{k^2 g D}{N_0^2 - f_0^2} - 1}
+\]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Normalization}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+The most useful normalization is,
+\begin{equation}
+\label{k_const_norm}
+G_i^2(0)+\frac{1}{g} \int_{-D}^{0} (N^2(z)-f_0^2) G_i^2 \, dz = 1 \tag{$K$-constant norm}.
+\end{equation}
+The integral can be re-written in terms of the stretched coordinate,
+\begin{align}
+\frac{1}{g} \int_{-D}^{0} (N^2(z)-f_0^2) G^2 \, dz =& \frac{1}{g} \int_{-D}^{0} \left(\left(\frac{c}{b}\right)^2 s^2 -f_0^2\right) G^2 \frac{dz}{ds}ds \\
+=& \frac{b}{g} \int_{s_D}^{s_0}  \left(\left(\frac{c}{b}\right)^2 s^2 -f_0^2\right) \frac{1}{s} G^2 ds \\
+=& \frac{c^2}{g b} \int_{s_D}^{s_0}  s G^2 ds - \frac{b f_0^2}{g} \int_{s_D}^{s_0}  s^{-1} G^2 ds
+\end{align}
+Fundamentally then, we need to compute,
+\begin{align}
+\int s J_\nu(s)^2 ds =& \frac{1}{2} z^2 \left( J_\nu^2 - J_{\nu-1} J_{\nu+1} \right) \\
+\int s J_\nu(s) Y_\nu(s) ds =& - \frac{1}{4} z^2 \csc(\pi \nu) \left[ -2 \cos(\pi \nu) J_\nu^2 + 2 J_{-\nu} J_{\nu} + J_{-\nu-1}J_{\nu-1}+J_{1-\nu}J_{\nu+1}+2J_{\nu-1}J_{\nu+1}\cos(\pi\nu) \right]\\
+\int s Y_\nu(s)^2 ds =&  \frac{1}{2} z^2 \left( Y_\nu^2 - Y_{\nu-1} Y_{\nu+1} \right) \\
+\int  \frac{J_\nu^2(s)}{s} ds =& \frac{2^{-2\nu-1} z^{2\nu}}{\nu^3 \Gamma^2(\nu)} \prescript{}{2}{F}_3 \left(\nu,\nu+\frac{1}{2}; \nu+1,\nu+1,2\nu+1; -s^2 \right)  \\ \nonumber
+\int  \frac{J_\nu(s) Y_\nu(s)}{s} ds =& \frac{4^{-\nu-1}}{\pi(\nu-1)\nu^3(\nu+1)\Gamma^2(\nu)} \biggl[   2\pi z^{2\nu} (\nu^2-1) \cot(\pi \nu) \prescript{}{2}{F}_3 \left(\nu,\nu+\frac{1}{2};\nu+1,\nu+1,2\nu+1;-z^2 \right) \\ \nonumber
+& -4^\nu \nu^2 \Gamma^2(\nu) \biggl( z^2 \prescript{}{3}{F}_4 \left(1,1,\frac{3}{2};2,2,2-\nu,\nu+2,-z^2 \right) + 4(\nu^2-1)\ln(z) \biggr) \biggr] \\ \nonumber
+\int  \frac{Y_\nu^2(s)}{s} ds =& \frac{1}{4} \biggl[ \cot(\pi \nu) \biggl( \frac{2^{1-2\nu} \cot(\pi \nu) z^{2\nu}}{\nu \Gamma^2(\nu+1)}  \prescript{}{2}{F}_3 \left(\nu,\nu+\frac{1}{2};\nu+1,\nu+1,2\nu+1;-z^2 \right) \\ \nonumber
+&\csc(\pi \nu) \biggl\{ z^2 \prescript{}{3}{\tilde{F}}_4 \left(1,1,\frac{3}{2};2-\nu,\nu+2,2,2;-z^2 \right)  + z^2 \prescript{}{3}{\tilde{F}}_4 \left(1,1,\frac{3}{2};\nu+2,2-\nu,2,2;-z^2 \right)  \\ \nonumber
+& - \frac{8 \ln(z)}{\Gamma(1-\nu) \Gamma(\nu+1)}  \biggr\} \biggr) \\ \nonumber
+& - \frac{2^{2\nu+1} z^{-2\nu} \csc^2 (\pi \nu) }{\nu \Gamma^2(1-\nu)} \prescript{}{2}{F}_3 \left(\frac{1}{2}-\nu,-\nu;1-2\nu,1-\nu,1-\nu;-z^2 \right) \biggr]
+\end{align}
+
+Even in the case where $\alpha$ is small, this doesn't work very well because the multiplier on the hypergeometric term overflows. So, this might be total crap and not worth doing.
+
+\end{document}  
