@@ -216,7 +216,7 @@ classdef InternalModesSpectral < InternalModesBase
             maxN = sqrt(max(self.N2(1),self.N2(end)));
             minDz = self.f0/(maxK*maxN)/10;
             n = max(128,2^ceil(log2((pi/2)*sqrt(self.Lz/minDz)+1))+1);
-            fprintf('Using %d grid points for the SQG mode\n',n);
+%             fprintf('Using %d grid points for the SQG mode\n',n);
             
             % Now create this new grid
             yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
@@ -320,7 +320,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
             self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
             
-            fprintf('All derivatives of density are computed with %d points.', length(self.zLobatto));
+%             fprintf('All derivatives of density are computed with %d points.', length(self.zLobatto));
         end
         
         function self = SetupEigenvalueProblem(self)
@@ -343,7 +343,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.Int_xCheb(2) = 0;
             self.Int_xCheb = self.Lz/2*self.Int_xCheb;
             
-            fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+%             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
         end
         
         function self = validateInitialModeAndEVPSettings(self)

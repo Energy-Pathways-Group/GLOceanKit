@@ -214,8 +214,25 @@ classdef InternalModesExponentialStratification < InternalModesBase
         end
                 
         function [psi] = SurfaceModesAtWavenumber(self, k)
+            % See LaCasce 2012.
             % size(psi) = [size(k); length(z)]
-            error('Not yet implemented. See LaCasce 2012.');
+            sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
+            k = reshape(k,[],1);
+            zCoord = reshape(self.z,1,[]);
+            
+            alpha = 2/self.b;
+            eta = self.N0*k/(alpha*self.f0);
+            H = self.Lz;
+            
+            numerator = besselk(0,2*eta*exp(-alpha*H/2)) .* besseli(1,2*eta*exp(alpha*zCoord/2)) + besseli(0,2*eta*exp(-alpha*H/2)) .* besselk(1,2*eta*exp(alpha*zCoord/2));
+            denominator = besseli(0,2*eta) .* besselk(0,2*eta*exp(-alpha*H/2)) - besselk(0,2*eta) .* besseli(0,2*eta*exp(-alpha*H/2));
+            psi = (1./(eta*alpha*self.f0)) .* exp(alpha*zCoord/2) .* numerator ./ denominator;
+            
+            sizeK(end+1) = length(self.z);
+            psi = reshape(psi,sizeK);
         end
         
         function [psi] = BottomModesAtWavenumber(self, k)

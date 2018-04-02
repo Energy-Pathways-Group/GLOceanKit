@@ -305,4 +305,24 @@ Fundamentally then, we need to compute,
 
 Even in the case where $\alpha$ is small, this doesn't work very well because the multiplier on the hypergeometric term overflows. So, this might be total crap and not worth doing.
 
+%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{SQG Mode}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+LaCasce 2012 solves for the SQG mode at the surface, but not the bottom boundary. The solution, without boundary conditions applied, is
+\begin{align}
+\chi = A e^{\alpha z/2} I_1 \left( 2 \eta e^{\alpha z/2} \right) + B e^{\alpha z/2} K_1 \left( 2 \eta e^{\alpha z/2} \right)
+\end{align}
+The boundary conditions we want to apply are,
+\begin{align}
+\frac{d\chi}{dz} \biggr\rvert_{z=0} = 0, \frac{d\chi}{dz} \biggr\rvert_{z=-D} = 1
+\end{align}
+Differentiating,
+\begin{align}
+\frac{d\chi}{dz}=& \frac{\alpha}{2} e^{\alpha z/2} \left( A I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right) \\
+&+ \alpha \eta e^{\alpha z} \left( A I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right)  \\
+&+  e^{\alpha z/2} \left( A I_0 \left( 2 \eta e^{\alpha z/2} \right) - \frac{\nu}{z} I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right) 
+\end{align}
 \end{document}  
