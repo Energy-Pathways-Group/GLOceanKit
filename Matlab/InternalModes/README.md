@@ -3,7 +3,7 @@ InternalModes
 
 The InternalModes class can be used to quickly and accurately compute the vertical modes and SQG modes from arbitrary stratification.
 
-The complete class hierarchy contains several implementations that include spectral methods, finite differencing, WKB approximated solutions, as well as the analytical solutions for constant stratification. The details are documented in Early, Lelong, and Smith (2018).
+The complete class hierarchy contains several implementations that include spectral methods, finite differencing, WKB approximated solutions, as well as the analytical solutions for constant stratification and exponential stratification. The details are documented in Early, Lelong, and Smith (2018).
 
 The classes contain many options, but also try to remain simple to use. Use `help InternalModes` in Matlab for a complete description, or use the Quick Start below.
 
@@ -13,12 +13,14 @@ If you use these classes to compute the vertical modes, please cite the followin
 ### Table of contents
 1. [Quick Start](#quick-start)
 2. [Convenience functions](#convenience-functions)
-3. [Built-in density profiles](#built-in-density-profiles)
-4. [Normalization and boundary conditions](#normalization-and-boundary-conditions)
-5. [Name/value pairs](#namevalue-pairs)
-6. [Numerical methods](#numerical-methods)
-7. [Class hierarchy](#class-hierarchy)
-8. [Internal modes class cluster](#internal-modes-class-cluster)
+3. [Constant and exponential stratification](#constant-and-exponential-stratification)
+4. [Built-in density profiles](#built-in-density-profiles)
+5. [Normalization and boundary conditions](#normalization-and-boundary-conditions)
+6. [Name/value pairs](#namevalue-pairs)
+7. [Numerical methods](#numerical-methods)
+8. [Class hierarchy](#class-hierarchy)
+9. [Internal modes class cluster](#internal-modes-class-cluster)
+10. [Unit testing](#unit-testing)
 
 ------------------------
 
@@ -93,6 +95,21 @@ im.ShowLowestModesAtFrequency(5*modes.f0)
 ```
 to quickly visualize the four lowest modes.
 
+Constant and exponential stratification
+------------
+
+Both constant and exponential stratification profiles have exact analytical solutions that have been implemented directly. Initialization follows the same basic format, but rather than specify a density profile, you specify the parameters for the stratification. For example,
+```matlab
+N0 = 5.2e-3;
+imConst = InternalModesConstantStratification(N0,[L 0],zOut,latitude);
+```
+will initialize a constant stratification profile with buoyancy frequency given by `N0`, and
+```matlab
+N0 = 5.2e-3;
+b = 1300;
+imExp = InternalModesExponentialStratification([N0 b],[L 0],zOut,latitude);
+```
+will initialize an exponential stratification profile with surface buoyancy frequency of `N0` and e-fold scale of `b`. 
 
 Built-in density profiles
 ------------
@@ -198,3 +215,10 @@ or
 im.ShowRelativeErrorAtFrequency(5*modes.f0)
 ```
 to estimate the error.
+
+Unit testing
+------------------
+
+The folder `UnitTests` constains two functions that use the analytical solutions from constant and exponential stratification to unit test against the numerical methods.
+-`InternalModeRelativeErrorTests.m` computes the internal mode solution at three different wavenumbers and three different frequencies, returning the number of 'good' modes (modes with less than 1 percent error). The test should be run with both surface boundary conditions.
+-`SQGModeRelativeErrorTests.m` computes the surface and bottom boundary SQG mode solutions at a range wavenumbers, returning the relative error.

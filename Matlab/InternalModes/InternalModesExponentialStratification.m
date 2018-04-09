@@ -22,15 +22,19 @@ classdef InternalModesExponentialStratification < InternalModesBase
         function self = InternalModesExponentialStratification(rho, z_in, z_out, latitude, varargin) 
             % rho should be a two component vector with the buoyancy at the
             % surface and the e-fold scale, e.g., [5.2e-3 1300].
-            if isa(rho,'numeric') == true && length(rho) == 2
+            if isa(rho,'numeric') == true && (length(rho) == 2 || length(rho) == 3)
                 N0 = rho(1);
                 b = rho(2);
-                rho0 = 1025;
+                if length(rho) == 3
+                    rho0 = rho(3);
+                else
+                    rho0 = 1025;
+                end
                 g = 9.81;
                 rhoFunction = @(z) rho0*(1 + b*N0*N0/(2*g)*(1 - exp(2*z/b)));
                 N2Function = @(z) N0*N0*exp(2*z/b);
             else
-                error('Invalid initialization: rho must be a two-component vector with the bouyancy at the surface and the e-fold scale, e.g., [5.2e-3 1300].\n');
+                error('Invalid initialization: rho must be a two-component vector with the bouyancy at the surface and the e-fold scale, e.g., [5.2e-3 1300], or a three-component vector that includes the density at the surface as the final argument.\n');
             end
             
             self@InternalModesBase(rhoFunction,z_in,z_out,latitude, varargin{:});
@@ -236,8 +240,27 @@ classdef InternalModesExponentialStratification < InternalModesBase
         end
         
         function [psi] = BottomModesAtWavenumber(self, k)
+            % Not done in LaCasce 2012, but the calculation is almost
+            % identical.
             % size(psi) = [size(k); length(z)]
-            error('Not yet implemented. See LaCasce 2012.');
+            sizeK = size(k);
+            if length(sizeK) == 2 && sizeK(2) == 1
+                sizeK(2) = [];
+            end
+            k = reshape(k,[],1);
+            zCoord = reshape(self.z,1,[]);
+            
+            alpha = 2/self.b;
+            eta = self.N0*k/(alpha*self.f0);
+            H = self.Lz;
+            
+            numerator = besselk(0,2*eta) .* besseli(1,2*eta*exp(alpha*zCoord/2)) + besseli(0,2*eta) .* besselk(1,2*eta*exp(alpha*zCoord/2));
+            denominator = besselk(0,2*eta) .* besseli(0,2*eta*exp(-alpha*H/2)) - besseli(0,2*eta) .* besselk(0,2*eta*exp(-alpha*H/2));
+            
+            psi = (1./(eta*alpha*self.f0)) .* exp(alpha*(zCoord+2*H)/2) .* numerator ./ denominator;
+            
+            sizeK(end+1) = length(self.z);
+            psi = reshape(psi,sizeK);
         end
         
         function [F,G] = ModeFunctionsForOmegaAndC(self,omega,c)

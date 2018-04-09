@@ -319,10 +319,72 @@ The boundary conditions we want to apply are,
 \begin{align}
 \frac{d\chi}{dz} \biggr\rvert_{z=0} = 0, \frac{d\chi}{dz} \biggr\rvert_{z=-D} = 1
 \end{align}
+Differentiation of the Bessel functions goes like,
+\begin{align}
+\frac{ d I_\nu(z)}{d z} =& I_{\nu-1}(z) - \frac{\nu}{z} I_\nu(z) \textrm{ or,}\\
+\frac{ d I_\nu(z)}{d z} =& \frac{\nu}{z} I_{\nu}(z) + I_{\nu+1} (z) 
+\end{align}
+the two of which can probably be related with the identity,
+\begin{equation}
+I_\nu(z) = \frac{2(\nu+1)}{z} I_{\nu+1}(z) + I_{\nu+2}(z)
+\end{equation}
+Also,
+\begin{align}
+\frac{ d K_\nu(z)}{d z} =& -K_{\nu-1}(z) - \frac{\nu}{z} I_\nu(z)
+\end{align}
+
 Differentiating,
 \begin{align}
 \frac{d\chi}{dz}=& \frac{\alpha}{2} e^{\alpha z/2} \left( A I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right) \\
-&+ \alpha \eta e^{\alpha z} \left( A I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right)  \\
-&+  e^{\alpha z/2} \left( A I_0 \left( 2 \eta e^{\alpha z/2} \right) - \frac{\nu}{z} I_1 \left( 2 \eta e^{\alpha z/2} \right) + B K_1 \left( 2 \eta e^{\alpha z/2} \right) \right) 
+&+  \alpha \eta e^{\alpha z}  A \left(  I_0 \left( 2 \eta e^{\alpha z/2} \right) - \frac{1}{2 \eta } e^{-\alpha z/2} I_1 \left( 2 \eta e^{\alpha z/2} \right) \right) \\
+&+  \alpha \eta e^{\alpha z}  B\left(  - K_0 \left( 2 \eta e^{\alpha z/2} \right) -  \frac{1}{2 \eta } e^{-\alpha z/2} K_1 \left( 2 \eta e^{\alpha z/2} \right) \right) 
+\end{align}
+which reduces to,
+\begin{align}
+\frac{d\chi}{dz}=& \alpha   \eta e^{\alpha z} \left[ A I_0 \left( 2 \eta e^{\alpha z/2} \right) - B K_0 \left( 2 \eta e^{\alpha z/2} \right)  \right].
+\end{align}
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Surface mode}
+%%%%%%%%%%%%%%%%%%%%%%%%
+Let's first replicate LaCasce's solution, to make sure we're doing things correctly. The bottom boundary condition gives use that,
+\begin{align}
+\frac{d\chi}{dz} \biggr\rvert_{z=-D} =&  \alpha   \eta e^{-\alpha D} \left[ A I_0 \left( 2 \eta e^{-\alpha D/2} \right) - B K_0 \left( 2 \eta e^{-\alpha D/2} \right)  \right] = 0
+\end{align}
+or
+\begin{align}
+A =& C K_0 \left( 2 \eta e^{-\alpha D/2} \right) \\
+B =& C I_0 \left( 2 \eta e^{-\alpha D/2} \right)
+\end{align}
+which gives you 
+\begin{align}
+\frac{d\chi}{dz}=& \alpha   \eta e^{\alpha z} C \left[ K_0 \left( 2 \eta e^{-\alpha D/2} \right) I_0 \left( 2 \eta e^{\alpha z/2} \right) - I_0 \left( 2 \eta e^{-\alpha D/2} \right) K_0 \left( 2 \eta e^{\alpha z/2} \right)  \right].
+\end{align}
+and thus a solution of,
+\begin{align}
+\chi_{\textrm{surf}} = \frac{e^{\alpha z/2}}{\alpha \eta} \frac{ K_0 \left( 2 \eta e^{-\alpha D/2} \right) I_1 \left( 2 \eta e^{\alpha z/2} \right) + I_0 \left( 2 \eta e^{-\alpha D/2} \right) K_1 \left( 2 \eta e^{\alpha z/2} \right)}{ K_0 \left( 2 \eta e^{-\alpha D/2} \right) I_0 \left( 2 \eta \right) - I_0 \left( 2 \eta e^{-\alpha D/2} \right) K_0 \left( 2 \eta  \right)}
+\end{align}
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Bottom mode}
+%%%%%%%%%%%%%%%%%%%%%%%%
+Thus, the boundary conditions give us
+\begin{align}
+\frac{d\chi}{dz} \biggr\rvert_{z=0} =&  \alpha \eta  \left[ A I_0(2 \eta) - B K_0(2 \eta) \right] = 0
+\end{align}
+or
+\begin{align}
+A =& C K_0(2 \eta) \\
+B =& C I_0(2 \eta) 
+\end{align}
+which gives us,
+\begin{align}
+\frac{d\chi}{dz}=& \alpha   \eta e^{\alpha z} C \left[ K_0(2 \eta) I_0 \left( 2 \eta e^{\alpha z/2} \right) - I_0(2 \eta)  K_0 \left( 2 \eta e^{\alpha z/2} \right)  \right].
+\end{align}
+and thus,
+\begin{align}
+C=& \frac{e^{\alpha D}}{\alpha  \eta}  \left[ K_0(2 \eta) I_0 \left( 2 \eta e^{-\alpha D/2} \right) - I_0(2 \eta)  K_0 \left( 2 \eta e^{-\alpha D/2} \right)  \right]^{-1}.
+\end{align}
+Thus, in sum, we have that
+\begin{align}
+\chi_{\textrm{bot}} =  \frac{e^{\alpha (z+2 D)/2}}{\alpha \eta} \frac{K_0(2 \eta)  I_1 \left( 2 \eta e^{\alpha z/2} \right) + I_0(2 \eta)  K_1 \left( 2 \eta e^{\alpha z/2}  \right)}{K_0(2 \eta) I_0 \left( 2 \eta e^{-\alpha D/2} \right) - I_0(2 \eta)  K_0 \left( 2 \eta e^{-\alpha D/2} \right)}
 \end{align}
 \end{document}  

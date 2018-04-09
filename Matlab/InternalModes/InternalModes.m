@@ -152,7 +152,8 @@ classdef InternalModes < handle
                 
                 if userSpecifiedMethod == 0 && isStratificationConstant == 1
                     fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
-                    self.internalModes = InternalModesConstantStratification(rho,zIn,zOut,latitude,extraargs{:});
+                    [N0, rho0] = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
+                    self.internalModes = InternalModesConstantStratification([N0, rho0],zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')
@@ -230,7 +231,7 @@ classdef InternalModes < handle
             errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
             
             if strcmp(self.stratification, 'constant')
-                imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imConstant = InternalModesConstantStratification(5.2e-3,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
                 imConstant.upperBoundary = self.upperBoundary;
                 imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtWavenumber( k );
@@ -271,7 +272,7 @@ classdef InternalModes < handle
             errorFunction = @(x,y) max(max(abs(x-y),[],1)./max(abs(y),[],1),1e-15);
             
             if  strcmp(self.stratification, 'constant')
-                imConstant = InternalModesConstantStratification(self.rhoFunction,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
+                imConstant = InternalModesConstantStratification(5.2e-3,[-5000 0],self.z,self.latitude,'nModes',self.nModes);
                 imConstant.upperBoundary = self.upperBoundary;
                 imConstant.normalization = self.normalization;
                 [F_analytical,G_analytical,h_analytical] = imConstant.ModesAtFrequency( omega );

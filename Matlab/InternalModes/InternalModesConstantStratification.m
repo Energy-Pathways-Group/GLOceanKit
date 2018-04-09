@@ -9,11 +9,24 @@ classdef InternalModesConstantStratification < InternalModesBase
     
     methods
         function self = InternalModesConstantStratification(rho, z_in, z_out, latitude, varargin) 
-            self@InternalModesBase(rho,z_in,z_out,latitude, varargin{:});
-            self.N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z_in,self.rho0,self.g);
+            if isa(rho,'numeric') == true && (length(rho) == 1 || length(rho) == 2)
+                N0 = rho(1);
+                if length(rho) == 2
+                    rho0 = rho(3);
+                else
+                    rho0 = 1025;
+                end
+                g = 9.81;
+                rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
+                N2Function = @(z) N0*N0*ones(size(z));
+            else
+                error('Invalid initialization: the first argument must be the buoyancy frequency.\n');
+            end
             
-            rhoFunction = @(z) -(self.N0*self.N0*self.rho0/self.g)*z + self.rho0;
-            N2Function = @(z) self.N0*self.N0*ones(size(z));
+            
+            self@InternalModesBase(rhoFunction,z_in,z_out,latitude, varargin{:});
+            self.N0 = N0;
+
             self.rho = rhoFunction(self.z);
             self.N2 = N2Function(self.z);
             self.rho_z = -(self.N0*self.N0*self.rho0/self.g)*ones(size(self.z));
@@ -257,10 +270,13 @@ classdef InternalModesConstantStratification < InternalModesBase
             flag = max_ddrho < 1e-7;
         end
         
-        function N0 = BuoyancyFrequencyFromConstantStratification(rho,z_in,rho0,g)
+        function N0 = BuoyancyFrequencyFromConstantStratification(rho,z_in)
+            g = 9.81;
             if isa(rho,'function_handle') == true
+                rho0 = rho(max(z_in));
                 drhodz = (rho(max(z_in)) - rho(min(z_in)))/( max(z_in) - min(z_in) );
             elseif isa(rho,'numeric') == true
+                rho0 = max(rho);
                 drhodz = (min(rho)-max(rho))/(max(z_in)-min(z_in));
             end
             N0 = sqrt(-g*drhodz/rho0);

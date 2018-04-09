@@ -83,7 +83,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.nz = nz;
             
             rhoFunction = @(z) -(self.N0*self.N0*self.rho0/9.81)*z + self.rho0;
-            self.internalModes = InternalModesConstantStratification(rhoFunction, [-dims(3) 0],z,latitude);
+            self.internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
             
             % Preallocate this array for a faster dct
             self.dctScratch = zeros(self.Nx,self.Ny,2*self.nz);

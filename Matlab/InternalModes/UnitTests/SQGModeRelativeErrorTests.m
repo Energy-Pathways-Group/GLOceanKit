@@ -18,7 +18,7 @@ for iProfile=1:length(profiles)
     z = linspace(min(zIn),max(zIn),n)';
     
     if strcmp(profiles{iProfile},'constant')==1
-        imAnalytical = InternalModesConstantStratification(rhoFunction,zIn,z,latitude,'nModes',n);
+        imAnalytical = InternalModesConstantStratification(5.2e-3,zIn,z,latitude,'nModes',n);
     else
         imAnalytical = InternalModesExponentialStratification([5.2e-3 1300],zIn,z,latitude,'nModes',n);
     end
