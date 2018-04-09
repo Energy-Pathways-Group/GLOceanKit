@@ -50,7 +50,7 @@ Now that the `im` object is initialized, you can request the internal modes at a
    ```
 or frequency `omega`,
 ```matlab
-   [F,G,h,k] = im.ModesAtWavenumber(5*im.f0);
+   [F,G,h,k] = im.ModesAtFrequency(5*im.f0);
    ```
 The arrays `F` and `G` contain the vertical modes for u/v and w/rho, respectively. The arrays have dimensions `size(F)=[length(zOut) length(h)]`, meaning that each column `i` is a normal mode, `F(:,i)` with corresponding eigendepth `h(i)`. The associated eigenfrequency or eigenwavenumber are also returned for convenience.
 
