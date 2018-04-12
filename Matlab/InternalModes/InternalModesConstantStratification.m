@@ -12,7 +12,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             if isa(rho,'numeric') == true && (length(rho) == 1 || length(rho) == 2)
                 N0 = rho(1);
                 if length(rho) == 2
-                    rho0 = rho(3);
+                    rho0 = rho(2);
                 else
                     rho0 = 1025;
                 end

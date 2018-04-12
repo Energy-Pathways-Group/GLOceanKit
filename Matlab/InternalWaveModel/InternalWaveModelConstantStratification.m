@@ -56,6 +56,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             
             if mod(log2(n(3)),1) == 0
                 nz = n(3);
+                error('You are implicitly asking for periodic boundary conditions in the vertical. This is not supported.');
             elseif mod(log2(n(3)-1),1) == 0 % user wants the surface point
                 nz = n(3)-1; % internally we proceed as if there are n-1 points
             else
@@ -203,7 +204,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
     end
     
-    methods (Access = protected)
+    methods %(Access = protected)
         
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
             myH = self.h(k0+1,l0+1,j0);
@@ -285,9 +286,15 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % points, it starts generating some small imaginary component.
             w = real(w(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
+                
+        function u_bar = TransformFromSpatialDomainWithF(self, u)
+            self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
+            u_bar = 2*real(self.dctScratch(:,:,2:self.nz+1)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+        end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
-            self.dstScratch = ifft(cat(3,w, zeros(self.Nx,self.Ny),-w(:,:,self.nz:-1:2)),2*self.nz,3);
+            self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
             w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
         end
