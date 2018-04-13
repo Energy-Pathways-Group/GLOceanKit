@@ -64,3 +64,58 @@ u_model_fixed = wavemodel.u_plus;
 u_model_fixed(1,1,:) = real(u_model_fixed(1,1,:));
 u_error = error(u_model_fixed,u_plus_back);
 fprintf('The solution matches to 1 part in 10^%d\n', round((log10(u_error))));
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Decomposition test
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+t = 360;
+[u,v,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','zeta');
+
+newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+newmodel.InitializeWithFieldsAtTime(t,u,v,eta);
+
+
+% error = @(u,u_unit) max(max(max(abs((u-u_unit)./max(abs(u_unit),1e-100)))));
+% A_plus_error = error(newmodel.Amp_plus,wavemodel.Amp_plus);
+
+error2 = @(u,u_unit) abs((u-u_unit))./abs(u_unit);
+totalError = error2(newmodel.Amp_plus,wavemodel.Amp_plus);
+totalError(abs(wavemodel.Amp_plus)<1e-15) = 0;
+A_plus_error = max(max(max(totalError)));
+
+fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10(A_plus_error))));
+
+totalError = error2(newmodel.Amp_minus,wavemodel.Amp_minus);
+totalError(abs(wavemodel.Amp_minus)<1e-15) = 0;
+A_minus_error = max(max(max(totalError)));
+fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10(A_minus_error))));
+
+return;
+
+ubar = wavemodel.TransformFromSpatialDomainWithF( u )./wavemodel.F;
+vbar = wavemodel.TransformFromSpatialDomainWithF( v )./wavemodel.F;
+etabar = wavemodel.TransformFromSpatialDomainWithG( eta )./wavemodel.G;
+
+k = wavemodel.K;
+l = wavemodel.L;
+K = sqrt(k.*k + l.*l);
+omega = (wavemodel.Omega);
+h = wavemodel.h;
+g = wavemodel.g;
+f0 = wavemodel.f0;
+
+delta = sqrt(h).*(k.*ubar + l.*vbar)./K;
+zeta = sqrt(h).*(k.*vbar - l.*ubar)./K;
+
+P_plus = exp(-sqrt(-1)*omega*t).*(-g*K.*sqrt(h).*etabar./omega + delta - sqrt(-1)*zeta*f0./omega)/2;
+P_minus = exp(-sqrt(-1)*omega*t).*(g*K.*sqrt(h).*etabar./omega + delta + sqrt(-1)*zeta*f0./omega)/2;
+B = (etabar*f0 - sqrt(-1)*zeta.*K.*sqrt(h))*f0./(omega.*omega);
+
+% inertial must be solved for separately.
+P_plus(1,1,:) = exp(-sqrt(-1)*f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(h(1,1,:))/2;
+P_minus(1,1,:) = conj(P_plus(1,1,:));
+B(1,1,:) = 0;

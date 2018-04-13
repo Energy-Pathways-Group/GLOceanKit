@@ -146,6 +146,33 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
         
+        function InitializeWithFieldsAtTime(self, t, u, v, zeta)
+            % This function can be used as a wave-vortex decomposition. It
+            % will *exactly* recover amplitudes being used the generate the
+            % dynamical fields. For the moment I assume assuming no
+            % buoyancy perturbation at the boundaries.
+            ubar = self.TransformFromSpatialDomainWithF( u )./self.F;
+            vbar = self.TransformFromSpatialDomainWithF( v )./self.F;
+            etabar = self.TransformFromSpatialDomainWithG( zeta )./self.G;
+            
+            delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
+            zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;
+            
+            A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            
+            % inertial must be solved for separately.
+            A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
+            A_minus(1,1,:) = conj(A_plus(1,1,:));
+            B(1,1,:) = 0;
+            
+            % B is the geostrophic solution, not yet implemented.
+            A_plus = InternalWaveModel.MakeHermitian(A_plus);
+            A_minus = InternalWaveModel.MakeHermitian(A_minus);
+            self.GenerateWavePhases(A_plus,A_minus);
+        end
+        
         function InitializeWithIsopycnalDisplacementField(self, zeta)
             % Note that you will lose any 'mean' zeta, because technically
             % this is the perturbation *from* a mean.

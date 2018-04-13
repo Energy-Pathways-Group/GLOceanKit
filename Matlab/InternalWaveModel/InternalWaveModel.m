@@ -256,12 +256,12 @@ classdef (Abstract) InternalWaveModel < handle
                 U = zeros(size(self.K));
                 U(k0+1,l0+1,j0) = A*ratio/2*exp(sqrt(-1)*phi0);
                 if sign > 0
-                    A_plus = MakeHermitian(U);
+                    A_plus = InternalWaveModel.MakeHermitian(U);
                     A_minus = zeros(size(U));
                     A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial oscillations are created using this trick.
                 else
                     A_plus = zeros(size(U));
-                    A_minus = MakeHermitian(U);
+                    A_minus = InternalWaveModel.MakeHermitian(U);
                 end
                 
                 A_minus_total = A_minus_total + A_minus;
@@ -1454,17 +1454,17 @@ classdef (Abstract) InternalWaveModel < handle
             fOverOmega = self.f0 ./ omega;
             
             % Without calling MakeHermitian, this doesn't deal with l=0.
-            self.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
-            self.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
+            self.u_plus = U_plus .* InternalWaveModel.MakeHermitian( ( -sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
+            self.u_minus = U_minus .* InternalWaveModel.MakeHermitian( (sqrt(-1)*fOverOmega .* sin(alpha) + cos(alpha) )./sqrt(self.h) );
             
-            self.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
-            self.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
+            self.v_plus = U_plus .* InternalWaveModel.MakeHermitian( ( sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
+            self.v_minus = U_minus .* InternalWaveModel.MakeHermitian( ( -sqrt(-1)*fOverOmega .* cos(alpha) + sin(alpha) )./sqrt(self.h) );
             
-            self.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
-            self.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
+            self.w_plus = U_plus .* InternalWaveModel.MakeHermitian(-sqrt(-1) *  self.Kh .* sqrt(self.h) );
+            self.w_minus = U_minus .* InternalWaveModel.MakeHermitian( -sqrt(-1) * self.Kh .* sqrt(self.h) );
             
-            self.zeta_plus = U_plus .* MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
-            self.zeta_minus = U_minus .* MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
+            self.zeta_plus = U_plus .* InternalWaveModel.MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
+            self.zeta_minus = U_minus .* InternalWaveModel.MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1999,48 +1999,52 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
     end
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
-%
-% The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
-% numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
-% conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
-% numbers are set to zero to avoid complications.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function A = MakeHermitian(A)
-M = size(A,1);
-N = size(A,2);
-K = size(A,3);
-
-% The order of the for-loop is chosen carefully here.
-for k=1:K
-    for j=1:(N/2+1)
-        for i=1:M
-            ii = mod(M-i+1, M) + 1;
-            jj = mod(N-j+1, N) + 1;
-            if i == ii && j == jj
-                % A(i,j,k) = real(A(i,j,k)); % self-conjugate term
-                % This is not normally what you'd do, but we're being
-                % tricky by later adding the conjugate
-                if i == 1 && j == 1
-                    continue;
-                else
-                    A(i,j,k) = 0;
+    
+    methods (Static)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
+        %
+        % The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
+        % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
+        % conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
+        % numbers are set to zero to avoid complications.
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function A = MakeHermitian(A)
+            M = size(A,1);
+            N = size(A,2);
+            K = size(A,3);
+            
+            % The order of the for-loop is chosen carefully here.
+            for k=1:K
+                for j=1:(N/2+1)
+                    for i=1:M
+                        ii = mod(M-i+1, M) + 1;
+                        jj = mod(N-j+1, N) + 1;
+                        if i == ii && j == jj
+                            % A(i,j,k) = real(A(i,j,k)); % self-conjugate term
+                            % This is not normally what you'd do, but we're being
+                            % tricky by later adding the conjugate
+                            if i == 1 && j == 1
+                                continue;
+                            else
+                                A(i,j,k) = 0;
+                            end
+                        elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
+                            A(i,j,k) = 0;
+                        else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay
+                            A(ii,jj,k) = conj(A(i,j,k));
+                        end
+                    end
                 end
-            elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
-                A(i,j,k) = 0;
-            else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay 
-                A(ii,jj,k) = conj(A(i,j,k));
             end
+            
         end
     end
 end
 
-end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -2118,7 +2122,7 @@ end
 function A = GenerateHermitianRandomMatrix( size )
 
 nX = size(1); nY = size(2); nZ = size(3);
-A = MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+A = InternalWaveModel.MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
 % A(1,1,:) = 2*real(A(1,1,:)); % Double the zero frequency
 A(1,1,:) = 2*A(1,1,:); % Double the zero frequency
 A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
