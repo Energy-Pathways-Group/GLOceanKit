@@ -33,6 +33,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
     properties (Access = public)
         N0
         F, G, M
+        B % amplitude of the geostrophic component
     end
     
     properties (Access = protected)
@@ -85,6 +86,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             
             rhoFunction = @(z) -(self.N0*self.N0*self.rho0/9.81)*z + self.rho0;
             self.internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
+            
+            self.rhobar = rhoFunction(self.z);
             
             % Preallocate this array for a faster dct
             self.dctScratch = zeros(self.Nx,self.Ny,2*self.nz);
@@ -146,6 +149,11 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
         
+        function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, rho_prime)
+            zeta = self.g * rho_prime /(self.rho0 * self.N0);
+            self.InitializeWithFieldsAtTime(t,u,v,zeta);
+        end
+        
         function InitializeWithFieldsAtTime(self, t, u, v, zeta)
             % This function can be used as a wave-vortex decomposition. It
             % will *exactly* recover amplitudes being used the generate the
@@ -160,12 +168,13 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             
             A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
             A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
-            B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            self.B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
             
             % inertial must be solved for separately.
             A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
             A_minus(1,1,:) = conj(A_plus(1,1,:));
-            B(1,1,:) = 0;
+            self.B(1,1,:) = 0;
+            self.B = InternalWaveModel.MakeHermitian(self.B);
             
             % B is the geostrophic solution, not yet implemented.
             A_plus = InternalWaveModel.MakeHermitian(A_plus);
