@@ -73,10 +73,11 @@ fprintf('The solution matches to 1 part in 10^%d\n', round((log10(u_error))));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 t = 360;
-[u,v,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','zeta');
+[u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
+totalEnergy = mean(mean(mean( u.^2 + v.^2 + w.^2 + eta.*eta ) ) )/2
 
 newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-newmodel.InitializeWithFieldsAtTime(t,u,v,eta);
+newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
 
 
 % error = @(u,u_unit) max(max(max(abs((u-u_unit)./max(abs(u_unit),1e-100)))));

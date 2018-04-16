@@ -149,19 +149,29 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = (U*K/m) * sin_theta .* sin(m*z);
         end
         
-        function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, rho_prime)
-            zeta = self.g * rho_prime /(self.rho0 * self.N0);
-            self.InitializeWithFieldsAtTime(t,u,v,zeta);
+        function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, t, u, v, rho_prime)
+            zeta = self.g * rho_prime /(self.rho0 * self.N0 * self.N0);
+            self.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,zeta);
         end
         
-        function InitializeWithFieldsAtTime(self, t, u, v, zeta)
+        function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, zeta)
             % This function can be used as a wave-vortex decomposition. It
             % will *exactly* recover amplitudes being used the generate the
             % dynamical fields. For the moment I assume assuming no
             % buoyancy perturbation at the boundaries.
-            ubar = self.TransformFromSpatialDomainWithF( u )./self.F;
-            vbar = self.TransformFromSpatialDomainWithF( v )./self.F;
-            etabar = self.TransformFromSpatialDomainWithG( zeta )./self.G;
+            ubar = self.TransformFromSpatialDomainWithF( u );
+            vbar = self.TransformFromSpatialDomainWithF( v );
+            etabar = self.TransformFromSpatialDomainWithG( zeta );
+            
+            totalEnergy = sum(sum(sum( abs(ubar).^2 + abs(vbar).^2  + abs(etabar).^2 ) ) );
+            fprintf('\tspectral energy %g\n', totalEnergy);
+            
+            ubar = ubar./self.F;
+            vbar = vbar./self.F;
+            etabar = etabar./self.G;
+            
+                        totalEnergy = sum(sum(sum( abs(ubar).^2 + abs(vbar).^2  + abs(etabar).^2 ) ) );
+            fprintf('\tspectral energy %g\n', totalEnergy);
             
             delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
             zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;

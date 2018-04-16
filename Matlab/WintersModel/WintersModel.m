@@ -82,6 +82,8 @@ classdef WintersModel < handle
             for iArg=1:length(varargout)
                 if ( strcmp(varargin{iArg}, 'rho_prime') )
                     varargout{iArg} = ncread(file,'s1');
+%                 elseif ( strcmp(varargin{iArg}, 'zeta') )
+%                     varargout{iArg} = ncread(file,'s1') * self.g * /(self.rho0 * self.N0);
                 elseif ( strcmp(varargin{iArg}, 't') )
                     varargout{iArg} = ncread(file,'time');
                 else
