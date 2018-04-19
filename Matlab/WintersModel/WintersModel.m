@@ -1,6 +1,7 @@
 classdef WintersModel < handle
     properties (Access = public)
         existingDirectoryPath
+        wavemodel
     end
             
     methods
@@ -8,6 +9,7 @@ classdef WintersModel < handle
             if nargin == 1
                 if isa(varargin{1},'char') == true
                     self.existingDirectoryPath = varargin{1};
+                    self.wavemodel = self.WaveModelFromInitialConditionsFile();
                 end
             else
                error('Not yet supported'); 
@@ -73,17 +75,35 @@ classdef WintersModel < handle
         
         function [varargout] = VariableFieldsAtTimeIndex(self, iTime, varargin)
             paths = self.TimeStepFiles;
-            if iTime > length(paths)
+            if iTime == 0
+                paths = self.initializationFile;
+                file = [paths(1).folder '/' paths(1).name];
+            elseif iTime > length(paths)
                 return;
+            else
+                file = [paths(iTime).folder '/' paths(iTime).name];
             end
             
-            file = [paths(iTime).folder '/' paths(iTime).name];
+            info = ncinfo(file);
+            containsRhoPrime = 0;
+            for i=1:length(info.Variables)
+                if ( strcmp(info.Variables(i).Name,'s1') )
+                    containsRhoPrime = 1;
+                end
+            end
+            
             varargout = cell(size(varargin));
             for iArg=1:length(varargout)
-                if ( strcmp(varargin{iArg}, 'rho_prime') )
-                    varargout{iArg} = ncread(file,'s1');
-%                 elseif ( strcmp(varargin{iArg}, 'zeta') )
-%                     varargout{iArg} = ncread(file,'s1') * self.g * /(self.rho0 * self.N0);
+                if ( strcmp(varargin{iArg}, 'rho_prime') || strcmp(varargin{iArg}, 'zeta') )
+                    if containsRhoPrime == 1
+                        varargout{iArg} = ncread(file,'s1');
+                    else
+                        varargout{iArg} = ncread(file,'rho') - reshape(self.wavemodel.rhobar,1,1,[]);
+                    end
+                    
+                    if strcmp(varargin{iArg}, 'zeta')
+                        varargin{iArg} = varargin{iArg} * self.wavemodel.g / (self.wavemodel.rho0 * self.wavemodel.N0 * self.wavemodel.N0);
+                    end
                 elseif ( strcmp(varargin{iArg}, 't') )
                     varargout{iArg} = ncread(file,'time');
                 else

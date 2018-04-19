@@ -159,19 +159,9 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % will *exactly* recover amplitudes being used the generate the
             % dynamical fields. For the moment I assume assuming no
             % buoyancy perturbation at the boundaries.
-            ubar = self.TransformFromSpatialDomainWithF( u );
-            vbar = self.TransformFromSpatialDomainWithF( v );
-            etabar = self.TransformFromSpatialDomainWithG( zeta );
-            
-            totalEnergy = sum(sum(sum( abs(ubar).^2 + abs(vbar).^2  + abs(etabar).^2 ) ) );
-            fprintf('\tspectral energy %g\n', totalEnergy);
-            
-            ubar = ubar./self.F;
-            vbar = vbar./self.F;
-            etabar = etabar./self.G;
-            
-                        totalEnergy = sum(sum(sum( abs(ubar).^2 + abs(vbar).^2  + abs(etabar).^2 ) ) );
-            fprintf('\tspectral energy %g\n', totalEnergy);
+            ubar = self.TransformFromSpatialDomainWithF( u )./self.F;
+            vbar = self.TransformFromSpatialDomainWithF( v )./self.F;
+            etabar = self.TransformFromSpatialDomainWithG( zeta )./self.G;
             
             delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
             zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;

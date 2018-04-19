@@ -22,12 +22,8 @@ if exist('A_p','var') == 0
     for i = 1:length(increments)
         iTime = increments(i);
         [t,u,v,w,rho_prime] = WM.VariableFieldsAtTimeIndex(iTime,'t','u','v','w','rho_prime');
-        zeta = rho_prime * wavemodel.g / (wavemodel.rho0 * wavemodel.N0);
-        
-        totalEnergy = mean(mean(mean( u.^2 + v.^2 + w.^2 + zeta.*zeta ) ) )/2;
-        fprintf('Extracting time: %f with energy %f\n', t, totalEnergy);
-        
-        wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(0,u,v,rho_prime);
+                
+        wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
         
         A_p(i) = wavemodel.Amp_plus(k,l,j);
         A_m(i) = wavemodel.Amp_minus(k,l,j);

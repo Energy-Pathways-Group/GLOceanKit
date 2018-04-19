@@ -74,7 +74,6 @@ fprintf('The solution matches to 1 part in 10^%d\n', round((log10(u_error))));
 
 t = 360;
 [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
-totalEnergy = mean(mean(mean( u.^2 + v.^2 + w.^2 + eta.*eta ) ) )/2
 
 newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
@@ -94,6 +93,21 @@ totalError = error2(newmodel.Amp_minus,wavemodel.Amp_minus);
 totalError(abs(wavemodel.Amp_minus)<1e-15) = 0;
 A_minus_error = max(max(max(totalError)));
 fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10(A_minus_error))));
+
+sum(sum(sum(abs(wavemodel.B).^2))) / sum(sum(sum(abs(wavemodel.Amp_minus).^2)))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Depth integrated energy comparison
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+integratedEnergy = trapz(wavemodel.z,mean(mean( u.^2 + v.^2 + w.^2 + N0*N0*eta.*eta, 1 ),2 ) )/2;
+fprintf('total integrated energy: %f m^3/s\n', integratedEnergy);
+
+spectralEnergy = sum(sum(sum(newmodel.Amp_plus.*conj(newmodel.Amp_plus) + newmodel.Amp_minus.*conj(newmodel.Amp_minus))));
+fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
 
 return;
 
