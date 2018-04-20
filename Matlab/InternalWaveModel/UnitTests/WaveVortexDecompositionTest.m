@@ -94,7 +94,7 @@ totalError(abs(wavemodel.Amp_minus)<1e-15) = 0;
 A_minus_error = max(max(max(totalError)));
 fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10(A_minus_error))));
 
-sum(sum(sum(abs(wavemodel.B).^2))) / sum(sum(sum(abs(wavemodel.Amp_minus).^2)))
+fprintf('Total B amplitude is %f\n', sum(sum(sum(abs(wavemodel.B).^2))) / sum(sum(sum(abs(wavemodel.Amp_minus).^2))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -106,8 +106,22 @@ sum(sum(sum(abs(wavemodel.B).^2))) / sum(sum(sum(abs(wavemodel.Amp_minus).^2)))
 integratedEnergy = trapz(wavemodel.z,mean(mean( u.^2 + v.^2 + w.^2 + N0*N0*eta.*eta, 1 ),2 ) )/2;
 fprintf('total integrated energy: %f m^3/s\n', integratedEnergy);
 
+P2_pm = newmodel.Amp_plus.*conj(newmodel.Amp_plus) + newmodel.Amp_minus.*conj(newmodel.Amp_minus);
 spectralEnergy = sum(sum(sum(newmodel.Amp_plus.*conj(newmodel.Amp_plus) + newmodel.Amp_minus.*conj(newmodel.Amp_minus))));
 fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
+
+omega = wavemodel.Omega;
+f = wavemodel.f0;
+N = wavemodel.N0;
+
+HKE = sum(sum(sum(  P2_pm .* (1 + f*f./(omega.*omega)) .* (N*N - omega.*omega) / (2 * (N*N - f*f) )  )));
+VKE = sum(sum(sum(  P2_pm .* (omega.*omega - f*f) / (2 * (N*N - f*f) )  )));
+PE = sum(sum(sum(  P2_pm .* N*N .* (omega.*omega - f*f) ./ (2 * (N*N - f*f) * omega.*omega )  )));
+
+fprintf('total spectral energy (HKE + VKE + PE) = E: (%f + %f + %f) = %f m^3/s\n', HKE, VKE, PE, HKE+VKE+PE);
+
+
+
 
 return;
 
