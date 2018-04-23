@@ -36,6 +36,18 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         B % amplitude of the geostrophic component
     end
     
+    properties (Dependent)
+        % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
+        % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
+        % values
+        Ppm_HKE_factor
+        Ppm_VKE_factor
+        Ppm_PE_factor
+        % Same, but for B
+        P0_HKE_factor
+        P0_PE_factor
+    end
+    
     properties (Access = protected)
         dctScratch, dstScratch;
         nz % DCT length in the vertical. This doesn't change if the user requests the value at the surface, but Nz will.
@@ -237,6 +249,23 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         
         function N2 = N2AtDepth(self,z)
             N2 = self.N0 * self.N0 * ones(size(z));
+        end
+        
+        
+        function value = get.Ppm_HKE_factor(self)
+            value = (1 + self.f0*self.f0./(self.Omega.*self.Omega)) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+        end
+        function value = get.Ppm_VKE_factor(self)
+            value = (self.Omega.*self.Omega - self.f0*self.f0) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+        end
+        function value = get.Ppm_PE_factor(self)
+            value = self.N0*self.N0 .* (self.Omega.*self.Omega - self.f0*self.f0) ./ (2 * (self.N0*self.N0 - self.f0*self.f0) * self.Omega.*self.Omega );
+        end
+        function value = get.P0_HKE_factor(self)
+            value = (self.g/(self.f0*self.f0)) * (self.Omega.*self.Omega - self.f0*self.f0) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+        end
+        function value = get.P0_PE_factor(self)
+            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2;
         end
     end
     
