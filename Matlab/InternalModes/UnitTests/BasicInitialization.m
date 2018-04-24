@@ -1,0 +1,9 @@
+N0 = 5.2e-3;
+g = 9.81;
+rho0 = 1025;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+L = -5000;
+zOut = linspace(L,0,200)';
+latitude = 33;
+im = InternalModes(rho,[L 0],zOut,latitude);
+[F,G,h,k] = im.ModesAtFrequency(5*im.f0);

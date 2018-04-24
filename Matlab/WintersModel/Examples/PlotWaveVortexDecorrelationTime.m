@@ -5,10 +5,12 @@
 % energy fraction, times AC. Then assess when it drops below, say 50%. This
 % would tell you "How long linear IW's explain 50% of KE variance".
 
+dynamicalfile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
+file = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp_chunked.nc';
+matfile = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp.mat';
 
-
-file = '/Volumes/seattle_data1/jearly/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
-matfile = '/Volumes/seattle_data1/jearly/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.mat';
+WM = WintersModel(dynamicalfile);
+wavemodel = WM.WaveModelFromInitialConditionsFile;
 
 k = ncread(file, 'k');
 l = ncread(file, 'l');
@@ -18,7 +20,7 @@ j = ncread(file, 'j');
 Kh = sqrt(K.*K + L.*L);
 
 % Create a reasonable wavenumber axis
-allKs = unique(reshape(abs(wavemodel.Kh),[],1),'sorted');
+allKs = unique(reshape(abs(Kh),[],1),'sorted');
 deltaK = max(diff(allKs));
 kAxis = 0:deltaK:max(allKs);
 
@@ -40,11 +42,25 @@ waveHKE = zeros(nK,nModes);
 vortexHKE = zeros(nK,nModes);
 waveDecorrelationTime = zeros(nK,nModes);
 vortexDecorrelationTime = zeros(nK,nModes);
-% for iK = 1:nK
-for iMode = 1:1
+
+ncid = netcdf.open(file);
+variableIDs = zeros(length(variables),1);
+for i=1:length(variables)
+    variableIDs(i) = netcdf.inqVarID(ncid,variables{i});
+end
+
+startTime = datetime('now');
+for iMode = 1:nModes
     fprintf('iMode: %d\n',iMode);
+    if iMode > 1
+        timePerStep = (datetime('now')-startTime)/(iMode-1);
+        timeRemaining = (nModes-iMode+1)*timePerStep;
+        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, nModes, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+    end
+    
+    fprintf('\tiK: ');
     for iK = 1:1:nK
-        fprintf('\tiK: %d\n',iK);
+        fprintf('%d..',iK);
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
         
         AC = zeros(length(t),Nvars);
@@ -55,7 +71,8 @@ for iMode = 1:1
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
             
             for iVar = 1:Nvars
-                u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
+%                 u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
+                u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j iMode 1]-1, [1 1 1 length(t)], [1 1 1 1])));
                 [ACu, DOFu] = Autocorrelation(u, length(t)-1);
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
@@ -98,9 +115,14 @@ for iMode = 1:1
         waveHKE(iK,iMode) = sum(HKE(1:4));
         vortexHKE(iK,iMode) = sum(HKE(5:6));
     end
+    fprintf('\n');
 end
 
-save(matfile,'waveHKE','vortexHKE','waveDecorrelationTime','vortexDecorrelationTime');
+netcdf.close(ncid);
+
+k = reshape(kAxis(1:nK),[],1);
+
+save(matfile,'waveHKE','vortexHKE','waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k');
 
 HKE_fraction = waveHKE./(waveHKE+vortexHKE);
 

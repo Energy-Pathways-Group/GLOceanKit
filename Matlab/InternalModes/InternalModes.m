@@ -152,8 +152,8 @@ classdef InternalModes < handle
                 
                 if userSpecifiedMethod == 0 && isStratificationConstant == 1
                     fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
-                    N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
-                    self.internalModes = InternalModesConstantStratification([N0, min(rho)],zIn,zOut,latitude,extraargs{:});
+                    [N0, rho0] = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
+                    self.internalModes = InternalModesConstantStratification([N0, rho0],zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')

@@ -1,9 +1,9 @@
 % file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
 % file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
-file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
-%file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
+%file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
 
-output_file = '/Volumes/seattle_data1/jearly/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
+output_file = '/Volumes/seattle_data1/jearly/nsf_iwv/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp_chunked.nc';
 
 WM = WintersModel(file);
 wavemodel = WM.WaveModelFromInitialConditionsFile;
@@ -15,6 +15,7 @@ fileIncrements = 1:10:nFiles;
 Nk = length(wavemodel.k);
 Nl = length(wavemodel.l);
 Nj = length(wavemodel.j);
+Nt = length(fileIncrements);
 
 precision = 'single';
 
@@ -28,13 +29,19 @@ else
     bytePerFloat = 8;
 end
 
-ncid = netcdf.create(output_file, 'CLOBBER');
+% Chunking: https://www.unidata.ucar.edu/blogs/developer/en/entry/chunking_data_choosing_shapes
+[csize, nelems, premp] = netcdf.getChunkCache();
+D = csize/bytePerFloat;
+c = (D/(Nk*Nl*Nj*Nt))^(1/4);
+chunkSize = floor(c*[Nk Nl Nj Nt]);
+
+ncid = netcdf.create(output_file, 'NETCDF4');
 
 % Define the dimensions
 kDimID = netcdf.defDim(ncid, 'k', Nk);
 lDimID = netcdf.defDim(ncid, 'l', Nl);
 jDimID = netcdf.defDim(ncid, 'j', Nj);
-tDimID = netcdf.defDim(ncid, 't', netcdf.getConstant('NC_UNLIMITED'));
+tDimID = netcdf.defDim(ncid, 't', Nt);
 
 % Define the coordinate variables
 kVarID = netcdf.defVar(ncid, 'k', ncPrecision, kDimID);
@@ -53,6 +60,12 @@ AmRealVarID = netcdf.defVar(ncid, 'Am_realp', ncPrecision, [kDimID,lDimID,jDimID
 AmImagVarID = netcdf.defVar(ncid, 'Am_imagp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
 BRealVarID = netcdf.defVar(ncid, 'B_realp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
 BImagVarID = netcdf.defVar(ncid, 'B_imagp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
+netcdf.defVarChunking(ncid,ApRealVarID,'CHUNKED',chunkSize);
+netcdf.defVarChunking(ncid,ApImagVarID,'CHUNKED',chunkSize);
+netcdf.defVarChunking(ncid,AmRealVarID,'CHUNKED',chunkSize);
+netcdf.defVarChunking(ncid,AmImagVarID,'CHUNKED',chunkSize);
+netcdf.defVarChunking(ncid,BRealVarID,'CHUNKED',chunkSize);
+netcdf.defVarChunking(ncid,BImagVarID,'CHUNKED',chunkSize);
 netcdf.putAtt(ncid,ApRealVarID, 'units', 'm/s');
 netcdf.putAtt(ncid,ApImagVarID, 'units', 'm/s');
 netcdf.putAtt(ncid,AmRealVarID, 'units', 'm/s');
