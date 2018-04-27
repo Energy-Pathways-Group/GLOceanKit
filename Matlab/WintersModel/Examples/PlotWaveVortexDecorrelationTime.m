@@ -55,7 +55,7 @@ for iMode = 1:nModes
     if iMode > 1
         timePerStep = (datetime('now')-startTime)/(iMode-1);
         timeRemaining = (nModes-iMode+1)*timePerStep;
-        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, nModes, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iMode, nModes, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
     
     fprintf('\tiK: ');
@@ -121,6 +121,7 @@ end
 netcdf.close(ncid);
 
 k = reshape(kAxis(1:nK),[],1);
+j = 1:nModes;
 
 save(matfile,'waveHKE','vortexHKE','waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k');
 

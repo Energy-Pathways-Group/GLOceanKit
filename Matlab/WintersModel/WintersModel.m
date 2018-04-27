@@ -71,7 +71,10 @@ classdef WintersModel < handle
             paths = dir([self.output3Ddirectory '/**/*.nc']);
         end
         
-        
+        function path = FilePathAtIndex(self, iFile)
+            paths = self.TimeStepFiles;
+            path = [paths(iFile).folder '/' paths(iFile).name];
+        end
         
         function [varargout] = VariableFieldsAtTimeIndex(self, iTime, varargin)
             paths = self.TimeStepFiles;
