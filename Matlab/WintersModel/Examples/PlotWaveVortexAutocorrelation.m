@@ -5,9 +5,29 @@
 % energy fraction, times AC. Then assess when it drops below, say 50%. This
 % would tell you "How long linear IW's explain 50% of KE variance".
 
+% S. Gille on estimating decorrelation time,
+% http://pordlabs.ucsd.edu/sgille/sio221c_f08/dof.pdf
 
+% The floating point noise floor is incredibly important for this analysis.
+% I'm finding that you must garbage the modes with variance that is too
+% low.
+% Make a histogram of log10 the mode amplitudes (or energies), and you'll
+% see a second hump emerge, which are the "zero" amplitude modes.
+% Unfortunately, they butt up against the resolved modes.
 
-file = '/Volumes/seattle_data1/jearly/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
+NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
+NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
+LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
+NonlinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+
+dynamicalfile = NonlinearSteadyStateFile;
+file = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
+
+dynamicalfile = LinearSteadyStateFile;
+file = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp.nc';
+
+WM = WintersModel(dynamicalfile);
+wavemodel = WM.WaveModelFromInitialConditionsFile;
 
 k = ncread(file, 'k');
 l = ncread(file, 'l');
@@ -34,11 +54,12 @@ DOF = zeros(length(t),Nvars);
 HKE = zeros(Nvars,1);
 nloops = zeros(1,Nvars);
 % for iK = 1:length(kAxis)
-for iMode = 1:1
-    for iK = 50:50
+tic
+for iMode = 26
+    for iK = 29:29
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
         
-        for iIndex = 1:length(indicesForK)
+        for iIndex = 20 %1:length(indicesForK)
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
             
             for iVar = 1:Nvars
@@ -57,18 +78,23 @@ for iMode = 1:1
         end
     end
 end
+toc
+
+dt = t(2)-t(1);
+figure, plot(t, cumsum(dt * ACu .* (length(DOFu) - DOFu)/length(DOFu))/86400)
 
 AC = AC./nloops;
 
+
 % let's combine the real and imaginary parts
-for i=Nvars:-2:1
-    AC(:,i-1) = (AC(:,i) + AC(:,i-1))/2;
-    DOF(:,i-1) = DOF(:,i) + DOF(:,i-1);
-    AC(:,i) = [];
-    DOF(:,i) = [];
-    HKE(i-1) = HKE(i) + HKE(i-1);
-    HKE(i) = [];
-end
+% for i=Nvars:-2:1
+%     AC(:,i-1) = (AC(:,i) + AC(:,i-1))/2;
+%     DOF(:,i-1) = DOF(:,i) + DOF(:,i-1);
+%     AC(:,i) = [];
+%     DOF(:,i) = [];
+%     HKE(i-1) = HKE(i) + HKE(i-1);
+%     HKE(i) = [];
+% end
 
 SE_indep = t(2:end);
 SE =  sqrt((1 + 2*cumsum(AC.^2,1))./DOF);
@@ -76,10 +102,11 @@ SE(1,:) = sqrt(1./DOF(1,:)); % first point is lag 1
 SE(end,:) = []; % there is no end point
 
 figure
-plot(t,AC, 'LineWidth',1)
+plot(t/86400,AC, 'LineWidth',1)
 hold on
-plot(SE_indep, [3*SE,-3*SE], 'LineWidth', 1.5, 'Color',0.4*[1.0 1.0 1.0] )
-xlabel('time lag (seconds)')
+plot(SE_indep/86400, [3*SE,-3*SE], 'LineWidth', 1.5, 'Color',0.4*[1.0 1.0 1.0] )
+ylim([-1 1])
+xlabel('time lag (days)')
 ylabel('temporal correlation')
 legend('A_p', 'A_m', 'B', 'SE_p', 'SE_m', 'SE_0')
 title(sprintf('%d km wavelength, %d%% wave energy', round(2*pi/kAxis(iK)/1000), round(100*(HKE(1) + HKE(2))/sum(HKE))) )

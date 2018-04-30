@@ -68,7 +68,9 @@ classdef WintersModel < handle
         end
         
         function paths = TimeStepFiles(self)
-            paths = dir([self.output3Ddirectory '/**/*.nc']);
+            if ~isempty(self.output3Ddirectory)
+                paths = dir([self.output3Ddirectory '/**/*.nc']);
+            end
         end
         
         function path = FilePathAtIndex(self, iFile)
