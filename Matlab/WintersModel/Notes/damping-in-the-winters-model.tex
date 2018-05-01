@@ -1,0 +1,65 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+%SetFonts
+
+%SetFonts
+
+
+\title{Damping in the Winter's Model}
+\author{Jeffrey J. Early}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+Using the terminology of Kraig Winters we need to define a reasonable coefficient for damping.
+
+Given that,
+\begin{equation}
+\frac{\partial u}{\partial t} = \nu \nabla^{2n} u
+\end{equation}
+is spectrally,
+\begin{equation}
+\frac{\partial u}{\partial t} = \nu (i k 2 \pi)^{2n} u
+\end{equation}
+which has the solution
+\begin{equation}
+u = e^{\nu (i k 2 \pi)^{2n} t}.
+\end{equation}
+We want to convert this into an e-fold time, so we want
+\begin{equation}
+e^{-t/T}=e^{\nu (i k 2 \pi)^{2n} t}.
+\end{equation}
+Using that $k=\frac{1}{2\Delta}$ where $\Delta$ is the sample interval and solving for $\nu$ in terms of the other variables,
+\begin{equation}
+\nu = \frac{(-1)^{n+1}}{T} \left( \frac{\Delta}{\pi} \right)^{2n}
+\end{equation}
+
+Now add some forcing,
+\begin{align}
+\frac{\partial \hat{u}}{\partial t} = \hat{F} +  \nu (i k 2 \pi)^{2n} \hat{u}
+\end{align}
+solution
+\begin{equation}
+\hat{u} = u_0 e^{\nu (-1)^n (k 2 \pi)^{2n} t} - (-1)^n \frac{F}{ \nu (k 2 \pi)^{2n}}
+\end{equation}
+Then, in steady state,
+\begin{equation}
+\hat{u}\hat{u}^\ast =  \frac{F^2}{ \nu^2 } (2 \pi k )^{-4n}
+\end{equation}
+
+\begin{itemize}
+\item We can compute the wavenumber at which damping drops the amplitude more than 50 percent during the length of the simulation.
+\item We can compute, given U, the cfl criteria, and then ask that the Reynolds number be one at the grid scale.
+\end{itemize}
+
+\end{document}  

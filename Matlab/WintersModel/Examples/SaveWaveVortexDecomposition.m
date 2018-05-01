@@ -6,7 +6,7 @@ NonlinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/mod
 file = LinearSteadyStateFile;
 
 output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
-output_directory = '/Users/jearly/Documents';
+% output_directory = '/Users/jearly/Documents';
 
 shouldChunk = 0;
 [filepath,name,ext] = fileparts(file);
@@ -20,9 +20,9 @@ outputfile = fullfile(output_directory,strcat(name,'_decomp.nc'));
 % So, I'm not seeing an advantage with the sizes that I chose.
 
 WM = WintersModel(file);
-wavemodel = WM.WaveModelFromInitialConditionsFile;
+wavemodel = WM.wavemodel;
 
-nFiles = WM.NumberOfTimeSteps;
+nFiles = WM.NumberOf3DOutputFiles;
 fileIncrements = 1:2:nFiles;
 % fileIncrements = 1:2;
 
@@ -31,7 +31,7 @@ Nl = length(wavemodel.l);
 Nj = length(wavemodel.j);
 Nt = length(fileIncrements);
 
-precision = 'single';
+precision = 'double';
 
 if strcmp(precision,'single')
     ncPrecision = 'NC_FLOAT';
@@ -127,7 +127,7 @@ for iTime = 1:length(fileIncrements)
         % subsequent estimatation.
         startTime = datetime('now');
     end
-    [t,u,v,w,rho_prime] = WM.VariableFieldsAtTimeIndex(fileIncrements(iTime),'t','u','v','w','rho_prime');
+    [t,u,v,w,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(fileIncrements(iTime),'t','u','v','w','rho_prime');
 
     wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
     

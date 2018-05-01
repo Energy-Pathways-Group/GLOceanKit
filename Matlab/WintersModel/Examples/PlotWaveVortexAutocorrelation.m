@@ -23,11 +23,11 @@ NonlinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/mod
 dynamicalfile = NonlinearSteadyStateFile;
 file = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
 
-dynamicalfile = LinearSteadyStateFile;
-file = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp.nc';
+% dynamicalfile = LinearSteadyStateFile;
+% file = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp.nc';
 
 WM = WintersModel(dynamicalfile);
-wavemodel = WM.WaveModelFromInitialConditionsFile;
+wavemodel = WM.wavemodel;
 
 k = ncread(file, 'k');
 l = ncread(file, 'l');
@@ -56,14 +56,14 @@ nloops = zeros(1,Nvars);
 % for iK = 1:length(kAxis)
 tic
 for iMode = 26
-    for iK = 29:29
+    for iK = 70% 29:29
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
         
         for iIndex = 20 %1:length(indicesForK)
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
             
             for iVar = 1:Nvars
-                u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
+                u = squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1]));
                 [ACu, DOFu] = Autocorrelation(u, length(t)-1);
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
