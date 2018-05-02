@@ -62,4 +62,20 @@ Then, in steady state,
 \item We can compute, given U, the cfl criteria, and then ask that the Reynolds number be one at the grid scale.
 \end{itemize}
 
+How does this hyperviscous $\nu$ compare to the usual $\nu_0$?
+\begin{align}
+\nu (k 2 \pi)^{2n} u =& \nu_0 (k 2 \pi)^{2} u \\
+\nu_0 = \nu (k 2 \pi)^{2n-2}  \\
+\nu_0 = \frac{1}{T} \left( \frac{\Delta}{\pi} \right)^{2}
+\end{align}
+
+\begin{align}
+ \frac{U \Delta}{\nu_0} =& 1\\
+\frac{(-1)^{n+1}}{U \Delta} \left( \frac{\Delta}{\pi} \right)^{2} =& T
+\end{align}
+
+For one simulation, we have that $U = 0.0365$ m/s and $\Delta=6750$ m with $n=3$. This suggests a damping time scale of $T=18000$s. The actually simulation used twice that.
+
+The linear wave mode propagation speed seems to be the maximum velocity in these simulations. Wait. There's no surface, so that can't matter.
+
 \end{document}  
