@@ -15,6 +15,12 @@
 % see a second hump emerge, which are the "zero" amplitude modes.
 % Unfortunately, they butt up against the resolved modes.
 
+% The ensemble averaged autocorrelation function remains nearly constant,
+% after some initial decay, indicates that the waves are staying near the
+% linear solution, but oscillating around it.
+
+%Urgh. not good. Mean amplitudes in each band are not zero.
+
 NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
 NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
 LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
@@ -49,21 +55,51 @@ P0_HKE_factor = wavemodel.P0_HKE_factor;
 conversion_factor = {Ppm_HKE_factor,Ppm_HKE_factor,Ppm_HKE_factor,Ppm_HKE_factor,P0_HKE_factor,P0_HKE_factor};
 Nvars = length(variables);
 
+maxAmplitude = 0;
+for iVar = 1:Nvars
+    u = max(max(max(abs(sqrt(conversion_factor{iVar}) .* ncread(file,variables{iVar},[1 1 1 1],[Inf Inf Inf 1])))));
+    if u > maxAmplitude
+        maxAmplitude = u;
+    end
+end
+
+
+% totalu = reshape(abs(sqrt(conversion_factor{iVar}) .* ncread(file,variables{iVar},[1 1 1 1],[Inf Inf Inf 1])),[],1);
+% for iVar = 2:Nvars
+%     u = reshape(abs(sqrt(conversion_factor{iVar}) .* ncread(file,variables{iVar},[1 1 1 1],[Inf Inf Inf 1])),[],1);
+%     totalu = cat(1,totalu,u);
+% end
+% figure, histogram(log10(totalu)-log10(maxAmplitude))
+% 
+% return
+
 AC = zeros(length(t),Nvars);
 DOF = zeros(length(t),Nvars);
 HKE = zeros(Nvars,1);
 nloops = zeros(1,Nvars);
+band_mean = zeros(1,Nvars);
+mean_vals = cell(1,Nvars);
 % for iK = 1:length(kAxis)
 tic
 for iMode = 26
-    for iK = 70% 29:29
+    for iK = 40 %29:29
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
         
-        for iIndex = 20 %1:length(indicesForK)
+        for iIndex = 1:length(indicesForK)
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
             
             for iVar = 1:Nvars
                 u = squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1]));
+                u = u * sqrt(conversion_factor{iVar}(i,j,iMode));
+                
+                band_mean(:,iVar) = band_mean(:,iVar) + mean(u);
+                mean_vals{iVar} = cat(1,mean_vals{iVar},mean(u));
+                
+                if log10(abs(mean(u)/maxAmplitude)) < -12
+                    fprintf('skipping low precision amplitude variable')
+                    continue;
+                end
+                
                 [ACu, DOFu] = Autocorrelation(u, length(t)-1);
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
@@ -72,7 +108,7 @@ for iMode = 26
                 DOF(:,iVar) = DOF(:,iVar) + DOFu;
                 nloops(1,iVar) = nloops(1,iVar)+1;
                 
-                HKE(iVar) = HKE(iVar) + mean(u.*conj(u))*conversion_factor{iVar}(i,j,iMode);
+                HKE(iVar) = HKE(iVar) + mean(u.*conj(u));
             end
             
         end
@@ -81,10 +117,10 @@ end
 toc
 
 dt = t(2)-t(1);
-figure, plot(t, cumsum(dt * ACu .* (length(DOFu) - DOFu)/length(DOFu))/86400)
+% figure, plot(t, cumsum(dt * ACu .* (length(DOFu) - DOFu)/length(DOFu))/86400)
 
 AC = AC./nloops;
-
+band_mean = band_mean./nloops;
 
 % let's combine the real and imaginary parts
 % for i=Nvars:-2:1

@@ -78,4 +78,35 @@ For one simulation, we have that $U = 0.0365$ m/s and $\Delta=6750$ m with $n=3$
 
 The linear wave mode propagation speed seems to be the maximum velocity in these simulations. Wait. There's no surface, so that can't matter.
 
+%%%%%%%%%%%%%%
+%
+\section{Decorrelation time}
+%
+%%%%%%%%%%%%%%
+
+\begin{align}
+R(\tau \geq 0) =& \int_0^\infty u(t)u(t+\tau) \, dt \\
+=& \int_0^\infty e^{\nu (i k 2 \pi)^{2n} t} e^{\nu (i k 2 \pi)^{2n} (t + \tau) } \, dt \\
+=& \frac{e^{ \nu (i k 2 \pi)^{2n} (2t + \tau)}}{2 \nu (i k 2 \pi)^{2n}} \biggr\rvert_0^\infty
+\end{align}
+
+So what is $\nu (k 2 \pi)^{2n}$?
+\begin{align}
+\nu (i k 2 \pi)^{2n} =&  \frac{(-1)^{n+1}}{T} \left( \frac{\Delta}{\pi} \right)^{2n}(i k 2 \pi)^{2n} \\
+=& - \frac{(k 2 \Delta)^{2n}}{T} 
+\end{align}
+So then,
+\begin{align}
+R(\tau) =&- \frac{T} {2(k 2 \Delta)^{2n}} e^{ - (k 2 \Delta)^{2n}\frac{\tau}{T}} 
+\end{align}
+If we normalize by the total variance of the integrated velocity, then we have that,
+\begin{align}
+R(\tau) =& e^{ - (k 2 \Delta)^{2n}\frac{\tau}{T}} 
+\end{align}
+So how long does it take for each wavenumber to decay to $\epsilon=0.5$?
+\begin{align}
+\ln \epsilon =& - (k 2 \Delta)^{2n}\frac{\tau}{T} \\
+\tau =& \frac{T \ln \epsilon}{- (k 2 \Delta)^{2n}}
+\end{align}
+
 \end{document}  
