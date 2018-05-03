@@ -108,5 +108,32 @@ So how long does it take for each wavenumber to decay to $\epsilon=0.5$?
 \ln \epsilon =& - (k 2 \Delta)^{2n}\frac{\tau}{T} \\
 \tau =& \frac{T \ln \epsilon}{- (k 2 \Delta)^{2n}}
 \end{align}
+I also want to know which wavenumbers take a certain amount of time to decay.
+\begin{align}
+(k 2 \Delta)^{2n} =& -\frac{T \ln \epsilon}{ \tau} \\
+k = \frac{1}{2 \Delta} \left( -\frac{T \ln \epsilon}{ \tau} \right)^{\frac{1}{2n}}
+\end{align}
+
+In terms of mode number,
+\begin{align}
+\frac{j}{2 N \Delta} =& \frac{1}{2 \Delta} \left( -\frac{T \ln \epsilon}{ \tau} \right)^{\frac{1}{2n}} \\
+j =&  N \left( -\frac{T \ln \epsilon}{ \tau} \right)^{\frac{1}{2n}}
+\end{align}
+
+%%%%%%%%%%%%%%
+%
+\section{2D Decorrelation time}
+%
+%%%%%%%%%%%%%%
+
+This should just be additive. 
+
+\begin{align}
+R(\tau \geq 0) =& \int_0^\infty u(t)u(t+\tau) \, dt \\
+=& \int_0^\infty \left[ e^{\nu_x (i k 2 \pi)^{2n} t} + e^{\nu_z (i m 2 \pi)^{2n} t} \right] \left[ e^{\nu_x (i k 2 \pi)^{2n} (t+\tau)} + e^{\nu_z (i m 2 \pi)^{2n} (t+\tau)} \right] \, dt \\
+=& \frac{e^{ \nu_x (i k 2 \pi)^{2n} (2t + \tau)}}{2 \nu_x (i k 2 \pi)^{2n}} \biggr\rvert_0^\infty + \frac{e^{ \nu_z (i k 2 \pi)^{2n} (2t + \tau)}}{2 \nu_z (i k 2 \pi)^{2n}} \biggr\rvert_0^\infty \\
+& + \left[ e^{\nu_x (i k 2 \pi)^{2n} \tau} + e^{\nu_z (i m 2 \pi)^{2n} \tau} \right] \frac{e^{ (\nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n}) t}}{\nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n}}\biggr\rvert_0^\infty \\
+&\frac{e^{ \nu_x (i k 2 \pi)^{2n} \tau}}{2 \nu_x (i k 2 \pi)^{2n}}+ \frac{e^{ \nu_z (i k 2 \pi)^{2n} \tau}}{2 \nu_z (i m 2 \pi)^{2n}} + \frac{e^{\nu_x (i k 2 \pi)^{2n} \tau} + e^{\nu_z (i m 2 \pi)^{2n} \tau}}{ \nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n} }
+\end{align}
 
 \end{document}  

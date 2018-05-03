@@ -5,12 +5,17 @@
 % energy fraction, times AC. Then assess when it drops below, say 50%. This
 % would tell you "How long linear IW's explain 50% of KE variance".
 
-dynamicalfile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
-file = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp_chunked.nc';
-matfile = '/Users/jearly/Documents/EarlyEtal_GM_LIN_unforced_3600000s_restart_decomp.mat';
+NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
+NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
+LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
+NonlinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+
+dynamicalfile = NonlinearSteadyStateFile;
+file = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
+matfile = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.mat';
 
 WM = WintersModel(dynamicalfile);
-wavemodel = WM.WaveModelFromInitialConditionsFile;
+wavemodel = WM.wavemodel;
 
 k = ncread(file, 'k');
 l = ncread(file, 'l');
@@ -18,6 +23,7 @@ j = ncread(file, 'j');
 
 [K,L,J] = ndgrid(k,l,j);
 Kh = sqrt(K.*K + L.*L);
+RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
 
 % Create a reasonable wavenumber axis
 allKs = unique(reshape(abs(Kh),[],1),'sorted');
@@ -50,7 +56,7 @@ for i=1:length(variables)
 end
 
 startTime = datetime('now');
-for iMode = 1:nModes
+for iMode = 1:10:nModes
     fprintf('iMode: %d\n',iMode);
     if iMode > 1
         timePerStep = (datetime('now')-startTime)/(iMode-1);
@@ -59,9 +65,9 @@ for iMode = 1:nModes
     end
     
     fprintf('\tiK: ');
-    for iK = 1:1:nK
+    for iK = 1:10:nK
         fprintf('%d..',iK);
-        indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
+        indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         
         AC = zeros(length(t),Nvars);
         DOF = zeros(length(t),Nvars);

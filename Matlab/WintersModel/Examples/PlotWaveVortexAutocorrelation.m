@@ -19,8 +19,6 @@
 % after some initial decay, indicates that the waves are staying near the
 % linear solution, but oscillating around it.
 
-%Urgh. not good. Mean amplitudes in each band are not zero.
-
 NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
 NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
 LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
@@ -73,6 +71,8 @@ end
 % 
 % return
 
+RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
+
 AC = zeros(length(t),Nvars);
 DOF = zeros(length(t),Nvars);
 HKE = zeros(Nvars,1);
@@ -81,9 +81,9 @@ band_mean = zeros(1,Nvars);
 mean_vals = cell(1,Nvars);
 % for iK = 1:length(kAxis)
 tic
-for iMode = 26
-    for iK = 40 %29:29
-        indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1) );
+for iMode = 1 %26
+    for iK = 81 %29:29
+        indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         
         for iIndex = 1:length(indicesForK)
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
@@ -96,7 +96,7 @@ for iMode = 26
                 mean_vals{iVar} = cat(1,mean_vals{iVar},mean(u));
                 
                 if log10(abs(mean(u)/maxAmplitude)) < -12
-                    fprintf('skipping low precision amplitude variable')
+                    fprintf('skipping low precision amplitude variable\n')
                     continue;
                 end
                 
@@ -115,6 +115,14 @@ for iMode = 26
     end
 end
 toc
+
+T = 36000;
+epsilon = 0.1;
+p = 3;
+dx = pi/max(k);
+j = ncread(file, 'j');
+k_happy = (pi/dx)*(-T*log(epsilon)/(10*86400))^(1/(2*p))
+j_happy = length(j)*(-T*log(epsilon)/(10*86400))^(1/(2*p))
 
 dt = t(2)-t(1);
 % figure, plot(t, cumsum(dt * ACu .* (length(DOFu) - DOFu)/length(DOFu))/86400)
