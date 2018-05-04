@@ -56,7 +56,7 @@ for i=1:length(variables)
 end
 
 startTime = datetime('now');
-for iMode = 1:10:nModes
+for iMode = 1:1:nModes
     fprintf('iMode: %d\n',iMode);
     if iMode > 1
         timePerStep = (datetime('now')-startTime)/(iMode-1);
@@ -65,7 +65,7 @@ for iMode = 1:10:nModes
     end
     
     fprintf('\tiK: ');
-    for iK = 1:10:nK
+    for iK = 1:1:nK
         fprintf('%d..',iK);
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         

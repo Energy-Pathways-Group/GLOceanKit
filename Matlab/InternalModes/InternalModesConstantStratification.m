@@ -261,13 +261,13 @@ classdef InternalModesConstantStratification < InternalModesBase
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
                 rho0 = rho(max(z_in));
-                max_ddrho = max(abs(diff(diff(rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
+                max_ddrho = max(abs(diff((rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
             elseif isa(rho,'numeric') == true
                 rho0 = max(rho);
-                max_ddrho = max(abs(diff(diff( rho/rho0 ))));
+                max_ddrho = max(abs(diff( rho/rho0 )));
             end
             
-            flag = max_ddrho < 1e-6;
+            flag = max_ddrho < 1e-7;
         end
         
         function [N0, rho0] = BuoyancyFrequencyFromConstantStratification(rho,z_in)

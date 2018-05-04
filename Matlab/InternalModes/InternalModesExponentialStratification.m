@@ -329,4 +329,32 @@ classdef InternalModesExponentialStratification < InternalModesBase
         end
     end
     
+     methods (Static)
+         % rho0*(1 + b*N0*N0/(2*g)*(1 - exp(2*z/b)));
+         function flag = IsStratificationExponential(rho,z_in)
+             if isa(rho,'function_handle') == true
+                 if numel(z_in) ~= 2
+                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
+                 end
+                 rho0 = rho(max(z_in));
+                 max_ddrho = max(abs(diff(diff(rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
+             elseif isa(rho,'numeric') == true
+                 
+                 if length(unique(diff(z_in))) > 1
+                     flag = 0;
+                     return;
+                 end
+                 dz = mean(diff(z_in));
+                 
+                 rho0 = max(rho);
+                 rho_z = diff(rho)/dz;
+                 b = 2./(diff(-log(rho_z))/dz);
+                 max_ddrho = mean(b)/std(b);
+             end
+             
+             flag = max_ddrho < 1e-7;
+         end
+         
+     end
+    
 end

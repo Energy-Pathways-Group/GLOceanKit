@@ -10,6 +10,7 @@ classdef WintersModel < handle
         rootDirectory
         initialConditionsFile
         output3Dfiles
+        output2Dfiles
     end
             
     methods
@@ -25,28 +26,45 @@ classdef WintersModel < handle
                     foundSomethingUseful = 0;
                     
                     % Look for existing model output
-                    output3Ddirectory = sprintf('%s/output/3D',self.rootDirectory);
-                    if exist(self.rootDirectory,'dir') ~= 0
-                        self.output3Dfiles = dir([output3Ddirectory '/**/*.nc']);
+                    possibleOutput3Dfiles = dir([self.rootDirectory '/**/3D/**/*.nc']);
+                    if ~isempty(possibleOutput3Dfiles)
+                        self.output3Dfiles = possibleOutput3Dfiles;
                         fprintf('Found %d 3D output files.\n',length(self.output3Dfiles));
                         if (~isempty(self.output3Dfiles))
                             foundSomethingUseful = 1;
                         end
                     end
                     
+                    % Look for existing model output
+                    possibleOutput2Dfiles = dir([self.rootDirectory '/**/2D/**/*.nc']);
+                    if ~isempty(possibleOutput2Dfiles)
+                        self.output2Dfiles = possibleOutput2Dfiles;
+                        fprintf('Found %d 2D output files.\n',length(self.output2Dfiles));
+                        if (~isempty(self.output2Dfiles))
+                            foundSomethingUseful = 1;
+                        end
+                    end
+                    
                     % Look for possible initial conditions files
-                    self.initialConditionsFile = [self.rootDirectory '/output/SaveIC_EarlyIWmodel.nc'];
-                    if exist(self.initialConditionsFile,'file') ~= 0
+                    possibleInitialConditionsFile = [self.rootDirectory '/output/SaveIC_EarlyIWmodel.nc'];
+                    if exist(possibleInitialConditionsFile,'file') ~= 0
+                        self.initialConditionsFile = possibleInitialConditionsFile;
                         fprintf('Founding possible initial conditions file at %s\n',self.initialConditionsFile);
                         foundSomethingUseful = 1;
+                        else
                     end
                     
                     if self.NumberOf3DOutputFiles > 0
-                        fprintf('Initializing wavemodel from the first 3D output file.\n'); 
+                        fprintf('Initializing wavemodel from the first 3D output file.\n');
                         self.wavemodel = self.WaveModelFromFirst3DOutputFile();
-                    else
+                    elseif self.NumberOf2DOutputFiles > 0
+                        fprintf('Initializing wavemodel from the first 2D output file.\n');
+                        self.wavemodel = self.WaveModelFromFirst2DOutputFile();
+                    elseif ~isempty(self.initialConditionsFile)
                         fprintf('Initializing wavemodel from the initial conditions file.\n');
                         self.wavemodel = self.WaveModelFromInitialConditionsFile();
+                    else
+                        fprintf('Unable to initialize the linear internal wave model from the Winters model output!\n');
                     end
                     
                     if ~foundSomethingUseful
@@ -58,7 +76,44 @@ classdef WintersModel < handle
             end
         end
         
-
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % 2D output files
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function nT = NumberOf2DOutputFiles(self)
+            if isempty(self.output2Dfiles)
+                nT = 0;
+            else
+                nT = length(self.output2Dfiles);
+            end
+        end
+        
+        function path = PathOf2DOutputFileAtIndex(self, iFile)
+            if isempty(self.output2Dfiles)
+                path = [];
+            else
+                path = [self.output2Dfiles(iFile).folder '/' self.output2Dfiles(iFile).name];
+            end
+        end
+        
+        function [varargout] = VariableFieldsFrom2DOutputFileAtIndex(self, iFile, varargin)
+            if iFile < 1 || iFile > self.NumberOf2DOutputFiles
+                error('You have requested variables from a file that does not exist.');
+            end
+            
+            file = self.PathOf2DOutputFileAtIndex(iFile);
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.VariableFieldsFromOutputFileAtPath(file,varargin{:});
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % 3D output files
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function nT = NumberOf3DOutputFiles(self)
             if isempty(self.output3Dfiles)
@@ -75,14 +130,24 @@ classdef WintersModel < handle
                 path = [self.output3Dfiles(iFile).folder '/' self.output3Dfiles(iFile).name];
             end
         end
-        
+         
         function [varargout] = VariableFieldsFrom3DOutputFileAtIndex(self, iFile, varargin)
             if iFile < 1 || iFile > self.NumberOf3DOutputFiles
                 error('You have requested variables from a file that does not exist.');
             end
             
             file = self.PathOf3DOutputFileAtIndex(iFile);
-            
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.VariableFieldsFromOutputFileAtPath(file,varargin{:});
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % 2D & 3D output files
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [varargout] = VariableFieldsFromOutputFileAtPath(self, file, varargin)
             info = ncinfo(file);
             containsRhoPrime = 0;
             for i=1:length(info.Variables)
@@ -133,6 +198,15 @@ classdef WintersModel < handle
             wavemodel = self.WaveModelFromFileParameters(x,y,z,rho_bar,latitude);
         end
         
+        function wavemodel = WaveModelFromFirst2DOutputFile(self)
+            [x,y,z,rho_bar] = self.VariableFieldsFrom2DOutputFileAtIndex(1,'x','y','z','s1_bar');
+            
+            warning('Assuming latitude=0! This may not be correct!');
+            latitude = 0;
+                        
+            wavemodel = self.WaveModelFromFileParameters(x,y,z,rho_bar,latitude);
+        end
+        
         function wavemodel = WaveModelFromInitialConditionsFile(self)
             % Creates a wavemodel object using the SaveIC_EarlyIWmodel.nc
             % file, if possible.
@@ -161,12 +235,30 @@ classdef WintersModel < handle
             Ny = length(y);
             Nz = length(z);
             
-            dx = (max(x)-min(x))/(Nx-1);
-            dy = (max(y)-min(y))/(Ny-1);
+            if Nx > 1
+                dx = (max(x)-min(x))/(Nx-1);
+                Lx = dx*Nx;
+            else
+                Lx = 0;
+            end
             
-            Lx = dx*Nx;
-            Ly = dy*Ny;
-            Lz = max(z)-min(z);
+            if Ny > 1
+                dy = (max(y)-min(y))/(Ny-1);
+                Ly = dy*Ny;
+            else
+                Ly = 0;
+            end
+            
+            if mod(log2(Nz),1) == 0
+                warning('This Winters model used 2^n points in the vertical, suggesting that either 1) the model was run with periodic boundary conditions or 2) you neglected to output the upper boundary point. The InternalWaveModel.m does not support periodic boundary conditions in the vertical, so we will assume the second case.');
+                dz = unique(diff(z));
+                Lz = Nz*dz;
+                Nz = Nz+1;
+            else
+                Lz = max(z)-min(z);
+            end
+            
+            
             
             isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,z);
             if isStratificationConstant == 1
@@ -174,7 +266,10 @@ classdef WintersModel < handle
                 N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z);
                 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, min(rho));
             else
-                error('Not yet supported');
+                fprintf('Failed to initialize wave model\n');
+                wavemodel = [];
+%                 fprintf('Initializing with the arbitrary stratification model\n');
+%                 wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);
             end
         end
     end
