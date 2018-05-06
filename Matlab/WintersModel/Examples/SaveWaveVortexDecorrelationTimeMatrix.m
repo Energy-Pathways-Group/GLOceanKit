@@ -8,11 +8,11 @@
 NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
 NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
 LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
-NonlinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+NonlinearSteadyStateFile = '/Volumes/Samsung_T5/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
 
 dynamicalfile = NonlinearSteadyStateFile;
-file = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
-matfile = '/Users/jearly/Documents/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.mat';
+file = '/Volumes/Samsung_T5/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
+matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.mat';
 
 WM = WintersModel(dynamicalfile);
 wavemodel = WM.wavemodel;
@@ -34,6 +34,7 @@ nK = length(kAxis)-1;
 nModes = length(j);
 
 t = ncread(file, 't');
+nT = length(t);
 
 variables = {'Ap_realp', 'Ap_imagp', 'Am_realp', 'Am_imagp', 'B_realp', 'B_imagp'};
 Ppm_HKE_factor = wavemodel.Ppm_HKE_factor;
@@ -46,8 +47,15 @@ decorrelationCutoff = 0.5;
 
 waveHKE = zeros(nK,nModes);
 vortexHKE = zeros(nK,nModes);
+waveHKEFromVariance = zeros(nK,nModes);
+vortexHKEFromVariance = zeros(nK,nModes);
 waveDecorrelationTime = zeros(nK,nModes);
 vortexDecorrelationTime = zeros(nK,nModes);
+
+waveAutocorrelation = zeros(nK,nModes,nT);
+vortexAutocorrelation = zeros(nK,nModes,nT);
+waveStandardError = zeros(nK,nModes,nT);
+vortexStandardError = zeros(nK,nModes,nT);
 
 ncid = netcdf.open(file);
 variableIDs = zeros(length(variables),1);
@@ -73,12 +81,17 @@ for iMode = 1:1:nModes
         DOF = zeros(length(t),Nvars);
         nloops = zeros(1,Nvars);
         HKE = zeros(1,Nvars);
+        HKEFromVariance = zeros(1,Nvars);
         for iIndex = 1:length(indicesForK)
             [i,j] = ind2sub([size(K,1) size(K,2)],indicesForK(iIndex));
+            
+            % Need to fix the inertial modes. Somehow I'm not dealing with
+            % phases correctly, or something.
             
             for iVar = 1:Nvars
 %                 u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
                 u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j iMode 1]-1, [1 1 1 length(t)], [1 1 1 1])));
+                u = u*sqrt(conversion_factor{iVar}(i,j,iMode));
                 [ACu, DOFu] = Autocorrelation(u, length(t)-1);
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
@@ -87,7 +100,8 @@ for iMode = 1:1:nModes
                 DOF(:,iVar) = DOF(:,iVar) + DOFu;
                 nloops(1,iVar) = nloops(1,iVar)+1;
                 
-                HKE(iVar) = HKE(iVar) + mean(u.*conj(u))*conversion_factor{iVar}(i,j,iMode);
+                HKE(iVar) = HKE(iVar) + mean(u.*conj(u)); % time mean of the *total* variance of u
+                HKEFromVariance(iVar) = HKEFromVariance(iVar) + var(u,1); % time variance without time-mean of u
             end
             
         end
@@ -120,6 +134,12 @@ for iMode = 1:1:nModes
         
         waveHKE(iK,iMode) = sum(HKE(1:4));
         vortexHKE(iK,iMode) = sum(HKE(5:6));
+        waveHKEFromVariance(iK,iMode) = sum(HKEFromVariance(1:4));
+        vortexHKEFromVariance(iK,iMode) = sum(HKEFromVariance(5:6));
+        waveAutocorrelation(iK,iMode,:) = waveAC;
+        vortexAutocorrelation(iK,iMode,:) = vortexAC;
+        waveStandardError(iK,iMode,:) = waveSE;
+        vortexStandardError(iK,iMode,:) = vortexSE;
     end
     fprintf('\n');
 end
@@ -129,7 +149,7 @@ netcdf.close(ncid);
 k = reshape(kAxis(1:nK),[],1);
 j = 1:nModes;
 
-save(matfile,'waveHKE','vortexHKE','waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k');
+save(matfile,'waveHKE','vortexHKE','waveHKEFromVariance','vortexHKEFromVariance','waveAutocorrelation','vortexAutocorrelation','waveStandardError','vortexStandardError', 'waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k', 't');
 
 HKE_fraction = waveHKE./(waveHKE+vortexHKE);
 
