@@ -31,14 +31,24 @@ Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
+rho0 = 1025; g = 9.81;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+z = linspace(-Lz,0,Nz);
+shouldUseConstantStratificationModel = 1;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Initialize the wave model
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-wavemodel.InitializeWithGMSpectrum(1.0);
+% if shouldUseConstantStratificationModel == 0
+%     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% else
+%     wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+% end
+
+% wavemodel.InitializeWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -47,12 +57,13 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))), 1e-15] )))), 1e-15]);
+error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 
 w = wavemodel.TransformToSpatialDomainWithG( wavemodel.w_plus );
 w_plus_back = wavemodel.TransformFromSpatialDomainWithG( w );
 
-w_error = error(wavemodel.w_plus,w_plus_back);
-fprintf('The solution matches to 1 part in 10^%d\n', round((log10(w_error))));
+w_error = error2(wavemodel.w_plus,w_plus_back);
+fprintf('The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
 u = wavemodel.TransformToSpatialDomainWithF( wavemodel.u_plus );
 u_plus_back = wavemodel.TransformFromSpatialDomainWithF( u );
@@ -62,9 +73,8 @@ u_plus_back = wavemodel.TransformFromSpatialDomainWithF( u );
 % to get rid of it to do a proper comparision.
 u_model_fixed = wavemodel.u_plus;
 u_model_fixed(1,1,:) = real(u_model_fixed(1,1,:));
-u_error = error(u_model_fixed,u_plus_back);
-fprintf('The solution matches to 1 part in 10^%d\n', round((log10(u_error))));
-
+u_error = error2(u_model_fixed,u_plus_back);
+fprintf('The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -75,7 +85,12 @@ fprintf('The solution matches to 1 part in 10^%d\n', round((log10(u_error))));
 t = 360;
 [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
 
-newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% if shouldUseConstantStratificationModel == 0
+%     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% else
+%     newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+% end
+
 newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
 
 
@@ -112,7 +127,7 @@ fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
 
 omega = wavemodel.Omega;
 f = wavemodel.f0;
-N = wavemodel.N0;
+N = N0;
 
 HKE = sum(sum(sum(  P2_pm .* (1 + f*f./(omega.*omega)) .* (N*N - omega.*omega) / (2 * (N*N - f*f) )  )));
 VKE = sum(sum(sum(  P2_pm .* (omega.*omega - f*f) / (2 * (N*N - f*f) )  )));

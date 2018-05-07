@@ -261,6 +261,7 @@ classdef WintersModel < handle
             
             
             isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,z);
+%             isStratificationExponential = InternalModesExponentialStratification.IsStratificationExponential(rho,z);
             if isStratificationConstant == 1
                 fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
                 N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z);

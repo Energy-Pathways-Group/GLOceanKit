@@ -38,6 +38,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
        S
        Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
        didPrecomputedModesForWavenumber
+       B
     end
     
     methods
@@ -152,7 +153,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
     end
     
-    methods (Access = protected)
+    methods %(Access = protected)
         
         function [F,G] = InternalModeAtDepth(self,z,iWave)
             % return the normal mode
@@ -195,7 +196,36 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iMode);
             G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
-                        
+                      
+        
+        function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, zeta)
+            % This function can be used as a wave-vortex decomposition. It
+            % will *exactly* recover amplitudes being used the generate the
+            % dynamical fields. For the moment I assume assuming no
+            % buoyancy perturbation at the boundaries.
+            ubar = self.TransformFromSpatialDomainWithF( u );
+            vbar = self.TransformFromSpatialDomainWithF( v );
+            etabar = self.TransformFromSpatialDomainWithG( zeta );
+            
+            delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
+            zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;
+            
+            A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            self.B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            
+            % inertial must be solved for separately.
+            A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
+            A_minus(1,1,:) = conj(A_plus(1,1,:));
+            self.B(1,1,:) = 0;
+            self.B = InternalWaveModel.MakeHermitian(self.B);
+            
+            % B is the geostrophic solution, not yet implemented.
+            A_plus = InternalWaveModel.MakeHermitian(A_plus);
+            A_minus = InternalWaveModel.MakeHermitian(A_minus);
+            self.GenerateWavePhases(A_plus,A_minus);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -230,5 +260,54 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             % that the coefficients in frequency space have the same units in time.
             w = self.Nx*self.Ny*ifft(ifft(w_temp,self.Nx,1),self.Ny,2,'symmetric');
         end
+        
+        function u_bar = TransformFromSpatialDomainWithF(self, u)
+            % convert to K x L x Z
+            u_temp = fft(fft(u,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            
+            self.ComputeModesForNonzeroWavenumbers( any(u_temp,3) );
+            RedundantWavenumbers = InternalWaveModel.RedundantHermitianCoefficients(zeros(self.Nx,self.Ny));
+            
+            % The 'S' and 'Sprime' have dimensions Nz x Nmodes x Nx x Ny
+            u_temp = permute(u_temp,[3 1 2]); % convert to Nz x Nk x Nl
+            u_bar = zeros(self.Nx,self.Ny,self.nModes);
+            
+            zIndices = 1:self.Nz;
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1
+                        continue;
+                    end
+                    u_bar(i,j,:) = self.Sprime(zIndices,:,i,j)\u_temp(zIndices,i,j);
+                end
+            end
+            u_bar = InternalWaveModel.MakeHermitian(u_bar);
+        end
+        
+        function w_bar = TransformFromSpatialDomainWithG(self, w)
+            % convert to K x L x Z
+            w_temp = fft(fft(w,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            
+            self.ComputeModesForNonzeroWavenumbers( any(w_temp,3) );
+            RedundantWavenumbers = InternalWaveModel.RedundantHermitianCoefficients(zeros(self.Nx,self.Ny));
+            
+            % The 'S' and 'Sprime' have dimensions Nz x Nmodes x Nx x Ny
+            w_temp = permute(w_temp,[3 1 2]); % convert to Nz x Nk x Nl
+            w_bar = zeros(self.Nx,self.Ny,self.nModes);
+            
+            % Chop off the end points, which are zero anyway, given
+            % boundary conditions
+            zIndices = 2:(self.Nz-1);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1
+                        continue;
+                    end
+                    w_bar(i,j,:) = self.S(zIndices,:,i,j)\w_temp(zIndices,i,j);
+                end
+            end
+            w_bar = InternalWaveModel.MakeHermitian(w_bar);
+        end
+        
     end
 end
