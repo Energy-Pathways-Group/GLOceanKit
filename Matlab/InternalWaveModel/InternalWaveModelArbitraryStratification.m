@@ -97,7 +97,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             % 2) We only do the computation for unique wavenumbers
             K2 = self.K2(:,:,1);
             [K2_unique,~,iK2_unique] = unique(K2);
-            K2needed = unique(K2( A & ~self.didPrecomputedModesForWavenumber )); % Nonzero amplitudes that we haven't yet computed
+            K2Nyquist = InternalWaveModel.NyquistWavenumbers(K2);
+            K2needed = unique(K2( A & ~K2Nyquist & ~self.didPrecomputedModesForWavenumber )); % Nonzero amplitudes that we haven't yet computed
             nEVPNeeded = length(K2needed);
             
             if nEVPNeeded == 0
@@ -151,6 +152,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         function N2 = N2AtDepth(self,z)
             N2 = interp1(self.internalModes.z,self.internalModes.N2,z,'spline');
         end
+        
+
     end
     
     methods %(Access = protected)
@@ -197,6 +200,10 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
                       
+        function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, t, u, v, rho_prime)
+            zeta = self.g * rho_prime ./(self.rho0 * self.N2');
+            self.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,zeta);
+        end
         
         function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, zeta)
             % This function can be used as a wave-vortex decomposition. It
@@ -262,6 +269,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function u_bar = TransformFromSpatialDomainWithF(self, u)
+            if length(size(u)) == 2 % deal with 2D data
+                if self.Ny == 1
+                   u = reshape(u,self.Nx,self.Ny,self.Nz); 
+                else
+                    error('Dimensional issues');
+                end
+            end
             % convert to K x L x Z
             u_temp = fft(fft(u,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
             
@@ -285,6 +299,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
+            if length(size(w)) == 2 % deal with 2D data
+                if self.Ny == 1
+                   w = reshape(w,self.Nx,self.Ny,self.Nz); 
+                else
+                    error('Dimensional issues');
+                end
+            end
             % convert to K x L x Z
             w_temp = fft(fft(w,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
             

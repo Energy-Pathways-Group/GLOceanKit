@@ -426,6 +426,42 @@ classdef InternalModes < handle
     end
     
     methods (Static)
+        
+        function N = NumberOfWellConditionedModes(G)
+            Nz = size(G,1);
+            maxModes = min(size(G,2),Nz-2);
+            minModes = 1;
+            zIndices = 2:(Nz-2); % given boundary conditions
+            cutoff = 100; 
+            
+            iMode = maxModes;
+            kappa = cond(G(zIndices,1:iMode));
+            while minModes+1 < maxModes
+                if kappa < cutoff % This *is* well conditined
+                    minModes = iMode;
+                else
+                    maxModes = iMode;
+                end
+                iMode = minModes + floor((maxModes - minModes)/2);
+                kappa = cond(G(zIndices,1:iMode));
+            end
+            
+            N = minModes;
+        end
+        
+        function kappa = ConditionNumberAsFunctionOfModeNumber(G)
+            Nz = size(G,1);
+            maxModes = size(G,2); %min(size(G,2),Nz-2);
+%             zIndices = 2:(Nz-2);
+
+            kappa = zeros(maxModes,1);
+            for iMode=1:maxModes
+               kappa(iMode) =  cond(G(:,1:iMode));
+            end
+        end
+        
+        
+        
         function [rhoFunc, N2Func, zIn] = StratificationProfileWithName(stratification)
             % Returns function handles for several built-in analytical
             % profiles. Options include 'constant', 'exponential',

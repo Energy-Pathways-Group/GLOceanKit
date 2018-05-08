@@ -134,9 +134,8 @@ classdef InternalModesSpectral < InternalModesBase
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega] = ModesAtWavenumber(self, k )
-            self.gridFrequency = 0;
-            
+        
+        function [A,B] = EigenmatricesForWavenumber(self, k )
             % The eigenvalue equation is,
             % G_{zz} - K^2 G = \frac{f_0^2 -N^2}{gh_j}G
             % A = \frac{g}{f_0^2 -N^2} \left( \partial_{zz} - K^2*I \right)
@@ -162,14 +161,9 @@ classdef InternalModesSpectral < InternalModesBase
                 A(1,:) = T(1,:);
                 B(1,:) = 0;
             end
-            
-            [F,G,h] = self.ModesFromGEPSpectral(A,B);
-            omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k] = ModesAtFrequency(self, omega )
-            self.gridFrequency = omega;
-            
+        function [A,B] = EigenmatricesForFrequency(self, omega )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -191,6 +185,21 @@ classdef InternalModesSpectral < InternalModesBase
                 A(1,:) = T(1,:);
                 B(1,:) = 0;
             end
+        end
+        
+        function [F,G,h,omega] = ModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+            
+            [A,B] = self.EigenmatricesForWavenumber(k);
+            
+            [F,G,h] = self.ModesFromGEPSpectral(A,B);
+            omega = self.omegaFromK(h,k);
+        end
+        
+        function [F,G,h,k] = ModesAtFrequency(self, omega )
+            self.gridFrequency = omega;
+            
+            [A,B] = self.EigenmatricesForFrequency(omega);
             
             [F,G,h] = self.ModesFromGEPSpectral(A,B);
             k = self.kFromOmega(h,omega);
@@ -249,6 +258,40 @@ classdef InternalModesSpectral < InternalModesBase
             
             sizeK(end+1) = length(self.z);
             psi = reshape(psi,sizeK);
+        end
+        
+        function z_g = GaussQuadraturePointsForModesAtWavenumber(self,nPoints,k)
+            % Now we just need to find the roots of the n+1 mode.
+            if 2*(nPoints+1) < self.nEVP
+               [A,B] = self.EigenmatricesForWavenumber(k);
+               if ( any(any(isnan(A))) || any(any(isnan(B))) )
+                   error('EVP setup fail. Found at least one nan in matrices A and B.\n');
+               end
+               [V,D] = eig( A, B );
+               
+               hFromLambda = @(lambda) 1.0 ./ lambda;
+               [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
+               G_cheb=V(:,permutation);
+               maxModes = ceil(find(h>0,1,'last')/2);
+               
+               if maxModes < (nPoints+1)
+                   error('We tried, but you are gonna need more points.');
+               end
+               
+               if 1 == 0
+                   F = self.Diff1_xCheb(G_cheb(:,nPoints+1));
+                   roots = FindRootsFromChebyshevVector(F(1:end-1), self.zLobatto);
+                   z_g = cat(1,min(self.zLobatto),reshape(roots,[],1),max(self.zLobatto));
+               else
+                   roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints+1), self.zLobatto);
+                   z_g = reshape(roots,[],1);
+               end
+               
+               z_g(z_g<min(self.zLobatto)) = min(self.zLobatto);
+               z_g(z_g>max(self.zLobatto)) = max(self.zLobatto);
+            else
+                error('need more points');
+            end
         end
     end
     
@@ -773,6 +816,44 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
         end
+        
+        function roots = FindRootsFromChebyshevVector(f_cheb, zLobatto)
+            % Copyright (c) 2007, Stephen Morris 
+            % All rights reserved.
+            n = length(f_cheb);
+            
+            A=zeros(n-1);   % "n-1" because Boyd's notation includes the zero-indexed
+            A(1,2)=1;       % elements whereas Matlab's of course does not allow this.
+            % In other words, to replicate Boyd's N=5 matrix we need to
+            % set n=6.
+            for j=2:n-2
+                for k=1:n-1
+                    if j==k+1 || j==k-1
+                        A(j,k)=0.5;
+                    end
+                end
+            end
+            for k=1:n-1
+                A(n-1,k)=-f_cheb(k)/(2*f_cheb(n));  % c(1) in our notation is c(0) in Boyd's
+            end
+            A(n-1,n-2)=A(n-1,n-2)+0.5;
+            % Now we have the companion matrix, we can find its eigenvalues using the
+            % MATLAB built-in function.
+            eigvals=eig(A);
+            
+            % We're only interested in the real elements of the matrix:
+            realvals=(arrayfun(@(x) ~any(imag(x)),eigvals)).*eigvals;
+            
+            % Of course these are the roots scaled to the canonical interval [-1,1]. We
+            % need to map them back onto the interval [a,b]; we widen the interval just
+            % a fraction to make sure that we don't miss any that are right on the
+            % edge.
+            a = min(zLobatto);
+            b = max(zLobatto);
+            rangevals=nonzeros((arrayfun(@(x) abs(x)<=1.001, realvals)).*realvals);
+            roots=sort((rangevals.*0.5*(b-a)) + (0.5*(b+a)));
+        end
+        
     end
 end
 
