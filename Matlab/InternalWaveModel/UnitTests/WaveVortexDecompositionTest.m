@@ -34,7 +34,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
-shouldUseConstantStratificationModel = 1;
+shouldUseArbitraryStratificationModel = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -42,13 +42,15 @@ shouldUseConstantStratificationModel = 1;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% if shouldUseConstantStratificationModel == 0
-%     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-% else
-%     wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
-% end
+if shouldUseArbitraryStratificationModel == 0
+    wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+else
+    if ~exist('wavemodel','var')
+        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+    end
+end
 
-% wavemodel.InitializeWithGMSpectrum(1.0);
+wavemodel.InitializeWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -85,11 +87,13 @@ fprintf('The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_
 t = 360;
 [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
 
-% if shouldUseConstantStratificationModel == 0
-%     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-% else
-%     newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
-% end
+if shouldUseArbitraryStratificationModel == 0
+    newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+else
+    if ~exist('newmodel','var')
+        newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+    end
+end
 
 newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
 

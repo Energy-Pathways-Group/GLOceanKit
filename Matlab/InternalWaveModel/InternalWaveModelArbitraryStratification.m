@@ -37,6 +37,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     properties
        S
        Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
+       NumberOfWellConditionedModes
        didPrecomputedModesForWavenumber
        B
     end
@@ -69,6 +70,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.nModes = nModes;
             self.S = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
             self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
+            self.NumberOfWellConditionedModes = zeros(self.Nx,self.Ny);
             self.internalModes = im;
             self.rho0 = im.rho0;
             self.internalModes = im;
@@ -120,6 +122,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
 
                 [F,G,h] = self.internalModes.ModesAtWavenumber(sqrt(kk));
                 h = reshape(h,[1 1 self.nModes]);
+                N = InternalModes.NumberOfWellConditionedModes(G);
                 
                 % indices contains the indices into K2, corresponding to
                 % the wavenumber under consideration
@@ -129,16 +132,21 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                     currentIndex = indices(iIndex);
                     [i,j] = ind2sub([self.Nx self.Ny], currentIndex);
                     self.didPrecomputedModesForWavenumber(i,j) = 1;
+                    badIndex = find(h>0,1,'last');
+                    if badIndex < self.nModes
+                        warning('Eigenvalue problem returned negative eigenvalue at index %d, try with higher resolution.',badIndex)
+                    end
                     self.h(i,j,:) = h;
                     self.S(:,:,i,j) = G;
                     self.Sprime(:,:,i,j) = F;
+                    self.NumberOfWellConditionedModes(i,j) = N;
                 end
                 
                 iSolved = iSolved+1;
                 if (iSolved == 1 && nEVPNeeded >1) || mod(iSolved,10) == 0
                     timePerStep = (datetime('now')-startTime)/iSolved;
                     timeRemaining = (nEVPNeeded-iSolved)*timePerStep;
-                    fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iUnique, nEVPNeeded, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+                    fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iSolved, nEVPNeeded, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
                 end
             end
             
@@ -201,7 +209,18 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
                       
         function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, t, u, v, rho_prime)
-            zeta = self.g * rho_prime ./(self.rho0 * self.N2');
+            if length(size(u)) == 2 % deal with 2D data
+                if self.Ny == 1
+                   u = reshape(u,self.Nx,self.Ny,self.Nz);
+                   v = reshape(u,self.Nx,self.Ny,self.Nz);
+                   rho_prime = reshape(rho_prime,self.Nx,self.Ny,self.Nz);
+                else
+                    error('Dimensional issues');
+                end
+            end
+            
+            a = self.rho0 * reshape(self.N2,1,1,[])/self.g;
+            zeta = rho_prime ./ a;
             self.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,zeta);
         end
         
@@ -210,16 +229,41 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             % will *exactly* recover amplitudes being used the generate the
             % dynamical fields. For the moment I assume assuming no
             % buoyancy perturbation at the boundaries.
+            
+            if length(size(u)) == 2 % deal with 2D data
+                if self.Ny == 1
+                    u = reshape(u,self.Nx,self.Ny,self.Nz);
+                    v = reshape(u,self.Nx,self.Ny,self.Nz);
+                    zeta = reshape(zeta,self.Nx,self.Ny,self.Nz);
+                else
+                    error('Dimensional issues');
+                end
+            end
+            
             ubar = self.TransformFromSpatialDomainWithF( u );
             vbar = self.TransformFromSpatialDomainWithF( v );
             etabar = self.TransformFromSpatialDomainWithG( zeta );
             
-            delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
-            zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;
+            alpha = atan2(self.L,self.K);
+            delta = sqrt(self.h).*(cos(alpha) .* ubar + sin(alpha) .* vbar);
+            zeta = sqrt(self.h).*(cos(alpha) .* vbar - sin(alpha) .* ubar);
             
-            A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
-            A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
-            self.B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            omega = abs(self.Omega);
+            isFzero = 0;
+            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+                omega(omega == 0) = 1;
+                isFzero = 1;
+            end
+            fOverOmega = self.f0 ./ omega;
+            KhOverOmega = self.Kh ./ omega;
+                        
+            A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*sqrt(self.h).*etabar.*KhOverOmega + delta - sqrt(-1)*zeta.*fOverOmega)/2;
+            A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*sqrt(self.h).*etabar.*KhOverOmega + delta + sqrt(-1)*zeta.*fOverOmega)/2;
+            if isFzero == 1
+                self.B = zeros(size(self.Kh));
+            else
+                self.B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            end
             
             % inertial must be solved for separately.
             A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
@@ -289,10 +333,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             zIndices = 1:self.Nz;
             for i=1:self.Nx
                 for j=1:self.Ny
-                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForWavenumber(i,j)
                         continue;
                     end
-                    u_bar(i,j,:) = self.Sprime(zIndices,:,i,j)\u_temp(zIndices,i,j);
+                    N = self.NumberOfWellConditionedModes(i,j);
+                    u_bar(i,j,1:N) = self.Sprime(zIndices,1:N,i,j)\u_temp(zIndices,i,j);
                 end
             end
             u_bar = InternalWaveModel.MakeHermitian(u_bar);
@@ -321,10 +366,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             zIndices = 2:(self.Nz-1);
             for i=1:self.Nx
                 for j=1:self.Ny
-                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForWavenumber(i,j)
                         continue;
                     end
-                    w_bar(i,j,:) = self.S(zIndices,:,i,j)\w_temp(zIndices,i,j);
+                    N = self.NumberOfWellConditionedModes(i,j);
+                    w_bar(i,j,1:N) = self.S(zIndices,1:N,i,j)\w_temp(zIndices,i,j);
                 end
             end
             w_bar = InternalWaveModel.MakeHermitian(w_bar);

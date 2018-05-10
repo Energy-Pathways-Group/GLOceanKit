@@ -1810,8 +1810,12 @@ classdef (Abstract) InternalWaveModel < handle
             self.Omega = sqrt(self.C.*self.C.*self.K2 + self.f0*self.f0);         % Mode frequency
             
             % Create the hermitian conjugates of the phase vectors;
-            self.Omega(:,(self.Ny/2+1):end,:) = -self.Omega(:,(self.Ny/2+1):end,:);
-            self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
+            if self.Ny > 1
+                self.Omega(:,self.Ny/2+1:end,:) = -self.Omega(:,self.Ny/2+1:end,:);
+            end
+            if self.Nx > 1
+                self.Omega((self.Nx/2+1):end,1,:) = -self.Omega((self.Nx/2+1):end,1,:);
+            end
         end
                
 
