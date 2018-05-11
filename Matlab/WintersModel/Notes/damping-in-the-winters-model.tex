@@ -142,25 +142,4 @@ Normalized, this is quite simply,
 R(\tau \geq 0) =&  e^{ (\lambda_x+\lambda_z) \tau }
 \end{align}
 
-This should just be additive. 
-
-\begin{align}
-R(\tau \geq 0) =& \int_0^\infty u(t)u(t+\tau) \, dt \\
-=& \int_0^\infty \left[ e^{\nu_x (i k 2 \pi)^{2n} t} + e^{\nu_z (i m 2 \pi)^{2n} t} \right] \left[ e^{\nu_x (i k 2 \pi)^{2n} (t+\tau)} + e^{\nu_z (i m 2 \pi)^{2n} (t+\tau)} \right] \, dt \\
-=& \frac{e^{ \nu_x (i k 2 \pi)^{2n} (2t + \tau)}}{2 \nu_x (i k 2 \pi)^{2n}} \biggr\rvert_0^\infty + \frac{e^{ \nu_z (i k 2 \pi)^{2n} (2t + \tau)}}{2 \nu_z (i k 2 \pi)^{2n}} \biggr\rvert_0^\infty \\
-& + \left[ e^{\nu_x (i k 2 \pi)^{2n} \tau} + e^{\nu_z (i m 2 \pi)^{2n} \tau} \right] \frac{e^{ (\nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n}) t}}{\nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n}}\biggr\rvert_0^\infty \\
-&\frac{e^{ \nu_x (i k 2 \pi)^{2n} \tau}}{2 \nu_x (i k 2 \pi)^{2n}}+ \frac{e^{ \nu_z (i k 2 \pi)^{2n} \tau}}{2 \nu_z (i m 2 \pi)^{2n}} + \frac{e^{\nu_x (i k 2 \pi)^{2n} \tau} + e^{\nu_z (i m 2 \pi)^{2n} \tau}}{ \nu_x (i k 2 \pi)^{2n} + \nu_z (i m 2 \pi)^{2n} }
-\end{align}
-Now we want to normalize this, so that it goes to 1 at lag 0. Let's simplify notation,
-\begin{align}
-R(\tau \geq 0) =& \frac{ e^{\lambda_x \tau} }{2 \lambda_x} +  \frac{ e^{\lambda_z \tau} }{2 \lambda_z}  +  \frac{ e^{\lambda_x \tau} + e^{\lambda_z \tau} }{ \lambda_x +  \lambda_z} \\
-=& \frac{\lambda_z (\lambda_x + \lambda_z) e^{\lambda_x \tau} + \lambda_x (\lambda_x + \lambda_z) e^{\lambda_z \tau} + 2 \lambda_x \lambda_z \left( e^{\lambda_x \tau} + e^{\lambda_z \tau}\right) }{2 \lambda_x \lambda_z (\lambda_x + \lambda_z)}\\
-R(0) =&  \frac{ \lambda_z (\lambda_x + \lambda_z) + \lambda_x (\lambda_x + \lambda_z) + 4 \lambda_x \lambda_z}{2 \lambda_x \lambda_z (\lambda_x + \lambda_z)} \\
-=& \frac{\lambda_x^2 + \lambda_z^2 + 6 \lambda_x \lambda_z}{2 \lambda_x \lambda_z (\lambda_x + \lambda_z)} \\
-=& 1
-\end{align}
-So, we have that,
-\begin{align}
-R(\tau \geq 0) =&\frac{\lambda_z^2 e^{\lambda_x \tau} + \lambda_x^2 e^{\lambda_z \tau} + 3 \lambda_x \lambda_z \left( e^{\lambda_x \tau} + e^{\lambda_z \tau}\right) }{\lambda_x^2 + \lambda_z^2 + 6 \lambda_x \lambda_z}
-\end{align}
-\end{document}  
+\end{document}
