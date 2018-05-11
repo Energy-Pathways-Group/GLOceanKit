@@ -330,7 +330,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nGrid = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
             end
             
-            if 0
+            if 1
                 [self.zLobatto, rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-16);
                 self.rho_zLobatto = rho(self.zLobatto);
                 self.rho_function = rho;
@@ -516,6 +516,45 @@ classdef InternalModesSpectral < InternalModesBase
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % Convert to a stretched grid
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [z_xLobatto, xOut] = StretchedGridFromCoordinate( x, xLobatto, zLobatto, zOut)
+            % x is a function handle, that maps from z.
+            % xLobatto is the grid on x
+            % zLobatto is the Lobatto grid on z
+            % zOut is the output grid
+            
+            maxZ = max(zLobatto);
+            minZ = min(zLobatto);
+            z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
+            z_xLobatto(z_xLobatto>maxZ) = maxZ;
+            z_xLobatto(z_xLobatto<minZ) = minZ;
+            
+            s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
+            relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
+            nloops = 0;
+            while ( nloops < 10 && relativeError > 1e-10)
+                z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
+                z_xLobatto(z_xLobatto>maxZ) = maxZ;
+                z_xLobatto(z_xLobatto<minZ) = minZ;
+                s_z_xLobatto = x(z_xLobatto);
+            
+                relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
+                fprintf('error: %g\n',relativeError);
+                nloops = nloops + 1;
+            end
+            if nloops == 10
+                warning('reached maximum number of loops');
+            end
+                        
+            xOut = x(zOut);
+            xOut(xOut>max(xLobatto)) = max(xLobatto);
+            xOut(xOut<min(xLobatto)) = min(xLobatto);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
         % Chebyshev Methods
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -678,7 +717,12 @@ classdef InternalModesSpectral < InternalModesBase
            t = acos(x_norm);
            
            N_polys = length(func_cheb);
-           value=sum(func_cheb.*cos(t*(0:(N_polys-1))));           
+%            value=sum(func_cheb.*cos(t*(0:(N_polys-1))));   
+           value = func_cheb(1)*ones(size(x0));
+           for i=2:N_polys
+               value = value + func_cheb(i)*cos(t*(i-1));
+           end
+                   
         end
         
         function [varargout] = ChebyshevPolynomialsOnGrid( x, N_polys )

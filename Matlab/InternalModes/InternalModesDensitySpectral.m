@@ -144,18 +144,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             Ls = sMax-sMin;
             self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;
             
-            % Now create a transformation for functions defined on
-            % z_lobatto to (spectrally) take them into s_lobatto.
-            % We use the fact that we have a function handle to iteratively
-            % improve this projection.
-            self.z_xLobatto = interp1(s(self.zLobatto), self.zLobatto, self.xLobatto, 'linear', self.zLobatto(1));
-            nloops = 0;
-            while ( nloops < 10 && max( abs(s(self.z_xLobatto) - self.xLobatto))/max(abs(self.xLobatto)) > 1e-15)
-                self.z_xLobatto = interp1(s(self.z_xLobatto), self.z_xLobatto, self.xLobatto, 'linear', self.zLobatto(1));
-                nloops = nloops + 1;
-            end
-    
-            self.xOut = s(zOut);
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
         end
         
         function self = SetupEigenvalueProblem(self) 

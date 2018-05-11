@@ -102,25 +102,20 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     methods (Access = protected)        
         function self = SetupEigenvalueProblem(self)
             % Create the stretched WKB grid
-            N_zLobatto = sqrt(self.N2_zLobatto);      
-            x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            Lxi = max(x_zLobatto)-min(x_zLobatto);
-            n = self.nEVP;
-            self.xLobatto = (Lxi/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(x_zLobatto);
+            N_zLobatto = sqrt(self.N2_zLobatto);
+            N_zCheb = InternalModesSpectral.fct(N_zLobatto);
             
-            % Now we need z on the \xi grid
-            self.z_xLobatto = interp1(x_zLobatto, self.zLobatto, self.xLobatto, 'spline');
-            self.z_xLobatto(self.z_xLobatto>max(self.zLobatto)) = max(self.zLobatto);
-            
-            % and z_out on the \xi grid
-            self.xOut = interp1(self.zLobatto, x_zLobatto, self.z, 'spline');
-            
+            x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(N_zCheb);
+            s = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
+            Lxi = s(max(self.zLobatto));
+            self.xLobatto = (Lxi/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1);
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
+
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
             T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xLobatto);
             self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            N_zCheb = InternalModesSpectral.fct(N_zLobatto);
             self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(N_zCheb));
             
             Lxi = max(self.xLobatto) - min(self.xLobatto);
@@ -138,6 +133,9 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
 %             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
         end
+        
+        
+        
     end
     
     methods (Access = private)             
