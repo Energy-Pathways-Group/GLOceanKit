@@ -309,12 +309,28 @@ classdef InternalModesSpectral < InternalModesBase
             end
                       
             self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
+            
+            K=16;
+            zFlip = flip(zIn);
+            z_knot = NaturalKnotsForSpline( zFlip, K );
+            B = bspline( zFlip, z_knot, K );
+            X = squeeze(B(:,:,1));
+            m = X\flip(rho);
+            
+            
+            
             if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
                 self.zLobatto = zIn;
                 self.rho_zLobatto = rho;
             else
                 self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
                 self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
+                
+                zFlip = flip(self.zLobatto);
+                Bq = bspline(zFlip,z_knot,K);
+                Xq = squeeze(Bq(:,:,1));
+                
+                self.rho_zLobatto = flip(Xq*m);
             end
               
             self.InitializeZLobattoProperties();
