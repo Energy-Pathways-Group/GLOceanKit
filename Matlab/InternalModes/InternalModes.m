@@ -428,14 +428,12 @@ classdef InternalModes < handle
     methods (Static)
         
         function N = NumberOfWellConditionedModes(G)
-            Nz = size(G,1);
-            maxModes = min(size(G,2),Nz-2);
+            maxModes = min(size(G));
             minModes = 1;
-            zIndices = 2:(Nz-2); % given boundary conditions
-            cutoff = 100; 
+            cutoff = 20; % empirically determined, good conditioning cutoff
             
             iMode = maxModes;
-            kappa = cond(G(zIndices,1:iMode));
+            kappa = cond(G(:,1:iMode));
             while minModes+1 < maxModes
                 if kappa < cutoff % This *is* well conditined
                     minModes = iMode;
@@ -443,17 +441,14 @@ classdef InternalModes < handle
                     maxModes = iMode;
                 end
                 iMode = minModes + floor((maxModes - minModes)/2);
-                kappa = cond(G(zIndices,1:iMode));
+                kappa = cond(G(:,1:iMode));
             end
             
             N = minModes;
         end
         
         function kappa = ConditionNumberAsFunctionOfModeNumber(G)
-            Nz = size(G,1);
-            maxModes = size(G,2); %min(size(G,2),Nz-2);
-%             zIndices = 2:(Nz-2);
-
+            maxModes = min(size(G));
             kappa = zeros(maxModes,1);
             for iMode=1:maxModes
                kappa(iMode) =  cond(G(:,1:iMode));

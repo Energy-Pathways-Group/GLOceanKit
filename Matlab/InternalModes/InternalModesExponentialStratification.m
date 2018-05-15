@@ -90,7 +90,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             while length(r) < self.nModes
                 % the roots get closer together
                 dr = r(end)-r(end-1);
-                bounds = [bounds(2) bounds(2)+dr*self.nInitialModes];
+                bounds = [bounds(2) bounds(2)+dr*self.nInitialSearchModes];
                 more_roots = FindRootsInRange(self, nu, s, bounds, x_nu);
                 r = [r; more_roots];
             end

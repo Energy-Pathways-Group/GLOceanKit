@@ -262,7 +262,7 @@ classdef InternalModesSpectral < InternalModesBase
         
         function z_g = GaussQuadraturePointsForModesAtWavenumber(self,nPoints,k)
             % Now we just need to find the roots of the n+1 mode.
-            if 2*(nPoints+1) < self.nEVP
+            if 2*nPoints < self.nEVP
                [A,B] = self.EigenmatricesForWavenumber(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
                    error('EVP setup fail. Found at least one nan in matrices A and B.\n');
@@ -283,7 +283,7 @@ classdef InternalModesSpectral < InternalModesBase
                    roots = FindRootsFromChebyshevVector(F(1:end-1), self.zLobatto);
                    z_g = cat(1,min(self.zLobatto),reshape(roots,[],1),max(self.zLobatto));
                else
-                   roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints+1), self.zLobatto);
+                   roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.zLobatto);
                    z_g = reshape(roots,[],1);
                end
                
