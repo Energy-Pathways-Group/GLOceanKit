@@ -262,6 +262,8 @@ classdef InternalModesSpectral < InternalModesBase
         
         function z_g = GaussQuadraturePointsForModesAtWavenumber(self,nPoints,k)
             % Now we just need to find the roots of the n+1 mode.
+            % For constant stratification this should give back the
+            % standard Fourier modes, i.e., an evenly spaced grid.
             if 2*nPoints < self.nEVP
                [A,B] = self.EigenmatricesForWavenumber(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
@@ -310,12 +312,12 @@ classdef InternalModesSpectral < InternalModesBase
                       
             self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
             
-            K=16;
-            zFlip = flip(zIn);
-            z_knot = NaturalKnotsForSpline( zFlip, K );
-            B = bspline( zFlip, z_knot, K );
-            X = squeeze(B(:,:,1));
-            m = X\flip(rho);
+%             K=16;
+%             zFlip = flip(zIn);
+%             z_knot = NaturalKnotsForSpline( zFlip, K );
+%             B = bspline( zFlip, z_knot, K );
+%             X = squeeze(B(:,:,1));
+%             m = X\flip(rho);
             
             
             
@@ -326,11 +328,11 @@ classdef InternalModesSpectral < InternalModesBase
                 self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
                 self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
                 
-                zFlip = flip(self.zLobatto);
-                Bq = bspline(zFlip,z_knot,K);
-                Xq = squeeze(Bq(:,:,1));
-                
-                self.rho_zLobatto = flip(Xq*m);
+%                 zFlip = flip(self.zLobatto);
+%                 Bq = bspline(zFlip,z_knot,K);
+%                 Xq = squeeze(Bq(:,:,1));
+%                 
+%                 self.rho_zLobatto = flip(Xq*m);
             end
               
             self.InitializeZLobattoProperties();
@@ -724,6 +726,28 @@ classdef InternalModesSpectral < InternalModesBase
                 end
             end
             D(1,:)=0.5*D(1,:);
+        end
+        
+        function D = ChebyshevInterpolationDerivative(n)
+            %% Chebyshev Interpolation Derivative
+            % taken from Canuto, et al. 2.4.33
+            D = zeros(n,n);
+            N = n-1;
+            c = @(j) (j == 0 || j == N)*2 + (j>0 && j<N)*1;
+            for j=0:(n-1)
+                for l=0:(n-1)
+                    if j ~= l
+                        D(j+1,l+1) = -(c(j)/c(l))*((-1)^(j+l))/( sin( (j+l)*pi/(2*N) ) * sin( (j-l)*pi/(2*N) ) )/2;
+                    elseif j == l && j == 0
+                        D(j+1,l+1) = (2*N*N+1)/6;
+                    elseif j == l && j == N
+                        D(j+1,l+1) = -(2*N*N+1)/6;
+                    else
+                        D(j+1,l+1) = -cos(pi*j/N)/(2*(sin(j*pi/N))^2);
+                    end
+                end
+            end
+            D(1,:)=D(1,:);
         end
         
         function value = ValueOfFunctionAtPointOnGrid( x0, x, func_cheb )
