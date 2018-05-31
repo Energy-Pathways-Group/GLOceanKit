@@ -309,8 +309,21 @@ classdef InternalModesSpectral < InternalModesBase
                 zIn = flip(zIn);
                 rho = flip(rho);
             end
-                      
-            self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
+            
+            % useful notes about condition number in least squares
+            % http://www.math.uchicago.edu/~may/REU2012/REUPapers/Lee.pdf
+            n = length(zIn);
+            T = InternalModesSpectral.ChebyshevPolynomialsOnGrid(zIn,n);
+            nPolys = InternalModes.NumberOfWellConditionedModes(T);
+            T = T(:,1:nPolys);
+%             m = T\rho;
+            
+            self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(zIn);
+            self.rho_zCheb = reshape(T\rho,[],1);
+            self.rho_zCheb = cat(1,self.rho_zCheb,zeros(n-length(self.rho_zCheb),1));
+            self.rho_zLobatto = InternalModesSpectral.ifct(self.rho_zCheb);
+%             self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
+            
             
 %             K=16;
 %             zFlip = flip(zIn);
@@ -321,19 +334,19 @@ classdef InternalModesSpectral < InternalModesBase
             
             
             
-            if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
-                self.zLobatto = zIn;
-                self.rho_zLobatto = rho;
-            else
-                self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
-                self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
-                
-%                 zFlip = flip(self.zLobatto);
-%                 Bq = bspline(zFlip,z_knot,K);
-%                 Xq = squeeze(Bq(:,:,1));
+%             if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
+%                 self.zLobatto = zIn;
+%                 self.rho_zLobatto = rho;
+%             else
+%                 self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
+%                 self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
 %                 
-%                 self.rho_zLobatto = flip(Xq*m);
-            end
+% %                 zFlip = flip(self.zLobatto);
+% %                 Bq = bspline(zFlip,z_knot,K);
+% %                 Xq = squeeze(Bq(:,:,1));
+% %                 
+% %                 self.rho_zLobatto = flip(Xq*m);
+%             end
               
             self.InitializeZLobattoProperties();
         end
