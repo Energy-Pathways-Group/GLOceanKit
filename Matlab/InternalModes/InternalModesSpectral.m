@@ -312,16 +312,23 @@ classdef InternalModesSpectral < InternalModesBase
             
             % useful notes about condition number in least squares
             % http://www.math.uchicago.edu/~may/REU2012/REUPapers/Lee.pdf
-            n = length(zIn);
-            T = InternalModesSpectral.ChebyshevPolynomialsOnGrid(zIn,n);
-            nPolys = InternalModes.NumberOfWellConditionedModes(T);
-            T = T(:,1:nPolys);
-%             m = T\rho;
+%             n = length(zIn);
+%             T = InternalModesSpectral.ChebyshevPolynomialsOnGrid(zIn,n);
+%             nPolys = InternalModes.NumberOfWellConditionedModes(T);
+%             T = T(:,1:nPolys);
+% %             m = T\rho;
+%             
+%             self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(zIn);
+%             self.rho_zCheb = reshape(T\rho,[],1);
+%             self.rho_zCheb = cat(1,self.rho_zCheb,zeros(n-length(self.rho_zCheb),1));
+%             self.rho_zLobatto = InternalModesSpectral.ifct(self.rho_zCheb);
             
+            n = length(zIn);            
             self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(zIn);
-            self.rho_zCheb = reshape(T\rho,[],1);
+            self.rho_zCheb = InternalModesSpectral.FitGriddedDensityDataToMonotonicFunction(zIn,rho);
             self.rho_zCheb = cat(1,self.rho_zCheb,zeros(n-length(self.rho_zCheb),1));
             self.rho_zLobatto = InternalModesSpectral.ifct(self.rho_zCheb);
+            
 %             self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
             
             
@@ -618,6 +625,85 @@ classdef InternalModesSpectral < InternalModesBase
             rho_zCheb = rho_zCheb(1:n);
         end
         
+        function rho_zCheb = FitGriddedDensityDataToMonotonicFunction(z,rho)
+            % useful notes about condition number in least squares
+            % http://www.math.uchicago.edu/~may/REU2012/REUPapers/Lee.pdf
+            n = length(z);
+            Lz = max(z)-min(z);
+            T = InternalModesSpectral.ChebyshevPolynomialsOnGrid(z,n);
+            nPolys = InternalModes.NumberOfWellConditionedModes(T);
+            nPolys = 32;
+            T = T(:,1:nPolys);
+            rho_zCheb = T\rho;
+            
+            % dense grid, upon which to evaluate derivatives
+            n_dense = 10*nPolys;
+            
+            rho_z_zCheb = InternalModesSpectral.DifferentiateChebyshevVector(rho_zCheb);
+            rho_z_zCheb = cat(1,rho_z_zCheb,zeros(n_dense-length(rho_z_zCheb),1));
+            rho_z = InternalModesSpectral.ifct(rho_z_zCheb);
+            
+            if any(rho_z < 0) 
+                fprintf('Fit gridded data to %d modes. Bouyancy frequency goes negative; attempting to constrain.\n',nPolys)
+%                 z_lobatto = ((max(zIn)-min(zIn))/2)*( cos(((0:Nz_dense-1)')*pi/(Nz_dense-1)) + 1) + min(zIn);
+
+                z_dense = ((max(z)-min(z))/2)*( cos(((0:n_dense-1)')*pi/(n_dense-1)) + 1) + min(z)';
+                [~,Tz] = InternalModesSpectral.ChebyshevPolynomialsOnGrid(z_dense,n);
+                Tz = Tz(:,1:nPolys);
+                
+                sigma_rho = sqrt(mean((rho-mean(rho)).^2));
+                sigma_drhodz = sqrt(mean((diff(rho)./diff(z)).^2));
+                lambda = n*sigma_rho*sigma_rho/(1e-8*Lz*sigma_drhodz*sigma_drhodz);
+                
+                % linear function, describing the likelihood of a derivative occurring.
+                min_rho_z = -1e-4*sigma_drhodz;
+                max_rho_z = 1e4*max(diff(rho)./diff(z));
+                min_lambda = lambda;
+                max_lambda = 1e4*min_lambda;
+                slope = (max_lambda-min_lambda)/(max_rho_z-min_rho_z);
+                intercept = min_lambda - slope*min_rho_z;
+                
+                w = @(rho_z) (slope*rho_z+intercept).*(rho_z > min_rho_z);
+                
+                % very rough integration weights
+                dz = diff(z_dense);
+                dz = abs(cat(1,dz(1)/2,(dz(1:end-1)+dz(2:end))/2, dz(1)/2));
+                
+                f = @(m) ((rho-T*m).')*(rho-T*m) + ((Tz*m-min_rho_z).')*(diag(w(Tz*m).*dz))*(Tz*m-min_rho_z);
+                
+                i=0;
+                m = rho_zCheb;
+                TT = (T.')*T;
+                while i < 100
+                    i = i+1;
+                    
+                    rho_z = Tz*m;
+                    fprintf('(rho_z, f) = (%f,%f), ',max(rho_z),f(m))
+                    
+                    W = diag(w(rho_z).*dz);
+                    
+                    wTz = W*Tz;
+                    
+                    TzTz = (Tz.')*wTz;
+                    M = TT + TzTz;
+                    B = (T.')*rho + min_rho_z*transpose(sum(wTz));
+                    m = M\B;
+                end
+                
+                rho_zCheb = m;
+                rho_zCheb = fminsearch(f,m,optimset('TolX',1e-4));
+                
+            else
+                fprintf('Fit gridded data to %d modes. Bouyancy frequency stays positive.\n',nPolys)
+                return
+            end
+            
+%             self.zLobatto = (Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(z);
+%             self.rho_zCheb = reshape(T\rho,[],1);
+%             self.rho_zCheb = cat(1,self.rho_zCheb,zeros(n-length(self.rho_zCheb),1));
+%             self.rho_zLobatto = InternalModesSpectral.ifct(self.rho_zCheb);
+        end
+        
         % Fast Chebyshev Transform
         % By Allan P. Engsig-Karup, apek@imm.dtu.dk.
         function uh = fct(u)
@@ -704,7 +790,8 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function v_p = IntegrateChebyshevVector(v)
-            % Taken from cumsum as part of chebfun
+            % Taken from cumsum as part of chebfun.
+            % chebfun/@chebtech/cumsum.m
             %
             % Copyright 2017 by The University of Oxford and The Chebfun Developers.
             % See http://www.chebfun.org/ for Chebfun information.
