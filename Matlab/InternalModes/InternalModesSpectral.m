@@ -681,7 +681,7 @@ classdef InternalModesSpectral < InternalModesBase
                 dz = z_dense(2)-z_dense(1);
                 
                 iPoly = 3;
-                K = 4;
+                K = 5;
                 
                 z_lin = linspace(min(z),max(z),length(z))';
                 t_knot = BSpline.KnotPointsForSplines(z,K,iPoly);
