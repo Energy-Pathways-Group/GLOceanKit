@@ -84,7 +84,9 @@ classdef InternalModes < handle
         internalModes % Instance of actual internal modes class that is doing all the work.
     end
     
-    properties (Dependent) 
+    properties (Dependent)
+        shouldShowDiagnostics % flag to show diagnostic information, default = 0
+        
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         nModes % Number of modes to be returned.
@@ -299,7 +301,21 @@ classdef InternalModes < handle
             title = sprintf('Relative error of internal modes at omega=%.2gf0 with %d grid points using %s',omega/self.f0,length(self.z),self.fullMethodName);
             self.ShowErrorFigure(h_error,F_error,G_error,title);
         end
-                
+              
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Diagnostics
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function set.shouldShowDiagnostics(self,value)
+            self.internalModes.shouldShowDiagnostics = value;
+        end
+        function value = get.shouldShowDiagnostics(self)
+            value = self.internalModes.shouldShowDiagnostics;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Useful problem constants, latitude and f0

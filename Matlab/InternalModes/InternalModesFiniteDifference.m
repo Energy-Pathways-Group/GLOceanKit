@@ -204,18 +204,18 @@ classdef InternalModesFiniteDifference < InternalModesBase
             self.rho_z_diff = rho;
         end
 
-        function self = InitializeWithFunction(self, rho, z_min, z_max, z_out)
+        function self = InitializeWithFunction(self, rho, z_min, z_max)
             % Used internally by subclasses to intialize with a density grid.
             %
             % The superclass calls this method upon initialization when it
             % determines that the input is given in functional form. The
             % goal is to initialize z_diff and rho_z_diff.
-            if length(z_out) < 5
+            if length(self.z) < 5
                 error('You need more than 5 point output points for finite differencing to work');
             end
             
-            if (min(z_out) == z_min && max(z_out) == z_max)
-                self.z_diff = z_out;
+            if (min(self.z) == z_min && max(self.z) == z_max)
+                self.z_diff = self.z;
                 self.rho_z_diff = rho(self.z_diff);
             else
                 error('Other cases not yet implemented');

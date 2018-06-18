@@ -38,6 +38,8 @@ classdef (Abstract) InternalModesBase < handle
 
     
     properties (Access = public)
+        shouldShowDiagnostics = 0 % flag to show diagnostic information, default = 0
+        
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         Lz % Depth of the ocean.
@@ -143,7 +145,10 @@ classdef (Abstract) InternalModesBase < handle
                 if userSpecifiedRho0 == 0
                     self.rho0 = rho(max(z_in));
                 end
-                self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out);
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Initialized %s class with a function handle.\n', class(self));
+                end
+                self.InitializeWithFunction(rho, min(z_in), max(z_in));
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');
@@ -153,6 +158,9 @@ classdef (Abstract) InternalModesBase < handle
                 end
                 if userSpecifiedRho0 == 0
                     self.rho0 = min(rho);
+                end
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Initialized %s class with gridded data.\n', class(self));
                 end
                 self.InitializeWithGrid(rho,z_in);
             else
