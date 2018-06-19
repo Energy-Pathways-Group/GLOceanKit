@@ -343,13 +343,10 @@ classdef InternalModesSpectral < InternalModesBase
             % they've completed their basic setup.
             self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
-                        
+            
+            % This computation isn't strictly necessary, although it is
+            % used in the stretched coordinate cases.
             self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
-            if any(self.N2_zLobatto < 0)
-                fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
-                self.N2_zLobatto(self.N2_zLobatto <= 0) = min(self.N2_zLobatto(self.N2_zLobatto>0));
-                self.N2_zCheb = InternalModesSpectral.fct(self.N2_zLobatto);
-            end
             
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
@@ -359,6 +356,10 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function self = SetupEigenvalueProblem(self)
+            if any(self.N2_zLobatto < 0)
+                fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
+            end
+            
             % Called during initialization after InitializeZLobattoProperties().
             % Subclasses will override this function.
             n = self.nEVP;
@@ -526,23 +527,73 @@ classdef InternalModesSpectral < InternalModesBase
             s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
             relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
             nloops = 0;
-            while ( nloops < 10 && relativeError > 1e-10)
+            maxLoops = 100;
+            while ( nloops < maxLoops && relativeError > 1e-10)
                 z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
                 z_xLobatto(z_xLobatto>maxZ) = maxZ;
                 z_xLobatto(z_xLobatto<minZ) = minZ;
                 s_z_xLobatto = x(z_xLobatto);
             
                 relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-                fprintf('error: %g\n',relativeError);
                 nloops = nloops + 1;
             end
-            if nloops == 10
-                warning('reached maximum number of loops');
+            if nloops == maxLoops
+                warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
             end
                         
             xOut = x(zOut);
             xOut(xOut>max(xLobatto)) = max(xLobatto);
             xOut(xOut<min(xLobatto)) = min(xLobatto);
+        end
+        
+        function [flag, dTotalVariation, rho_zCheb, rho_zLobatto, rhoz_zCheb, rhoz_zLobatto] = CheckIfReasonablyMonotonic(zLobatto, rho_zCheb, rho_zLobatto, rhoz_zCheb, rhoz_zLobatto)
+            % We want to know if the density function is decreasing as z
+            % increases. If it's not, are the discrepencies small enough
+            % that we can just force them?
+            %
+            % flag is 0 if the function is not reasonably monotonic, 1 if
+            % it is, and 2 if we were able to to coerce it to be, without
+            % too much change
+            
+            flag = 0;
+            dTotalVariation = 0;
+            if any(rhoz_zLobatto > 0)
+                % record the density at the bottom, and the total variation
+                % in density
+                rho_top = min(rho_zLobatto(1),rho_zLobatto(end));
+                rho_bottom = max(rho_zLobatto(1),rho_zLobatto(end));
+                dRho = rho_bottom-rho_top;
+                Lz = abs(zLobatto(1)-zLobatto(end));
+                
+                % Now zero out the all the regions where there are density
+                % inversions, project onto cheb basis, the integrate to get
+                % a new density function, but keep the density at the
+                % surface the same (because we use rho0 elsewhere).
+                rhoz_zLobatto(rhoz_zLobatto >= 0) = max(rhoz_zLobatto(rhoz_zLobatto<0));
+                rhoz_zCheb = InternalModesSpectral.fct(rhoz_zLobatto);
+                rho_zCheb = (Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(rhoz_zCheb);
+                rho_zCheb(end) = [];
+                rho_zLobatto = InternalModesSpectral.ifct(rho_zCheb);
+                delta = - min(rho_zLobatto) + rho_top;
+                rho_zLobatto = rho_zLobatto + delta;
+                rho_zCheb(1) = rho_zCheb(1) + delta;
+                
+                % Re-derive all the properties
+%                 new_rhoz_zLobatto = InternalModesSpectral.ifct((2/Lz)*InternalModesSpectral.DifferentiateChebyshevVector(rho_zCheb));
+                
+                
+                
+                dRho_new = abs(rho_zLobatto(end)-rho_zLobatto(1));
+                dTotalVariation = (dRho_new-dRho)/dRho;
+                
+                if dTotalVariation < 1e-2
+                    flag = 1;
+                else
+                    flag = 2;
+                end
+            end
+            
+            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

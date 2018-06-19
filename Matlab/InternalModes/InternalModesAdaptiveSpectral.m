@@ -275,7 +275,11 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             end
             
             % Now we need z on the \xi grid
-            self.z_xLobatto = interp1(self.x_zLobatto, self.zLobatto, self.xLobatto, 'spline');
+            maxZ = max(self.zLobatto);
+            minZ = min(self.zLobatto);
+            self.z_xLobatto = interp1(self.x_zLobatto, self.zLobatto, self.xLobatto, 'spline','extrap');
+            self.z_xLobatto(self.z_xLobatto>maxZ) = maxZ;
+            self.z_xLobatto(self.z_xLobatto<minZ) = minZ;
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
