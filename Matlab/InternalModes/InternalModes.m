@@ -118,8 +118,7 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function self = InternalModes(varargin)    
-            % Initialize with either a grid or analytical profile.
-            self.method = 'wkbAdaptiveSpectral';
+            % Initialize with either a grid or analytical profile.   
             userSpecifiedMethod = 0;
             
             % First check to see if the user specified some extra arguments
@@ -156,6 +155,24 @@ classdef InternalModes < handle
                     fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
                     [N0, rho0] = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
                     self.internalModes = InternalModesConstantStratification([N0, rho0],zIn,zOut,latitude,extraargs{:});
+                elseif userSpecifiedMethod == 0
+                    % If the user didn't specify a method, try
+                    % wkbAdaptiveSpectral first, but if that fails to
+                    % produce a reasonable coordinate system, try
+                    % z-coordinate spectral.
+                    try
+                        self.method = 'wkbAdaptiveSpectral';
+                        self.internalModes = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                    catch ME
+                        if ~isempty(ME.cause) && strcmp(ME.cause{1}.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
+                            fprintf('%s : %s\n', ME.cause{1}.identifier, ME.cause{1}.message);
+                            fprintf('Switching to InternalModesSpectral.\n');
+                            self.method = 'spectral';
+                            self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                        else
+                            rethrow(ME);
+                        end
+                    end
                 elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')

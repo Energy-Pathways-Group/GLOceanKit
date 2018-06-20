@@ -26,10 +26,32 @@ for iProfile=1:length(profiles)
     fprintf('\n---%s stratification profile---\n',profiles{iProfile});
     for iMethod=1:length(methods)
         % initialize directly from the function
-        im = InternalModes(rhoFunction,zIn,z,latitude,'nModes',n, 'method', methods{iMethod}, 'shouldShowDiagnostics', 1);
+        try
+            im = InternalModes(rhoFunction,zIn,z,latitude,'nModes',n, 'method', methods{iMethod}, 'shouldShowDiagnostics', 1);
+        catch ME
+            fprintf('*******FAILED**********\n');
+            if ~isempty(ME.cause)
+                fprintf('%s : %s\n', ME.cause{1}.identifier, ME.cause{1}.message);
+            else
+                fprintf('%s : %s\n', ME.identifier, ME.message);
+            end
+            fprintf('***********************\n');
+        end
         fprintf('\n')
+        
+        
         % initialize directly from a equispaced grid.
-        im = InternalModes(rhoFunction(z),z,z,latitude,'nModes',n, 'method', methods{iMethod}, 'shouldShowDiagnostics', 1);
+        try
+            im = InternalModes(rhoFunction(z),z,z,latitude,'nModes',n, 'method', methods{iMethod}, 'shouldShowDiagnostics', 1);
+        catch ME
+            fprintf('*******FAILED**********\n');
+            if ~isempty(ME.cause)
+                fprintf('%s : %s\n', ME.cause{1}.identifier, ME.cause{1}.message);
+            else
+                fprintf('%s : %s\n', ME.identifier, ME.message);
+            end
+            fprintf('***********************\n');
+        end
         fprintf('\n')
     end
 end

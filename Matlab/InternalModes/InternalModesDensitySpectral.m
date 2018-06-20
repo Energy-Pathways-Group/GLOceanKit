@@ -135,7 +135,19 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             sMax = max(range);
             Ls = sMax-sMin;
             self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;
-            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
+            
+            % We need to be able to create a reasonable stretched grid...
+            % if we can't, we will throw an exception
+            try
+                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
+            catch ME
+                switch ME.identifier
+                    case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
+                        causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue density grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
+                        ME = addCause(ME,causeException);  
+                end
+                rethrow(ME)
+            end
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the

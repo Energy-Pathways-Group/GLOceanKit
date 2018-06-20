@@ -22,6 +22,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
     %   March 14th, 2017        Version 1.0
     
     properties %(Access = private)
+        xiFromZ                     % function that converts from the z-grid to the stretched (xi/wkb) grid.
         x_zLobatto                  % x (xi) coordinate on the zLobatto grid                
         N_zCheb
         
@@ -151,10 +152,50 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             % Although we use the same stretched coordinate as the
             % WKBSpectral superclass, we use different point locations, so
             % we have to override this function.
-            N_zLobatto = sqrt(self.N2_zLobatto);      
+%             N_zLobatto = sqrt(self.N2_zLobatto);      
+%             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
+%             self.x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
+%             self.xOut = interp1(self.zLobatto, self.x_zLobatto, self.z, 'spline');
+            
+                        % Check if we an even create a WKB coordinate system
+            [flag, dTotalVariation, rho_zCheb_new, rho_zLobatto_new, rhoz_zCheb, rhoz_zLobatto] = InternalModesSpectral.CheckIfReasonablyMonotonic(self.zLobatto, self.rho_zCheb, self.rho_zLobatto, -(self.rho0/self.g)*self.N2_zCheb, -(self.rho0/self.g)*self.N2_zLobatto);
+            if flag == 1
+                self.rho_zCheb = rho_zCheb_new;
+                self.rho_zLobatto = rho_zLobatto_new;
+                self.N2_zCheb= -(self.g/self.rho0)*rhoz_zCheb;
+                self.N2_zLobatto = -(self.g/self.rho0)*rhoz_zLobatto;
+                
+                self.rho = self.T_zCheb_zOut(self.rho_zCheb);
+                self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
+                
+                fprintf('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We used this new density function for the computation and will proceed.\n', dTotalVariation*100);
+            elseif flag == 2
+                error('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
+            end
+            
+            % Create the stretched WKB grid
+            N_zLobatto = sqrt(self.N2_zLobatto);
             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            self.x_zLobatto = cumtrapz(self.zLobatto,N_zLobatto);
-            self.xOut = interp1(self.zLobatto, self.x_zLobatto, self.z, 'spline');
+            
+            x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(self.N_zCheb);
+            self.x_zLobatto = InternalModesSpectral.ifct(x_zCheb(1:end-1));
+            self.xiFromZ = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
+            self.xLobatto = (self.xiFromZ(max(self.zLobatto))/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1);
+
+            % We need to be able to create a reasonable stretched grid...
+            % if we can't, we will throw an exception
+            try
+                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( self.xiFromZ, self.xLobatto, self.zLobatto, self.z);
+            catch ME
+                switch ME.identifier
+                    case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
+                        causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue wkb grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
+                        ME = addCause(ME,causeException);
+                end
+                rethrow(ME)
+            end
+            
+            
             
             self.CreateGridForFrequency(0.0);
         end
@@ -169,8 +210,10 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             
             requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
             [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);
-            boundaries = interp1(self.zLobatto,self.x_zLobatto,zBoundariesAndTPs,'spline');
-            
+                        
+            boundaries2 = interp1(self.zLobatto,self.x_zLobatto,zBoundariesAndTPs,'spline');
+            boundaries = InternalModesSpectral.fInverseBisection(self.xiFromZ,zBoundariesAndTPs,min(self.xLobatto),max(self.xLobatto),1e-10);
+      error('temp throw error: inverse is not returning the correct values because the function evaluates one of the boundaries at slightly below zero.');
             % Distribute the allowed points in these regions, but remove
             % regions that end up with too few points.
             nEVPPoints = InternalModesAdaptiveSpectral.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );
