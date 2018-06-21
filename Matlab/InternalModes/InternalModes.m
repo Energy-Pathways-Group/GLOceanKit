@@ -84,7 +84,9 @@ classdef InternalModes < handle
         internalModes % Instance of actual internal modes class that is doing all the work.
     end
     
-    properties (Dependent) 
+    properties (Dependent)
+        shouldShowDiagnostics % flag to show diagnostic information, default = 0
+        
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         nModes % Number of modes to be returned.
@@ -116,8 +118,7 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function self = InternalModes(varargin)    
-            % Initialize with either a grid or analytical profile.
-            self.method = 'wkbAdaptiveSpectral';
+            % Initialize with either a grid or analytical profile.   
             userSpecifiedMethod = 0;
             
             % First check to see if the user specified some extra arguments
@@ -154,6 +155,24 @@ classdef InternalModes < handle
                     fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
                     [N0, rho0] = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
                     self.internalModes = InternalModesConstantStratification([N0, rho0],zIn,zOut,latitude,extraargs{:});
+                elseif userSpecifiedMethod == 0
+                    % If the user didn't specify a method, try
+                    % wkbAdaptiveSpectral first, but if that fails to
+                    % produce a reasonable coordinate system, try
+                    % z-coordinate spectral.
+                    try
+                        self.method = 'wkbAdaptiveSpectral';
+                        self.internalModes = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                    catch ME
+                        if ~isempty(ME.cause) && strcmp(ME.cause{1}.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
+                            fprintf('%s : %s\n', ME.cause{1}.identifier, ME.cause{1}.message);
+                            fprintf('Switching to InternalModesSpectral.\n');
+                            self.method = 'spectral';
+                            self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
+                        else
+                            rethrow(ME);
+                        end
+                    end
                 elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')
@@ -299,7 +318,21 @@ classdef InternalModes < handle
             title = sprintf('Relative error of internal modes at omega=%.2gf0 with %d grid points using %s',omega/self.f0,length(self.z),self.fullMethodName);
             self.ShowErrorFigure(h_error,F_error,G_error,title);
         end
-                
+              
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Diagnostics
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function set.shouldShowDiagnostics(self,value)
+            self.internalModes.shouldShowDiagnostics = value;
+        end
+        function value = get.shouldShowDiagnostics(self)
+            value = self.internalModes.shouldShowDiagnostics;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Useful problem constants, latitude and f0

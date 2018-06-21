@@ -95,6 +95,7 @@ classdef InternalModesSpectral < InternalModesBase
         nEVP = 0           % number of points in the eigenvalue problem
         nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
+        xDomain            % limits of the stretched coordinate [xMin xMax]
         z_xLobatto         % The value of z, at the xLobatto points
         xOut               % desired locations of the output in x-coordinate (deduced from z_out)
         N2_xLobatto        % N2 on the z2Lobatto grid
@@ -102,6 +103,11 @@ classdef InternalModesSpectral < InternalModesBase
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
         T_xCheb_zOut
         Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
+    end
+    
+    properties (Dependent)
+        xMin
+        xMax
     end
     
     methods
@@ -295,6 +301,14 @@ classdef InternalModesSpectral < InternalModesBase
                 error('need more points');
             end
         end
+        
+        function value = get.xMin(self)
+            value = self.xDomain(1);
+        end
+        
+        function value = get.xMax(self)
+            value = self.xDomain(2);
+        end
     end
     
     methods (Access = protected)       
@@ -310,85 +324,43 @@ classdef InternalModesSpectral < InternalModesBase
                 rho = flip(rho);
             end
             
-            % useful notes about condition number in least squares
-            % http://www.math.uchicago.edu/~may/REU2012/REUPapers/Lee.pdf
-            n = length(zIn);
-            T = InternalModesSpectral.ChebyshevPolynomialsOnGrid(zIn,n);
-            nPolys = InternalModes.NumberOfWellConditionedModes(T);
-            T = T(:,1:nPolys);
-%             m = T\rho;
+            K = 5; % quartic spline
+            rho_interpolant = BSpline(zIn,rho,K);
             
-            self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(zIn);
-            self.rho_zCheb = reshape(T\rho,[],1);
-            self.rho_zCheb = cat(1,self.rho_zCheb,zeros(n-length(self.rho_zCheb),1));
-            self.rho_zLobatto = InternalModesSpectral.ifct(self.rho_zCheb);
-%             self.rho_function = @(z) interp1(zIn, rho, z, 'spline');
-            
-            
-%             K=16;
-%             zFlip = flip(zIn);
-%             z_knot = NaturalKnotsForSpline( zFlip, K );
-%             B = bspline( zFlip, z_knot, K );
-%             X = squeeze(B(:,:,1));
-%             m = X\flip(rho);
-            
-            
-            
-%             if InternalModesSpectral.IsChebyshevGrid(zIn) == 1
-%                 self.zLobatto = zIn;
-%                 self.rho_zLobatto = rho;
-%             else
-%                 self.zLobatto = InternalModesSpectral.FindSmallestChebyshevGridWithNoGaps( zIn ); % z, on a chebyshev grid
-%                 self.rho_zLobatto = self.rho_function(self.zLobatto); % rho, interpolated to that grid
-%                 
-% %                 zFlip = flip(self.zLobatto);
-% %                 Bq = bspline(zFlip,z_knot,K);
-% %                 Xq = squeeze(Bq(:,:,1));
-% %                 
-% %                 self.rho_zLobatto = flip(Xq*m);
-%             end
-              
-            self.InitializeZLobattoProperties();
+            if self.shouldShowDiagnostics == 1
+               fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
+            end
+                          
+            self.InitializeWithFunction(rho_interpolant,min(zIn),max(zIn));
         end
         
-        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
+        function self = InitializeWithFunction(self, rho, zMin, zMax)
             % Superclass calls this method upon initialization when it
             % determines that the input is given in functional form. The goal
             % is to initialize zLobatto and rho_zLobatto.
             self.validateInitialModeAndEVPSettings();
                         
-            if self.nGrid < 65 || isempty(self.nGrid) 
-                self.nGrid = 2^14 + 1; % 2^n + 1 for a fast Chebyshev transform
+            [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-16);
+            self.rho_zLobatto = rho(self.zLobatto);
+            self.rho_function = rho;
+            self.nGrid = length(self.zLobatto);
+            
+            if self.shouldShowDiagnostics == 1
+               fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_zCheb)); 
             end
             
-            if 1
-                [self.zLobatto, rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-16);
-                self.rho_zLobatto = rho(self.zLobatto);
-                self.rho_function = rho;
-                self.nGrid = length(self.zLobatto);
-            else
-                n = self.nGrid;
-                self.zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + zMin;
-                self.rho_zLobatto = rho(self.zLobatto);
-                self.rho_function = rho;
-            end
             self.InitializeZLobattoProperties();
         end      
         
         function self = InitializeZLobattoProperties(self)
             % Called by InitializeWithGrid and InitializeWithFunction after
             % they've completed their basic setup.
-            self.rho_zCheb = InternalModesSpectral.fct(self.rho_zLobatto);
-            self.rho_zCheb = self.SetNoiseFloorToZero(self.rho_zCheb);
             self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
-                        
+            
+            % This computation isn't strictly necessary, although it is
+            % used in the stretched coordinate cases.
             self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
-            if any(self.N2_zLobatto < 0)
-                fprintf('The bouyancy frequency goes negative! This is likely happening because of spline interpolation of density. We will proceed by setting N2=0 at those points.\n');
-                self.N2_zLobatto(self.N2_zLobatto <= 0) = min(self.N2_zLobatto(self.N2_zLobatto>0));
-                self.N2_zCheb = InternalModesSpectral.fct(self.N2_zLobatto);
-            end
             
             self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
             self.rho = self.T_zCheb_zOut(self.rho_zCheb);
@@ -398,10 +370,15 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function self = SetupEigenvalueProblem(self)
+            if any(self.N2_zLobatto < 0)
+                fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
+            end
+            
             % Called during initialization after InitializeZLobattoProperties().
             % Subclasses will override this function.
             n = self.nEVP;
             self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            self.xDomain = self.zDomain;
             T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
             
             self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
@@ -565,23 +542,100 @@ classdef InternalModesSpectral < InternalModesBase
             s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
             relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
             nloops = 0;
-            while ( nloops < 10 && relativeError > 1e-10)
+            maxLoops = 100;
+            while ( nloops < maxLoops && relativeError > 1e-10)
                 z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
                 z_xLobatto(z_xLobatto>maxZ) = maxZ;
                 z_xLobatto(z_xLobatto<minZ) = minZ;
                 s_z_xLobatto = x(z_xLobatto);
             
                 relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-                fprintf('error: %g\n',relativeError);
                 nloops = nloops + 1;
             end
-            if nloops == 10
-                warning('reached maximum number of loops');
+            if nloops == maxLoops
+                warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
             end
                         
             xOut = x(zOut);
             xOut(xOut>max(xLobatto)) = max(xLobatto);
             xOut(xOut<min(xLobatto)) = min(xLobatto);
+        end
+        
+        function [flag, dTotalVariation, rho_zCheb, rho_zLobatto, rhoz_zCheb, rhoz_zLobatto] = CheckIfReasonablyMonotonic(zLobatto, rho_zCheb, rho_zLobatto, rhoz_zCheb, rhoz_zLobatto)
+            % We want to know if the density function is decreasing as z
+            % increases. If it's not, are the discrepencies small enough
+            % that we can just force them?
+            %
+            % flag is 0 if the function is not reasonably monotonic, 1 if
+            % it is, and 2 if we were able to to coerce it to be, without
+            % too much change
+            
+            flag = 0;
+            dTotalVariation = 0;
+            if any(rhoz_zLobatto > 0)
+                % record the density at the bottom, and the total variation
+                % in density
+                rho_top = min(rho_zLobatto(1),rho_zLobatto(end));
+                rho_bottom = max(rho_zLobatto(1),rho_zLobatto(end));
+                dRho = rho_bottom-rho_top;
+                Lz = abs(zLobatto(1)-zLobatto(end));
+                
+                % Now zero out the all the regions where there are density
+                % inversions, project onto cheb basis, the integrate to get
+                % a new density function, but keep the density at the
+                % surface the same (because we use rho0 elsewhere).
+                rhoz_zLobatto(rhoz_zLobatto >= 0) = max(rhoz_zLobatto(rhoz_zLobatto<0));
+                rhoz_zCheb = InternalModesSpectral.fct(rhoz_zLobatto);
+                rho_zCheb = (Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(rhoz_zCheb);
+                rho_zCheb(end) = [];
+                rho_zLobatto = InternalModesSpectral.ifct(rho_zCheb);
+                delta = - min(rho_zLobatto) + rho_top;
+                rho_zLobatto = rho_zLobatto + delta;
+                rho_zCheb(1) = rho_zCheb(1) + delta;
+                
+                % Re-derive all the properties
+%                 new_rhoz_zLobatto = InternalModesSpectral.ifct((2/Lz)*InternalModesSpectral.DifferentiateChebyshevVector(rho_zCheb));
+                
+                
+                
+                dRho_new = abs(rho_zLobatto(end)-rho_zLobatto(1));
+                dTotalVariation = (dRho_new-dRho)/dRho;
+                
+                if dTotalVariation < 1e-2
+                    flag = 1;
+                else
+                    flag = 2;
+                end
+            end
+            
+            
+        end
+        
+        function y = fInverseBisection(f, x, yMin,yMax, tol)
+            %FINVERSEBISECTION(F, X)   Compute F^{-1}(X) using Bisection.
+            % Taken from cumsum as part of chebfun.
+            % chebfun/inv.m
+            %
+            % Copyright 2017 by The University of Oxford and The Chebfun Developers.
+            % See http://www.chebfun.org/ for Chebfun information.
+            
+            a = yMin*ones(size(x));
+            b = yMax*ones(size(x));
+            c = (a + b)/2;
+            
+            while ( norm(b - a, inf) >= tol )
+                vals = feval(f, c);
+                % Bisection:
+                I1 = ((vals-x) <= -tol);
+                I2 = ((vals-x) >= tol);
+                I3 = ~I1 & ~I2;
+                a = I1.*c + I2.*a + I3.*c;
+                b = I1.*b + I2.*c + I3.*c;
+                c = (a+b)/2;
+            end
+            
+            y = c;
+            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -617,7 +671,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             rho_zCheb = rho_zCheb(1:n);
         end
-        
+                
         % Fast Chebyshev Transform
         % By Allan P. Engsig-Karup, apek@imm.dtu.dk.
         function uh = fct(u)
@@ -704,7 +758,8 @@ classdef InternalModesSpectral < InternalModesBase
         end
         
         function v_p = IntegrateChebyshevVector(v)
-            % Taken from cumsum as part of chebfun
+            % Taken from cumsum as part of chebfun.
+            % chebfun/@chebtech/cumsum.m
             %
             % Copyright 2017 by The University of Oxford and The Chebfun Developers.
             % See http://www.chebfun.org/ for Chebfun information.

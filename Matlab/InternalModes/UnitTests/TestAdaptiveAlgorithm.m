@@ -15,7 +15,7 @@ z = linspace(Lz,0,n)';
 rho = rhoFunction;
 zOut = linspace(min(zIn),max(zIn),5000)';
 
-im = InternalModesAdaptiveSpectral(rho,zIn,zOut,lat);
+im = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude);
 
 [F,G,h] = im.ModesAtFrequency( omega );
 

@@ -30,7 +30,7 @@ classdef InternalModesWKB < InternalModesSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h,omega] = ModesAtWavenumber(self, k )
-            error('Not yet implemented');
+            error('The WKB solution for modes with constant wavenumber has not been solved. Maybe you should solve it!');
         end
         
         function [F,G,h,k] = ModesAtFrequency(self, omega )

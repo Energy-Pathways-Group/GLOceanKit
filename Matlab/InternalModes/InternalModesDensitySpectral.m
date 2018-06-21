@@ -106,48 +106,44 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
 
     end
     
-    methods (Access = protected)
-        % Superclass calls this method upon initialization when it
-        % determines that the input is given in gridded form.
-        %
-        % The superclass will initialize zLobatto and rho_lobatto;
-        % this class must initialize the sLobatto, z_sLobatto and
-        % sOut.
-        function self = InitializeWithGrid(self, rho, z_in)
-            % Superclass initializes zLobatto and rho_lobatto
-            InitializeWithGrid@InternalModesSpectral(self, rho, z_in);
-                        
-            n = self.nEVP;
-            s = -self.g*rho/self.rho0 + self.g;
-            Ls = max(s)-min(s);
-            self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(s);
-            self.z_xLobatto = interp1(s, z_in, self.xLobatto, 'spline'); % z, evaluated on that s grid
-            self.xOut = interp1(z_in, s, self.z, 'spline'); % z, evaluated on that s grid
-        end
-        
-        % Superclass calls this method upon initialization when it
-        % determines that the input is given in functional form.
-        %
-        % The superclass will initialize zLobatto and rho_lobatto;
-        % this class must initialize the sLobatto, z_sLobatto and
-        % sOut.
-        function self = InitializeWithFunction(self, rho, zMin, zMax, zOut)
-            % Superclass initializes zLobatto and rho_lobatto
-            InitializeWithFunction@InternalModesSpectral(self, rho, zMin, zMax, zOut);
+    methods (Access = protected)        
+        function self = SetupEigenvalueProblem(self)
             
-            % Create a stretched grid that includes all the points of z_out
-            s = @(z) -self.g*rho(z)/self.rho0 + self.g;   
+            % Check if we an even create a density coordinate system
+            [flag, dTotalVariation, rho_zCheb_new, rho_zLobatto_new, rhoz_zCheb, rhoz_zLobatto] = InternalModesSpectral.CheckIfReasonablyMonotonic(self.zLobatto, self.rho_zCheb, self.rho_zLobatto, -(self.rho0/self.g)*self.N2_zCheb, -(self.rho0/self.g)*self.N2_zLobatto);
+            if flag == 1
+                self.rho_zCheb = rho_zCheb_new;
+                self.rho_zLobatto = rho_zLobatto_new;
+                self.N2_zCheb= -(self.g/self.rho0)*rhoz_zCheb;
+                self.N2_zLobatto = -(self.g/self.rho0)*rhoz_zLobatto;
+                
+                self.rho = self.T_zCheb_zOut(self.rho_zCheb);
+                self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
+                
+                fprintf('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We used this new density function for the computation and will proceed.\n', dTotalVariation*100);
+            elseif flag == 2
+                error('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
+            end
             
-            n = self.nEVP;
-            sMin = min([s(zMax), s(zMin)]);
-            sMax = max([s(zMax), s(zMin)]);
-            Ls = sMax-sMin;
-            self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;
             
-            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
-        end
-        
-        function self = SetupEigenvalueProblem(self) 
+            % Create a stretched grid from the density function
+            s = @(z) -self.g*self.rho_function(z)/self.rho0 + self.g;
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
+            
+            % We need to be able to create a reasonable stretched grid...
+            % if we can't, we will throw an exception
+            try
+                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
+            catch ME
+                switch ME.identifier
+                    case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
+                        causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue density grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
+                        ME = addCause(ME,causeException);  
+                end
+                rethrow(ME)
+            end
+            
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid

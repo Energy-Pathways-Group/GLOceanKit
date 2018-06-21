@@ -38,6 +38,8 @@ classdef (Abstract) InternalModesBase < handle
 
     
     properties (Access = public)
+        shouldShowDiagnostics = 0 % flag to show diagnostic information, default = 0
+        
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         Lz % Depth of the ocean.
@@ -46,10 +48,16 @@ classdef (Abstract) InternalModesBase < handle
         nModes % Used to limit the number of modes to be returned.
         
         z % Depth coordinate grid used for all output (same as zOut).
+        zDomain % [zMin zMax]
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
         upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
+    end
+    
+    properties (Dependent)
+        zMin
+        zMax
     end
     
     properties (Abstract)
@@ -97,6 +105,14 @@ classdef (Abstract) InternalModesBase < handle
                 self.upperBoundaryDidChange();
             end
         end
+        
+        function value = get.zMin(self)
+            value = self.zDomain(1);
+        end
+        
+        function value = get.zMax(self)
+            value = self.zDomain(2);
+        end
     end
     
     methods (Access = protected)
@@ -116,7 +132,8 @@ classdef (Abstract) InternalModesBase < handle
                 z_out = z_out.';
             end
             
-            self.Lz = max(z_in) - min(z_in);
+            self.zDomain = [min(z_in) max(z_in)];
+            self.Lz = self.zDomain(2)-self.zDomain(1);
             self.latitude = latitude;
             self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
             self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
@@ -143,7 +160,10 @@ classdef (Abstract) InternalModesBase < handle
                 if userSpecifiedRho0 == 0
                     self.rho0 = rho(max(z_in));
                 end
-                self.InitializeWithFunction(rho, min(z_in), max(z_in), z_out);
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Initialized %s class with a function handle.\n', class(self));
+                end
+                self.InitializeWithFunction(rho, min(z_in), max(z_in));
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');
@@ -153,6 +173,9 @@ classdef (Abstract) InternalModesBase < handle
                 end
                 if userSpecifiedRho0 == 0
                     self.rho0 = min(rho);
+                end
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Initialized %s class with gridded data.\n', class(self));
                 end
                 self.InitializeWithGrid(rho,z_in);
             else
