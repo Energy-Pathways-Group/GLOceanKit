@@ -378,6 +378,7 @@ classdef InternalModesSpectral < InternalModesBase
             % Subclasses will override this function.
             n = self.nEVP;
             self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            self.xLobatto(1) = self.zMax;
             self.xDomain = self.zDomain;
             T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
             
@@ -648,9 +649,10 @@ classdef InternalModesSpectral < InternalModesBase
             m = 3;
             m_max = 15;
             
-            Lz = max(zIn)-min(zIn);
+            zMax = max(zIn);
             zMin = min(zIn);
-            
+            Lz = zMax - zMin;
+                        
             n = 2^m + 1;
             cutoff = n;
             while (cutoff == n && m <= m_max)
@@ -669,6 +671,8 @@ classdef InternalModesSpectral < InternalModesBase
                 disp('Unable to project density function within requested tolerance! Using maximum allowed length.');
             end
             
+            zLobatto(1) = zMax;
+            zLobatto(end) = zMin;
             rho_zCheb = rho_zCheb(1:n);
         end
                 

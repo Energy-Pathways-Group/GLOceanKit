@@ -164,8 +164,15 @@ classdef InternalModes < handle
                         self.method = 'wkbAdaptiveSpectral';
                         self.internalModes = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude,extraargs{:});
                     catch ME
+                        errorStruct = [];
                         if ~isempty(ME.cause) && strcmp(ME.cause{1}.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
-                            fprintf('%s : %s\n', ME.cause{1}.identifier, ME.cause{1}.message);
+                            errorStruct = ME.cause{1};
+                        elseif strcmp(ME.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
+                            errorStruct = ME;
+                        end
+                        
+                        if ~isempty(errorStruct)
+                            fprintf('%s : %s\n', errorStruct.identifier, errorStruct.message);
                             fprintf('Switching to InternalModesSpectral.\n');
                             self.method = 'spectral';
                             self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
@@ -752,12 +759,19 @@ classdef InternalModes < handle
             ytick([]);
             
             subplot(1,3,3)
-            plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
-            if ~isempty(self.N2Function)
-                plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
+            if any(self.N2 < 0)
+                plot(self.N2,self.z, 'LineWidth', 2), hold on
+                xlim([1.1*min(self.N2) 1.1*max(self.N2)])
+                xlabel('N^2');
+            else
+                plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
+                if ~isempty(self.N2Function)
+                    plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
+                end
+                xlim([0.0 1.1*max(sqrt(self.N2))])
+                xlabel('buoyancy frequency');
             end
-            xlim([0.0 1.1*max(sqrt(self.N2))])
-            xlabel('buoyancy frequency');
+            
             ytick([]);
         end
         

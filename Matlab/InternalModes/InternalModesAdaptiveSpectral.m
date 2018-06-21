@@ -170,7 +170,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                 
                 fprintf('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We used this new density function for the computation and will proceed.\n', dTotalVariation*100);
             elseif flag == 2
-                error('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
+                error('StretchedGridFromCoordinate:NonMonotonicFunction', 'The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
             end
             
             % Create the stretched WKB grid
