@@ -120,12 +120,12 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
             % Create the stretched WKB grid
             N_zLobatto = sqrt(self.N2_zLobatto);
-            N_zCheb = InternalModesSpectral.fct(N_zLobatto);
-            
+            N_zCheb = InternalModesSpectral.fct(N_zLobatto);  
             x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(N_zCheb);
+            
             s = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
-            Lxi = s(max(self.zLobatto));
-            self.xLobatto = (Lxi/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1);
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
 
             % We need to be able to create a reasonable stretched grid...
             % if we can't, we will throw an exception

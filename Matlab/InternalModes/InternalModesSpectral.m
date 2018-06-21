@@ -95,6 +95,7 @@ classdef InternalModesSpectral < InternalModesBase
         nEVP = 0           % number of points in the eigenvalue problem
         nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
+        xDomain            % limits of the stretched coordinate [xMin xMax]
         z_xLobatto         % The value of z, at the xLobatto points
         xOut               % desired locations of the output in x-coordinate (deduced from z_out)
         N2_xLobatto        % N2 on the z2Lobatto grid
@@ -102,6 +103,11 @@ classdef InternalModesSpectral < InternalModesBase
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
         T_xCheb_zOut
         Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
+    end
+    
+    properties (Dependent)
+        xMin
+        xMax
     end
     
     methods
@@ -295,6 +301,14 @@ classdef InternalModesSpectral < InternalModesBase
                 error('need more points');
             end
         end
+        
+        function value = get.xMin(self)
+            value = self.xDomain(1);
+        end
+        
+        function value = get.xMax(self)
+            value = self.xDomain(2);
+        end
     end
     
     methods (Access = protected)       
@@ -364,6 +378,7 @@ classdef InternalModesSpectral < InternalModesBase
             % Subclasses will override this function.
             n = self.nEVP;
             self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            self.xDomain = self.zDomain;
             T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
             
             self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);

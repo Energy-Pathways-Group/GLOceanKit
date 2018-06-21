@@ -176,12 +176,15 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             % Create the stretched WKB grid
             N_zLobatto = sqrt(self.N2_zLobatto);
             self.N_zCheb = InternalModesSpectral.fct(N_zLobatto);
+            x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(self.N_zCheb(1:end-1));
             
-            x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(self.N_zCheb);
-            self.x_zLobatto = InternalModesSpectral.ifct(x_zCheb(1:end-1));
-            self.xiFromZ = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
-            self.xLobatto = (self.xiFromZ(max(self.zLobatto))/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1);
-
+            self.x_zLobatto = InternalModesSpectral.ifct(x_zCheb);
+            s = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
+            self.xiFromZ = s;
+            
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
+            
             % We need to be able to create a reasonable stretched grid...
             % if we can't, we will throw an exception
             try
@@ -209,11 +212,9 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             self.gridFrequency = omega;            
             
             requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
-            [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);
-                        
-            boundaries2 = interp1(self.zLobatto,self.x_zLobatto,zBoundariesAndTPs,'spline');
-            boundaries = InternalModesSpectral.fInverseBisection(self.xiFromZ,zBoundariesAndTPs,min(self.xLobatto),max(self.xLobatto),1e-10);
-      error('temp throw error: inverse is not returning the correct values because the function evaluates one of the boundaries at slightly below zero.');
+            [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);                        
+            boundaries = self.xiFromZ(zBoundariesAndTPs);
+            
             % Distribute the allowed points in these regions, but remove
             % regions that end up with too few points.
             nEVPPoints = InternalModesAdaptiveSpectral.DistributePointsInRegionsWithMinimum( self.nEVP, boundaries, thesign );

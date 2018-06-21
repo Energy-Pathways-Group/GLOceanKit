@@ -128,13 +128,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             
             % Create a stretched grid from the density function
             s = @(z) -self.g*self.rho_function(z)/self.rho0 + self.g;
-            
-            n = self.nEVP;
-            range = [s(max(self.zLobatto)), s(min(self.zLobatto))];
-            sMin = min(range);
-            sMax = max(range);
-            Ls = sMax-sMin;
-            self.xLobatto = (Ls/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + sMin;
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
             
             % We need to be able to create a reasonable stretched grid...
             % if we can't, we will throw an exception
