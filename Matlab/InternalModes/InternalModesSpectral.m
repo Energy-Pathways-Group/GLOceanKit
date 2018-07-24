@@ -270,6 +270,12 @@ classdef InternalModesSpectral < InternalModesBase
             % Now we just need to find the roots of the n+1 mode.
             % For constant stratification this should give back the
             % standard Fourier modes, i.e., an evenly spaced grid.
+            %
+            % Note that if the boundary conditions are such that G(0)=0 and
+            % G(-D)=0, then those two points do not encode any information.
+            % As such, only the first (nPoints-2) modes will encode any
+            % useful information. So we'd expect cond(G(:,1:(nPoints-2))))
+            % to be good (low), but not the next.
             if 2*nPoints < self.nEVP
                [A,B] = self.EigenmatricesForWavenumber(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
@@ -287,11 +293,15 @@ classdef InternalModesSpectral < InternalModesBase
                end
                
                if 1 == 0
-                   F = self.Diff1_xCheb(G_cheb(:,nPoints+1));
+                   F = self.Diff1_xCheb(G_cheb(:,nPoints-2));
                    roots = FindRootsFromChebyshevVector(F(1:end-1), self.zLobatto);
                    z_g = cat(1,min(self.zLobatto),reshape(roots,[],1),max(self.zLobatto));
                else
-                   roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.zLobatto);
+                   if self.upperBoundary == UpperBoundary.rigidLid
+                       roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.zLobatto);
+                   elseif self.upperBoundary == UpperBoundary.freeSurface
+                       roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints), self.zLobatto);
+                   end
                    z_g = reshape(roots,[],1);
                end
                
