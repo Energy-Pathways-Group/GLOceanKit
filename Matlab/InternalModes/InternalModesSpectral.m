@@ -293,14 +293,23 @@ classdef InternalModesSpectral < InternalModesBase
                end
                
                if 1 == 0
-                   F = self.Diff1_xCheb(G_cheb(:,nPoints-2));
+                   F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
                    roots = FindRootsFromChebyshevVector(F(1:end-1), self.zLobatto);
                    z_g = cat(1,min(self.zLobatto),reshape(roots,[],1),max(self.zLobatto));
                else
                    if self.upperBoundary == UpperBoundary.rigidLid
+                       % n-th mode has n+1 zeros (including boundaries)
                        roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.zLobatto);
                    elseif self.upperBoundary == UpperBoundary.freeSurface
-                       roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints), self.zLobatto);
+                       % n-th mode has n zeros (including zero at lower
+                       % boundary, and not zero at upper)
+                       a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,G_cheb(:,nPoints-0));
+                       b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,G_cheb(:,nPoints-1));
+                       q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
+%                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
+%                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
+%                        q = G_cheb(:,nPoints-0);
+                       roots = FindRootsFromChebyshevVector(q, self.zLobatto);
                    end
                    z_g = reshape(roots,[],1);
                end
