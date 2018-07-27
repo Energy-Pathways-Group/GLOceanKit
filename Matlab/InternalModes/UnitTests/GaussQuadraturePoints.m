@@ -1,5 +1,5 @@
 upperBoundary = UpperBoundary.freeSurface;
-normalization = Normalization.omegaConstant;
+normalization = Normalization.kConstant;
 nPoints = 64;
 k = 0;
 
@@ -28,16 +28,23 @@ end
 subplot(1,2,1)
 plot(G_hr(:,maxGMode),im.z), hold on
 scatter(G(:,maxGMode),z_g)
-title('Highest resolvable G mode')
+title(sprintf('Highest resolvable G mode (%d)',maxGMode))
 subplot(1,2,2)
 plot(F_hr(:,maxGMode+1),im.z), hold on
 scatter(F(:,maxGMode+1),z_g)
-title('Highest resolvable F mode')
+title(sprintf('Highest resolvable F mode (%d)',maxGMode+1))
 
 
 fprintf('The condition number for the first %d modes of F is %f\n', maxGMode+1, cond(F(:,1:(maxGMode+1))));
 fprintf('The condition number for the first %d modes of G is %f\n', maxGMode, cond(G(:,1:maxGMode)));
 
+gamma = zeros(1,size(G,2));
+for iMode = 1:size(G,2)
+    gamma(iMode) = norm(G(:,iMode));
+end
+gamma = median(gamma)./gamma;
+G_tilde = G .* gamma;
+return
 if im_gauss.upperBoundary == UpperBoundary.freeSurface
     gamma = norm(G(:,2))/norm(G(:,1));
     G = cat(2, gamma*G(:,1),G(:,2:end));

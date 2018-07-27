@@ -463,6 +463,10 @@ classdef InternalModes < handle
         function psi = BottomModesAtWavenumber(self, k)
             psi = self.internalModes.BottomModesAtWavenumber(k);
         end
+        
+        function [m,G] = ProjectOntoGModesAtWavenumber(self, zeta, k)
+            
+        end
     end
     
     methods (Static)
@@ -495,8 +499,15 @@ classdef InternalModes < handle
             end
         end
         
-        
-        
+        function [G_tilde, gamma] = RenormalizeForGoodConditioning(G)
+            gamma = zeros(1,size(G,2));
+            for iMode = 1:size(G,2)
+                gamma(iMode) = norm(G(:,iMode));
+            end
+            gamma = median(gamma)./gamma;
+            G_tilde = G .* gamma;
+        end
+                
         function [rhoFunc, N2Func, zIn] = StratificationProfileWithName(stratification)
             % Returns function handles for several built-in analytical
             % profiles. Options include 'constant', 'exponential',
