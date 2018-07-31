@@ -316,6 +316,7 @@ classdef InternalModesSpectral < InternalModesBase
                
                z_g(z_g<min(self.zLobatto)) = min(self.zLobatto);
                z_g(z_g>max(self.zLobatto)) = max(self.zLobatto);
+               z_g = unique(z_g,'stable');
             else
                 error('need more points');
             end
@@ -556,6 +557,7 @@ classdef InternalModesSpectral < InternalModesBase
             maxZ = max(zLobatto);
             minZ = min(zLobatto);
             z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
+            z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zLobatto),max(zLobatto),1e-12);
             z_xLobatto(z_xLobatto>maxZ) = maxZ;
             z_xLobatto(z_xLobatto<minZ) = minZ;
             
