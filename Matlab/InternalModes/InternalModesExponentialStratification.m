@@ -111,13 +111,13 @@ classdef InternalModesExponentialStratification < InternalModesBase
         function [F,G,h,k] = ModesAtFrequency(self, omega )            
             % This is the function that we use to find the eigenvalues,
             % by finding its roots.
-            if omega > self.N0*exp(-self.Lz/self.b)
+            if omega > self.N0*exp(-self.Lz/self.b) % This is from equation 2.18 in Desaubies (1973)
                 eta = (sqrt(self.N0^2 - omega^2) - omega*acos(omega/self.N0))/pi;
-                x_nu = Inf;
+                x_nu = Inf; % forces f_bignu
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [3/4 nModes-1/4]
             else
-                eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;
-                x_nu = 0;
+                eta = (sqrt(self.N0^2 - omega^2) - sqrt(self.N0^2*exp(-2*self.Lz/self.b) - omega^2) - omega*acos(omega/self.N0) + omega*acos(omega/self.N0*exp(self.Lz/self.b)))/pi;  % This is from equation 2.19 in Desaubies (1973)
+                x_nu = 0; % forces f_smallnu
                 bounds = [0.5 self.nModes+1]; % the WKB solution should range from [1 nModes]
             end
             
