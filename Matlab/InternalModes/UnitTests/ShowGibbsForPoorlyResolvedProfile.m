@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Stratification profile
 %
-if 1 == 0
+if 1 == 1
 stratification = 'exponential';
 latitude = 33;
 [rhoFunction, N2Function, zIn] = InternalModes.StratificationProfileWithName('latmix-site1');
@@ -16,12 +16,15 @@ else
     rhoFunction = @(z) (z>z_ml).*rho_0 + (z<=z_ml).*rhoFunc(z);
     zIn = [-5000 0];
 end
-figure, plot(rhoFunction(z),z)
+% figure, plot(rhoFunction(z),z)
 
 
 Nz = 1024;
 z = linspace(min(zIn), max(zIn), Nz)';
 
+im = InternalModes(rhoFunction,zIn,z,latitude);
+[F,G,h] = im.ModesAtWavenumber(0);
+return;
 
 % im = InternalModes(rhoFunction(z),z,z,latitude, 'method', 'wkbSpectral');
 % im = InternalModes(rhoFunction(z),z,z,latitude);
