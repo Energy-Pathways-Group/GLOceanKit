@@ -212,7 +212,13 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             self.gridFrequency = omega;            
             
             requiredDecay = 1e-5; % 1e-6 performs worse at high frequencies, 1e-4 performs worse at low frequencies. 1e-5 wins.
-            [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);                        
+            
+            n = 2^15 + 1;
+            zLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zDomain);
+            N2_zCheb = cat(1,self.N2_zCheb,zeros(n-length(self.N2_zCheb),1));
+            [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(InternalModesSpectral.ifct(N2_zCheb), zLobatto, omega, requiredDecay);
+%                         [zBoundariesAndTPs, thesign] = InternalModesAdaptiveSpectral.FindWKBSolutionBoundaries(self.N2_zLobatto, self.zLobatto, omega, requiredDecay);
+%             [zBoundariesAndTPs2, thesign2] = self.FindWKBSolutionBoundariesSpectral(omega,requiredDecay);
             boundaries = self.xiFromZ(zBoundariesAndTPs);
             
             % Distribute the allowed points in these regions, but remove
@@ -353,7 +359,31 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             self.T_xCheb_zOut = @(v) self.T_xCheb_zOutFunction(v);
             self.Diff1_xCheb = @(v) self.Diff1_xChebFunction(v);
         end
+        
+        function [zBoundariesAndTPs, thesign] = FindWKBSolutionBoundariesSpectral(self, omega, requiredDecay)
+            N2Omega2_zCheb = self.N2_zCheb;
+            N2Omega2_zCheb(1) = N2Omega2_zCheb(1) - omega*omega;
+            
+            % boundaries and turning points, ordered top to bottom
+            zTPs = self.FindTurningPointsAtFrequency(omega);
+            zBoundariesAndTPs = [max(self.zDomain); sort(zTPs,'descend'); min(self.zDomain)];
+            
+            % sign of the solution in those regions
+            midZ = zBoundariesAndTPs(1:end-1) + diff(zBoundariesAndTPs)/2;
+            thesign = sign(InternalModesSpectral.ValueOfFunctionAtPointOnGrid(midZ,self.zLobatto,N2Omega2_zCheb));
 
+            % sum of the oscillatory (positive sign) regions
+            L_osc = 0.0;
+            for i = 1:length(thesign)
+                if thesign(i) > 0
+                    L_osc = L_osc + InternalModesSpectral.IntegrateChebyshevVectorWithLimits(N2Omega2_zCheb,self.zLobatto,zBoundariesAndTPs(i+1),zBoundariesAndTPs(i));
+                end
+            end
+            
+            q_zCheb = InternalModesSpectral.IntegrateChebyshevVector( InternalModesSpectral.fct(sqrt(abs(self.N2_zLobatto - omega*omega))) );
+            q = InternalModesSpectral.ifct(q_zCheb);
+            
+        end
     end
     
     methods (Access = private)             
@@ -486,7 +516,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             % This is a key parameter that can strongly influence the
             % results. We never let it drop below 6, and generally try to
             % keep it at 2^4 (1/16th) the total points).
-            minPoints = max([round(2^(log2(nTotalPoints)-4)) 6]);
+            minPoints = max([round(2^(log2(nTotalPoints)-4))/sum(thesign<0) 6]);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         
             if totalEquations > 1

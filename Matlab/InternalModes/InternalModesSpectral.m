@@ -503,6 +503,12 @@ classdef InternalModesSpectral < InternalModesBase
                 F(:,j) = FOutFromGCheb(G_cheb(:,j),h(j))/A;
             end
         end
+        
+        function zTPs = FindTurningPointsAtFrequency(self, omega)
+            f_cheb = self.N2_zCheb;
+            f_cheb(1) = f_cheb(1) - omega*omega;
+            zTPs= InternalModesSpectral.FindRootsFromChebyshevVector(f_cheb,self.zLobatto);
+        end
     end
     
     methods (Static)
@@ -782,6 +788,15 @@ classdef InternalModesSpectral < InternalModesBase
             v_p(1) = v_p(1)/2;
         end
         
+        function s = IntegrateChebyshevVectorWithLimits(v,x,a,b)
+            % v are the coefficients of the chebyshev polynomials
+            % x is the domain, a Gauss-Lobatto grid
+            % a and b are the lower and upper limits, respectively
+            v_p = InternalModesSpectral.IntegrateChebyshevVector(v);
+            
+            s = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(b,x,v_p) - InternalModesSpectral.ValueOfFunctionAtPointOnGrid(a,x,v_p);
+        end
+                   
         function v_p = IntegrateChebyshevVector(v)
             % Taken from cumsum as part of chebfun.
             % chebfun/@chebtech/cumsum.m
@@ -998,6 +1013,8 @@ classdef InternalModesSpectral < InternalModesBase
             % Copyright (c) 2007, Stephen Morris 
             % All rights reserved.
             n = length(f_cheb);
+            
+            f_cheb(abs(f_cheb)<1e-15) = 1e-15;
             
             A=zeros(n-1);   % "n-1" because Boyd's notation includes the zero-indexed
             A(1,2)=1;       % elements whereas Matlab's of course does not allow this.
