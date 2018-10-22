@@ -181,12 +181,14 @@ classdef WintersModel < handle
     
     methods (Access = private)
         function wavemodel = WaveModelFromFirst3DOutputFile(self)
-            [x,y,z,rho] = self.VariableFieldsFrom3DOutputFileAtIndex(1,'x','y','z','rho');
+            [x,y,z,rho,f0] = self.VariableFieldsFrom3DOutputFileAtIndex(1,'x','y','z','rho','f0');
             rho_bar = squeeze(mean(mean(rho,1),2));
+            
+            latitude = asind(f0/(2 * 7.2921E-5));
             
             % The 3D output files don't have latitude saved to them, so we
             % fetch it from the initial conditions file, for now.
-            [~,~,~,~,latitude] = self.ModelParametersFromInitialConditionsFile();
+%             [~,~,~,~,latitude] = self.ModelParametersFromInitialConditionsFile();
             
             % added because the initial conditions files are sometimes
             % written in single precision, and multiplying a single by a

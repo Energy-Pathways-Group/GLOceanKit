@@ -5,14 +5,26 @@
 % energy fraction, times AC. Then assess when it drops below, say 50%. This
 % would tell you "How long linear IW's explain 50% of KE variance".
 
-NonlinearSpindownFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_unforced_36000s';
-NonlinearForcedFromInitialConditionsFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s';
-LinearSteadyStateFile = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart';
-NonlinearSteadyStateFile = '/Volumes/Samsung_T5/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+ReadOverNetwork = 0;
+
+if ReadOverNetwork == 1
+    baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+else
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/model_raw/';
+end
+
+% Version 1 files, from June 2017
+NonlinearSpindownFile = strcat(baseURL,'EarlyEtal_GM_NL_unforced_36000s');
+NonlinearForcedFromInitialConditionsFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s');
+LinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_LIN_unforced_3600000s_restart');
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart');
+
+% Version 2 files, from October 2018
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
 
 dynamicalfile = NonlinearSteadyStateFile;
-file = '/Volumes/Samsung_T5/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.nc';
-matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyEtal_GM_NL_35e-11_36000s_restart_decomp.mat';
+file = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_NL_forced_damped_decomp.nc';
+matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_NL_forced_damped_decomp.mat';
 
 WM = WintersModel(dynamicalfile);
 wavemodel = WM.wavemodel;

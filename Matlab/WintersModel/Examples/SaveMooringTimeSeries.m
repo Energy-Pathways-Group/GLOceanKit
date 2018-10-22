@@ -1,13 +1,14 @@
 file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
+file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyV2_GM_NL_forced_damped';
 output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
 
 [filepath,name,ext] = fileparts(file);
 outputfile = fullfile(output_directory,strcat(name,'_moorings.mat'));
 
 WM = WintersModel(file);
-wavemodel = WM.WaveModelFromInitialConditionsFile();
+wavemodel = WM.wavemodel;
 
-nFiles = WM.NumberOfTimeSteps;
+nFiles = WM.NumberOf3DOutputFiles;
 fileIncrements = 1:1:nFiles;
 
 x = wavemodel.x;
@@ -30,7 +31,7 @@ for iFile = 1:length(fileIncrements)
         timeRemaining = (nT-iFile+1)*timePerStep;
         fprintf('reading values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iFile, nT, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
-    file = WM.FilePathAtIndex(fileIncrements(iFile));
+    file = WM.PathOf3DOutputFileAtIndex(fileIncrements(iFile));
     t(iFile) = double(ncread(file,'time'));
     
     u3d = double(squeeze(ncread(file, 'u', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
