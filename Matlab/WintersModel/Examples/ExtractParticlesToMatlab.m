@@ -4,13 +4,13 @@ baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
 NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
 
-model_dir = NonlinearSteadyStateFile;
-
-WM = WintersModel(file);
-wavemodel = WM.wavemodel;
+model_dir = LinearSteadyStateFile;
+% 
+% WM = WintersModel(file);
+% wavemodel = WM.wavemodel;
 
 eulerian_file = [model_dir 'input/SaveIC_EarlyIWmodel.nc'];
-lagrangian_dir = [model_dir 'output/lagrangian/'];
+lagrangian_dir = [model_dir '/output/lagrangian/'];
 floatsPerLevel = 100;
 
 UniqueParticleFiles = dir([lagrangian_dir 'particles_*.nc']);
@@ -29,5 +29,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = '/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_10/particles_NL.mat';
+outputfile = '/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_10/particles_LIN.mat';
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
