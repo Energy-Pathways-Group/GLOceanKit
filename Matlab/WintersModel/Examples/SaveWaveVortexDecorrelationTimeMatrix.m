@@ -21,10 +21,11 @@ NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart
 
 % Version 2 files, from October 2018
 NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
+LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
 
-dynamicalfile = NonlinearSteadyStateFile;
-file = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_NL_forced_damped_decomp.nc';
-matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_NL_forced_damped_decomp.mat';
+dynamicalfile = LinearSteadyStateFile;
+file = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_LIN_unforced_damped_decomp.nc';
+matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_LIN_unforced_damped_decomp.mat';
 
 WM = WintersModel(dynamicalfile);
 wavemodel = WM.wavemodel;
