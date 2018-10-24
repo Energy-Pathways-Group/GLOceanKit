@@ -161,7 +161,13 @@ netcdf.close(ncid);
 k = reshape(kAxis(1:nK),[],1);
 j = 1:nModes;
 
-save(matfile,'waveHKE','vortexHKE','waveHKEFromVariance','vortexHKEFromVariance','waveAutocorrelation','vortexAutocorrelation','waveStandardError','vortexStandardError', 'waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k', 't');
+x = wavemodel.x;
+y= wavemodel.y;
+z = wavemodel.z;
+T_diss = 36000;
+p = 3;
+
+save(matfile,'x', 'y', 'z','T_diss','p','waveHKE','vortexHKE','waveHKEFromVariance','vortexHKEFromVariance','waveAutocorrelation','vortexAutocorrelation','waveStandardError','vortexStandardError', 'waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k', 't');
 
 HKE_fraction = waveHKE./(waveHKE+vortexHKE);
 
