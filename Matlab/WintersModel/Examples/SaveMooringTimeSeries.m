@@ -1,5 +1,23 @@
-file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart';
-file = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyV2_GM_NL_forced_damped';
+ReadOverNetwork = 0;
+
+if ReadOverNetwork == 1
+    baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+else
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/model_raw/';
+end
+
+% Version 1 files, from June 2017
+NonlinearSpindownFile = strcat(baseURL,'EarlyEtal_GM_NL_unforced_36000s');
+NonlinearForcedFromInitialConditionsFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s');
+LinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_LIN_unforced_3600000s_restart');
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart');
+
+% Version 2 files, from October 2018
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
+LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
+
+file = LinearSteadyStateFile;
+
 output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
 
 [filepath,name,ext] = fileparts(file);
@@ -15,8 +33,10 @@ x = wavemodel.x;
 y = wavemodel.y;
 z = wavemodel.z;
 stride = 8;
-depth_start_index = floor(length(z)/2);
-depth_stride = 64;
+
+nDepths = 5;
+depth_start_index = ceil(length(z)/2);
+depth_stride = (length(z)-depth_start_index)/(nDepths-1);
 depth_indices = depth_start_index:depth_stride:length(z);
 nDepths = length(depth_indices);
 nT = length(fileIncrements);
@@ -24,6 +44,7 @@ nT = length(fileIncrements);
 t = zeros(length(fileIncrements),1);
 u4d = zeros(length(x)/stride, length(y)/stride, nDepths, nT);
 v4d = zeros(length(x)/stride, length(y)/stride, nDepths, nT);
+w4d = zeros(length(x)/stride, length(y)/stride, nDepths, nT);
 startTime = datetime('now');
 for iFile = 1:length(fileIncrements)
     if mod(iFile,10) == 2
@@ -36,22 +57,25 @@ for iFile = 1:length(fileIncrements)
     
     u3d = double(squeeze(ncread(file, 'u', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
     v3d = double(squeeze(ncread(file, 'v', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
+    w3d = double(squeeze(ncread(file, 'v', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
     
     u4d(:,:,:,iFile) = u3d;
     v4d(:,:,:,iFile) = v3d;
+    w4d(:,:,:,iFile) = w3d;
 end
 
 
 nMoorings = size(u4d,1)*size(u4d,2);
 u3d = reshape(u4d,nMoorings,nDepths, nT);
 v3d = reshape(v4d,nMoorings,nDepths, nT);
+w3d = reshape(w4d,nMoorings,nDepths, nT);
 
 depths = z(depth_indices);
 N0 = wavemodel.N0;
 Lz = wavemodel.Lz;
 latitude = wavemodel.latitude;
 f0 = wavemodel.f0;
-save(outputfile,'u3d','v3d','t','depths', 'N0', 'Lz', 'latitude', 'f0');
+save(outputfile,'u3d','v3d','w3d','t','depths', 'N0', 'Lz', 'latitude', 'f0');
 
 dt = t(2)-t(1);
 S = zeros(nT,nDepths);
