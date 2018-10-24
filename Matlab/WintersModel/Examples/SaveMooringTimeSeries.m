@@ -19,6 +19,7 @@ LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
 file = LinearSteadyStateFile;
 
 output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
+output_directory = baseURL;
 
 [filepath,name,ext] = fileparts(file);
 outputfile = fullfile(output_directory,strcat(name,'_moorings.mat'));
@@ -57,7 +58,7 @@ for iFile = 1:length(fileIncrements)
     
     u3d = double(squeeze(ncread(file, 'u', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
     v3d = double(squeeze(ncread(file, 'v', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
-    w3d = double(squeeze(ncread(file, 'v', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
+    w3d = double(squeeze(ncread(file, 'w', [1 1 depth_start_index 1], [length(x)/stride length(y)/stride nDepths 1], [stride stride depth_stride 1])));
     
     u4d(:,:,:,iFile) = u3d;
     v4d(:,:,:,iFile) = v3d;
