@@ -14,9 +14,9 @@ NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart
 
 % Version 2 files, from October 2018
 NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
+LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
 
-
-file = NonlinearSteadyStateFile;
+file = LinearSteadyStateFile;
 
 output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
 output_directory = '/Volumes/Samsung_T5/nsf_iwv';
