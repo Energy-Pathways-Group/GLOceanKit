@@ -11,6 +11,20 @@ classdef WintersModel < handle
         initialConditionsFile
         output3Dfiles
         output2Dfiles
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Hyperdiffusion parameters used in the model run
+        p_x
+        p_y
+        p_z
+        
+        T_diss_x
+        T_diss_y
+        T_diss_z
+        
+        delta_x
+        delta_y
+        delta_z
     end
             
     methods
@@ -52,6 +66,20 @@ classdef WintersModel < handle
                         fprintf('Founding possible initial conditions file at %s\n',self.initialConditionsFile);
                         foundSomethingUseful = 1;
                         else
+                    end
+                    
+                    possibleDiffusionParamsFile = [self.rootDirectory '/input/high_order_diffusion_params'];
+                    if exist(possibleDiffusionParamsFile,'file')~=0
+                        data = importdata(possibleDiffusionParamsFile);
+                        self.p_x = sscanf(data{1},'%d');
+                        self.p_y = sscanf(data{2},'%d');
+                        self.p_z = sscanf(data{3},'%d');
+                        self.T_diss_x = sscanf(data{4},'%f');
+                        self.T_diss_y = sscanf(data{5},'%f');
+                        self.T_diss_z = sscanf(data{6},'%f');
+                        self.delta_x = sscanf(data{7},'%f');
+                        self.delta_y = sscanf(data{8},'%f');
+                        self.delta_z = sscanf(data{9},'%f');
                     end
                     
                     if self.NumberOf3DOutputFiles > 0
@@ -166,7 +194,7 @@ classdef WintersModel < handle
                     end
                     
                     if strcmp(varargin{iArg}, 'zeta')
-                        varargin{iArg} = varargin{iArg} * self.wavemodel.g / (self.wavemodel.rho0 * self.wavemodel.N0 * self.wavemodel.N0);
+                        varargout{iArg} = varargout{iArg} * self.wavemodel.g / (self.wavemodel.rho0 * self.wavemodel.N0 * self.wavemodel.N0);
                     end
                 elseif ( strcmp(varargin{iArg}, 't') )
                     varargout{iArg} = ncread(file,'time');
