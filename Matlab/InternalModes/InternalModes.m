@@ -472,6 +472,9 @@ classdef InternalModes < handle
     methods (Static)
         
         function N = NumberOfWellConditionedModes(G)
+            kappa = InternalModes.ConditionNumberAsFunctionOfModeNumber(G);
+            N = find(diff(diff(log10(kappa))) > 1e-2,1,'first')+2;
+            return
             maxModes = min(size(G));
             minModes = 1;
             cutoff = 20; % empirically determined, good conditioning cutoff
