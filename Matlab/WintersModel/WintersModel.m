@@ -68,9 +68,10 @@ classdef WintersModel < handle
                         else
                     end
                     
-                    possibleDiffusionParamsFile = [self.rootDirectory '/input/high_order_diffusion_params'];
-                    if exist(possibleDiffusionParamsFile,'file')~=0
-                        data = importdata(possibleDiffusionParamsFile);
+                    possibleDiffusionParamsFiles = dir([self.rootDirectory '/**/high_order_diffusion_params']);
+                    if ~isempty(possibleDiffusionParamsFiles)
+                        path = [possibleDiffusionParamsFiles(1).folder '/' possibleDiffusionParamsFiles(1).name];
+                        data = importdata(path);
                         self.p_x = sscanf(data{1},'%d');
                         self.p_y = sscanf(data{2},'%d');
                         self.p_z = sscanf(data{3},'%d');

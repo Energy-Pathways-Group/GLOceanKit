@@ -263,8 +263,8 @@ classdef InternalModesConstantStratification < InternalModesBase
                 rho0 = rho(max(z_in));
                 max_ddrho = max(abs(diff((rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
             elseif isa(rho,'numeric') == true
-                rho0 = max(rho);
-                max_ddrho = max(abs(diff( rho/rho0 )));
+                drhodz = diff(rho)./diff(z_in);
+                max_ddrho = std(drhodz)/abs(mean(drhodz));
             end
             
             flag = max_ddrho < 1e-4;
