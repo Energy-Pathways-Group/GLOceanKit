@@ -446,14 +446,22 @@ classdef InternalModes < handle
         % Primary methods to construct the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
             % Return the normal modes and eigenvalue at a given wavenumber.
-            [F,G,h,omega] = self.internalModes.ModesAtWavenumber( k );
+            if nargout == 6
+                [F,G,h,omega,F2,N2G2] = self.internalModes.ModesAtWavenumber( k );
+            else
+                [F,G,h,omega] = self.internalModes.ModesAtWavenumber( k );
+            end
         end
         
-        function [F,G,h,k] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
-            [F,G,h,k] = self.internalModes.ModesAtFrequency( omega );
+            if nargout == 6
+                [F,G,h,k,F2,N2G2] = self.internalModes.ModesAtFrequency( omega );
+            else
+                [F,G,h,k] = self.internalModes.ModesAtFrequency( omega );
+            end
         end
         
         function psi = SurfaceModesAtWavenumber(self, k)

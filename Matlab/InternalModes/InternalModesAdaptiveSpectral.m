@@ -55,14 +55,18 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
             % We just need to make sure we're using the right grid,
             % otherwise we can use the superclass method as is.
             self.CreateGridForFrequency(0.0);
-            [F,G,h,omega] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+            if nargout == 6
+                [F,G,h,omega,F2,N2G2] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+            else
+                [F,G,h,omega] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+            end
         end
         
-        function [F,G,h,k] = ModesAtFrequency(self, omega )        
+        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )        
             self.CreateGridForFrequency(omega);
             
             T = self.T_xLobatto;
@@ -107,7 +111,11 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                 B(max(self.eqIndices{i-1})+2,:) = 0;
             end
             
-            [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            if nargout == 6
+                [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
+            else
+                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            end
             k = self.kFromOmega(h,omega);
         end
  
@@ -387,7 +395,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
     end
     
     methods (Access = private)             
-        function [F,G,h] = ModesFromGEPWKBSpectral(self,A,B)
+        function [F,G,h,F2,N2G2] = ModesFromGEPWKBSpectral(self,A,B)
             % This function is an intermediary used by ModesAtFrequency and
             % ModesAtWavenumber to establish the various norm functions.
             hFromLambda = @(lambda) 1.0 ./ lambda;
@@ -397,7 +405,11 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* self.T_xCheb_xLobatto(self.Diff1_xChebFunction(G_cheb));
             GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
-            [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+            if nargout == 5
+                [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+            else
+                [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+            end
         end
     end
     

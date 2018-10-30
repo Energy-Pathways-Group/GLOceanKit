@@ -59,11 +59,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
-        function [F,G,h,omega] = ModesAtWavenumber(self, k )            
+        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )            
             epsilon = self.f0/self.N0;
             lambda = k*self.b;
             
-            % These are our "low frequency" (lf) and "high frequency" (hf)
+            % Theseg are our "low frequency" (lf) and "high frequency" (hf)
             % estimates of the eigenvalues, taken from Desaubies 1975. We
             % use these as bounds in our root finding algorithm.
             x_lf = @(j,lambda) (j-1/4)*pi + lambda*pi/2;
@@ -105,10 +105,14 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             omega = self.omegaFromK(h,k);
             
-            [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+            if nargout == 6
+                [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+            else
+                [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+            end
         end
         
-        function [F,G,h,k] = ModesAtFrequency(self, omega )            
+        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )            
             % This is the function that we use to find the eigenvalues,
             % by finding its roots.
             if omega > self.N0*exp(-self.Lz/self.b) % This is from equation 2.18 in Desaubies (1973)
@@ -141,7 +145,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 h = h(1:self.nModes);
             end
             
-            [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+            if nargout == 6
+                [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+            else
+                [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+            end   
             
             k = self.kFromOmega(h,omega);
         end
@@ -273,9 +281,11 @@ classdef InternalModesExponentialStratification < InternalModesBase
             end
         end
         
-        function [F,G] = NormalizedModesForOmegaAndC(self,omega,c)
+        function [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega,c)
             F = zeros(length(self.z),length(c));
             G = zeros(length(self.z),length(c));
+            N2G2 = zeros(1,length(c));
+            F2 = zeros(1,length(c));
             
             for j=1:length(c)
                 if omega(j) < self.N0
@@ -300,6 +310,12 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 end
                 F(:,j) = Ffunc(self.z,omega(j),c(j))/A;
                 G(:,j) = Gfunc(self.z,omega(j),c(j))/A;
+                
+                if nargout == 4
+                    F2(j) = integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                    N2G2(j) = integral( @(z) self.N0^2*exp(2*z/self.b).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                end
+                    
             end
         end
        
@@ -339,7 +355,9 @@ classdef InternalModesExponentialStratification < InternalModesBase
                  rho0 = rho(max(z_in));
                  max_ddrho = max(abs(diff(diff(rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
              elseif isa(rho,'numeric') == true
-                 
+                 % The best solution here might be to do a polyfit of
+                 % log(diff(rho)) and if the residual is sufficiently
+                 % small, call it good.
                  if length(unique(diff(z_in))) > 1
                      flag = 0;
                      return;
