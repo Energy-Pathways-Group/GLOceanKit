@@ -40,6 +40,20 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
        NumberOfWellConditionedModes
        didPrecomputedModesForWavenumber
        B
+       F2 % normalization \int F^2 dz
+       N2G2 % normalization \int N^2 G^2 dz
+    end
+    
+    properties (Dependent)
+        % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
+        % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
+        % values
+        Ppm_HKE_factor
+        Ppm_VKE_factor
+        Ppm_PE_factor
+        % Same, but for B
+        P0_HKE_factor
+        P0_PE_factor
     end
     
     methods
@@ -75,6 +89,9 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.rho0 = im.rho0;
             self.internalModes = im;
             self.h = ones(size(self.K2)); % we do this to prevent divide by zero when uninitialized.
+            
+            self.F2 = zeros(size(self.K2));
+            self.N2G2 = zeros(size(self.K2));
             
             self.didPrecomputedModesForWavenumber = zeros(size(self.K2(:,:,1)));
         end
@@ -120,7 +137,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                     continue
                 end
 
-                [F,G,h] = self.internalModes.ModesAtWavenumber(sqrt(kk));
+                [F,G,h,~,F2_,N2G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
                 h = reshape(h,[1 1 self.nModes]);
                 N = InternalModes.NumberOfWellConditionedModes(G);
                 
@@ -136,6 +153,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                     if badIndex < self.nModes
                         warning('Eigenvalue problem returned negative eigenvalue at index %d, try with higher resolution.',badIndex)
                     end
+                    self.F2(i,j,:) = F2_;
+                    self.N2G2(i,j,:) = N2G2_;
                     self.h(i,j,:) = h;
                     self.S(:,:,i,j) = G;
                     self.Sprime(:,:,i,j) = F;
@@ -161,7 +180,22 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             N2 = interp1(self.internalModes.z,self.internalModes.N2,z,'spline');
         end
         
-
+        function value = get.Ppm_HKE_factor(self)
+            value = (1 + self.f0*self.f0./(self.Omega.*self.Omega)) .* self.F2 ./ (2*self.h);
+        end
+        function value = get.Ppm_VKE_factor(self)
+            error('not yet implemented because we are not computing \int G^2 dz anywhere');
+            value = zeros(size(self.K2));
+        end
+        function value = get.Ppm_PE_factor(self)
+            value = self.K2 .* self.h .* self.N2G2 ./ (2*self.Omega.*self.Omega);
+        end
+        function value = get.P0_HKE_factor(self)
+            value = (self.g*self.g/(2*self.f0*self.f0)) .* self.K2 .* self.F2;
+        end
+        function value = get.P0_PE_factor(self)
+            value = self.N2G2/2;
+        end
     end
     
     methods %(Access = protected)

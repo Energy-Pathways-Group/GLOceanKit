@@ -480,34 +480,66 @@ classdef InternalModes < handle
     methods (Static)
         
         function N = NumberOfWellConditionedModes(G)
-            kappa = InternalModes.ConditionNumberAsFunctionOfModeNumber(G);
-            N = find(diff(diff(log10(kappa))) > 1e-2,1,'first')+2;
-            return
+            % This function can become a rate limiting step if used for
+            % each set of returned modes. So a good algorithm is necessary.
+            % Otherwise we'd just use,
+            %   kappa = InternalModes.ConditionNumberAsFunctionOfModeNumber(G);
+            %   N = find(diff(diff(log10(kappa))) > 1e-2,1,'first')+2;
             maxModes = min(size(G));
             minModes = 1;
-            cutoff = 20; % empirically determined, good conditioning cutoff
             
-            iMode = maxModes;
-            kappa = cond(G(:,1:iMode));
-            while minModes+1 < maxModes
-                if kappa < cutoff % This *is* well conditined
-                    minModes = iMode;
-                else
-                    maxModes = iMode;
+            kappaFull = zeros(maxModes,1);
+            kappaFullIsSet = zeros(maxModes,1);
+            
+            % include the end points, min 4 indices to be helpful
+            % maxModes=5, stride = 1
+            % maxModes=6, stride = 2
+            % maxModes=7, stride = 2
+            % maxModes=9, stride = 2
+            % maxModes=10, stride = 4
+            % maxModes=18, stride = 8
+            % maxModes=stride*2+2
+            % stride=(maxModes-2)/2
+            strideExp = floor(log2((maxModes-2)/2));
+            lowerBound = minModes;
+            upperBound = maxModes;
+            while (strideExp > 0)
+                stride = 2^strideExp;
+                modeIndices = lowerBound:stride:upperBound;
+                if (modeIndices(end) ~= upperBound)
+                    modeIndices(end+1) = upperBound;
                 end
-                iMode = minModes + floor((maxModes - minModes)/2);
-                kappa = cond(G(:,1:iMode));
+                
+                indicesNeeded = modeIndices(kappaFullIsSet(modeIndices) == 0);
+                
+                kappaNeeded = InternalModes.ConditionNumberAsFunctionOfModeNumberForModeIndices(G,indicesNeeded);
+                kappaFull(indicesNeeded) = kappaNeeded;
+                kappaFullIsSet(indicesNeeded) = 1;
+                
+                kappa = kappaFull(modeIndices);
+                
+                n = find(diff(diff(log10(kappa))) > 1e-2,1,'first');
+                if isempty(n)
+                    N = maxModes;
+                    return;
+                end
+                N = modeIndices(n+1);
+                lowerBound = modeIndices(n);
+                upperBound = modeIndices(n+2);
+                strideExp = strideExp-1;
             end
             
-            N = minModes;
+        end
+        
+        function [kappa,modeIndices] = ConditionNumberAsFunctionOfModeNumberForModeIndices(G,modeIndices)
+            kappa = zeros(length(modeIndices),1);
+            for iIndex=1:length(modeIndices)
+               kappa(iIndex) =  cond(G(:,1:modeIndices(iIndex)));
+            end
         end
         
         function kappa = ConditionNumberAsFunctionOfModeNumber(G)
-            maxModes = min(size(G));
-            kappa = zeros(maxModes,1);
-            for iMode=1:maxModes
-               kappa(iMode) =  cond(G(:,1:iMode));
-            end
+            kappa = InternalModes.ConditionNumberAsFunctionOfModeNumberForModeIndices(G,1:min(size(G)));
         end
         
         function [G_tilde, gamma] = RenormalizeForGoodConditioning(G)

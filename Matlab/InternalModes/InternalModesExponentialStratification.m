@@ -16,6 +16,9 @@ classdef InternalModesExponentialStratification < InternalModesBase
         shouldApproximate
         GSolutionApprox
         FSolutionApprox
+        
+        rhoFunction
+        N2Function
     end
     
     methods
@@ -40,6 +43,8 @@ classdef InternalModesExponentialStratification < InternalModesBase
             self@InternalModesBase(rhoFunction,z_in,z_out,latitude, varargin{:});
             self.N0 = N0;
             self.b = b;
+            self.rhoFunction = rhoFunction;
+            self.N2Function = N2Function;
             
             self.rho = rhoFunction(self.z);
             self.N2 = N2Function(self.z);

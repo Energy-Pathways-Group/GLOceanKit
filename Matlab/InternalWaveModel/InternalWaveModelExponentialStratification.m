@@ -33,7 +33,9 @@ classdef InternalWaveModelExponentialStratification < InternalWaveModelArbitrary
             im = InternalModesExponentialStratification(rho,[-dims(3) 0], z, latitude);
             im.nModes = nModes;
             
-            self@InternalWaveModelArbitraryStratification(dims, n, z, im.N2, nModes, latitude);
+            self@InternalWaveModelArbitraryStratification(dims, n, im.rhoFunction, z, nModes, latitude);
+            
+            self.internalModes = im;
         end
     end
 end
