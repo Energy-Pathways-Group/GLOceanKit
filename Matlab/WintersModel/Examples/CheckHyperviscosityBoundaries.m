@@ -27,8 +27,8 @@ wavemodel = WM.wavemodel;
 %
 
 % These first two lines actually do the decomposition
-[t,u,v,w,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'t','u','v','w','rho_prime');
-wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
+[t0,u,v,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'t','u','v','rho_prime');
+wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t0,u,v,rho_prime);
 
 waveHKE_full = wavemodel.Ppm_HKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
 waveVKE_full = wavemodel.Ppm_VKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
@@ -76,8 +76,8 @@ end
 maxFileIndex = WM.NumberOf3DOutputFiles;
 
 % These first two lines actually do the decomposition
-[t,u,v,w,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(maxFileIndex,'t','u','v','w','rho_prime');
-wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
+[t_max,u,v,w,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(maxFileIndex,'t','u','v','w','rho_prime');
+wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t_max,u,v,rho_prime);
 
 waveHKE_full = wavemodel.Ppm_HKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
 waveVKE_full = wavemodel.Ppm_VKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
@@ -131,11 +131,11 @@ lambda_x = nu_x*(sqrt(-1)*K).^(2*WM.p_x);
 lambda_z = nu_z*(sqrt(-1)*M).^(2*WM.p_z);
 % tau = WM.VariableFieldsFrom3DOutputFileAtIndex(WM.NumberOf3DOutputFiles,'t');
 tau = max(WM.T_diss_x,WM.T_diss_z);
-R = exp((lambda_x+lambda_z)*tau);
+R = exp((lambda_x+lambda_z)*(t_max-t0));
 
 % The highest wavenumber should e-fold in time tau, so let's contour the
 % area that retains 90% of its value
-C = contourc(j_diss,k_diss,R,0.60*[1 1]);
+C = contourc(j_diss,k_diss,R,0.1*[1 1]);
 n = C(2,1);
 j_damp = C(1,1+1:n);
 k_damp = C(2,1+1:n);
@@ -162,16 +162,19 @@ end
 figure
 subplot(1,3,1)
 pcolor( k, j, log10((waveHKE./waveHKE_t0).') ), xlog, ylog, shading flat, hold on
+caxis([-3 0])
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
 subplot(1,3,2)
 pcolor( k, j, log10((waveVKE./waveVKE_t0).') ), xlog, ylog, shading flat, hold on
+caxis([-3 0])
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
 subplot(1,3,3)
 pcolor( k, j, log10((waveHKE./waveHKE_t0).')+log10((waveVKE./waveVKE_t0).') ), xlog, ylog, shading flat, hold on
+caxis([-3 0])
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
