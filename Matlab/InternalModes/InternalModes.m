@@ -503,7 +503,7 @@ classdef InternalModes < handle
             strideExp = floor(log2((maxModes-2)/2));
             lowerBound = minModes;
             upperBound = maxModes;
-            while (strideExp > 0)
+            while (strideExp >= 0)
                 stride = 2^strideExp;
                 modeIndices = lowerBound:stride:upperBound;
                 if (modeIndices(end) ~= upperBound)
@@ -518,10 +518,9 @@ classdef InternalModes < handle
                 
                 kappa = kappaFull(modeIndices);
                 
-                n = find(diff(diff(log10(kappa))) > 1e-2,1,'first');
+                n = find(diff(diff(log10(kappa))./diff(modeIndices')) > 1e-2,1,'first');
                 if isempty(n)
-                    N = maxModes;
-                    return;
+                    [~,n] = max(diff(diff(log10(kappa))./diff(modeIndices')));
                 end
                 N = modeIndices(n+1);
                 lowerBound = modeIndices(n);
