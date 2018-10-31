@@ -131,7 +131,7 @@ lambda_x = nu_x*(sqrt(-1)*K).^(2*WM.p_x);
 lambda_z = nu_z*(sqrt(-1)*M).^(2*WM.p_z);
 % tau = WM.VariableFieldsFrom3DOutputFileAtIndex(WM.NumberOf3DOutputFiles,'t');
 tau = max(WM.T_diss_x,WM.T_diss_z);
-R = exp((lambda_x+lambda_z)*(t_max-t0));
+R = exp(2*(lambda_x+lambda_z)*(t_max-t0));
 
 % The highest wavenumber should e-fold in time tau, so let's contour the
 % area that retains 90% of its value
