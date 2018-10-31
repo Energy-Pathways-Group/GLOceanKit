@@ -31,6 +31,7 @@ wavemodel = WM.wavemodel;
 wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
 
 waveHKE_full = wavemodel.Ppm_HKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
+waveVKE_full = wavemodel.Ppm_VKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
 vortexHKE_full = wavemodel.P0_HKE_factor .* abs(wavemodel.B).^2;
 
 % Now we need to figure out how to display this information...
@@ -53,14 +54,15 @@ nK = length(k);
 nModes = length(j);
 
 waveHKE_t0 = zeros(nK,nModes);
+waveVKE_t0 = zeros(nK,nModes);
 vortexHKE_t0 = zeros(nK,nModes);
-
 for iMode = 1:1:nModes
     for iK = 1:1:nK
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         for iIndex = 1:length(indicesForK)
             [i,m] = ind2sub([size(Kh,1) size(Kh,2)],indicesForK(iIndex));
             waveHKE_t0(iK,iMode) = waveHKE_t0(iK,iMode) + waveHKE_full(i,m,iMode);
+            waveVKE_t0(iK,iMode) = waveVKE_t0(iK,iMode) + waveVKE_full(i,m,iMode);
             vortexHKE_t0(iK,iMode) = vortexHKE_t0(iK,iMode) + vortexHKE_full(i,m,iMode);
         end
     end
@@ -81,14 +83,15 @@ waveHKE_full = wavemodel.Ppm_HKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wa
 vortexHKE_full = wavemodel.P0_HKE_factor .* abs(wavemodel.B).^2;
 
 waveHKE = zeros(nK,nModes);
+waveVKE = zeros(nK,nModes);
 vortexHKE = zeros(nK,nModes);
-
 for iMode = 1:1:nModes
     for iK = 1:1:nK
         indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         for iIndex = 1:length(indicesForK)
             [i,m] = ind2sub([size(Kh,1) size(Kh,2)],indicesForK(iIndex));
             waveHKE(iK,iMode) = waveHKE(iK,iMode) + waveHKE_full(i,m,iMode);
+            waveVKE(iK,iMode) = waveVKE(iK,iMode) + waveVKE_full(i,m,iMode);
             vortexHKE(iK,iMode) = vortexHKE(iK,iMode) + vortexHKE_full(i,m,iMode);
         end
     end
@@ -156,6 +159,14 @@ for i=1:length(ticks_y)
 end
 
 figure
+subplot(1,2,1)
 pcolor( k, j, log10((waveHKE./waveHKE_t0).') ), xlog, ylog, shading flat, hold on
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
+
+subplot(1,2,2)
+pcolor( k, j, log10((waveVKE./waveVKE_t0).') ), xlog, ylog, shading flat, hold on
+plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
+plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
+
+
