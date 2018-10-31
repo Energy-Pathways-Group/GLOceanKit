@@ -80,6 +80,7 @@ maxFileIndex = WM.NumberOf3DOutputFiles;
 wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
 
 waveHKE_full = wavemodel.Ppm_HKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
+waveVKE_full = wavemodel.Ppm_VKE_factor .* ( abs(wavemodel.Amp_plus).^2 + abs(wavemodel.Amp_minus).^2 );
 vortexHKE_full = wavemodel.P0_HKE_factor .* abs(wavemodel.B).^2;
 
 waveHKE = zeros(nK,nModes);
@@ -159,14 +160,18 @@ for i=1:length(ticks_y)
 end
 
 figure
-subplot(1,2,1)
+subplot(1,3,1)
 pcolor( k, j, log10((waveHKE./waveHKE_t0).') ), xlog, ylog, shading flat, hold on
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
-subplot(1,2,2)
+subplot(1,3,2)
 pcolor( k, j, log10((waveVKE./waveVKE_t0).') ), xlog, ylog, shading flat, hold on
 plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
 plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
+subplot(1,3,3)
+pcolor( k, j, log10((waveHKE./waveHKE_t0).')+log10((waveVKE./waveVKE_t0).') ), xlog, ylog, shading flat, hold on
+plot( k_damp, j_damp, 'LineWidth', 4, 'Color', 0*[1 1 1])
+plot( k_damp, j_damp, 'LineWidth', 2, 'Color', [1 1 1])
 
