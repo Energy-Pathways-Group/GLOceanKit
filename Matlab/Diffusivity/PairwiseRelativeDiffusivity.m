@@ -6,6 +6,11 @@ function [r2, kappa_r, velocity_correlation ] = PairwiseRelativeDiffusivity( t, 
 % bunch of particles at the origin on a random walk, you will find a
 % correlation with diffusivity and mean-square-distance because you've
 % selectively chosen the particles that diffused the furthest.
+%
+% The slope method is computing a slope for each pair, which presumably is
+% then binned and averaged. However, it may be better to bin pair sizes
+% first, then do a single slope to the whole ensemble.
+%
 nDrifters = size(x,2);
 nReps = nDrifters*(nDrifters-1)/2;
 r2 = zeros(nReps,1);

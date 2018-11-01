@@ -1,10 +1,23 @@
-baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+ReadOverNetwork = 0;
+Nonlinear = 1;
 
-% Version 2 files, from October 2018
-LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
+if ReadOverNetwork == 1
+    baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+else
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
+end
 
-model_dir = LinearSteadyStateFile;
+if Nonlinear == 1
+    runtype = 'NL';
+    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
+    model_dir = NonlinearSteadyStateFile;
+else
+    runtype = 'LIN';
+    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+    model_dir = LinearSteadyStateFile;
+end
+
+
 % 
 % WM = WintersModel(file);
 % wavemodel = WM.wavemodel;
@@ -29,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = '/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_10/particles_LIN.mat';
+outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_11/particles_%s.mat',runtype);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');

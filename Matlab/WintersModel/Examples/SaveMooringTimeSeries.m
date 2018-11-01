@@ -3,22 +3,15 @@ ReadOverNetwork = 0;
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/model_raw/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
 end
 
-% Version 1 files, from June 2017
-NonlinearSpindownFile = strcat(baseURL,'EarlyEtal_GM_NL_unforced_36000s');
-NonlinearForcedFromInitialConditionsFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s');
-LinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_LIN_unforced_3600000s_restart');
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart');
-
 % Version 2 files, from October 2018
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
-LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
+LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 
 file = LinearSteadyStateFile;
 
-output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
 output_directory = baseURL;
 
 [filepath,name,ext] = fileparts(file);

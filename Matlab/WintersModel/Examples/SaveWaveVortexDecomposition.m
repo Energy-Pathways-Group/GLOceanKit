@@ -1,26 +1,21 @@
+runtype = 'nonlinear';
 ReadOverNetwork = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/model_raw/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
 end
 
-% Version 1 files, from June 2017
-NonlinearSpindownFile = strcat(baseURL,'EarlyEtal_GM_NL_unforced_36000s');
-NonlinearForcedFromInitialConditionsFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s');
-LinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_LIN_unforced_3600000s_restart');
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart');
+if strcmp(runtype,'linear')
+    file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+elseif strcmp(runtype,'nonlinear')
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
+else
+    error('invalid run type.');
+end
 
-% Version 2 files, from October 2018
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
-LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
-
-file = LinearSteadyStateFile;
-
-output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv';
-output_directory = '/Volumes/Samsung_T5/nsf_iwv';
-% output_directory = '/Users/jearly/Documents';
+output_directory = baseURL;
 
 shouldChunk = 0;
 [filepath,name,ext] = fileparts(file);

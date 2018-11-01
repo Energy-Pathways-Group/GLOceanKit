@@ -5,27 +5,27 @@
 % energy fraction, times AC. Then assess when it drops below, say 50%. This
 % would tell you "How long linear IW's explain 50% of KE variance".
 
+runtype = 'nonlinear';
 ReadOverNetwork = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/model_raw/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
 end
 
-% Version 1 files, from June 2017
-NonlinearSpindownFile = strcat(baseURL,'EarlyEtal_GM_NL_unforced_36000s');
-NonlinearForcedFromInitialConditionsFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s');
-LinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_LIN_unforced_3600000s_restart');
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyEtal_GM_NL_35e-11_36000s_restart');
+if strcmp(runtype,'linear')
+    dynamicalfile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+elseif strcmp(runtype,'nonlinear')
+    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
+else
+    error('invalid run type.');
+end
+output_directory = baseURL;
 
-% Version 2 files, from October 2018
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
-LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped');
-
-dynamicalfile = LinearSteadyStateFile;
-file = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_LIN_unforced_damped_decomp.nc';
-matfile = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_LIN_unforced_damped_decomp.mat';
+[filepath,name,ext] = fileparts(dynamicalfile);
+file = fullfile(output_directory,strcat(name,'_decomp.nc'));
+matfile = fullfile(output_directory,strcat(name,'_decomp.mat'));
 
 WM = WintersModel(dynamicalfile);
 wavemodel = WM.wavemodel;
