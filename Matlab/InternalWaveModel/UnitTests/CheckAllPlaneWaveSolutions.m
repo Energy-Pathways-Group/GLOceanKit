@@ -48,7 +48,7 @@ for iLat = 1:length(latitude)
         rho0 = 1025; g = 9.81;
         rho = @(z) -(N0*N0*rho0/g)*z + rho0;
         z = (Lz/Nz)*(0:Nz-1)' - Lz;
-        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude(iLat), 'method','wkbSpectral','nEVP',128);
+        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude(iLat), 'method','wkbSpectral','nEVP',128);
     end
     
     % pull out some model constants for easy reference

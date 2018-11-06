@@ -9,8 +9,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     %   n           a vector containing the number of grid points of x,y,z
     %   rho         a function handle to the density profile valid from -Lz to 0
     %   z           a vector containing the vertical grid point desired
-    %   nModes      maximum number of vertical modes to be used
     %   latitude    the latitude of the model.
+    %
+    %   The number of vertical modes will be determined automatically based
+    %   on the number of resolvable modes. If you want to override this
+    %   behavior, pass the name/value pair ('nModes', nModes).
     %
     %   Two very useful stratification profiles are,
     %       rho = @(z) -(N0*N0*rho0/g)*z + rho0;
@@ -57,7 +60,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     end
     
     methods
-        function self = InternalWaveModelArbitraryStratification(dims, n, rho, z, nModes, latitude, varargin)
+        function self = InternalWaveModelArbitraryStratification(dims, n, rho, z, latitude, varargin)
             if length(dims) ~=3
                 error('The dimensions must be given as [Lx Ly Lz] where Lz is the depth of the water column.');
             end
@@ -73,6 +76,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             nargs = length(varargin);
             if mod(nargs,2) ~= 0
                 error('Arguments must be given as name/value pairs');
+            end
+            
+            nModes = [];
+            for k = 1:2:length(varargin)
+                if strcmp(varargin{k}, 'nModes')
+                    nModes = varargin{k+1};
+                end
             end
             
             im = InternalModes(rho,[-dims(3) 0],z,latitude, varargin{:});

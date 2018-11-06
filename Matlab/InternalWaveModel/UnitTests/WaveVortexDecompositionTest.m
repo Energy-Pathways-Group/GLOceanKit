@@ -46,7 +46,7 @@ if shouldUseArbitraryStratificationModel == 0
     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
     if ~exist('wavemodel','var')
-        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
     end
 end
 
@@ -91,7 +91,7 @@ if shouldUseArbitraryStratificationModel == 0
     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
     if ~exist('newmodel','var')
-        newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz-2, latitude);
+        newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
     end
 end
 

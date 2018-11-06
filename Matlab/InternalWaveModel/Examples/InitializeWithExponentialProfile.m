@@ -24,6 +24,6 @@ latitude = 31;
 [rhoFunction, N2Function, zIn] = InternalModes.StratificationProfileWithName('exponential');
 
 z = linspace(-Lz,0,Nz)';
-% wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rhoFunction, z, [], latitude);
-wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [5.2e-3 1300], z, [], latitude);
+% wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rhoFunction, z, latitude, 'nModes', 10);
+wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [5.2e-3 1300], z, latitude);
 wavemodel.InitializeWithGMSpectrum(1.0);

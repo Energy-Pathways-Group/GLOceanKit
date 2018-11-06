@@ -25,7 +25,7 @@ Lz = 5000;
 
 Nx = 32;
 Ny = 32;
-Nz = 32;
+Nz = 33;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -36,12 +36,12 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
-% rho0 = 1025; g = 9.81;
-% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-% z = (Lz/Nz)*(0:Nz-1)' - Lz;
-% wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);
+rho0 = 1025; g = 9.81;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+z = (Lz/Nz)*(0:Nz-1)' - Lz;
+wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -58,8 +58,7 @@ sign = 1;
 period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
 t = 4*86400;
-[u,v] = wavemodel.VelocityFieldAtTime(t);
-[w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+[u,v,w,zeta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
