@@ -76,6 +76,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             im = InternalModes(rho,[-dims(3) 0],z,latitude, varargin{:});
+            if isempty(nModes)
+                [F,G] = im.ModesAtWavenumber(0);
+                nGoodModes_F = InternalModes.NumberOfWellConditionedModes(F);
+                nGoodModes_G = InternalModes.NumberOfWellConditionedModes(G);
+                nModes = min([nGoodModes_F nGoodModes_G]);
+                fprintf('nModes was set to %d, based on the number of resolvable modes at k=0. Note that this number would likely be lower for k=k_max.\n',nModes);
+            end
             im.nModes = nModes;
             N2 = im.N2;
             
