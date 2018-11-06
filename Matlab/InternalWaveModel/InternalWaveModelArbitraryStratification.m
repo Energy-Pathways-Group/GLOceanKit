@@ -114,8 +114,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function GenerateWavePhases(self, U_plus, U_minus)
-            GenerateWavePhases@InternalWaveModel(self, U_plus, U_minus );
             self.ComputeModesForNonzeroWavenumbers( any( (U_plus ~= 0) | (U_minus ~= 0),3) );
+            GenerateWavePhases@InternalWaveModel(self, U_plus, U_minus );
         end
         
         function FillOutWaveSpectrum(self)

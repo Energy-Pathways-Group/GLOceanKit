@@ -520,9 +520,12 @@ classdef InternalModes < handle
                 
                 n = find(diff(diff(log10(kappa))./diff(modeIndices')) > 1e-2,1,'first');
                 if isempty(n)
-                    [~,n] = max(diff(diff(log10(kappa))./diff(modeIndices')));
+                    %[~,n] = max(diff(diff(log10(kappa))./diff(modeIndices')));
+                    n = length(modeIndices)-2;
+                    N = modeIndices(n+2);
+                else
+                    N = modeIndices(n+1);
                 end
-                N = modeIndices(n+1);
                 lowerBound = modeIndices(n);
                 upperBound = modeIndices(n+2);
                 strideExp = strideExp-1;
