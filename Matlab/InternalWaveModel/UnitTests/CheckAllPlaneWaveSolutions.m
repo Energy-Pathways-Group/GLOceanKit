@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = 4;
 Ny = 8;
-Nz = 4;
+Nz = 5;
 
 latitude = [0 31];
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -65,7 +65,7 @@ for iLat = 1:length(latitude)
     for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
         for l_loop=(-Ny/2 + 1):1:(Ny/2-1)
             fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
-            for j0=1:(Nz-1)
+            for j0=1:(Nz-2)
                 for thesign=-1:2:1
                     
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
