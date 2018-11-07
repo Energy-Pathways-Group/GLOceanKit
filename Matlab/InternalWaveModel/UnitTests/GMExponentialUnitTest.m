@@ -38,6 +38,10 @@ b = 1300;
 %
 % Initialize the wave model
 %
+% Initialization requires computing the internal modes, which can take
+% quite a while. Therefore, we check to see if the model was previously
+% initialized with the same parameters, and use that when possible.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if ~exist('wavemodel','var') || any([wavemodel.Lx wavemodel.Ly wavemodel.Lz wavemodel.Nx wavemodel.Ny wavemodel.Nz wavemodel.N0 wavemodel.b] ~= [Lx Ly Lz Nx Ny Nz N0 b])
@@ -48,21 +52,34 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 
 [u,v,w,zeta]=wavemodel.VariableFieldsAtTime(0,'u','v','w','zeta');
 
-z = wavemodel.z;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Compute the spatially averaged variances from the dynamical variables
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));
 zetaVariance = squeeze(mean(mean(zeta.*zeta,1),2));
+wVariance = squeeze(mean(mean(w.*w,1),2));
 
-zeta2 = squeeze(mean(mean(zeta.*zeta,1),2));
-u2 = squeeze(mean(mean(u.*u,1),2)+mean(vmean(v.*v,1),2));
-w2 = squeeze(mean(mean(w.*w,1),2));
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Let's compare this to the Garrett Munk spectrum
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~exist('GM','var')
     GM = GarrettMunkSpectrum(wavemodel.internalModes.rhoFunction,[-Lz 0],latitude);
 end
+z = wavemodel.z;
 Euv = GM.HorizontalVelocityVariance(z);
 Eeta = GM.IsopycnalVariance(z);
 Ew = GM.VerticalVelocityVariance(z);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Plot everything
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure
 subplot(1,3,1)
 plot([44 44], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
@@ -70,7 +87,7 @@ plot(1e4*(N0./sqrt(wavemodel.N2)).*uvVariance,z,'LineWidth', 2)
 plot(1e4*(N0./sqrt(wavemodel.N2)).*GM.HorizontalVelocityVariance(z),z,'LineWidth', 2)
 xlabel('cm^2/s^2'), ylabel('depth (m)'), title('horizontal velocity variance')
 xlim([0 1.05*max(1e4*uvVariance)])
-% legend('GM', 'model output', 'theory')
+legend('GM', 'model output', 'theory')
 
 subplot(1,3,2)
 plot([53 53], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
@@ -80,6 +97,6 @@ xlabel('m^2'), set(gca,'YTickLabel',[]), title('isopycnal variance')
 
 subplot(1,3,3)
 plot([30 30], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
-plot(0.5*1e4*(N0./sqrt(wavemodel.N2)).*(u2 + w2 + wavemodel.N2.*zeta2) ,z,'LineWidth', 2)
+plot(0.5*1e4*(N0./sqrt(wavemodel.N2)).*(uvVariance + wVariance + wavemodel.N2.*zetaVariance) ,z,'LineWidth', 2)
 xlabel('cm^2 s^{-2}'), set(gca,'YTickLabel',[]); title('total energy'),
-xlim([0 1.05*max(0.5*1e4*(u2 + w2 + wavemodel.N2.*zeta2))])
+xlim([0 1.05*max(0.5*1e4*(uvVariance + wVariance + wavemodel.N2.*zetaVariance))])
