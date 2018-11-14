@@ -471,7 +471,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.internalModes.normalization = self.norm_ext;
             numValidIndices = 0;
             for iWave=1:length(kOrOmega)
-                [FExt,GExt,hExt] = self.internalModes.(methodName)(kOrOmega(iWave));
+                [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
                 if (hExt(j(iWave)) <= 0)
                     warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
                     continue;
