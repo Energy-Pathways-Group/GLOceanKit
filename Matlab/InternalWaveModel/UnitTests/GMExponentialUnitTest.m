@@ -47,7 +47,7 @@ b = 1300;
 if ~exist('wavemodel','var') || any([wavemodel.Lx wavemodel.Ly wavemodel.Lz wavemodel.Nx wavemodel.Ny wavemodel.Nz wavemodel.N0 wavemodel.b] ~= [Lx Ly Lz Nx Ny Nz N0 b])
     wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [N0 b], linspace(-Lz,0,Nz), latitude);
 end
-% wavemodel.FillOutWaveSpectrum();
+wavemodel.FillOutWaveSpectrum();
 wavemodel.InitializeWithGMSpectrum(1.0);
 
 [u,v,w,zeta]=wavemodel.VariableFieldsAtTime(0,'u','v','w','zeta');
