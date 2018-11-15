@@ -290,13 +290,18 @@ classdef WintersModel < handle
             end
             
             
+            z = z-Lz;
             
             isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,z);
-%             isStratificationExponential = InternalModesExponentialStratification.IsStratificationExponential(rho,z);
+            isStratificationExponential = InternalModesExponentialStratification.IsStratificationExponential(rho,z);
             if isStratificationConstant == 1
                 fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
                 N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z);
                 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, min(rho));
+            elseif isStratificationExponential == 1
+                wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [5.2e-3 1300], z, latitude);
+                ProfileDeviation = std((rho-wavemodel.internalModes.rhoFunction(z))/max(rho));
+                fprintf('Our assumed profile deviates from the recorded profile by 1 part in 10^{%d}\n',round(log10(ProfileDeviation)));
             else
                 fprintf('Failed to initialize wave model\n');
                 wavemodel = [];
