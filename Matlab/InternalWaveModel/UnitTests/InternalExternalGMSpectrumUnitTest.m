@@ -39,7 +39,8 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 t = 3600;
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+% wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [N0 1300], linspace(-Lz,0,Nz)', latitude);
 wavemodel.InitializeWithGMSpectrum(1.0)
 % wavemodel.InitializeWithPlaneWave(0,0,1,1.0,1);
 % [u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);

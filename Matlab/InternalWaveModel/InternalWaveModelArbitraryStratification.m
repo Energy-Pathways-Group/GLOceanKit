@@ -123,6 +123,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             FillOutWaveSpectrum@InternalWaveModel(self);
         end
         
+        function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)
+            self.ComputeModesForNonzeroWavenumbers( 1 );
+            [GM3Dint,GM3Dext] = InitializeWithSpectralFunction@InternalWaveModel(self,GM2D_int,varargin{:});
+        end
+        
         function ComputeModesForNonzeroWavenumbers(self, A)
             % We go to great lengths to avoid solving the eigenvalue
             % problem, because it's so darned expensive.

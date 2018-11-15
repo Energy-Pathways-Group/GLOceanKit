@@ -31,8 +31,8 @@ classdef InternalWaveModelExponentialStratification < InternalWaveModelArbitrary
        N0
        b
     end
-    
-    methods
+        
+    methods  
         function self = InternalWaveModelExponentialStratification(dims, n, rho, z, latitude, varargin)
             
             im = InternalModesExponentialStratification(rho,[-dims(3) 0], z, latitude);

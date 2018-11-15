@@ -471,7 +471,7 @@ classdef (Abstract) InternalWaveModel < handle
             self.internalModes.normalization = self.norm_ext;
             numValidIndices = 0;
             for iWave=1:length(kOrOmega)
-                [FExt,GExt,hExt] = self.internalModes.(methodName)(kOrOmega(iWave));
+                [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
                 if (hExt(j(iWave)) <= 0)
                     warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
                     continue;
@@ -1473,6 +1473,13 @@ classdef (Abstract) InternalWaveModel < handle
         % and external
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+        
+        function omegaResolved = ResolvedFrequenciesAtMode(self,jMode)
+            Om = self.Omega(:,:,jMode);
+            OmNyquist = InternalWaveModel.NyquistWavenumbers(Om);  
+            omegaResolved = sort(reshape(unique(abs(Om(~OmNyquist))),1,[]));
+        end
+        
         function ShowResolvedModesPlot(self,maxDeltaOmega)
             xAxisMax = 15*self.f0;
             omegaAxis = linspace(self.f0,xAxisMax,1000)';
@@ -1541,7 +1548,7 @@ classdef (Abstract) InternalWaveModel < handle
             caxis([-2 0])
             shading flat
             for jMode = modeAxis
-                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                omega = self.ResolvedFrequenciesAtMode(jMode);
                 scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
             end
             scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
@@ -1565,7 +1572,7 @@ classdef (Abstract) InternalWaveModel < handle
             caxis([-2 0])
             shading flat
             for jMode = modeAxis
-                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                omega = self.ResolvedFrequenciesAtMode(jMode);
                 scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
             end
             scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
@@ -1590,7 +1597,7 @@ classdef (Abstract) InternalWaveModel < handle
             caxis([-2 0])
             shading flat
             for jMode = modeAxis
-                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                omega = self.ResolvedFrequenciesAtMode(jMode);
                 scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
             end
             scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
@@ -1616,7 +1623,7 @@ classdef (Abstract) InternalWaveModel < handle
             caxis([-2 0])
             shading flat
             for jMode = modeAxis
-                omega = sort(reshape(self.Omega(:,:,jMode),1,[]));
+                omega = self.ResolvedFrequenciesAtMode(jMode);
                 scatter(omega+omega_epsilon,jMode*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
             end
             scatter(self.omega_ext+omega_epsilon,self.j_ext+0.5,16*ones(size(self.omega_ext)),'filled', 'MarkerFaceColor', 1*[1 1 1])
