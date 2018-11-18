@@ -19,27 +19,30 @@ Ew = GM.VerticalVelocityVariance(z);
 N2 = GM.N2(z);
 N = sqrt(N2);
 
-N0_const = N0/2;
-GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L 0],latitude);
-EnergyScale = L/L_gm/2;
-Euv_const = EnergyScale*GMConst.HorizontalVelocityVariance(z);
-Eeta_const = EnergyScale*GMConst.IsopycnalVariance(z);
-Ew_const = EnergyScale*GMConst.VerticalVelocityVariance(z);
+L_const = L/2;
+z_const = linspace(-L_const,0,100)';
+
+N0_const = N0/sqrt(2);
+GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L_const 0],latitude);
+EnergyScale = L/L_gm/2.5;
+Euv_const = EnergyScale*GMConst.HorizontalVelocityVariance(z_const);
+Eeta_const = EnergyScale*GMConst.IsopycnalVariance(z_const);
+Ew_const = EnergyScale*GMConst.VerticalVelocityVariance(z_const);
 
 figure
 subplot(1,3,1)
 plot(1e4*Euv,z), hold on
-plot(1e4*Euv_const,z)
+plot(1e4*Euv_const,z_const)
 xlabel('velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
 subplot(1,3,2)
 plot(Eeta,z), hold on
-plot(Eeta_const,z)
+plot(Eeta_const,z_const)
 xlabel('isopycnal variance (m^2)')
 ylabel('depth (m)')
 subplot(1,3,3)
 plot(1e4*(Euv + Ew + N2.*Eeta)/2,z), hold on
-plot(1e4*(Euv_const + Ew_const + N0_const*N0_const.*Eeta_const)/2,z)
+plot(1e4*(Euv_const + Ew_const + N0_const*N0_const.*Eeta_const)/2,z_const)
 xlabel('total energy (cm^2/s^2)')
 ylabel('depth (m)')
 legend('Exponential profile (GM reference)', 'Constant stratification')
@@ -47,14 +50,14 @@ legend('Exponential profile (GM reference)', 'Constant stratification')
 figure
 subplot(1,2,1)
 plot(1e4*Euv.*(N0./N),z), hold on
-plot(1e4*Euv_const.*(N0./N0_const),z)
+plot(1e4*Euv_const.*(N0./N0_const),z_const)
 vlines(44,'k--')
 xlabel('velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
 title('wkb scaled')
 subplot(1,2,2)
 plot(Eeta.*(N/N0),z),hold on
-plot(Eeta_const*(N0_const/N0),z)
+plot(Eeta_const*(N0_const/N0),z_const)
 vlines(53,'k--')
 xlabel('isopycnal variance (m^2)')
 ylabel('depth (m)')
@@ -68,22 +71,32 @@ figure
 subplot(2,1,1)
 omega = linspace(-N0,N0,200);
 S = GM.HorizontalVelocitySpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
-plot(omega,S), ylog
+S_const = GMConst.HorizontalVelocitySpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);;
+plot(omega,S), ylog, hold on,
+ax = gca;
+ax.ColorOrderIndex = 1;
+plot(omega,S_const,'--')
 ylim([1e-4 1e2])
 xlim(1.05*[-N0 N0])
 title('horizontal velocity spectra')
 xlabel('radians per second')
+legend('surface','650 m', '1300 m')
 
 subplot(2,1,2)
 omega = linspace(0,N0,500);
 Siso = GM.IsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
-plot(omega,Siso), ylog, xlog
+Siso_const = GMConst.IsopycnalSpectrumAtFrequencies([0 -L_gm/2 -L_gm],omega);
+plot(omega,Siso), ylog, xlog, hold on,
+ax = gca;
+ax.ColorOrderIndex = 1;
+plot(omega,Siso_const,'--')
 Sref = omega.^(-2); Sref(omega<f0) = 0; refIndex = find(omega>f0,1,'first'); Sref = Sref * (Siso(2,refIndex)/Sref(refIndex))*10;
 hold on, plot(omega,Sref,'k','LineWidth',2)
 ylim([1e1 3e6])
 xlim(1.05*[0 N0])
 title('isopycnal spectra')
 xlabel('radians per second')
+legend('surface','650 m', '1300 m')
 
 % subplot(2,2,4)
 % omega = linspace(0,N0,500);
