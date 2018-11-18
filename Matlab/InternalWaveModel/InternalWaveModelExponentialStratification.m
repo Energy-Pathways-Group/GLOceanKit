@@ -27,9 +27,9 @@ classdef InternalWaveModelExponentialStratification < InternalWaveModelArbitrary
     % Jeffrey J. Early
     % jeffrey@jeffreyearly.com
     
-    properties
-        N0
-        b
+    properties (Access = public)
+       N0
+       b
     end
         
     methods  
@@ -39,9 +39,9 @@ classdef InternalWaveModelExponentialStratification < InternalWaveModelArbitrary
             
             self@InternalWaveModelArbitraryStratification(dims, n, im.rhoFunction, z, latitude, varargin{:});
             
+            self.internalModes = im;
             self.N0 = rho(1);
             self.b = rho(2);
-            self.internalModes = im;
         end
     end
 end

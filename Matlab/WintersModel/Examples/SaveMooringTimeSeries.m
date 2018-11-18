@@ -10,7 +10,9 @@ end
 NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
 LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 
-file = LinearSteadyStateFile;
+ExponentialSpinup = strcat(baseURL,'EarlyV2_GMexp_NL_forced_damped_64cube');
+
+file = ExponentialSpinup;
 
 output_directory = baseURL;
 
@@ -65,14 +67,24 @@ v3d = reshape(v4d,nMoorings,nDepths, nT);
 w3d = reshape(w4d,nMoorings,nDepths, nT);
 
 depths = z(depth_indices);
-N0 = wavemodel.N0;
 Lz = wavemodel.Lz;
 latitude = wavemodel.latitude;
 f0 = wavemodel.f0;
-save(outputfile,'u3d','v3d','w3d','t','depths', 'N0', 'Lz', 'latitude', 'f0');
+
+if strcmp(class(wavemodel),'InternalWaveModelExponentialStratification')
+    N0 = wavemodel.N0;
+    b = wavemodel.b;
+    save(outputfile,'u3d','v3d','w3d','t','depths', 'N0', 'b', 'Lz', 'latitude', 'f0');
+elseif strcmp(class(wavemodel),'InternalWaveModelConstantStratification')
+    N0 = wavemodel.N0;
+    save(outputfile,'u3d','v3d','w3d','t','depths', 'N0', 'Lz', 'latitude', 'f0');
+else
+    error('ahahahahha')
+end
+
 
 dt = t(2)-t(1);
-S = zeros(nT,nDepths);
+S = zeros(nT+1,nDepths);
 for iDepth = 1:nDepths
     cv_mooring = squeeze(u3d(:,iDepth,:) + sqrt(-1)*v3d(:,iDepth,:)).';
     [omega_p, Spp, Snn, Spn] = mspec(dt,cv_mooring,[]);
