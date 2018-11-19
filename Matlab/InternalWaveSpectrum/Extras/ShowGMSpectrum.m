@@ -1,16 +1,16 @@
-if 1 == 0
-    [rho, N2, zIn] = InternalModes.StratificationProfileWithName('constant');
-    z = linspace(min(zIn),max(zIn),5000);
-    N0 = sqrt(max(N2(z)));
-else
-    GM = GarrettMunkSpectrum('exponential');
-    z = flip(GM.zInternal);
-    N0 = GM.N_max;
-end
-
-if ~exist('GM','var')
-    GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
-end
+% if 1 == 0
+%     [rho, N2, zIn] = InternalModes.StratificationProfileWithName('constant');
+%     z = linspace(min(zIn),max(zIn),5000);
+%     N0 = sqrt(max(N2(z)));
+% else
+%     GM = GarrettMunkSpectrum('exponential');
+%     z = flip(GM.zInternal);
+%     N0 = GM.N_max;
+% end
+% 
+% if ~exist('GM','var')
+%     GM = GarrettMunkSpectrum(rho,[-L 0],latitude);
+% end
 
 L_gm = 1300;
 f0 = GM.f0;
