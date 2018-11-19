@@ -26,10 +26,10 @@ classdef InternalModesExponentialStratification < InternalModesBase
             % rho should be a two component vector with the buoyancy at the
             % surface and the e-fold scale, e.g., [5.2e-3 1300].
             if isa(rho,'numeric') == true && (length(rho) == 2 || length(rho) == 3)
-                N0 = rho(1);
-                b = rho(2);
+                N0 = double(rho(1));
+                b = double(rho(2));
                 if length(rho) == 3
-                    rho0 = rho(3);
+                    rho0 = double(rho(3));
                 else
                     rho0 = 1025;
                 end
@@ -40,7 +40,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 error('Invalid initialization: rho must be a two-component vector with the bouyancy at the surface and the e-fold scale, e.g., [5.2e-3 1300], or a three-component vector that includes the density at the surface as the final argument.\n');
             end
             
-            self@InternalModesBase(rhoFunction,z_in,z_out,latitude, varargin{:});
+            self@InternalModesBase(rhoFunction,double(z_in),double(z_out),double(latitude), varargin{:});
             self.N0 = N0;
             self.b = b;
             self.rhoFunction = rhoFunction;
@@ -87,16 +87,15 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             nu = @(x) sqrt( epsilon^2 * x.^2 + lambda^2 );
             s = @(x) x;
-            x_nu = lambda/sqrt(5*5*exp(-2*self.Lz/self.b) - epsilon*epsilon);
             
             bounds = [x_lowerbound(lambda) x_upperbound(lambda)];
-            r = FindRootsInRange(self, nu, s, bounds, x_nu);
+            r = FindRootsInRange(self, nu, s, bounds, exp(-self.Lz/self.b));
             
             while length(r) < self.nModes
                 % the roots get closer together
                 dr = r(end)-r(end-1);
-                bounds = [bounds(2) bounds(2)+dr*self.nInitialSearchModes];
-                more_roots = FindRootsInRange(self, nu, s, bounds, x_nu);
+                bounds = [bounds(2) bounds(2)+dr*min(self.nInitialSearchModes, self.nModes-length(r)+1) ];
+                more_roots = FindRootsInRange(self, nu, s, bounds, exp(-self.Lz/self.b));
                 r = [r; more_roots];
             end
             
@@ -133,7 +132,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             if omega < self.N0
                 nu = @(x) omega*x/eta;
                 s = @(x) self.N0*x/eta;
-                r = FindRootsInRange(self, nu, s, bounds, x_nu);
+                r = FindRootsInRange(self, nu, s, bounds, exp(-self.Lz/self.b));
                 
                 % sqrt(gh)= b*eta/x, so h=(b*eta/x)^2/g
                 h = reshape((self.b*eta./r).^2/self.g,1,[]);   
@@ -159,7 +158,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             k = self.kFromOmega(h,omega);
         end
         
-        function r = FindRootsInRange(self, nu, s, bounds, x_nu)
+        function r = FindRootsInRange(self, nu, s, bounds, expMinusDOverB)
             % nu(x) is a function of x [used in the solution J_\nu(s)]
             % s(x) is a function of x [used in the solution J_\nu(s)]
             % bounds is the [xmin xmax] of the region to search for roots
@@ -178,30 +177,21 @@ classdef InternalModesExponentialStratification < InternalModesBase
             f_smallnu = @(x) A(x) .* besselj(nu(x),exp(-self.Lz/self.b)*s(x)) + B(x) .* bessely(nu(x),exp(-self.Lz/self.b)*s(x));
             f_bignu = @(x) (A(x) ./ bessely(nu(x),exp(-self.Lz/self.b)*s(x)) ) .* besselj(nu(x),exp(-self.Lz/self.b)*s(x)) + B(x);
             
-            % The function omega(x)./(exp(-D/b)*x) will monotonically decay with x.
-            % We want to find where it first drops below 5, and use the appropriate
-            % form of the equation.
-            xcutoffIndex = find( x >= x_nu,1,'first' );
             
-            if xcutoffIndex == 1
-                % nu is small for all values of x
-                f = f_smallnu;
-                f_cheb = chebfun(f,bounds,'splitting','on');
-                r = roots(f_cheb);
-            elseif isempty(xcutoffIndex) == 1
-                % nu is large for all values of x
-                f = f_bignu;
-                f_cheb = chebfun(f,bounds,'splitting','on');
-                r = roots(f_cheb);
-            else
-                % we need to subdivide the interval into small and large.
-                f = f_bignu;
-                f_cheb = chebfun(f,[bounds(1) x(xcutoffIndex)] ,'splitting','on');
-                r = roots(f_cheb);
-                f = f_smallnu;
-                f_cheb = chebfun(f,[x(xcutoffIndex) bounds(2)] ,'splitting','on');
+            r = [];
+            bigNuIndices = find( nu(x) >= s(x)*expMinusDOverB );
+            if ~isempty(bigNuIndices)
+                f_cheb = chebfun(f_bignu,[x(min(bigNuIndices)) x(max(bigNuIndices))],'splitting','on');
                 r = [r; roots(f_cheb)];
             end
+            
+            smallNuIndices = find( nu(x) < s(x)*expMinusDOverB );
+            if ~isempty(smallNuIndices)
+                f_cheb = chebfun(f_smallnu,[x(min(smallNuIndices)) x(max(smallNuIndices))],'splitting','on');
+                r = [r; roots(f_cheb)];
+            end
+            
+            r = sort(r);
         end
         
         function h0 = BarotropicEquivalentDepthAtWavenumber(self, k)
@@ -299,6 +289,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
                     lowerIntegrationBound = max(-self.Lz,-4*c(j)/omega(j));
                 end
                 [Ffunc,Gfunc] = self.ModeFunctionsForOmegaAndC(omega(j),c(j));
+                Scale = abs(Ffunc(0,omega(j),c(j)).^2);
                 switch self.normalization
                     case Normalization.uMax
                         % Doesn't the surface have the maximum value???
@@ -306,7 +297,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
                     case Normalization.wMax
                         A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) ) )  );
                     case Normalization.kConstant
-                        A = sqrt(Gfunc(0,omega(j),c(j))^2 + integral( @(z) (self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
+                        A = sqrt(Gfunc(0,omega(j),c(j))^2 + Scale*integral( @(z) (1/Scale)*(self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
                     case Normalization.omegaConstant
                         A = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
                 end
@@ -351,31 +342,54 @@ classdef InternalModesExponentialStratification < InternalModesBase
     end
     
      methods (Static)
-         % rho0*(1 + b*N0*N0/(2*g)*(1 - exp(2*z/b)));
-         function flag = IsStratificationExponential(rho,z_in)
+         % rho(z) = rho0*(1 + b*N0*N0/(2*g)*(1 - exp(2*z/b)));
+         % rho0 = rho(0)
+         % N2 = -g*diff(rho)/rho0 = N0*N0 * exp(2*z/b)
+         % log(N2) = log(N0^2)+(2/b)*z
+         function [flag,rho_params] = IsStratificationExponential(rho,z_in)
              if isa(rho,'function_handle') == true
                  if numel(z_in) ~= 2
                      error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
-                 end
-                 rho0 = rho(max(z_in));
-                 max_ddrho = max(abs(diff(diff(rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
-             elseif isa(rho,'numeric') == true
-                 % The best solution here might be to do a polyfit of
-                 % log(diff(rho)) and if the residual is sufficiently
-                 % small, call it good.
-                 if length(unique(diff(z_in))) > 1
-                     flag = 0;
-                     return;
-                 end
-                 dz = mean(diff(z_in));
-                 
-                 rho0 = max(rho);
-                 rho_z = diff(rho)/dz;
-                 b = 2./(diff(-log(rho_z))/dz);
-                 max_ddrho = mean(b)/std(b);
+                 end       
+                 z_rho = linspace(min(double(z_in)),max(double(z_in)),500)';
+                 rho_grid = rho(z_rho);
+                 rho_0 = rho(max(double(z_in)));          
+             elseif isa(rho,'numeric') == true                 
+                 z_rho = reshape(z_in,[],1);
+                 rho_grid = reshape(rho,[],1);
+                 rho_0 = max(rho);
              end
              
-             flag = max_ddrho < 1e-7;
+             g = 9.81;
+             N2 = -(g/rho_0)*diff(rho_grid)./diff(z_rho);
+             z_N2 = (z_rho(1:end-1) + z_rho(2:end))/2;
+             
+             % We want to handle single precision densities that have been
+             % contaminated by adding rho0
+             if isfloat(rho)
+                 NumSignifcantDigits = 7.2 - (abs(log10(max(abs(rho_grid-rho_0))/rho_0)) + log10(length(z_rho)));
+             else
+                 NumSignifcantDigits = 15.9 - (abs(log10(max(abs(rho_grid-rho_0))/rho_0)) + log10(length(z_rho)));
+             end
+             zeroIndices = N2 < max(N2)*power(10,-NumSignifcantDigits);
+             N2(zeroIndices) = [];
+             z_N2(zeroIndices) = [];
+             
+             [p,~,mu]=polyfit(z_N2,log(N2),1);
+             slope = (p(1)/mu(2));
+             intercept = p(2)-p(1)*mu(1)/mu(2);
+             
+             N0 = round(sqrt( exp(intercept) ),3,'significant');
+             b = round(2/slope,3,'significant');
+             
+             % create an analytical profile with these parameters
+             rho_exp = @(z) rho_0*(1 + b*N0*N0/(2*g)*(1 - exp(2*z/b)));
+             ProfileDeviation = std((rho_grid-rho_exp(z_rho))/rho_0);
+             
+             rho_params = [N0 b rho_0];
+             
+             % require single precision floating point
+             flag = log10(ProfileDeviation) < -6;
          end
          
      end

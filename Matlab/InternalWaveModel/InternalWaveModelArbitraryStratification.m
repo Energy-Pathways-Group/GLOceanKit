@@ -86,6 +86,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             im = InternalModes(rho,[-dims(3) 0],z,latitude, varargin{:});
+            im.nModes = length(z);
             if isempty(nModes)
                 [F,G] = im.ModesAtWavenumber(0);
                 nGoodModes_F = InternalModes.NumberOfWellConditionedModes(F);
@@ -203,7 +204,12 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function value = get.Ppm_HKE_factor(self)
-            value = (1 + self.f0*self.f0./(self.Omega.*self.Omega)) .* self.F2 ./ (2*self.h);
+            omega = self.Omega;
+            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+                omega(omega == 0) = 1;
+            end
+            fOverOmega = self.f0 ./ omega;
+            value = (1 + fOverOmega.*fOverOmega) .* self.F2 ./ (2*self.h);
         end
         function value = get.Ppm_VKE_factor(self)
             error('not yet implemented because we are not computing \int G^2 dz anywhere');

@@ -141,11 +141,19 @@ classdef (Abstract) InternalWaveModel < handle
 %             self.rhobar = self.RhoBarAtDepth(self.z);
             
             % Spectral domain, in radians
-            dk = 1/self.Lx;          % fourier frequency
-            self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+            if self.Nx > 0 && self.Lx > 0
+                dk = 1/self.Lx;          % fourier frequency
+                self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+            else
+                self.k = 0;
+            end
             
-            dl = 1/self.Ly;          % fourier frequency
-            self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+            if self.Ny > 0 && self.Ly > 0
+                dl = 1/self.Ly;          % fourier frequency
+                self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+            else
+                self.l = 0;
+            end
             
             self.j = (1:nModes)';
             

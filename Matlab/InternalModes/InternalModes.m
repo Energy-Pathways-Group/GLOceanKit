@@ -150,11 +150,14 @@ classdef InternalModes < handle
                 latitude = varargin{4};
                 
                 isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,zIn);
-                
+                [isStratificationExponential, rho_params] = InternalModesExponentialStratification.IsStratificationExponential(rho,zIn);
                 if userSpecifiedMethod == 0 && isStratificationConstant == 1
-                    fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
                     [N0, rho0] = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,zIn);
+                    fprintf('Initialization detected that you are using constant stratification with N0=%.1g. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n', N0);
                     self.internalModes = InternalModesConstantStratification([N0, rho0],zIn,zOut,latitude,extraargs{:});
+                elseif userSpecifiedMethod == 0 && isStratificationExponential == 1
+                    fprintf('Initialization detected that you are using exponential stratification with N0=%.1g, b=%d. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n',rho_params(1),round(rho_params(2)));
+                    self.internalModes = InternalModesExponentialStratification(rho_params,zIn,zOut,latitude,extraargs{:});
                 elseif userSpecifiedMethod == 0
                     % If the user didn't specify a method, try
                     % wkbAdaptiveSpectral first, but if that fails to
