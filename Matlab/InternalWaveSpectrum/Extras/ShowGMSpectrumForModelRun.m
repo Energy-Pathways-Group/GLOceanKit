@@ -1,3 +1,5 @@
+shouldSavePlots = 1;
+
 latitude = 33;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 rho0 = 1025;
@@ -71,6 +73,10 @@ title('$\left\langle u^2 + w^2 + N^2 \eta^2 \right\rangle$','interpreter','latex
 legend('Exponential', 'Constant','Location','southeast')
 packfig(1,4)
 
+if shouldSavePlots == 1
+    print('-depsc2','VariancesVsDepth.eps')
+end
+
 
 figure('Name','WKBScaled Variances Vs Depth')
 subplot(1,3,1)
@@ -100,6 +106,10 @@ packfig(1,3)
 
 legend('Exponential', 'Constant','GM Ref','Location','southeast')
 
+if shouldSavePlots == 1
+    print('-depsc2','VariancesVsDepth_WKBScaled.eps')
+end
+
 E = 0.5*(Euv + Ew + N2.*Eeta);
 Etotal = trapz(z,E);
 
@@ -112,6 +122,10 @@ Etotal = trapz(z,E);
 omega_hke = linspace(-N0,N0,200);
 omega_iso = linspace(f0,N0,4000);
 depths = [-100 -325 -650];
+legendlabels = cell(length(depths),1);
+for iDepth = 1:length(depths)
+   legendlabels{iDepth} = sprintf('%d m',abs(depths(iDepth)));
+end
 
 Suv = GM.HorizontalVelocitySpectrumAtFrequencies(depths,omega_hke);
 Siso = GM.IsopycnalSpectrumAtFrequencies(depths,omega_iso);
@@ -132,7 +146,11 @@ ylim([1e-4 20])
 xlim(1.05*frequencyscale*[-N0 N0])
 title('$\left\langle u^2 \right\rangle$(f)','interpreter','latex')
 xlabel('cph')
-legend('100 m','500 m', '1000 m')
+legend(legendlabels)
+
+if shouldSavePlots == 1
+    print('-depsc2','HorizontalVelocityFrequencySpectrum.eps')
+end
 
 figure('Name','Spectra')
 subplot(2,1,1)
@@ -146,7 +164,7 @@ ylim([3e2 3e6])
 xlim(frequencyscale*[f0 1.05*N0])
 title('$\left\langle \eta^2 \right\rangle$(f)','interpreter','latex')
 xlabel('cph')
-legend('100 m','500 m', '1000 m')
+legend(legendlabels)
 
 subplot(2,1,2)
 plot(frequencyscale*omega_iso,Sw,ExpLineStyle,'LineWidth',2), ylog, xlog, hold on,
@@ -157,6 +175,10 @@ ylim([2e-4 1e-1])
 xlim(frequencyscale*[f0 1.05*N0])
 title('$\left\langle w^2\right\rangle$(f) ','interpreter','latex')
 xlabel('cph')
+
+if shouldSavePlots == 1
+    print('-depsc2','IsopycnalAndVerticalVelocityFrequencySpectra.eps')
+end
 
 packfig(2,1)
 

@@ -2,7 +2,7 @@ file = '/Users/jearly/Documents/ProjectRepositories/single-wave-exponential-stra
 file = '/Users/jearly/Documents/ProjectRepositories/single-wave-exponential-stratification/WintersModelRuns/output_180506';
 
 
-% WM = WintersModel(file);
+WM = WintersModel(file);
 
 if WM.NumberOf3DOutputFiles > 1
     [t,u,v,w,x,z] = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'t','u','v','w','x','z');

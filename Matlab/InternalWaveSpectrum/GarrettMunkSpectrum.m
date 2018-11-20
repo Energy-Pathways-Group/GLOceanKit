@@ -136,7 +136,10 @@ classdef GarrettMunkSpectrum < handle
                     self.(varargin{k}) = varargin{k+1};
                 end
                 
-                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,latitude,'nEVP',self.nEVPMin);
+                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude);
+%                 if strcmp(class(im.internalModes),'InternalModesAdaptiveSpectral')
+%                     im.internalModes.nEVP = self.nEVPMin;
+%                 end
                 self.N_max = max(sqrt(im.N2_xLobatto));
                 self.zInternal = im.z_xLobatto;
                 self.N2internal = im.N2_xLobatto;
@@ -761,6 +764,9 @@ classdef GarrettMunkSpectrum < handle
                 while( (isempty(h) || length(h) < self.nModes) && nEVP < self.nEVPMax )
                     nEVP = nEVP + 128;
                     im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
+%                     if strcmp(class(im.internalModes),'InternalModesAdaptiveSpectral')
+%                         im.internalModes.nEVP = nEVP;
+%                     end
                     im.normalization = Normalization.kConstant;
                     [F, G, h] = im.(methodName)(x(i));
                 end
