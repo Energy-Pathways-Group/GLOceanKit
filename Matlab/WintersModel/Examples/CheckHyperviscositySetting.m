@@ -20,6 +20,10 @@ T_diss_z_theory = (dz/pi)^2/(W*dz);
 T_diss_x = WM.T_diss_x;
 T_diss_z = WM.T_diss_z;
 
+cfl = 0.25; % U*dt/dx < cfl
+dT_x = cfl*dx/U;
+dT_z = cfl*dz/W;
+
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
