@@ -1,11 +1,13 @@
+file = '/Users/jearly/Documents/ProjectRepositories/single-wave-exponential-stratification/WintersModelRuns/output_181113';
 file = '/Users/jearly/Documents/ProjectRepositories/single-wave-exponential-stratification/WintersModelRuns/output_180506';
 
-WM = WintersModel(file);
+
+% WM = WintersModel(file);
 
 if WM.NumberOf3DOutputFiles > 1
     [t,u,v,w,x,z] = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'t','u','v','w','x','z');
 elseif WM.NumberOf2DOutputFiles > 1
-    [t,u,v,w,x,z] = WM.VariableFieldsFrom2DOutputFileAtIndex(90,'t','u','v','w','x','z');
+    [t,u,v,w,x,z] = WM.VariableFieldsFrom2DOutputFileAtIndex(1,'t','u','v','w','x','z');
 end
 
 U = max(max(max(sqrt(u.*u + v.*v))));
@@ -14,15 +16,18 @@ W = max(max(max(abs(w))));
 dx = x(2)-x(1);
 dz = z(2)-z(1);
 
+fprintf('Model has grid resolution of (dx,dz) = (%.1f m x %.1f m) and max velocities of (U,W)=(%.2f,%.2f) cm/s\n',dx,dz,100*U,100*W);
+fprintf('Model dissipation scales are (T_diss_x,T_diss_z) = (%.1f s x %.1f s)\n',WM.T_diss_x,WM.T_diss_z);
+
 T_diss_x_theory = (dx/pi)^2/(U*dx);
 T_diss_z_theory = (dz/pi)^2/(W*dz);
-
-T_diss_x = WM.T_diss_x;
-T_diss_z = WM.T_diss_z;
 
 cfl = 0.25; % U*dt/dx < cfl
 dT_x = cfl*dx/U;
 dT_z = cfl*dz/W;
+
+fprintf('Model dissipation scales *should* be (T_diss_x,T_diss_z) = (%.1f s x %.1f s)\n',T_diss_x_theory,T_diss_z_theory);
+fprintf('Model time step *should* be (dt_x,dt_z) = (%.1f s x %.1f s)\n',dT_x,dT_z);
 
 return
 

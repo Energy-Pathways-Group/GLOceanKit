@@ -21,11 +21,11 @@ N = sqrt(N2);
 %
 % Initialize a stratification with good parameters for the model
 %
-L_const = L/2;
+L_const = 1300;
 z_const = linspace(-L_const,0,100)';
-N0_const = N0/sqrt(2);
+N0_const = N0;
 GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L_const 0],latitude);
-EnergyScale = L/L_gm/2.5;
+EnergyScale = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -111,7 +111,7 @@ Etotal = trapz(z,E);
 
 omega_hke = linspace(-N0,N0,200);
 omega_iso = linspace(f0,N0,4000);
-depths = [-100 -500 -1000];
+depths = [-100 -325 -650];
 
 Suv = GM.HorizontalVelocitySpectrumAtFrequencies(depths,omega_hke);
 Siso = GM.IsopycnalSpectrumAtFrequencies(depths,omega_iso);

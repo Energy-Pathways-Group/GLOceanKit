@@ -27,7 +27,7 @@ function prob_params = load_problem_params(runDIR)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
 % Textscan problem_params and extract the first 'column' of the file containing key variables
 
-prob_params_fileID = fopen(sprintf('%s/codes_etc/input/problem_params', runDIR));
+prob_params_fileID = fopen(sprintf('%s/input/problem_params', runDIR));
 prob_params_data = textscan(prob_params_fileID,'%s %*[^\n]');
 fclose(prob_params_fileID);
 
