@@ -21,28 +21,85 @@
 \maketitle
 %\section{}
 %\subsection{}
+%%%%%%%%%%%%%%
+%
+\section{Damping time scale}
+%
+%%%%%%%%%%%%%%
 Using the terminology of Kraig Winters we need to define a reasonable coefficient for damping.
 
 Given that,
 \begin{equation}
-\frac{\partial u}{\partial t} = \nu \nabla^{2n} u
+\frac{\partial u}{\partial t} = \nu_n \nabla^{2n} u
 \end{equation}
 is spectrally,
 \begin{equation}
-\frac{\partial u}{\partial t} = \nu (i k 2 \pi)^{2n} u
+\frac{\partial u}{\partial t} = \nu_n (i k 2 \pi)^{2n} u
 \end{equation}
 which has the solution
 \begin{equation}
-u = e^{\nu (i k 2 \pi)^{2n} t}.
+u = e^{\nu_n (i k 2 \pi)^{2n} t}.
 \end{equation}
 We want to convert this into an e-fold time, so we want
 \begin{equation}
-e^{-t/T}=e^{\nu (i k 2 \pi)^{2n} t}.
+e^{-t/T}=e^{\nu_n (i k 2 \pi)^{2n} t}.
 \end{equation}
 Using that $k=\frac{1}{2\Delta}$ where $\Delta$ is the sample interval and solving for $\nu$ in terms of the other variables,
 \begin{equation}
-\nu = \frac{(-1)^{n+1}}{T} \left( \frac{\Delta}{\pi} \right)^{2n}
+\label{nu_time_scale}
+\nu _n= \frac{(-1)^{n+1}}{T} \left( \frac{\Delta}{\pi} \right)^{2n}
 \end{equation}
+
+%%%%%%%%%%%%%%
+\subsection{Reynolds number}
+%%%%%%%%%%%%%%
+The usual approach to setting a damping scale is to require that the Reynolds number is 1 at the grid scale. So, $\frac{U\Delta}{\nu_1}=1$. Of course, this is not the hyperviscous coefficient, but the regular viscosity coefficient, i.e., $\nu_1$ in our notation.
+
+How does this hyperviscous $\nu_n$ compare to the usual $\nu_1$?
+\begin{align}
+\nu_n (k 2 \pi)^{2n} u =& \nu_1 (k 2 \pi)^{2} u \\
+\nu_1 = \nu_n (k 2 \pi)^{2n-2}  \\
+\nu_1= \frac{1}{T} \left( \frac{\Delta}{\pi} \right)^{2}
+\end{align}
+where we used equation \ref{nu_time_scale}. Now use the fact that we want $Re=1$,
+\begin{align}
+ \frac{U \Delta}{\nu_1} =& 1\\
+\frac{(-1)^{n+1}}{U \Delta} \left( \frac{\Delta}{\pi} \right)^{2} =& T
+\end{align}
+
+Note that the dependence on the order of the hyperviscous operator, $n$, is gone. This makes sense because we're simply setting the time scale at which the highest wavenumber decays---and we want it to decay at the same rate for ALL case. It's only the other wavenumbers that differ.
+
+%For one simulation, we have that $U = 0.0365$ m/s and $\Delta=6750$ m with $n=3$. This suggests a damping time scale of $T=18000$s. The actually simulation used twice that.
+
+%%%%%%%%%%%%%%
+\subsection{Hyper-Reynolds number}
+%%%%%%%%%%%%%%
+An alternative way of looking at this is to create a `hyper-Reynolds number'. So,
+\begin{equation}
+\frac{\partial u}{\partial t} + u u_x = \nu_n \nabla^{2n} u
+\end{equation}
+would lead to a Reynolds number that looks like,
+\begin{equation}
+Re = \frac{U L^{2n}}{L \nu_n}
+\end{equation}
+Requiring this to be viscous at the grid scale is,
+\begin{equation}
+\nu_n = U \Delta^{2n-1}
+\end{equation}
+Now use this in equation \ref{nu_time_scale} to find the time scale,
+\begin{equation}
+ U \Delta^{2n-1} = \frac{(-1)^{n+1}}{T} \left( \frac{\Delta}{\pi} \right)^{2n}
+\end{equation}
+and, other than some factors of $\pi$ we get that,
+\begin{equation}
+T = \frac{\Delta}{U}.
+\end{equation}
+
+%%%%%%%%%%%%%%
+%
+\section{With forcing}
+%
+%%%%%%%%%%%%%%
 
 Now add some forcing,
 \begin{align}
@@ -62,21 +119,7 @@ Then, in steady state,
 \item We can compute, given U, the cfl criteria, and then ask that the Reynolds number be one at the grid scale.
 \end{itemize}
 
-How does this hyperviscous $\nu$ compare to the usual $\nu_0$?
-\begin{align}
-\nu (k 2 \pi)^{2n} u =& \nu_0 (k 2 \pi)^{2} u \\
-\nu_0 = \nu (k 2 \pi)^{2n-2}  \\
-\nu_0 = \frac{1}{T} \left( \frac{\Delta}{\pi} \right)^{2}
-\end{align}
 
-\begin{align}
- \frac{U \Delta}{\nu_0} =& 1\\
-\frac{(-1)^{n+1}}{U \Delta} \left( \frac{\Delta}{\pi} \right)^{2} =& T
-\end{align}
-
-For one simulation, we have that $U = 0.0365$ m/s and $\Delta=6750$ m with $n=3$. This suggests a damping time scale of $T=18000$s. The actually simulation used twice that.
-
-The linear wave mode propagation speed seems to be the maximum velocity in these simulations. Wait. There's no surface, so that can't matter.
 
 %%%%%%%%%%%%%%
 %
