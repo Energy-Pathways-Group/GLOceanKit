@@ -136,7 +136,7 @@ classdef GarrettMunkSpectrum < handle
                     self.(varargin{k}) = varargin{k+1};
                 end
                 
-                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude);
+                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,self.latitude);
 %                 if strcmp(class(im.internalModes),'InternalModesAdaptiveSpectral')
 %                     im.internalModes.nEVP = self.nEVPMin;
 %                 end

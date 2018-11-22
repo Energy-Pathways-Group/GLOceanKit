@@ -109,12 +109,3 @@ ylim([1e-6 1e-1])
 xlim(1.05*[0 N0])
 title('horizontal vertical velocity spectra')
 xlabel('radians per second')
-
-return
-
-k = linspace(0,pi/10,150)';
-S = GM.HorizontalVelocitySpectrumAtWavenumbers(k);
-
-S( S<1e-2 ) = 1e-2;
-figure, plot(k,S), ylog, xlog
-ylim([1e-2 1.1*max(max(S))])

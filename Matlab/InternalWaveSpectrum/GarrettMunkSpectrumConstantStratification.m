@@ -55,6 +55,19 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             N2 = self.N_max*self.N_max*ones(size(z));
         end
         
+        function [omega2, k2, m2] = SquaredFrequencyForWavenumber(self,k)
+            k = reshape(k,[],1);
+            j = reshape(1:self.nModes,1,[]);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            
+            m = j*pi/self.Lz;
+            omega2 = (N2*k.^2 + f2*m.^2)./(k.^2 + m.^2);
+            k2 = k.^2;
+            m2 = m.^2;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Horizontal Velocity Spectra
@@ -90,6 +103,8 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         end
         
         function S = HorizontalVelocitySpectrumAtWavenumbers(self,z,k)
+            % returns the horizontal velocity spectrum as a function of
+            % horizontal wavenumber (k), for any given depth (z).
             z = reshape(z,[],1);
             k = reshape(k,1,[]);
             j=shiftdim(1:self.nModes,-1);
@@ -106,6 +121,26 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             C = 1+f2./omega2;
             S = self.E * sum( C .* Bfunc .* Phi,3);
         end
+
+        function [S,j] = HorizontalVelocitySpectrumAtWavenumberAndMode(self,k)
+            % returns the horizontal velocity spectrum as a function of
+            % horizontal wavenumber (k) and mode (j).
+            k = reshape(k,[],1);
+            j = reshape(1:self.nModes,1,[]);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            f = self.f0;
+                        
+            m = j*pi/self.Lz;
+%             omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2;
+            omega2 = (N2*k.^2 + f2*m.^2)./(k.^2 + m.^2);
+            
+            Phi = (2/self.Lz)*self.H(j) .* (m.^2./(k.^2 + m.^2));
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
+            C = 1+f2./omega2;
+            S = self.E * C .* Bfunc .* Phi;
+        end
         
            
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,7 +149,8 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = IsopycnalVariance(self,z)
-            % depth averaged variance should be around 13.7 m^2
+            % returns the isopycnal variance as a function of depth (z)
+            % the depth averaged variance should be around 13.7 m^2
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
@@ -126,6 +162,8 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         end
         
         function S = IsopycnalSpectrumAtFrequencies(self,z,omega)
+            % returns the isopycnal spectrum as a function of frequency
+            % (omega), for any given depth (z).
             z = reshape(z,[],1);
             omega = reshape(omega,1,[]);
             
@@ -143,7 +181,39 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             S = Gamma*A;
         end
         
+        function [S,j] = IsopycnalSpectrumAtWavenumberAndMode(self,k)
+            % returns the depth-integrated isopycnal spectrum as a function
+            % of horizontal wavenumber (k) and mode (j).
+            k = reshape(k,[],1);
+            j = reshape(1:self.nModes,1,[]);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            f = self.f0;
+            
+            m = j*pi/self.Lz;
+            
+            Gamma = self.H(j);
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
+            C = k.^2 ./ (N2*k.^2 + f2*m.^2);
+            S = self.E * C .* Bfunc .* Gamma;
+        end
+                
+        function S = IsopycnalSpectrumAtWavenumbers(self,z,k)
+            % returns the isopycnal spectrum as a function of horizontal
+            % wavenumber (k), for any given depth (z).            
+            [S,j] = self.IsopycnalSpectrumAtWavenumberAndMode(k);
+            z = reshape(z,1,1,[]);
+            
+            m = j*pi/self.Lz;
+            Gamma = (2/self.Lz) * sin(z.*m).^2;
+            
+            S = shiftdim(squeeze(sum(S .* Gamma,2)),1);
+        end
+                
         function [S, m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+            % returns the isopycnal spectrum as a function of vertical
+            % wavenumber (m)
             j = 1:self.nModes;
             H1 = (1+j/self.j_star).^(-5/2);
             H_norm = 1/sum(H1);
@@ -165,6 +235,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = VerticalVelocityVariance(self,z)
+            % returns the vertical velocity variance as a function of depth
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
@@ -177,6 +248,8 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         end
         
         function S = VerticalVelocitySpectrumAtFrequencies(self,z,omega)
+            % returns the vertical velocity spectrum as a function of
+            % frequency (omega), for any given depth (z).
             z = reshape(z,[],1);
             omega = reshape(omega,1,[]);
             
@@ -193,5 +266,36 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             Gamma = (2/self.Lz)*sum(self.H(j).*sin(z*j*pi/self.Lz).^2,2);
             S = Gamma*A;
         end
+        
+        function [S,j] = VerticalVelocitySpectrumAtWavenumberAndMode(self,k)
+            % returns the depth-integrated vertical velocity spectrum as a
+            % function of horizontal wavenumber (k) and mode (j).
+            k = reshape(k,[],1);
+            j = reshape(1:self.nModes,1,[]);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            f = self.f0;
+            
+            m = j*pi/self.Lz;
+            
+            Gamma = self.H(j);
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
+            C = k.^2 ./ (k.^2 + m.^2);
+            S = self.E * C .* Bfunc .* Gamma;
+        end
+                
+        function S = VerticalVelocitySpectrumAtWavenumbers(self,z,k)
+            % returns the vertical velocity spectrum as a function of
+            % horizontal wavenumber (k), for any given depth (z).
+            [S,j] = self.VerticalVelocitySpectrumAtWavenumberAndMode(k);
+            z = reshape(z,1,1,[]);
+            
+            m = j*pi/self.Lz;
+            Gamma = (2/self.Lz) * sin(z.*m).^2;
+            
+            S = shiftdim(squeeze(sum(S .* Gamma,2)),1);
+        end      
+        
     end
 end
