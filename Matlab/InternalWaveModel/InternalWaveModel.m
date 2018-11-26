@@ -570,8 +570,15 @@ classdef (Abstract) InternalWaveModel < handle
             
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
+            maxMode = self.nModes;
+            for iArg = 1:2:length(varargin)
+                if strcmp(varargin{iArg}, 'maxMode')
+                    maxMode = varargin{iArg+1};
+                end
+            end
+                  
             totalEnergy = 0;
-            for mode=1:self.nModes
+            for mode=1:maxMode
                 totalEnergy = totalEnergy + GM2D_int(self.f0,self.Nmax,mode);
             end
             fprintf('You will miss %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
