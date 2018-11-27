@@ -989,6 +989,13 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function uvw = VelocityFieldAtTimePosition(self,t,xyz,interpolationMethod)
+            % useful for integration methods where dy/dt is best given with
+            % y as a single variable.
+            [u,v,w] = self.VelocityAtTimePosition(t,xyz(:,1),xyz(:,2),xyz(:,3),interpolationMethod);
+            uvw = cat(2,u,v,w);
+        end
+        
         function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,interpolationMethod)
             if nargout == 3
                 [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w');

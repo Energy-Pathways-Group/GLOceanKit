@@ -75,7 +75,7 @@ end
 
 if strcmp(method,'powspec')
     averaging_bandwidth = 1;
-    taper_bandwidth = 0;
+    taper_bandwidth = 1;
     kappa_r = DiffusivityFromZeroFrequency(t(2)-t(1),velocities,averaging_bandwidth,taper_bandwidth)';
 end
 

@@ -42,7 +42,7 @@ plot(1e4*Euv_const_summed,z,'r--')
 legend('analytical','analytical summed')
 xlabel('horizontal velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
-xlim([0 1.1*max(1e4*Euv)])
+xlim([0 1.1*max(1e4*Euv_const)])
 
 subplot(1,3,2)
 plot(Eeta_const,z,'r'),hold on
@@ -58,9 +58,9 @@ legend('analytical','analytical summed')
 xlabel('vertical velocity variance (cm^2/s^2)')
 ylabel('depth (m)')
 
-Lx = 108e3;
+Lx = 800e3;
 
-figure
+figure('Name', 'Variances vs wavenumber')
 subplot(3,1,1)
 plot(k,k.*squeeze(Suv_const(50,:))), xlog, hold on, vlines(2*pi/Lx,'g--')
 subplot(3,1,2)
@@ -85,10 +85,10 @@ VariancePreserving = (k').*j;
 
 % Measures of stokes drift
 StokesDriftF2 = Suv_kj.^2.*k2./omega2;
-figure, jpcolor(k,j,(VariancePreserving.*abs(StokesDriftF2)).'); shading flat, xlog, ylog
-figure, plot(k,(k').*sum(StokesDriftF2,2)), xlog
+figure('Name', 'Stokes drift vs mode and wavenumber'), jpcolor(k,j,(VariancePreserving.*abs(StokesDriftF2)).'); shading flat, xlog, ylog
+figure('Name', 'Stokes drift vs wavenumber'), plot(k,(k').*sum(StokesDriftF2,2)), xlog, hold on, vlines(2*pi/Lx,'g--')
 
-figure
+figure('Name', 'Nonlinearity vs modes and wavenumber')
 subplot(4,1,1)
 jpcolor(k,j,(VariancePreserving.*abs(HorizontalShearNonlinearity)).'); shading flat, xlog, ylog
 colorbar
@@ -102,7 +102,7 @@ subplot(4,1,4)
 jpcolor(k,j,(VariancePreserving.*abs(VerticalStrainNonlinearity)).'); shading flat, xlog, ylog
 colorbar
 
-figure
+figure('Name', 'Variances vs modes and wavenumber')
 subplot(3,1,1)
 jpcolor(k,j,((k').*j.*abs(Suv_kj)).'); shading flat, xlog, ylog
 subplot(3,1,2)

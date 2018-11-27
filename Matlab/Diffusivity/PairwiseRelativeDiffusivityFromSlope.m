@@ -67,6 +67,7 @@ for iBin = 1:nBins
     r2(iBin) = mean(R2Bin{iBin});
     kappa_r(iBin) = Slope/4;
     std_error(iBin) = SE/4;
+     
     
 %     [p,bint,mu]=polyfit(tBin{iBin},D2Bin{iBin},1);
 %     m = (p(1)/mu(2));
@@ -82,7 +83,10 @@ for iBin = 1:nBins
     
 end
 
-
-
-end
+% spread = zeros(length(t),1);
+% for iTime = 1:length(t)
+%     indices = find(tBin{10} <= t(iTime));
+%     spread(iTime) = mean(D2Bin{10}(indices));
+% end
+% figure, plot(t,spread./t/4)
 
