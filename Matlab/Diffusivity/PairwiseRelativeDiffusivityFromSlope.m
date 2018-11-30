@@ -7,19 +7,9 @@ nDrifters = size(x,2);
 t = reshape(t,[],1);
 
 nBins = length(theBins);
-tBin = cell(nBins,1);
-D2Bin = cell(nBins,1);
-R2Bin = cell(nBins,1);
-for iBin = 1:nBins
-   tBin{iBin} = [];
-   D2Bin{iBin} = [];
-   R2Bin{iBin} = [];
-end
-
-
-r2 = zeros(nBins,1);
-kappa_r = zeros(nBins,1);
-std_error = zeros(nBins,1);
+D2 = zeros(length(t),nBins); % mean-square distance vs time, for each bin
+r0 = zeros(1,nBins); % initial separation
+nReps = zeros(1,nBins); % number of samples in this bin.
 
 stride = 1;
 for iDrifter=1:stride:nDrifters
@@ -27,32 +17,36 @@ for iDrifter=1:stride:nDrifters
         q = x(:,iDrifter) - x(:,jDrifter);
         r = y(:,iDrifter) - y(:,jDrifter);
         
-        % mean-squared-separation distance over the requested time-interval
-        R2 = mean(q.^2 + r.^2,1);
+        initialSeparation = sqrt(q(1)^2 + r(1)^2);
+        iBin = find(initialSeparation > theBins,1,'last');
         
+        nReps(iBin) = nReps(iBin) + 1;
+        r0(iBin) = r0(iBin) + initialSeparation;
+                
         % Now remove the initial conditions.
         q = q-q(1);
         r = r-r(1);
         
         % squared-separation distance as a function of time.
-        D2 = q.^2 + r.^2;
-        
-        iBin = find(sqrt(R2) > theBins,1,'last');
-
-        tBin{iBin} = cat(1,tBin{iBin},t);
-        D2Bin{iBin} = cat(1,D2Bin{iBin},D2);
-        R2Bin{iBin} = cat(1,R2Bin{iBin},R2);
+        D2(:,iBin) = D2(:,iBin) + q.^2 + r.^2;
     end
 end
 
+D2 = D2./nReps;
+r0 = r0./nReps;
+
+r2 = zeros(nBins,1);
+kappa_r = zeros(nBins,1);
+std_error = zeros(nBins,1);
+
 for iBin = 1:nBins
-    if isempty(tBin{iBin})
-        continue;
-    end
+%     if isempty(tBin{iBin})
+%         continue;
+%     end
     
     
-    X = tBin{iBin};
-    Y = D2Bin{iBin};
+    X = t;
+    Y = D2(:,iBin);
     
     %% Calculation of Standard Error Without Intercept
     % https://www.mathworks.com/matlabcentral/answers/373940-how-does-matlab-calculate-standard-error-in-fitlm
@@ -64,7 +58,7 @@ for iBin = 1:nBins
     MSE=SSE/(n-1);                                       %  Mean Squared Error
     SE=sqrt(MSE/sum(X.^2));
     
-    r2(iBin) = mean(R2Bin{iBin});
+    r2(iBin) = r0(iBin)^2;
     kappa_r(iBin) = Slope/4;
     std_error(iBin) = SE/4;
      

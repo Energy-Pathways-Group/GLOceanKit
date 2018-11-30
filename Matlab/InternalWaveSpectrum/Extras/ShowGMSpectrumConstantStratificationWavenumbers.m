@@ -25,7 +25,8 @@ Ew_const = GMConst.VerticalVelocityVariance(z);
 %
 % Same variances, but now computed by summing their associated spectra
 %
-k = 10.^linspace(log10(2*pi/1e6),log10(2*pi/10),150); dk = k(2)-k(1);
+k = 10.^linspace(log10(2*pi/1e6),log10(2*pi/10),150);
+dk = diff(k);
 
 Suv_const = GMConst.HorizontalVelocitySpectrumAtWavenumbers(z,k);
 Seta_const = GMConst.IsopycnalSpectrumAtWavenumbers(z,k);
@@ -109,3 +110,47 @@ subplot(3,1,2)
 jpcolor(k,j,((k').*j.*abs(Seta_kj)).'); shading flat, xlog, ylog
 subplot(3,1,3)
 jpcolor(k,j,((k').*j.*abs(Sw_kj)).'); shading flat, xlog, ylog
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Stokes drift as function of wavenumber and depth
+%
+z = reshape(z,[],1);
+k = reshape(k,1,[]);
+m=shiftdim(j*pi/L,-1);
+dk = cat(2,k(2)-k(1),diff(k));
+
+% confirm that our summation actually works how we expected
+U2 = dk.*shiftdim(Suv_kj,-1).*cos(z.*m).^2;
+figure, plot(sum(sum(U2,3),2)*1e4,z);
+xlabel('cm^2/s^2'), ylabel('depth')
+title('horizontal velocity variance')
+
+StokesDriftF2=dk.^2 .* shiftdim(Suv_kj.^2.*k2./omega2/4,-1);
+
+Stokes = sum(sum(StokesDriftF2.*cos(2*z.*m).^2,3),2);
+figure, plot(Stokes*1e4,z);
+xlabel('cm^2/s^2'), ylabel('depth')
+title('horizontal stokes drift variance')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Group velocity
+%
+% want k x m
+cg_h = k.*m.^2*(N0^2-f0^2)./((k.^2 + m.^2).^(3/2) .* sqrt(N0^2*k.^2 + f0^2.*m.^2));
+
+% figure('Name', 'Group velocity')
+% jpcolor(k,j,cg_h.'); shading flat, xlog, ylog
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Decorrelation time should be 1./(k*cg_h)
+%
+
+T_decorrelation = 1./(cg_h .* k);
+% T_decorrelation = max(T_decorrelation,[],3);
+
+kappa = sum(sum(StokesDriftF2.*cos(2*z.*m).^2.*T_decorrelation,3),2);
+figure, plot(kappa,z)
+xlabel('m^2/s'), ylabel('depth')

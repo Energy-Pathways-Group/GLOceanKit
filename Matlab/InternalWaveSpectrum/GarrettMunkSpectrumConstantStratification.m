@@ -74,6 +74,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = HorizontalVelocityVariance(self,z)
+            % units returned are m^2/s^2
             z = reshape(z,[],1);
             
             N2 = self.N_max*self.N_max;
