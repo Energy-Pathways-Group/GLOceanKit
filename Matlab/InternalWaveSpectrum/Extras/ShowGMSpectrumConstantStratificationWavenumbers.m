@@ -71,6 +71,7 @@ plot(k,k.*squeeze(Sw_const(50,:))), xlog, hold on, vlines(2*pi/Lx,'g--')
 
 [omega2, k2, m2] = GMConst.SquaredFrequencyForWavenumber(k);
 
+% summed by *mode* --- if summed by vertical wavenumber, need dm
 [Suv_kj,j] = GMConst.HorizontalVelocitySpectrumAtWavenumberAndMode(k);
 [Seta_kj,j] = GMConst.IsopycnalSpectrumAtWavenumberAndMode(k);
 [Sw_kj,j] = GMConst.VerticalVelocitySpectrumAtWavenumberAndMode(k);
@@ -79,6 +80,8 @@ HorizontalShearNonlinearity = Suv_kj.*(k2./omega2);
 IsopycnalSlopeNonlinearity = Seta_kj.*k2;
 GradientFroudeNonlinearity = Suv_kj.*(m2./(N0*N0)); % Richardson number
 VerticalStrainNonlinearity = Seta_kj.*m2;
+return
+m = j*pi/L;
 
 % This is probably the right thing to do, because its the integral that
 % sets the total energy of the wave.

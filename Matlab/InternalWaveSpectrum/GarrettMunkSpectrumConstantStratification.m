@@ -146,7 +146,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
            
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Horizontal Isopycnal Spectra
+        % Isopycnal Spectra
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function E = IsopycnalVariance(self,z)
