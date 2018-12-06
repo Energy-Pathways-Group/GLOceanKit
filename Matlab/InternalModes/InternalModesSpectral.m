@@ -353,7 +353,7 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             K = 5; % quartic spline
-            rho_interpolant = BSpline(zIn,rho,K);
+            rho_interpolant = InterpolatingSpline(zIn,rho,K);
             
             if self.shouldShowDiagnostics == 1
                fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
@@ -368,7 +368,7 @@ classdef InternalModesSpectral < InternalModesBase
             % is to initialize zLobatto and rho_zLobatto.
             self.validateInitialModeAndEVPSettings();
                         
-            [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-16);
+            [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-10);
             self.rho_zLobatto = rho(self.zLobatto);
             self.rho_function = rho;
             self.nGrid = length(self.zLobatto);
