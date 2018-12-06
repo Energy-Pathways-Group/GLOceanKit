@@ -1,4 +1,4 @@
-ReadOverNetwork = 0;
+ReadOverNetwork = 1;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
@@ -6,15 +6,15 @@ else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
 end
 
-% Version 2 files, from October 2018
+% Version 2 files, from December 2018
 NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
 LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 
-ExponentialSpinup = strcat(baseURL,'EarlyV2_GMexp_NL_forced_damped_64cube');
+% ExponentialSpinup = strcat(baseURL,'EarlyV2_GMexp_NL_forced_damped_64cube');
 
-file = ExponentialSpinup;
+file = NonlinearSteadyStateFile;
 
-output_directory = baseURL;
+output_directory = '/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_12';
 
 [filepath,name,ext] = fileparts(file);
 outputfile = fullfile(output_directory,strcat(name,'_moorings.mat'));

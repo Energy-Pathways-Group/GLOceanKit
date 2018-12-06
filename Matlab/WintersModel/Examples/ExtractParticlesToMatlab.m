@@ -1,5 +1,5 @@
-ReadOverNetwork = 0;
-Nonlinear = 1;
+ReadOverNetwork = 1;
+Nonlinear = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
@@ -42,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_11/particles_%s.mat',runtype);
+outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_12/particles_%s.mat',runtype);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
