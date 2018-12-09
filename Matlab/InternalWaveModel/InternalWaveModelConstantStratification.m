@@ -363,7 +363,42 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
         end
-
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Compute full spectral transforms to take derivatives with
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [u_bar, K, L, M] = TransformFromSpatialDomainWithFFull(self, u)
+            self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
+            u_bar = 2*real(self.dctScratch(:,:,1:self.nz+1)); % we *include* the barotropic mode, starting at 1, instead of 2 in the transform
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            
+            m = (pi/self.Lz)*(0:(self.Nz-1));
+            [K,L,M] = ndgrid(self.k,self.l,m);
+        end
+        
+        function u = TransformToSpatialDomainWithFFull(obj, u_bar)
+            % Here we use what I call the 'Fourier series' definition of the ifft, so
+            % that the coefficients in frequency space have the same units in time.
+            u = obj.Nx*obj.Ny*ifft(ifft(u_bar,obj.Nx,1),obj.Ny,2,'symmetric');
+            
+            % Re-order to convert to an fast cosine transform
+            obj.dctScratch = cat(3, 0.5*u(:,:,1:obj.nz), u(:,:,obj.nz), 0.5*u(:,:,obj.nz:-1:2));
+            
+            u = fft(obj.dctScratch,2*obj.nz,3);
+            if obj.performSanityChecks == 1
+                ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
+                if ratio > 1e-6
+                    fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
+                end
+            end
+            % should not have to call real, but for some reason, with enough
+            % points, it starts generating some small imaginary component.
+            u = real(u(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+        end
+        
     end
 end
 
