@@ -1,9 +1,9 @@
-ReadOverNetwork = 1;
+ReadOverNetwork = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_12/';
 end
 
 % Version 2 files, from December 2018

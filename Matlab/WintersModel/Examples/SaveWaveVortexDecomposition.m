@@ -4,7 +4,7 @@ ReadOverNetwork = 0;
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_11/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_12/';
 end
 
 if strcmp(runtype,'linear')

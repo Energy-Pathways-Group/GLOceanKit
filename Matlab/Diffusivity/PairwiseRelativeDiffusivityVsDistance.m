@@ -5,7 +5,11 @@ if strcmp(diffusivityMethod,'slope')
     [r2,kappa_r,std_error] = PairwiseRelativeDiffusivityFromSlope(t, x, y, theBins );
 elseif strcmp(diffusivityMethod,'powspec') || strcmp(diffusivityMethod,'endpoint')
     [r2_all, kappa_r_all] = PairwiseRelativeDiffusivity(t, x, y, diffusivityMethod);
-    theBins(end+1) = 1.1*sqrt(max(r2_all));
+    if theBins(end) < 1.1*sqrt(max(r2_all))
+        theBins(end+1) = 1.1*sqrt(max(r2_all));
+    else
+        theBins(end+1) = theBins(end) + (theBins(end)-theBins(end-1));
+    end
     [r2,kappa_r,std_error] = BinDataWithErrorBars(r2_all,kappa_r_all,theBins);
 end
 
@@ -22,4 +26,8 @@ function [x2Mean,yMean,yStdErr] = BinDataWithErrorBars(x2,y,xBins)
         yMean(i) = mean(y(bin==i));
         yStdErr(i) = std(y(bin==i))/sqrt(sum(bin==i));
     end
+    
+    yStdErr(x2Mean==0) = [];
+    yMean(x2Mean==0) = [];
+    x2Mean(x2Mean==0) = [];
 end
