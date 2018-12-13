@@ -12,7 +12,7 @@ LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart')
 
 % ExponentialSpinup = strcat(baseURL,'EarlyV2_GMexp_NL_forced_damped_64cube');
 
-file = NonlinearSteadyStateFile;
+file = LinearSteadyStateFile;
 
 output_directory = '/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2018_12';
 

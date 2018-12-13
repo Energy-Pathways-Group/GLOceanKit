@@ -55,6 +55,12 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             N2 = self.N_max*self.N_max*ones(size(z));
         end
         
+        function Bu = Bu(self)
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            Bu = (3*N2/2 - f2 - (self.B0*self.f0/2)*sqrt(N2-f2))/(N2-f2);
+        end
+        
         function [omega2, k2, m2] = SquaredFrequencyForWavenumber(self,k)
             k = reshape(k,[],1);
             j = reshape(1:self.nModes,1,[]);
