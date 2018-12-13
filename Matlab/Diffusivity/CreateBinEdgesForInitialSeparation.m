@@ -1,16 +1,26 @@
-function edges = CreateBinEdgesForInitialSeparation(x0,y0)
-n = length(x0);
+function [edges,N] = CreateBinEdgesForInitialSeparation(t,x,y)
+iDim = find(size(x) ~= length(t));
+if isempty(iDim) || length(iDim) > 1
+    error('Cannot find appropriate dimension')
+end
+
+x = shiftdim(x,iDim-1);
+y = shiftdim(y,iDim-1);
+x = x(:,1);
+y = y(:,1);
+
+n = length(x);
 initialSeparation = zeros(n*(n-1)/2,1);
 i = 1;
 for iDrifter=1:n
     for jDrifter = (iDrifter+1):n
-        q = x0(iDrifter) - x0(jDrifter);
-        r = y0(iDrifter) - y0(jDrifter);
+        q = x(iDrifter) - x(jDrifter);
+        r = y(iDrifter) - y(jDrifter);
         
         initialSeparation(i) = sqrt(q^2 + r^2);
         i=i+1;
     end
 end
 
-[~,edges] = histcounts(initialSeparation);
+[N,edges] = histcounts(initialSeparation);
 end

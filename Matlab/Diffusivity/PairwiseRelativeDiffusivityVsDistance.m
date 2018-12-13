@@ -27,7 +27,7 @@ function [x2Mean,yMean,yStdErr] = BinDataWithErrorBars(x2,y,xBins)
         yStdErr(i) = std(y(bin==i))/sqrt(sum(bin==i));
     end
     
-    yStdErr(x2Mean==0) = [];
-    yMean(x2Mean==0) = [];
-    x2Mean(x2Mean==0) = [];
+%     yStdErr(x2Mean==0) = [];
+%     yMean(x2Mean==0) = [];
+%     x2Mean(x2Mean==0) = [];
 end
