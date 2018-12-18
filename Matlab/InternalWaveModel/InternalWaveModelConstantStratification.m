@@ -33,19 +33,19 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
     properties (Access = public)
         N0
         F, G, M
-        B % amplitude of the geostrophic component
     end
     
     properties (Dependent)
         % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
         % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
         % values
-        Ppm_HKE_factor
-        Ppm_VKE_factor
-        Ppm_PE_factor
+        Apm_HKE_factor
+        Apm_VKE_factor
+        Apm_PE_factor
         % Same, but for B
-        P0_HKE_factor
-        P0_PE_factor
+        B0_HKE_factor
+        B_HKE_factor
+        B_PE_factor
     end
     
     properties (Access = protected)
@@ -68,7 +68,6 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             end
             
             if mod(log2(n(3)),1) == 0
-                nz = n(3);
                 error('You are implicitly asking for periodic boundary conditions in the vertical. This is not supported.');
             elseif mod(log2(n(3)-1),1) == 0 % user wants the surface point
                 nz = n(3)-1; % internally we proceed as if there are n-1 points
@@ -171,8 +170,22 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % will *exactly* recover amplitudes being used the generate the
             % dynamical fields. For the moment I assume assuming no
             % buoyancy perturbation at the boundaries.
-            ubar = self.TransformFromSpatialDomainWithF( u )./self.F;
-            vbar = self.TransformFromSpatialDomainWithF( v )./self.F;
+            %
+            % Note that the Winters model includes energy in the Nz-1
+            % vertical mode---which is problematic because it's not
+            % resolved. So, transforms are inexact.
+            
+            % We need to include the zero/mean in the transform
+            ubar = self.TransformFromSpatialDomainWithFFull( u );
+            vbar = self.TransformFromSpatialDomainWithFFull( v );
+            
+            % Take care of the vertically uniform geostrophic component.
+            self.B0 = -sqrt(-1)*(self.f0/self.g)*(self.K(:,:,1) .* vbar(:,:,1) - self.L(:,:,1) .* ubar(:,:,1))./self.K2(:,:,1);
+            self.B0(1,1) = 0; % we did some divide by zeros
+            
+            % Now separate waves and vortices
+            ubar = ubar(:,:,2:end)./self.F;
+            vbar = vbar(:,:,2:end)./self.F;
             etabar = self.TransformFromSpatialDomainWithG( zeta )./self.G;
             
             delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
@@ -180,15 +193,23 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             
             A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
             A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
-            self.B = (etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega);
+            self.B = InternalWaveModel.MakeHermitian((etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega));
+            self.B(1,1,:) = 0; % we did some divide by zeros
             
             % inertial must be solved for separately.
             A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
             A_minus(1,1,:) = conj(A_plus(1,1,:));
-            self.B(1,1,:) = 0;
-            self.B = InternalWaveModel.MakeHermitian(self.B);
+                      
+            % Compute the geostrophic part by including the zero vertical
+            % wavenumber part. The division by two is from the definition
+            % of the cosine transform of something at zero-frequency.
+            u_g0 = self.TransformToSpatialDomainWithUniformF(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0)/2;
+            v_g0 = self.TransformToSpatialDomainWithUniformF( sqrt(-1)*(self.g/self.f0)*self.K(:,:,1).*self.B0)/2;
             
-            % B is the geostrophic solution, not yet implemented.
+            self.u_g = u_g0 + self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B.*self.F);
+            self.v_g = v_g0 + self.TransformToSpatialDomainWithF( sqrt(-1)*(self.g/self.f0)*self.K.*self.B.*self.F);
+            self.zeta_g = self.TransformToSpatialDomainWithG(self.B.*self.G);
+            
             A_plus = InternalWaveModel.MakeHermitian(A_plus);
             A_minus = InternalWaveModel.MakeHermitian(A_minus);
             self.GenerateWavePhases(A_plus,A_minus);
@@ -252,19 +273,22 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
         
         
-        function value = get.Ppm_HKE_factor(self)
+        function value = get.Apm_HKE_factor(self)
             value = (1 + self.f0*self.f0./(self.Omega.*self.Omega)) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
         end
-        function value = get.Ppm_VKE_factor(self)
+        function value = get.Apm_VKE_factor(self)
             value = (self.Omega.*self.Omega - self.f0*self.f0) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
         end
-        function value = get.Ppm_PE_factor(self)
+        function value = get.Apm_PE_factor(self)
             value = self.N0*self.N0 .* (self.Omega.*self.Omega - self.f0*self.f0) ./ (2 * (self.N0*self.N0 - self.f0*self.f0) * self.Omega.*self.Omega );
         end
-        function value = get.P0_HKE_factor(self)
+        function value = get.B0_HKE_factor(self)
+            value = (self.g/(self.f0*self.f0)) * self.K2(:,:,1)/2;
+        end
+        function value = get.B_HKE_factor(self)
             value = (self.g/(self.f0*self.f0)) * (self.Omega.*self.Omega - self.f0*self.f0) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
         end
-        function value = get.P0_PE_factor(self)
+        function value = get.B_PE_factor(self)
             value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2;
         end
     end
@@ -312,16 +336,20 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         % Computes the phase information given the amplitudes (internal)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function u = TransformToSpatialDomainWithF(obj, u_bar)
+        function u = TransformToSpatialDomainWithUniformF(self, u_bar)
+            u = self.Nx*self.Ny*ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+        end
+        
+        function u = TransformToSpatialDomainWithF(self, u_bar)
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
-            u = obj.Nx*obj.Ny*ifft(ifft(u_bar,obj.Nx,1),obj.Ny,2,'symmetric');
+            u = self.Nx*self.Ny*ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            obj.dctScratch = cat(3, zeros(obj.Nx,obj.Ny), 0.5*u(:,:,1:obj.nz-1), u(:,:,obj.nz), 0.5*u(:,:,obj.nz-1:-1:1));
+            self.dctScratch = cat(3, zeros(self.Nx,self.Ny), 0.5*u(:,:,1:self.nz-1), u(:,:,self.nz), 0.5*u(:,:,self.nz-1:-1:1));
   
-            u = fft(obj.dctScratch,2*obj.nz,3);
-            if obj.performSanityChecks == 1
+            u = fft(self.dctScratch,2*self.nz,3);
+            if self.performSanityChecks == 1
                 ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
                 if ratio > 1e-6
                     fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
@@ -329,19 +357,19 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            u = real(u(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+            u = real(u(:,:,1:self.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
         
-        function w = TransformToSpatialDomainWithG(obj, w_bar )
+        function w = TransformToSpatialDomainWithG(self, w_bar )
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
-            w = obj.Nx*obj.Ny*ifft(ifft(w_bar,obj.Nx,1),obj.Ny,2,'symmetric');
+            w = self.Nx*self.Ny*ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            obj.dstScratch = sqrt(-1)*cat(3, zeros(obj.Nx,obj.Ny), 0.5*w(:,:,1:obj.nz-1), w(:,:,obj.nz), -0.5*w(:,:,obj.nz-1:-1:1));
+            self.dstScratch = sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), 0.5*w(:,:,1:self.nz-1), w(:,:,self.nz), -0.5*w(:,:,self.nz-1:-1:1));
             
-            w = fft( obj.dstScratch,2*obj.nz,3);
-            if obj.performSanityChecks == 1
+            w = fft( self.dstScratch,2*self.nz,3);
+            if self.performSanityChecks == 1
                 ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
                 if ratio > 1e-6
                     fprintf('WARNING: The inverse sine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
@@ -349,16 +377,20 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            w = real(w(:,:,1:obj.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+            w = real(w(:,:,1:self.Nz)); % Here we use Nz (not nz) because the user may want the end point.
         end
                 
         function u_bar = TransformFromSpatialDomainWithF(self, u)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-1)*df
             self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
             u_bar = 2*real(self.dctScratch(:,:,2:self.nz+1)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-2)*df
             self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
             w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;

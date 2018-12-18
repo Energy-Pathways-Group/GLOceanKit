@@ -10,7 +10,7 @@ end
 if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped'); 
 else
     error('invalid run type.');
 end
@@ -86,6 +86,8 @@ AmRealVarID = netcdf.defVar(ncid, 'Am_realp', ncPrecision, [kDimID,lDimID,jDimID
 AmImagVarID = netcdf.defVar(ncid, 'Am_imagp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
 BRealVarID = netcdf.defVar(ncid, 'B_realp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
 BImagVarID = netcdf.defVar(ncid, 'B_imagp', ncPrecision, [kDimID,lDimID,jDimID,tDimID]);
+B0RealVarID = netcdf.defVar(ncid, 'B0_realp', ncPrecision, [kDimID,lDimID,tDimID]);
+B0ImagVarID = netcdf.defVar(ncid, 'B0_imagp', ncPrecision, [kDimID,lDimID,tDimID]);
 if shouldChunk == 1
     netcdf.defVarChunking(ncid,ApRealVarID,'CHUNKED',chunkSize);
     netcdf.defVarChunking(ncid,ApImagVarID,'CHUNKED',chunkSize);
@@ -93,6 +95,8 @@ if shouldChunk == 1
     netcdf.defVarChunking(ncid,AmImagVarID,'CHUNKED',chunkSize);
     netcdf.defVarChunking(ncid,BRealVarID,'CHUNKED',chunkSize);
     netcdf.defVarChunking(ncid,BImagVarID,'CHUNKED',chunkSize);
+    netcdf.defVarChunking(ncid,B0RealVarID,'CHUNKED',chunkSize);
+    netcdf.defVarChunking(ncid,B0ImagVarID,'CHUNKED',chunkSize);
 end
 netcdf.putAtt(ncid,ApRealVarID, 'units', 'm/s');
 netcdf.putAtt(ncid,ApImagVarID, 'units', 'm/s');
@@ -100,6 +104,8 @@ netcdf.putAtt(ncid,AmRealVarID, 'units', 'm/s');
 netcdf.putAtt(ncid,AmImagVarID, 'units', 'm/s');
 netcdf.putAtt(ncid,BRealVarID, 'units', 'm');
 netcdf.putAtt(ncid,BImagVarID, 'units', 'm');
+netcdf.putAtt(ncid,B0RealVarID, 'units', 'm');
+netcdf.putAtt(ncid,B0ImagVarID, 'units', 'm');
 
 % Write some metadata
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'latitude', wavemodel.latitude);
@@ -146,6 +152,8 @@ for iTime = 1:length(fileIncrements)
     netcdf.putVar(ncid, AmImagVarID, [0 0 0 iTime-1], [Nk Nl Nj 1], imag(wavemodel.Amp_minus));
     netcdf.putVar(ncid, BRealVarID, [0 0 0 iTime-1], [Nk Nl Nj 1], real(wavemodel.B));
     netcdf.putVar(ncid, BImagVarID, [0 0 0 iTime-1], [Nk Nl Nj 1], imag(wavemodel.B));
+    netcdf.putVar(ncid, B0RealVarID, [0 0 iTime-1], [Nk Nl 1], real(wavemodel.B0));
+    netcdf.putVar(ncid, B0ImagVarID, [0 0 iTime-1], [Nk Nl 1], imag(wavemodel.B0));
     
     netcdf.putVar(ncid, tVarID, iTime-1, 1, t);
 end

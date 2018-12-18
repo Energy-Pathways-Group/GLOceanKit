@@ -66,9 +66,13 @@ classdef (Abstract) InternalWaveModel < handle
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
         Amp_plus, Amp_minus % Used for diagnostics only
+        B % amplitude of the geostrophic component (matches Amp_plus/minus)
+        B0 % amplitude of the geostrophic component for k_z=0.
+
         
         didPreallocateAdvectionCoefficients = 0
         U_cos_int, U_sin_int, V_cos_int, V_sin_int, W_sin_int, Zeta_cos_int, Rho_cos_int, k_int, l_int, j_int, h_int, omega_int, phi_int
+        u_g, v_g, zeta_g % geostropic components
         
         % These are all row vectors, e.g. size(U_ext)=[1 length(U_ext)], except F_ext, G_ext which are size(F_ext) = [length(z) length(U_ext)];
         U_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
@@ -1057,6 +1061,13 @@ classdef (Abstract) InternalWaveModel < handle
                         u = self.TransformToSpatialDomainWithF(u_bar);
                     end
                     varargout{iArg} = u;
+                    
+                    if ~isempty(self.B)
+                       if isempty(self.u_g)
+                          self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B);
+                       end
+                       varargout{iArg} = varargout{iArg} + self.u_g;
+                    end
                 elseif ( strcmp(varargin{iArg}, 'v') )
                     if isempty(v)
                         v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
@@ -1066,6 +1077,13 @@ classdef (Abstract) InternalWaveModel < handle
                         v = self.TransformToSpatialDomainWithF(v_bar);
                     end
                     varargout{iArg} = v;
+                    
+                    if ~isempty(self.B)
+                        if isempty(self.v_g)
+                            self.v_g = self.TransformToSpatialDomainWithF(sqrt(-1)*(self.g/self.f0)*self.K.*self.B);
+                        end
+                        varargout{iArg} = varargout{iArg} + self.v_g;
+                    end
                 elseif ( strcmp(varargin{iArg}, 'w') )
                     if isempty(w)
                         w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
@@ -1082,6 +1100,13 @@ classdef (Abstract) InternalWaveModel < handle
                             CheckHermitian(zeta_bar);
                         end
                         zeta = self.TransformToSpatialDomainWithG(zeta_bar);
+                        
+                        if ~isempty(self.B)
+                            if isempty(self.zeta_g)
+                                self.zeta_g = self.TransformToSpatialDomainWithG(self.B);
+                            end
+                            zeta = zeta + self.zeta_g;
+                        end
                     end
                     
                     if strcmp(varargin{iArg}, 'zeta')
@@ -1113,7 +1138,7 @@ classdef (Abstract) InternalWaveModel < handle
                 [varargout{:}] = self.InternalVariablesAtTimePositionExact(t,x,y,z,varargin{:});
             else
                 [varargout{:}] = self.InternalVariableFieldsAtTime(t,varargin{:});
-                [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,method,varargout{:});
+                [varargout{:}] = self.InterpolatedFieldAtPositionNewAndShiny(x,y,z,method,varargout{:});
             end
         end
         
@@ -2031,6 +2056,46 @@ classdef (Abstract) InternalWaveModel < handle
             end     
         end
         
+        function varargout = InterpolatedFieldAtPositionNewAndShiny(self,x,y,z,method,varargin)
+            if nargin-5 ~= nargout
+                error('You must have the same number of input variables as output variables');
+            end
+            
+            % (x,y) are periodic for the gridded solution
+            x_tilde = mod(x,self.Lx);
+            y_tilde = mod(y,self.Ly);
+            
+            dx = self.x(2)-self.x(1);
+            x_index = floor(x_tilde/dx);
+            dy = self.y(2)-self.y(1);
+            y_index = floor(y_tilde/dy);
+            dz = self.z(2)-self.z(1);
+            z_index = self.Nz+floor(z/dz)-1;
+            
+            if length(unique(diff(self.z)))>1
+               error('This optimized interpolation does not yet work for uneven z') 
+            end
+                        
+            % Identify the particles along the interpolation boundary
+            if strcmp(method,'spline')
+                S = 3+1; % cubic spline, plus buffer
+            elseif strcmp(method,'linear')
+                S = 1+1;
+            end
+            
+            
+            xrange = ((min(x_index)-S):(max(x_index)+S))+1;
+            yrange = ((min(y_index)-S):(max(y_index)+S))+1;
+            zrange = (max((min(z_index)-S),0):min((max(z_index)+S),self.Nz-1))+1;
+                       
+            varargout = cell(1,nargout);
+            for i = 1:nargout
+                U = varargin{i}; % gridded field
+                u = interpn(self.X(xrange,yrange,zrange),self.Y(xrange,yrange,zrange),self.Z(xrange,yrange,zrange),U(xrange,yrange,zrange),x_tilde,y_tilde,z,method);
+                varargout{i} = u;
+            end
+        end
+                
     end
     
     methods (Static)

@@ -95,12 +95,14 @@ xI = pI(:,1);
 yI = pI(:,2);
 zI = pI(:,3);
 
+profile on
 tic
 [~,p45] = ode45(f,t_in, p0); % ,odeset('RelTol',1e-11,'AbsTol',1e-11)
 t45 = toc;
 x45 = p45(:,1);
 y45 = p45(:,2);
 z45 = p45(:,3);
+profile viewer
 
 % Second, let's do the adaptive time-stepping integrator
 if shouldUseGMSpectrum == 1
@@ -117,7 +119,7 @@ end
 % This has to be repeated, to capture the new wavemodel reference.
 % f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y);
 
-% f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y,'exact');
+f = @(t,y) wavemodel.VelocityAtTimePositionVector(t,y,'exact');
 
 tic
 [t,p] = ode45(f,t_in, p0,odeset('RelTol',1e-11,'AbsTol',1e-8)); % ,odeset('RelTol',1e-11,'AbsTol',1e-11)

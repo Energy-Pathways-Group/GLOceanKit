@@ -42,7 +42,6 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
        Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
        NumberOfWellConditionedModes
        didPrecomputedModesForWavenumber
-       B
        F2 % normalization \int F^2 dz
        N2G2 % normalization \int N^2 G^2 dz
     end
