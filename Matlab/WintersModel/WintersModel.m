@@ -11,6 +11,7 @@ classdef WintersModel < handle
         initialConditionsFile
         output3Dfiles
         output2Dfiles
+        outputParticleFiles
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Hyperdiffusion parameters used in the model run
@@ -55,6 +56,16 @@ classdef WintersModel < handle
                         self.output2Dfiles = possibleOutput2Dfiles;
                         fprintf('Found %d 2D output files.\n',length(self.output2Dfiles));
                         if (~isempty(self.output2Dfiles))
+                            foundSomethingUseful = 1;
+                        end
+                    end
+                    
+                    % Look for existing model output of particles
+                    possibleOutputParticlefiles = dir([self.rootDirectory '/**/lagrangian/**/*.nc']);
+                    if ~isempty(possibleOutputParticlefiles)
+                        self.outputParticleFiles = possibleOutputParticlefiles;
+                        fprintf('Found %d particle files.\n',length(self.outputParticleFiles));
+                        if (~isempty(self.outputParticleFiles))
                             foundSomethingUseful = 1;
                         end
                     end
@@ -201,6 +212,28 @@ classdef WintersModel < handle
                     varargout{iArg} = ncread(file,'time');
                 else
                     varargout{iArg} = ncread(file,varargin{iArg});
+                end
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Lagrangian
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [t,x,y,z] = ParticleTrajectories(self)
+            for iFile = 1:length(self.outputParticleFiles)
+                file = [self.outputParticleFiles(iFile).folder '/' self.outputParticleFiles(iFile).name];
+                if (iFile == 1)
+                    t = ncread(file,'t_secs');
+                    x = ncread(file,'x')';
+                    y = ncread(file,'y')';
+                    z = ncread(file,'z')';
+                else
+                    x = cat(2,x,ncread(file,'x')');
+                    y = cat(2,y,ncread(file,'y')');
+                    z = cat(2,z,ncread(file,'z')');
                 end
             end
         end
