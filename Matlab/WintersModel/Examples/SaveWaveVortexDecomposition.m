@@ -4,13 +4,13 @@ ReadOverNetwork = 0;
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_12/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
 end
 
 if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
 else
     error('invalid run type.');
 end

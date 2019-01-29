@@ -11,7 +11,7 @@ ReadOverNetwork = 0;
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2018_12/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
 end
 
 if strcmp(runtype,'linear')
@@ -50,9 +50,9 @@ t = ncread(file, 't');
 nT = length(t);
 
 variables = {'Ap_realp', 'Ap_imagp', 'Am_realp', 'Am_imagp', 'B_realp', 'B_imagp'};
-Ppm_HKE_factor = wavemodel.Ppm_HKE_factor;
-P0_HKE_factor = wavemodel.P0_HKE_factor;
-conversion_factor = {Ppm_HKE_factor,Ppm_HKE_factor,Ppm_HKE_factor,Ppm_HKE_factor,P0_HKE_factor,P0_HKE_factor};
+Apm_HKE_factor = wavemodel.Apm_HKE_factor;
+B_HKE_factor = wavemodel.B_HKE_factor;
+conversion_factor = {Apm_HKE_factor,Apm_HKE_factor,Apm_HKE_factor,Apm_HKE_factor,B_HKE_factor,B_HKE_factor};
 Nvars = length(variables);
 
 % Not sure what a good value to use is.
