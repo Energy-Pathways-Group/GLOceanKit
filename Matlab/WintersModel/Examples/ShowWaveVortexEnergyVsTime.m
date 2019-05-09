@@ -1,4 +1,4 @@
-wintersOutputDirectory = '/Volumes/Samsung_T5/nsf_iwv/2019_01/EarlyV2_GM_NL_forced_damped_restart';
+wintersOutputDirectory = '/Volumes/Samsung_T5/nsf_iwv/EarlyV2_GM_NL_forced_damped_spindown';
 
 WM = WintersModel(wintersOutputDirectory);
 wavemodel = WM.wavemodel;

@@ -6,12 +6,14 @@ if ReadOverNetwork == 1
 else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
     baseURL = '/Users/jearly/Documents/nsf_iw/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/';
 end
 
 if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_quartergrid_2tide'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_spindown'); 
 else
     error('invalid run type.');
 end
@@ -33,7 +35,7 @@ WM = WintersModel(file);
 wavemodel = WM.wavemodel;
 
 nFiles = WM.NumberOf3DOutputFiles;
-fileIncrements = 1:2:nFiles;
+fileIncrements = 1:1:nFiles;
 % fileIncrements = 1:2;
 
 Nk = length(wavemodel.k);
