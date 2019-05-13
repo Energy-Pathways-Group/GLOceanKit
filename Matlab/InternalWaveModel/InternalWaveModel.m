@@ -689,7 +689,7 @@ classdef (Abstract) InternalWaveModel < handle
             externalOmegaLinearIndices = 1:length(self.omega_ext);
             GM3Dint = zeros(size(self.Kh));
             GM3Dext = zeros(size(self.k_ext));
-            indicesToSkip = reshape(internalOmegaLinearIndices(abs(self.K) < minK | abs(self.K) > maxK),[],1);
+            indicesToSkip = reshape(internalOmegaLinearIndices(abs(self.Kh) < minK | abs(self.Kh) > maxK),[],1);
             for iMode = minMode:maxMode
                 intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode),[],1); % Find the indices of everything with this iMode
                 if excludeNyquist == 1
