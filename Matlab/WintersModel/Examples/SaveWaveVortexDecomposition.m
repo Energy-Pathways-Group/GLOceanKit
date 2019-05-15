@@ -6,14 +6,14 @@ if ReadOverNetwork == 1
 else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
     baseURL = '/Users/jearly/Documents/nsf_iw/';
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
 end
 
 if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_quartergrid_2tide'); 
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_spindownPSI'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped'); 
 else
     error('invalid run type.');
 end
