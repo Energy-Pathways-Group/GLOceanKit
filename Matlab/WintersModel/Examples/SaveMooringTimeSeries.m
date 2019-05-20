@@ -8,7 +8,7 @@ else
 end
 
 % Version 2 files, from December 2018
-NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped');
+NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
 % LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 
 % ExponentialSpinup = strcat(baseURL,'EarlyV2_GMexp_NL_forced_damped_64cube');

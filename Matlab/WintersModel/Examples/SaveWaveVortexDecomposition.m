@@ -13,7 +13,7 @@ if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_quartergrid_2tide'); 
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
 else
     error('invalid run type.');
 end

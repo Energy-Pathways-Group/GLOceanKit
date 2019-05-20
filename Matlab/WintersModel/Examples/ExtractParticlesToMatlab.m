@@ -4,7 +4,7 @@ Nonlinear = 1;
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
 end
 
 if Nonlinear == 1
@@ -42,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2019_01/particles_%s.mat',runtype);
+outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2019_05/particles_%s.mat',runtype);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
