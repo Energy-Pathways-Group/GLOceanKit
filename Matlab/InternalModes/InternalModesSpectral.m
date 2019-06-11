@@ -77,7 +77,8 @@ classdef InternalModesSpectral < InternalModesBase
     
 
     properties %(Access = private)
-        rho_function        % function handle to return rho at z (uses interpolation for grids)
+        rho_function        % function handle to return rho at z
+        N2_function         % function handle to return N2 at z
         
         % These properties are initialized with InitializeZLobattoProperties()
         % Most subclasses would *not* override these initializations.
@@ -352,11 +353,13 @@ classdef InternalModesSpectral < InternalModesBase
                 rho = flip(rho);
             end
             
-            K = 5; % quartic spline
+           
             if any(diff(rho) > 0)
+                K = 4; % cubic spline
                 rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
                 rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
             else
+                K = 5; % quartic spline
                 z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
                 rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
             end
@@ -364,8 +367,13 @@ classdef InternalModesSpectral < InternalModesBase
             if self.shouldShowDiagnostics == 1
                fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
             end
-                          
-            self.InitializeWithFunction(rho_interpolant,min(zIn),max(zIn));
+            
+            self.rho_function = rho_interpolant;
+            self.N2_function = @(z) -(self.g/self.rho0)*rho_interpolant(z,1);
+            
+            self.rho = self.rho_function(self.z);
+            self.N2 = self.N2_function(self.z);
+            
         end
         
         function self = InitializeWithFunction(self, rho, zMin, zMax)
@@ -375,48 +383,31 @@ classdef InternalModesSpectral < InternalModesBase
             self.validateInitialModeAndEVPSettings();
                         
             [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-10);
-            self.rho_zLobatto = rho(self.zLobatto);
-            self.rho_function = rho;
-            self.nGrid = length(self.zLobatto);
-            
             if self.shouldShowDiagnostics == 1
-               fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_zCheb)); 
+                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_zCheb));
             end
+            self.N2_zCheb= -(self.g/self.rho0)*(2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector((self.rho_zCheb));
             
-            self.InitializeZLobattoProperties();
+            self.rho_function = rho;
+            self.N2_function = @(z) -(self.g/self.rho0)*InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,self.N2_zCheb);
+            
+            self.rho = self.rho_function(self.z);
+            self.N2 = self.N2_function(self.z);
         end      
-        
-        function self = InitializeZLobattoProperties(self)
-            % Called by InitializeWithGrid and InitializeWithFunction after
-            % they've completed their basic setup.
-            self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
-            
-            % This computation isn't strictly necessary, although it is
-            % used in the stretched coordinate cases.
-            self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
-            
-            self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
-            self.rho = self.T_zCheb_zOut(self.rho_zCheb);
-            self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-            
-%             fprintf('All derivatives of density are computed with %d points.', length(self.zLobatto));
-        end
-        
+                
         function self = SetupEigenvalueProblem(self)
-            if any(self.N2_zLobatto < 0)
-                fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
-            end
+%             if any(self.N2_zLobatto < 0)
+%                 fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
+%             end
             
             % Called during initialization after InitializeZLobattoProperties().
             % Subclasses will override this function.
             n = self.nEVP;
-            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
+            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.zMin;
             self.xLobatto(1) = self.zMax;
             self.xDomain = self.zDomain;
-            T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
             
-            self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
+            self.N2_xLobatto = self.N2_function(self.xLobatto);
             self.Diff1_xCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
