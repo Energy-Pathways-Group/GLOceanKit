@@ -149,6 +149,12 @@ classdef InternalModes < handle
                 zOut = varargin{3};
                 latitude = varargin{4};
                 
+                if isa(rho,'numeric') == true
+                   rho = reshape(rho,[],1);
+                   zIn = reshape(zIn,[],1);
+                   zOut = reshape(zOut,[],1);
+                end
+                
                 isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,zIn);
                 [isStratificationExponential, rho_params] = InternalModesExponentialStratification.IsStratificationExponential(rho,zIn);
                 if userSpecifiedMethod == 0 && isStratificationConstant == 1
