@@ -354,7 +354,7 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
            
-            if any(diff(rho) > 0)
+            if any(diff(rho)./diff(zIn) > 0)
                 K = 4; % cubic spline
                 rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
                 rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
@@ -369,7 +369,7 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             self.rho_function = rho_interpolant;
-            self.N2_function = @(z) -(self.g/self.rho0)*rho_interpolant(z,1);
+            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
             
             self.rho = self.rho_function(self.z);
             self.N2 = self.N2_function(self.z);
@@ -380,16 +380,19 @@ classdef InternalModesSpectral < InternalModesBase
             % Superclass calls this method upon initialization when it
             % determines that the input is given in functional form. The goal
             % is to initialize zLobatto and rho_zLobatto.
-            self.validateInitialModeAndEVPSettings();
-                        
-            [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-10);
-            if self.shouldShowDiagnostics == 1
-                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_zCheb));
-            end
-            self.N2_zCheb= -(self.g/self.rho0)*(2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector((self.rho_zCheb));
             
-            self.rho_function = rho;
-            self.N2_function = @(z) -(self.g/self.rho0)*InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,self.N2_zCheb);
+            if ~exist('chebfun','class')
+               error('The package chebfun is required.')
+            end
+            
+            self.validateInitialModeAndEVPSettings();
+
+            self.rho_function = chebfun(rho,self.zDomain);
+            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
+            
+            if self.shouldShowDiagnostics == 1
+                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
+            end
             
             self.rho = self.rho_function(self.z);
             self.N2 = self.N2_function(self.z);
@@ -582,7 +585,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             maxZ = max(zLobatto);
             minZ = min(zLobatto);
-            z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
+%             z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
             z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zLobatto),max(zLobatto),1e-12);
             z_xLobatto(z_xLobatto>maxZ) = maxZ;
             z_xLobatto(z_xLobatto<minZ) = minZ;

@@ -127,33 +127,30 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             end
             
             % Create the stretched WKB grid
-            N_zLobatto = sqrt(self.N2_zLobatto);
-            N_zCheb = InternalModesSpectral.fct(N_zLobatto);  
-            x_zCheb = (self.Lz/2)*InternalModesSpectral.IntegrateChebyshevVector(N_zCheb);
-            
-            s = @(z) InternalModesSpectral.ValueOfFunctionAtPointOnGrid(z,self.zLobatto,x_zCheb);
+            N_function = sqrt(self.N2_function);
+            s = cumsum(N_function);
             self.xDomain = [s(self.zMin) s(self.zMax)];
             self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
 
             % We need to be able to create a reasonable stretched grid...
             % if we can't, we will throw an exception
-            try
-                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
-            catch ME
-                switch ME.identifier
-                    case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
-                        causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue wkb grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
-                        ME = addCause(ME,causeException);
-                end
-                rethrow(ME)
-            end
+%             try
+                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+%             catch ME
+%                 switch ME.identifier
+%                     case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
+%                         causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue wkb grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
+%                         ME = addCause(ME,causeException);
+%                 end
+%                 rethrow(ME)
+%             end
                         
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
-            T_zCheb_xiLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xLobatto);
-            self.N2_xLobatto = T_zCheb_xiLobatto(self.N2_zCheb);
-            self.Nz_xLobatto = T_zCheb_xiLobatto(self.Diff1_zCheb(N_zCheb));
+            self.N2_xLobatto = self.N2_function(self.z_xLobatto);
+            Nz_function = diff(N_function);
+            self.Nz_xLobatto = Nz_function(self.z_xLobatto);
             
             Lxi = max(self.xLobatto) - min(self.xLobatto);
             self.Diff1_xCheb = @(v) (2/Lxi)*InternalModesSpectral.DifferentiateChebyshevVector( v );
