@@ -66,35 +66,25 @@ classdef InternalModesSpectral < InternalModesBase
     %   March 14th, 2017        Version 1.0
     
     properties (Access = public)
-        rho % Density on the z grid.
-        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
+
     end
     
     properties (Dependent)
+        rho % Density on the z grid.
         rho_z % First derivative of density on the z grid.
         rho_zz % Second derivative of density on the z grid.
+        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
     end
     
 
     properties %(Access = private)
         rho_function        % function handle to return rho at z
         N2_function         % function handle to return N2 at z
-        
-        % These properties are initialized with InitializeZLobattoProperties()
-        % Most subclasses would *not* override these initializations.
-        zLobatto            % zIn coordinate, on Chebyshev extrema/Lobatto grid
-        rho_zLobatto        % rho on the above zLobatto
-        rho_zCheb           % rho in spectral space
-        N2_zCheb            % N2 in spectral space
-        N2_zLobatto         % N2 on the zLobatto grid
-        Diff1_zCheb         % *function handle*, that takes single derivative in spectral space
-        T_zCheb_zOut        % *function handle*, that transforms from spectral to z_out
-        
+                
         % These properties are initialized with SetupEigenvalueProblem()
         % Most subclasses *will* override these initializations. The 'x' refers to the stretched coordinate being used.
         % This class uses x=z (depth), although they may have different numbers of points.
         nEVP = 0           % number of points in the eigenvalue problem
-        nGrid = 0          % number of points used to compute the derivatives of density.
         xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
         xDomain            % limits of the stretched coordinate [xMin xMax]
         z_xLobatto         % The value of z, at the xLobatto points
@@ -128,12 +118,22 @@ classdef InternalModesSpectral < InternalModesBase
         % Computed (dependent) properties
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function value = get.rho(self)
+            value = self.rho_function(self.z);
+        end
+                
         function value = get.rho_z(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.rho_zCheb));
+            rho_z_function = diff(self.rho_function);
+            value = rho_z_function(self.z);
         end
         
         function value = get.rho_zz(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.Diff1_zCheb(self.rho_zCheb)));
+            rho_zz_function = diff(diff(self.rho_function));
+            value = rho_zz_function(self.z);
+        end
+        
+        function value = get.N2(self)
+            value = self.N2_function(self.z);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,69 +340,9 @@ classdef InternalModesSpectral < InternalModesBase
         end
     end
     
-    methods (Access = protected)       
-        function self = InitializeWithGrid(self, rho, zIn)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in gridded form. The goal is
-            % to initialize zLobatto and rho_zLobatto.
-            self.validateInitialModeAndEVPSettings();
-            
-            % Our Chebyshev grids are monotonically decreasing.
-            if (zIn(2) - zIn(1)) > 0
-                zIn = flip(zIn);
-                rho = flip(rho);
-            end
-            
-           
-            if any(diff(rho)./diff(zIn) > 0)
-                K = 4; % cubic spline
-                rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
-                rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
-            else
-                K = 5; % quartic spline
-                z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
-                rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
-            end
-            
-            if self.shouldShowDiagnostics == 1
-               fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
-            end
-            
-            self.rho_function = rho_interpolant;
-            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
-            
-            self.rho = self.rho_function(self.z);
-            self.N2 = self.N2_function(self.z);
-            
-        end
+    methods (Access = protected)
         
-        function self = InitializeWithFunction(self, rho, zMin, zMax)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in functional form. The goal
-            % is to initialize zLobatto and rho_zLobatto.
-            
-            if ~exist('chebfun','class')
-               error('The package chebfun is required.')
-            end
-            
-            self.validateInitialModeAndEVPSettings();
-
-            self.rho_function = chebfun(rho,self.zDomain);
-            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
-            
-            if self.shouldShowDiagnostics == 1
-                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
-            end
-            
-            self.rho = self.rho_function(self.z);
-            self.N2 = self.N2_function(self.z);
-        end      
-                
         function self = SetupEigenvalueProblem(self)
-%             if any(self.N2_zLobatto < 0)
-%                 fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
-%             end
-            
             % Called during initialization after InitializeZLobattoProperties().
             % Subclasses will override this function.
             n = self.nEVP;
@@ -423,9 +363,71 @@ classdef InternalModesSpectral < InternalModesBase
             self.Int_xCheb(2) = 0;
             self.Int_xCheb = self.Lz/2*self.Int_xCheb;
             
-%             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            if self.shouldShowDiagnostics == 1
+                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            end
         end
         
+        function self = InitializeWithGrid(self, rho, zIn)
+            self.validateInitialModeAndEVPSettings();
+            
+            K = 5; % quartic spline
+            if self.requiresMonotonicDensity == 1
+                if any(diff(rho)./diff(zIn) > 0)
+                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
+                    rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
+                    if self.shouldShowDiagnostics == 1
+                        fprintf('Creating a %d-order monotonic smoothing spline from the %d points.\n', K, length(rho));
+                    end
+                else
+                    z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
+                    rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+                    if self.shouldShowDiagnostics == 1
+                        fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
+                    end
+                end
+            else
+                rho_interpolant = InterpolatingSpline(zIn,rho,'K',K);
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho));
+                end
+            end
+            
+            self.rho_function = rho_interpolant;
+            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
+        end
+        
+        function self = InitializeWithFunction(self, rho, zMin, zMax)
+            self.validateInitialModeAndEVPSettings();
+            
+            if ~exist('chebfun','class')
+               error('The package chebfun is required when initializing with a function.')
+            end
+
+            self.rho_function = chebfun(rho,[zMin zMax]);
+            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
+            
+            if self.requiresMonotonicDensity == 1
+                % Taken from inv as part of chebfun.
+                f = self.rho_function;
+                fp = diff(f);
+                tPoints = roots(fp);
+                if ( ~isempty(tPoints) )
+                    endtest = zeros(length(tPoints), 1);
+                    for k = 1:length(tPoints)
+                        endtest(k) = min(abs(tPoints(k) - f.domain));
+                    end
+                    if ( any(endtest > 100*abs(feval(f, tPoints))*tol) )
+                        error('Density must be monotonic to use WKB. The function you provided is not monotonic.');
+                    end
+                end
+            end
+            
+            if self.shouldShowDiagnostics == 1
+                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
+            end
+        end      
+                   
         function self = validateInitialModeAndEVPSettings(self)
             % The user requested that the eigenvalue problem be solved on a
             % grid of particular length
@@ -437,11 +439,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
             end            
         end
-        
-        function f = SetNoiseFloorToZero(~, f)
-            f(abs(f)/max(abs(f)) < 1e-15) = 0;
-        end
-                
+                        
         % This function is an intermediary used by ModesAtFrequency and
         % ModesAtWavenumber to establish the various norm functions.
         function [F,G,h,F2,N2G2] = ModesFromGEPSpectral(self,A,B)

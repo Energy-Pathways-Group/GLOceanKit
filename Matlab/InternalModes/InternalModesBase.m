@@ -49,6 +49,7 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         zDomain % [zMin zMax]
+        requiresMonotonicDensity = 0
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).

@@ -24,7 +24,7 @@ for iProfile=2:2%length(profiles)
     z = linspace(min(zIn),max(zIn),n)';
 
     fprintf('\n---%s stratification profile---\n',profiles{iProfile});
-    for iMethod=2:2%length(methods)
+    for iMethod=1:length(methods)
         % initialize directly from the function
         try
             im = InternalModes(rhoFunction,zIn,z,latitude,'nModes',n, 'method', methods{iMethod}, 'shouldShowDiagnostics', 1);

@@ -33,6 +33,8 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesWKBSpectral(rho, z_in, z_out, latitude, varargin)
+            varargin{end+1} = 'requiresMonotonicDensity';
+            varargin{end+1} = 1;
             self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
         
@@ -107,44 +109,17 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
  
     end
     
-    methods (Access = protected)        
-        function self = SetupEigenvalueProblem(self)
-            
-            % Check if we an even create a WKB coordinate system
-            [flag, dTotalVariation, rho_zCheb_new, rho_zLobatto_new, rhoz_zCheb, rhoz_zLobatto] = InternalModesSpectral.CheckIfReasonablyMonotonic(self.zLobatto, self.rho_zCheb, self.rho_zLobatto, -(self.rho0/self.g)*self.N2_zCheb, -(self.rho0/self.g)*self.N2_zLobatto);
-            if flag == 1
-                self.rho_zCheb = rho_zCheb_new;
-                self.rho_zLobatto = rho_zLobatto_new;
-                self.N2_zCheb= -(self.g/self.rho0)*rhoz_zCheb;
-                self.N2_zLobatto = -(self.g/self.rho0)*rhoz_zLobatto;
-                
-                self.rho = self.T_zCheb_zOut(self.rho_zCheb);
-                self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-                
-                fprintf('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We used this new density function for the computation and will proceed.\n', dTotalVariation*100);
-            elseif flag == 2
-                error('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
-            end
-            
+    methods (Access = protected)
+        
+        function self = SetupEigenvalueProblem(self)       
             % Create the stretched WKB grid
             N_function = sqrt(self.N2_function);
             s = cumsum(N_function);
             self.xDomain = [s(self.zMin) s(self.zMax)];
             self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
 
-            % We need to be able to create a reasonable stretched grid...
-            % if we can't, we will throw an exception
-%             try
-                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
-%             catch ME
-%                 switch ME.identifier
-%                     case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
-%                         causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue wkb grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
-%                         ME = addCause(ME,causeException);
-%                 end
-%                 rethrow(ME)
-%             end
-                        
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+            
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
             % stretched grid
@@ -165,7 +140,9 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.Int_xCheb(2) = 0;
             self.Int_xCheb = Lxi/2*self.Int_xCheb;
             
-%             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            if self.shouldShowDiagnostics == 1
+                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            end
         end
         
         
