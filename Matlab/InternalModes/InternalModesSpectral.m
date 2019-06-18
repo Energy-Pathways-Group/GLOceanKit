@@ -155,18 +155,26 @@ classdef InternalModesSpectral < InternalModesBase
             A = (Tzz - k*k*eye(n)*T);
             B = diag((self.f0*self.f0-self.N2_xLobatto)/self.g)*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(1,:) = Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
         end
         
@@ -179,18 +187,26 @@ classdef InternalModesSpectral < InternalModesBase
             A = Tzz;
             B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(1,:) = Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
         end
         
@@ -371,10 +387,10 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InitializeWithGrid(self, rho, zIn)
             self.validateInitialModeAndEVPSettings();
             
-            K = 6; % quartic spline
+            K = 6; % cubic spline
             if self.requiresMonotonicDensity == 1
                 if any(diff(rho)./diff(zIn) > 0)
-                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
+                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'knot_dof',1,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
                     rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
                     if self.shouldShowDiagnostics == 1
                         fprintf('Creating a %d-order monotonic smoothing spline from the %d points.\n', K, length(rho));

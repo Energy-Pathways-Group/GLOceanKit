@@ -54,6 +54,7 @@ classdef (Abstract) InternalModesBase < handle
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
         upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
+        lowerBoundary = LowerBoundary.rigidLid  % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
     end
     
     properties (Dependent)

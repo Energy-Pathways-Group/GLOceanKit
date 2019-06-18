@@ -54,17 +54,26 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
-            % G=0 or N*G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % N*G_s = \frac{1}{h_j} G at the surface
+                    A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
             if nargout == 6
@@ -86,19 +95,28 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-            
-            % G=0 or N*G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % N*G_s = \frac{1}{h_j} G at the surface
+                    A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
+                        
             if nargout == 6
                 [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
             else

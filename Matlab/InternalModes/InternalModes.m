@@ -99,6 +99,7 @@ classdef InternalModes < handle
         rho_zz % Second derivative of density on the z grid.
         rho0 % density at the surface (or user specified through constructor args)
         
+        lowerBoundary % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
         upperBoundary % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
         normalization % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
     end
@@ -447,6 +448,13 @@ classdef InternalModes < handle
         end
         function value = get.upperBoundary(self)
             value = self.internalModes.upperBoundary;
+        end
+        
+        function set.lowerBoundary(self,value)
+            self.internalModes.lowerBoundary = value;
+        end
+        function value = get.lowerBoundary(self)
+            value = self.internalModes.lowerBoundary;
         end
         
         
