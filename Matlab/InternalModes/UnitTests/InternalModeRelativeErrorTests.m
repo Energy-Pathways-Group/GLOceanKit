@@ -2,12 +2,12 @@ profiles = cell(1,1);
 profiles{1} = 'constant';
 profiles{2} = 'exponential';
 
-methods = cell(5,1);
+methods = cell(4,1);
 methods{1} = 'finiteDifference';
 methods{2} = 'wkbSpectral';
 methods{3} = 'densitySpectral';
 methods{4} = 'spectral';
-methods{5} = 'wkbAdaptiveSpectral';
+% methods{5} = 'wkbAdaptiveSpectral';
 
 upperBoundary = UpperBoundary.freeSurface;
 

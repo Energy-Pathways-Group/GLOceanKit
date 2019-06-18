@@ -371,10 +371,10 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InitializeWithGrid(self, rho, zIn)
             self.validateInitialModeAndEVPSettings();
             
-            K = 5; % quartic spline
+            K = 6; % quartic spline
             if self.requiresMonotonicDensity == 1
                 if any(diff(rho)./diff(zIn) > 0)
-                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
+                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
                     rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
                     if self.shouldShowDiagnostics == 1
                         fprintf('Creating a %d-order monotonic smoothing spline from the %d points.\n', K, length(rho));
