@@ -161,6 +161,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
 %             z_knotIn = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
             z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
+            z_knot = InterpolatingSpline.KnotPointsForPoints(self.z_xLobatto,K,1);
             rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
             
             self.rho_function = rho_interpolant;
