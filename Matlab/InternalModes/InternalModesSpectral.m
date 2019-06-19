@@ -389,7 +389,7 @@ classdef InternalModesSpectral < InternalModesBase
             
             K = 6; % cubic spline
             if self.requiresMonotonicDensity == 1
-                if any(diff(rho)./diff(zIn) > 0)
+                if 0 && any(diff(rho)./diff(zIn) > 0)
                     rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'knot_dof',1,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
                     rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
                     if self.shouldShowDiagnostics == 1
@@ -397,6 +397,8 @@ classdef InternalModesSpectral < InternalModesBase
                     end
                 else
                     z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
+%                     z_knot(end-2*K-1:end-K-1) = [];
+%                     z_knot(K+1:2*K+1) = [];
                     rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
                     if self.shouldShowDiagnostics == 1
                         fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
@@ -410,7 +412,7 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             self.rho_function = rho_interpolant;
-            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
+            self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
         end
         
         function self = InitializeWithFunction(self, rho, zMin, zMax)
@@ -604,22 +606,27 @@ classdef InternalModesSpectral < InternalModesBase
             z_xLobatto(z_xLobatto>maxZ) = maxZ;
             z_xLobatto(z_xLobatto<minZ) = minZ;
             
-            s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
-            relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-            nloops = 0;
-            maxLoops = 100;
-            while ( nloops < maxLoops && relativeError > 1e-10)
-                z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
-                z_xLobatto(z_xLobatto>maxZ) = maxZ;
-                z_xLobatto(z_xLobatto<minZ) = minZ;
-                s_z_xLobatto = x(z_xLobatto);
+            z_xLobatto(1) = maxZ;
+            z_xLobatto(end) = minZ;
             
-                relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-                nloops = nloops + 1;
-            end
-            if nloops == maxLoops
-                warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
-            end
+%             z_xLobatto(1
+            
+            s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
+%             relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
+%             nloops = 0;
+%             maxLoops = 100;
+%             while ( nloops < maxLoops && relativeError > 1e-10)
+%                 z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
+%                 z_xLobatto(z_xLobatto>maxZ) = maxZ;
+%                 z_xLobatto(z_xLobatto<minZ) = minZ;
+%                 s_z_xLobatto = x(z_xLobatto);
+%             
+%                 relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
+%                 nloops = nloops + 1;
+%             end
+%             if nloops == maxLoops
+%                 warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
+%             end
                         
             xOut = x(zOut);
             xOut(xOut>max(xLobatto)) = max(xLobatto);

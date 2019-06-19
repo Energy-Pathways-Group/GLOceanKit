@@ -832,18 +832,18 @@ classdef InternalModes < handle
             yticks([]);
             
             subplot(1,3,3)
-            if any(self.N2 < 0)
+%             if any(self.N2 < 0)
                 plot(self.N2,self.z, 'LineWidth', 2), hold on
                 xlim([1.1*min(self.N2) 1.1*max(self.N2)])
                 xlabel('N^2');
-            else
-                plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
-                if ~isempty(self.N2Function)
-                    plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
-                end
-                xlim([0.0 1.1*max(sqrt(self.N2))])
-                xlabel('buoyancy frequency');
-            end
+%             else
+%                 plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
+%                 if ~isempty(self.N2Function)
+%                     plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
+%                 end
+%                 xlim([0.0 1.1*max(sqrt(self.N2))])
+%                 xlabel('buoyancy frequency');
+%             end
             
             yticks([]);
         end

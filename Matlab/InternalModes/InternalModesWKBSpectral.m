@@ -129,6 +129,44 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     
     methods (Access = protected)
         
+        function self = InitializeWithGrid(self, rho, zIn)
+            InitializeWithGrid@InternalModesSpectral(self,rho,zIn);
+            rho=flip(rho); zIn=flip(zIn);
+            
+            N_function = sqrt(self.N2_function);
+            s = cumsum(N_function);
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            
+            n = self.nEVP;
+            
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+            y = discretize(self.z_xLobatto,zIn);
+            
+                        
+            % The goal here is to eliminate variations below the WKB grid
+            % scale. So, we don't allow knot points 
+            while (length(unique(y)) < length(self.z_xLobatto))
+                n = (n-1)/2+1;
+                self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+                y = discretize(self.z_xLobatto,zIn);
+            end
+            
+
+            K = 4; % cubic spline
+
+            
+            
+            
+%             z_knotIn = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
+            z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
+            rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+            
+            self.rho_function = rho_interpolant;
+            self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
+        end
+        
         function self = SetupEigenvalueProblem(self)       
             % Create the stretched WKB grid
             N_function = sqrt(self.N2_function);
@@ -137,6 +175,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
 
             [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+
             
             % The eigenvalue problem will be solved using N2 and N2z, so
             % now we need transformations to project them onto the
