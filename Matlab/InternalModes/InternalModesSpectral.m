@@ -444,7 +444,7 @@ classdef InternalModesSpectral < InternalModesBase
             if self.shouldShowDiagnostics == 1
                 fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
             end
-        end      
+        end
                    
         function self = validateInitialModeAndEVPSettings(self)
             % The user requested that the eigenvalue problem be solved on a
@@ -593,40 +593,22 @@ classdef InternalModesSpectral < InternalModesBase
         % Convert to a stretched grid
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [z_xLobatto, xOut] = StretchedGridFromCoordinate( x, xLobatto, zLobatto, zOut)
+        function [z_xLobatto, xOut] = StretchedGridFromCoordinate( x, xLobatto, zDomain, zOut)
             % x is a function handle, that maps from z.
             % xLobatto is the grid on x
             % zLobatto is the Lobatto grid on z
             % zOut is the output grid
             
-            maxZ = max(zLobatto);
-            minZ = min(zLobatto);
-%             z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
-            z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zLobatto),max(zLobatto),1e-12);
+            maxZ = max(zDomain);
+            minZ = min(zDomain);
+
+            z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zDomain),max(zDomain),1e-12);
             z_xLobatto(z_xLobatto>maxZ) = maxZ;
             z_xLobatto(z_xLobatto<minZ) = minZ;
             
             z_xLobatto(1) = maxZ;
             z_xLobatto(end) = minZ;
             
-%             z_xLobatto(1
-            
-            s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
-%             relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-%             nloops = 0;
-%             maxLoops = 100;
-%             while ( nloops < maxLoops && relativeError > 1e-10)
-%                 z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
-%                 z_xLobatto(z_xLobatto>maxZ) = maxZ;
-%                 z_xLobatto(z_xLobatto<minZ) = minZ;
-%                 s_z_xLobatto = x(z_xLobatto);
-%             
-%                 relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-%                 nloops = nloops + 1;
-%             end
-%             if nloops == maxLoops
-%                 warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
-%             end
                         
             xOut = x(zOut);
             xOut(xOut>max(xLobatto)) = max(xLobatto);

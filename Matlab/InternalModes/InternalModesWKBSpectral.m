@@ -143,15 +143,18 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
             y = discretize(self.z_xLobatto,zIn);
             
+            
+            % Can rework this below by transforming zIn to xIn, finding the
+            % reduced grid, then computing the inverse.
                         
             % The goal here is to eliminate variations below the WKB grid
             % scale. So, we don't allow knot points 
-            while (length(unique(y)) < length(self.z_xLobatto))
-                n = (n-1)/2+1;
-                self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
-                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
-                y = discretize(self.z_xLobatto,zIn);
-            end
+%             while (length(unique(y)) < length(self.z_xLobatto))
+%                 n = (n-1)/2+1;
+%                 self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+%                 [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+%                 y = discretize(self.z_xLobatto,zIn);
+%             end
             
 
             K = 4; % cubic spline
@@ -161,7 +164,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
 %             z_knotIn = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
             z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
-            z_knot = InterpolatingSpline.KnotPointsForPoints(self.z_xLobatto,K,1);
+%             z_knot = InterpolatingSpline.KnotPointsForPoints(self.z_xLobatto,K,1);
             rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
             
             self.rho_function = rho_interpolant;

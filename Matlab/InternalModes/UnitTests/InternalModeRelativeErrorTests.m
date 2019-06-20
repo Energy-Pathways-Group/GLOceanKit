@@ -11,7 +11,9 @@ methods{4} = 'spectral';
 
 upperBoundary = UpperBoundary.freeSurface;
 
+
 for iProfile=1:length(profiles)
+    fprintf('**************************************************************\n');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Initialize the analytical solution
     n = 2*64;
@@ -39,49 +41,66 @@ for iProfile=1:length(profiles)
     errorFunction = @(x,y) max(abs(x-y),[],1)./max(abs(y),[],1);
     errorTolerance = 1e-2;
     
-    for iMethod=1:length(methods)
-        if iMethod > 1
-            im = InternalModes(rhoFunction,zIn,z,latitude,'nModes',n, 'method', methods{iMethod}, 'nEVP', n);
+    for iGrid = 1:2
+        if iGrid == 1
+            fprintf('->Initializing with a function\n');
+            rhoInit = rhoFunction;
+            zInit = zIn;
         else
-            im = InternalModes(rhoFunction,zIn,z,latitude,'nModes',n, 'method', methods{iMethod});
+            fprintf('->Initializing with a gridded data\n');
+            zGrid = linspace(min(zIn),max(zIn),n)';
+            rhoInit = rhoFunction(zGrid);
+            zInit = zGrid;
         end
-        im.upperBoundary = upperBoundary;
-        im.normalization = Normalization.kConstant;
         
-        k = 0.1*k_star;
-        [F,G,h] = im.ModesAtWavenumber( k );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at k=0.1*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
-        
-        k = k_star;
-        [F,G,h] = im.ModesAtWavenumber( k );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at k=k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
-        
-        k = 10*k_star;
-        [F,G,h] = im.ModesAtWavenumber( k );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at k=10*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
-        
-        omega = 0.1*N0;
-        [F,G,h] = im.ModesAtFrequency( omega );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at omega=0.1*N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
-        
-        omega = N0;
-        [F,G,h] = im.ModesAtFrequency( omega );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at omega=N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
-        
-        omega = 10*N0;
-        [F,G,h] = im.ModesAtFrequency( omega );
-        [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
-        max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
-        fprintf('%s has %d good modes at omega=10*N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+        for iMethod=1:length(methods)
+            fprintf('\n');
+            
+            if iMethod > 1
+                im = InternalModes(rhoInit,zInit,z,latitude,'nModes',n, 'method', methods{iMethod}, 'nEVP', n);
+            else
+                im = InternalModes(rhoInit,zInit,z,latitude,'nModes',n, 'method', methods{iMethod});
+            end
+
+            im.upperBoundary = upperBoundary;
+            im.normalization = Normalization.kConstant;
+            
+            k = 0.1*k_star;
+            [F,G,h] = im.ModesAtWavenumber( k );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at k=0.1*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            
+            k = k_star;
+            [F,G,h] = im.ModesAtWavenumber( k );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at k=k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            
+            k = 10*k_star;
+            [F,G,h] = im.ModesAtWavenumber( k );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at k=10*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            
+            omega = 0.1*N0;
+            [F,G,h] = im.ModesAtFrequency( omega );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at omega=0.1*N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            
+            omega = N0;
+            [F,G,h] = im.ModesAtFrequency( omega );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at omega=N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            
+            omega = 10*N0;
+            [F,G,h] = im.ModesAtFrequency( omega );
+            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtFrequency( omega );
+            max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            fprintf('%s has %d good modes at omega=10*N0\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+        end
+        fprintf('\n');
     end
 end
