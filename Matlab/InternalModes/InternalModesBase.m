@@ -179,6 +179,8 @@ classdef (Abstract) InternalModesBase < handle
                 if self.shouldShowDiagnostics == 1
                     fprintf('Initialized %s class with gridded data.\n', class(self));
                 end
+                [z_in,I] = sort(z_in,'ascend');
+                rho = rho(I);
                 self.InitializeWithGrid(rho,z_in);
             else
                 error('rho must be a function handle or an array.');

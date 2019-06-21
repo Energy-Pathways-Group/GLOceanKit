@@ -131,83 +131,49 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         
         function self = InitializeWithGrid(self, rho, zIn)
             InitializeWithGrid@InternalModesSpectral(self,rho,zIn);
-            rho=flip(rho); zIn=flip(zIn);
-            
+
+            % This is our new (s)treched grid...we need to make s(z) be
+            % monotonic!
             N_function = sqrt(self.N2_function);
             s = cumsum(N_function);
+            
             self.xDomain = [s(self.zMin) s(self.zMax)];
             
-            n = self.nEVP;
-            
-            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
-            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
-            y = discretize(self.z_xLobatto,zIn);
-            
-            
-            % Can rework this below by transforming zIn to xIn, finding the
-            % reduced grid, then computing the inverse.
-                        
-            % The goal here is to eliminate variations below the WKB grid
-            % scale. So, we don't allow knot points 
-%             while (length(unique(y)) < length(self.z_xLobatto))
-%                 n = (n-1)/2+1;
-%                 self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
-%                 [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
-%                 y = discretize(self.z_xLobatto,zIn);
-%             end
-            
+            % if the data is noisy, let's make sure that there are no
+            % variations below the grid scale. Specifically, each grid
+            % point should uniquely map to a z-grid point.
+            if any(diff(rho)./diff(zIn) > 0)
+                n = self.nEVP;
+                xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+                xIn = s(zIn);
+                y = discretize(xLobatto,xIn);
+                while (length(unique(y)) < length(xLobatto))
+                    n = n-1;
+                    xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+                    y = discretize(xLobatto,xIn);
+                end
+                
+                K = 6; % cubic spline
+                z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
+                rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+                
+                self.rho_function = rho_interpolant;
+                self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
 
-            K = 4; % cubic spline
-
-            
-            
-            
-%             z_knotIn = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
-            z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
-%             z_knot = InterpolatingSpline.KnotPointsForPoints(self.z_xLobatto,K,1);
-            rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
-            
-            self.rho_function = rho_interpolant;
-            self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Data was found to be noise. Creating a %d-order monotonic smoothing spline using %d knot points.\n', K, n);
+                end
+            end
         end
         
         function self = SetupEigenvalueProblem(self)       
             % Create the stretched WKB grid
             N_function = sqrt(self.N2_function);
-            s = cumsum(N_function);
-            self.xDomain = [s(self.zMin) s(self.zMax)];
-            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
-
-            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
-
+            self.x_function = cumsum(N_function);
             
-            % The eigenvalue problem will be solved using N2 and N2z, so
-            % now we need transformations to project them onto the
-            % stretched grid
-            self.N2_xLobatto = self.N2_function(self.z_xLobatto);
             Nz_function = diff(N_function);
             self.Nz_xLobatto = Nz_function(self.z_xLobatto);
-            
-            Lxi = max(self.xLobatto) - min(self.xLobatto);
-            self.Diff1_xCheb = @(v) (2/Lxi)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            
-            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.xOut);
-            
-            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
-            % for all n, except n=1, where the integral is zero.
-            np = (0:(self.nEVP-1))';
-            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
-            self.Int_xCheb(2) = 0;
-            self.Int_xCheb = Lxi/2*self.Int_xCheb;
-            
-            if self.shouldShowDiagnostics == 1
-                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
-            end
-        end
-        
-        
-        
+        end   
     end
     
     methods (Access = private)             

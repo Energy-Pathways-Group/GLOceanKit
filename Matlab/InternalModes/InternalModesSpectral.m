@@ -81,24 +81,31 @@ classdef InternalModesSpectral < InternalModesBase
         rho_function        % function handle to return rho at z
         N2_function         % function handle to return N2 at z
                 
+        nEVP = 0           % number of points in the eigenvalue problem
+        
         % These properties are initialized with SetupEigenvalueProblem()
         % Most subclasses *will* override these initializations. The 'x' refers to the stretched coordinate being used.
         % This class uses x=z (depth), although they may have different numbers of points.
-        nEVP = 0           % number of points in the eigenvalue problem
+        
+        % The 'x' refers to the stretched coordinate being used.
+        % Once x_function has been set, all the properties listed below are
+        % automatically created.
+        x_function         % function handle to return 'x' at z (i.e., the stretched coordinate function)
         xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
         xDomain            % limits of the stretched coordinate [xMin xMax]
         z_xLobatto         % The value of z, at the xLobatto points
         xOut               % desired locations of the output in x-coordinate (deduced from z_out)
-        N2_xLobatto        % N2 on the z2Lobatto grid
         Diff1_xCheb        % single derivative in spectral space, *function handle*
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
-        T_xCheb_zOut
-        Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
+        T_xCheb_zOut        
+        Int_xCheb          % Vector that multiplies Cheb coeffs, then sum for integral
+        N2_xLobatto        % N2 on the z2Lobatto grid
     end
     
     properties (Dependent)
         xMin
         xMax
+        Lx
     end
     
     methods
@@ -354,39 +361,53 @@ classdef InternalModesSpectral < InternalModesBase
         function value = get.xMax(self)
             value = self.xDomain(2);
         end
+        
+        function value = get.Lx(self)
+            value = self.xMax - self.xMin;
+        end
+        
+        function set.x_function(self,s)
+            self.x_function = s;
+            
+            self.recomputeStretchedGrid(s);
+        end
+        
+        
     end
     
     methods (Access = protected)
         
-        function self = SetupEigenvalueProblem(self)
-            % Called during initialization after InitializeZLobattoProperties().
-            % Subclasses will override this function.
-            n = self.nEVP;
-            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.zMin;
-            self.xLobatto(1) = self.zMax;
-            self.xDomain = self.zDomain;
-            
-            self.N2_xLobatto = self.N2_function(self.xLobatto);
-            self.Diff1_xCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            
+        function self = recomputeStretchedGrid(self,s)
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
+                        
+            self.Diff1_xCheb = @(v) (2/self.Lx)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
+            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.xOut);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.
-            np = (0:(n-1))';
+            np = (0:(self.nEVP-1))';
             self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
             self.Int_xCheb(2) = 0;
-            self.Int_xCheb = self.Lz/2*self.Int_xCheb;
+            self.Int_xCheb = self.Lx/2*self.Int_xCheb;
+            
+            self.N2_xLobatto = self.N2_function(self.z_xLobatto);
             
             if self.shouldShowDiagnostics == 1
                 fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
             end
         end
         
+        function self = SetupEigenvalueProblem(self)
+            % Subclasses will override this function.
+            self.x_function = @(z) z;                           
+        end
+        
         function self = InitializeWithGrid(self, rho, zIn)
             self.validateInitialModeAndEVPSettings();
-            
+
             K = 6; % cubic spline
             if self.requiresMonotonicDensity == 1
                 if 0 && any(diff(rho)./diff(zIn) > 0)
@@ -397,8 +418,6 @@ classdef InternalModesSpectral < InternalModesBase
                     end
                 else
                     z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
-%                     z_knot(end-2*K-1:end-K-1) = [];
-%                     z_knot(K+1:2*K+1) = [];
                     rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
                     if self.shouldShowDiagnostics == 1
                         fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
@@ -436,7 +455,7 @@ classdef InternalModesSpectral < InternalModesBase
                         endtest(k) = min(abs(tPoints(k) - f.domain));
                     end
                     if ( any(endtest > 100*abs(feval(f, tPoints))*tol) )
-                        error('Density must be monotonic to use WKB. The function you provided is not monotonic.');
+                        error('Density must be monotonic to use this class. The function you provided is not monotonic.');
                     end
                 end
             end
