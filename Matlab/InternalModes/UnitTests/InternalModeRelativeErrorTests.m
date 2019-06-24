@@ -7,7 +7,7 @@ methods{1} = 'finiteDifference';
 methods{2} = 'wkbSpectral';
 methods{3} = 'densitySpectral';
 methods{4} = 'spectral';
-% methods{5} = 'wkbAdaptiveSpectral';
+methods{5} = 'wkbAdaptiveSpectral';
 
 upperBoundary = UpperBoundary.freeSurface;
 

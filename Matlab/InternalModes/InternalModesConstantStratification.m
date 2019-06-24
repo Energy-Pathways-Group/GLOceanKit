@@ -274,13 +274,13 @@ classdef InternalModesConstantStratification < InternalModesBase
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
-                rho0 = rho(max(z_in));
-                max_ddrho = max(abs(diff((rho(linspace(min(z_in),max(z_in),100))/rho0 ))));
+                z=linspace(min(z_in),max(z_in),100)';
+                drhodz = diff(rho(z))./diff(z);
             elseif isa(rho,'numeric') == true
                 drhodz = diff(rho)./diff(z_in);
-                max_ddrho = std(drhodz)/abs(mean(drhodz));
             end
             
+            max_ddrho = std(drhodz)/abs(mean(drhodz));
             flag = max_ddrho < 1e-3;
         end
         

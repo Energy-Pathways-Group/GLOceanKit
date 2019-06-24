@@ -19,7 +19,7 @@ errorOfMode = zeros(totalEVPs,1);
 error_cutoff = 1e-2;
 for log2nEVP = 1:totalEVPs
     nEVP = 2^(minEVP+log2nEVP);
-    im = InternalModes(rhoFunction,zIn,zOut,latitude, 'nEVP', nEVP, 'nModes', nEVP);
+    im = InternalModes(rhoFunction,zIn,zOut,latitude, 'nEVP', nEVP, 'nModes', nEVP, 'method','wkbAdaptiveSpectral');
     [F,G,h] = im.ModesAtFrequency(omega);
     
     h_error = errorFunction(h,h_analytical);

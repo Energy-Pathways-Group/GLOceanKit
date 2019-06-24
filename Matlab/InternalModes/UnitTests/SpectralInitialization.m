@@ -15,7 +15,7 @@ methods{3} = 'densitySpectral';
 methods{4} = 'spectral';
 methods{5} = 'wkbAdaptiveSpectral';
 
-for iProfile=2:2%length(profiles)
+for iProfile=1:length(profiles)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Initialize the analytical solution
     n = 2*64;

@@ -266,13 +266,13 @@ classdef InternalModesSpectral < InternalModesBase
 %             fprintf('Using %d grid points for the SQG mode\n',n);
             
             % Now create this new grid
-            yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
-            T_zCheb_yLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, yLobatto);
+            yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.zMin;
             T_yCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(yLobatto, self.z);
             
             [T,Ty,Tyy] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( yLobatto, length(yLobatto) );
-            N2_yLobatto = T_zCheb_yLobatto(self.N2_zCheb);
-            N2_z_yLobatto = T_zCheb_yLobatto(self.Diff1_zCheb(self.N2_zCheb));
+            N2_yLobatto = self.N2_function(yLobatto);
+            N2z_function = diff(self.N2_function);
+            N2_z_yLobatto = N2z_function(yLobatto);
             
             A = N2_yLobatto .* Tyy - N2_z_yLobatto.*Ty;
             B = - (1/(self.f0*self.f0))* (N2_yLobatto.*N2_yLobatto) .*T;
@@ -449,6 +449,7 @@ classdef InternalModesSpectral < InternalModesBase
                 f = self.rho_function;
                 fp = diff(f);
                 tPoints = roots(fp);
+                tol = eps;
                 if ( ~isempty(tPoints) )
                     endtest = zeros(length(tPoints), 1);
                     for k = 1:length(tPoints)

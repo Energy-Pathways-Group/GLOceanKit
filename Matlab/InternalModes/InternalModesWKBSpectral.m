@@ -21,7 +21,8 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     %
     %   March 14th, 2017        Version 1.0
     
-    properties %(Access = private)            
+    properties %(Access = private)
+        Nz_function
         Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
     end
     
@@ -171,8 +172,8 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             N_function = sqrt(self.N2_function);
             self.x_function = cumsum(N_function);
             
-            Nz_function = diff(N_function);
-            self.Nz_xLobatto = Nz_function(self.z_xLobatto);
+            self.Nz_function = diff(N_function);
+            self.Nz_xLobatto = self.Nz_function(self.z_xLobatto);
         end   
     end
     
