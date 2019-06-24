@@ -353,13 +353,7 @@ classdef InternalModesSpectral < InternalModesBase
             end
             
             K = 5; % quartic spline
-            if any(diff(rho) > 0)
-                rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
-                rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
-            else
-                z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
-                rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
-            end
+            rho_interpolant = InterpolatingSpline(zIn,rho,K);
             
             if self.shouldShowDiagnostics == 1
                fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
