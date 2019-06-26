@@ -394,7 +394,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.Int_xCheb = self.Lx/2*self.Int_xCheb;
             
             self.N2_xLobatto = self.N2_function(self.z_xLobatto);
-            
+      
             if self.shouldShowDiagnostics == 1
                 fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
             end
