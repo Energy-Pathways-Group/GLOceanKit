@@ -135,7 +135,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
 
             % This is our new (s)treched grid...we need to make s(z) be
             % monotonic!
-            N_function = sqrt(self.N2_function);
+            N_function = sqrt(self.N2_function,struct('global',ShapeConstraint.positive));
             s = cumsum(N_function);
             
             self.xDomain = [s(self.zMin) s(self.zMax)];
