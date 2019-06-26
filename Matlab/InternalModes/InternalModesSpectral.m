@@ -66,48 +66,46 @@ classdef InternalModesSpectral < InternalModesBase
     %   March 14th, 2017        Version 1.0
     
     properties (Access = public)
-        rho % Density on the z grid.
-        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
+
     end
     
     properties (Dependent)
+        rho % Density on the z grid.
         rho_z % First derivative of density on the z grid.
         rho_zz % Second derivative of density on the z grid.
+        N2 % Buoyancy frequency on the z grid, $N^2 = -\frac{g}{\rho(0)} \frac{\partial \rho}{\partial z}$.
     end
     
 
     properties %(Access = private)
-        rho_function        % function handle to return rho at z (uses interpolation for grids)
-        
-        % These properties are initialized with InitializeZLobattoProperties()
-        % Most subclasses would *not* override these initializations.
-        zLobatto            % zIn coordinate, on Chebyshev extrema/Lobatto grid
-        rho_zLobatto        % rho on the above zLobatto
-        rho_zCheb           % rho in spectral space
-        N2_zCheb            % N2 in spectral space
-        N2_zLobatto         % N2 on the zLobatto grid
-        Diff1_zCheb         % *function handle*, that takes single derivative in spectral space
-        T_zCheb_zOut        % *function handle*, that transforms from spectral to z_out
+        rho_function        % function handle to return rho at z
+        N2_function         % function handle to return N2 at z
+                
+        nEVP = 0           % number of points in the eigenvalue problem
         
         % These properties are initialized with SetupEigenvalueProblem()
         % Most subclasses *will* override these initializations. The 'x' refers to the stretched coordinate being used.
         % This class uses x=z (depth), although they may have different numbers of points.
-        nEVP = 0           % number of points in the eigenvalue problem
-        nGrid = 0          % number of points used to compute the derivatives of density.
+        
+        % The 'x' refers to the stretched coordinate being used.
+        % Once x_function has been set, all the properties listed below are
+        % automatically created.
+        x_function         % function handle to return 'x' at z (i.e., the stretched coordinate function)
         xLobatto           % stretched coordinate Lobatto grid nEVP points. z for this class, density or wkb for others.
         xDomain            % limits of the stretched coordinate [xMin xMax]
         z_xLobatto         % The value of z, at the xLobatto points
         xOut               % desired locations of the output in x-coordinate (deduced from z_out)
-        N2_xLobatto        % N2 on the z2Lobatto grid
         Diff1_xCheb        % single derivative in spectral space, *function handle*
         T_xLobatto, Tx_xLobatto, Txx_xLobatto        % Chebyshev polys (and derivs) on the zLobatto
-        T_xCheb_zOut
-        Int_xCheb           % Vector that multiplies Cheb coeffs, then sum for integral
+        T_xCheb_zOut        
+        Int_xCheb          % Vector that multiplies Cheb coeffs, then sum for integral
+        N2_xLobatto        % N2 on the z2Lobatto grid
     end
     
     properties (Dependent)
         xMin
         xMax
+        Lx
     end
     
     methods
@@ -127,12 +125,22 @@ classdef InternalModesSpectral < InternalModesBase
         % Computed (dependent) properties
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function value = get.rho(self)
+            value = self.rho_function(self.z);
+        end
+                
         function value = get.rho_z(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.rho_zCheb));
+            rho_z_function = diff(self.rho_function);
+            value = rho_z_function(self.z);
         end
         
         function value = get.rho_zz(self)
-            value = self.T_zCheb_zOut(self.Diff1_zCheb(self.Diff1_zCheb(self.rho_zCheb)));
+            rho_zz_function = diff(diff(self.rho_function));
+            value = rho_zz_function(self.z);
+        end
+        
+        function value = get.N2(self)
+            value = self.N2_function(self.z);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,18 +162,26 @@ classdef InternalModesSpectral < InternalModesBase
             A = (Tzz - k*k*eye(n)*T);
             B = diag((self.f0*self.f0-self.N2_xLobatto)/self.g)*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(1,:) = Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
         end
         
@@ -178,18 +194,26 @@ classdef InternalModesSpectral < InternalModesBase
             A = Tzz;
             B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.rigidLid
+                    A(n,:) = T(n,:);
+                    B(n,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
-            % G=0 or G_z = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(1,:) = Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(1,:) = Tz(1,:);
+                    B(1,:) = T(1,:);
+                case UpperBoundary.rigidLid
+                    A(1,:) = T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
         end
         
@@ -242,13 +266,13 @@ classdef InternalModesSpectral < InternalModesBase
 %             fprintf('Using %d grid points for the SQG mode\n',n);
             
             % Now create this new grid
-            yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
-            T_zCheb_yLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, yLobatto);
+            yLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.zMin;
             T_yCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(yLobatto, self.z);
             
             [T,Ty,Tyy] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( yLobatto, length(yLobatto) );
-            N2_yLobatto = T_zCheb_yLobatto(self.N2_zCheb);
-            N2_z_yLobatto = T_zCheb_yLobatto(self.Diff1_zCheb(self.N2_zCheb));
+            N2_yLobatto = self.N2_function(yLobatto);
+            N2z_function = diff(self.N2_function);
+            N2_z_yLobatto = N2z_function(yLobatto);
             
             A = N2_yLobatto .* Tyy - N2_z_yLobatto.*Ty;
             B = - (1/(self.f0*self.f0))* (N2_yLobatto.*N2_yLobatto) .*T;
@@ -337,95 +361,111 @@ classdef InternalModesSpectral < InternalModesBase
         function value = get.xMax(self)
             value = self.xDomain(2);
         end
+        
+        function value = get.Lx(self)
+            value = self.xMax - self.xMin;
+        end
+        
+        function set.x_function(self,s)
+            self.x_function = s;
+            
+            self.recomputeStretchedGrid(s);
+        end
+        
+        
     end
     
-    methods (Access = protected)       
-        function self = InitializeWithGrid(self, rho, zIn)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in gridded form. The goal is
-            % to initialize zLobatto and rho_zLobatto.
-            self.validateInitialModeAndEVPSettings();
-            
-            % Our Chebyshev grids are monotonically decreasing.
-            if (zIn(2) - zIn(1)) > 0
-                zIn = flip(zIn);
-                rho = flip(rho);
-            end
-            
-            K = 5; % quartic spline
-            rho_interpolant = InterpolatingSpline(zIn,rho,K);
-            
-            if self.shouldShowDiagnostics == 1
-               fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho)); 
-            end
-                          
-            self.InitializeWithFunction(rho_interpolant,min(zIn),max(zIn));
-        end
+    methods (Access = protected)
         
-        function self = InitializeWithFunction(self, rho, zMin, zMax)
-            % Superclass calls this method upon initialization when it
-            % determines that the input is given in functional form. The goal
-            % is to initialize zLobatto and rho_zLobatto.
-            self.validateInitialModeAndEVPSettings();
+        function self = recomputeStretchedGrid(self,s)
+            self.xDomain = [s(self.zMin) s(self.zMax)];
+            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
+            [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zDomain, self.z);
                         
-            [self.zLobatto, self.rho_zCheb] = InternalModesSpectral.ProjectOntoChebyshevPolynomialsWithTolerance([zMin zMax], rho, 1e-10);
-            self.rho_zLobatto = rho(self.zLobatto);
-            self.rho_function = rho;
-            self.nGrid = length(self.zLobatto);
-            
-            if self.shouldShowDiagnostics == 1
-               fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_zCheb)); 
-            end
-            
-            self.InitializeZLobattoProperties();
-        end      
-        
-        function self = InitializeZLobattoProperties(self)
-            % Called by InitializeWithGrid and InitializeWithFunction after
-            % they've completed their basic setup.
-            self.Diff1_zCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            self.N2_zCheb= -(self.g/self.rho0)*self.Diff1_zCheb(self.rho_zCheb);
-            
-            % This computation isn't strictly necessary, although it is
-            % used in the stretched coordinate cases.
-            self.N2_zLobatto = InternalModesSpectral.ifct(self.N2_zCheb);
-            
-            self.T_zCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z);
-            self.rho = self.T_zCheb_zOut(self.rho_zCheb);
-            self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-            
-%             fprintf('All derivatives of density are computed with %d points.', length(self.zLobatto));
-        end
-        
-        function self = SetupEigenvalueProblem(self)
-            if any(self.N2_zLobatto < 0)
-                fprintf('Warning: the bouyancy frequency goes negative! This may not be what you want, but we will proceed anyway...\n');
-            end
-            
-            % Called during initialization after InitializeZLobattoProperties().
-            % Subclasses will override this function.
-            n = self.nEVP;
-            self.xLobatto = (self.Lz/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + min(self.zLobatto);
-            self.xLobatto(1) = self.zMax;
-            self.xDomain = self.zDomain;
-            T_zCheb_xLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.xLobatto);
-            
-            self.N2_xLobatto = T_zCheb_xLobatto(self.N2_zCheb);
-            self.Diff1_xCheb = @(v) (2/self.Lz)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            
+            self.Diff1_xCheb = @(v) (2/self.Lx)*InternalModesSpectral.DifferentiateChebyshevVector( v );
             [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.z);
+            self.T_xCheb_zOut = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.xOut);
             
             % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
             % for all n, except n=1, where the integral is zero.
-            np = (0:(n-1))';
+            np = (0:(self.nEVP-1))';
             self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
             self.Int_xCheb(2) = 0;
-            self.Int_xCheb = self.Lz/2*self.Int_xCheb;
+            self.Int_xCheb = self.Lx/2*self.Int_xCheb;
             
-%             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            self.N2_xLobatto = self.N2_function(self.z_xLobatto);
+      
+            if self.shouldShowDiagnostics == 1
+                fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            end
         end
         
+        function self = SetupEigenvalueProblem(self)
+            % Subclasses will override this function.
+            self.x_function = @(z) z;                           
+        end
+        
+        function self = InitializeWithGrid(self, rho, zIn)
+            self.validateInitialModeAndEVPSettings();
+
+            K = 6; % cubic spline
+            if self.requiresMonotonicDensity == 1
+                if 0 && any(diff(rho)./diff(zIn) > 0)
+                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'knot_dof',1,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
+                    rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
+                    if self.shouldShowDiagnostics == 1
+                        fprintf('Creating a %d-order monotonic smoothing spline from the %d points.\n', K, length(rho));
+                    end
+                else
+                    z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
+                    rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+                    if self.shouldShowDiagnostics == 1
+                        fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
+                    end
+                end
+            else
+                rho_interpolant = InterpolatingSpline(zIn,rho,'K',K);
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Creating a %d-order spline from the %d points.\n', K, length(rho));
+                end
+            end
+            
+            self.rho_function = rho_interpolant;
+            self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
+        end
+        
+        function self = InitializeWithFunction(self, rho, zMin, zMax)
+            self.validateInitialModeAndEVPSettings();
+            
+            if ~exist('chebfun','class')
+               error('The package chebfun is required when initializing with a function.')
+            end
+
+            self.rho_function = chebfun(rho,[zMin zMax]);
+            self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
+            
+            if self.requiresMonotonicDensity == 1
+                % Taken from inv as part of chebfun.
+                f = self.rho_function;
+                fp = diff(f);
+                tPoints = roots(fp);
+                tol = eps;
+                if ( ~isempty(tPoints) )
+                    endtest = zeros(length(tPoints), 1);
+                    for k = 1:length(tPoints)
+                        endtest(k) = min(abs(tPoints(k) - f.domain));
+                    end
+                    if ( any(endtest > 100*abs(feval(f, tPoints))*tol) )
+                        error('Density must be monotonic to use this class. The function you provided is not monotonic.');
+                    end
+                end
+            end
+            
+            if self.shouldShowDiagnostics == 1
+                fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
+            end
+        end
+                   
         function self = validateInitialModeAndEVPSettings(self)
             % The user requested that the eigenvalue problem be solved on a
             % grid of particular length
@@ -437,11 +477,7 @@ classdef InternalModesSpectral < InternalModesBase
                 self.nEVP = 513; % 2^n + 1 for a fast Chebyshev transform
             end            
         end
-        
-        function f = SetNoiseFloorToZero(~, f)
-            f(abs(f)/max(abs(f)) < 1e-15) = 0;
-        end
-                
+                        
         % This function is an intermediary used by ModesAtFrequency and
         % ModesAtWavenumber to establish the various norm functions.
         function [F,G,h,F2,N2G2] = ModesFromGEPSpectral(self,A,B)
@@ -577,35 +613,22 @@ classdef InternalModesSpectral < InternalModesBase
         % Convert to a stretched grid
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [z_xLobatto, xOut] = StretchedGridFromCoordinate( x, xLobatto, zLobatto, zOut)
+        function [z_xLobatto, xOut] = StretchedGridFromCoordinate( x, xLobatto, zDomain, zOut)
             % x is a function handle, that maps from z.
             % xLobatto is the grid on x
             % zLobatto is the Lobatto grid on z
             % zOut is the output grid
             
-            maxZ = max(zLobatto);
-            minZ = min(zLobatto);
-            z_xLobatto = interp1(x(zLobatto), zLobatto, xLobatto, 'spline','extrap');
-            z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zLobatto),max(zLobatto),1e-12);
+            maxZ = max(zDomain);
+            minZ = min(zDomain);
+
+            z_xLobatto = InternalModesSpectral.fInverseBisection(x,xLobatto,min(zDomain),max(zDomain),1e-12);
             z_xLobatto(z_xLobatto>maxZ) = maxZ;
             z_xLobatto(z_xLobatto<minZ) = minZ;
             
-            s_z_xLobatto = x(z_xLobatto); % this should give us xLobatto back, if our approximation is good.
-            relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-            nloops = 0;
-            maxLoops = 100;
-            while ( nloops < maxLoops && relativeError > 1e-10)
-                z_xLobatto = interp1(s_z_xLobatto, z_xLobatto, xLobatto, 'spline','extrap');
-                z_xLobatto(z_xLobatto>maxZ) = maxZ;
-                z_xLobatto(z_xLobatto<minZ) = minZ;
-                s_z_xLobatto = x(z_xLobatto);
+            z_xLobatto(1) = maxZ;
+            z_xLobatto(end) = minZ;
             
-                relativeError = max( abs(s_z_xLobatto - xLobatto))/max(abs(xLobatto));
-                nloops = nloops + 1;
-            end
-            if nloops == maxLoops
-                warning('Stretched coordinate reached maximum number of loops (%d) with relative error of %g\n', maxLoops, relativeError);
-            end
                         
             xOut = x(zOut);
             xOut(xOut>max(xLobatto)) = max(xLobatto);

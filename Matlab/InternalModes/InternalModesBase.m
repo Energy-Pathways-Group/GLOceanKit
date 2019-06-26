@@ -49,10 +49,12 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         zDomain % [zMin zMax]
+        requiresMonotonicDensity = 0
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
         upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
+        lowerBoundary = LowerBoundary.rigidLid  % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
     end
     
     properties (Dependent)
@@ -177,6 +179,8 @@ classdef (Abstract) InternalModesBase < handle
                 if self.shouldShowDiagnostics == 1
                     fprintf('Initialized %s class with gridded data.\n', class(self));
                 end
+                [z_in,I] = sort(z_in,'ascend');
+                rho = rho(I);
                 self.InitializeWithGrid(rho,z_in);
             else
                 error('rho must be a function handle or an array.');

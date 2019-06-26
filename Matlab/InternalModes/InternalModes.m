@@ -99,6 +99,7 @@ classdef InternalModes < handle
         rho_zz % Second derivative of density on the z grid.
         rho0 % density at the surface (or user specified through constructor args)
         
+        lowerBoundary % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
         upperBoundary % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
         normalization % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
     end
@@ -447,6 +448,13 @@ classdef InternalModes < handle
         end
         function value = get.upperBoundary(self)
             value = self.internalModes.upperBoundary;
+        end
+        
+        function set.lowerBoundary(self,value)
+            self.internalModes.lowerBoundary = value;
+        end
+        function value = get.lowerBoundary(self)
+            value = self.internalModes.lowerBoundary;
         end
         
         
@@ -821,23 +829,23 @@ classdef InternalModes < handle
             plot(G(:,1:4),self.z, 'LineWidth', 2)
             title(b, sprintf('Internal Modes for %s stratification computed using %s\n h = (%.2g, %.2g, %.2g, %.2g)',self.stratification,self.fullMethodName, h(1) , h(2), h(3), h(4) ));
             xlabel('w-modes');
-            ytick([]);
+            yticks([]);
             
             subplot(1,3,3)
-            if any(self.N2 < 0)
+%             if any(self.N2 < 0)
                 plot(self.N2,self.z, 'LineWidth', 2), hold on
                 xlim([1.1*min(self.N2) 1.1*max(self.N2)])
                 xlabel('N^2');
-            else
-                plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
-                if ~isempty(self.N2Function)
-                    plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
-                end
-                xlim([0.0 1.1*max(sqrt(self.N2))])
-                xlabel('buoyancy frequency');
-            end
+%             else
+%                 plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on
+%                 if ~isempty(self.N2Function)
+%                     plot(sqrt(self.N2Function(self.z)),self.z, 'LineWidth', 2)
+%                 end
+%                 xlim([0.0 1.1*max(sqrt(self.N2))])
+%                 xlabel('buoyancy frequency');
+%             end
             
-            ytick([]);
+            yticks([]);
         end
         
         function self = ShowErrorFigure(self, h_error, F_error, G_error, theTitle)

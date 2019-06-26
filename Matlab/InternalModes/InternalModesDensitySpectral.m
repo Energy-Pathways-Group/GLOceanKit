@@ -32,6 +32,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesDensitySpectral(rho, z_in, z_out, latitude, varargin)
+            varargin{end+1} = 'requiresMonotonicDensity';
+            varargin{end+1} = 1;
             self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
         end
                     
@@ -114,64 +116,50 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
 
     end
     
-    methods (Access = protected)        
-        function self = SetupEigenvalueProblem(self)
+    methods (Access = protected)
+        
+        function self = InitializeWithGrid(self, rho, zIn)
+            InitializeWithGrid@InternalModesSpectral(self,rho,zIn);
             
-            % Check if we an even create a density coordinate system
-            [flag, dTotalVariation, rho_zCheb_new, rho_zLobatto_new, rhoz_zCheb, rhoz_zLobatto] = InternalModesSpectral.CheckIfReasonablyMonotonic(self.zLobatto, self.rho_zCheb, self.rho_zLobatto, -(self.rho0/self.g)*self.N2_zCheb, -(self.rho0/self.g)*self.N2_zLobatto);
-            if flag == 1
-                self.rho_zCheb = rho_zCheb_new;
-                self.rho_zLobatto = rho_zLobatto_new;
-                self.N2_zCheb= -(self.g/self.rho0)*rhoz_zCheb;
-                self.N2_zLobatto = -(self.g/self.rho0)*rhoz_zLobatto;
-                
-                self.rho = self.T_zCheb_zOut(self.rho_zCheb);
-                self.N2 = self.T_zCheb_zOut(self.N2_zCheb);
-                
-                fprintf('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We used this new density function for the computation and will proceed.\n', dTotalVariation*100);
-            elseif flag == 2
-                error('The density function was not monotonically decreasing and zeroing out overturns resulted in a change in total variation of %.2g percent. We are unable to create a WKB stretched coordinate system.\n', dTotalVariation*100);
-            end
+            % This is our new (s)treched grid...we need to make s(z) be
+            % monotonic!
+            s = @(z) (-self.g/self.rho0)*self.rho_function(z) + self.g;
             
-            
-            % Create a stretched grid from the density function
-            s = @(z) -self.g*self.rho_function(z)/self.rho0 + self.g;
             self.xDomain = [s(self.zMin) s(self.zMax)];
-            self.xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:self.nEVP-1)')*pi/(self.nEVP-1)) + 1) + self.xMin;
             
-            % We need to be able to create a reasonable stretched grid...
-            % if we can't, we will throw an exception
-            try
-                [self.z_xLobatto, self.xOut] = InternalModesSpectral.StretchedGridFromCoordinate( s, self.xLobatto, self.zLobatto, self.z);
-            catch ME
-                switch ME.identifier
-                    case 'MATLAB:griddedInterpolant:NonUniqueCompVecsPtsErrId'
-                        causeException = MException('StretchedGridFromCoordinate:NonMonotonicFunction','The density function must be strictly monotonically decreasing in order to create a unqiue density grid. Unable to proceed. You consider trying InternalModesSpectral, which has no such restriction because it uses the z-coordinate.');
-                        ME = addCause(ME,causeException);  
+            % if the data is noisy, let's make sure that there are no
+            % variations below the grid scale. Specifically, each grid
+            % point should uniquely map to a z-grid point.
+            if any(diff(rho)./diff(zIn) > 0)
+                n = self.nEVP;
+                xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+                xIn = s(zIn);
+                y = discretize(xLobatto,xIn);
+                while (length(unique(y)) < length(xLobatto))
+                    n = n-1;
+                    xLobatto = ((self.xMax-self.xMin)/2)*( cos(((0:n-1)')*pi/(n-1)) + 1) + self.xMin;
+                    y = discretize(xLobatto,xIn);
                 end
-                rethrow(ME)
+                
+                K = 6; % cubic spline
+                z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
+                rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+                
+                self.rho_function = rho_interpolant;
+                self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
+                
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Data was found to be noise. Creating a %d-order monotonic smoothing spline using %d knot points.\n', K, n);
+                end
             end
+        end
+        
+        function self = SetupEigenvalueProblem(self)     
+            % Create a stretched grid from the density function
+            self.x_function = @(z) (-self.g/self.rho0)*self.rho_function(z) + self.g;
             
-            % The eigenvalue problem will be solved using N2 and N2z, so
-            % now we need transformations to project them onto the
-            % stretched grid
-            T_zCheb_sLobatto = InternalModesSpectral.ChebyshevTransformForGrid(self.zLobatto, self.z_xLobatto);
-            self.N2_xLobatto = T_zCheb_sLobatto(self.N2_zCheb);
-            self.N2z_xLobatto = T_zCheb_sLobatto(self.Diff1_zCheb(self.N2_zCheb));
-            
-            Ls = max(self.xLobatto)-min(self.xLobatto);
-            self.Diff1_xCheb = @(v) (2/Ls)*InternalModesSpectral.DifferentiateChebyshevVector( v );
-            [self.T_xLobatto,self.Tx_xLobatto,self.Txx_xLobatto] = InternalModesSpectral.ChebyshevPolynomialsOnGrid( self.xLobatto, length(self.xLobatto) );
-            [self.T_xCheb_zOut, ~] = InternalModesSpectral.ChebyshevTransformForGrid(self.xLobatto, self.xOut);
-            
-            % We use that \int_{-1}^1 T_n(x) dx = \frac{(-1)^n + 1}{1-n^2}
-            % for all n, except n=1, where the integral is zero.
-            np = (0:(self.nEVP-1))';
-            self.Int_xCheb = -(1+(-1).^np)./(np.*np-1);
-            self.Int_xCheb(2) = 0;
-            self.Int_xCheb = Ls/2*self.Int_xCheb;
-            
-%             fprintf(' The eigenvalue problem will be solved with %d points.\n', length(self.xLobatto));
+            N2z_function = diff(self.N2_function);
+            self.N2z_xLobatto = N2z_function(self.z_xLobatto);
         end
     end
     
