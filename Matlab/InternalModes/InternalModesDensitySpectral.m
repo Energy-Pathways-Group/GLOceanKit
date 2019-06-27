@@ -56,18 +56,30 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             iSurface = 1;
             iBottom = n;
             
-            % Lower boundary is rigid, G=0
-            A(iBottom,:) = T(iBottom,:);
-            B(iBottom,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.freeSlip
+                    A(iBottom,:) = T(iBottom,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.noSlip
+                    A(iBottom,:) = Tz(iBottom,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
-                B(iSurface,:) = T(iSurface,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(iSurface,:) = T(iSurface,:);
-                B(iSurface,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
+                    B(iSurface,:) = T(iSurface,:);
+                case UpperBoundary.rigidLid
+                    A(iSurface,:) = T(iSurface,:);
+                    B(iSurface,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
             if nargout == 6
@@ -92,18 +104,30 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             iSurface = 1;
             iBottom = n;
             
-            % Lower boundary is rigid, G=0
-            A(iBottom,:) = T(iBottom,:);
-            B(iBottom,:) = 0;
+            switch self.lowerBoundary
+                case LowerBoundary.freeSlip
+                    A(iBottom,:) = T(iBottom,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.noSlip
+                    A(iBottom,:) = Tz(iBottom,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
             
             % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
-                B(iSurface,:) = T(iSurface,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(iSurface,:) = T(iSurface,:);
-                B(iSurface,:) = 0;
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
+                    B(iSurface,:) = T(iSurface,:);
+                case UpperBoundary.rigidLid
+                    A(iSurface,:) = T(iSurface,:);
+                    B(iSurface,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
             if nargout == 6

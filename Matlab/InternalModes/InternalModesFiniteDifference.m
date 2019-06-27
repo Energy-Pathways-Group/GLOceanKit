@@ -60,8 +60,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
             
             self.n = length(self.z_diff);
             self.Diff1 = InternalModesFiniteDifference.FiniteDifferenceMatrix(1, self.z_diff, 1, 1, self.orderOfAccuracy);
+            self.Diff2 = InternalModesFiniteDifference.FiniteDifferenceMatrix(2, self.z_diff, 2, 2, self.orderOfAccuracy);
             self.N2_z_diff = -(self.g/self.rho0) * self.Diff1 * self.rho_z_diff;
-            self.upperBoundaryDidChange(); % this sets Diff2          
             
             self.InitializeOutputTransformation(z_out);
             self.rho = self.T_out(self.rho_z_diff);
@@ -89,20 +89,40 @@ classdef InternalModesFiniteDifference < InternalModesBase
             A = self.Diff2 - k*k*eye(self.n);
             B = diag(self.f0*self.f0 - self.N2_z_diff)/self.g;
             
-            % Bottom boundary condition (always taken to be G=0)
-            % NOTE: we already chose the correct BCs when creating the
-            % Diff2 matrix
-            A(1,:) = self.Diff2(1,:);
-            B(1,:) = 0;
+            iSurface = length(self.z);
+            iBottom = 1;
             
-            % Surface boundary condition
-            A(end,:) = self.Diff2(end,:);
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                B(end,end)=1;
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                % G=0 at the surface (note we chose this BC when creating Diff2)
-                B(end,end)=0;
+            switch self.lowerBoundary
+                case LowerBoundary.freeSlip % G = 0
+                    A(iBottom,:) = 0;
+                    A(iBottom,iBottom) = 1;
+                    B(iBottom,:) = 0;
+                case LowerBoundary.noSlip % G_z = 0
+                    D = weights(self.z(iBottom),self.z,1);
+                    A(iBottom,:) = D(2,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
+            
+            % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    range = (iSurface-(self.orderOfAccuracy+1-1)):iSurface;
+                    D = InternalModesFiniteDifference.weights( self.z(iSurface), self.z(range), 1 );
+                    A(iSurface,:) = 0;
+                    A(iSurface,range) = D(2,:);
+                    B(iSurface,:) = 0;
+                    B(iSurface,iSurface) = 1;
+                case UpperBoundary.rigidLid
+                    A(iSurface,:) = 0;
+                    A(iSurface,iSurface) = 1;
+                    B(iSurface,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
             h_func = @(lambda) 1.0 ./ lambda;
@@ -118,22 +138,42 @@ classdef InternalModesFiniteDifference < InternalModesBase
             A = self.Diff2;
             B = -diag(self.N2_z_diff - omega*omega)/self.g;
             
-            % Bottom boundary condition (always taken to be G=0)
-            % NOTE: we already chose the correct BCs when creating the
-            % Diff2 matrix
-            A(1,:) = self.Diff2(1,:);
-            B(1,:) = 0;
+            iSurface = length(self.z);
+            iBottom = 1;
             
-            % Surface boundary condition
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % G_z = \frac{1}{h_j} G at the surface
-                B(end,end)=1;
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                % G=0 at the surface (note we chose this BC when creating Diff2)
-                A(end,:) = self.Diff2(end,:);
-                B(end,end)=0;
+            switch self.lowerBoundary
+                case LowerBoundary.freeSlip % G = 0
+                    A(iBottom,:) = 0;
+                    A(iBottom,iBottom) = 1;
+                    B(iBottom,:) = 0;
+                case LowerBoundary.noSlip % G_z = 0
+                    D = weights(self.z(iBottom),self.z,1);
+                    A(iBottom,:) = D(2,:);
+                    B(iBottom,:) = 0;
+                case LowerBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
             end
             
+            % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
+            switch self.upperBoundary
+                case UpperBoundary.freeSurface
+                    % G_z = \frac{1}{h_j} G at the surface
+                    range = (iSurface-(self.orderOfAccuracy+1-1)):iSurface;
+                    D = InternalModesFiniteDifference.weights( self.z(iSurface), self.z(range), 1 );
+                    A(iSurface,:) = 0;
+                    A(iSurface,range) = D(2,:);
+                    B(iSurface,:) = 0;
+                    B(iSurface,iSurface) = 1;
+                case UpperBoundary.rigidLid
+                    A(iSurface,:) = 0;
+                    A(iSurface,iSurface) = 1;
+                    B(iSurface,:) = 0;
+                case UpperBoundary.none
+                otherwise
+                    error('Unknown boundary condition');
+            end
+                        
             h_func = @(lambda) 1.0 ./ lambda;
             [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
             k = self.kFromOmega(h,omega);
@@ -223,18 +263,6 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 % default
             end
         end
-        
-        function self = upperBoundaryDidChange(self)
-            % This function is called when the user changes the surface
-            % boundary condition. By overriding this function, a subclass
-            % can respond as necessary.
-            if self.upperBoundary == UpperBoundary.freeSurface
-                rightBCDerivs = 1;
-            else
-                rightBCDerivs = 0;
-            end
-            self.Diff2 = InternalModesFiniteDifference.FiniteDifferenceMatrix(2, self.z_diff, 0, rightBCDerivs, self.orderOfAccuracy);
-        end
 
     end
     
@@ -318,7 +346,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             c = InternalModesFiniteDifference.weights( x(n), x(range), rightBCDerivs );
             D(n,range) = c(rightBCDerivs+1,:);
         end
-        
+                
         function c = weights(z,x,m)
             % Calculates FD weights. The parameters are:
             %  z   location where approximations are to be accurate,

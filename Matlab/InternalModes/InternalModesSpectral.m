@@ -163,7 +163,7 @@ classdef InternalModesSpectral < InternalModesBase
             B = diag((self.f0*self.f0-self.N2_xLobatto)/self.g)*T;
             
             switch self.lowerBoundary
-                case LowerBoundary.rigidLid
+                case LowerBoundary.freeSlip
                     A(n,:) = T(n,:);
                     B(n,:) = 0;
                 case LowerBoundary.none
@@ -195,7 +195,7 @@ classdef InternalModesSpectral < InternalModesBase
             B = diag((omega*omega-self.N2_xLobatto)/self.g)*T;
             
             switch self.lowerBoundary
-                case LowerBoundary.rigidLid
+                case LowerBoundary.freeSlip
                     A(n,:) = T(n,:);
                     B(n,:) = 0;
                 case LowerBoundary.none

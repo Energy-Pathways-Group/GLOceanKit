@@ -99,7 +99,7 @@ classdef InternalModes < handle
         rho_zz % Second derivative of density on the z grid.
         rho0 % density at the surface (or user specified through constructor args)
         
-        lowerBoundary % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
+        lowerBoundary % Lower boundary condition. Either LowerBoundary.freeSlip (default) or LowerBoundary.none.
         upperBoundary % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
         normalization % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
     end
@@ -834,7 +834,7 @@ classdef InternalModes < handle
             subplot(1,3,3)
 %             if any(self.N2 < 0)
                 plot(self.N2,self.z, 'LineWidth', 2), hold on
-                xlim([1.1*min(self.N2) 1.1*max(self.N2)])
+                xlim([0.9*min(self.N2) 1.1*max(self.N2)])
                 xlabel('N^2');
 %             else
 %                 plot(sqrt(self.N2),self.z, 'LineWidth', 2), hold on

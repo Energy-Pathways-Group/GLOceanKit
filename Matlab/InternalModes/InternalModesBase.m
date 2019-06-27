@@ -54,7 +54,7 @@ classdef (Abstract) InternalModesBase < handle
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
         upperBoundary = UpperBoundary.rigidLid  % Surface boundary condition. Either UpperBoundary.rigidLid (default) or UpperBoundary.freeSurface.
-        lowerBoundary = LowerBoundary.rigidLid  % Lower boundary condition. Either LowerBoundary.rigidLid (default) or LowerBoundary.none.
+        lowerBoundary = LowerBoundary.freeSlip  % Lower boundary condition. Either LowerBoundary.freeSlip (default) or LowerBoundary.none.
     end
     
     properties (Dependent)
@@ -100,12 +100,8 @@ classdef (Abstract) InternalModesBase < handle
         end
         
         function set.upperBoundary(self,upperBoundary)
-            if  upperBoundary ~= UpperBoundary.rigidLid && upperBoundary ~= UpperBoundary.freeSurface
-                error('Invalid upper boundary condition!')
-            else
-                self.upperBoundary = upperBoundary;
-                self.upperBoundaryDidChange();
-            end
+            self.upperBoundary = upperBoundary;
+            self.upperBoundaryDidChange();
         end
         
         function value = get.zMin(self)
