@@ -89,41 +89,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             A = self.Diff2 - k*k*eye(self.n);
             B = diag(self.f0*self.f0 - self.N2_z_diff)/self.g;
             
-            iSurface = length(self.z);
-            iBottom = 1;
-            
-            switch self.lowerBoundary
-                case LowerBoundary.freeSlip % G = 0
-                    A(iBottom,:) = 0;
-                    A(iBottom,iBottom) = 1;
-                    B(iBottom,:) = 0;
-                case LowerBoundary.noSlip % G_z = 0
-                    D = weights(self.z(iBottom),self.z,1);
-                    A(iBottom,:) = D(2,:);
-                    B(iBottom,:) = 0;
-                case LowerBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
-            
-            % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            switch self.upperBoundary
-                case UpperBoundary.freeSurface
-                    % G_z = \frac{1}{h_j} G at the surface
-                    range = (iSurface-(self.orderOfAccuracy+1-1)):iSurface;
-                    D = InternalModesFiniteDifference.weights( self.z(iSurface), self.z(range), 1 );
-                    A(iSurface,:) = 0;
-                    A(iSurface,range) = D(2,:);
-                    B(iSurface,:) = 0;
-                    B(iSurface,iSurface) = 1;
-                case UpperBoundary.rigidLid
-                    A(iSurface,:) = 0;
-                    A(iSurface,iSurface) = 1;
-                    B(iSurface,:) = 0;
-                case UpperBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
+            [A,B] = self.ApplyBoundaryConditions(A,B);
             
             h_func = @(lambda) 1.0 ./ lambda;
             [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
@@ -138,6 +104,14 @@ classdef InternalModesFiniteDifference < InternalModesBase
             A = self.Diff2;
             B = -diag(self.N2_z_diff - omega*omega)/self.g;
             
+            [A,B] = self.ApplyBoundaryConditions(A,B);
+                        
+            h_func = @(lambda) 1.0 ./ lambda;
+            [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
+            k = self.kFromOmega(h,omega);
+        end
+        
+        function [A,B] = ApplyBoundaryConditions(self,A,B)
             iSurface = length(self.z);
             iBottom = 1;
             
@@ -173,10 +147,6 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 otherwise
                     error('Unknown boundary condition');
             end
-                        
-            h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
-            k = self.kFromOmega(h,omega);
         end
         
         function psi = SurfaceModesAtWavenumber(self, k)

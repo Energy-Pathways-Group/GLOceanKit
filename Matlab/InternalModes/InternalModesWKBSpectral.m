@@ -50,35 +50,11 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
                         
             A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
-            switch self.lowerBoundary
-                case LowerBoundary.freeSlip
-                    A(n,:) = T(n,:);
-                    B(n,:) = 0;
-                case LowerBoundary.noSlip
-                    A(n,:) = Tz(n,:);
-                    B(n,:) = 0;
-                case LowerBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
-            
-            switch self.upperBoundary
-                case UpperBoundary.freeSurface
-                    % N*G_s = \frac{1}{h_j} G at the surface
-                    A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
-                    B(1,:) = T(1,:);
-                case UpperBoundary.rigidLid
-                    A(1,:) = T(1,:);
-                    B(1,:) = 0;
-                case UpperBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
+            [A,B] = self.ApplyBoundaryConditions(A,B);
             
             if nargout == 6
                 [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
@@ -94,10 +70,24 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
             
             A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
+            
+            [A,B] = self.ApplyBoundaryConditions(A,B);
+                        
+            if nargout == 6
+                [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
+            else
+                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
+            end
+            k = self.kFromOmega(h,omega);
+        end
+        
+        function [A,B] = ApplyBoundaryConditions(self,A,B)
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            n = self.nEVP;
             
             switch self.lowerBoundary
                 case LowerBoundary.freeSlip
@@ -123,15 +113,8 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
                 otherwise
                     error('Unknown boundary condition');
             end
-                        
-            if nargout == 6
-                [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
-            end
-            k = self.kFromOmega(h,omega);
         end
- 
+        
     end
     
     methods (Access = protected)

@@ -48,39 +48,11 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
                          
             A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz - k*k*T;
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
-            iSurface = 1;
-            iBottom = n;
-            
-            switch self.lowerBoundary
-                case LowerBoundary.freeSlip
-                    A(iBottom,:) = T(iBottom,:);
-                    B(iBottom,:) = 0;
-                case LowerBoundary.noSlip
-                    A(iBottom,:) = Tz(iBottom,:);
-                    B(iBottom,:) = 0;
-                case LowerBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
-            
-            % G=0 or N^2 G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            switch self.upperBoundary
-                case UpperBoundary.freeSurface
-                    % G_z = \frac{1}{h_j} G at the surface
-                    A(iSurface,:) = self.N2_xLobatto(iSurface) * Tz(iSurface,:);
-                    B(iSurface,:) = T(iSurface,:);
-                case UpperBoundary.rigidLid
-                    A(iSurface,:) = T(iSurface,:);
-                    B(iSurface,:) = 0;
-                case UpperBoundary.none
-                otherwise
-                    error('Unknown boundary condition');
-            end
+            [A,B] = self.ApplyBoundaryConditions(A,B);
             
             if nargout == 6
                 [F,G,h,F2,N2G2] = self.ModesFromGEPDensitySpectral(A,B);
@@ -96,10 +68,24 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
-            n = self.nEVP;
                          
             A = diag(self.N2_xLobatto .* self.N2_xLobatto)*Tzz + diag(self.N2z_xLobatto)*Tz;
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
+            
+            [A,B] = self.ApplyBoundaryConditions(A,B);
+            
+            if nargout == 6
+                [F,G,h,F2,N2G2] = self.ModesFromGEPDensitySpectral(A,B);
+            else
+                [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
+            end
+            k = self.kFromOmega(h,omega);
+        end
+
+        function [A,B] = ApplyBoundaryConditions(self,A,B)
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            n = self.nEVP;
             
             iSurface = 1;
             iBottom = n;
@@ -129,15 +115,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
                 otherwise
                     error('Unknown boundary condition');
             end
-            
-            if nargout == 6
-                [F,G,h,F2,N2G2] = self.ModesFromGEPDensitySpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
-            end
-            k = self.kFromOmega(h,omega);
         end
-
+        
     end
     
     methods (Access = protected)
