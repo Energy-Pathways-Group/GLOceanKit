@@ -393,7 +393,7 @@ classdef InternalModesSpectral < InternalModesBase
         function self = InitializeWithGrid(self, rho, zIn)
             self.validateInitialModeAndEVPSettings();
 
-            K = 6; % cubic spline
+            K = 6; 
             if self.requiresMonotonicDensity == 1
                 if 0 && any(diff(rho)./diff(zIn) > 0)
                     rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'knot_dof',1,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));

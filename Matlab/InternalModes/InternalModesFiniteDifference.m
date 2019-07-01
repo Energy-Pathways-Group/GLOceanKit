@@ -112,7 +112,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
-            iSurface = length(self.z);
+            iSurface = size(A,1);
             iBottom = 1;
             
             switch self.lowerBoundary
@@ -121,7 +121,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
                     A(iBottom,iBottom) = 1;
                     B(iBottom,:) = 0;
                 case LowerBoundary.noSlip % G_z = 0
-                    D = weights(self.z(iBottom),self.z,1);
+                    D = weights(self.z_diff(iBottom),self.z_diff,1);
                     A(iBottom,:) = D(2,:);
                     B(iBottom,:) = 0;
                 case LowerBoundary.none
@@ -134,7 +134,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 case UpperBoundary.freeSurface
                     % G_z = \frac{1}{h_j} G at the surface
                     range = (iSurface-(self.orderOfAccuracy+1-1)):iSurface;
-                    D = InternalModesFiniteDifference.weights( self.z(iSurface), self.z(range), 1 );
+                    D = InternalModesFiniteDifference.weights( self.z_diff(iSurface), self.z_diff(range), 1 );
                     A(iSurface,:) = 0;
                     A(iSurface,range) = D(2,:);
                     B(iSurface,:) = 0;

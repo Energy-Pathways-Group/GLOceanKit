@@ -187,7 +187,12 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             smallNuIndices = find( nu(x) < s(x)*expMinusDOverB );
             if ~isempty(smallNuIndices) && length(smallNuIndices) > 1
-                f_cheb = chebfun(f_smallnu,[x(min(smallNuIndices)) x(max(smallNuIndices))],'splitting','on');
+                if ~isempty(bigNuIndices)
+                    bnds = [x(max(bigNuIndices)) x(max(smallNuIndices))];
+                else
+                    bnds = [x(min(smallNuIndices)) x(max(smallNuIndices))];
+                end
+                f_cheb = chebfun(f_smallnu,bnds,'splitting','on');
                 r = [r; roots(f_cheb)];
             end
             
