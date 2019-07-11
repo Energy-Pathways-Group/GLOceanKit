@@ -170,26 +170,26 @@ classdef InternalModes < handle
                     % wkbAdaptiveSpectral first, but if that fails to
                     % produce a reasonable coordinate system, try
                     % z-coordinate spectral.
-                    try
+%                     try
                         self.method = 'wkbAdaptiveSpectral';
                         self.internalModes = InternalModesAdaptiveSpectral(rho,zIn,zOut,latitude,extraargs{:});
-                    catch ME
-                        errorStruct = [];
-                        if ~isempty(ME.cause) && strcmp(ME.cause{1}.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
-                            errorStruct = ME.cause{1};
-                        elseif strcmp(ME.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
-                            errorStruct = ME;
-                        end
-                        
-                        if ~isempty(errorStruct)
-                            fprintf('%s : %s\n', errorStruct.identifier, errorStruct.message);
-                            fprintf('Switching to InternalModesSpectral.\n');
-                            self.method = 'spectral';
-                            self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
-                        else
-                            rethrow(ME);
-                        end
-                    end
+%                     catch ME
+%                         errorStruct = [];
+%                         if ~isempty(ME.cause) && strcmp(ME.cause{1}.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
+%                             errorStruct = ME.cause{1};
+%                         elseif strcmp(ME.identifier,'StretchedGridFromCoordinate:NonMonotonicFunction')
+%                             errorStruct = ME;
+%                         end
+%                         
+%                         if ~isempty(errorStruct)
+%                             fprintf('%s : %s\n', errorStruct.identifier, errorStruct.message);
+%                             fprintf('Switching to InternalModesSpectral.\n');
+%                             self.method = 'spectral';
+%                             self.internalModes = InternalModesSpectral(rho,zIn,zOut,latitude,extraargs{:});
+%                         else
+%                             rethrow(ME);
+%                         end
+%                     end
                 elseif  strcmp(self.method, 'densitySpectral')
                     self.internalModes = InternalModesDensitySpectral(rho,zIn,zOut,latitude,extraargs{:});
                 elseif  strcmp(self.method, 'wkbSpectral')
