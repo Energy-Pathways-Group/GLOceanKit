@@ -81,6 +81,7 @@ classdef (Abstract) InternalModesBase < handle
     end
     
     methods (Abstract, Access = protected)
+        self = InitializeWithBSpline(self, rho) % Used internally by subclasses to intialize with a bspline.
         self = InitializeWithGrid(self, rho, z_in) % Used internally by subclasses to intialize with a density grid.
         self = InitializeWithFunction(self, rho, z_min, z_max, z_out) % Used internally by subclasses to intialize with a density function.
     end
@@ -151,7 +152,12 @@ classdef (Abstract) InternalModesBase < handle
              
             % Is density specified as a function handle or as a grid of
             % values?
-            if isa(rho,'function_handle') == true
+            if isa(rho,'BSpline') == true
+                if userSpecifiedRho0 == 0
+                    self.rho0 = rho(max(rho.domain));
+                end
+                self.InitializeWithBSpline(rho);
+            elseif isa(rho,'function_handle') == true
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end

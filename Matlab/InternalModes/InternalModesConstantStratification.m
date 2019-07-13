@@ -270,7 +270,7 @@ classdef InternalModesConstantStratification < InternalModesBase
     
     methods (Static)
         function flag = IsStratificationConstant(rho,z_in)
-            if isa(rho,'function_handle') == true
+            if isa(rho,'function_handle') || isa(rho,'BSpline') == true
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                 end
@@ -286,7 +286,7 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         function [N0, rho0] = BuoyancyFrequencyFromConstantStratification(rho,z_in)
             g = 9.81;
-            if isa(rho,'function_handle') == true
+            if isa(rho,'function_handle') == true || isa(rho,'BSpline') == true
                 rho0 = rho(max(z_in));
                 drhodz = (rho(max(z_in)) - rho(min(z_in)))/( max(z_in) - min(z_in) );
             elseif isa(rho,'numeric') == true

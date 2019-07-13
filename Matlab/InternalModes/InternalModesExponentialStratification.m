@@ -352,7 +352,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
          % N2 = -g*diff(rho)/rho0 = N0*N0 * exp(2*z/b)
          % log(N2) = log(N0^2)+(2/b)*z
          function [flag,rho_params] = IsStratificationExponential(rho,z_in)
-             if isa(rho,'function_handle') == true
+             if isa(rho,'function_handle') == true || isa(rho,'BSpline') == true
                  if numel(z_in) ~= 2
                      error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                  end       

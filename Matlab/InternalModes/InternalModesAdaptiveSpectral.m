@@ -83,18 +83,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             A = diag(N2)*Tzz + diag(Nz)*Tz;
             B = diag( (omega*omega - N2)/self.g )*T;
             
-            % Lower boundary is rigid, G=0
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-            
-            % G=0 or N*G_s = \frac{1}{h_j} G at the surface, depending on the BC
-            if self.upperBoundary == UpperBoundary.freeSurface
-                A(1,:) = sqrt(self.N2_xLobatto(1)) * Tz(1,:);
-                B(1,:) = T(1,:);
-            elseif self.upperBoundary == UpperBoundary.rigidLid
-                A(1,:) = T(1,:);
-                B(1,:) = 0;
-            end
+            [A,B] = self.ApplyBoundaryConditions(A,B);
             
             % now couple the equations together, using the gaps we left in
             % the matrices.

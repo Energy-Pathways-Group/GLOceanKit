@@ -390,23 +390,29 @@ classdef InternalModesSpectral < InternalModesBase
             self.x_function = @(z) z;                           
         end
         
+        function self = InitializeWithBSpline(self, rho)
+           self.validateInitialModeAndEVPSettings();
+           
+           if self.requiresMonotonicDensity == 1
+               z = BSpline.PointsOfSupport(rho.t_knot,rho.K);
+               self.rho_function = ConstrainedSpline(z,rho.ValueAtPoints(z),rho.K,rho.t_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+           else
+               self.rho_function = rho;
+           end
+           
+           
+           self.N2_function = (-self.g/self.rho0)*diff(self.rho_function);
+        end
+        
         function self = InitializeWithGrid(self, rho, zIn)
             self.validateInitialModeAndEVPSettings();
 
             K = 6; 
             if self.requiresMonotonicDensity == 1
-                if 0 && any(diff(rho)./diff(zIn) > 0)
-                    rho_interpolant = SmoothingSpline(zIn,rho,NormalDistribution(1),'K',K,'knot_dof',1,'lambda',Lambda.optimalExpected,'constraints',struct('global',ShapeConstraint.monotonicDecreasing));
-                    rho_interpolant.minimize( @(spline) spline.expectedMeanSquareErrorFromCV );
-                    if self.shouldShowDiagnostics == 1
-                        fprintf('Creating a %d-order monotonic smoothing spline from the %d points.\n', K, length(rho));
-                    end
-                else
-                    z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
-                    rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
-                    if self.shouldShowDiagnostics == 1
-                        fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
-                    end
+                z_knot = InterpolatingSpline.KnotPointsForPoints(zIn,K,1);
+                rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
+                if self.shouldShowDiagnostics == 1
+                    fprintf('Creating a %d-order monotonic spline from the %d points.\n', K, length(rho));
                 end
             else
                 rho_interpolant = InterpolatingSpline(zIn,rho,'K',K);
