@@ -344,6 +344,10 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 self.nModes = 64;
             end
         end
+        
+        function self = InitializeWithBSpline(self, rho, z_in)
+            error('not yet implemented')
+        end
     end
     
      methods (Static)
