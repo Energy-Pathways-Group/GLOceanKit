@@ -183,6 +183,9 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.freeSlip
                     A(n,:) = T(n,:);
                     B(n,:) = 0;
+                case LowerBoundary.noSlip
+                    A(n,:) = Tz(n,:);
+                    B(n,:) = 0;
                 case LowerBoundary.none
                 otherwise
                     error('Unknown boundary condition');
@@ -196,6 +199,9 @@ classdef InternalModesSpectral < InternalModesBase
                 case UpperBoundary.rigidLid
                     A(1,:) = T(1,:);
                     B(1,:) = 0;
+                case UpperBoundary.buoyancyAnomaly
+                    A(1,:) = T(1,:);
+                    B(1,:) = 1;
                 case UpperBoundary.none
                 otherwise
                     error('Unknown boundary condition');
