@@ -204,6 +204,11 @@ classdef InternalModesFiniteDifference < InternalModesBase
     end
     
     methods (Access = protected)     
+        
+        function self = InitializeWithBSpline(self, rho)
+           error('Not yet implemented') 
+        end
+        
         function self = InitializeWithGrid(self, rho, z_in)
             % Used internally by subclasses to intialize with a density function.
             %
