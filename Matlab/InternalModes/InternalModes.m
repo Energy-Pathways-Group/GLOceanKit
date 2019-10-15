@@ -104,7 +104,7 @@ classdef InternalModes < handle
         normalization % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
     end
     
-    properties (Access = private)
+    properties %(Access = private)
         isRunningTestCase = 0;
         stratification = 'user specified';
         rhoFunction

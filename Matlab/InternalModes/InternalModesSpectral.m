@@ -317,28 +317,28 @@ classdef InternalModesSpectral < InternalModesBase
                
                if 1 == 0
                    F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
-                   roots = FindRootsFromChebyshevVector(F(1:end-1), self.zLobatto);
-                   z_g = cat(1,min(self.zLobatto),reshape(roots,[],1),max(self.zLobatto));
+                   roots = FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
+                   z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
                else
                    if self.upperBoundary == UpperBoundary.rigidLid
                        % n-th mode has n+1 zeros (including boundaries)
-                       roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.zLobatto);
+                       roots = FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.z_xLobatto);
                    elseif self.upperBoundary == UpperBoundary.freeSurface
                        % n-th mode has n zeros (including zero at lower
                        % boundary, and not zero at upper)
-                       a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,G_cheb(:,nPoints-0));
-                       b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,G_cheb(:,nPoints-1));
+                       a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-0));
+                       b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-1));
                        q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
 %                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
 %                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
 %                        q = G_cheb(:,nPoints-0);
-                       roots = FindRootsFromChebyshevVector(q, self.zLobatto);
+                       roots = FindRootsFromChebyshevVector(q, self.z_xLobatto);
                    end
                    z_g = reshape(roots,[],1);
                end
                
-               z_g(z_g<min(self.zLobatto)) = min(self.zLobatto);
-               z_g(z_g>max(self.zLobatto)) = max(self.zLobatto);
+               z_g(z_g<min(self.z_xLobatto)) = min(self.z_xLobatto);
+               z_g(z_g>max(self.z_xLobatto)) = max(self.z_xLobatto);
                z_g = unique(z_g,'stable');
             else
                 error('need more points');

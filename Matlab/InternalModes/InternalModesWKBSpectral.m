@@ -143,7 +143,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
                     y = discretize(xLobatto,xIn);
                 end
                 
-                K = 6; % cubic spline
+                K = 4; % cubic spline
                 z_knot = InterpolatingSpline.KnotPointsForPoints([zIn(1);zIn(unique(y)+1)],K,1);
                 rho_interpolant = ConstrainedSpline(zIn,rho,K,z_knot,NormalDistribution(1),struct('global',ShapeConstraint.monotonicDecreasing));
                 
