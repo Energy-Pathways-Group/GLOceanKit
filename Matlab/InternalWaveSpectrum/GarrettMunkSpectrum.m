@@ -672,6 +672,47 @@ classdef GarrettMunkSpectrum < handle
             S = S.*Gamma;
             
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Sea-surface height spectra
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [S,k_] = SSHSpectrumAtFrequencies(self,omega)
+            % The horizontal velocity frequency spectrum at given depths
+            % and frequencies. [m^2/s]
+            %
+            %   z                            array of depths, in meters
+            %   omega                        array of frequencies, in radians/second
+            %   appoximation (optional)     'exact' (default), 'wkb', 'wkb-hydrostatic', 'gm'
+            %   spectrumType (optional)     'one-sided', or 'two-sided'.
+            
+%             [z,omega,approximation,spectrumType] = self.validateSpectrumArguments(z,omega,varargin{:});
+                         
+omega = reshape(omega,[],1);
+
+            % Choose a small increment
+            dOmega = omega(2)-omega(1);    
+            dOmega = min( [self.f0/2,dOmega]);
+                        
+            % Create the function that converts to energy
+            f = self.f0;
+            Nmax = self.N_max;
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax)*( (1-f*f/(omega*omega)) );
+            
+            S = zeros(length(omega),self.nModes);
+            for i=1:length(omega)
+                Bomega = self.B( abs( omega(i) ) - dOmega/2, abs( omega(i) ) + dOmega/2 )/dOmega;
+                S(i,:) = self.E* ( Bomega .* C(omega(i)) );
+            end
+            S(isnan(S))=0;
+            
+            k_ = interpn(self.omega.',1:self.nModes,real(self.k_omega),omega,1:self.nModes);
+            Phi = squeeze(self.Phi_omega(1,:,:)).*self.h_omega;
+            S = S.*interpn(self.omega.',1:self.nModes,Phi,omega,1:self.nModes)/self.g;
+        end
+        
     end
     
     methods  (Access = protected)
