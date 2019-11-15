@@ -10,6 +10,7 @@ classdef GarrettMunkSpectrum < handle
         j_star = 3;
         N_max
         B
+        B_int
         H
         
         N2 % *function handle* of z
@@ -153,8 +154,8 @@ classdef GarrettMunkSpectrum < handle
             f = self.f0;
             Nmax = self.N_max;
             B_norm = 1/acos(f/Nmax);
-            B_int = @(omega0,omega1) B_norm*(atan(f./sqrt(omega0.*omega0-f*f)) - atan(f./sqrt(omega1.*omega1-f*f)));
-            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax).*zeros(size(omega0)) + (omega0<f & omega1>f).*B_int(f*ones(size(omega0)),omega1) + (omega0>=f & omega1 <= Nmax).*B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*B_int(omega0,Nmax*ones(size(omega1)));
+            self.B_int = @(omega0,omega1) B_norm*(atan(f./sqrt(omega0.*omega0-f*f)) - atan(f./sqrt(omega1.*omega1-f*f)));
+            self.B = @(omega0,omega1) (omega1<f | omega1 > Nmax).*zeros(size(omega0)) + (omega0<f & omega1>f).*self.B_int(f*ones(size(omega0)),omega1) + (omega0>=f & omega1 <= Nmax).*self.B_int(omega0,omega1) + (omega0<Nmax & omega1 > Nmax).*self.B_int(omega0,Nmax*ones(size(omega1)));
                         
             self.PrecomputeComputeInternalModesForOmega();
         end
@@ -712,6 +713,58 @@ omega = reshape(omega,[],1);
             Phi = squeeze(self.Phi_omega(1,:,:)).*self.h_omega;
             S = S.*interpn(self.omega.',1:self.nModes,Phi,omega,1:self.nModes)/self.g;
         end
+        
+        function [Sssh_kj, k_, j_] = SSHSpectrumAtWavenumberAndMode(self)
+            self.PrecomputeComputeInternalModesForK();
+
+            f = self.f0;
+            Nmax = self.N_max;
+            
+            % We are using the one-sided version of the spectrum
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax).*( (1-(f./omega).^2) );
+            
+            % Integrate B across the frequency bands, \int B domega
+            omegaMid = self.omega_k(1:end-1,:) + diff(self.omega_k,1,1)/2;
+            omegaLeft = cat(1,self.omega_k(1,:),omegaMid);
+            omegaRight = cat(1, omegaMid, self.omega_k(end,:));
+            BofK = self.B(omegaLeft,omegaRight);
+            
+            % Now divide by dk. This is essentially applying the Jacobian.
+            kMid = self.k(1:end-1) + diff(self.k)/2;
+            kLeft = cat(2,self.k(1),kMid);
+            kRight = cat(2,kMid,self.k(end));
+            dk = (kRight-kLeft).';
+            BofK = BofK./dk;
+            
+            Sssh_kj = squeeze(self.E * self.Phi_k(1,:,:) .* shiftdim( C(self.omega_k) .* BofK, -1)).*self.h_k;
+            
+            k_ = reshape(self.k,[],1);
+            j_ = 1:self.nModes;            
+        end
+        
+        function [Sssh_k_omega, k_, omega_] = SSHSpectrumAtWavenumberAndFrequency(self)
+            % Convert wavenumber-mode to wavenumber-frequency
+            [Sssh_kj, k_, j_] = self.SSHSpectrumAtWavenumberAndMode();
+            
+            % Choose a full range of frequency, spanning the known domain
+            omega_ = exp(linspace(log(self.f0),log(self.N_max),50)).';
+            omegaMid = omega_(1:end-1) + diff(omega_)/2;
+            omegaLeft = cat(1,omega_(1),omegaMid);
+            omegaRight = cat(1, omegaMid, self.omega_k(end));
+            domega = (omegaRight-omegaLeft);
+            
+            Sssh_k_omega = zeros(length(k_),length(omega_));
+            for i=1:length(k_)
+                Sssh_j = Sssh_kj(i,:);
+                omega_j = self.omega_k(i,:);
+                for iOmega=1:length(omega_)
+                    omegaIndices = omega_j >= omegaLeft(iOmega) & omega_j < omegaRight(iOmega);
+                    Sssh_k_omega(i,iOmega) = sum( Sssh_j(omegaIndices) )/domega(iOmega);
+                end
+            end
+            
+        end
+        
         
     end
     
