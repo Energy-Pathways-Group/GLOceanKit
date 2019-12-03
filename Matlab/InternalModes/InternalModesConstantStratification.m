@@ -146,6 +146,8 @@ classdef InternalModesConstantStratification < InternalModesBase
                     A = (-1).^j;
                 case Normalization.uMax
                     A = (-1).^j./(h.*k_z);
+                case Normalization.surfacePressure
+                    A = 1./(h.*k_z.*cos(k_z*self.Lz));
             end
             G = A .*  sin(k_z .* (self.z + self.Lz));
             F = A .*  repmat(h.*k_z,length(self.z),1) .* cos(k_z .* (self.z + self.Lz));
@@ -213,6 +215,8 @@ classdef InternalModesConstantStratification < InternalModesBase
                         A = 1/self.Lz;
                     case Normalization.uMax
                         A = 1/self.Lz;
+                    case Normalization.surfacePressure
+                        A = 1/self.Lz;
                 end
                 G0 = A*(self.z + self.Lz);
                 F0 = A*self.Lz*ones(size(self.z));
@@ -228,6 +232,8 @@ classdef InternalModesConstantStratification < InternalModesBase
                     case Normalization.wMax
                         A = 1/sinh(k_z*self.Lz);
                     case Normalization.uMax
+                        A = 1/(h0*k_z*cosh(k_z*self.Lz));
+                    case Normalization.surfacePressure
                         A = 1/(h0*k_z*cosh(k_z*self.Lz));
                 end
                 G0 = A*sinh(k_z*(self.z + self.Lz));
@@ -245,6 +251,8 @@ classdef InternalModesConstantStratification < InternalModesBase
                         A = 1/sin(k_z*self.Lz);
                     case Normalization.uMax
                         A = 1/(h0*k_z);
+                    case Normalization.surfacePressure
+                        A = 1/(h0*k_z*cos(k_z*self.Lz));
                 end
                 G0 = A*sin(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cos(k_z*(self.z + self.Lz));

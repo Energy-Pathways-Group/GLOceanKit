@@ -13,9 +13,10 @@ end
 % SSH Spectrum
 %
 % SWOT error pulled from here: https://swot.jpl.nasa.gov/docs/D-61923_SRD_Rev_A_20160318.pdf
-k = exp(linspace(log(2*pi/1e10),log(2*pi/15e1),1000));
+k = exp(linspace(log(2*pi/1e10),log(2*pi/1.5e1),1000));
 S = GM.IsopycnalSpectrumAtWavenumbers(0,k);
 fprintf('total SSH variance due to IGWs is %.2f cm^2\n', trapz(k,S)*1e4);
+% S = S./(2*pi*k);
 lambda = k*(1e3)/(2*pi);
 S_lambda = 1e4*S*2*pi/1e3;
 E = 2 + 0.00125*(lambda).^(-2);
@@ -25,7 +26,6 @@ if ~exist('GM_latmix','var')
 end
 S_latmix = 2*GM_latmix.IsopycnalSpectrumAtWavenumbers(0,k);
 S_latmix_lambda = 1e4*S_latmix*2*pi/1e3;
-
 
 S1d = zeros(size(S));
 S1d_latmix = zeros(size(S));
@@ -62,4 +62,14 @@ labels = cell(3,1); labels{1} = '1000 km';  labels{2} = '100 km';  labels{3} = '
 xticklabels(labels)
 set( gca, 'FontSize', figure_axis_tick_size);
 
-print('-depsc2', 'SSHWavenumberSpectralRange.eps')
+% intercept = A^2/lambda_0^(2*alpha)
+intercept = 70;
+lambda_0 = 1/200;
+alpha = 1;
+A = sqrt(intercept*lambda_0^(2*alpha));
+matern = @(lambda) A^2./(lambda.^2 + lambda_0^2).^alpha;
+matern_radial = @(lambda) (pi/2)*A^2* lambda./((lambda.^2 + lambda_0^2).^(alpha+1/2));
+hold on, plot(lambda,matern(lambda))
+hold on, plot(lambda,matern_radial(lambda))
+
+% print('-depsc2', 'SSHWavenumberSpectralRange.eps')
