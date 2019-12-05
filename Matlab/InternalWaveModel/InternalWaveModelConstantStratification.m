@@ -227,6 +227,14 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.GenerateWavePhases(A_plus,zeros(size(self.K)));
         end
         
+        function InitializeGeostrophicSolutionWithRhoPrimeField(self, rho_prime)
+            self.InitializeGeostrophicSolutionWithIsopycnalDisplacementField(-rho_prime/((self.rho0/self.g)*self.N0*self.N0));
+        end
+        
+        function InitializeGeostrophicSolutionWithIsopycnalDisplacementField(self, zeta)
+            self.B = self.TransformFromSpatialDomainWithG(zeta) ./ self.G;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)

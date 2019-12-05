@@ -1045,7 +1045,7 @@ classdef (Abstract) InternalWaveModel < handle
                 return;
             end
             
-            u = []; v = []; w = []; zeta = [];
+            u = []; v = []; w = []; zeta = []; p = [];
             
             phase_plus = exp(sqrt(-1)*self.Omega*t);
             phase_minus = exp(-sqrt(-1)*self.Omega*t);
@@ -1064,7 +1064,7 @@ classdef (Abstract) InternalWaveModel < handle
                     
                     if ~isempty(self.B)
                        if isempty(self.u_g)
-                          self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B);
+                          self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B.*self.F);
                        end
                        varargout{iArg} = varargout{iArg} + self.u_g;
                     end
@@ -1080,7 +1080,7 @@ classdef (Abstract) InternalWaveModel < handle
                     
                     if ~isempty(self.B)
                         if isempty(self.v_g)
-                            self.v_g = self.TransformToSpatialDomainWithF(sqrt(-1)*(self.g/self.f0)*self.K.*self.B);
+                            self.v_g = self.TransformToSpatialDomainWithF(sqrt(-1)*(self.g/self.f0)*self.K.*self.B.*self.F);
                         end
                         varargout{iArg} = varargout{iArg} + self.v_g;
                     end
@@ -1093,6 +1093,20 @@ classdef (Abstract) InternalWaveModel < handle
                         w = self.TransformToSpatialDomainWithG(w_bar);
                     end
                     varargout{iArg} = w;
+                elseif ( strcmp(varargin{iArg}, 'p') )
+                    if isempty(p)
+                        p_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
+                        if self.performSanityChecks == 1
+                            CheckHermitian(p_bar);
+                        end
+                        p = self.TransformToSpatialDomainWithF(p_bar);
+                    end
+                    
+                    if ~isempty(self.B)
+                        p_g = self.TransformToSpatialDomainWithF(self.B.*self.F);
+                        p = p + p_g;
+                    end
+                    varargout{iArg} = self.rho0*self.g*p;
                 elseif ( strcmp(varargin{iArg}, 'rho_prime') || strcmp(varargin{iArg}, 'zeta') )
                     if isempty(zeta)
                         zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
@@ -1103,7 +1117,7 @@ classdef (Abstract) InternalWaveModel < handle
                         
                         if ~isempty(self.B)
                             if isempty(self.zeta_g)
-                                self.zeta_g = self.TransformToSpatialDomainWithG(self.B);
+                                self.zeta_g = self.TransformToSpatialDomainWithG(self.B.*self.G);
                             end
                             zeta = zeta + self.zeta_g;
                         end
@@ -1237,6 +1251,8 @@ classdef (Abstract) InternalWaveModel < handle
                     varargout{iArg} = zeta;
                 elseif strcmp(varargin{iArg}, 'rho_prime')
                     varargout{iArg} = (self.rho0/self.g)*self.N2AtDepth(z) .* zeta;
+                elseif strcmp(varargin{iArg}, 'p')
+                    warning('Pressure from externial variables fields is not yet implemented.');
                 end
             end
         end
