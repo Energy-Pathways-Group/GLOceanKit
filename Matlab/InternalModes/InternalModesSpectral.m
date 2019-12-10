@@ -186,6 +186,8 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.noSlip
                     A(n,:) = Tz(n,:);
                     B(n,:) = 0;
+                    A(n-1,:) = T(n,:);
+                    B(n-1,:) = 0;
                 case LowerBoundary.buoyancyAnomaly
                     A(n,:) = T(n,:);
                     B(n,:) = 1;
@@ -292,7 +294,14 @@ classdef InternalModesSpectral < InternalModesBase
             psi = reshape(psi,sizeK);
         end
         
+        function z_g = GaussQuadraturePointsForModesAtFrequency(self,nPoints,omega)
+            z_g = self.GaussQuadraturePointsForModesAtMethod(nPoints,omega,'EigenmatricesForFrequency');
+        end
         function z_g = GaussQuadraturePointsForModesAtWavenumber(self,nPoints,k)
+            z_g = self.GaussQuadraturePointsForModesAtMethod(nPoints,k,'EigenmatricesForWavenumber');
+        end
+        
+        function z_g = GaussQuadraturePointsForModesAtMethod(self,nPoints,k,methodName)
             % Now we just need to find the roots of the n+1 mode.
             % For constant stratification this should give back the
             % standard Fourier modes, i.e., an evenly spaced grid.
@@ -303,7 +312,7 @@ classdef InternalModesSpectral < InternalModesBase
             % useful information. So we'd expect cond(G(:,1:(nPoints-2))))
             % to be good (low), but not the next.
             if 2*nPoints < self.nEVP
-               [A,B] = self.EigenmatricesForWavenumber(k);
+               [A,B] = self.(methodName)(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
                    error('EVP setup fail. Found at least one nan in matrices A and B.\n');
                end
