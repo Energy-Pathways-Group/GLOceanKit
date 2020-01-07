@@ -1,18 +1,18 @@
-Lx = 15e3;
-Ly = 15e3;
+Lx = 30e3;
+Ly = 30e3;
 Lz = 5000;
 
-Nx = 64;
-Ny = 64;
-Nz = 64;
+Nx = 256;
+Ny = 256;
+Nz = 257;
 
 latitude = 31;
 N0 = 5.2e-3/2;
-t = 0*86400;
+t = 8*3600; 1*86400;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
-Lh = Lx/8;
+Lh = Lx/32;
 Lv = Lz/8;
 x0 = Lx/2;
 y0 = Ly/2;
@@ -40,4 +40,4 @@ dispvar = zeta;
 figure
 pcolor(wavemodel.x,wavemodel.z,squeeze(dispvar(:,Ny/2,:))'),shading flat
 figure
-plot(wavemodel.x,squeeze(dispvar(:,Ny/2,Nz/2)));
+plot(wavemodel.x,squeeze(dispvar(:,Ny/2,floor(Nz/2))));
