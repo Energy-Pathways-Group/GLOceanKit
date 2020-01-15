@@ -1,5 +1,5 @@
 runtype = 'nonlinear';
-ReadOverNetwork = 0;
+ReadOverNetwork = 1;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
@@ -13,12 +13,12 @@ if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_quartergrid_2tide'); 
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
 else
     error('invalid run type.');
 end
 
-output_directory = baseURL;
+output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv/';
 
 shouldChunk = 0;
 [filepath,name,ext] = fileparts(file);
