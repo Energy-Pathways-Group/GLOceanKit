@@ -9,19 +9,22 @@ runtype = 'nonlinear';
 ReadOverNetwork = 1;
 
 if ReadOverNetwork == 1
-    baseURL = '/Volumes/seattle_data1/jearly/nsf_iwv/';
+    baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+    baseURLdecomp = '/Volumes/seattle_data1/jearly/nsf_iwv/';
 else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
 end
 
 if strcmp(runtype,'linear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+    decompFile = strcat(baseURLdecomp,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart'); 
+    decompFile = strcat(baseURLdecomp,'EarlyV2_GM_NL_forced_damped_restart');
 else
     error('invalid run type.');
 end
-output_directory = baseURL;
+output_directory = decompFile;
 
 [filepath,name,ext] = fileparts(dynamicalfile);
 file = fullfile(output_directory,strcat(name,'_decomp.nc'));
