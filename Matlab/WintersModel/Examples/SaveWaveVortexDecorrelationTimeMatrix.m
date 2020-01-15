@@ -6,10 +6,10 @@
 % would tell you "How long linear IW's explain 50% of KE variance".
 
 runtype = 'nonlinear';
-ReadOverNetwork = 0;
+ReadOverNetwork = 1;
 
 if ReadOverNetwork == 1
-    baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
+    baseURL = '/Volumes/seattle_data1/jearly/nsf_iwv/';
 else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
 end
