@@ -1,4 +1,4 @@
-ReadOverNetwork = 0;
+ReadOverNetwork = 1;
 Nonlinear = 0;
 
 if ReadOverNetwork == 1
@@ -9,11 +9,11 @@ end
 
 if Nonlinear == 1
     runtype = 'NL';
-    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
+    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM');
     model_dir = NonlinearSteadyStateFile;
 else
     runtype = 'LIN';
-    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_01xGM');
     model_dir = LinearSteadyStateFile;
 end
 
@@ -42,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2019_12/particles_%s.mat',runtype);
+outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2020_01/particles_%s.mat',runtype);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
