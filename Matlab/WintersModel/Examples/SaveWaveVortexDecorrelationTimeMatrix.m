@@ -24,7 +24,7 @@ elseif strcmp(runtype,'nonlinear')
 else
     error('invalid run type.');
 end
-output_directory = decompFile;
+output_directory = baseURLdecomp;
 
 [filepath,name,ext] = fileparts(dynamicalfile);
 file = fullfile(output_directory,strcat(name,'_decomp.nc'));
