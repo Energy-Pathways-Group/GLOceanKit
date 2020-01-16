@@ -1,12 +1,12 @@
 runtype = 'nonlinear';
-ReadOverNetwork = 1;
+ReadOverNetwork = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
     baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_01/';
     baseURL = '/Users/jearly/Documents/nsf_iw/';
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2020_01/';
 end
 
 if strcmp(runtype,'linear')
@@ -18,7 +18,7 @@ else
     error('invalid run type.');
 end
 
-output_directory = '/Volumes/seattle_data1/jearly/nsf_iwv/';
+output_directory = baseURL; %'/Volumes/seattle_data1/jearly/nsf_iwv/';
 
 shouldChunk = 0;
 [filepath,name,ext] = fileparts(file);
@@ -61,7 +61,7 @@ D = csize/bytePerFloat;
 c = (D/(Nk*Nl*Nj*Nt))^(1/4);
 chunkSize = floor(c*[Nk Nl Nj Nt]);
 
-cmode = netcdf.getConstant('CLOBBER');
+% cmode = netcdf.getConstant('CLOBBER');
 cmode = bitor(cmode,netcdf.getConstant('SHARE'));
 cmode = bitor(cmode,netcdf.getConstant('NETCDF4'));
 ncid = netcdf.create(outputfile, cmode);

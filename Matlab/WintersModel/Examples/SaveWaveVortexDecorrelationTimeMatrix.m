@@ -6,13 +6,18 @@
 % would tell you "How long linear IW's explain 50% of KE variance".
 
 runtype = 'nonlinear';
-ReadOverNetwork = 1;
+ReadOverNetwork = 0;
+
+strideJ = 10;
+strideK = 10;
+strideT = 2;
+maxT = 90;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
     baseURLdecomp = '/Volumes/seattle_data1/jearly/nsf_iwv/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_05/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2020_01/';
 end
 
 if strcmp(runtype,'linear')
@@ -20,11 +25,11 @@ if strcmp(runtype,'linear')
     decompFile = strcat(baseURLdecomp,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
-    decompFile = strcat(baseURLdecomp,'EarlyV2_GM_NL_forced_damped_01xGM');
+    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM');
 else
     error('invalid run type.');
 end
-output_directory = baseURLdecomp;
+output_directory = baseURL;
 
 [filepath,name,ext] = fileparts(dynamicalfile);
 file = fullfile(output_directory,strcat(name,'_decomp.nc'));
@@ -45,11 +50,15 @@ RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
 allKs = unique(reshape(abs(Kh),[],1),'sorted');
 deltaK = max(diff(allKs));
 kAxis = 0:deltaK:max(allKs);
+t = ncread(file, 't');
+
+% now stride the data
+kAxis = kAxis(1:strideK:end);
+jAxis = j(1:strideJ:end);
+t = t(1:strideT:maxT);
 
 nK = length(kAxis)-1;
-nModes = length(j);
-
-t = ncread(file, 't');
+nModes = length(jAxis);
 nT = length(t);
 
 variables = {'Ap_realp', 'Ap_imagp', 'Am_realp', 'Am_imagp', 'B_realp', 'B_imagp'};
@@ -80,7 +89,7 @@ for i=1:length(variables)
 end
 
 startTime = datetime('now');
-for iMode = 1:1:nModes
+for iMode = 1:nModes
     fprintf('iMode: %d\n',iMode);
     if iMode > 1
         timePerStep = (datetime('now')-startTime)/(iMode-1);
@@ -106,9 +115,9 @@ for iMode = 1:1:nModes
             
             for iVar = 1:Nvars
 %                 u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
-                u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j iMode 1]-1, [1 1 1 length(t)], [1 1 1 1])));
-                u = u*sqrt(conversion_factor{iVar}(i,j,iMode));
-                [ACu, DOFu] = Autocorrelation(u, length(t)-1);
+                u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j jAxis(iMode) 1]-1, [1 1 1 maxT], [1 1 1 strideT])));
+                u = u*sqrt(conversion_factor{iVar}(i,j,jAxis(iMode)));
+                [ACu, DOFu] = Autocorrelation(u, nT-1);
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
                 end
@@ -163,7 +172,7 @@ end
 netcdf.close(ncid);
 
 k = reshape(kAxis(1:nK),[],1);
-j = 1:nModes;
+j = jAxis;
 
 x = wavemodel.x;
 y= wavemodel.y;

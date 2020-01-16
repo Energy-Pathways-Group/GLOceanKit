@@ -1,4 +1,4 @@
-shouldSavePlots = 1;
+shouldSavePlots = 0;
 
 latitude = 33;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
@@ -23,9 +23,16 @@ N = sqrt(N2);
 %
 % Initialize a stratification with good parameters for the model
 %
-L_const = 1300;
+% L_const = 1300;
+% z_const = linspace(-L_const,0,100)';
+% N0_const = N0;
+% GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L_const 0],latitude);
+% EnergyScale = 1;
+
+omega = 2*(2*pi/86400);
+N0_const = N0/4;
+L_const = 1300*sqrt( (N0*N0 + omega*omega)/(N0_const*N0_const - omega*omega));
 z_const = linspace(-L_const,0,100)';
-N0_const = N0;
 GMConst = GarrettMunkSpectrumConstantStratification(N0_const,[-L_const 0],latitude);
 EnergyScale = 1;
 
