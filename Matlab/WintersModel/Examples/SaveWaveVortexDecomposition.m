@@ -13,7 +13,7 @@ if strcmp(runtype,'linear')
     file = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
     file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_quartergrid_2tide'); 
-    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
+    file = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM'); 
 else
     error('invalid run type.');
 end
@@ -61,7 +61,7 @@ D = csize/bytePerFloat;
 c = (D/(Nk*Nl*Nj*Nt))^(1/4);
 chunkSize = floor(c*[Nk Nl Nj Nt]);
 
-% cmode = netcdf.getConstant('CLOBBER');
+cmode = netcdf.getConstant('CLOBBER');
 cmode = bitor(cmode,netcdf.getConstant('SHARE'));
 cmode = bitor(cmode,netcdf.getConstant('NETCDF4'));
 ncid = netcdf.create(outputfile, cmode);

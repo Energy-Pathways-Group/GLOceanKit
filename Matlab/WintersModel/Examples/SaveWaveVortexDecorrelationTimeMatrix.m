@@ -10,6 +10,7 @@ ReadOverNetwork = 0;
 
 strideJ = 10;
 strideK = 10;
+shouldExponentialSpaceWavenumbers = 1;
 strideT = 2;
 maxT = 90;
 
@@ -24,8 +25,8 @@ if strcmp(runtype,'linear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
     decompFile = strcat(baseURLdecomp,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
-    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
-    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM');
+    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM'); 
+    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM');
 else
     error('invalid run type.');
 end
@@ -53,8 +54,13 @@ kAxis = 0:deltaK:max(allKs);
 t = ncread(file, 't');
 
 % now stride the data
-kAxis = kAxis(1:strideK:end);
-jAxis = j(1:strideJ:end);
+if shouldExponentialSpaceWavenumbers == 1
+    kAxis = kAxis(2.^(0:1:floor(log2(length(kAxis)))));
+    jAxis = j(2.^(0:1:floor(log2(length(j)))));
+else
+    jAxis = j;
+end
+
 t = t(1:strideT:maxT);
 
 nK = length(kAxis)-1;

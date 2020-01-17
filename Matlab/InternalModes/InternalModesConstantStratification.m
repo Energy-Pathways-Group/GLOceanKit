@@ -293,7 +293,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             end
             
             max_ddrho = std(drhodz)/abs(mean(drhodz));
-            flag = max_ddrho < 1e-3;
+            flag = max_ddrho < 3e-3;
         end
         
         function [N0, rho0] = BuoyancyFrequencyFromConstantStratification(rho,z_in)
