@@ -1,19 +1,19 @@
-ReadOverNetwork = 1;
-Nonlinear = 1;
+ReadOverNetwork = 0;
+Nonlinear = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2019_12/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/';
 end
 
 if Nonlinear == 1
     runtype = 'NL';
-    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM');
+    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
     model_dir = NonlinearSteadyStateFile;
 else
     runtype = 'LIN';
-    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_5xGM');
+    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
     model_dir = LinearSteadyStateFile;
 end
 
@@ -42,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = sprintf('/Users/jearly/Documents/ManuscriptRepositories/garrett-munk-lateral-diffusivity/data/2020_01/particles_5x_%s.mat',runtype);
+outputfile = sprintf('%s_particles.mat',model_dir);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
