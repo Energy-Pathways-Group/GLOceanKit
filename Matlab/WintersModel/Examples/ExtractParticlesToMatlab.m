@@ -1,4 +1,4 @@
-ReadOverNetwork = 0;
+ReadOverNetwork = 1;
 Nonlinear = 0;
 
 if ReadOverNetwork == 1
@@ -13,7 +13,7 @@ if Nonlinear == 1
     model_dir = NonlinearSteadyStateFile;
 else
     runtype = 'LIN';
-    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
+    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_01xGM');
     model_dir = LinearSteadyStateFile;
 end
 
@@ -42,5 +42,5 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-outputfile = sprintf('%s_particles.mat',model_dir);
+outputfile = 'EarlyV2_GM_LIN_unforced_damped_01xGM_particles.mat'; %sprintf('%s_particles.mat',model_dir);
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
