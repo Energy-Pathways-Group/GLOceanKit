@@ -354,8 +354,13 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             u = self.Nx*self.Ny*ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
+            % There's a lot of time spent here, and below taking the real
+            % part.
             self.dctScratch = cat(3, zeros(self.Nx,self.Ny), 0.5*u(:,:,1:self.nz-1), u(:,:,self.nz), 0.5*u(:,:,self.nz-1:-1:1));
-  
+%             self.dctScratch(:,:,2:self.nz) =  0.5*u(:,:,1:self.nz-1); % length= nz-1
+%             self.dctScratch(:,:,self.nz+1) =  u(:,:,self.nz); % length 1
+%             self.dctScratch(:,:,(self.nz+2):(2*self.nz)) = 0.5*u(:,:,self.nz-1:-1:1); % length nz-1
+            
             u = fft(self.dctScratch,2*self.nz,3);
             if self.performSanityChecks == 1
                 ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));

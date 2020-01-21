@@ -198,10 +198,9 @@ j = jAxis;
 x = wavemodel.x;
 y= wavemodel.y;
 z = wavemodel.z;
-T_diss = 36000;
 p = 3;
 
-save(matfile,'x', 'y', 'z','T_diss','p','waveHKE','vortexHKE','waveHKEFromVariance','vortexHKEFromVariance','waveAutocorrelation','vortexAutocorrelation','waveStandardError','vortexStandardError', 'waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k', 't');
+save(matfile,'x', 'y', 'z','p','waveHKE','vortexHKE','waveHKEFromVariance','vortexHKEFromVariance','waveAutocorrelation','vortexAutocorrelation','waveStandardError','vortexStandardError', 'waveDecorrelationTime','vortexDecorrelationTime', 'j', 'k', 't');
 
 HKE_fraction = waveHKE./(waveHKE+vortexHKE);
 
