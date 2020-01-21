@@ -8,25 +8,23 @@
 runtype = 'nonlinear';
 ReadOverNetwork = 0;
 
-strideJ = 10;
-strideK = 10;
-shouldExponentialSpaceWavenumbers = 1;
-strideT = 2;
-maxT = 90;
+shouldExponentialSpaceWavenumbers = 0;
+strideT = 4;
+maxT = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
     baseURLdecomp = '/Volumes/seattle_data1/jearly/nsf_iwv/';
 else
-    baseURL = '/Volumes/Samsung_T5/nsf_iwv/2020_01/';
+    baseURL = '/Volumes/Samsung_T5/nsf_iwv/';
 end
 
 if strcmp(runtype,'linear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
     decompFile = strcat(baseURLdecomp,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
-    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM'); 
-    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM');
+    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
+    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM');
 else
     error('invalid run type.');
 end
@@ -55,15 +53,20 @@ t = ncread(file, 't');
 
 % now stride the data
 if shouldExponentialSpaceWavenumbers == 1
-    kAxis = kAxis(2.^(0:1:floor(log2(length(kAxis)))));
+    kIndices = 2.^(0:1:floor(log2(length(kAxis))));
     jAxis = j(2.^(0:1:floor(log2(length(j)))));
 else
+    kIndices = 1:length(kAxis);
     jAxis = j;
 end
 
+if maxT <= 1
+    maxT = length(t);
+end
 t = t(1:strideT:maxT);
 
-nK = length(kAxis)-1;
+
+nK = length(kIndices)-1;
 nModes = length(jAxis);
 nT = length(t);
 
@@ -94,8 +97,9 @@ for i=1:length(variables)
     variableIDs(i) = netcdf.inqVarID(ncid,variables{i});
 end
 
+% profile on
 startTime = datetime('now');
-for iMode = 1:nModes
+for iMode = 1:1:nModes
     fprintf('iMode: %d\n',iMode);
     if iMode > 1
         timePerStep = (datetime('now')-startTime)/(iMode-1);
@@ -104,9 +108,10 @@ for iMode = 1:nModes
     end
     
     fprintf('\tiK: ');
-    for iK = 1:1:nK
+    for iK = 1:nK
+        kIndex = kIndices(iK);
         fprintf('%d..',iK);
-        indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
+        indicesForK = find( kAxis(kIndex) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(kIndex+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
         
         AC = zeros(length(t),Nvars);
         DOF = zeros(length(t),Nvars);
@@ -121,9 +126,15 @@ for iMode = 1:nModes
             
             for iVar = 1:Nvars
 %                 u = double(squeeze(ncread(file, variables{iVar}, [i j iMode 1], [1 1 1 length(t)], [1 1 1 1])));
-                u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j jAxis(iMode) 1]-1, [1 1 1 maxT], [1 1 1 strideT])));
+                u = double(squeeze(netcdf.getVar(ncid, variableIDs(iVar), [i j jAxis(iMode) 1]-1, [1 1 1 nT], [1 1 1 strideT])));
                 u = u*sqrt(conversion_factor{iVar}(i,j,jAxis(iMode)));
-                [ACu, DOFu] = Autocorrelation(u, nT-1);
+                if 0
+                    [ACu, DOFu] = Autocorrelation(u, nT-1);
+                else
+                    DOFu = length(u) - (0:(nT-1))';
+                    AC2 = xcorr(u,'unbiased');
+                    ACu = AC2(length(u):end)/var(u);
+                end
                 if any(isnan(ACu))
                     continue; % this will occur for the occasional unresolved mode. Seems to only be the Nyquist, which is okay.
                 end
@@ -177,7 +188,11 @@ end
 
 netcdf.close(ncid);
 
-k = reshape(kAxis(1:nK),[],1);
+% profile viewer
+% 
+% return
+
+k = reshape(kAxis(kIndices(1:nK)),[],1);
 j = jAxis;
 
 x = wavemodel.x;
