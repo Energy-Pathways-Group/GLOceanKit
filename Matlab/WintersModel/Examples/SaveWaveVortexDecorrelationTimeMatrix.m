@@ -23,8 +23,8 @@ if strcmp(runtype,'linear')
     dynamicalfile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_restart');
     decompFile = strcat(baseURLdecomp,'EarlyV2_GM_LIN_unforced_damped_restart');
 elseif strcmp(runtype,'nonlinear')
-    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM'); 
-    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_01xGM');
+    dynamicalfile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM'); 
+    decompFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_5xGM');
 else
     error('invalid run type.');
 end
