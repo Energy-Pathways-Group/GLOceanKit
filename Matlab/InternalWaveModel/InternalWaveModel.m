@@ -1153,6 +1153,7 @@ classdef (Abstract) InternalWaveModel < handle
             else
                 [varargout{:}] = self.InternalVariableFieldsAtTime(t,varargin{:});
                 [varargout{:}] = self.InterpolatedFieldAtPositionNewAndShiny(x,y,z,method,varargout{:});
+%                 [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,method,varargout{:});
             end
         end
         
@@ -2099,7 +2100,9 @@ classdef (Abstract) InternalWaveModel < handle
                 S = 1+1;
             end
             
-            
+%             % can't handle particles at the boundary
+%             xrange = mod(((min(x_index)-S):(max(x_index)+S)),self.Nx)+1;
+%             yrange = mod(((min(y_index)-S):(max(y_index)+S)),self.Ny)+1;
             xrange = ((min(x_index)-S):(max(x_index)+S))+1;
             yrange = ((min(y_index)-S):(max(y_index)+S))+1;
             zrange = (max((min(z_index)-S),0):min((max(z_index)+S),self.Nz-1))+1;
