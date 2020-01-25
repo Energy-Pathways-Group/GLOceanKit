@@ -1,5 +1,5 @@
 ReadOverNetwork = 0;
-Nonlinear = 0;
+Nonlinear = 1;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
@@ -9,7 +9,7 @@ end
 
 if Nonlinear == 1
     runtype = 'NL';
-    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_restart');
+    NonlinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_NL_forced_damped_03xGM');
     model_dir = NonlinearSteadyStateFile;
 else
     runtype = 'LIN';
