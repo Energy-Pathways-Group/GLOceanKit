@@ -511,6 +511,17 @@ classdef (Abstract) InternalWaveModel < handle
             h = h(1:numValidIndices);
         end
         
+        function [E_tot,E_gridded,E_ext] = EnergyLevel(self)
+            L_gm = 1.3e3; % thermocline exponential scale, meters
+            invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+            E_gm = 6.3e-5; % non-dimensional energy parameter
+            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+                        
+            E_gridded = sum( abs(self.Amp_minus(:)).^2 + abs(self.Amp_plus(:)).^2 )/E;
+            E_ext = sum(abs(self.U_ext.^2).*self.h_ext/2)/E;
+            E_tot = E_gridded+E_ext;  
+        end
+        
         function PrecomputeExternalWaveCoefficients(self)
             alpha0 = atan2(self.l_ext,self.k_ext);
             Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
