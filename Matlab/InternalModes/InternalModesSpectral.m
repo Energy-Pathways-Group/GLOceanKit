@@ -349,9 +349,18 @@ classdef InternalModesSpectral < InternalModesBase
                    z_g = reshape(roots,[],1);
                end
                
+               %%%% February 5th, 2020
+               %%%% Need to compute the values of the extrema and discard
+               %%%% those near zero, rather than the checks below.
+               % G(z)=0
+               
                z_g(z_g<min(self.z_xLobatto)) = min(self.z_xLobatto);
                z_g(z_g>max(self.z_xLobatto)) = max(self.z_xLobatto);
                z_g = unique(z_g,'stable');
+               z_g( abs(diff(z_g)) < 1e-6 ) = [];
+               if length(z_g) ~= nPoints
+                   error('Returned %d unique roots (requested %d). Maybe need more EVP.', length(z_g),nPoints);
+               end
             else
                 error('need more points');
             end

@@ -1,5 +1,5 @@
-ReadOverNetwork = 0;
-Nonlinear = 1;
+ReadOverNetwork = 1;
+Nonlinear = 0;
 
 if ReadOverNetwork == 1
     baseURL = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/';
@@ -13,14 +13,26 @@ if Nonlinear == 1
     model_dir = NonlinearSteadyStateFile;
 else
     runtype = 'LIN';
-    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_5xGM');
+    LinearSteadyStateFile = strcat(baseURL,'EarlyV2_GM_LIN_unforced_damped_fresh');
     model_dir = LinearSteadyStateFile;
 end
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
-% WM = WintersModel(file);
-% wavemodel = WM.wavemodel;
+% Comput the actual energy of the internal wave field
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+WM = WintersModel(file);
+wavemodel = WM.wavemodel;
+[t,u,v,w,rho_prime] = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'t','u','v','w','rho_prime');
+wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(t,u,v,rho_prime);
+L_gm = 1.3e3; % thermocline exponential scale, meters
+invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+E_gm = 6.3e-5; % non-dimensional energy parameter
+E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+GMEnergyLevel = sum( abs(wavemodel.Amp_minus(:)).^2 + abs(wavemodel.Amp_plus(:)).^2 )/E;
+fprintf('Measured energy level: %.2f GM\n', GMEnergyLevel);
+
 
 eulerian_file = [model_dir 'input/SaveIC_EarlyIWmodel.nc'];
 lagrangian_dir = [model_dir '/output/lagrangian/'];
@@ -43,4 +55,4 @@ for iFile = 1:length(UniqueParticleFiles)
 end
 
 outputfile = sprintf('%s_particles.mat',model_dir);
-save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
+save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir','GMEnergyLevel');

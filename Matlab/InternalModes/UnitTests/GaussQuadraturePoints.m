@@ -1,4 +1,4 @@
-upperBoundary = UpperBoundary.freeSurface;
+upperBoundary = UpperBoundary.rigidLid;
 normalization = Normalization.kConstant;
 nPoints = 64;
 k = 0;

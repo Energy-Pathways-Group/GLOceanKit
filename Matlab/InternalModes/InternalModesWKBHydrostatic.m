@@ -34,8 +34,8 @@ classdef InternalModesWKBHydrostatic < InternalModesSpectral
         end
         
         function [F,G,h,k] = ModesAtFrequency(self, omega )            
-            N = flip(sqrt(self.N2_zLobatto));
-            z = flip(self.zLobatto);
+            N = flip(sqrt(self.N2_xLobatto));
+            z = flip(self.xLobatto);
             
             Nzeroed = N-omega;
             N(Nzeroed <= 0) = 0;

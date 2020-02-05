@@ -44,9 +44,8 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
-            self.gridFrequency = 0;
-            
+        
+        function [A,B] = EigenmatricesForWavenumber(self, k )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -55,6 +54,23 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
+        end
+        
+        function [A,B] = EigenmatricesForFrequency(self, omega )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
+            B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
+            
+            [A,B] = self.ApplyBoundaryConditions(A,B);
+        end
+        
+        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+            
+            [A,B] = self.EigenmatricesForWavenumber(k);
             
             if nargout == 6
                 [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
@@ -67,14 +83,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )
             self.gridFrequency = omega;
             
-            T = self.T_xLobatto;
-            Tz = self.Tx_xLobatto;
-            Tzz = self.Txx_xLobatto;
-            
-            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
-            B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
-            
-            [A,B] = self.ApplyBoundaryConditions(A,B);
+            [A,B] = self.EigenmatricesForFrequency(omega);
                         
             if nargout == 6
                 [F,G,h,F2,N2G2] = self.ModesFromGEPWKBSpectral(A,B);
