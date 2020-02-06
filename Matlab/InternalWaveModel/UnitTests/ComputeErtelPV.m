@@ -23,9 +23,9 @@ Lx = 25e3;
 Ly = aspectRatio*Lx;
 Lz = 1300;
 
-Nx = 8;
+Nx = 64;
 Ny = aspectRatio*Nx;
-Nz = 9; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
+Nz = 65; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
@@ -37,17 +37,17 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-% wavemodel.InitializeWithGMSpectrum(1.0);
+wavemodel.InitializeWithGMSpectrum(1.0);
 
-U = 0.20;
-k0 = 2;
-l0 = 0;
-j0 = 1;
-period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,1);
-omega = 2*pi/period;
-kk = wavemodel.k(k0+1);
-ll = wavemodel.l(l0+1);
-mm = j0*pi/wavemodel.Lz;
+% U = 0.20;
+% k0 = 2;
+% l0 = 0;
+% j0 = 1;
+% period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,1);
+% omega = 2*pi/period;
+% kk = wavemodel.k(k0+1);
+% ll = wavemodel.l(l0+1);
+% mm = j0*pi/wavemodel.Lz;
 
 [u,v,w,rho_prime,eta] = wavemodel.VariableFieldsAtTime(0,'u', 'v', 'w', 'rho_prime','zeta');
 
