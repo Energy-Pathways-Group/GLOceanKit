@@ -323,7 +323,7 @@ classdef ModelDiagnostics < handle
         end
         
         function [Eeta,z] = IsopycnalVariance(self)
-            %% Isopycnal velocity variance as a function of depth, m^2/s^2
+            %% Isopycnal velocity variance as a function of depth, m^2
             %
             Eeta = squeeze(mean(mean((self.eta).^2,1),2));
             z = self.z;
@@ -344,7 +344,7 @@ classdef ModelDiagnostics < handle
         end
         
         function [Eeta,z] = IsopycnalVarianceWKB(self)
-            %% WKB scaled sopycnal velocity variance as a function of depth, m^2/s^2
+            %% WKB scaled sopycnal velocity variance as a function of depth, m^2
             %
             Eeta = (sqrt(self.N2)./self.N_gm) .* self.IsopycnalVariance();
             z = self.z;
