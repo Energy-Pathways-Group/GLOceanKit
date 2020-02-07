@@ -17,6 +17,9 @@ classdef ModelDiagnostics < handle
         Nmax % sqrt(max(N2))
         K2, Kh, f0
         
+        % isotropic wavenumber axis, its spacing, and indices into Kh
+        kAxis, dK, kIndices
+        
         u,v,w,rhoPrime
     end
     
@@ -115,6 +118,41 @@ classdef ModelDiagnostics < handle
             self.f0 = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
             self.K2 = self.K.*self.K + self.L.*self.L;   % Square of the horizontal wavenumber
             self.Kh = sqrt(self.K2);
+        end
+        
+        function BuildIsotropicWavenumberAxis(self)
+            % Create a reasonable wavenumber axis, then find which indices
+            % in Kh belong in the buckets of the kAxis.
+            allKs = unique(reshape(abs(self.Kh),[],1),'sorted');
+            self.dK = max(diff(allKs));
+            self.kAxis = 0:self.dK:max(allKs);
+            self.kIndices = cell( length(self.kAxis), 1);
+            for i = 1:length(self.kAxis)
+                self.kIndices{i} = find( squeeze(self.Kh(:,:,1)) >= self.kAxis(i)-self.dK/2 & squeeze(self.Kh(:,:,1)) < self.kAxis(i)+self.dK/2 );
+            end
+        end
+        
+        function S = MakeIsotropicWavenumberSpectrumFromXY(self, u)
+            % should be the same as fft(fft(u,1),2)/Nx/Ny
+            u_bar = FourierTransformForward( FourierTransformForward(u,1), 2);
+            
+            % S_u is now the spectrum (see the notes in
+            % FourierTransformForward)
+            S_u = self.Lx*self.Ly*u_bar.*conj(u_bar);
+            
+            % Multiply in order to convert from spectral density to
+            % variance---the sum(S_u) should be total variance.
+            dk = self.k(2)-self.k(1);
+            dl = self.l(2)-self.l(1);
+            S_u = dk*dl*S_u;
+            
+            S = zeros(length(kMag),size(u,3));
+            for iK = 1:length(kMag)
+                for iJ = 1:size(u,3)
+                    ulvl = squeeze(S_u(:,:,iJ));
+                    S(iK,iJ) = sum(ulvl(self.kIndices{iK}))/self.dK;
+                end
+            end
         end
          
         function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, u, v, w, rhoPrime)
