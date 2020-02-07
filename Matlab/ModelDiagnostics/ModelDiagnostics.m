@@ -60,7 +60,7 @@ classdef ModelDiagnostics < handle
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
             
-            if length(rhoBar) ~= dims(3) || length(N2) ~= dims(3)
+            if length(rhoBar) ~= n(3) || length(N2) ~= n(3)
                error('N2 must have the same number of points as the z dimension'); 
             end
             
@@ -76,9 +76,10 @@ classdef ModelDiagnostics < handle
             
             dx = self.Lx/self.Nx;
             dy = self.Ly/self.Ny;
+            dz = self.Lz/(self.Nz-1);
             self.x = dx*(0:self.Nx-1)'; % periodic basis
             self.y = dy*(0:self.Ny-1)'; % periodic basis
-            self.z = z; % cosine basis (not your usual dct basis, however)
+            self.z = dz*(0:self.Nz-1)' - self.Lz; % cosine basis (not your usual dct basis, however)
             
             self.rhoBar = rhoBar;
             self.rho0 = rhoBar(end);
@@ -106,8 +107,7 @@ classdef ModelDiagnostics < handle
                 self.l = 0;
             end
             
-            nModes = length(z);
-            self.j = (1:nModes)';
+            self.j = (1:(self.Nz-1))';
             
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
@@ -118,6 +118,8 @@ classdef ModelDiagnostics < handle
             self.f0 = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
             self.K2 = self.K.*self.K + self.L.*self.L;   % Square of the horizontal wavenumber
             self.Kh = sqrt(self.K2);
+            
+            self.BuildIsotropicWavenumberAxis();
         end
         
         function BuildIsotropicWavenumberAxis(self)
@@ -132,13 +134,23 @@ classdef ModelDiagnostics < handle
             end
         end
         
-        function S = MakeIsotropicWavenumberSpectrumFromXY(self, u)
+        function [S,k] = MakeIsotropicWavenumberSpectrumFromXY(self, u)
+            % Given u, with dimensions x,y and possibly z, this assumes
+            % that x and y should be treated isotropically, and builds an
+            % isotropic wavenumber spectrum. The returned object S will
+            % have dimension [length(k) Nz].
+            %
+            % Preserves variance in the following way,
+            % var = squeeze(mean(mean((self.u).^2,1),2))
+            % var = squeeze(sum(S,1)*(k(2)-k(1)))
+            
             % should be the same as fft(fft(u,1),2)/Nx/Ny
-            u_bar = FourierTransformForward( FourierTransformForward(u,1), 2);
+            u_bar = FourierTransformForward(self.x,u,1);
+            u_bar = FourierTransformForward(self.y,u_bar,2);
             
             % S_u is now the spectrum (see the notes in
-            % FourierTransformForward)
-            S_u = self.Lx*self.Ly*u_bar.*conj(u_bar);
+            % FourierTransformForward) but note that we are using radians!
+            S_u = self.Lx*self.Ly* ( u_bar.*conj(u_bar) )/(2*pi)^2;
             
             % Multiply in order to convert from spectral density to
             % variance---the sum(S_u) should be total variance.
@@ -146,13 +158,14 @@ classdef ModelDiagnostics < handle
             dl = self.l(2)-self.l(1);
             S_u = dk*dl*S_u;
             
-            S = zeros(length(kMag),size(u,3));
-            for iK = 1:length(kMag)
+            S = zeros(length(self.kAxis),size(u,3));
+            for iK = 1:length(self.kAxis)
                 for iJ = 1:size(u,3)
                     ulvl = squeeze(S_u(:,:,iJ));
                     S(iK,iJ) = sum(ulvl(self.kIndices{iK}))/self.dK;
                 end
             end
+            k = self.kAxis;
         end
          
         function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, u, v, w, rhoPrime)
@@ -329,13 +342,11 @@ classdef ModelDiagnostics < handle
         
         function PV = QGPV(self)
             %% QG PV, quasigeostrophic potential vorticity
-            % PV = N^2 (-f_0 eta_z + \zeta_z + f0) where eta = -rho/rhobar_z
+            % PV = N^2 (-f_0 eta_z + \zeta_z) where eta = -rho/rhobar_z
             %
-            % This is only the same as linear Ertel PV when N^2 is
-            % constant.
-            %
-            % We include the f0 term to keep it comparable in magnitude to
-            % Ertel PV.
+            % This is only the same as linear Ertel PV when N^2 is constant
+            % with no background. But, these are fundamentally different
+            % quantities, based on different approximations.
             
             PV = self.N2 .* ( self.vorticity_z - self.f0 * self.eta_z );
         end
