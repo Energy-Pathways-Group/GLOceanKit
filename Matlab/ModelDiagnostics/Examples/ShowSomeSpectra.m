@@ -14,6 +14,11 @@ N2 = wavemodel.N2AtDepth(wavemodel.z);
 diag = ModelDiagnostics(dims, n, latitude, rhoBar, N2);
 diag.InitializeWithHorizontalVelocityAndDensityPerturbationFields(u,v,w,rho_prime);
 
+
+[S_km,k,m] = diag.HorizontalVelocitySpectrumAtHorizontalAndVerticalWavenumbers();
+S_k = diag.HorizontalVelocitySpectrumAtWavenumbers();
+S_m = diag.HorizontalVelocitySpectrumAtVerticalWavenumbers();
+
 S = diag.MakeIsotropicWavenumberSpectrumFromXY(u+sqrt(-1)*v);
 
 SsumVsDepth = sum(S,1)*diag.dK;

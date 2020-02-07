@@ -167,7 +167,114 @@ classdef ModelDiagnostics < handle
             end
             k = self.kAxis;
         end
+        
+        
+        function [S,m] = MakeVerticalWavenumberSpectrumWithCosineTransform(self,u,dim)
+            [u_bar, m] = CosineTransformForward( self.z, u, dim );
+            S = self.Lz* ( u_bar .* conj(u_bar) );
+            
+            % We're now going to correct the zero and Nyquist frequencies
+            % so that the spectral sum does the right thing
+            
+            % move the dim to the first dimension
+            % [x y dim] -> [dim x y]
+            S = shiftdim(S,dim-1);
+            S(1,:) = S(1,:)/2;
+            S(end,:) = S(end,:)*2;
+            
+            % now move the dim back to where it was
+            S = shiftdim(S,ndims(S)-(dim-1));
+            
+            S = S/(2*pi);
+            m = m*(2*pi);
+        end
+        
+        function [S,m] = MakeVerticalWavenumberSpectrumWithSineTransform(self,u,dim)
+            [u_bar, m] = SineTransformForward( self.z, u, dim, 'both' );
+            S = self.Lz* ( u_bar .* conj(u_bar) );
+                        
+            S = S/(2*pi);
+            m = m*(2*pi);
+        end
          
+        function [S,k,m] = MakeHorizontalAndVerticalWavenumberSpectrumCosine(self, u)
+            % Given u, with dimensions x,y and possibly z, this assumes
+            % that x and y should be treated isotropically, and builds an
+            % isotropic wavenumber spectrum. The returned object S will
+            % have dimension [length(k) Nz].
+            %
+            % Preserves variance in the following way,
+            % var = squeeze(mean(mean((self.u).^2,1),2))
+            % var = squeeze(sum(S,1)*(k(2)-k(1)))
+            
+            % should be the same as fft(fft(u,1),2)/Nx/Ny
+            u_bar = FourierTransformForward(self.x,u,1);
+            u_bar = FourierTransformForward(self.y,u_bar,2);
+            [u_bar, m] = CosineTransformForward( self.z, u_bar, 3 );
+            
+            % S_u is now the spectrum (see the notes in
+            % FourierTransformForward) but note that we are using radians!
+            S_u = self.Lx*self.Ly*self.Lz ( u_bar.*conj(u_bar) )/(2*pi)^3;
+            
+            % Multiply in order to convert from spectral density to
+            % variance---the sum(S_u) should be total variance.
+            dk = self.k(2)-self.k(1);
+            dl = self.l(2)-self.l(1);
+            S_u = dk*dl*S_u;
+            
+            S = zeros(length(self.kAxis),size(u,3));
+            for iK = 1:length(self.kAxis)
+                for iJ = 1:size(u,3)
+                    ulvl = squeeze(S_u(:,:,iJ));
+                    if iJ == 1
+                        S(iK,iJ) = sum(ulvl(self.kIndices{iK}))/self.dK/2;
+                    elseif iJ == size(u,3)
+                        S(iK,iJ) = 2*sum(ulvl(self.kIndices{iK}))/self.dK;
+                    else
+                        S(iK,iJ) = sum(ulvl(self.kIndices{iK}))/self.dK;
+                    end
+                end
+            end
+            k = self.kAxis;
+        end
+        
+        function [S,k,m] = MakeHorizontalAndVerticalWavenumberSpectrumSine(self, u)
+            % Given u, with dimensions x,y and possibly z, this assumes
+            % that x and y should be treated isotropically, and builds an
+            % isotropic wavenumber spectrum. The returned object S will
+            % have dimension [length(k) Nz].
+            %
+            % Preserves variance in the following way,
+            % var = squeeze(mean(mean((self.u).^2,1),2))
+            % var = squeeze(sum(S,1)*(k(2)-k(1)))
+            
+            % should be the same as fft(fft(u,1),2)/Nx/Ny
+            u_bar = FourierTransformForward(self.x,u,1);
+            u_bar = FourierTransformForward(self.y,u_bar,2);
+            [u_bar, m] = SineTransformForward( self.z, u_bar, 3,'both' );
+            
+            % S_u is now the spectrum (see the notes in
+            % FourierTransformForward) but note that we are using radians!
+            S_u = self.Lx*self.Ly*self.Lz ( u_bar.*conj(u_bar) )/(2*pi)^3;
+            
+            % Multiply in order to convert from spectral density to
+            % variance---the sum(S_u) should be total variance.
+            dk = self.k(2)-self.k(1);
+            dl = self.l(2)-self.l(1);
+            S_u = dk*dl*S_u;
+            
+            S = zeros(length(self.kAxis),size(u,3));
+            for iK = 1:length(self.kAxis)
+                for iJ = 1:size(u,3)
+                    ulvl = squeeze(S_u(:,:,iJ));
+                    S(iK,iJ) = sum(ulvl(self.kIndices{iK}))/self.dK;
+                end
+            end
+            k = self.kAxis;
+        end
+        
+        
+        
         function InitializeWithHorizontalVelocityAndDensityPerturbationFields(self, u, v, w, rhoPrime)
             self.u = u;
             self.v = v;
@@ -399,5 +506,85 @@ classdef ModelDiagnostics < handle
             z = self.z;
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Variances and energy as a function of horizontal wavenumber
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [S,k,z] = HorizontalVelocitySpectrumAtWavenumbers(self)
+            %% Horizontal velocity wavenumber spectrum as a function of depth, m^3/s^2
+            %
+            S = self.MakeIsotropicWavenumberSpectrumFromXY(self.u+sqrt(-1)*self.v);
+            k = self.kAxis;
+            z = self.z;
+        end
+        
+        function [S,k,z] = VerticalVelocitySpectrumAtWavenumbers(self)
+            %% Vertical velocity wavenumber spectrum as a function of depth, m^3/s^2
+            %
+            S = self.MakeIsotropicWavenumberSpectrumFromXY(self.w);
+            k = self.kAxis;
+            z = self.z;
+        end
+        
+        function [S,k,z] = IsopycnalSpectrumAtWavenumbers(self)
+            %% Isopycnal wavenumber spectrum as a function of depth, m^3
+            %
+            S = self.MakeIsotropicWavenumberSpectrumFromXY(self.eta);
+            k = self.kAxis;
+            z = self.z;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Variances and energy as a function of horizontal and vertical wavenumber
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [S,k,m] = HorizontalVelocitySpectrumAtHorizontalAndVerticalWavenumbers(self)
+            %% Horizontal velocity wavenumber spectrum as a function of depth, m^4/s^2
+            
+            [S,k,m] = self.MakeHorizontalAndVerticalWavenumberSpectrumCosine(self.u + sqrt(-1)*self.v);
+        end
+        
+        function [S,k,m] = VerticalVelocitySpectrumAtHorizontalAndVerticalWavenumbers(self)
+            %% Vertical velocity wavenumber spectrum as a function of depth, m^4/s^2
+            
+            [S,k,m] = self.MakeHorizontalAndVerticalWavenumberSpectrumSine(self.w);
+        end
+        
+        function [S,k,m] = IsopycnalSpectrumAtHorizontalAndVerticalWavenumbers(self)
+            %% Isopycnal wavenumber spectrum as a function of depth, m^4
+            
+            [S,k,m] = self.MakeHorizontalAndVerticalWavenumberSpectrumSine(self.eta);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Variances and energy as a function of vertical wavenumber
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [S,m] = HorizontalVelocitySpectrumAtVerticalWavenumbers(self)
+            %% Horizontal velocity vertical wavenumber spectrum, m^3/s^2
+            
+            [S,m] = self.MakeVerticalWavenumberSpectrumWithCosineTransform(self.u+sqrt(-1)*self.v,3);
+            S = squeeze(mean(mean(S,1),2));
+        end
+        
+        function [S,m] = VerticalVelocitySpectrumAtVerticalWavenumbers(self)
+            %% Vertical velocity vertical wavenumber spectrum, m^3/s^2
+            
+            [S,m] = self.MakeVerticalWavenumberSpectrumWithSineTransform(self.w,3);
+            S = squeeze(mean(mean(S,1),2));
+        end
+        
+        function [S,m] = IsopycnalSpectrumAtVerticalWavenumbers(self)
+            %% Isopycnal wavenumber vertical spectrum, m^3
+
+            [S,m] = self.MakeVerticalWavenumberSpectrumWithSineTransform(self.eta,3);
+            S = squeeze(mean(mean(S,1),2));
+        end
     end
 end
