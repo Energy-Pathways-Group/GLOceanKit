@@ -16,14 +16,14 @@ end
 % Lets go to the frequency domain
 % T has units of kg / (m s)
 % nu has units of 1/s
-[nu, T] = TransformForward( t_stress, tau, 1);
+[T,nu] = FourierTransformForward( t_stress, tau, 1);
 
 % Transfer function, units of m^2 s / kg
 %H = 1; % 1/s
 H = OBLModelTransferFunction_DampedSlab( time, latitude, slab_depth, slab_damp);
 
 U = H .* T; % units of m
-[tn, z] = TransformBack( nu, U, 1);
+z = FourierTransformBack( nu, U, 1);
 
 u_water = real(z);
 v_water = imag(z);

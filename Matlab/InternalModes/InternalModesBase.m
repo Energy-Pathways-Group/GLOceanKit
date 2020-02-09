@@ -84,6 +84,7 @@ classdef (Abstract) InternalModesBase < handle
         self = InitializeWithBSpline(self, rho) % Used internally by subclasses to intialize with a bspline.
         self = InitializeWithGrid(self, rho, z_in) % Used internally by subclasses to intialize with a density grid.
         self = InitializeWithFunction(self, rho, z_min, z_max, z_out) % Used internally by subclasses to intialize with a density function.
+        self = InitializeWithN2Function(self, N2, z_min, z_max, z_out) % Used internally by subclasses to intialize with a density function.
     end
     
     methods
@@ -139,15 +140,24 @@ classdef (Abstract) InternalModesBase < handle
             
             % Set properties supplied as name,value pairs
             userSpecifiedRho0 = 0;
+            userSpecifiedN2 = 0;
             nargs = length(varargin);
             if mod(nargs,2) ~= 0
                 error('Arguments must be given as name/value pairs');
             end
-            for k = 1:2:length(varargin)
-                self.(varargin{k}) = varargin{k+1};
+            for k = 1:2:length(varargin) 
                 if strcmp(varargin{k}, 'rho0')
                     userSpecifiedRho0 = 1;
                 end
+                if strcmp(varargin{k}, 'N2')
+                    userSpecifiedN2 = 1;
+                    continue; % no property to set
+                end
+                self.(varargin{k}) = varargin{k+1};
+            end
+            
+            if userSpecifiedN2 == 1 && userSpecifiedRho0 == 0
+                error('If you pass N2 instead of rho, you must also provide a rho0')
             end
              
             % Is density specified as a function handle or as a grid of
@@ -167,7 +177,11 @@ classdef (Abstract) InternalModesBase < handle
                 if self.shouldShowDiagnostics == 1
                     fprintf('Initialized %s class with a function handle.\n', class(self));
                 end
-                self.InitializeWithFunction(rho, min(z_in), max(z_in));
+                if userSpecifiedN2 == 1
+                    self.InitializeWithN2Function(rho, min(z_in), max(z_in));
+                else
+                    self.InitializeWithFunction(rho, min(z_in), max(z_in));
+                end
             elseif isa(rho,'numeric') == true
                 if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                     error('rho must be 1 dimensional and z must have the same length');

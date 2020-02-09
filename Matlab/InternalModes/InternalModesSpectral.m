@@ -483,6 +483,21 @@ classdef InternalModesSpectral < InternalModesBase
                 fprintf('Projected the function onto %d Chebyshev polynomials\n', length(self.rho_function));
             end
         end
+        
+        function self = InitializeWithN2Function(self, N2, zMin, zMax)
+            self.validateInitialModeAndEVPSettings();
+            
+            if ~exist('chebfun','class')
+                error('The package chebfun is required when initializing with a function.')
+            end
+            
+            N2_func = chebfun(N2,[zMin,zMax]);
+            rho_func = -(self.rho0/self.g)*cumsum(N2_func);
+            rho_func = rho_func - rho_func(zMax) + self.rho0;
+            
+            self.InitializeWithFunction(rho_func,zMin,zMax);
+        end
+        
                    
         function self = validateInitialModeAndEVPSettings(self)
             % The user requested that the eigenvalue problem be solved on a
