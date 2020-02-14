@@ -18,17 +18,17 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 256;
-aspectRatio = 8;
+N = 512;
+aspectRatio = 1;
 L = 50e3;
 
 Lx = aspectRatio*L;
 Ly = L;
-Lz = 5000;
+Lz = 1300;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = N+1;
+Nz = 128+1;
 
 latitude = 31;
 N0 = 5.2e-3;
@@ -60,8 +60,8 @@ end
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.ShowDiagnostics();
-% wavemodel.FillOutWaveSpectrum();
-wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
+wavemodel.FillOutWaveSpectrum();
+wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
 
 t = (0:timeStep:maxTime)';
 
