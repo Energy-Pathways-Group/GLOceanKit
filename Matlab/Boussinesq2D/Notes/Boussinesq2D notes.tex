@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{amsmath}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Notes on Matlab 2D Boussinesq implementation}
+\author{Jeffrey J. Early}
+\date{March 12th, 2020}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+The 2D Boussinesq equations are
+\begin{subequations}{}
+\begin{align}
+\label{streamfunction_equation}
+\nabla^2 \psi_t +  J\left( \psi, \nabla^2 \psi \right) =& \frac{g}{\rho_0}\rho_x \\ \label{rho_equation}
+\rho_t + J\left( \psi, \rho \right) + \psi_x \bar{\rho}_z =& 0
+\end{align}
+\end{subequations}
+where $J(a,b) \equiv a_x b_z - a_z b_x$. The linear solution written as a stream function is
+\begin{align}
+\label{linear_streamfunction}
+\psi(x,z,t) =& U h \cos \theta G(z) \\
+b(x,z,t) =& -U \frac{kh}{\omega} \cos \theta G(z)
+\end{align}
+
+We should write this in terms of buoyancy, $b(x,y,z,t) \equiv -\frac{g}{\rho_0} \rho$.
+\begin{subequations}{}
+\begin{align}
+\rho_t + \psi_x \rho_z - \psi_z \rho_x + \psi_x \bar{\rho}_z =& 0 \\
+b_t + \psi_x b_z - \psi_z b_x + \psi_x N^2 =& 0 \\
+b_t =& \psi_z b_x -\psi_x (N^2 + b_z) 
+\end{align}
+\end{subequations}
+So our equations to model are,
+
+\begin{subequations}{}
+\begin{align}
+\nabla^2 \psi_t =& -  \psi_x \nabla^2 \psi_z + \psi_z \nabla^2 \psi_x  -b_x \\ 
+b_t =& \psi_z b_x -\psi_x (N^2 + b_z) 
+\end{align}
+\end{subequations}
+
+Using that,
+\begin{align}
+\psi(x,z) =& \psi_{km} e^{ikx} \sin mz \\
+b(x,z) =& b_{km} e^{ikx} \sin mz \\
+\end{align}
+the derivatives of $\psi$ are,
+\begin{align}
+\psi_x =& ik\psi_{km} e^{ikx} \sin mz \\
+\psi_z =& m \psi_{km} e^{ikx} \cos mz \\
+\nabla^2 \psi =& -(k^2 + m^2) \psi_{km} e^{ikx} \sin mz \\
+\nabla^2 \psi_x =& -i k (k^2 + m^2) \psi_{km} e^{ikx} \sin mz \\
+\nabla^2 \psi_z =& -m (k^2 + m^2) \psi_{km} e^{ikx} \cos mz 
+\end{align}
+and the derivatives of $b$ are,
+\begin{align}
+b_x =& ik b_{km} e^{ikx} \sin mz \\
+b_z =& m b_{km} e^{ikx} \cos mz
+\end{align}
+
+\end{document}  
