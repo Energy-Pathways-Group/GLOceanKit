@@ -21,7 +21,7 @@ The 2D Boussinesq equations are
 \begin{subequations}{}
 \begin{align}
 \label{streamfunction_equation}
-\nabla^2 \psi_t +  J\left( \psi, \nabla^2 \psi \right) =& \frac{g}{\rho_0}\rho_x \\ \label{rho_equation}
+\nabla^2 \psi_t +  J\left( \psi, \nabla^2 \psi \right) =& \frac{g}{\rho_0}\rho_x + \nu Q(k) \psi_{xxxx} + \nu_z Q(m) \psi_{zzzz} \\ \label{rho_equation}
 \rho_t + J\left( \psi, \rho \right) + \psi_x \bar{\rho}_z =& 0
 \end{align}
 \end{subequations}
@@ -60,7 +60,9 @@ the derivatives of $\psi$ are,
 \psi_z =& m \psi_{km} e^{ikx} \cos mz \\
 \nabla^2 \psi =& -(k^2 + m^2) \psi_{km} e^{ikx} \sin mz \\
 \nabla^2 \psi_x =& -i k (k^2 + m^2) \psi_{km} e^{ikx} \sin mz \\
-\nabla^2 \psi_z =& -m (k^2 + m^2) \psi_{km} e^{ikx} \cos mz 
+\nabla^2 \psi_z =& -m (k^2 + m^2) \psi_{km} e^{ikx} \cos mz  \\
+\psi_{xxxx} = & k^4 e^{ikx} \sin mz \\
+\psi_{zzzz} = & m^4 e^{ikx} \sin mz
 \end{align}
 and the derivatives of $b$ are,
 \begin{align}
