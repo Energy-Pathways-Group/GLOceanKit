@@ -29,8 +29,10 @@ where $J(a,b) \equiv a_x b_z - a_z b_x$. The linear solution written as a stream
 \begin{align}
 \label{linear_streamfunction}
 \psi(x,z,t) =& U h \cos \theta G(z) \\
-b(x,z,t) =& -U \frac{kh}{\omega} \cos \theta G(z)
+b(x,z,t) =& -U N^2 \frac{kh}{\omega} \cos \theta G(z)
 \end{align}
+
+Note we need to add damping on the density to match the damping that occurs on $w$.
 
 We should write this in terms of buoyancy, $b(x,y,z,t) \equiv -\frac{g}{\rho_0} \rho$.
 \begin{subequations}{}
