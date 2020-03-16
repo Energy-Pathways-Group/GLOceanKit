@@ -98,7 +98,7 @@ classdef Boussinesq2D < handle
             [~,G,h,omega] = im.ModesAtWavenumber(k0);
             
             psi_n = U*h(j0)*cos(k0*self.X).*(G(:,j0).');
-            b_n = -self.N2*(U*k0*h(j0)/omega(j0))*cos(k0*self.X).*(G(:,j0).');
+            b_n = self.N2*(U*k0*h(j0)/omega(j0))*cos(k0*self.X).*(G(:,j0).');
             h = h(j0);
             omega = omega(j0);
             
@@ -180,7 +180,7 @@ classdef Boussinesq2D < handle
             
             nabla2_psi_bar = self.TransformForwardFS(nabla2_psi);            
             f{1} = -self.b_x(b); % + self.damp_psi(nabla2_psi_bar);
-            f{2} = -self.N2*self.psi_x(nabla2_psi_bar);
+            f{2} = self.N2*self.psi_x(nabla2_psi_bar);
         end
         
         function f = linearFluxWithParticles(self,y0)
@@ -194,8 +194,8 @@ classdef Boussinesq2D < handle
             
             w = -self.psi_x(nabla2_psi_bar);
             
-            f{1} = -self.b_x(b) + self.damp_psi(nabla2_psi_bar);
-            f{2} = self.N2*w;
+            f{1} = -self.b_x(b); % + self.damp_psi(nabla2_psi_bar);
+            f{2} = -self.N2*w;
             
             if self.nParticles > 0
                 u = self.psi_z(nabla2_psi_bar);
@@ -222,8 +222,8 @@ classdef Boussinesq2D < handle
             nabla2_psi_x = self.nabla2_psi_x(nabla2_psi_bar);
             nabla2_psi_z = self.nabla2_psi_z(nabla2_psi_bar);
             
-            f{1} =  u.*nabla2_psi_x + w.*nabla2_psi_z - b_x; % + self.damp_psi(nabla2_psi_bar);
-            f{2} = u.*b_x + w.*(self.N2 + b_z);
+            f{1} = -u.*nabla2_psi_x - w.*nabla2_psi_z - b_x; % + self.damp_psi(nabla2_psi_bar);
+            f{2} =-u.*b_x - w.*(self.N2 + b_z);
             
             if self.nParticles > 0    
                 f{3} = interpn(self.X,self.Z,u,xi,zeta);
@@ -308,7 +308,7 @@ classdef Boussinesq2D < handle
         end
         
         function psi_x = psi_x(self,nabla2_psi_bar)
-            L = sqrt(-1)*self.K./(self.K.* self.K + self.M_s.*self.M_s);
+            L = -sqrt(-1)*self.K./(self.K.* self.K + self.M_s.*self.M_s);
             psi_x = self.TransformBackFS( L .* nabla2_psi_bar );
         end
         
@@ -319,7 +319,7 @@ classdef Boussinesq2D < handle
         end
         
         function psi_z = psi_z(self,nabla2_psi_bar)
-            L = self.M_s./(self.K.* self.K + self.M_s.*self.M_s);
+            L = -self.M_s./(self.K.* self.K + self.M_s.*self.M_s);
             psi_z = self.TransformBackFC( L .* nabla2_psi_bar );
         end
         

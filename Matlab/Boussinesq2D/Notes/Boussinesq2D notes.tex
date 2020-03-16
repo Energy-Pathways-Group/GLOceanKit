@@ -18,36 +18,69 @@
 %\section{}
 %\subsection{}
 The 2D Boussinesq equations are
+The equations of motion for fluid velocity $u(x,z,t)$ and $w(x,z,t)$ are given by,
+\begin{subequations}{}
+\begin{align}
+\label{x-momentum-bq}
+u_t +u u_x + w u_z=& - \frac{1}{\rho_0} p_x \\ \label {z-momentum-bq}
+w_t +u w_x + w w_z =& - \frac{1}{\rho_0} p_z - g \frac{\rho}{\rho_0} \\ \label{continuity-bq}
+u_x + w_z =& 0 \\ \label{thermodynamic-bq}
+\rho_t + u \rho_x + w \rho_z + w \bar{\rho}_z =& 0
+\end{align}
+\end{subequations}
+We should write this in terms of buoyancy, $b(x,y,z,t) \equiv -\frac{g}{\rho_0} \rho$,
+\begin{subequations}{}
+\begin{align}
+u_t +u u_x + w u_z=& - \frac{1}{\rho_0} p_x \\
+w_t +u w_x + w w_z =& - \frac{1}{\rho_0} p_z + b \\
+u_x + w_z =& 0 \\ 
+b_t + u b_x + w b_z + w N^2 =& 0
+\end{align}
+\end{subequations}
+For mathematical convenience we define a stream function $u=\psi_z$ and $w=-\psi_x$ that automatically enforces the continuity. With this we have that,
+\begin{subequations}{}
+\begin{align}
+\psi_{zt} +\psi_z \psi_{xz} -\psi_x \psi_{zz}=& - \frac{1}{\rho_0} p_x \\
+-\psi_{xt} -\psi_z \psi_{xx} + \psi_x \psi_{xz} =& - \frac{1}{\rho_0} p_z + b \\
+b_t + u b_x + w b_z + w N^2 =& 0
+\end{align}
+\end{subequations}
+so then take the curl,
+\begin{subequations}{}
+\begin{align} \nonumber
+\psi_{zzt} + \psi_{xxt} +\psi_{zz} \psi_{xz} + \psi_z \psi_{xzz}  -\psi_{xz} \psi_{zz}-\psi_x \psi_{zzz} & \\
++ \psi_{xz} \psi_{xx}+\psi_z \psi_{xxx}-\psi_{xx} \psi_{xz} - \psi_x \psi_{xxz}&= - b_x \\
+b_t + u b_x + w b_z + w N^2 &= 0
+\end{align}
+\end{subequations}
+which organizes as,
+\begin{subequations}{}
+\begin{align} \nonumber
+\nabla^2 \psi_t+ \psi_z \nabla^2 \psi_{x} -\psi_x \nabla^2 \psi_{z}  &= - b_x \\
+b_t + \psi_z b_x - \psi_x ( b_z + N^2 ) &= 0
+\end{align}
+\end{subequations}
+which is the,
 \begin{subequations}{}
 \begin{align}
 \label{streamfunction_equation}
-\nabla^2 \psi_t +  J\left( \psi, \nabla^2 \psi \right) =& \frac{g}{\rho_0}\rho_x + \nu Q(k) \psi_{xxxx} + \nu_z Q(m) \psi_{zzzz} \\ \label{rho_equation}
-\rho_t + J\left( \psi, \rho \right) + \psi_x \bar{\rho}_z =& 0
+\nabla^2 \psi_t +  J\left( \psi, \nabla^2 \psi \right) =& -b_x + \nu Q(k) \psi_{xxxx} + \nu_z Q(m) \psi_{zzzz} \\ \label{rho_equation}
+b_t + J\left( \psi, b \right) + b_x \bar{\rho}_z =& 0
 \end{align}
 \end{subequations}
-where $J(a,b) \equiv a_x b_z - a_z b_x$. The linear solution written as a stream function is
+where $J(a,b) \equiv a_z b_x - a_x b_z$. The linear solution written as a stream function is
 \begin{align}
 \label{linear_streamfunction}
 \psi(x,z,t) =& U h \cos \theta G(z) \\
-b(x,z,t) =& -U N^2 \frac{kh}{\omega} \cos \theta G(z)
+b(x,z,t) =& U N^2 \frac{kh}{\omega} \cos \theta G(z)
 \end{align}
-
 Note we need to add damping on the density to match the damping that occurs on $w$.
 
-We should write this in terms of buoyancy, $b(x,y,z,t) \equiv -\frac{g}{\rho_0} \rho$.
-\begin{subequations}{}
-\begin{align}
-\rho_t + \psi_x \rho_z - \psi_z \rho_x + \psi_x \bar{\rho}_z =& 0 \\
-b_t + \psi_x b_z - \psi_z b_x + \psi_x N^2 =& 0 \\
-b_t =& \psi_z b_x -\psi_x (N^2 + b_z) 
-\end{align}
-\end{subequations}
 So our equations to model are,
-
 \begin{subequations}{}
 \begin{align}
-\nabla^2 \psi_t =& -  \psi_x \nabla^2 \psi_z + \psi_z \nabla^2 \psi_x  -b_x \\ 
-b_t =& \psi_z b_x -\psi_x (N^2 + b_z) 
+\nabla^2 \psi_t =& -  \psi_z \nabla^2 \psi_x +  \psi_x \nabla^2 \psi_z  -b_x \\ 
+b_t =& -\psi_z b_x + \psi_x (N^2 + b_z) 
 \end{align}
 \end{subequations}
 
