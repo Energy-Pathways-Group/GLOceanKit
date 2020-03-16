@@ -15,6 +15,9 @@ m = j*pi/Lz;
 epsilon = U/(omega/k)
 W = (k/m)*U;
 
+nParticles = 5;
+model.setParticlePositions(Lx*ones(1,nParticles)/2,(Lz/6)*(1:nParticles) - Lz)
+
 % figure
 % subplot(1,2,1)
 % pcolor(model.X,model.Z,model.psi_n), shading interp
@@ -64,12 +67,19 @@ pcolor(model.X,model.Z,model.u), shading interp
 n = 100;
 maxU = zeros(n,1);
 maxW = zeros(n,1);
+xi = zeros(n,nParticles);
+zeta = zeros(n,nParticles);
 for i=1:n
     model.StepForwardToTime(i*model.dt);
     [u,w] = model.uw;
     maxU(i) = max(u(:));
     maxW(i) = max(w(:));
+    xi(i,:) = model.xi;
+    zeta(i,:) = model.zeta;
 end
 
 figure
 plot([maxU, maxW])
+
+figure
+plot(xi,zeta)

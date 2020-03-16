@@ -24,8 +24,13 @@ classdef Boussinesq2D < handle
                 
         dt
         integrator
-        t
+        t = 0
         y % cell array with {nabla2_psi,b}
+        
+        nParticles = 0
+        t_p
+        x_p
+        z_p
 
         shouldAntialias = 0;
     end
@@ -78,7 +83,7 @@ classdef Boussinesq2D < handle
             [self.K,self.M_s] = ndgrid(self.k,self.m_s);
             [self.X,self.Z] = ndgrid(self.x,self.z);
             
-            self.y = {zeros(size(self.K)), zeros(size(self.K))};
+            self.y = {zeros(size(self.K)), zeros(size(self.K)),[],[]};
         end
         
 
@@ -123,8 +128,8 @@ classdef Boussinesq2D < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Set up the integrator
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            f = @(t,y0) self.linearFlux(y0);
-            self.y = {nabla2_psi_n;b_n};
+            f = @(t,y0) self.linearFluxWithParticles(y0);
+            self.y = {nabla2_psi_n;b_n;[];[]};
             self.integrator = ArrayIntegrator(f,self.y,self.dt);
         end
         
@@ -148,32 +153,85 @@ classdef Boussinesq2D < handle
             u = self.psi_z(nabla2_psi_bar);
             w = -self.psi_x(nabla2_psi_bar);
         end
-        
+                
         function b = b(self)
             b = self.y{2};
         end
-                
+        
+        function setParticlePositions(self,xi0,zeta0)
+            self.nParticles = length(xi0);
+            self.y{3} = xi0;
+            self.y{4} = zeta0;
+            self.integrator = ArrayIntegrator(@(t,y0) self.nonlinearFluxWithParticles(y0),self.y,self.dt);
+        end
+        
+        function xi = xi(self)
+            xi = self.y{3};
+        end
+        
+        function zeta = zeta(self)
+            zeta = self.y{4};
+        end
+        
         function f = linearFlux(self,y0)
             f = cell(2,1);
             nabla2_psi = y0{1};
             b = y0{2};
             
             nabla2_psi_bar = self.TransformForwardFS(nabla2_psi);            
-            f{1} = -self.b_x(b) + self.damp_psi(nabla2_psi_bar);
+            f{1} = -self.b_x(b); % + self.damp_psi(nabla2_psi_bar);
             f{2} = -self.N2*self.psi_x(nabla2_psi_bar);
         end
         
-        function f = linearFluxCat(self,y0)
-            nabla2_psi = y0(:,1:self.Nz);
-            b = y0(:,(self.Nz+1):end);
-            
+        function f = linearFluxWithParticles(self,y0)
+            f = cell(2,1);
+            nabla2_psi = y0{1};
+            b = y0{2};
+            xi = y0{3};
+            zeta = y0{4};
+                    
             nabla2_psi_bar = self.TransformForwardFS(nabla2_psi);
-%             b_bar = self.TransformForwardFS(b);
             
-            f_psi = -self.b_x(b) + self.damp_psi(nabla2_psi_bar);
-            f_b = -self.N2*self.psi_x(nabla2_psi_bar);
+            w = -self.psi_x(nabla2_psi_bar);
             
-            f = cat(2,f_psi,f_b);
+            f{1} = -self.b_x(b) + self.damp_psi(nabla2_psi_bar);
+            f{2} = self.N2*w;
+            
+            if self.nParticles > 0
+                u = self.psi_z(nabla2_psi_bar);
+                f{3} = interpn(self.X,self.Z,u,xi,zeta);
+                f{4} = interpn(self.X,self.Z,w,xi,zeta);
+            else
+                f{3} = [];
+                f{4} = [];
+            end
+        end
+        
+        function f = nonlinearFluxWithParticles(self,y0)
+            f = cell(2,1);
+            nabla2_psi = y0{1};
+            b = y0{2};
+            xi = y0{3};
+            zeta = y0{4};
+            
+            nabla2_psi_bar = self.AntiAlias( self.TransformForwardFS(nabla2_psi) );
+            u = self.psi_z(nabla2_psi_bar);
+            w = -self.psi_x(nabla2_psi_bar);
+            b_x = self.b_x(b);
+            b_z = self.b_z(b);
+            nabla2_psi_x = self.nabla2_psi_x(nabla2_psi_bar);
+            nabla2_psi_z = self.nabla2_psi_z(nabla2_psi_bar);
+            
+            f{1} =  u.*nabla2_psi_x + w.*nabla2_psi_z - b_x; % + self.damp_psi(nabla2_psi_bar);
+            f{2} = u.*b_x + w.*(self.N2 + b_z);
+            
+            if self.nParticles > 0    
+                f{3} = interpn(self.X,self.Z,u,xi,zeta);
+                f{4} = interpn(self.X,self.Z,w,xi,zeta);
+            else
+                f{3} = [];
+                f{4} = [];
+            end
         end
         
         function [Qk,Qm] = SVV(self)

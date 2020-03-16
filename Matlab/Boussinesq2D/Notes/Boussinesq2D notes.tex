@@ -72,4 +72,21 @@ b_x =& ik b_{km} e^{ikx} \sin mz \\
 b_z =& m b_{km} e^{ikx} \cos mz
 \end{align}
 
+%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Damping}
+%
+%%%%%%%%%%%%%%%%%%%%%
+
+We have to get the damping right so that the buoyancy gets damped at a rate consistent with velocity.
+\begin{subequations}{}
+\begin{align}
+\label{x-momentum-bq}
+u_t =& - \frac{1}{\rho_0} p_x - \nu_x u_{xx} - \nu_z u_{zz} \\ \label {z-momentum-bq}
+w_t =& - \frac{1}{\rho_0} p_z - g \frac{\rho}{\rho_0}  - \nu_x w_{xx} - \nu_z w_{zz} \\ \label{continuity-bq}
+u_x + w_z =& 0 \\ \label{thermodynamic-bq}
+\rho_t + w \bar{\rho}_z =& 0
+\end{align}
+\end{subequations}
+
 \end{document}  
