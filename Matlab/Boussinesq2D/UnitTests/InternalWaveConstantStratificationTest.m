@@ -34,7 +34,8 @@ b = @(t,x,z) norm*N0*N0*(U*k/(m*omega))*cos(k*x+omega*t).*sin(m*z);
 uw = @(t,x) [u(t,x(1),x(2));w(t,x(1),x(2))];
 % uw = @(t,x) [U*cos(k*x(1)+omega*t)*cos(m*x(2));U*(k/m)*sin(k*x(1)+omega*t)*sin(m*x(2))];
 
-rho = @(t,x,z) (rho0/g)*N0*N0*(z+(U*k/(m*omega))*cos(k*x+omega*t).*sin(m*z));
+% leaving off rho0 - ...
+% rho = @(t,x,z) (rho0/g)*N0*N0*(z+(U*k/(m*omega))*cos(k*x+omega*t).*sin(m*z));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -67,27 +68,39 @@ x_i = model.x(i);
 s = model.z + Lz;
 
 
-figure
-subplot(1,3,1)
-plot(u_model(i,:),model.z), hold on
-plot(u(0,x_i,s),model.z)
-subplot(1,3,2)
-plot(w_model(i,:),model.z), hold on
-plot(w(0,x_i,s),model.z)
-subplot(1,3,3)
-plot(b_model(i,:),model.z), hold on
-plot(b(0,x_i,s),model.z)
+% figure
+% subplot(1,3,1)
+% plot(u_model(i,:),model.z), hold on
+% plot(u(0,x_i,s),model.z)
+% subplot(1,3,2)
+% plot(w_model(i,:),model.z), hold on
+% plot(w(0,x_i,s),model.z)
+% subplot(1,3,3)
+% plot(b_model(i,:),model.z), hold on
+% plot(b(0,x_i,s),model.z)
+
+rel_error = @(model,truth) max(abs(model(:)-truth(:)))./max(abs(truth(:)));
 
 n = 100;
 t = zeros(n,1);
 xi = zeros(n,1);
 zeta = zeros(n,1);
+u_err = zeros(n,1);
+w_err = zeros(n,1);
+b_err = zeros(n,1);
 for i=1:n
     model.StepForwardToTime(i*model.dt);
     t(i) = model.t;
     xi(i,:) = model.xi;
     zeta(i,:) = model.zeta;
+    
+    u_err(i)=rel_error(model.u,u(model.t,model.X,model.Z+Lz));
+    w_err(i)=rel_error(model.w,w(model.t,model.X,model.Z+Lz));
+    b_err(i)=rel_error(model.b,b(model.t,model.X,model.Z+Lz));
 end
+
+figure
+plot(t,[u_err,w_err,b_err])
 
 p = deval(t,sol);
 

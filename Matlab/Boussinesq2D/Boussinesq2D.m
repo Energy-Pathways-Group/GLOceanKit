@@ -10,10 +10,10 @@ classdef Boussinesq2D < handle
         Lx, Lz % Domain size
         Nx, Nz % Number of points in each direction
         
-        x, z
-        k, m, m_s
+        x,z
+        k,m,m_s
         X,Z
-        K,M,M_s
+        K,M_s
         
         rhobar, rho0
         N2, Nmax
@@ -25,25 +25,15 @@ classdef Boussinesq2D < handle
         dt
         integrator
         t = 0
-        y % cell array with {nabla2_psi,b}
+        y % cell array with {nabla2_psi,b,xi,zeta}
         
         nParticles = 0
-        t_p
-        x_p
-        z_p
-
         shouldAntialias = 0;
     end
         
     properties (Constant)
         g = 9.81;
     end
-    
-%     methods(Abstract, Access = public)
-%         N2 = N2AtDepth(self,z)
-%         rho = RhoBarAtDepth(self,z)
-%     end
-
     
     methods
         
@@ -184,7 +174,7 @@ classdef Boussinesq2D < handle
         end
         
         function f = linearFluxWithParticles(self,y0)
-            f = cell(2,1);
+            f = cell(4,1);
             nabla2_psi = y0{1};
             b = y0{2};
             xi = y0{3};
@@ -208,7 +198,7 @@ classdef Boussinesq2D < handle
         end
         
         function f = nonlinearFluxWithParticles(self,y0)
-            f = cell(2,1);
+            f = cell(4,1);
             nabla2_psi = y0{1};
             b = y0{2};
             xi = y0{3};
