@@ -55,7 +55,7 @@ Nx = 256;
 Nz = 65;
 N2 = N0*N0;
 
-model = Boussinesq2D([Lx, Lz], [Nx, Nz], linspace(-Lz,0,Nz).', N2);
+model = Boussinesq2DConstantStratification([Lx, Lz], [Nx, Nz], linspace(-Lz,0,Nz).', N2);
 [omega,h] = model.InitializeWithPlaneWave(k,j,U);
 model.setParticlePositions(Lx/2,zeta0-Lz);
 

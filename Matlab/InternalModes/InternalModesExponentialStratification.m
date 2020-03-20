@@ -348,6 +348,10 @@ classdef InternalModesExponentialStratification < InternalModesBase
         function self = InitializeWithBSpline(self, rho, z_in)
             error('not yet implemented')
         end
+        
+        function self = InitializeWithN2Function(self, N2, zMin, zMax)
+            error('Invalid initialization path');
+        end
     end
     
      methods (Static)
