@@ -116,6 +116,37 @@ classdef Boussinesq2D < handle
             self.InitializeWithPsiAndB(psi_n+psi1_n,b_n+b1_n,omega);
         end
         
+        function [omega,h] = InitializeWithPlaneWaveNewCorrection(self, k0, j0, U)
+            self.internalModes.normalization = Normalization.uMax;
+            [~,G,h,omega] = self.internalModes.ModesAtWavenumber(k0);
+            
+            h = h(j0);
+            omega = omega(j0);
+            G = G(:,j0).';
+            c2 = self.g * h;
+            
+            psi_n = U*h*cos(k0*self.X).*G;
+            b_n = self.N2.*((U*k0*h/omega)*cos(k0*self.X)).*G;
+            
+            self.internalModes.normalization = Normalization.uMax;
+            [~,G2k,h2k] = self.internalModes.ModesAtWavenumber(2*k0);
+            %             N = InternalModes.NumberOfWellConditionedModes(G2k);
+            ratio = self.internalModes.internalModes.rho_zz ./ self.internalModes.internalModes.rho_z;
+            
+            f = ratio.*(G.*G).';
+            coeffs = G2k\f;
+            Gamma = (G2k * ( (h2k./(h-h2k)).' .* coeffs)).';
+            Gamma_b = (G2k * ( ((h+h2k)./(h-h2k)).' .* coeffs)).';
+            
+            %             figure
+            %             plot([G;Gamma;Gamma_b],self.z)
+            
+            psi1_n = (U*U*h*h/(2*sqrt(c2)))*cos(2*k0*self.X).*Gamma;
+            b1_n = (U*U*h*h/(4*c2))*self.N2.*cos(2*k0*self.X).*Gamma_b;
+            
+            self.InitializeWithPsiAndB(psi_n+psi1_n,b_n+b1_n,omega);
+        end
+        
         function [omega,h] = InitializeWithPlaneWave(self, k0, j0, U)
             self.internalModes.normalization = Normalization.uMax;
             [~,G,h,omega] = self.internalModes.ModesAtWavenumber(k0);

@@ -28,7 +28,7 @@ model.internalModes.normalization = Normalization.uMax;
 [~,G,h,omega] = model.internalModes.ModesAtWavenumber(k);
 U = epsilon*(omega(j)/k);
 m = j*pi/Lz;
-[omega,h] = model.InitializeWithPlaneWave(k,j,U);
+[omega,h] = model.InitializeWithPlaneWaveNewCorrection(k,j,U);
 W = (k/m)*U;
 
 nParticles = 5;
