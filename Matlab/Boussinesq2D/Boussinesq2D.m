@@ -26,9 +26,10 @@ classdef Boussinesq2D < handle
         dt
         integrator
         t = 0
-        y % cell array with {nabla2_psi,b,xi,zeta}
+        y % cell array with {nabla2_psi,b,xi,zeta,x_drifter,z_drifter}
         
         nParticles = 0
+        nDrifters = 0   % Drifters stay at fixed depth
         shouldAntialias = 0;
         nonlinear = 1; % set to 0 to evolve the equations linearly
     end
@@ -75,7 +76,7 @@ classdef Boussinesq2D < handle
             [self.K,self.M_s] = ndgrid(self.k,self.m_s);
             [self.X,self.Z] = ndgrid(self.x,self.z);
             
-            self.y = {zeros(size(self.K)), zeros(size(self.K)),[],[]};
+            self.y = {zeros(size(self.K)), zeros(size(self.K)),[],[],[],[]};
         end
         
 
@@ -131,7 +132,7 @@ classdef Boussinesq2D < handle
         function InitializeWithPsiAndB(self,psi_n,b_n,omega)
             % other stuff that needs to be initialized...
             nabla2_psi_n = self.Nabla2PsiFromPsi(psi_n);
-            self.y = {nabla2_psi_n;b_n;[];[]};
+            self.y = {nabla2_psi_n;b_n;[];[];[];[]};
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Set the viscosity
@@ -178,6 +179,13 @@ classdef Boussinesq2D < handle
             self.integrator = ArrayIntegrator(@(t,y0) self.fluxWithParticles(y0),self.y,self.dt);
         end
         
+        function setDrifterPositions(self,xi0,zeta0)
+            self.nDrifters = length(xi0);
+            self.y{5} = xi0;
+            self.y{6} = zeta0;
+            self.integrator = ArrayIntegrator(@(t,y0) self.fluxWithParticles(y0),self.y,self.dt);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Accessors
@@ -216,6 +224,14 @@ classdef Boussinesq2D < handle
             zeta = self.y{4};
         end
         
+        function x_drifter = x_drifter(self)
+            x_drifter = self.y{5};
+        end
+        
+        function z_drifter = z_drifter(self)
+            z_drifter = self.y{6};
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % The flux (F) in the equation dy/dt = F(t,y)
@@ -228,6 +244,8 @@ classdef Boussinesq2D < handle
             b = y0{2};
             xi = y0{3};
             zeta = y0{4};
+            x_drifter = y0{5};
+            z_drifter = y0{6};
 
             if self.nonlinear == 1
                 nabla2_psi_bar = self.AntiAlias( self.TransformForwardFS(nabla2_psi) );
@@ -257,6 +275,14 @@ classdef Boussinesq2D < handle
             else
                 f{3} = [];
                 f{4} = [];
+            end
+            
+            if self.nDrifters > 0
+                f{5} = interpn(self.X,self.Z,u,x_drifter,z_drifter);
+                f{6} = zeros(size(x_drifter));
+            else
+                f{5} = [];
+                f{6} = [];
             end
         end
         
