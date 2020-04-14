@@ -84,39 +84,8 @@ classdef Boussinesq2D < handle
         % Create a single wave (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function [omega,h] = InitializeWithPlaneWaveCorrection(self, k0, j0, U)
-            self.internalModes.normalization = Normalization.uMax;
-            [~,G,h,omega] = self.internalModes.ModesAtWavenumber(k0);
-            
-            h = h(j0);
-            omega = omega(j0);
-            G = G(:,j0).';
-            c2 = self.g * h;
-            
-            psi_n = U*h*cos(k0*self.X).*G;
-            b_n = self.N2.*((U*k0*h/omega)*cos(k0*self.X)).*G;
-            
-            self.internalModes.normalization = Normalization.uMax;
-            [~,G2k,h2k] = self.internalModes.ModesAtWavenumber(2*k0);
-%             N = InternalModes.NumberOfWellConditionedModes(G2k);
-            ratio = self.internalModes.internalModes.rho_zz ./ self.internalModes.internalModes.rho_z;
-            
-            f = ratio.*(G.*G).';
-            coeffs = G2k\f;
-            Gamma = (G2k * ( (h*h2k./(h-h2k)).' .* coeffs)).';
-            Gamma_b = 0.5*f.' + Gamma;
-            
-%             figure
-%             plot([G;Gamma;Gamma_b],self.z)
-            
-            psi1_n = (U*U*h/(2*sqrt(c2)))*cos(2*k0*self.X).*Gamma;
-            b1_n = (U*U*h/(2*c2))*self.N2.*cos(2*k0*self.X).*Gamma_b;
-            
-            self.InitializeWithPsiAndB(psi_n+psi1_n,b_n+b1_n,omega);
-        end
-        
-        function [omega,h] = InitializeWithPlaneWaveNewCorrection(self, k0, j0, U)
+                
+        function [omega,h] = InitializeWithNonlinearPlaneWave(self, k0, j0, U)
             self.internalModes.normalization = Normalization.uMax;
             [~,G,h,omega] = self.internalModes.ModesAtWavenumber(k0);
             
@@ -274,6 +243,9 @@ classdef Boussinesq2D < handle
             else
                 nabla2_psi_bar = self.TransformForwardFS(nabla2_psi);
                 w = -self.Psi_xFromNabla2PsiBar(nabla2_psi_bar);
+                if self.nParticles > 0
+                    u = self.Psi_zFromNabla2PsiBar(nabla2_psi_bar);
+                end
                 
                 f{1} = -self.b_x(b); % + self.damp_psi(nabla2_psi_bar);
                 f{2} = -self.N2.*w;
