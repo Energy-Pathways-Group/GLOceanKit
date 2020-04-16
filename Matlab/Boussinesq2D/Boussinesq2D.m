@@ -100,9 +100,13 @@ classdef Boussinesq2D < handle
             
             self.internalModes.normalization = Normalization.uMax;
             [~,G2k,h2k] = self.internalModes.ModesAtWavenumber(2*k0);
-            %             N = InternalModes.NumberOfWellConditionedModes(G2k);
-            ratio = self.internalModes.internalModes.rho_zz ./ self.internalModes.internalModes.rho_z;
             
+            N = InternalModes.NumberOfWellConditionedModes(G2k);
+            G2k = G2k(:,1:N);
+            h2k = h2k(1:N);
+            
+            ratio = self.internalModes.internalModes.rho_zz ./ self.internalModes.internalModes.rho_z;
+                        
             f = ratio.*(G.*G).';
             coeffs = G2k\f;
             Gamma = (G2k * ( (h2k./(h-h2k)).' .* coeffs)).';
@@ -147,7 +151,7 @@ classdef Boussinesq2D < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Set the time-step
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            cfl = 0.25;
+            cfl = 1/4;
             dt_u = cfl*(self.x(2)-self.x(1))/U;
             dt_w = cfl*(self.z(2)-self.z(1))/W;
             fprintf('cfl condition for (u,w)=>dt=(%.1f,%.1f) seconds for period of %.1f seconds\n',dt_u,dt_w,2*pi/omega);
@@ -170,6 +174,11 @@ classdef Boussinesq2D < handle
         function StepForwardToTime(self,time)
             self.y = self.integrator.StepForwardToTime(time);
             self.t = self.integrator.currentTime;
+        end
+        
+        function IncrementForward(self)
+           self.y = self.integrator.IncrementForward;
+           self.t = self.integrator.currentTime;
         end
         
         function setParticlePositions(self,xi0,zeta0)
@@ -251,13 +260,21 @@ classdef Boussinesq2D < handle
                 nabla2_psi_bar = self.AntiAlias( self.TransformForwardFS(nabla2_psi) );
                 u = self.Psi_zFromNabla2PsiBar(nabla2_psi_bar);
                 w = -self.Psi_xFromNabla2PsiBar(nabla2_psi_bar);
-                b_x = self.b_x(b);
-                b_z = self.b_z(b);
                 nabla2_psi_x = self.Nabla2Psi_xFromNabla2PsiBar(nabla2_psi_bar);
                 nabla2_psi_z = self.Nabla2Psi_zFromNabla2PsiBar(nabla2_psi_bar);
                 
+                b_bar = self.AntiAlias( self.TransformForwardFS(b) );
+                b_x = self.b_xFromBBar(b_bar);
+                b_z = self.b_zFromBBar(b_bar);
+                
                 f{1} = -u.*nabla2_psi_x - w.*nabla2_psi_z - b_x; % + self.damp_psi(nabla2_psi_bar);
                 f{2} =-u.*b_x - w.*(self.N2 + b_z);
+                
+                cfl_x = max(u(:))*self.dt/(self.x(2)-self.x(1));
+                cfl_z = max(w(:))*self.dt/(self.z(2)-self.z(1));
+                if max([cfl_x cfl_z]) > 0.5
+                    fprintf('CFL condition appears to have gotten rather high, (%.2f,%.2f)\n',cfl_x,cfl_z);
+                end
             else
                 nabla2_psi_bar = self.TransformForwardFS(nabla2_psi);
                 w = -self.Psi_xFromNabla2PsiBar(nabla2_psi_bar);
@@ -357,6 +374,16 @@ classdef Boussinesq2D < handle
         function nabla2_psi_z = Nabla2Psi_zFromNabla2PsiBar(self,nabla2_psi_bar)
             L = self.M_s;
             nabla2_psi_z = self.TransformBackFC( L .* nabla2_psi_bar );
+        end
+        
+        function b_x = b_xFromBBar(self,bbar)
+            L = sqrt(-1)*self.K;
+            b_x = self.TransformBackFS( L .* bbar );
+        end
+        
+        function b_z = b_zFromBBar(self,bbar)
+            L = self.M_s;
+            b_z = self.TransformBackFC( L .* bbar );
         end
         
         function b_x = b_x(self,b)
