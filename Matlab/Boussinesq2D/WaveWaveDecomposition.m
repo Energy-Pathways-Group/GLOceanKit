@@ -57,7 +57,7 @@ classdef WaveWaveDecomposition < handle
             dk = 1/self.Lx;          % fourier frequency
             self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
                         
-            model.internalModes.normalization = Normalization.kConstant;
+            self.internalModes.normalization = Normalization.kConstant;
             k_max = max(abs(self.k));
             [~,G,~] = self.internalModes.ModesAtWavenumber(k_max);
             self.nGoodModes = InternalModes.NumberOfWellConditionedModes(G);
