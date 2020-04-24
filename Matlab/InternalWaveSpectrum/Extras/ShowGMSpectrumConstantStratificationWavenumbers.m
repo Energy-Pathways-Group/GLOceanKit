@@ -80,7 +80,7 @@ HorizontalShearNonlinearity = Suv_kj.*(k2./omega2);
 IsopycnalSlopeNonlinearity = Seta_kj.*k2;
 GradientFroudeNonlinearity = Suv_kj.*(m2./(N0*N0)); % Richardson number
 VerticalStrainNonlinearity = Seta_kj.*m2;
-return
+
 m = j*pi/L;
 
 % This is probably the right thing to do, because its the integral that

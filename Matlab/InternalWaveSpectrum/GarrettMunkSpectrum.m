@@ -13,6 +13,7 @@ classdef GarrettMunkSpectrum < handle
         B_int
         H
         
+        userSpecifiedN2 = 0
         N2 % *function handle* of z
         
         zInternal % A full depth coordinate used to precompute Phi & Gamma
@@ -109,6 +110,28 @@ classdef GarrettMunkSpectrum < handle
                 self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
                 self.z_in = z_in;
                 
+                % Set properties supplied as name,value pairs
+                userSpecifiedRho0 = 0;
+                self.userSpecifiedN2 = 0;
+                nargs = length(varargin);
+                if mod(nargs,2) ~= 0
+                    error('Arguments must be given as name/value pairs');
+                end
+                for k = 1:2:length(varargin)
+                    if strcmp(varargin{k}, 'rho0')
+                        userSpecifiedRho0 = 1;
+                    end
+                    if strcmp(varargin{k}, 'N2')
+                        self.userSpecifiedN2 = 1;
+                        continue; % no property to set
+                    end
+                    self.(varargin{k}) = varargin{k+1};
+                end
+                
+                if self.userSpecifiedN2 == 1 && userSpecifiedRho0 == 0
+                    error('If you pass N2 instead of rho, you must also provide a rho0')
+                end
+                
                 % Is density specified as a function handle or as a grid of
                 % values?
                 self.rho = rho;
@@ -116,7 +139,16 @@ classdef GarrettMunkSpectrum < handle
                     if numel(z_in) ~= 2
                         error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
                     end
-                    self.rho0 = rho(max(z_in));
+                    if userSpecifiedRho0 == 0
+                        self.rho0 = rho(max(z_in));
+                    end
+                    if self.userSpecifiedN2 == 1
+                        self.N2 = rho;
+                        im = InternalModesAdaptiveSpectral(self.N2,self.z_in,self.z_in,self.latitude,'N2',1,'rho0',self.rho0);  
+                        self.rho = im.rho_function;
+                    else
+                        im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,self.latitude);
+                    end
                 elseif isa(rho,'numeric') == true
                     if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
                         error('rho must be 1 dimensional and z must have the same length');
@@ -124,27 +156,20 @@ classdef GarrettMunkSpectrum < handle
                     if isrow(rho)
                         rho = rho.';
                     end
+                    
                     self.rho0 = min(rho);
+                    
+                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,self.latitude);
                 else
                     error('rho must be a function handle or an array.');
                 end
                 
-                nargs = length(varargin);
-                if mod(nargs,2) ~= 0
-                    error('Arguments must be given as name/value pairs');
-                end
-                for k = 1:2:length(varargin)
-                    self.(varargin{k}) = varargin{k+1};
-                end
-                
-                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.z_in,self.latitude);
-%                 if strcmp(class(im.internalModes),'InternalModesAdaptiveSpectral')
-%                     im.internalModes.nEVP = self.nEVPMin;
-%                 end
                 self.N_max = max(sqrt(im.N2_xLobatto));
                 self.zInternal = im.z_xLobatto;
                 self.N2internal = im.N2_xLobatto;
-                self.N2 = @(z) interp1(self.zInternal,self.N2internal,z,'linear');
+                if self.userSpecifiedN2 == 0
+                    self.N2 = @(z) interp1(self.zInternal,self.N2internal,z,'linear');
+                end
             end
             
             H1 = (self.j_star+(1:3000)).^(-5/2);
@@ -844,8 +869,11 @@ omega = reshape(omega,[],1);
             nX = length(x);
             nEVP = self.nEVPMin;
                                     
-            im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-            im.normalization = Normalization.kConstant;
+            if self.userSpecifiedN2 == 1
+                im = InternalModesAdaptiveSpectral(self.N2,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant,'N2',1,'rho0',self.rho0);
+            else
+                im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant);
+            end
             
             F_out = nan(length(self.zInternal),nX,self.nModes);
             G_out = nan(length(self.zInternal),nX,self.nModes);
@@ -857,10 +885,11 @@ omega = reshape(omega,[],1);
                 % desired number of good quality modes (or reach some max).
                 while( (isempty(h) || length(h) < self.nModes) && nEVP < self.nEVPMax )
                     nEVP = nEVP + 128;
-                    im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude,'nEVP',nEVP);
-%                     if strcmp(class(im.internalModes),'InternalModesAdaptiveSpectral')
-%                         im.internalModes.nEVP = nEVP;
-%                     end
+                    if self.userSpecifiedN2 == 1
+                        im = InternalModesAdaptiveSpectral(self.N2,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant,'N2',1,'rho0',self.rho0);
+                    else
+                        im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant);
+                    end
                     im.normalization = Normalization.kConstant;
                     [F, G, h] = im.(methodName)(x(i));
                 end
@@ -918,7 +947,12 @@ omega = reshape(omega,[],1);
         end
         
         function Phi = PhiForOmegaWKBApproximation(self, z, omega, approximation)
-            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            if self.userSpecifiedN2 == 1
+                im = InternalModes(self.N2,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant,'N2',1,'rho0',self.rho0);
+            else
+                im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            end
+            
             Phi = zeros(length(z),length(omega));
             [sortedOmegas, indices] = sort(abs(omega));
             for i = 1:length(sortedOmegas)
@@ -945,7 +979,11 @@ omega = reshape(omega,[],1);
         end
         
         function Gamma = GammaForOmegaWKBApproximation(self, z, omega, approximation)
-            im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            if self.userSpecifiedN2 == 1
+                im = InternalModes(self.N2,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant,'N2',1,'rho0',self.rho0);
+            else
+                im = InternalModes(self.rho,self.z_in,z,self.latitude, 'method', approximation, 'nEVP', self.nModes, 'normalization', Normalization.kConstant);
+            end
             Gamma = zeros(length(z),length(omega));
             [sortedOmegas, indices] = sort(abs(omega));
             for i = 1:length(sortedOmegas)
