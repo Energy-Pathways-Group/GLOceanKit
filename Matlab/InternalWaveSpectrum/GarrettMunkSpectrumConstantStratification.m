@@ -22,7 +22,7 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         L_gm = 1.3e3; % thermocline exponential scale, meters
         invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
         E_gm = 6.3e-5; % non-dimensional energy parameter
-        E = (1.3e3)*(1.3e3)*(1.3e3)*(5.2e-3)*(5.2e-3)*(6.3e-5);
+        E = (1.3e3)*(1.3e3)*(1.3e3)*(5.2e-3)*(5.2e-3)*(6.3e-5); % m^3/s^2
     end
     
     methods
@@ -112,21 +112,8 @@ classdef GarrettMunkSpectrumConstantStratification < handle
         function S = HorizontalVelocitySpectrumAtWavenumbers(self,z,k)
             % returns the horizontal velocity spectrum as a function of
             % horizontal wavenumber (k), for any given depth (z).
-            z = reshape(z,[],1);
-            k = reshape(k,1,[]);
-            j=shiftdim(1:self.nModes,-1);
-            
-            N2 = self.N_max*self.N_max;
-            f2 = self.f0*self.f0;
-            f = self.f0;
-                        
-            m = j*pi/self.Lz;
-            omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2;
-            
-            Phi = (2/self.Lz)*self.H(j) .* (m.^2./(k.^2 + m.^2)) .* cos(z.*m).^2;
-            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
-            C = 1+f2./omega2;
-            S = self.E * sum( C .* Bfunc .* Phi,3);
+            % units are m^3/s^2, or arguably, m^2/s^2/(radians/m)
+            S = sum( self.HorizontalVelocitySpectrumAtDepthWavenumberAndMode(z,k) ,3);
         end
 
         function [S,j] = HorizontalVelocitySpectrumAtWavenumberAndMode(self,k)
@@ -140,13 +127,33 @@ classdef GarrettMunkSpectrumConstantStratification < handle
             f = self.f0;
                         
             m = j*pi/self.Lz;
-%             omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2;
-            omega2 = (N2*k.^2 + f2*m.^2)./(k.^2 + m.^2);
+            omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2; % or, omega2 = (N2*k.^2 + f2*m.^2)./(k.^2 + m.^2);
             
-            Phi = (2/self.Lz)*self.H(j) .* (m.^2./(k.^2 + m.^2));
-            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2));
-            C = 1+f2./omega2;
-            S = self.E * C .* Bfunc .* Phi;
+            Phi = self.H(j) .* (m.^2./(k.^2 + m.^2)); % depth integrated, so unitless
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2)); % m, or 1/(radians/m)
+            C = 1+f2./omega2; % unitless
+            S = self.E * C .* Bfunc .* Phi; % m^3/s^2/(radians/m)
+        end
+        
+        function [S,j] = HorizontalVelocitySpectrumAtDepthWavenumberAndMode(self,z,k)
+            % returns the horizontal velocity spectrum as a function of
+            % horizontal wavenumber (k), for any given depth (z) and mode (j).
+            % units are m^3/s^2, or arguably, m^2/s^2/(radians/m)/mode
+            z = reshape(z,[],1);
+            k = reshape(k,1,[]);
+            j=shiftdim(1:self.nModes,-1);
+            
+            N2 = self.N_max*self.N_max;
+            f2 = self.f0*self.f0;
+            f = self.f0;
+                        
+            m = j*pi/self.Lz;
+            omega2 = (N2-f2)*(k.^2./(k.^2 + m.^2)) + f2; % or, omega2 = (N2*k.^2 + f2*m.^2)./(k.^2 + m.^2);
+            
+            Phi = (2/self.Lz)*self.H(j) .* (m.^2./(k.^2 + m.^2)) .* cos(z.*m).^2; % 1/m
+            Bfunc = (2/pi)*((f*m.^2)./(N2*k.^2 + f2*m.^2)) .* sqrt( (N2-f2)./(k.^2 + m.^2)); % m, or 1/(radians/m)
+            C = 1+f2./omega2; % unitless
+            S = self.E * C .* Bfunc .* Phi; % m^2/s^2/(radians/m)
         end
         
            

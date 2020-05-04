@@ -25,6 +25,8 @@ classdef GarrettMunkSpectrum < handle
         G_omega  % size(G_omega) = [nZ,nOmega,nModes]
         h_omega  % size(h_omega) = [nOmega,nModes]
         k_omega  % size(k_omega) = [nOmega,nModes]
+        F2_omega % size(F2_omega) = [nK,nModes]---\int F^2 dz
+        N2G2_omega % size(N2G2_omega) = [nK,nModes]---\int N^2 G^2 dz
         
         didPrecomputePhiAndGammaForK = 0
         k    % size(k) = nK
@@ -32,6 +34,8 @@ classdef GarrettMunkSpectrum < handle
         G_k  % size(G_k) = [nZ,nK,nModes]
         h_k  % size(h_k) = [nK,nModes]
         omega_k % size(omega_k) = [nK,nModes]
+        F2_k % size(F2_kj) = [nK,nModes]---\int F^2 dz
+        N2G2_k % size(N2G2_k) = [nK,nModes]---\int N^2 G^2 dz
         
         % We also store a copy of the various wavenumber spectra
         Suv_k % size(Suv_k) = [Nz,nK];
@@ -226,7 +230,18 @@ classdef GarrettMunkSpectrum < handle
                 Gamma(:,i,1:j0) = (1/self.g)*(squeeze(self.G_k(:,i,1:j0)).^2) .* self.H(1:j0);
             end
         end
-
+        
+        function [omega2, k2] = SquaredFrequencyForWavenumber(self,k)
+            self.PrecomputeComputeInternalModesForK;
+            
+            k = reshape(k,[],1);
+            j = reshape(1:self.nModes,1,[]);
+            
+            h = interpn(self.k,j,self.h_k,k,j);
+            
+            k2 = k.*k;
+            omega2 = self.g * h .* k2 + self.f0*self.f0;
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -325,7 +340,44 @@ classdef GarrettMunkSpectrum < handle
             S = interpn(self.zInternal,self.k,self.Suv_k,z,k,'linear');
         end
         
-
+        function [Suv_kj,j] = HorizontalVelocitySpectrumAtWavenumberAndMode(self,k)
+            % returns the horizontal velocity spectrum as a function of
+            % horizontal wavenumber (k) and mode (j).
+            self.PrecomputeComputeInternalModesForK();
+            if isrow(k)
+                k = k.';
+            end
+            j = reshape(1:self.nModes,1,[]);
+            
+            f = self.f0;
+            Nmax = self.N_max;
+            
+            % We are using the one-sided version of the spectrum
+            C = @(omega) (abs(omega)<f | abs(omega) > Nmax)*0 + (abs(omega) >= f & abs(omega) <= Nmax).*( (1+(f./omega).^2) );
+            
+            % Integrate B across the frequency bands, \int B domega
+            omegaMid = self.omega_k(1:end-1,:) + diff(self.omega_k,1,1)/2;
+            omegaLeft = cat(1,self.omega_k(1,:),omegaMid);
+            omegaRight = cat(1, omegaMid, self.omega_k(end,:));
+            BofK = self.B(omegaLeft,omegaRight);
+            
+            % Now divide by dk. This is essentially applying the Jacobian.
+            kMid = self.k(1:end-1) + diff(self.k)/2;
+            kLeft = cat(2,self.k(1),kMid);
+            kRight = cat(2,kMid,self.k(end));
+            dk = (kRight-kLeft).';
+            BofK = BofK./dk; % m, or 1/(radians/m)
+            
+            % depth integrated, so unitless
+            Phi = nan(length(self.k),self.nModes);
+            for i=1:length(self.k)
+                j0 = sum(~isnan(self.F2_k(i,:)));
+                Phi(i,1:j0) = (squeeze(self.F2_k(i,1:j0))) .* (1./squeeze(self.h_k(i,1:j0)) .* self.H(1:j0));
+            end
+            
+            S = self.E * Phi .* C(self.omega_k) .* BofK; % m^3/s^2/(radians/m)
+            Suv_kj = interpn(self.k,j,S,k,j,'linear');
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -860,7 +912,7 @@ omega = reshape(omega,[],1);
         % Computation of the vertical structure functions Phi and Gamma
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F_out,G_out,h] = InternalModesForCoordinate(self,x,methodName)
+        function [F_out,G_out,h_out,F2_out,N2G2_out] = InternalModesForCoordinate(self,x,methodName)
             % This will return size(Phi) =
             % [length(self.zInternal),length(x),nModes]. This is really an
             % unsummed version of Phi, so Phi = sum(Phi,3) would match the
@@ -878,8 +930,10 @@ omega = reshape(omega,[],1);
             F_out = nan(length(self.zInternal),nX,self.nModes);
             G_out = nan(length(self.zInternal),nX,self.nModes);
             h_out = nan(nX,self.nModes);
+            F2_out = nan(nX,self.nModes);
+            N2G2_out = nan(nX,self.nModes);
             for i = 1:length(x)
-                [F, G, h] = im.(methodName)(x(i));
+                [F, G, h, ~, F2, N2G2] = im.(methodName)(x(i));
                 
                 % Increase the number of grid points until we get the
                 % desired number of good quality modes (or reach some max).
@@ -891,7 +945,7 @@ omega = reshape(omega,[],1);
                         im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant);
                     end
                     im.normalization = Normalization.kConstant;
-                    [F, G, h] = im.(methodName)(x(i));
+                    [F, G, h, ~, F2, N2G2] = im.(methodName)(x(i));
                 end
                 if length(h) < self.nModes
                    fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),self.nModes);
@@ -902,9 +956,10 @@ omega = reshape(omega,[],1);
                 
                 F_out(:,i,1:j0) = F(:,1:j0);
                 G_out(:,i,1:j0) = G(:,1:j0);
-                h_out(i,1:j0)=h(1:j0);             
+                h_out(i,1:j0)=h(1:j0);
+                F2_out(i,1:j0)=F2(1:j0); 
+                N2G2_out(i,1:j0)=N2G2(1:j0); 
             end
-            h = h_out;
         end
         
         function PrecomputeComputeInternalModesForOmega(self)
@@ -912,7 +967,7 @@ omega = reshape(omega,[],1);
                 nOmega = 128;      
                 self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
                 self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
-                [self.F_omega,self.G_omega,self.h_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
+                [self.F_omega,self.G_omega,self.h_omega,self.F2_omega,self.N2G2_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
                 self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*self.h_omega));
                 self.didPrecomputePhiAndGammaForOmega = 1;
             end
@@ -923,7 +978,7 @@ omega = reshape(omega,[],1);
                 nK = 128;
                 self.k = zeros(1,nK);
                 self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
-                [self.F_k, self.G_k,self.h_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
+                [self.F_k, self.G_k,self.h_k,self.F2_k,self.N2G2_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');
                 k2 = reshape(self.k .^2,[],1);
                 self.omega_k = sqrt(self.g * self.h_k .* k2 + self.f0*self.f0);
                 self.didPrecomputePhiAndGammaForK = 1;
