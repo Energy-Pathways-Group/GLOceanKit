@@ -21,7 +21,7 @@ figure
 jet.plotStreamfunction(), hold on
 jet.plotVelocityField()
 ```
-<p align="center"><img src="figures/kinematic_model_jet.eps" width="400" /></p>
+<p align="center"><img src="figures/kinematic_model_jet.png" width="400" /></p>
 This meandering jet example is bounded in the y-direction, and periodic in the x-direction.
 
 Now let's add some particles
