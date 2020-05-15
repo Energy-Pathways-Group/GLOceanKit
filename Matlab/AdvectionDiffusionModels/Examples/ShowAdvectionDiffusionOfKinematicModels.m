@@ -1,4 +1,4 @@
-shouldSaveImages = 1;
+shouldSaveImages = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -9,7 +9,7 @@ shouldSaveImages = 1;
 jet = MeanderingJet();
 
 kappa = 1e3;
-model = AdvectionDiffusionModel(jet,kappa);
+integrator = AdvectionDiffusionIntegrator(jet,kappa);
 
 % determine reasonable integration time scales
 T = 5*jet.Lx/jet.U;
@@ -21,14 +21,14 @@ y = linspace(min(jet.ylim),max(jet.ylim),6);
 [x0,y0] = ndgrid(x,y);
 
 
-[t,x,y] = model.particleTrajectories(x0,y0,T,dt);
+
+[t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
 
 figure
 jet.plotVelocityField(), hold on
-model.plotTrajectories(x,y)
-
+integrator.plotTrajectories(x,y)
 if shouldSaveImages == 1
-    print('figures/trajectories_jet.eps','-depsc')
+    print('figures/trajectories_jet.png','-dpng')
 end
 
 return
@@ -43,7 +43,7 @@ eddy = TranslatingGaussian();
 % eddy.cx = 0;
 
 kappa = 1e2;
-model = AdvectionDiffusionModel(eddy,kappa);
+model = AdvectionDiffusionIntegrator(eddy,kappa);
 
 % place particles throughout the valid domain
 x0 = zeros(1,10);

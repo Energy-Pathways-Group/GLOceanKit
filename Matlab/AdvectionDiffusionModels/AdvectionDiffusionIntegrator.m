@@ -1,4 +1,4 @@
-classdef AdvectionDiffusionModel
+classdef AdvectionDiffusionIntegrator
     %AdvectionDiffusionModel Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -8,7 +8,7 @@ classdef AdvectionDiffusionModel
     end
     
     methods
-        function self = AdvectionDiffusionModel(aKinematicModel,kappa)
+        function self = AdvectionDiffusionIntegrator(aKinematicModel,kappa)
             self.kinematicModel = aKinematicModel;
             self.kappa = kappa;
         end
