@@ -1,4 +1,4 @@
-shouldSaveImages = 0;
+shouldSaveImages = 1;
 
 eddy = TranslatingGaussian();
 figure
@@ -6,7 +6,7 @@ eddy.plotStreamfunction(), hold on
 eddy.plotVelocityField();
 
 if shouldSaveImages == 1
-    print('figures/kinematic_model_eddy.eps','-depsc')
+    print('figures/kinematic_model_eddy.png','-dpng')
 end
 
 jet = MeanderingJet();
@@ -15,7 +15,7 @@ jet.plotStreamfunction(), hold on
 jet.plotVelocityField();
 
 if shouldSaveImages == 1
-    print('figures/kinematic_model_jet.eps','-depsc')
+    print('figures/kinematic_model_jet.png','-dpng')
 end
 
 cylinder = CylinderFlow();
@@ -24,7 +24,7 @@ cylinder.plotStreamfunction(), hold on
 cylinder.plotVelocityField();
 
 if shouldSaveImages == 1
-    print('figures/kinematic_model_cylinder.eps','-depsc')
+    print('figures/kinematic_model_cylinder.png','-dpng')
 end
 
 strain = LinearVelocityField(1e-6,0,0);
@@ -33,7 +33,7 @@ strain.plotStreamfunction(), hold on
 strain.plotVelocityField();
 
 if shouldSaveImages == 1
-    print('figures/kinematic_model_strain.eps','-depsc')
+    print('figures/kinematic_model_strain.png','-dpng')
 end
 
 strain = LinearVelocityField(0,0,1e-6);
@@ -42,5 +42,5 @@ strain.plotStreamfunction(), hold on
 strain.plotVelocityField();
 
 if shouldSaveImages == 1
-    print('figures/kinematic_model_vorticity.eps','-depsc')
+    print('figures/kinematic_model_vorticity.png','-dpng')
 end
