@@ -67,6 +67,31 @@ classdef KinematicModel < handle
             end
         end
         
+        function plotTrajectories(self,x,y)
+            if self.xIsPeriodic == 1
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Here's a trick for drawing periodic data. If we use mod(x,xWindow), then
+                % we will get weird wrapping effects
+                xMin = min(self.xlim);
+                xMax = max(self.xlim);
+                xWindowLength = xMax - xMin;
+                nmin = floor(min(x(:)-xMin)/xWindowLength);
+                nmax = floor(max(x(:)-xMin)/xWindowLength);
+                h = gca;
+                for n=nmin:nmax
+                    xshift = x - xMin - n*xWindowLength;
+                    yshift = y;
+                    mask = xshift < 0 | xshift > xWindowLength;
+                    xshift(mask) = nan;
+                    yshift(mask) = nan;
+                    h.ColorOrderIndex = 1;
+                    plot((xshift+xMin)/1e3,yshift/1e3)
+                end
+            else
+                plot(x/1e3,y/1e3)
+            end
+        end
+        
     end
 
     methods (Static)

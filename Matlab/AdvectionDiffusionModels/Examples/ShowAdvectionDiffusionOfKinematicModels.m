@@ -26,7 +26,7 @@ y = linspace(min(jet.ylim),max(jet.ylim),6);
 
 figure
 jet.plotVelocityField(), hold on
-integrator.plotTrajectories(x,y)
+jet.plotTrajectories(x,y)
 if shouldSaveImages == 1
     print('figures/trajectories_jet.png','-dpng')
 end

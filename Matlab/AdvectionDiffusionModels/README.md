@@ -27,7 +27,7 @@ This meandering jet example is bounded in the y-direction, and periodic in the x
 Now that we have a `KinematicModel` initialized, we can use that in the `AdvectionDiffusionIntegrator`. 
 ```matlab
 kappa = 1e3;
-integrator = AdvectionDiffusionModel(jet,kappa);
+integrator = AdvectionDiffusionIntegrator(jet,kappa);
 ```
 Let's choose appropriate time scales to integrate
 ```matlab
@@ -46,7 +46,7 @@ Finally, we now use the integrator to generate some trajectories
 
 figure
 jet.plotVelocityField(), hold on
-integrator.plotTrajectories(x,y)
+jet.plotTrajectories(x,y)
 ```
 <p align="left"><img src="Examples/figures/trajectories_jet.png" width="600" /></p>
 
