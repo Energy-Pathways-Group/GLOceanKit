@@ -8,7 +8,7 @@ The complete class hierarchy contains several implementations that include spect
 The classes contain many options, but also try to remain simple to use. Use `help InternalModes` in Matlab for a complete description, or use the Quick Start below.
 
 If you use these classes to compute the vertical modes, please cite the following paper,
-- J. Early, M. P. Lelong, K. S. Smith. Fast and accurate computation of vertical modes using Chebyshev polynomials, Ocean Modelling, In prep.
+- J. Early, M. P. Lelong, and K. S. Smith. Fast and Accurate Coputation of Vertical Modes. Journal of Advances in Modeling Earth Systems. 2020. [doi](https://doi.org/10.1029/2019MS001939)
 
 ### Table of contents
 1. [Quick Start](#quick-start)
