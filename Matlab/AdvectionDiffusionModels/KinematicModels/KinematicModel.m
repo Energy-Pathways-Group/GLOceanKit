@@ -11,6 +11,7 @@ classdef KinematicModel < handle
         
         xVisLim % visual (box) limits of the ocean, no infinities
         yVisLim % visual (box) limits of the ocean, no infinities   
+        visualScale = 1e-3
         
         name = ''
     end
@@ -34,11 +35,18 @@ classdef KinematicModel < handle
             end
         end
         
+        function plotBounds(self)
+            if all(~isinf(self.xlim)) && all(~isinf(self.ylim)) && self.xIsPeriodic == 0 && self.yIsPeriodic == 0
+                rectangle('Position',self.visualScale*[min(self.xlim) min(self.ylim) max(self.xlim)-min(self.xlim) max(self.ylim)-min(self.ylim)], 'LineWidth', 8)
+            end
+        end
+        
         function varargout = plotVelocityField(self,t)
             if ~exist('t','var')
                 t = 0;
             end
             N = 15;
+            
             xg = linspace(min(self.xVisLim),max(self.xVisLim),2*N)';
             yg = linspace(min(self.yVisLim),max(self.yVisLim),N)';
             [X,Y] = meshgrid(xg,yg);

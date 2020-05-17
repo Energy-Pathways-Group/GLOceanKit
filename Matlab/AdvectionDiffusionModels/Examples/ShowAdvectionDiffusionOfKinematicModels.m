@@ -20,8 +20,6 @@ x = linspace(min(jet.xlim),max(jet.xlim),6);
 y = linspace(min(jet.ylim),max(jet.ylim),6);
 [x0,y0] = ndgrid(x,y);
 
-
-
 [t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
 
 figure
