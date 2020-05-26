@@ -84,7 +84,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 end
             end
             
-            im = InternalModes(rho,z,z,latitude, varargin{:});
+            im = InternalModes(rho,[min(z) max(z)],z,latitude, varargin{:});
             im.nModes = length(z);
             if isempty(nModes)
                 [F,G] = im.ModesAtWavenumber(0);
