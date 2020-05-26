@@ -14,6 +14,10 @@ classdef WintersModel < handle
         outputParticleFiles
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Problem parameters used in the model run
+        f0
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Hyperdiffusion parameters used in the model run
         p_x
         p_y
@@ -92,6 +96,13 @@ classdef WintersModel < handle
                         self.delta_x = sscanf(data{7},'%f');
                         self.delta_y = sscanf(data{8},'%f');
                         self.delta_z = sscanf(data{9},'%f');
+                    end
+                    
+                    possibleProblemParamsFiles = dir([self.rootDirectory '/**/problem_params']);
+                    if ~isempty(possibleProblemParamsFiles)
+                        path = [possibleProblemParamsFiles(1).folder '/' possibleProblemParamsFiles(1).name];
+                        data = importdata(path,'\n');
+                        self.f0 = sscanf(data{21},'%f');
                     end
                     
                     if self.NumberOf3DOutputFiles > 0
@@ -243,10 +254,14 @@ classdef WintersModel < handle
     
     methods (Access = private)
         function wavemodel = WaveModelFromFirst3DOutputFile(self)
-            [x,y,z,rho,f0] = self.VariableFieldsFrom3DOutputFileAtIndex(1,'x','y','z','rho','f0');
-            rho_bar = squeeze(mean(mean(rho,1),2));
+            [x,y,z,rho_bar] = self.VariableFieldsFrom3DOutputFileAtIndex(1,'x','y','z','s1_bar');
+%             rho_bar = squeeze(mean(mean(rho,1),2));
             
-            latitude = asind(f0/(2 * 7.2921E-5));
+            if isempty(self.f0)
+                self.f0 = self.VariableFieldsFrom3DOutputFileAtIndex(1,'f0');
+            end
+
+            latitude = asind(self.f0/(2 * 7.2921E-5));
             
             % The 3D output files don't have latitude saved to them, so we
             % fetch it from the initial conditions file, for now.
@@ -326,12 +341,13 @@ classdef WintersModel < handle
             z = z-Lz;
             
             isStratificationConstant = InternalModesConstantStratification.IsStratificationConstant(rho,z);
+            isStratificationExponential = InternalModesExponentialStratification.IsStratificationExponential(rho,z);
             if isStratificationConstant == 1
-                fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form. If you would like to override this behavior, specify the method parameter.\n');
+                fprintf('Initialization detected that you are using constant stratification. The modes will now be computed using the analytical form.\n');
                 N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho,z);
                 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, min(rho));
-            else
-                %isStratificationExponential = InternalModesExponentialStratification.IsStratificationExponential(rho,z);
+            elseif isStratificationExponential == 1
+                fprintf('Initialization detected that you are using exponential stratification. The modes will now be computed using the analytical form.\n');
                 wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [5.2e-3 1300], z, latitude);
                 ProfileDeviation = std((rho-wavemodel.internalModes.rhoFunction(z))/max(rho));
                 fprintf('Our assumed profile deviates from the recorded profile by 1 part in 10^{%d}\n',round(log10(ProfileDeviation)));
@@ -339,6 +355,9 @@ classdef WintersModel < handle
                     wavemodel = [];
                     fprintf('Failed to initialize wave model\n');
                 end
+            else
+                fprintf('Initialization using a custom stratification profile\n');
+                wavemodel = InternalWaveModelArbitraryStratification(double([Lx, Ly, Lz]), double([Nx, Ny, Nz]), double(rho), double(z), double(latitude));
             end
 %                 fprintf('Initializing with the arbitrary stratification model\n');
 %                 wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, Nz, latitude);

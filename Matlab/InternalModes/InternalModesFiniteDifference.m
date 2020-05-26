@@ -238,7 +238,14 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 % default
             end
         end
-
+        
+        function self = InitializeWithN2Function(self, N2, zMin, zMax)
+            fprintf('Initialization from N2 has not yet been unit tested...or implemented for that matter.');
+            % Note that there will be a grid mismatch here---so we need to
+            % do something clever...
+%             self.z_diff = z_in;
+%             self.rho_z_diff = -(self.rho0/self.g)*N2;
+        end
     end
     
     methods (Access = public)   
