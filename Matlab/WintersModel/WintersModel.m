@@ -201,9 +201,14 @@ classdef WintersModel < handle
         function [varargout] = VariableFieldsFromOutputFileAtPath(self, file, varargin)
             info = ncinfo(file);
             containsRhoPrime = 0;
+            timeVarName = [];
             for i=1:length(info.Variables)
                 if ( strcmp(info.Variables(i).Name,'s1') )
                     containsRhoPrime = 1;
+                elseif ( strcmp(info.Variables(i).Name,'t') )
+                    timeVarName = 't';
+                elseif ( strcmp(info.Variables(i).Name,'time') )
+                    timeVarName = 'time';
                 end
             end
             
@@ -220,7 +225,7 @@ classdef WintersModel < handle
                         varargout{iArg} = varargout{iArg} * self.wavemodel.g / (self.wavemodel.rho0 * self.wavemodel.N0 * self.wavemodel.N0);
                     end
                 elseif ( strcmp(varargin{iArg}, 't') )
-                    varargout{iArg} = ncread(file,'time');
+                    varargout{iArg} = ncread(file,timeVarName);
                 else
                     varargout{iArg} = ncread(file,varargin{iArg});
                 end
