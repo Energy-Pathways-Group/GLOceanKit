@@ -517,7 +517,7 @@ classdef InternalModes < handle
             % maxModes=18, stride = 8
             % maxModes=stride*2+2
             % stride=(maxModes-2)/2
-            strideExp = floor(log2((maxModes-2)/2));
+            strideExp = max(0,floor(log2((maxModes-2)/2)));
             lowerBound = minModes;
             upperBound = maxModes;
             while (strideExp >= 0)

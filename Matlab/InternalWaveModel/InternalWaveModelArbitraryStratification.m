@@ -38,12 +38,21 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
     % jeffrey@jeffreyearly.com
     
     properties
-       S
-       Sprime % The 'F' modes with dimensions Nz x Nmodes x Nx x Ny
-       NumberOfWellConditionedModes
-       didPrecomputedModesForWavenumber
-       F2 % normalization \int F^2 dz
-       N2G2 % normalization \int N^2 G^2 dz
+       K2unique     % unique squared-wavenumbers
+       nK2unique    % number of unique squared-wavenumbers
+       iK2unique    % map from 2-dim K2, to 1-dim K2unique
+       
+       S            % The 'G' modes with dimensions [Nz x Nmodes x nK2unique]
+       Sprime       % The 'F' modes with dimensions [Nz x Nmodes x nK2unique]
+       h_unique     % Eigendepth with dimensions [nK2Unique x Nmodes]
+       F2_unique    % normalization \int F^2 dz, [nK2Unique x Nmodes]
+       N2G2_unique  % normalization \int N^2 G^2 dz, [nK2Unique x Nmodes]
+       
+       NumberOfWellConditionedModes % size() = [nK2unique 1]
+       didPrecomputedModesForK2unique % size() = [nK2unique 1]
+       
+       F2 % normalization \int F^2 dz, size(self.K2);
+       N2G2 % normalization \int N^2 G^2 dz, size(self.K2)
     end
     
     properties (Dependent)
@@ -86,8 +95,19 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             if isa(rho,'numeric') == true
                 zIn = z;
+                if abs(((max(z)-min(z))-dims(3))/dims(3)) > 1e-7
+                    error('The given Lz is not consistent with the given z coordinate.')
+                end
             else
-                zIn = [min(z) max(z)];
+                if  all(z <= 0)
+                    % we can assume that the ocean floor is at -Lz
+                    zIn = [-dims(3) 0];
+                    
+                else
+                    % assume the ocean floor is at 0
+                    zIn = [0 dims(3)];
+                end
+                fprintf('Assuming the vertical domain from [%f %f].\n',zIn(1), zIn(2));
             end
             
             im = InternalModes(rho,zIn,z,latitude, varargin{:});
@@ -104,19 +124,29 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             self@InternalWaveModel(dims, n, z, N2, nModes, latitude);
             
+            % We should have this so that if unspecified, it does the right
+            % number of modes.
             self.nModes = nModes;
-            self.S = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
-            self.Sprime = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
-            self.NumberOfWellConditionedModes = zeros(self.Nx,self.Ny);
+            
+            % Figure out how many unique wavenumbers we have
+            K2 = self.K2(:,:,1);
+            [self.K2unique,~,self.iK2unique] = unique(K2);
+            self.iK2unique = reshape(self.iK2unique,size(K2));
+            self.nK2unique = length(self.K2unique);
+            
+            self.S = zeros(self.Nz, self.nModes, self.nK2unique);
+            self.Sprime = zeros(self.Nz, self.nModes, self.nK2unique);
+            self.h_unique = ones(self.nK2unique, self.nModes);
+            self.F2_unique = zeros(self.nK2unique, self.nModes);
+            self.N2G2_unique = zeros(self.nK2unique, self.nModes);
+            
+            self.NumberOfWellConditionedModes = zeros(self.nK2unique,1);
+            self.didPrecomputedModesForK2unique = zeros(self.nK2unique,1);
+            
             self.internalModes = im;
             self.rho0 = im.rho0;
             self.internalModes = im;
             self.h = ones(size(self.K2)); % we do this to prevent divide by zero when uninitialized.
-            
-            self.F2 = zeros(size(self.K2));
-            self.N2G2 = zeros(size(self.K2));
-            
-            self.didPrecomputedModesForWavenumber = zeros(size(self.K2(:,:,1)));
         end
         
         function GenerateWavePhases(self, U_plus, U_minus)
@@ -142,10 +172,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             % 1) We only do the eigenvalue problem for some wavenumber if
             % there's a nonzero amplitude associated with it and,
             % 2) We only do the computation for unique wavenumbers
-            K2 = self.K2(:,:,1);
-            [K2_unique,~,iK2_unique] = unique(K2);
-            K2Nyquist = InternalWaveModel.NyquistWavenumbers(K2);
-            K2needed = unique(K2( A & ~K2Nyquist & ~self.didPrecomputedModesForWavenumber )); % Nonzero amplitudes that we haven't yet computed
+            K2_ = self.K2(:,:,1);
+            K2Nyquist = InternalWaveModel.NyquistWavenumbers(K2_);
+            K2requested = unique(K2_( A & ~K2Nyquist )); % Nonzero amplitudes that we haven't yet computed
+            K2uncomputed = self.K2unique( ~self.didPrecomputedModesForK2unique );
+            K2needed = intersect(K2requested,K2uncomputed);
             nEVPNeeded = length(K2needed);
             
             if nEVPNeeded == 0
@@ -159,35 +190,9 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             startTime = datetime('now');
             iSolved = 0; % total number of EVPs solved
-            for iUnique=1:length(K2_unique)
-                kk = K2_unique(iUnique);
-                if ~ismember(kk, K2needed)
-                    continue
-                end
-
-                [F,G,h,~,F2_,N2G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
-                h = reshape(h,[1 1 self.nModes]);
-                N = InternalModes.NumberOfWellConditionedModes(G);
-                
-                % indices contains the indices into K2, corresponding to
-                % the wavenumber under consideration
-                indices = find(iK2_unique==iUnique);
-                
-                for iIndex=1:length(indices)
-                    currentIndex = indices(iIndex);
-                    [i,j] = ind2sub([self.Nx self.Ny], currentIndex);
-                    self.didPrecomputedModesForWavenumber(i,j) = 1;
-                    badIndex = find(h>0,1,'last');
-                    if badIndex < self.nModes
-                        warning('Eigenvalue problem returned negative eigenvalue at index %d, try with higher resolution.',badIndex)
-                    end
-                    self.F2(i,j,:) = F2_;
-                    self.N2G2(i,j,:) = N2G2_;
-                    self.h(i,j,:) = h;
-                    self.S(:,:,i,j) = G;
-                    self.Sprime(:,:,i,j) = F;
-                    self.NumberOfWellConditionedModes(i,j) = N;
-                end
+            for iNeeded=1:length(K2needed)
+                index = find(self.K2unique==K2needed(iNeeded));
+                self.ComputeModesForK2UniqueIndex(index);
                 
                 iSolved = iSolved+1;
                 if (iSolved == 1 && nEVPNeeded >1) || mod(iSolved,10) == 0
@@ -197,7 +202,63 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 end
             end
             
+            self.h = self.TransformFromK2UniqueToK2Vector(self.h_unique);
             self.SetOmegaFromEigendepths(self.h);
+        end
+        
+        function ComputeModesForK2UniqueIndex(self,iUnique)
+            kk = self.K2unique(iUnique);
+            [F,G,h,~,F2_,N2G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
+            h = reshape(h,[1 1 self.nModes]);
+            N = InternalModes.NumberOfWellConditionedModes(G);
+            
+            badIndex = find(h>0,1,'last');
+            if badIndex < self.nModes
+                warning('Eigenvalue problem returned negative eigenvalue at index %d, try with higher resolution.',badIndex)
+            end
+            self.S(:,:,iUnique) = G;
+            self.Sprime(:,:,iUnique) = F;
+            
+            self.F2_unique(iUnique,:) = F2_;
+            self.N2G2_unique(iUnique,:) = N2G2_;
+            self.h_unique(iUnique,:) = h;
+            
+            self.NumberOfWellConditionedModes(iUnique) = N;
+            self.didPrecomputedModesForK2unique(iUnique) = 1;
+        end
+        
+        function h_full = TransformFromK2UniqueToK2Vector(self,h_k2unique)
+            % Converts a vector (like h) to its full matrix format---lots
+            % of redundant data.
+            %
+            % size(h_k2unique) = [K2unique nModes]
+            % size(h_full) = [Nx Ny Nmodes]
+            h_full = nan(size(self.K2));
+            for iUnique=1:length(self.K2unique)
+                indices = find(self.iK2unique==iUnique);           
+                for iIndex=1:length(indices)
+                    currentIndex = indices(iIndex);
+                    [i,j] = ind2sub([self.Nx self.Ny], currentIndex);
+                    h_full(i,j,:) = h_k2unique(iUnique,:);
+                end    
+            end
+        end
+        
+        function S_full = TransformFromK2UniqueToK2Matrix(self,S_k2unique)
+            % Converts a vector (like h) to its full matrix format---lots
+            % of redundant data.
+            %
+            % size(S_k2unique) = [Nz Nmodes K2unique]
+            % size(S_full) = [Nz Nmodes Nx Ny]
+            S_full = zeros(self.Nz, self.nModes, self.Nx, self.Ny);
+            for iUnique=1:length(self.K2unique)
+                indices = find(self.iK2_unique==iUnique);
+                for iIndex=1:length(indices)
+                    currentIndex = indices(iIndex);
+                    [i,j] = ind2sub([self.Nx self.Ny], currentIndex);
+                    S_full(i,j,:) = S_k2unique(:,:,S_k2unique);
+                end
+            end
         end
         
         function rho = RhoBarAtDepth(self,z)
@@ -241,7 +302,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
                 
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
-            A = zeros(size(self.didPrecomputedModesForWavenumber));
+            A = zeros(size(self.K2(:,:,1)));
             A(k0+1,l0+1) = 1;
             self.ComputeModesForNonzeroWavenumbers(A)
             
@@ -251,7 +312,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             F = self.internalModes.ModesAtWavenumber(myK);
             
             F_uConst = F(:,j0);
-            F_Gnorm = self.Sprime(:,j0,k0+1,l0+1);
+            iK2 = self.iK2unique(k0+1,l0+1);
+            F_Gnorm = self.Sprime(:,j0,iK2);
             
             [~, index] = max(abs(F_uConst));
    
@@ -266,11 +328,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         
         function F = InternalUVModeAtDepth(self, z, iMode)
+            error('broken');
             [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iMode);
             F = interp1(self.z,self.Sprime(:,j0,k0+1,l0+1),z,'spline');
         end
         
         function G = InternalWModeAtDepth(self, z, iMode)
+            error('broken');
             [k0, l0, j0] = ind2sub([self.Nx self.Ny self.Nz],iMode);
             G = interp1(self.z,self.S(:,j0,k0+1,l0+1),z,'spline');
         end
@@ -355,7 +419,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             
             for i=1:self.Nx
                 for j=1:self.Ny
-                    u_temp(i,j,:) = self.Sprime(:,:,i,j)*u_bar(:,i,j);
+                    iK2 = self.iK2unique(i,j);
+                    u_temp(i,j,:) = self.Sprime(:,:,iK2)*u_bar(:,i,j);
                 end
             end
             
@@ -370,7 +435,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                         
             for i=1:self.Nx
                 for j=1:self.Ny
-                    w_temp(i,j,:) = self.S(:,:,i,j)*w_bar(:,i,j);
+                    iK2 = self.iK2unique(i,j);
+                    w_temp(i,j,:) = self.S(:,:,iK2)*w_bar(:,i,j);
                 end
             end
             
@@ -400,11 +466,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             zIndices = 1:self.Nz;
             for i=1:self.Nx
                 for j=1:self.Ny
-                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForWavenumber(i,j)
+                    iK2 = self.iK2unique(i,j);
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForK2unique(iK2)
                         continue;
                     end
-                    N = self.NumberOfWellConditionedModes(i,j);
-                    u_bar(i,j,1:N) = self.Sprime(zIndices,1:N,i,j)\u_temp(zIndices,i,j);
+                    
+                    N = self.NumberOfWellConditionedModes(iK2);
+                    u_bar(i,j,1:N) = self.Sprime(zIndices,1:N,iK2)\u_temp(zIndices,i,j);
                 end
             end
             u_bar = InternalWaveModel.MakeHermitian(u_bar);
@@ -433,11 +501,13 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             zIndices = 2:(self.Nz-1);
             for i=1:self.Nx
                 for j=1:self.Ny
-                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForWavenumber(i,j)
+                    iK2 = self.iK2unique(i,j);
+                    if i == (self.Nx/2 + 1) || j == (self.Ny/2 + 1) || RedundantWavenumbers(i,j) == 1 || ~self.didPrecomputedModesForK2unique(iK2)
                         continue;
                     end
-                    N = self.NumberOfWellConditionedModes(i,j);
-                    w_bar(i,j,1:N) = self.S(zIndices,1:N,i,j)\w_temp(zIndices,i,j);
+
+                    N = self.NumberOfWellConditionedModes(iK2);
+                    w_bar(i,j,1:N) = self.S(zIndices,1:N,iK2)\w_temp(zIndices,i,j);
                 end
             end
             w_bar = InternalWaveModel.MakeHermitian(w_bar);

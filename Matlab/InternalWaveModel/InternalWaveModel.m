@@ -234,8 +234,8 @@ classdef (Abstract) InternalWaveModel < handle
                 if (l0 <= -self.Ny/2 || l0 >= self.Ny/2)
                     error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
                 end
-                if (j0 < 1 || j0 >= self.nModes)
-                    error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, self.nModes);
+                if (j0 < 1 || j0 > self.nModes)
+                    warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d',j0, self.nModes);
                 end
                 
                 % Deal with the negative wavenumber cases (and inertial)

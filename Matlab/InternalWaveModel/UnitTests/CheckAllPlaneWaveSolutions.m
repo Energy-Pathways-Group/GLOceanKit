@@ -29,7 +29,7 @@ latitude = [0 31];
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 U = 0.01; % m/s
 phi = 0*0.232; % random, just to see if its doing the right thing API = 1 will fail, because you can't set the phase using that API.
-t = 2.13*86400;
+t = 0*2.13*86400;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -40,14 +40,14 @@ totalErrors = 0;
 totalTests = 0;
 
 for iLat = 1:length(latitude)
-    if 1 == 1
+    if 1 == 0
         wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0);
         rho0 = wavemodel.rho0;
         g = 9.81;
     else
         rho0 = 1025; g = 9.81;
         rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-        z = (Lz/Nz)*(0:Nz-1)' - Lz;
+        z = (Lz/(Nz-1))*(0:Nz-1)' - Lz;
         wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude(iLat), 'method','wkbSpectral','nEVP',128);
     end
     
