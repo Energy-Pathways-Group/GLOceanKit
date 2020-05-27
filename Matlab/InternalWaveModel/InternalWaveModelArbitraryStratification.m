@@ -89,6 +89,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             nModes = [];
+            cacheFile = [];
             extraargs = {}; nExtra = 0;
             for k = 1:2:length(varargin)
                 if strcmp(varargin{k}, 'nModes')
