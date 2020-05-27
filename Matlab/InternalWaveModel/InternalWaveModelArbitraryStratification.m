@@ -51,6 +51,8 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
        NumberOfWellConditionedModes % size() = [nK2unique 1]
        didPrecomputedModesForK2unique % size() = [nK2unique 1]
        
+       cacheFile % should end with .mat
+       
        F2 % normalization \int F^2 dz, size(self.K2);
        N2G2 % normalization \int N^2 G^2 dz, size(self.K2)
     end
@@ -87,9 +89,15 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             
             nModes = [];
+            extraargs = {}; nExtra = 0;
             for k = 1:2:length(varargin)
                 if strcmp(varargin{k}, 'nModes')
                     nModes = varargin{k+1};
+                elseif strcmp(varargin{k}, 'cacheFile')
+                    cacheFile = varargin{k+1};
+                else
+                    nExtra = nExtra+1; extraargs{nExtra} = varargin{k};
+                    nExtra = nExtra+1; extraargs{nExtra} = varargin{k+1};
                 end
             end
             
@@ -110,7 +118,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 fprintf('Assuming the vertical domain from [%f %f].\n',zIn(1), zIn(2));
             end
             
-            im = InternalModes(rho,zIn,z,latitude, varargin{:});
+            im = InternalModes(rho,zIn,z,latitude, extraargs{:});
             im.nModes = length(z);
             if isempty(nModes)
                 [F,G] = im.ModesAtWavenumber(0);
@@ -143,10 +151,14 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.NumberOfWellConditionedModes = zeros(self.nK2unique,1);
             self.didPrecomputedModesForK2unique = zeros(self.nK2unique,1);
             
+            self.cacheFile = cacheFile;
+                        
             self.internalModes = im;
             self.rho0 = im.rho0;
             self.internalModes = im;
             self.h = ones(size(self.K2)); % we do this to prevent divide by zero when uninitialized.
+            
+            self.ReadEigenmodesFromCache();
         end
         
         function GenerateWavePhases(self, U_plus, U_minus)
@@ -189,6 +201,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.internalModes.nModes = self.nModes;
             
             startTime = datetime('now');
+            lastSaveTime = startTime;
             iSolved = 0; % total number of EVPs solved
             for iNeeded=1:length(K2needed)
                 index = find(self.K2unique==K2needed(iNeeded));
@@ -200,10 +213,56 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                     timeRemaining = (nEVPNeeded-iSolved)*timePerStep;
                     fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iSolved, nEVPNeeded, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
                 end
+                if datetime('now')-lastSaveTime > 300
+                    self.SaveEigenmodesToCache();
+                    lastSaveTime = datetime('now');
+                end
             end
+            self.SaveEigenmodesToCache();
             
             self.h = self.TransformFromK2UniqueToK2Vector(self.h_unique);
             self.SetOmegaFromEigendepths(self.h);
+        end
+        
+        function SaveEigenmodesToCache(self)
+            if isempty(self.cacheFile)
+                return;
+            end
+            
+            K2unique_ = self.K2unique;
+            nK2unique_ = self.nK2unique;
+            iK2unique_ = self.iK2unique;
+            S_ = self.S;
+            Sprime_ = self.Sprime;
+            h_unique_ = self.h_unique;
+            F2_unique_ = self.F2_unique;
+            N2G2_unique_ = self.N2G2_unique;
+            NumberOfWellConditionedModes_ = self.NumberOfWellConditionedModes;
+            didPrecomputedModesForK2unique_ = self.didPrecomputedModesForK2unique;
+        	save(self.cacheFile,'K2unique_','nK2unique_','iK2unique_','S_','Sprime_','h_unique_','F2_unique_','N2G2_unique_','NumberOfWellConditionedModes_','didPrecomputedModesForK2unique_');
+            fprintf('Saved to cache file %d EVP results.\n',sum(self.didPrecomputedModesForK2unique));
+        end
+        
+        function ReadEigenmodesFromCache(self)
+            if exist(self.cacheFile,'file')
+                A = load(self.cacheFile);
+                
+                self.K2unique = A.K2unique_;
+                self.nK2unique = A.nK2unique_;
+                self.iK2unique = A.iK2unique_;
+                self.S = A.S_;
+                self.Sprime = A.Sprime_;
+                self.h_unique = A.h_unique_;
+                self.F2_unique = A.F2_unique_;
+                self.N2G2_unique = A.N2G2_unique_;
+                self.NumberOfWellConditionedModes = A.NumberOfWellConditionedModes_;
+                self.didPrecomputedModesForK2unique =A.didPrecomputedModesForK2unique_;
+                
+                self.h = self.TransformFromK2UniqueToK2Vector(self.h_unique);
+                self.SetOmegaFromEigendepths(self.h);
+                
+                fprintf('Read from cache file. %d of %d EVPs already solved.\n',sum(self.didPrecomputedModesForK2unique), self.nK2unique);
+            end
         end
         
         function ComputeModesForK2UniqueIndex(self,iUnique)
