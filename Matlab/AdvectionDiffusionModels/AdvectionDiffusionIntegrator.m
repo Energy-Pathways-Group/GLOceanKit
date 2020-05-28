@@ -51,7 +51,7 @@ classdef AdvectionDiffusionIntegrator
                 yMax = max(self.kinematicModel.ylim);
             end
             
-            integrator = IntegratorWithDiffusivity( flux, p0,dt,self.kappa,[xMin yMin],[xMax yMax] );
+            integrator = IntegratorWithObstacles( flux, p0,dt,self.kappa,[xMin yMin],[xMax yMax], self.kinematicModel.obstacles );
             
             t = zeros(tn,1);
             x = zeros(length(t),n);

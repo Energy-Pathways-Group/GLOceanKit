@@ -214,7 +214,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                     timeRemaining = (nEVPNeeded-iSolved)*timePerStep;
                     fprintf('\tsolving EVP %d of %d to file. Estimated finish time %s (%s from now)\n', iSolved, nEVPNeeded, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
                 end
-                if datetime('now')-lastSaveTime > 300
+                if seconds(datetime('now')-lastSaveTime) > 300
                     self.SaveEigenmodesToCache();
                     lastSaveTime = datetime('now');
                 end

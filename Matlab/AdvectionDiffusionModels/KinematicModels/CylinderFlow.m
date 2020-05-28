@@ -9,6 +9,10 @@ classdef CylinderFlow < StreamfunctionModel
     
     methods
         function self = CylinderFlow()
+            self.xlim = 3*self.R*[-1 1];
+            self.ylim = 3*self.R*[-1 1];
+            self.xIsPeriodic = 1;
+            
             self.xVisLim = 3*self.R*[-1 1];
             self.yVisLim = 3*self.R*[-1 1];
             
