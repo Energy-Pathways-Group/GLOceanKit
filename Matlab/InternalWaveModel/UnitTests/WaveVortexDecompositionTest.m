@@ -34,7 +34,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
-shouldUseArbitraryStratificationModel = 1;
+shouldUseArbitraryStratificationModel = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -45,28 +45,56 @@ shouldUseArbitraryStratificationModel = 1;
 if shouldUseArbitraryStratificationModel == 0
     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    if ~exist('wavemodel','var')
-        wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
-    end
+    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
 end
 
-wavemodel.InitializeWithGMSpectrum(1.0);
+% wavemodel.InitializeWithGMSpectrum(1.0);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Generate randomized amplitudes
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% We have to exclude the nyquist, because it's no resolvable.
+shouldExcludeNyquist = 1;
+
+% Generate waves---with one additional condition for the intertial waves.
+Ap = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+Am = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+Am(1,1,:) = conj(Ap(1,1,:)); % Inertial motions go only one direction!
+
+% Generate barotropic geostrophic currents--amplitude prefactor of 1e-3 is
+% set in order to keep the energetics similar magnitude to the waves.
+B0 = 1e-3*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K(:,:,1)), shouldExcludeNyquist);
+B0(1,1) = 0;
+
+% Generate internal geostrophic currents--amplitude prefactor of 6e-2 is
+% set in order to keep the energetics similar magnitude to the waves.
+B = 6e-2*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+B(1,1,:) = 0;
+
+% Now initial th models with these.
+wavemodel.GenerateWavePhases(Ap,Am);
+wavemodel.GenerateGeostrophicCurrents(B0,B);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Forward/back transformation tests
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fprintf('\n********** Transform tests **********\n');
 
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))), 1e-15] )))), 1e-15]);
 error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 
+% First check the baroclinic G transform
 w = wavemodel.TransformToSpatialDomainWithG( wavemodel.w_plus );
 w_plus_back = wavemodel.TransformFromSpatialDomainWithG( w );
-
 w_error = error2(wavemodel.w_plus,w_plus_back);
-fprintf('The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
+fprintf('\tG-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
+% Check the baroclinic F transform
 u = wavemodel.TransformToSpatialDomainWithF( wavemodel.u_plus );
 u_plus_back = wavemodel.TransformFromSpatialDomainWithF( u );
 
@@ -76,27 +104,52 @@ u_plus_back = wavemodel.TransformFromSpatialDomainWithF( u );
 u_model_fixed = wavemodel.u_plus;
 u_model_fixed(1,1,:) = real(u_model_fixed(1,1,:));
 u_error = error2(u_model_fixed,u_plus_back);
-fprintf('The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+
+uu = wavemodel.TransformToSpatialDomainWithBarotropicFMode(B0);
+B0uu = wavemodel.TransformFromSpatialDomainWithBarotropicFMode(uu);
+uu_error = error2(B0uu,B0);
+fprintf('\tBarotropic transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Decomposition test
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-t = 360;
-[u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
+fprintf('\n********** Decomposition tests **********\n');
 
 if shouldUseArbitraryStratificationModel == 0
     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    if ~exist('newmodel','var')
-        newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
-    end
+    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
 end
 
-newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
+error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));
 
+t = 360;
+for i=1:7
+    if i <= 3
+        mask = zeros(3,1);
+        mask(i)=1;
+    elseif i <=6
+        mask = ones(3,1);
+        mask(i-3) = 0;
+    else
+        mask = ones(3,1);
+    end
+    wavemodel.GenerateWavePhases(mask(1)*Ap,mask(1)*Am);
+    wavemodel.GenerateGeostrophicCurrents(mask(2)*B0,mask(3)*B);
+    [u,v,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','zeta');
+    newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
+    
+    fprintf('\nmask %d\n',i);
+    fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_plus,wavemodel.Amp_plus) ))));
+    fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_minus,wavemodel.Amp_minus) ))));
+    fprintf('The B0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B0,wavemodel.B0) ))));
+    fprintf('The B amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B,wavemodel.B) ))));
+end
+
+return
 
 % error = @(u,u_unit) max(max(max(abs((u-u_unit)./max(abs(u_unit),1e-100)))));
 % A_plus_error = error(newmodel.Amp_plus,wavemodel.Amp_plus);
@@ -113,7 +166,18 @@ totalError(abs(wavemodel.Amp_minus)<1e-15) = 0;
 A_minus_error = max(max(max(totalError)));
 fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10(A_minus_error))));
 
+totalError = error2(newmodel.B0,wavemodel.B0);
+totalError(abs(wavemodel.B0)<1e-15) = 0;
+B0_error = max(max(max(totalError)));
+fprintf('The B0 amplitude matches to 1 part in 10^%d\n', round((log10(B0_error))));
+
+totalError = error2(newmodel.B,wavemodel.B);
+totalError(abs(wavemodel.B)<1e-15) = 0;
+B_error = max(max(max(totalError)));
+fprintf('The B amplitude matches to 1 part in 10^%d\n', round((log10(B_error))));
+
 fprintf('Total B amplitude is %f\n', sum(sum(sum(abs(wavemodel.B).^2))) / sum(sum(sum(abs(wavemodel.Amp_minus).^2))))
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -139,8 +203,38 @@ PE = sum(sum(sum(  P2_pm .* N*N .* (omega.*omega - f*f) ./ (2 * (N*N - f*f) * om
 
 fprintf('total spectral energy (HKE + VKE + PE) = E: (%f + %f + %f) = %f m^3/s\n', HKE, VKE, PE, HKE+VKE+PE);
 
+return
 
 
+
+
+return
+
+u_in = randn(size(u));
+v_in = randn(size(v));
+
+eta_in = randn(size(eta));
+eta_in(:,:,1) = 0;
+eta_in(:,:,end) = 0;
+eta_in = eta_in - mean(mean(eta_in,1),2);
+
+newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(0,u_in,v_in,eta_in);
+[u_out,v_out,eta_out] = wavemodel.VariableFieldsAtTime(t,'u','v','zeta');
+
+totalError = error2(u_out,u_in);
+totalError(abs(u_in)<1e-15) = 0;
+u_error = max(max(max(totalError)));
+fprintf('The u amplitude matches to 1 part in 10^%d\n', round((log10(u_error))));
+
+totalError = error2(v_out,v_in);
+totalError(abs(v_in)<1e-15) = 0;
+v_error = max(max(max(totalError)));
+fprintf('The v amplitude matches to 1 part in 10^%d\n', round((log10(v_error))));
+
+totalError = error2(eta_out,eta_in);
+totalError(abs(eta_in)<1e-15) = 0;
+eta_error = max(max(max(totalError)));
+fprintf('The eta amplitude matches to 1 part in 10^%d\n', round((log10(eta_error))));
 
 return;
 

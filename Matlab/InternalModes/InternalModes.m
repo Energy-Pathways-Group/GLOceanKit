@@ -496,7 +496,7 @@ classdef InternalModes < handle
     
     methods (Static)
         
-        function N = NumberOfWellConditionedModes(G)
+        function N = NumberOfWellConditionedModes(G,varargin)
             % This function can become a rate limiting step if used for
             % each set of returned modes. So a good algorithm is necessary.
             % Otherwise we'd just use,
@@ -535,7 +535,7 @@ classdef InternalModes < handle
                 
                 kappa = kappaFull(modeIndices);
                 
-                n = find(diff(diff(log10(kappa))./diff(modeIndices')) > 1e-2,1,'first');
+                n = find(diff(diff(log10(kappa))./diff(modeIndices')) > 3e-2,1,'first');
                 if isempty(n)
                     %[~,n] = max(diff(diff(log10(kappa))./diff(modeIndices')));
                     n = length(modeIndices)-2;

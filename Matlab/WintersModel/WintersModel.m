@@ -257,7 +257,7 @@ classdef WintersModel < handle
     end
     
     
-    methods (Access = private)
+    methods (Access = public)
         function wavemodel = WaveModelFromFirst3DOutputFile(self)
             [x,y,z,rho_bar] = self.VariableFieldsFrom3DOutputFileAtIndex(1,'x','y','z','s1_bar');
 %             rho_bar = squeeze(mean(mean(rho,1),2));

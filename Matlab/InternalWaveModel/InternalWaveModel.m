@@ -79,7 +79,7 @@ classdef (Abstract) InternalWaveModel < handle
         U_cos_ext, U_sin_ext, V_cos_ext, V_sin_ext, W_sin_ext, Zeta_cos_ext
         
         Xc, Yc, Zc % These may contain 'circular' versions of the grid
-                
+                 
         internalModes % InternalModes object being used by the model
         
         version = 1.6
@@ -104,9 +104,15 @@ classdef (Abstract) InternalWaveModel < handle
         F = InternalUVModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(F) = [length(z) nIntModes]
         G = InternalWModeAtDepth(self, z, iMode) % Returns normal modes at requested depth, size(G) = [length(z) nIntModes]
 %         F = ExternalUVModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
-%         G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth 
+%         G = ExternalWModeAtDepth(self, z, iMode) % Returns normal mode at requested depth
+        u = TransformToSpatialDomainWithBarotropicFMode(self, u_bar)
         u = TransformToSpatialDomainWithF(self, u_bar) % Transform from (k,l,j) to (x,y,z)
         w = TransformToSpatialDomainWithG(self, w_bar ) % Transform from (k,l,j) to (x,y,z)
+        
+        u_bar = TransformFromSpatialDomainWithBarotropicFMode(self, u)
+        u_bar = TransformFromSpatialDomainWithF(self, u)
+        w_bar = TransformFromSpatialDomainWithG(self, w)
+        
         ratio = UmaxGNormRatioForWave(self,k0, l0, j0) % Return the ratio/scaling required to convert a mode from the G_norm to the U_max norm
     end
     
@@ -541,6 +547,55 @@ classdef (Abstract) InternalWaveModel < handle
             self.W_sin_ext = self.U_ext .* Kh_ .* self.h_ext;
             self.Zeta_cos_ext = - self.U_ext .* kOverOmega .* self.h_ext;
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialize from an existing u,v,zeta (public)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, zeta)
+            % This function can be used as a wave-vortex decomposition. It
+            % will *exactly* recover amplitudes being used the generate the
+            % dynamical fields. For the moment I assume assuming no
+            % buoyancy perturbation at the boundaries.
+            %
+            % Note that the Winters model includes energy in the Nz-1
+            % vertical mode---which is problematic because it's not
+            % resolved. So, transforms are inexact.
+            
+            % We need to include the zero/mean in the transform
+            ubar0 = 2*self.TransformFromSpatialDomainWithBarotropicFMode( u );
+            vbar0 = 2*self.TransformFromSpatialDomainWithBarotropicFMode( v );
+            
+            % Take care of the vertically uniform geostrophic component.
+            B0_ = -sqrt(-1)*(self.f0/self.g)*(self.K(:,:,1) .* vbar0(:,:,1) - self.L(:,:,1) .* ubar0(:,:,1))./self.K2(:,:,1);
+            B0_(1,1) = 0; % we did some divide by zeros
+            
+            % Now separate waves and vortices
+            ubar = self.TransformFromSpatialDomainWithF( u );
+            vbar = self.TransformFromSpatialDomainWithF( v );
+            etabar = self.TransformFromSpatialDomainWithG( zeta );
+            
+            delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
+            zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;
+            
+            A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
+            B_ = InternalWaveModel.MakeHermitian((etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega));
+            B_(1,1,:) = 0; % we did some divide by zeros
+            
+            % inertial must be solved for separately.
+            A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
+            A_minus(1,1,:) = conj(A_plus(1,1,:));
+                      
+            A_plus = InternalWaveModel.MakeHermitian(A_plus);
+            A_minus = InternalWaveModel.MakeHermitian(A_minus);
+            self.GenerateWavePhases(A_plus,A_minus);
+            
+            self.GenerateGeostrophicCurrents(B0_, B_);
+        end
+        
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1073,10 +1128,7 @@ classdef (Abstract) InternalWaveModel < handle
                     end
                     varargout{iArg} = u;
                     
-                    if ~isempty(self.B)
-                       if isempty(self.u_g)
-                          self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B.*self.F);
-                       end
+                    if ~isempty(self.u_g)
                        varargout{iArg} = varargout{iArg} + self.u_g;
                     end
                 elseif ( strcmp(varargin{iArg}, 'v') )
@@ -1089,11 +1141,8 @@ classdef (Abstract) InternalWaveModel < handle
                     end
                     varargout{iArg} = v;
                     
-                    if ~isempty(self.B)
-                        if isempty(self.v_g)
-                            self.v_g = self.TransformToSpatialDomainWithF(sqrt(-1)*(self.g/self.f0)*self.K.*self.B.*self.F);
-                        end
-                        varargout{iArg} = varargout{iArg} + self.v_g;
+                    if ~isempty(self.v_g)
+                       varargout{iArg} = varargout{iArg} + self.v_g;
                     end
                 elseif ( strcmp(varargin{iArg}, 'w') )
                     if isempty(w)
@@ -1114,7 +1163,7 @@ classdef (Abstract) InternalWaveModel < handle
                     end
                     
                     if ~isempty(self.B)
-                        p_g = self.TransformToSpatialDomainWithF(self.B.*self.F);
+                        p_g = self.TransformToSpatialDomainWithF(self.B);
                         p = p + p_g;
                     end
                     varargout{iArg} = self.rho0*self.g*p;
@@ -1126,10 +1175,7 @@ classdef (Abstract) InternalWaveModel < handle
                         end
                         zeta = self.TransformToSpatialDomainWithG(zeta_bar);
                         
-                        if ~isempty(self.B)
-                            if isempty(self.zeta_g)
-                                self.zeta_g = self.TransformToSpatialDomainWithG(self.B.*self.G);
-                            end
+                        if ~isempty(self.zeta_g)
                             zeta = zeta + self.zeta_g;
                         end
                     end
@@ -1540,6 +1586,33 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.zeta_plus = U_plus .* InternalWaveModel.MakeHermitian( -self.Kh .* sqrt(self.h) ./ omega );
             self.zeta_minus = U_minus .* InternalWaveModel.MakeHermitian( self.Kh .* sqrt(self.h) ./ omega );
+        end
+                
+        function GenerateGeostrophicCurrents(self, B0, B)
+            % Compute the geostrophic part by including the zero vertical
+            % wavenumber part. The division by two is from the definition
+            % of the cosine transform of something at zero-frequency.
+            
+            self.B0 = B0;
+            if ~isempty(self.B0)
+                u_g0 = self.TransformToSpatialDomainWithBarotropicFMode(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0)/2;
+                v_g0 = self.TransformToSpatialDomainWithBarotropicFMode( sqrt(-1)*(self.g/self.f0)*self.K(:,:,1).*self.B0)/2;
+            end
+            
+            self.B = B;
+            if ~isempty(self.B)
+                self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B);
+                self.v_g = self.TransformToSpatialDomainWithF( sqrt(-1)*(self.g/self.f0)*self.K.*self.B);
+                self.zeta_g = self.TransformToSpatialDomainWithG(self.B);
+            end
+            
+            if ~isempty(self.B) && ~isempty(self.B0)
+                self.u_g = self.u_g + u_g0;
+                self.v_g = self.v_g + v_g0;
+            elseif ~isempty(self.B0)
+                self.u_g = u_g0;
+                self.v_g = v_g0;
+            end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2221,6 +2294,29 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
+        function A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
+            
+            nX = size(1); nY = size(2);
+            if length(size) > 2
+                nZ = size(3);
+            else
+                nZ = 1;
+            end
+            A = InternalWaveModel.MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+            if shouldExcludeNyquist == 1
+                mask = ~InternalWaveModel.NyquistWavenumbers(A(:,:,1));
+                A = mask.*A;
+            else
+                A(1,1,:) = 2*A(1,1,:); % Double the zero frequency
+                A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
+                A(1,nY/2+1,:) = -2*real(A(1,nY/2+1,:)); % Double the Nyquist frequency
+                A(nX/2+1,nY/2+1,:) = -2*real(A(nX/2+1,nY/2+1,:)); % Double the Nyquist frequency
+            end
+            if nZ > 1
+                A(:,:,nZ) = zeros(nX,nY); % Because we can't resolve the last mode.
+            end
+            
+        end
     end
 end
 
