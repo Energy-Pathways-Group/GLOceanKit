@@ -330,6 +330,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function u = TransformToSpatialDomainWithBarotropicFMode(self, u_bar)
             u = self.Nx*self.Ny*ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            u = repmat(u,[1 1 self.Nz]);
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
@@ -382,7 +383,11 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
                 
         function u_bar = TransformFromSpatialDomainWithBarotropicFMode(self, u)
-            u_bar = fft(fft(mean(u,3),self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            % Consistent with the DCT-I, the end points only have half the
+            % width of the other points.
+            u(:,:,1) = 0.5*u(:,:,1);
+            u(:,:,end) = 0.5*u(:,:,end);
+            u_bar = fft(fft(sum(u,3)/(self.Nz-1),self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
         end
         
         function u_bar = TransformFromSpatialDomainWithF(self, u)
@@ -411,6 +416,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
             u_bar = 2*real(self.dctScratch(:,:,1:self.nz+1)); % we *include* the barotropic mode, starting at 1, instead of 2 in the transform
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            
+            u_bar(:,:,2:end) = u_bar(:,:,2:end)./self.F;
             
             m = (pi/self.Lz)*(0:(self.Nz-1));
             [K,L,M] = ndgrid(self.k,self.l,m);

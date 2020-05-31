@@ -475,6 +475,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function u = TransformToSpatialDomainWithBarotropicFMode(self, u_bar)
             u = self.Nx*self.Ny*ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            u = repmat(u,[1 1 self.Nz]);
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
@@ -510,7 +511,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         end
         
         function u_bar = TransformFromSpatialDomainWithBarotropicFMode(self, u)
-            u_bar = fft(fft(mean(u,3),self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            % Consistent with the DCT-I, the end points only have half the
+            % width of the other points.
+            u(:,:,1) = 0.5*u(:,:,1);
+            u(:,:,end) = 0.5*u(:,:,end);
+            u_bar = fft(fft(sum(u,3)/(self.Nz-1),self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
         end
         
         function u_bar = TransformFromSpatialDomainWithF(self, u)

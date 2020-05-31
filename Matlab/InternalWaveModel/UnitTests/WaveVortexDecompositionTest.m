@@ -34,7 +34,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
-shouldUseArbitraryStratificationModel = 0;
+shouldUseArbitraryStratificationModel = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -109,7 +109,7 @@ fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10
 uu = wavemodel.TransformToSpatialDomainWithBarotropicFMode(B0);
 B0uu = wavemodel.TransformFromSpatialDomainWithBarotropicFMode(uu);
 uu_error = error2(B0uu,B0);
-fprintf('\tBarotropic transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+fprintf('\tBarotropic transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(uu_error)))))));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
