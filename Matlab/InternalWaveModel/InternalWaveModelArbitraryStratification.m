@@ -45,28 +45,31 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
        S            % The 'G' modes with dimensions [Nz x Nmodes x nK2unique]
        Sprime       % The 'F' modes with dimensions [Nz x Nmodes x nK2unique]
        h_unique     % Eigendepth with dimensions [nK2Unique x Nmodes]
-       F2_unique    % normalization \int F^2 dz, [nK2Unique x Nmodes]
-       N2G2_unique  % normalization \int N^2 G^2 dz, [nK2Unique x Nmodes]
+       F2_unique    % value of \int F^2 dz, [nK2Unique x Nmodes]
+       G2_unique    % value of \int G^2 dz, [nK2Unique x Nmodes]
+       N2G2_unique  % value of \int N^2 G^2 dz, [nK2Unique x Nmodes]
        
        NumberOfWellConditionedModes % size() = [nK2unique 1]
        didPrecomputedModesForK2unique % size() = [nK2unique 1]
        
        cacheFile % should end with .mat
-       
-       F2 % normalization \int F^2 dz, size(self.K2);
-       N2G2 % normalization \int N^2 G^2 dz, size(self.K2)
     end
     
     properties (Dependent)
+        F2 % value of \int F^2 dz, size(self.K2);
+        G2 % value of \int F^2 dz, size(self.K2);
+        N2G2 % value of \int N^2 G^2 dz, size(self.K2)
+        
         % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
         % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
         % values
-        Ppm_HKE_factor
-        Ppm_VKE_factor
-        Ppm_PE_factor
+        Apm_HKE_factor
+        Apm_VKE_factor
+        Apm_PE_factor
         % Same, but for B
-        P0_HKE_factor
-        P0_PE_factor
+        B0_HKE_factor
+        B_HKE_factor
+        B_PE_factor
     end
     
     methods
@@ -147,6 +150,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.Sprime = zeros(self.Nz, self.nModes, self.nK2unique);
             self.h_unique = ones(self.nK2unique, self.nModes);
             self.F2_unique = zeros(self.nK2unique, self.nModes);
+            self.G2_unique = zeros(self.nK2unique, self.nModes);
             self.N2G2_unique = zeros(self.nK2unique, self.nModes);
             
             self.NumberOfWellConditionedModes = zeros(self.nK2unique,1);
@@ -237,10 +241,11 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             Sprime_ = self.Sprime;
             h_unique_ = self.h_unique;
             F2_unique_ = self.F2_unique;
+            G2_unique_ = self.G2_unique;
             N2G2_unique_ = self.N2G2_unique;
             NumberOfWellConditionedModes_ = self.NumberOfWellConditionedModes;
             didPrecomputedModesForK2unique_ = self.didPrecomputedModesForK2unique;
-        	save(self.cacheFile,'K2unique_','nK2unique_','iK2unique_','S_','Sprime_','h_unique_','F2_unique_','N2G2_unique_','NumberOfWellConditionedModes_','didPrecomputedModesForK2unique_','-v7.3');
+        	save(self.cacheFile,'K2unique_','nK2unique_','iK2unique_','S_','Sprime_','h_unique_','F2_unique_','G2_unique_','N2G2_unique_','NumberOfWellConditionedModes_','didPrecomputedModesForK2unique_','-v7.3');
             fprintf('Saved to cache file %d EVP results.\n',sum(self.didPrecomputedModesForK2unique));
         end
         
@@ -255,6 +260,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
                 self.Sprime = A.Sprime_;
                 self.h_unique = A.h_unique_;
                 self.F2_unique = A.F2_unique_;
+                self.G2_unique = A.G2_unique_;
                 self.N2G2_unique = A.N2G2_unique_;
                 self.NumberOfWellConditionedModes = A.NumberOfWellConditionedModes_;
                 self.didPrecomputedModesForK2unique =A.didPrecomputedModesForK2unique_;
@@ -268,7 +274,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         
         function ComputeModesForK2UniqueIndex(self,iUnique)
             kk = self.K2unique(iUnique);
-            [F,G,h,~,F2_,N2G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
+            [F,G,h,~,F2_,N2G2_,G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
             h = reshape(h,[1 1 self.nModes]);
             N = InternalModes.NumberOfWellConditionedModes(G);
             
@@ -280,6 +286,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             self.Sprime(:,:,iUnique) = F;
             
             self.F2_unique(iUnique,:) = F2_;
+            self.G2_unique(iUnique,:) = G2_;
             self.N2G2_unique(iUnique,:) = N2G2_;
             self.h_unique(iUnique,:) = h;
             
@@ -328,8 +335,22 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         function N2 = N2AtDepth(self,z)
             N2 = interp1(self.internalModes.z,self.internalModes.N2,z,'spline');
         end
+                
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function value = get.Ppm_HKE_factor(self)
+        function value = get.F2(self)
+            value = self.TransformFromK2UniqueToK2Vector(self.F2_unique);
+        end
+        function value = get.G2(self)
+            value = self.TransformFromK2UniqueToK2Vector(self.G2_unique);
+        end
+        function value = get.N2G2(self)
+            value = self.TransformFromK2UniqueToK2Vector(self.N2G2_unique);
+        end
+        
+        function value = get.Apm_HKE_factor(self)
+            % This currently differs from the definition in the manuscript
+            % by a factor of h. The missing factor of 1/2 is the c.c.
             omega = self.Omega;
             if abs(self.f0) < 1e-14 % This handles the f=0 case.
                 omega(omega == 0) = 1;
@@ -337,17 +358,19 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             fOverOmega = self.f0 ./ omega;
             value = (1 + fOverOmega.*fOverOmega) .* self.F2 ./ (2*self.h);
         end
-        function value = get.Ppm_VKE_factor(self)
-            error('not yet implemented because we are not computing \int G^2 dz anywhere');
-            value = zeros(size(self.K2));
+        function value = get.Apm_VKE_factor(self)
+            value = self.K2 .* self.h .* self.G2/2;
         end
-        function value = get.Ppm_PE_factor(self)
+        function value = get.Apm_PE_factor(self)
             value = self.K2 .* self.h .* self.N2G2 ./ (2*self.Omega.*self.Omega);
         end
-        function value = get.P0_HKE_factor(self)
+        function value = get.B0_HKE_factor(self)
+            value = (self.g^2/(self.f0*self.f0)) * self.K2(:,:,1) * self.Lz/2;
+        end
+        function value = get.B_HKE_factor(self)
             value = (self.g*self.g/(2*self.f0*self.f0)) .* self.K2 .* self.F2;
         end
-        function value = get.P0_PE_factor(self)
+        function value = get.B_PE_factor(self)
             value = self.N2G2/2;
         end
     end
@@ -528,6 +551,16 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
             % convert to K x L x Z
             u_temp = fft(fft(u,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            
+            %%%% Temp hack %%%%%
+            % We have to remove the barotropic component before projecting
+            % with the baroclinic modes
+            u_rm = u_temp;
+            u_rm(:,:,1) = 0.5*u_rm(:,:,1);
+            u_rm(:,:,end) = 0.5*u_rm(:,:,end);
+            u_rm = sum(u_rm,3)/(self.Nz-1);
+            u_temp = u_temp - u_rm;
+            %%%% Temp hack %%%%%
             
             self.ComputeModesForNonzeroWavenumbers( any(u_temp,3) );
             RedundantWavenumbers = InternalWaveModel.RedundantHermitianCoefficients(zeros(self.Nx,self.Ny));

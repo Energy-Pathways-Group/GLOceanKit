@@ -565,8 +565,8 @@ classdef (Abstract) InternalWaveModel < handle
             % resolved. So, transforms are inexact.
             
             % We need to include the zero/mean in the transform
-            ubar0 = 2*self.TransformFromSpatialDomainWithBarotropicFMode( u );
-            vbar0 = 2*self.TransformFromSpatialDomainWithBarotropicFMode( v );
+            ubar0 = self.TransformFromSpatialDomainWithBarotropicFMode( u );
+            vbar0 = self.TransformFromSpatialDomainWithBarotropicFMode( v );
             
             % Take care of the vertically uniform geostrophic component.
             B0_ = -sqrt(-1)*(self.f0/self.g)*(self.K(:,:,1) .* vbar0(:,:,1) - self.L(:,:,1) .* ubar0(:,:,1))./self.K2(:,:,1);
@@ -1595,8 +1595,8 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.B0 = B0;
             if ~isempty(self.B0)
-                u_g0 = self.TransformToSpatialDomainWithBarotropicFMode(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0)/2;
-                v_g0 = self.TransformToSpatialDomainWithBarotropicFMode( sqrt(-1)*(self.g/self.f0)*self.K(:,:,1).*self.B0)/2;
+                u_g0 = self.TransformToSpatialDomainWithBarotropicFMode(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0);
+                v_g0 = self.TransformToSpatialDomainWithBarotropicFMode( sqrt(-1)*(self.g/self.f0)*self.K(:,:,1).*self.B0);
             end
             
             self.B = B;

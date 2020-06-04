@@ -64,7 +64,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
-        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )            
+        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )            
             epsilon = self.f0/self.N0;
             lambda = k*self.b;
             
@@ -109,14 +109,14 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             omega = self.omegaFromK(h,k);
             
-            if nargout == 6
-                [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+            if nargout == 7
+                [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
             else
                 [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
             end
         end
         
-        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )            
+        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )            
             % This is the function that we use to find the eigenvalues,
             % by finding its roots.
             if omega > self.N0*exp(-self.Lz/self.b) % This is from equation 2.18 in Desaubies (1973)
@@ -149,8 +149,8 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 h = h(1:self.nModes);
             end
             
-            if nargout == 6
-                [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+            if nargout == 7
+                [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
             else
                 [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
             end   
@@ -281,11 +281,12 @@ classdef InternalModesExponentialStratification < InternalModesBase
             end
         end
         
-        function [F,G,F2,N2G2] = NormalizedModesForOmegaAndC(self,omega,c)
+        function [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega,c)
             F = zeros(length(self.z),length(c));
             G = zeros(length(self.z),length(c));
             N2G2 = zeros(1,length(c));
             F2 = zeros(1,length(c));
+            G2 = zeros(1,length(c));
             
             for j=1:length(c)
                 if omega(j) < self.N0
@@ -312,7 +313,8 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 F(:,j) = Ffunc(self.z,omega(j),c(j))/A;
                 G(:,j) = Gfunc(self.z,omega(j),c(j))/A;
                 
-                if nargout == 4
+                if nargout == 5
+                    G2(j) = integral( @(z) Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
                     F2(j) = integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
                     N2G2(j) = integral( @(z) self.N0^2*exp(2*z/self.b).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
                 end

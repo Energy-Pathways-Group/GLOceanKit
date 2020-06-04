@@ -266,6 +266,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         
         
         function value = get.Apm_HKE_factor(self)
+            % This currently differs from the definition in the manuscript
+            % by a factor of h. The missing factor of 1/2 is the c.c.
             value = (1 + self.f0*self.f0./(self.Omega.*self.Omega)) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
         end
         function value = get.Apm_VKE_factor(self)
@@ -275,7 +277,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             value = self.N0*self.N0 .* (self.Omega.*self.Omega - self.f0*self.f0) ./ (2 * (self.N0*self.N0 - self.f0*self.f0) * self.Omega.*self.Omega );
         end
         function value = get.B0_HKE_factor(self)
-            value = (self.g/(self.f0*self.f0)) * self.K2(:,:,1)/2;
+            value = (self.g^2/(self.f0*self.f0)) * self.K2(:,:,1) * self.Lz/2;
         end
         function value = get.B_HKE_factor(self)
             value = (self.g/(self.f0*self.f0)) * (self.Omega.*self.Omega - self.f0*self.f0) .* (self.N0*self.N0 - self.Omega.*self.Omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );

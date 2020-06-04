@@ -217,7 +217,7 @@ classdef (Abstract) InternalModesBase < handle
         % Generical function to normalize
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,F2,N2G2] = NormalizeModes(self,F,G,N2,z)
+        function [F,G,F2,N2G2,G2] = NormalizeModes(self,F,G,N2,z)
             % This method normalizes the modes F,G using trapezoidal
             % integration on the given z grid. At the moment, this is only
             % used by the finite differencing algorithm, as the spectral
@@ -231,6 +231,7 @@ classdef (Abstract) InternalModesBase < handle
             
             N2G2 = zeros(1,length(G(1,:)));
             F2 = zeros(1,length(G(1,:)));
+            G2 = zeros(1,length(G(1,:)));
             
             [maxIndexZ] = find(N2-self.gridFrequency*self.gridFrequency>0,1,direction);  
             for j=1:length(G(1,:))
@@ -265,6 +266,7 @@ classdef (Abstract) InternalModesBase < handle
                 
                 F2(j) = abs(trapz( z, F(:,j) .^ 2));
                 N2G2(j) = abs(trapz(z, N2.* (G(:,j).^2)));
+                G2(j) = abs(trapz(z, G(:,j).^2));
             end
         end
         

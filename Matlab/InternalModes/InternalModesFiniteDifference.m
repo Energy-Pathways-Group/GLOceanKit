@@ -77,7 +77,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
             % Return the normal modes and eigenvalue at a given wavenumber.
             
             self.gridFrequency = 0;
@@ -92,11 +92,11 @@ classdef InternalModesFiniteDifference < InternalModesBase
             [A,B] = self.ApplyBoundaryConditions(A,B);
             
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
+            [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func);
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
             % Return the normal modes and eigenvalue at a given frequency.
             
             self.gridFrequency = omega;
@@ -107,7 +107,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
             [A,B] = self.ApplyBoundaryConditions(A,B);
                         
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func);
+            [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func);
             k = self.kFromOmega(h,omega);
         end
         
@@ -260,7 +260,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         end
         
 
-        function [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,h_func)
+        function [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func)
             % Take matrices A and B from the generalized eigenvalue problem
             % (GEP) and returns F,G,h. The h_func parameter is a function that
             % returns the eigendepth, h, given eigenvalue lambda from the GEP.
@@ -274,7 +274,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 F(:,j) = h(j) * self.Diff1 * G(:,j);
             end
             
-            [F_norm,G_norm,F2,N2G2] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff);
+            [F_norm,G_norm,F2,N2G2,G2] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff);
             
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);

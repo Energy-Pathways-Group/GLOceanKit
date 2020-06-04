@@ -36,6 +36,8 @@ rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
 shouldUseArbitraryStratificationModel = 1;
 
+rho = InternalModes.StratificationProfileWithName('exponential');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Initialize the wave model
@@ -45,7 +47,7 @@ shouldUseArbitraryStratificationModel = 1;
 if shouldUseArbitraryStratificationModel == 0
     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
+    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral'); %, 'method','spectral'
 end
 
 % wavemodel.InitializeWithGMSpectrum(1.0);
@@ -66,7 +68,7 @@ Am(1,1,:) = conj(Ap(1,1,:)); % Inertial motions go only one direction!
 
 % Generate barotropic geostrophic currents--amplitude prefactor of 1e-3 is
 % set in order to keep the energetics similar magnitude to the waves.
-B0 = 1e-3*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K(:,:,1)), shouldExcludeNyquist);
+B0 = 2e-3*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K(:,:,1)), shouldExcludeNyquist);
 B0(1,1) = 0;
 
 % Generate internal geostrophic currents--amplitude prefactor of 6e-2 is
@@ -121,7 +123,7 @@ fprintf('\n********** Decomposition tests **********\n');
 if shouldUseArbitraryStratificationModel == 0
     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude);
+    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral'); %, 'method','spectral'
 end
 
 error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));
@@ -139,14 +141,33 @@ for i=1:7
     end
     wavemodel.GenerateWavePhases(mask(1)*Ap,mask(1)*Am);
     wavemodel.GenerateGeostrophicCurrents(mask(2)*B0,mask(3)*B);
-    [u,v,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','zeta');
+    [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
     newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
     
     fprintf('\nmask %d\n',i);
-    fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_plus,wavemodel.Amp_plus) ))));
-    fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_minus,wavemodel.Amp_minus) ))));
-    fprintf('The B0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B0,wavemodel.B0) ))));
-    fprintf('The B amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B,wavemodel.B) ))));
+    
+    spectralEnergy = 0;
+    if ~isempty(error2(newmodel.Amp_plus,wavemodel.Amp_plus))
+        fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_plus,wavemodel.Amp_plus) ))));
+        % 1 == newmodel.Apm_HKE_factor + newmodel.Apm_VKE_factor + newmodel.Apm_PE_factor
+        spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.Amp_plus.*conj(newmodel.Amp_plus) )));
+    end
+    if ~isempty(error2(newmodel.Amp_minus,wavemodel.Amp_minus))
+        fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_minus,wavemodel.Amp_minus) ))));
+        spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.Amp_minus.*conj(newmodel.Amp_minus) )));
+    end
+    if ~isempty(error2(newmodel.B0,wavemodel.B0))
+        fprintf('The B0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B0,wavemodel.B0) ))));
+        spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.B0_HKE_factor .* newmodel.B0.*conj(newmodel.B0) )));
+    end
+    if ~isempty(error2(newmodel.B,wavemodel.B))
+        fprintf('The B amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B,wavemodel.B) ))));
+        spectralEnergy = spectralEnergy + sum(sum(sum( (newmodel.B_HKE_factor+newmodel.B_PE_factor) .* newmodel.B.*conj(newmodel.B) )));
+    end
+    
+    integratedEnergy = trapz(wavemodel.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(wavemodel.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+    fprintf('total integrated energy: %f m^3/s\n', integratedEnergy);
+    fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
 end
 
 return

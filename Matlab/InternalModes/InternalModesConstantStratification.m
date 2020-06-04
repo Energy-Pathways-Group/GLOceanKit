@@ -35,7 +35,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
         end
                 
-        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -46,7 +46,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             h = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+k_z.*k_z)); 
             
             % Now compute the baroclinic modes
-            [F,G,F2,N2G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
+            [F,G,F2,N2G2,G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
             if self.upperBoundary == UpperBoundary.freeSurface
                 % Make some room for the barotropic mode
@@ -55,6 +55,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 G = circshift(G,1,2);
                 F2 = circshift(F2,1,2);
                 N2G2 = circshift(N2G2,1,2);
+                G2 = circshift(G2,1,2);
                 
                 [F0,G0,h0] = self.BarotropicModeAtWavenumber(k);
                 h(1) = h0;
@@ -64,7 +65,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -78,7 +79,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                h = zeros(size(h));
             end
             
-            [F,G,F2,N2G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
+            [F,G,F2,N2G2,G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
             if self.upperBoundary == UpperBoundary.freeSurface
                 % Make some room for the barotropic mode
@@ -87,6 +88,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 G = circshift(G,1,2);
                 F2 = circshift(F2,1,2);
                 N2G2 = circshift(N2G2,1,2);
+                G2 = circshift(G2,1,2);
                 
                 [F0,G0,h0] = self.BarotropicModeAtFrequency(omega);
                 h(1) = h0;
@@ -132,7 +134,7 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         % k_z and h should be of size [1, nModes]
         % [F,G] will return with size [length(z), nModes]
-        function [F,G,F2,N2G2] = BaroclinicModesWithEigenvalue(self, k_z, h)
+        function [F,G,F2,N2G2,G2] = BaroclinicModesWithEigenvalue(self, k_z, h)
             N0_ = self.N0; % reference buoyancy frequency, radians/seconds
             g_ = self.g;
             j = 1:self.nModes;
@@ -155,9 +157,10 @@ classdef InternalModesConstantStratification < InternalModesBase
             % compute \int F^2 dz and \int N^2 G^2 dz
             F2 = A.*A.*h.*h.*k_z.*k_z*self.Lz/2;
             N2G2 = A.*A*N0_*N0_*self.Lz/2;
+            G2 = A.*A*self.Lz/2;
         end
         
-        function [F0,G0,h0,F2,N2G2] = BarotropicModeAtWavenumber(self, k)
+        function [F0,G0,h0,F2,N2G2,G2] = BarotropicModeAtWavenumber(self, k)
             k_star = sqrt( (self.N0*self.N0 - self.f0*self.f0)/(self.g*self.Lz) );
                 
             if (abs(k-k_star)/k_star < 1e-6) % transition (linear) solution
@@ -178,10 +181,10 @@ classdef InternalModesConstantStratification < InternalModesBase
                 h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + k_z*k_z ));        
             end
             
-            [F0,G0,F2,N2G2] = self.BarotropicMode(solutionType, k_z, h0);
+            [F0,G0,F2,N2G2,G2] = self.BarotropicMode(solutionType, k_z, h0);
         end
         
-        function [F0,G0,h0,F2,N2G2] = BarotropicModeAtFrequency(self, omega)
+        function [F0,G0,h0,F2,N2G2,G2] = BarotropicModeAtFrequency(self, omega)
             if (abs(omega-self.N0)/self.N0 < 1e-6)
                 solutionType = 'linear';
                 h0 = self.Lz;
@@ -198,10 +201,10 @@ classdef InternalModesConstantStratification < InternalModesBase
                 h0 = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
             end
             
-            [F0,G0,F2,N2G2] = self.BarotropicMode(solutionType, k_z, h0);
+            [F0,G0,F2,N2G2,G2] = self.BarotropicMode(solutionType, k_z, h0);
         end
         
-        function [F0,G0,F2,N2G2] = BarotropicMode(self, solutionType, k_z, h0)
+        function [F0,G0,F2,N2G2,G2] = BarotropicMode(self, solutionType, k_z, h0)
             % It's safer to do a switch on solutionType, rather than check
             % that omega *or* k are equal to N0, k_star within tolerance.
             if strcmp(solutionType, 'linear')
@@ -222,6 +225,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F0 = A*self.Lz*ones(size(self.z));
                 F2 = A*A*(self.Lz)^3;
                 N2G2 = A*A*self.N0*self.N0*((self.Lz)^3)/3;
+                G2 = A*A*((self.Lz)^3)/3;
             elseif strcmp(solutionType, 'hyperbolic')
                 switch self.normalization
                     case Normalization.kConstant
@@ -240,6 +244,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F0 = A*h0*k_z*cosh(k_z*(self.z + self.Lz));
                 F2 = A.*A.*h0.*h0.*k_z.*k_z*(sinh(2*k_z*self.Lz)./(4*k_z*self.Lz) - 1/2);
                 N2G2 = A.*A*self.N0*self.N0*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
+                G2 = A.*A*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
             elseif strcmp(solutionType, 'trig')
                 switch self.normalization
                     case Normalization.kConstant
@@ -258,6 +263,7 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F0 = A*h0*k_z*cos(k_z*(self.z + self.Lz));
                 F2 = A.*A.*h0.*h0.*k_z.*k_z*(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz));
                 N2G2 = A.*A*self.N0*self.N0*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
+                G2 = A.*A*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
             end
         end
     end

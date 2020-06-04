@@ -66,10 +66,12 @@ for iProfile=1:length(profiles)
             im.normalization = Normalization.kConstant;
             
             k = 0.1*k_star;
-            [F,G,h] = im.ModesAtWavenumber( k );
-            [F_analytical,G_analytical,h_analytical] = imAnalytical.ModesAtWavenumber( k );
+            [F,G,h,~,F2,N2G2,G2] = im.ModesAtWavenumber( k );
+            [F_analytical,G_analytical,h_analytical,~,F2_analytical,N2G2_analytical,G2_analytical] = imAnalytical.ModesAtWavenumber( k );
             max_error = max([errorFunction(h,h_analytical); errorFunction(F,F_analytical); errorFunction(G,G_analytical)],[],1);
+            max_error_norm = max([errorFunction(F2_analytical,F2); errorFunction(N2G2_analytical,N2G2); errorFunction(G2_analytical,G2)],[],1);
             fprintf('%s has %d good modes at k=0.1*k_star\n', methods{iMethod}, find(max_error < errorTolerance,1,'last'));
+            fprintf('%s has %d good norms at k=0.1*k_star\n', methods{iMethod}, find(max_error_norm < errorTolerance,1,'last'));
             
             k = k_star;
             [F,G,h] = im.ModesAtWavenumber( k );

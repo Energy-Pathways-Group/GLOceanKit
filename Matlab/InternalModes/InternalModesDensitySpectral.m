@@ -42,7 +42,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
             self.gridFrequency = 0;
             
             T = self.T_xLobatto;
@@ -54,15 +54,15 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
             
-            if nargout == 6
-                [F,G,h,F2,N2G2] = self.ModesFromGEPDensitySpectral(A,B);
+            if nargout == 7
+                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPDensitySpectral(A,B);
             else
                 [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
             end
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
             self.gridFrequency = omega;
             
             T = self.T_xLobatto;
@@ -74,8 +74,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
             
-            if nargout == 6
-                [F,G,h,F2,N2G2] = self.ModesFromGEPDensitySpectral(A,B);
+            if nargout == 7
+                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPDensitySpectral(A,B);
             else
                 [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
             end
@@ -167,7 +167,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
     end
     
     methods (Access = private)
-        function [F,G,h,F2,N2G2] = ModesFromGEPDensitySpectral(self,A,B)
+        function [F,G,h,F2,N2G2,G2] = ModesFromGEPDensitySpectral(self,A,B)
             % This function is an intermediary used by ModesAtFrequency and
             % ModesAtWavenumber to establish the various norm functions.
             hFromLambda = @(lambda) 1.0 ./ lambda;
@@ -177,8 +177,8 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
-            if nargout == 5
-                [F,G,h,F2,N2G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+            if nargout == 6
+                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
             else
                 [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
             end
