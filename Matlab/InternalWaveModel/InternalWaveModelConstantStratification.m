@@ -166,56 +166,6 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             self.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,zeta);
         end
         
-%         function InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(self, t, u, v, zeta)
-%             % This function can be used as a wave-vortex decomposition. It
-%             % will *exactly* recover amplitudes being used the generate the
-%             % dynamical fields. For the moment I assume assuming no
-%             % buoyancy perturbation at the boundaries.
-%             %
-%             % Note that the Winters model includes energy in the Nz-1
-%             % vertical mode---which is problematic because it's not
-%             % resolved. So, transforms are inexact.
-%             
-%             % We need to include the zero/mean in the transform
-%             ubar = self.TransformFromSpatialDomainWithFFull( u );
-%             vbar = self.TransformFromSpatialDomainWithFFull( v );
-%             
-%             % Take care of the vertically uniform geostrophic component.
-%             self.B0 = -sqrt(-1)*(self.f0/self.g)*(self.K(:,:,1) .* vbar(:,:,1) - self.L(:,:,1) .* ubar(:,:,1))./self.K2(:,:,1);
-%             self.B0(1,1) = 0; % we did some divide by zeros
-%             
-%             % Now separate waves and vortices
-%             ubar = ubar(:,:,2:end);
-%             vbar = vbar(:,:,2:end);
-%             etabar = self.TransformFromSpatialDomainWithG( zeta );
-%             
-%             delta = sqrt(self.h).*(self.K .* ubar + self.L .* vbar)./self.Kh;
-%             zeta = sqrt(self.h).*(self.K .* vbar - self.L .* ubar)./self.Kh;
-%             
-%             A_plus = exp(-sqrt(-1)*self.Omega*t).*(-self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta - sqrt(-1)*zeta*self.f0./self.Omega)/2;
-%             A_minus = exp(sqrt(-1)*self.Omega*t).*(self.g*self.Kh.*sqrt(self.h).*etabar./self.Omega + delta + sqrt(-1)*zeta*self.f0./self.Omega)/2;
-%             self.B = InternalWaveModel.MakeHermitian((etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega));
-%             self.B(1,1,:) = 0; % we did some divide by zeros
-%             
-%             % inertial must be solved for separately.
-%             A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
-%             A_minus(1,1,:) = conj(A_plus(1,1,:));
-%                       
-%             % Compute the geostrophic part by including the zero vertical
-%             % wavenumber part. The division by two is from the definition
-%             % of the cosine transform of something at zero-frequency.
-%             u_g0 = self.TransformToSpatialDomainWithBarotropicFMode(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0)/2;
-%             v_g0 = self.TransformToSpatialDomainWithBarotropicFMode( sqrt(-1)*(self.g/self.f0)*self.K(:,:,1).*self.B0)/2;
-%             
-%             self.u_g = u_g0 + self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B.*self.F);
-%             self.v_g = v_g0 + self.TransformToSpatialDomainWithF( sqrt(-1)*(self.g/self.f0)*self.K.*self.B.*self.F);
-%             self.zeta_g = self.TransformToSpatialDomainWithG(self.B.*self.G);
-%             
-%             A_plus = InternalWaveModel.MakeHermitian(A_plus);
-%             A_minus = InternalWaveModel.MakeHermitian(A_minus);
-%             self.GenerateWavePhases(A_plus,A_minus);
-%         end
-        
         function InitializeWithIsopycnalDisplacementField(self, zeta)
             % Note that you will lose any 'mean' zeta, because technically
             % this is the perturbation *from* a mean.
