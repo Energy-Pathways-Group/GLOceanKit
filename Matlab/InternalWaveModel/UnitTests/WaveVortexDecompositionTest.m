@@ -32,9 +32,9 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 rho0 = 1025; g = 9.81;
-% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
-shouldUseArbitraryStratificationModel = 0;
+shouldUseArbitraryStratificationModel = 1;
 
 rho = InternalModes.StratificationProfileWithName('exponential');
 
