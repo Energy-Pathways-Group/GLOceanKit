@@ -2339,9 +2339,6 @@ classdef (Abstract) InternalWaveModel < handle
                 A(1,nY/2+1,:) = -2*real(A(1,nY/2+1,:)); % Double the Nyquist frequency
                 A(nX/2+1,nY/2+1,:) = -2*real(A(nX/2+1,nY/2+1,:)); % Double the Nyquist frequency
             end
-            if nZ > 1
-                A(:,:,nZ) = zeros(nX,nY); % Because we can't resolve the last mode.
-            end
             
         end
     end

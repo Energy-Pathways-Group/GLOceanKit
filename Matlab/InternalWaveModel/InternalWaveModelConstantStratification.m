@@ -82,7 +82,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             z = dz*(0:Nz-1)' - Lz; % cosine basis (not your usual dct basis, howeve
             
             % Number of modes is fixed for this model.
-            nModes = nz;
+            nModes = nz-1;
             
             self@InternalWaveModel(dims, n, z, N0*N0*ones(size(z)), nModes, latitude);
             
@@ -297,7 +297,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % Re-order to convert to an fast cosine transform
             % There's a lot of time spent here, and below taking the real
             % part.
-            self.dctScratch = cat(3, zeros(self.Nx,self.Ny), 0.5*u(:,:,1:self.nz-1), u(:,:,self.nz), 0.5*u(:,:,self.nz-1:-1:1));
+            self.dctScratch = cat(3, zeros(self.Nx,self.Ny), 0.5*u(:,:,1:self.nz-1), zeros(self.Nx,self.Ny), 0.5*u(:,:,self.nz-1:-1:1));
 %             self.dctScratch(:,:,2:self.nz) =  0.5*u(:,:,1:self.nz-1); % length= nz-1
 %             self.dctScratch(:,:,self.nz+1) =  u(:,:,self.nz); % length 1
 %             self.dctScratch(:,:,(self.nz+2):(2*self.nz)) = 0.5*u(:,:,self.nz-1:-1:1); % length nz-1
@@ -320,7 +320,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             w = self.Nx*self.Ny*ifft(ifft(w_bar.* self.G,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            self.dstScratch = sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), 0.5*w(:,:,1:self.nz-1), w(:,:,self.nz), -0.5*w(:,:,self.nz-1:-1:1));
+            self.dstScratch = sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), 0.5*w(:,:,1:self.nz-1), zeros(self.Nx,self.Ny), -0.5*w(:,:,self.nz-1:-1:1));
             
             w = fft( self.dstScratch,2*self.nz,3);
             if self.performSanityChecks == 1
@@ -346,7 +346,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-1)*df
             self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
-            u_bar = 2*real(self.dctScratch(:,:,2:self.nz+1)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
+            u_bar = 2*real(self.dctScratch(:,:,2:self.nz)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.F/self.Nx/self.Ny;
         end
         
@@ -354,7 +354,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
             self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
-            w_bar = 2*imag(self.dstScratch(:,:,2:self.nz+1));
+            w_bar = 2*imag(self.dstScratch(:,:,2:self.nz));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)./self.G/self.Nx/self.Ny;
         end
         
