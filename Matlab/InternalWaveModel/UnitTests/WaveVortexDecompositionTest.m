@@ -32,9 +32,9 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 rho0 = 1025; g = 9.81;
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 z = linspace(-Lz,0,Nz);
-shouldUseArbitraryStratificationModel = 1;
+shouldUseArbitraryStratificationModel = 0;
 
 rho = InternalModes.StratificationProfileWithName('exponential');
 
@@ -47,7 +47,7 @@ rho = InternalModes.StratificationProfileWithName('exponential');
 if shouldUseArbitraryStratificationModel == 0
     wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral'); %, 'method','spectral'
+    wavemodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral','cacheFile','evp-cache.mat'); %, 'method','spectral'
 end
 
 % wavemodel.InitializeWithGMSpectrum(1.0);
@@ -123,7 +123,7 @@ fprintf('\n********** Decomposition tests **********\n');
 if shouldUseArbitraryStratificationModel == 0
     newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
-    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral'); %, 'method','spectral'
+    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral','cacheFile','evp-cache.mat'); %, 'method','spectral'
 end
 
 error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));

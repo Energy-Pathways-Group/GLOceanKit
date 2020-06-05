@@ -51,7 +51,7 @@ classdef (Abstract) InternalWaveModel < handle
     properties (Access = public)
         Lx, Ly, Lz % Domain size
         Nx, Ny, Nz % Number of points in each direction
-        nModes
+        nModes % Number of resolved internal modes---the barotropic mode is treated separately.
         latitude
         
         x, y, z
@@ -212,7 +212,7 @@ classdef (Abstract) InternalWaveModel < handle
             % The values given must meet the following requirements:
             % (k0 > -Nx/2 && k0 < Nx/2)
             % (l0 > -Ny/2 && l0 < Ny/2)
-            % (j0 >= 1 && j0 < nModes)
+            % (j0 >= 1 && j0 <= nModes)
             % phi is in radians, from 0-2pi
             % Amp is the fluid velocity U
             % sign is +/-1, indicating the sign of the frequency.
@@ -596,6 +596,33 @@ classdef (Abstract) InternalWaveModel < handle
             self.GenerateGeostrophicCurrents(B0_, B_);
         end
         
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Energetics
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = totalEnergy(self)
+            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','zeta');
+            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+        end
+        
+        function energy = totalSpectralEnergy(self)
+            energy = self.waveEnergy + self.geostrophicEnergy + self.barotropicGeostrophicEnergy;
+        end
+        
+        function energy = waveEnergy(self)
+            energy = sum(sum(sum( self.Amp_plus.*conj(self.Amp_plus) + self.Amp_minus.*conj(self.Amp_minus) )));
+        end
+        
+        function energy = geostrophicEnergy(self)
+            energy = sum(sum(sum( (self.B_HKE_factor+self.B_PE_factor) .* self.B.*conj(self.B) )));
+        end
+        
+        function energy = barotropicGeostrophicEnergy(self)
+            energy = sum(sum(self.B0_HKE_factor .* (self.B0.*conj(self.B0)) ));
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
