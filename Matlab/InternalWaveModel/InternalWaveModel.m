@@ -617,11 +617,23 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function energy = geostrophicEnergy(self)
-            energy = sum(sum(sum( (self.B_HKE_factor+self.B_PE_factor) .* self.B.*conj(self.B) )));
+            energy = sum(sum(sum( (self.B_HKE_factor+self.B_PE_factor) .* (self.B.*conj(self.B)) )));
         end
         
         function energy = barotropicGeostrophicEnergy(self)
             energy = sum(sum(self.B0_HKE_factor .* (self.B0.*conj(self.B0)) ));
+        end
+        
+        function energy = inertialEnergy(self)
+            energy = sum(sum(sum( self.Amp_plus(1,1,:).^2 + self.Amp_minus(1,1,:).^2 )));
+        end
+        
+        function energy = internalWaveEnergyPlus(self)
+            energy = sum(sum(sum( self.Amp_plus(2:end,2:end,:).*conj(self.Amp_plus(2:end,2:end,:))  )));
+        end
+        
+        function energy = internalWaveEnergyMinus(self)
+            energy = sum(sum(sum( self.Amp_minus(2:end,2:end,:).*conj(self.Amp_minus(2:end,2:end,:))  )));
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1639,6 +1651,69 @@ classdef (Abstract) InternalWaveModel < handle
             elseif ~isempty(self.B0)
                 self.u_g = u_g0;
                 self.v_g = v_g0;
+            end
+        end
+        
+        function k = IsotropicKAxis(self)
+            % Create a reasonable wavenumber axis
+            allKs = unique(reshape(abs(self.Kh),[],1),'sorted');
+            deltaK = max(diff(allKs));
+            kAxis = 0:deltaK:max(allKs);
+            
+            % Thi is the final output axis for wavenumber
+            k = reshape(kAxis(1:(length(kAxis)-1)),[],1);
+        end
+        
+        function [k,j,varargout] = ConvertToWavenumberAndMode(self,varargin)      
+            % Create a reasonable wavenumber axis
+            allKs = unique(reshape(abs(self.Kh),[],1),'sorted');
+            deltaK = max(diff(allKs));
+            kAxis = 0:deltaK:max(allKs);
+            
+            % Thi is the final output axis for wavenumber
+            k = reshape(kAxis(1:(length(kAxis)-1)),[],1);
+            
+            % Mode axis is just what we already have
+            j = self.j;
+            
+            RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(self.Kh);
+            nK = length(k);
+            
+            varargout = cell(size(varargin));
+            for iVar=1:length(varargin)
+                thesize = size(varargin{iVar});
+                if length(thesize) == 2
+                    newsize = [nK 1];
+                else
+                    newsize = cat(2,nK,thesize(3:end));
+                end
+                varargout{iVar} = zeros(newsize);
+            end
+               
+            for iK = 1:1:nK
+                indicesForK = find( kAxis(iK) <= squeeze(self.Kh(:,:,1)) & squeeze(self.Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
+                for iIndex = 1:length(indicesForK)
+                    [i,m] = ind2sub([size(self.Kh,1) size(self.Kh,2)],indicesForK(iIndex));
+                    if i+m==2
+                        prefactor = 1;
+                    else
+                        prefactor = 2;
+                    end
+                    for iMode = 1:self.nModes
+                        for iVar=1:length(varargin)
+                            if ismatrix(varargin{iVar})
+                                continue;
+                            end
+                            varargout{iVar}(iK,iMode) = varargout{iVar}(iK,iMode) + prefactor*varargin{iVar}(i,m,iMode);
+                        end
+                    end
+                    for iVar=1:length(varargin)
+                        if ~ismatrix(varargin{iVar})
+                            continue;
+                        end
+                        varargout{iVar}(iK) = varargout{iVar}(iK) + prefactor*varargin{iVar}(i,m);
+                    end
+                end
             end
         end
         
