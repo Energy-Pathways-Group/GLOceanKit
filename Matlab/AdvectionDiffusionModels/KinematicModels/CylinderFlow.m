@@ -15,6 +15,7 @@ classdef CylinderFlow < StreamfunctionModel
             
             self.xVisLim = 3*self.R*[-1 1];
             self.yVisLim = 3*self.R*[-1 1];
+            self.visualScale = 1e3;
             
             theta = linspace(0,2*pi-2*pi/30,30);
             self.obstacles = polyshape(self.R*cos(theta),self.R*sin(theta));

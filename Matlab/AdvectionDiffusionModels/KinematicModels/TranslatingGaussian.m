@@ -13,6 +13,7 @@ classdef TranslatingGaussian < StreamfunctionModel
         function self = TranslatingGaussian()
             self.xVisLim = 3*self.L*[-1 1];
             self.yVisLim = 3*self.L*[-1 1];
+            self.visualScale = 1e3;
             
             self.name = 'Translating Gaussian';
         end

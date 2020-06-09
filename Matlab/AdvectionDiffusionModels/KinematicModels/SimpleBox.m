@@ -15,6 +15,7 @@ classdef SimpleBox < KinematicModel
             epsilony = 0.05*self.Ly;
             self.xVisLim = [0-epsilonx self.Lx+epsilonx];
             self.yVisLim = [0-epsilony self.Ly+epsilony];
+            self.visualScale = 1e3;
             
             self.name = 'No flow box';
         end

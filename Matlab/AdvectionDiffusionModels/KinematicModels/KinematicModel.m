@@ -11,7 +11,7 @@ classdef KinematicModel < handle
         
         xVisLim % visual (box) limits of the ocean, no infinities
         yVisLim % visual (box) limits of the ocean, no infinities   
-        visualScale = 1e-3
+        visualScale = 1e3
         
         name = ''
     end
@@ -26,7 +26,17 @@ classdef KinematicModel < handle
         function [x0,y0] = removeOutOfBoundsParticles(self,x0,y0)
             outOfBounds = x0 < min(self.xlim) | x0 > max(self.xlim) | y0 < min(self.ylim) | y0 > max(self.ylim);
             if ~isempty(self.obstacles)
-                outOfBounds = outOfBounds | isinterior(self.obstacles,x0,y0);
+                if self.xIsPeriodic == 1
+                    x_wrap = mod(x0-min(self.xlim),max(self.xlim)-min(self.xlim)) + min(self.xlim);
+                else
+                    x_wrap = x0;
+                end
+                if self.yIsPeriodic == 1
+                    y_wrap = mod(y0-min(self.ylim),max(self.ylim)-min(self.ylim)) + min(self.ylim);
+                else
+                    y_wrap = y0;
+                end
+                outOfBounds = outOfBounds | isinterior(self.obstacles,x_wrap,y_wrap);
             end
             if sum(outOfBounds) > 0
                 fprintf('Removed %d particles because they were out of bounds.\n',sum(outOfBounds));
@@ -35,9 +45,13 @@ classdef KinematicModel < handle
             end
         end
         
-        function plotBounds(self)
+        function plotBounds(self,varargin)
             if all(~isinf(self.xlim)) && all(~isinf(self.ylim)) && self.xIsPeriodic == 0 && self.yIsPeriodic == 0
-                rectangle('Position',self.visualScale*[min(self.xlim) min(self.ylim) max(self.xlim)-min(self.xlim) max(self.ylim)-min(self.ylim)], 'LineWidth', 8)
+                rectangle('Position',[min(self.xlim) min(self.ylim) max(self.xlim)-min(self.xlim) max(self.ylim)-min(self.ylim)]/self.visualScale, varargin{:});
+            elseif all(~isinf(self.ylim)) && self.yIsPeriodic == 0
+                x = [min(self.xVisLim) min(self.xVisLim); max(self.xVisLim) max(self.xVisLim)];
+                y = [min(self.yVisLim) max(self.yVisLim); min(self.yVisLim) max(self.yVisLim)];
+                line( x/self.visualScale, y/self.visualScale, varargin{:});
             end
         end
         
@@ -57,17 +71,17 @@ classdef KinematicModel < handle
                 mask = ~isinterior(self.obstacles,x,y);
                 mask = reshape(mask,size(X));
 
-                quiver(X/1e3,Y/1e3,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y))
+                quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y))
                 plot(scale(self.obstacles,1e-3))
             else
-                quiver(X/1e3,Y/1e3,self.u(t,X,Y),self.v(t,X,Y))
+                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y))
             end
             
             axis equal
-            xlim([min(self.xVisLim) max(self.xVisLim)]/1e3)
-            ylim([min(self.yVisLim) max(self.yVisLim)]/1e3)
+            xlim([min(self.xVisLim) max(self.xVisLim)]/self.visualScale)
+            ylim([min(self.yVisLim) max(self.yVisLim)]/self.visualScale)
             xlabel('km'), ylabel('km')
-            title(sprintf('%s t=%d',self.name,t))
+%             title(sprintf('%s t=%d',self.name,t))
             
             if length(nargout) == 2
                 varargout{1} = X;
@@ -75,7 +89,18 @@ classdef KinematicModel < handle
             end
         end
         
-        function plotTrajectories(self,x,y)
+        function plotTrajectories(self,x,y,varargin)
+%             shouldShow
+%             extraargs = {};
+%             for k = 1:2:length(extraargs)
+%                 if strcmp(extraargs{k}, 'method')
+%                     self.method = extraargs{k+1};
+%                     extraargs(k+1) = [];
+%                     extraargs(k) = [];
+%                     userSpecifiedMethod = 1;
+%                     break;
+%                 end
+%             end
             if self.xIsPeriodic == 1
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Here's a trick for drawing periodic data. If we use mod(x,xWindow), then
@@ -93,10 +118,22 @@ classdef KinematicModel < handle
                     xshift(mask) = nan;
                     yshift(mask) = nan;
                     h.ColorOrderIndex = 1;
-                    plot((xshift+xMin)/1e3,yshift/1e3)
+                    plot((xshift+xMin)/self.visualScale,yshift/self.visualScale,varargin{:})
+                end
+                
+                nmin = floor(min(x(end,:)-xMin)/xWindowLength);
+                nmax = floor(max(x(end,:)-xMin)/xWindowLength);
+                for n=nmin:nmax
+                    xshift = x(end,:) - xMin - n*xWindowLength;
+                    yshift = y(end,:);
+                    mask = xshift < 0 | xshift > xWindowLength;
+                    xshift(mask) = nan;
+                    yshift(mask) = nan;
+                    
+                    scatter( (xshift+xMin)/self.visualScale,yshift/self.visualScale, 8^2, 'k', 'fill')
                 end
             else
-                plot(x/1e3,y/1e3)
+                plot(x/self.visualScale,y/self.visualScale,varargin{:})
             end
         end
         

@@ -27,15 +27,15 @@ classdef StreamfunctionModel < KinematicModel
                 psiValues = self.psi(t,a,b);
                 levels = linspace(min(psiValues),max(psiValues),20);
                 
-                contour(Xf/1e3,Yf/1e3,maskf.*self.psi(t,Xf,Yf),levels), hold on
+                contour(Xf/self.visualScale,Yf/self.visualScale,maskf.*self.psi(t,Xf,Yf),levels), hold on
                 plot(scale(self.obstacles,1e-3))
             else
-                contour(Xf/1e3,Yf/1e3,self.psi(t,Xf,Yf))
+                contour(Xf/self.visualScale,Yf/self.visualScale,self.psi(t,Xf,Yf))
             end
             
             axis equal
-            xlim([min(self.xVisLim) max(self.xVisLim)]/1e3)
-            ylim([min(self.yVisLim) max(self.yVisLim)]/1e3)
+            xlim([min(self.xVisLim) max(self.xVisLim)]/self.visualScale)
+            ylim([min(self.yVisLim) max(self.yVisLim)]/self.visualScale)
             xlabel('km'), ylabel('km')
             title(sprintf('%s',self.name))
             

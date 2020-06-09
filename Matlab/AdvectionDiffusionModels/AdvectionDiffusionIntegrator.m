@@ -36,22 +36,22 @@ classdef AdvectionDiffusionIntegrator
             
             % For the integrator, a periodic domain should be treated as if
             % it's unbounded.
-            if self.kinematicModel.xIsPeriodic == 1
-                xMin = -Inf;
-                xMax = Inf;
-            else
+%             if self.kinematicModel.xIsPeriodic == 1
+%                 xMin = -Inf;
+%                 xMax = Inf;
+%             else
                 xMin = min(self.kinematicModel.xlim);
                 xMax = max(self.kinematicModel.xlim);
-            end
-            if self.kinematicModel.yIsPeriodic == 1
-                yMin = -Inf;
-                yMax = Inf;
-            else
+%             end
+%             if self.kinematicModel.yIsPeriodic == 1
+%                 yMin = -Inf;
+%                 yMax = Inf;
+%             else
                 yMin = min(self.kinematicModel.ylim);
                 yMax = max(self.kinematicModel.ylim);
-            end
+%             end
             
-            integrator = IntegratorWithObstacles( flux, p0,dt,self.kappa,[xMin yMin],[xMax yMax], self.kinematicModel.obstacles );
+            integrator = IntegratorWithObstacles( flux, p0,dt,self.kappa,[xMin yMin],[xMax yMax], self.kinematicModel.obstacles, [self.kinematicModel.xIsPeriodic self.kinematicModel.yIsPeriodic] );
             
             t = zeros(tn,1);
             x = zeros(length(t),n);

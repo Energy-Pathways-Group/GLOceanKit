@@ -29,6 +29,7 @@ classdef MeanderingJet < StreamfunctionModel
 
             self.xVisLim = [0 2*self.Lx];
             self.yVisLim = [-5*self.L 5*self.L];
+            self.visualScale = 1e3;
             
             self.name = 'Meandering jet';
         end
