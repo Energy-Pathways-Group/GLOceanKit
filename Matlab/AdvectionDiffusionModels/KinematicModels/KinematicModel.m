@@ -154,6 +154,7 @@ classdef KinematicModel < handle
                 end
             else
                 plot(x/self.visualScale,y/self.visualScale,varargin{:})
+                scatter( x(end,:)/self.visualScale,y(end,:)/self.visualScale, 8^2, 'k', 'fill')
             end
         end
         

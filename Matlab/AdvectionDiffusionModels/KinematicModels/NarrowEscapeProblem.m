@@ -11,8 +11,8 @@ classdef NarrowEscapeProblem < KinematicModel
     methods
         function self = NarrowEscapeProblem()
             
-            self.xVisLim = 0.1*self.L*[-1 1] + [0 self.L];
-            self.yVisLim = 0.1*self.L*[-1 1] + [0 self.L];
+            self.xVisLim = 0.1*(self.L+2*self.delta)*[-1 1] + [-self.delta self.L+self.delta];
+            self.yVisLim = 0.1*(self.L+2*self.delta)*[-1 1] + [-self.delta self.L+self.delta];
             self.visualScale = 1e3;
             
             self.RegenerateObstacles();
