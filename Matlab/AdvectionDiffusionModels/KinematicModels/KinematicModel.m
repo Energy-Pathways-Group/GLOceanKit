@@ -14,15 +14,33 @@ classdef KinematicModel < handle
         visualScale = 1e3
         
         name = ''
+        u_ = [];
+        v_ = [];
     end
     
     
-    methods (Abstract)
-       u = u(self,t,x,y);
-       v = v(self,t,x,y);
-    end
+%     methods (Abstract)
+%        u = u(self,t,x,y);
+%        v = v(self,t,x,y);
+%     end
 
     methods
+        function u = u(self,t,x,y)
+            if isempty(self.u_)
+                u = zeros(size(x));
+            else
+                u = self.u_(t,x,y);
+            end
+        end
+        
+        function v = v(self,t,x,y)
+            if isempty(self.v_)
+                v = zeros(size(x));
+            else
+                v = self.v_(t,x,y);
+            end
+        end
+        
         function [x0,y0] = removeOutOfBoundsParticles(self,x0,y0)
             outOfBounds = x0 < min(self.xlim) | x0 > max(self.xlim) | y0 < min(self.ylim) | y0 > max(self.ylim);
             if ~isempty(self.obstacles)
@@ -36,7 +54,9 @@ classdef KinematicModel < handle
                 else
                     y_wrap = y0;
                 end
-                outOfBounds = outOfBounds | isinterior(self.obstacles,x_wrap,y_wrap);
+                for iObstacle=1:length(self.obstacles)
+                    outOfBounds = outOfBounds | isinterior(self.obstacles(iObstacle),x_wrap,y_wrap);
+                end
             end
             if sum(outOfBounds) > 0
                 fprintf('Removed %d particles because they were out of bounds.\n',sum(outOfBounds));

@@ -61,7 +61,9 @@ end
 % We have to exclude the nyquist, because it's no resolvable.
 shouldExcludeNyquist = 1;
 
-% Generate waves---with one additional condition for the intertial waves.
+A0 = randn(1,1)+sqrt(-1)*randn(1,1);
+
+% Generate waves---with one additional condition for the inertial waves.
 Ap = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
 Am = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
 Am(1,1,:) = conj(Ap(1,1,:)); % Inertial motions go only one direction!
@@ -77,6 +79,7 @@ B = 6e-2*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), sho
 B(1,1,:) = 0;
 
 % Now initial th models with these.
+wavemodel.A0 = A0;
 wavemodel.GenerateWavePhases(Ap,Am);
 wavemodel.GenerateGeostrophicCurrents(B0,B);
 
@@ -129,24 +132,30 @@ end
 error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));
 
 t = 360;
-for i=1:7
-    if i <= 3
-        mask = zeros(3,1);
+for i=1:8
+    if i <= 4 % First we walk through the four types of solutions in isolation
+        mask = zeros(4,1);
         mask(i)=1;
-    elseif i <=6
-        mask = ones(3,1);
-        mask(i-3) = 0;
+    elseif i <= 8  % now walk through triplets
+        mask = ones(4,1);
+        mask(i-4) = 0;
     else
-        mask = ones(3,1);
+        mask = ones(4,1);
     end
-    wavemodel.GenerateWavePhases(mask(1)*Ap,mask(1)*Am);
-    wavemodel.GenerateGeostrophicCurrents(mask(2)*B0,mask(3)*B);
+    wavemodel.A0 = mask(1)*A0;
+    wavemodel.GenerateWavePhases(mask(2)*Ap,mask(2)*Am);
+    wavemodel.GenerateGeostrophicCurrents(mask(3)*B0,mask(4)*B);
     [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
     newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
     
     fprintf('\nmask %d\n',i);
     
     spectralEnergy = 0;
+    if ~isempty(error2(newmodel.A0,wavemodel.A0))
+        fprintf('The A0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.A0,wavemodel.A0) ))));
+        % 1 == newmodel.Apm_HKE_factor + newmodel.Apm_VKE_factor + newmodel.Apm_PE_factor
+        spectralEnergy = spectralEnergy + abs(newmodel.A0)^2*newmodel.Lz/2;
+    end
     if ~isempty(error2(newmodel.Amp_plus,wavemodel.Amp_plus))
         fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_plus,wavemodel.Amp_plus) ))));
         % 1 == newmodel.Apm_HKE_factor + newmodel.Apm_VKE_factor + newmodel.Apm_PE_factor

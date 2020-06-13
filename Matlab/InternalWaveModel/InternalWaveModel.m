@@ -65,6 +65,7 @@ classdef (Abstract) InternalWaveModel < handle
         K2, Kh, h, Omega, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         
+        A0 % amplitude of the barotropic intertial mode (scalar)
         Amp_plus, Amp_minus % Used for diagnostics only
         B % amplitude of the geostrophic component (matches Amp_plus/minus)
         B0 % amplitude of the geostrophic component for k_z=0.
@@ -198,7 +199,8 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function RemoveAllGriddedWaves(self)
-            self.GenerateWavePhases(zeros(size(self.K)),zeros(size(self.K)));            
+            self.GenerateWavePhases(zeros(size(self.K)),zeros(size(self.K)));
+            self.A0 = [];
             self.didPreallocateAdvectionCoefficients = 0;
         end
         
@@ -240,8 +242,9 @@ classdef (Abstract) InternalWaveModel < handle
                 if (l0 <= -self.Ny/2 || l0 >= self.Ny/2)
                     error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
                 end
-                if (j0 < 1 || j0 > self.nModes)
-                    warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d',j0, self.nModes);
+                
+                if ~( (j0 == 0 && l0 == 0 && k0 == 0) || (j0 >= 1 && j0 <= self.nModes) )
+                    warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d, unless k=l=0, in which case j=0 is okay.',j0, self.nModes);
                 end
                 
                 % Deal with the negative wavenumber cases (and inertial)
@@ -249,6 +252,15 @@ classdef (Abstract) InternalWaveModel < handle
                     if sign < 1
                         sign=1;   
                         phi0 = -phi0;
+                    end
+                    if j0 == 0
+                        if abs(self.f0) >= 1e-14
+                            self.A0 = A*exp(-sqrt(-1)*phi0);
+                            omega(iMode) = self.f0;
+                            k(iMode) = 0;
+                            l(iMode) = 0;
+                        end
+                       continue
                     end
                 elseif l0 == 0 && k0 < 0
                     k0 = -k0;
@@ -345,6 +357,16 @@ classdef (Abstract) InternalWaveModel < handle
             phi = [phi_plus; phi_minus];
             A = [A_plus; A_minus];
             norm = Normalization.kConstant;
+            
+            if ~isempty(self.A0)
+               k = cat(1,k,0); 
+               l = cat(1,l,0); 
+               omega = cat(1,omega,self.f0); 
+               mode = cat(1,mode,0); 
+               alpha = cat(1,alpha,0); 
+               phi = cat(1,phi,angle(self.A0)); 
+               A = cat(1,A,abs(self.A0)); 
+            end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -489,27 +511,40 @@ classdef (Abstract) InternalWaveModel < handle
             self.internalModes.normalization = self.norm_ext;
             numValidIndices = 0;
             for iWave=1:length(kOrOmega)
-                [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
-                if (hExt(j(iWave)) <= 0)
-                    warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
-                    continue;
-                end
-                numValidIndices = numValidIndices + 1;
-                validIndices(numValidIndices) = iWave;
-                h(numValidIndices) = hExt(j(iWave));
-                
-                index = numExistingWaves + numValidIndices;
-                                
-                self.F_ext(:,index) = FExt(:,j(iWave));
-                self.G_ext(:,index) = GExt(:,j(iWave));
-                self.h_ext = cat(2,self.h_ext,hExt(j(iWave)));
-                self.j_ext = cat(2,self.j_ext,j(iWave));
-                self.k_z_ext = cat(2,self.k_z_ext,j(iWave)*pi/self.Lz);
-                self.phi_ext = cat(2,self.phi_ext,phi(iWave));
-                if norm == Normalization.kConstant
-                    self.U_ext = cat(2,self.U_ext,A(iWave)/sqrt(hExt(j(iWave))));
-                elseif norm == Normalization.uMax
+                if j(iWave) == 0
+                    numValidIndices = numValidIndices + 1;
+                    validIndices(numValidIndices) = iWave;
+                    index = numExistingWaves + numValidIndices;
+                    self.F_ext(:,index) = ones(size(self.z));
+                    self.G_ext(:,index) = zeros(size(self.z));
+                    self.h_ext = cat(2,self.h_ext,self.Lz);
+                    self.j_ext = cat(2,self.j_ext,j(iWave));
+                    self.k_z_ext = cat(2,self.k_z_ext,j(iWave)*pi/self.Lz);
+                    self.phi_ext = cat(2,self.phi_ext,phi(iWave));
                     self.U_ext = cat(2,self.U_ext,A(iWave));
+                else
+                    [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
+                    if (hExt(j(iWave)) <= 0)
+                        warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
+                        continue;
+                    end
+                    numValidIndices = numValidIndices + 1;
+                    validIndices(numValidIndices) = iWave;
+                    h(numValidIndices) = hExt(j(iWave));
+                    
+                    index = numExistingWaves + numValidIndices;
+                    
+                    self.F_ext(:,index) = FExt(:,j(iWave));
+                    self.G_ext(:,index) = GExt(:,j(iWave));
+                    self.h_ext = cat(2,self.h_ext,hExt(j(iWave)));
+                    self.j_ext = cat(2,self.j_ext,j(iWave));
+                    self.k_z_ext = cat(2,self.k_z_ext,j(iWave)*pi/self.Lz);
+                    self.phi_ext = cat(2,self.phi_ext,phi(iWave));
+                    if norm == Normalization.kConstant
+                        self.U_ext = cat(2,self.U_ext,A(iWave)/sqrt(hExt(j(iWave))));
+                    elseif norm == Normalization.uMax
+                        self.U_ext = cat(2,self.U_ext,A(iWave));
+                    end
                 end
             end
             
@@ -568,6 +603,9 @@ classdef (Abstract) InternalWaveModel < handle
             ubar0 = self.TransformFromSpatialDomainWithBarotropicFMode( u );
             vbar0 = self.TransformFromSpatialDomainWithBarotropicFMode( v );
             
+            % u + i*v = A0*exp(-i*f0*t)
+            self.A0 = exp(sqrt(-1)*self.f0*t)*(ubar0(1,1) + sqrt(-1)*vbar0(1,1));
+            
             % Take care of the vertically uniform geostrophic component.
             B0_ = -sqrt(-1)*(self.f0/self.g)*(self.K(:,:,1) .* vbar0(:,:,1) - self.L(:,:,1) .* ubar0(:,:,1))./self.K2(:,:,1);
             B0_(1,1) = 0; % we did some divide by zeros
@@ -613,7 +651,7 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function energy = waveEnergy(self)
-            energy = sum(sum(sum( self.Amp_plus.*conj(self.Amp_plus) + self.Amp_minus.*conj(self.Amp_minus) )));
+            energy = self.A0_HKE_factor*abs(self.A0)^2 + sum(sum(sum( self.Amp_plus.*conj(self.Amp_plus) + self.Amp_minus.*conj(self.Amp_minus) )));
         end
         
         function energy = geostrophicEnergy(self)
@@ -625,7 +663,12 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function energy = inertialEnergy(self)
-            energy = sum(sum(sum( self.Amp_plus(1,1,:).^2 + self.Amp_minus(1,1,:).^2 )));
+            % The all intertial energy, barotropic and baroclinic
+            energy = self.A0_HKE_factor*abs(self.A0)^2 + sum(sum(sum( self.Amp_plus(1,1,:).^2 + self.Amp_minus(1,1,:).^2 )));
+        end
+        
+        function energy = barotropicInertialEnergy(self)
+            energy = self.A0_HKE_factor*abs(self.A0)^2;
         end
         
         function energy = internalWaveEnergyPlus(self)
@@ -1170,6 +1213,10 @@ classdef (Abstract) InternalWaveModel < handle
                     if ~isempty(self.u_g)
                        varargout{iArg} = varargout{iArg} + self.u_g;
                     end
+                    if ~isempty(self.A0)
+                        u_I = real( self.A0*exp(-sqrt(-1)*self.f0*t) );
+                        varargout{iArg} = varargout{iArg} + u_I;
+                    end
                 elseif ( strcmp(varargin{iArg}, 'v') )
                     if isempty(v)
                         v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
@@ -1182,6 +1229,10 @@ classdef (Abstract) InternalWaveModel < handle
                     
                     if ~isempty(self.v_g)
                        varargout{iArg} = varargout{iArg} + self.v_g;
+                    end
+                    if ~isempty(self.A0)
+                        v_I = imag( self.A0*exp(-sqrt(-1)*self.f0*t) );
+                        varargout{iArg} = varargout{iArg} + v_I;
                     end
                 elseif ( strcmp(varargin{iArg}, 'w') )
                     if isempty(w)
@@ -1690,6 +1741,59 @@ classdef (Abstract) InternalWaveModel < handle
                 varargout{iVar} = zeros(newsize);
             end
                
+            for iK = 1:1:nK
+                indicesForK = find( kAxis(iK) <= squeeze(self.Kh(:,:,1)) & squeeze(self.Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
+                for iIndex = 1:length(indicesForK)
+                    [i,m] = ind2sub([size(self.Kh,1) size(self.Kh,2)],indicesForK(iIndex));
+                    if i+m==2
+                        prefactor = 1;
+                    else
+                        prefactor = 2;
+                    end
+                    for iMode = 1:self.nModes
+                        for iVar=1:length(varargin)
+                            if ismatrix(varargin{iVar})
+                                continue;
+                            end
+                            varargout{iVar}(iK,iMode) = varargout{iVar}(iK,iMode) + prefactor*varargin{iVar}(i,m,iMode);
+                        end
+                    end
+                    for iVar=1:length(varargin)
+                        if ~ismatrix(varargin{iVar})
+                            continue;
+                        end
+                        varargout{iVar}(iK) = varargout{iVar}(iK) + prefactor*varargin{iVar}(i,m);
+                    end
+                end
+            end
+        end
+        
+        function [k,j,varargout] = ConvertToFrequencyAndMode(self,varargin)
+            % Create a reasonable wavenumber axis
+            allKs = unique(abs(self.Omega(:)),'sorted');
+            deltaK = max(diff(allKs));
+            kAxis = 0:deltaK:max(allKs);
+            
+            % Thi is the final output axis for wavenumber
+            k = reshape(kAxis(1:(length(kAxis)-1)),[],1);
+            
+            % Mode axis is just what we already have
+            j = self.j;
+            
+            RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(self.Kh);
+            nK = length(k);
+            
+            varargout = cell(size(varargin));
+            for iVar=1:length(varargin)
+                thesize = size(varargin{iVar});
+                if length(thesize) == 2
+                    newsize = [nK 1];
+                else
+                    newsize = cat(2,nK,thesize(3:end));
+                end
+                varargout{iVar} = zeros(newsize);
+            end
+            
             for iK = 1:1:nK
                 indicesForK = find( kAxis(iK) <= squeeze(self.Kh(:,:,1)) & squeeze(self.Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
                 for iIndex = 1:length(indicesForK)
