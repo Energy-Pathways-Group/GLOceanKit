@@ -1,6 +1,6 @@
 model = NarrowEscapeProblem();
 
-kappa = 100;
+kappa = 100; % m^2/s
 integrator = AdvectionDiffusionIntegrator(model,kappa);
 
 % determine reasonable integration time scales
