@@ -39,6 +39,7 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
         % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
         % values
+        A0_HKE_factor
         Apm_HKE_factor
         Apm_VKE_factor
         Apm_PE_factor
@@ -215,6 +216,9 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
         end
         
         
+        function value = get.A0_HKE_factor(self)
+             value = self.Lz/2;
+        end
         function value = get.Apm_HKE_factor(self)
             % This currently differs from the definition in the manuscript
             % by a factor of h. The missing factor of 1/2 is the c.c.
@@ -240,11 +244,15 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
     methods %(Access = protected)
         
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
-            myH = self.h(k0+1,l0+1,j0);
-            m = j0*pi/self.Lz;
-            g = 9.81;
-            F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
-            ratio = sqrt(myH)/F_coefficient;
+            if j0 == 0
+                ratio = 1;
+            else
+                myH = self.h(k0+1,l0+1,j0);
+                m = j0*pi/self.Lz;
+                g = 9.81;
+                F_coefficient = myH * m * sqrt(2*g/self.Lz)/sqrt(self.N0^2 - self.f0^2);
+                ratio = sqrt(myH)/F_coefficient;
+            end
         end     
                 
         % size(z) = [N 1]

@@ -4,7 +4,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-showEndStateOnly = 0;
+showEndStateOnly = 1;
 FramesFolder = './FramesScratch';
 if exist(FramesFolder,'dir') == 0
 	mkdir(FramesFolder);

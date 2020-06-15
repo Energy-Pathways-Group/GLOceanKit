@@ -40,7 +40,8 @@ totalErrors = 0;
 totalTests = 0;
 
 for iLat = 1:length(latitude)
-    if 1 == 0
+    fprintf('\nlatitude: %.1f\n',latitude(iLat));
+    if 1 == 1
         wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0);
         rho0 = wavemodel.rho0;
         g = 9.81;
@@ -65,8 +66,12 @@ for iLat = 1:length(latitude)
     for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
         for l_loop=(-Ny/2 + 1):1:(Ny/2-1)
             fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
-            for j0=1:(Nz-2)
+            for j0=0:(Nz-2)
                 for thesign=-1:2:1
+                    
+                    if j0==0 && (k_loop ~=0 || l_loop ~= 0)
+                        continue;
+                    end
                     
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     %
@@ -90,7 +95,11 @@ for iLat = 1:length(latitude)
                     ll = l(l0+1);
                     alpha=atan2(ll,kk);
                     K = sqrt( kk^2 + ll^2);
-                    omega = thesign*sqrt( (K*K*N0*N0 + m*m*f0*f0)/(K*K+m*m) );
+                    if j0 == 0
+                        omega = f0;
+                    else
+                        omega = thesign*sqrt( (K*K*N0*N0 + m*m*f0*f0)/(K*K+m*m) );
+                    end
                     
                     if latitude(iLat) == 0
                         f0OverOmega = 0;
@@ -108,7 +117,11 @@ for iLat = 1:length(latitude)
                     u_unit = U*(cos(alpha)*cos( theta ) + f0OverOmega*sin(alpha)*sin( theta )).*cos(m*Z);
                     v_unit = U*(sin(alpha)*cos( theta ) - f0OverOmega*cos(alpha)*sin( theta )).*cos(m*Z);
                     w_unit = (U*K/m) * sin( theta ) .* sin(m*Z);
-                    zeta_unit = -(U/m) * kOverOmega * cos( theta ) .* sin(m*Z);
+                    if j0 == 0
+                        zeta_unit = zeros(size(Z));
+                    else
+                        zeta_unit = -(U/m) * kOverOmega * cos( theta ) .* sin(m*Z);
+                    end
                     rho_prime_unit = -(rho0/g)*N0*N0*(U*K/m/omega) * cos( theta ) .* sin(m*Z);
                     rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) + rho_prime_unit;
                     
@@ -141,10 +154,14 @@ for iLat = 1:length(latitude)
                             else
                                 signchange = sign(omega_p);
                             end
-                            wavemodel.SetExternalWavesWithWavenumbers(signchange*k_p, signchange*l_p, j_p, signchange*phi_p,signchange*A_p,norm);
+                            if ~isempty(k_p)
+                                wavemodel.SetExternalWavesWithWavenumbers(signchange*k_p, signchange*l_p, j_p, signchange*phi_p,signchange*A_p,norm);
+                            end
                         elseif API == 4
                             apiName = 'SetExternalWavesWithFrequencies';
-                            wavemodel.SetExternalWavesWithFrequencies(omega_p, alpha_p, j_p, phi_p,A_p,norm);
+                            if ~isempty(k_p)
+                                wavemodel.SetExternalWavesWithFrequencies(omega_p, alpha_p, j_p, phi_p,A_p,norm);
+                            end
                         end
                         
                         [u,v,w,zeta,rho_prime] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta','rho_prime');

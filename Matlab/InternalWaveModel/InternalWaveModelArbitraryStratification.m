@@ -63,6 +63,7 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
         % These convert the coefficients of Amp_plus.*conj(Amp_plus) and
         % Amp_minus.*conj(Amp_minus) to their depth-integrated averaged
         % values
+        A0_HKE_factor
         Apm_HKE_factor
         Apm_VKE_factor
         Apm_PE_factor
@@ -348,6 +349,9 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             value = self.TransformFromK2UniqueToK2Vector(self.N2G2_unique);
         end
         
+        function value = get.A0_HKE_factor(self)
+            value = self.Lz/2;
+        end
         function value = get.Apm_HKE_factor(self)
             % This currently differs from the definition in the manuscript
             % by a factor of h. The missing factor of 1/2 is the c.c.
