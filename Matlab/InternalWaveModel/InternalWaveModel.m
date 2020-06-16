@@ -637,7 +637,7 @@ classdef (Abstract) InternalWaveModel < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Energetics
+        % Energetics (total)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -647,36 +647,71 @@ classdef (Abstract) InternalWaveModel < handle
         end
         
         function energy = totalSpectralEnergy(self)
-            energy = self.waveEnergy + self.geostrophicEnergy + self.barotropicGeostrophicEnergy;
+            energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Major constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = inertialEnergy(self)
+            energy = self.barotropicInertialEnergy + self.baroclinicInertialEnergy;
         end
         
         function energy = waveEnergy(self)
-            energy = self.A0_HKE_factor*abs(self.A0)^2 + sum(sum(sum( self.Amp_plus.*conj(self.Amp_plus) + self.Amp_minus.*conj(self.Amp_minus) )));
+            energy = self.internalWaveEnergyPlus + self.internalWaveEnergyMinus;
         end
         
         function energy = geostrophicEnergy(self)
-            energy = sum(sum(sum( (self.B_HKE_factor+self.B_PE_factor) .* (self.B.*conj(self.B)) )));
+            energy = self.barotropicGeostrophicEnergy + self.baroclinicGeostrophicEnergy;
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Geostrophic constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = barotropicGeostrophicEnergy(self)
-            energy = sum(sum(self.B0_HKE_factor .* (self.B0.*conj(self.B0)) ));
+            if isempty(self.B0)
+                energy = 0;
+            else
+                energy = sum(sum(self.B0_HKE_factor .* (self.B0.*conj(self.B0)) ));
+            end
         end
         
-        function energy = inertialEnergy(self)
-            % The all intertial energy, barotropic and baroclinic
-            energy = self.A0_HKE_factor*abs(self.A0)^2 + sum(sum(sum( self.Amp_plus(1,1,:).^2 + self.Amp_minus(1,1,:).^2 )));
+        function energy = baroclinicGeostrophicEnergy(self)
+            if isempty(self.B)
+                energy = 0;
+            else
+                energy = sum(sum(sum( (self.B_HKE_factor+self.B_PE_factor) .* (self.B.*conj(self.B)) )));
+            end
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Inertia-gravity wave constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = barotropicInertialEnergy(self)
-            energy = self.A0_HKE_factor*abs(self.A0)^2;
+            if isempty(self.A0)
+                energy = 0;
+            else
+                energy = self.A0_HKE_factor*abs(self.A0)^2;
+            end
+        end
+        
+        function energy = baroclinicInertialEnergy(self)
+            energy = sum(sum(sum( abs(self.Amp_plus(1,1,:)).^2 + abs(self.Amp_minus(1,1,:)).^2 )));
         end
         
         function energy = internalWaveEnergyPlus(self)
-            energy = sum(sum(sum( self.Amp_plus(2:end,2:end,:).*conj(self.Amp_plus(2:end,2:end,:))  )));
+            A = self.Amp_plus;
+            A(1,1,:) = 0;
+            energy = sum( A(:).*conj(A(:))  );
         end
         
         function energy = internalWaveEnergyMinus(self)
-            energy = sum(sum(sum( self.Amp_minus(2:end,2:end,:).*conj(self.Amp_minus(2:end,2:end,:))  )));
+            A = self.Amp_minus;
+            A(1,1,:) = 0;
+            energy = sum( A(:).*conj(A(:))  );
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
