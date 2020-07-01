@@ -79,19 +79,23 @@ classdef KinematicModel < handle
             if ~exist('t','var')
                 t = 0;
             end
-            N = 15;
+            N = 150;
             
             xg = linspace(min(self.xVisLim),max(self.xVisLim),2*N)';
             yg = linspace(min(self.yVisLim),max(self.yVisLim),N)';
             [X,Y] = meshgrid(xg,yg);
                        
             if ~isempty(self.obstacles)
-                x = reshape(X,[],1);
-                y = reshape(Y,[],1);
-                mask = ~isinterior(self.obstacles,x,y);
-                mask = reshape(mask,size(X));
+%                 x = reshape(X,[],1);
+%                 y = reshape(Y,[],1);
+%                 mask = false(size(x));
+%                 for iObstacle=1:length(self.obstacles)
+%                     mask = mask & ~isinterior(self.obstacles(iObstacle),x,y);
+%                 end
+%                 mask = reshape(mask,size(X));
 
-                quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y))
+%                 quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y)), hold on
+                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y)), hold on
                 plot(scale(self.obstacles,1e-3))
             else
                 quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y))

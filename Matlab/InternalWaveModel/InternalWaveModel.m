@@ -1726,17 +1726,27 @@ classdef (Abstract) InternalWaveModel < handle
             
             self.B = B;
             if ~isempty(self.B)
-                self.u_g = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B);
-                self.v_g = self.TransformToSpatialDomainWithF( sqrt(-1)*(self.g/self.f0)*self.K.*self.B);
-                self.zeta_g = self.TransformToSpatialDomainWithG(self.B);
+                u_gN = self.TransformToSpatialDomainWithF(-sqrt(-1)*(self.g/self.f0)*self.L.*self.B);
+                v_gN = self.TransformToSpatialDomainWithF( sqrt(-1)*(self.g/self.f0)*self.K.*self.B);
+                zeta_gN = self.TransformToSpatialDomainWithG(self.B);
             end
             
             if ~isempty(self.B) && ~isempty(self.B0)
-                self.u_g = self.u_g + u_g0;
-                self.v_g = self.v_g + v_g0;
+                self.u_g = u_gN + u_g0;
+                self.v_g = v_gN + v_g0;
+                self.zeta_g = zeta_gN;
             elseif ~isempty(self.B0)
                 self.u_g = u_g0;
                 self.v_g = v_g0;
+                self.zeta_g = [];
+            elseif ~isempty(self.B)
+                self.u_g = u_gN;
+                self.v_g = v_gN;
+                self.zeta_g = zeta_gN;
+            else
+                self.u_g = [];
+                self.v_g = [];
+                self.zeta_g = [];
             end
         end
         
@@ -1763,6 +1773,7 @@ classdef (Abstract) InternalWaveModel < handle
             j = self.j;
             
             RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(self.Kh);
+            OmNyquist = InternalWaveModel.NyquistWavenumbers(self.Omega); 
             nK = length(k);
             
             varargout = cell(size(varargin));
@@ -1777,7 +1788,7 @@ classdef (Abstract) InternalWaveModel < handle
             end
                
             for iK = 1:1:nK
-                indicesForK = find( kAxis(iK) <= squeeze(self.Kh(:,:,1)) & squeeze(self.Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(RedundantCoefficients(:,:,1)) );
+                indicesForK = find( kAxis(iK) <= squeeze(self.Kh(:,:,1)) & squeeze(self.Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(OmNyquist(:,:,1)) & ~squeeze(RedundantCoefficients(:,:,1))  );
                 for iIndex = 1:length(indicesForK)
                     [i,m] = ind2sub([size(self.Kh,1) size(self.Kh,2)],indicesForK(iIndex));
                     if i+m==2
