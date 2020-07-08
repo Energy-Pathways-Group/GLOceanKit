@@ -1321,14 +1321,12 @@ classdef (Abstract) InternalWaveModel < handle
             end
         end
         
-        function [varargout] = InternalVariableFieldsFromConstituentAtTime(t,flowConstituent,varargin)
+        function [varargout] = InternalVariableFieldsFromConstituentAtTime(self,t,flowConstituent,varargin)
             % Copy of above, but broken down by constuent part
             if length(varargin) < 1
                 return;
             end
-            
-            u = []; v = []; w = []; zeta = []; p = [];
-            
+                        
             phase_plus = exp(sqrt(-1)*self.Omega*t);
             phase_minus = exp(-sqrt(-1)*self.Omega*t);
             
@@ -1336,7 +1334,7 @@ classdef (Abstract) InternalWaveModel < handle
             for iArg=1:length(varargin)
                 if ( strcmp(varargin{iArg}, 'u') )
                     switch flowConstituent
-                        case inertial
+                        case FlowConstituent.inertial
                             u_bar = zeros(size(self.u_plus));
                             u_bar(1,1,:) = self.u_plus(1,1,:).*phase_plus(1,1,:) + self.u_minus(1,1,:).*phase_minus(1,1,:);
                             varargout{iArg} = self.TransformToSpatialDomainWithF(u_bar);
@@ -1344,11 +1342,11 @@ classdef (Abstract) InternalWaveModel < handle
                                 u_I = real( self.A0*exp(-sqrt(-1)*self.f0*t) );
                                 varargout{iArg} = varargout{iArg} + u_I;
                             end
-                        case wave
+                        case FlowConstituent.wave
                             u_bar = self.u_plus.*phase_plus + self.u_minus.*phase_minus;
                             u_bar(1,1,:) = 0;
                             varargout{iArg} = self.TransformToSpatialDomainWithF(u_bar);
-                        case geostrophic
+                        case FlowConstituent.geostrophic
                             if ~isempty(self.u_g)
                                 varargout{iArg} = self.u_g;
                             else
@@ -1359,7 +1357,7 @@ classdef (Abstract) InternalWaveModel < handle
                     end
                 elseif ( strcmp(varargin{iArg}, 'v') )
                     switch flowConstituent
-                        case inertial
+                        case FlowConstituent.inertial
                             v_bar = zeros(size(self.v_plus));
                             v_bar(1,1,:) = self.v_plus(1,1,:).*phase_plus(1,1,:) + self.v_minus(1,1,:).*phase_minus(1,1,:);
                             varargout{iArg} = self.TransformToSpatialDomainWithF(v_bar);
@@ -1367,11 +1365,11 @@ classdef (Abstract) InternalWaveModel < handle
                                 v_I = imag( self.A0*exp(-sqrt(-1)*self.f0*t) );
                                 varargout{iArg} = varargout{iArg} + v_I;
                             end
-                        case wave
+                        case FlowConstituent.wave
                             v_bar = self.v_plus.*phase_plus + self.v_minus.*phase_minus;
                             v_bar(1,1,:) = 0;
                             varargout{iArg} = self.TransformToSpatialDomainWithF(v_bar);
-                        case geostrophic
+                        case FlowConstituent.geostrophic
                             if ~isempty(self.v_g)
                                 varargout{iArg} = self.v_g;
                             else
@@ -1382,24 +1380,24 @@ classdef (Abstract) InternalWaveModel < handle
                     end
                 elseif ( strcmp(varargin{iArg}, 'w') )
                     switch flowConstituent
-                        case inertial
+                        case FlowConstituent.inertial
                             varargout{iArg} = zeros(size(self.X));
-                        case wave
+                        case FlowConstituent.wave
                             w_bar = self.w_plus.*phase_plus + self.w_minus.*phase_minus;
                             varargout{iArg} = self.TransformToSpatialDomainWithG(w_bar);
-                        case geostrophic
+                        case FlowConstituent.geostrophic
                             varargout{iArg} = zeros(size(self.X));
                         otherwise
                             error('Unknown flow constituent');
                     end      
                 elseif ( strcmp(varargin{iArg}, 'p') )
                     switch flowConstituent
-                        case inertial
+                        case FlowConstituent.inertial
                             varargout{iArg} = zeros(size(self.X));
-                        case wave
+                        case FlowConstituent.wave
                             p_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
                             varargout{iArg} = self.rho0*self.g*self.TransformToSpatialDomainWithF(p_bar);
-                        case geostrophic
+                        case FlowConstituent.geostrophic
                             if ~isempty(self.B)
                                 varargout{iArg} = self.rho0*self.g*self.TransformToSpatialDomainWithF(self.B);
                             else
@@ -1410,9 +1408,9 @@ classdef (Abstract) InternalWaveModel < handle
                     end    
                 elseif ( strcmp(varargin{iArg}, 'rho_prime') || strcmp(varargin{iArg}, 'zeta') )                    
                     switch flowConstituent
-                        case inertial
+                        case FlowConstituent.inertial
                             varargout{iArg} = zeros(size(self.X));
-                        case wave
+                        case FlowConstituent.wave
                             zeta_bar = self.zeta_plus.*phase_plus + self.zeta_minus.*phase_minus;
                             zeta = self.TransformToSpatialDomainWithG(zeta_bar);
                             if strcmp(varargin{iArg}, 'zeta')
@@ -1420,7 +1418,7 @@ classdef (Abstract) InternalWaveModel < handle
                             elseif strcmp(varargin{iArg}, 'rho_prime')
                                 varargout{iArg} = (self.rho0/9.81)*self.N2AtDepth(self.Z) .* zeta;
                             end
-                        case geostrophic
+                        case FlowConstituent.geostrophic
                             if strcmp(varargin{iArg}, 'zeta')
                                 varargout{iArg} = self.zeta_g;
                             elseif strcmp(varargin{iArg}, 'rho_prime')

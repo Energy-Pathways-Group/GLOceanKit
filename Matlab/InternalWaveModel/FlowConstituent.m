@@ -1,4 +1,4 @@
-classdef FlowConstituents
+classdef FlowConstituent
     %Normalization This class simply defines the possible valid
     %normalization constants for the InternalModes classes.
     enumeration
