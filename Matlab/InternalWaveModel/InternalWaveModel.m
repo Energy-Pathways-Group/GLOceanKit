@@ -628,7 +628,10 @@ classdef (Abstract) InternalWaveModel < handle
             B_ = InternalWaveModel.MakeHermitian((etabar*self.f0 - sqrt(-1)*zeta.*self.Kh.*sqrt(self.h))*self.f0./(self.Omega.*self.Omega));
             B_(1,1,:) = 0; % we did some divide by zeros
             
-            % inertial must be solved for separately.
+            % inertial must be solved for separately. This is a really
+            % confusing way of doing this, IMO. But, notice that A_minus
+            % contains e^{ift}(u+iv)/2 --- just like A0 above, but with
+            % the other half of its energy in A_plus.
             A_plus(1,1,:) = exp(-sqrt(-1)*self.f0*t)*(ubar(1,1,:) - sqrt(-1)*vbar(1,1,:)).*sqrt(self.h(1,1,:))/2;
             A_minus(1,1,:) = conj(A_plus(1,1,:));
                       
@@ -719,6 +722,23 @@ classdef (Abstract) InternalWaveModel < handle
             energy = sum( A(:).*conj(A(:))  );
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Energetics by wavenumber and mode
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [k,j,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK,IOEnergyJ] = energeticsByWavenumberAndMode(self)
+            Ap2 = self.Amp_plus.*conj(self.Amp_plus);
+            Am2 = self.Amp_minus.*conj(self.Amp_minus);
+            B2 = (self.B_HKE_factor+self.B_PE_factor) .* (self.B.*conj(self.B));
+            B02 = self.B0_HKE_factor .* (self.B0.*conj(self.B0));
+            [k,j,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK] = self.ConvertToWavenumberAndMode(Ap2,Am2,B2,B02);
+            IOEnergyJ = IGWPlusEnergyKJ(1,:) + IGWMinusEnergyKJ(1,:);
+            IGWPlusEnergyKJ(1,:) = 0;
+            IGWMinusEnergyKJ(1,:) = 0;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Create a full Garrett-Munk spectrum (public)

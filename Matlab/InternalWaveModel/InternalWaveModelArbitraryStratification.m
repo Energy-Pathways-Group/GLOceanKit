@@ -254,18 +254,24 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             if exist(self.cacheFile,'file')
                 A = load(self.cacheFile);
                 
-                self.K2unique = A.K2unique_;
-                self.nK2unique = A.nK2unique_;
-                self.iK2unique = A.iK2unique_;
-                self.S = A.S_;
-                self.Sprime = A.Sprime_;
-                self.h_unique = A.h_unique_;
-                self.F2_unique = A.F2_unique_;
-                self.G2_unique = A.G2_unique_;
-                self.N2G2_unique = A.N2G2_unique_;
-                self.NumberOfWellConditionedModes = A.NumberOfWellConditionedModes_;
-                self.didPrecomputedModesForK2unique =A.didPrecomputedModesForK2unique_;
+                if self.nModes <= size(A.S_,2)
                 
+                    self.K2unique = A.K2unique_;
+                    self.nK2unique = A.nK2unique_;
+                    self.iK2unique = A.iK2unique_;
+                    self.S = A.S_(:,1:self.nModes,:);
+                    self.Sprime = A.Sprime_(:,1:self.nModes,:);
+                    self.h_unique = A.h_unique_(:,1:self.nModes);
+                    self.F2_unique = A.F2_unique_(:,1:self.nModes);
+                    self.G2_unique = A.G2_unique_(:,1:self.nModes);
+                    self.N2G2_unique = A.N2G2_unique_(:,1:self.nModes);
+                    self.NumberOfWellConditionedModes = A.NumberOfWellConditionedModes_;
+                    self.didPrecomputedModesForK2unique =A.didPrecomputedModesForK2unique_;
+                else
+                    error('There are not enough modes in this cache!');
+                end
+                
+                self.NumberOfWellConditionedModes(self.NumberOfWellConditionedModes>self.nModes) = self.nModes;
                 self.h = self.TransformFromK2UniqueToK2Vector(self.h_unique);
                 self.SetOmegaFromEigendepths(self.h);
                 
