@@ -279,6 +279,43 @@ classdef InternalWaveModelArbitraryStratification < InternalWaveModel
             end
         end
         
+        function ReadEigenmodesFromNetCDFCache(self,file)
+                A.K2unique_ = ncread(file,'K2unique');
+                A.nK2unique_ = length(A.K2unique_);
+                A.iK2unique_ = ncread(file,'iK2unique');
+                A.S_ = ncread(file,'S');
+                A.Sprime_ = ncread(file,'Sprime');
+                A.h_unique_ = ncread(file,'h_unique');
+                A.F2_unique_ = ncread(file,'F2_unique');
+                A.G2_unique_ = ncread(file,'G2_unique');
+                A.N2G2_unique_ = ncread(file,'N2G2_unique');
+                A.NumberOfWellConditionedModes_ = ncread(file,'NumberOfWellConditionedModes');
+                A.didPrecomputedModesForK2unique_ = ncread(file,'didPrecomputedModesForK2unique');
+                
+                if self.nModes <= size(A.S_,2)
+                    
+                    self.K2unique = A.K2unique_;
+                    self.nK2unique = A.nK2unique_;
+                    self.iK2unique = A.iK2unique_;
+                    self.S = A.S_(:,1:self.nModes,:);
+                    self.Sprime = A.Sprime_(:,1:self.nModes,:);
+                    self.h_unique = A.h_unique_(:,1:self.nModes);
+                    self.F2_unique = A.F2_unique_(:,1:self.nModes);
+                    self.G2_unique = A.G2_unique_(:,1:self.nModes);
+                    self.N2G2_unique = A.N2G2_unique_(:,1:self.nModes);
+                    self.NumberOfWellConditionedModes = A.NumberOfWellConditionedModes_;
+                    self.didPrecomputedModesForK2unique =A.didPrecomputedModesForK2unique_;
+                else
+                    error('There are not enough modes in this cache!');
+                end
+                
+                self.NumberOfWellConditionedModes(self.NumberOfWellConditionedModes>self.nModes) = self.nModes;
+                self.h = self.TransformFromK2UniqueToK2Vector(self.h_unique);
+                self.SetOmegaFromEigendepths(self.h);
+                
+                fprintf('Read from cache file. %d of %d EVPs already solved.\n',sum(self.didPrecomputedModesForK2unique), self.nK2unique);
+        end
+        
         function ComputeModesForK2UniqueIndex(self,iUnique)
             kk = self.K2unique(iUnique);
             [F,G,h,~,F2_,N2G2_,G2_] = self.internalModes.ModesAtWavenumber(sqrt(kk));
