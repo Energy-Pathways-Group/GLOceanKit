@@ -183,9 +183,13 @@ classdef InternalWaveModelNetCDFTools < handle
             latitude = ncreadatt(self.netcdfFile,'/','latitude');
             stratification = ncreadatt(self.netcdfFile,'/','stratification');
             
-            Lx = max(x)-min(x); self.Nx = length(x);
-            Ly = max(y)-min(y); self.Ny = length(y);
-            Lz = max(z)-min(z); self.Nz = length(z);
+            self.Nx = length(x);
+            self.Ny = length(y);
+            self.Nz = length(z);
+            
+            Lx = (x(2)-x(1))*self.Nx; 
+            Ly = (y(2)-y(1))*self.Ny; 
+            Lz = max(z)-min(z); 
             
             if strcmp(stratification,'custom')
                 nModes = length(j);
@@ -205,7 +209,7 @@ classdef InternalWaveModelNetCDFTools < handle
             wavemodel = self.wm;
         end
         
-        function wavemodel = SetWaveModelToIndex(self,iTime)
+        function t = SetWaveModelToIndex(self,iTime)
             A0_realp = ncread(self.netcdfFile,'A0_realp',iTime, 1);
             A0_imagp = ncread(self.netcdfFile,'A0_imagp',iTime, 1);
             Ap_realp = ncread(self.netcdfFile,'Ap_realp',[1 1 1 iTime], [Inf Inf Inf 1]);
@@ -229,7 +233,7 @@ classdef InternalWaveModelNetCDFTools < handle
             self.wm.GenerateWavePhases(A_plus,A_minus);
             self.wm.GenerateGeostrophicCurrents(B0, B);
             
-            wavemodel = self.wm;
+            t = ncread(self.netcdfFile,'t',iTime,1);
         end
         
         function self = CreateAmplitudeCoefficientVariables(self)

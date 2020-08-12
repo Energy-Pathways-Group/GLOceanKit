@@ -1828,6 +1828,9 @@ classdef (Abstract) InternalWaveModel < handle
             % amplitudes and phases for the dynamical variables. Generally
             % you don't want to call this directly, unless you have some
             % very specific use case.
+            %
+            % Compared to the manuscript this differs by:
+            % 2*A_manuscript*sqrt(h) = A_model
             self.Amp_plus = U_plus; self.Amp_minus = U_minus;
             alpha = atan2(self.L,self.K);
             omega = abs(self.Omega); % The following definitions assume omega > 0.
@@ -1854,7 +1857,9 @@ classdef (Abstract) InternalWaveModel < handle
             % Compute the geostrophic part by including the zero vertical
             % wavenumber part. The division by two is from the definition
             % of the cosine transform of something at zero-frequency.
-            
+            %
+            % Compared to the manuscript this differs by:
+            % 2*A_manuscript = A_model
             self.B0 = B0;
             if ~isempty(self.B0)
                 u_g0 = self.TransformToSpatialDomainWithBarotropicFMode(-sqrt(-1)*(self.g/self.f0)*self.L(:,:,1).*self.B0);
