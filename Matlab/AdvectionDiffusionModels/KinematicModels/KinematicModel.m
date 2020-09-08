@@ -75,9 +75,12 @@ classdef KinematicModel < handle
             end
         end
         
-        function varargout = plotVelocityField(self,t)
+        function varargout = plotVelocityField(self,t,quiverscale)
             if ~exist('t','var')
                 t = 0;
+            end
+            if ~exist('quiverscale','var')
+                quiverscale = 1;
             end
             N = 150;
             
@@ -95,10 +98,10 @@ classdef KinematicModel < handle
 %                 mask = reshape(mask,size(X));
 
 %                 quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y)), hold on
-                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y)), hold on
+                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale), hold on
                 plot(scale(self.obstacles,1e-3))
             else
-                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y))
+                quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale)
             end
             
             axis equal

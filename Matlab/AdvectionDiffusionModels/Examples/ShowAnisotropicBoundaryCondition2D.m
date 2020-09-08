@@ -58,3 +58,5 @@ y = squeeze(pn(:,2,:)).';
 
 figure
 plot(x,y)
+
+save('AnisotropicBoundaryCondition.mat','x','y','t')
