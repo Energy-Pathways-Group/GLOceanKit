@@ -166,7 +166,11 @@ classdef (Abstract) InternalModesBase < handle
                 if userSpecifiedRho0 == 0
                     self.rho0 = rho(max(rho.domain));
                 end
-                self.InitializeWithBSpline(rho);
+                if userSpecifiedN2 == 1
+                    error('Initialization with an N2 BSpline is not yet supported.')
+                else
+                    self.InitializeWithBSpline(rho);
+                end
             elseif isa(rho,'function_handle') == true
                 if numel(z_in) ~= 2
                     error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
@@ -197,7 +201,11 @@ classdef (Abstract) InternalModesBase < handle
                 end
                 [z_in,I] = sort(z_in,'ascend');
                 rho = rho(I);
-                self.InitializeWithGrid(rho,z_in);
+                if userSpecifiedN2 == 1
+                    error('Initialization with a gridded N2 is not yet supported.')
+                else
+                    self.InitializeWithGrid(rho,z_in);
+                end
             else
                 error('rho must be a function handle or an array.');
             end   

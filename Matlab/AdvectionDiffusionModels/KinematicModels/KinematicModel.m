@@ -75,14 +75,17 @@ classdef KinematicModel < handle
             end
         end
         
-        function varargout = plotVelocityField(self,t,quiverscale)
+        function varargout = plotVelocityField(self,t,quiverscale,N)
             if ~exist('t','var')
                 t = 0;
             end
             if ~exist('quiverscale','var')
                 quiverscale = 1;
             end
-            N = 150;
+            if ~exist('N','var')
+                N = 150;
+            end
+            
             
             xg = linspace(min(self.xVisLim),max(self.xVisLim),2*N)';
             yg = linspace(min(self.yVisLim),max(self.yVisLim),N)';
@@ -160,8 +163,9 @@ classdef KinematicModel < handle
                     scatter( (xshift+xMin)/self.visualScale,yshift/self.visualScale, 8^2, 'k', 'fill')
                 end
             else
-                plot(x/self.visualScale,y/self.visualScale,varargin{:})
+                plot(x/self.visualScale,y/self.visualScale,varargin{:}), hold on
                 scatter( x(end,:)/self.visualScale,y(end,:)/self.visualScale, 8^2, 'k', 'fill')
+                axis equal
             end
         end
         
