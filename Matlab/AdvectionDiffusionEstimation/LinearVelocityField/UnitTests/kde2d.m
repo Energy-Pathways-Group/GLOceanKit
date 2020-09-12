@@ -68,7 +68,7 @@ function [bandwidth,density,X,Y]=kde2d(data,n,MIN_XY,MAX_XY)
 %  plot(data(:,1),data(:,2),'w.','MarkerSize',5)
 %
 %  Reference:
-% Kernel density estimation via diffusion
+%  
 % Z. I. Botev, J. F. Grotowski, and D. P. Kroese (2010)
 % Annals of Statistics, Volume 38, Number 5, pages 2916-2957.
 global N A2 I

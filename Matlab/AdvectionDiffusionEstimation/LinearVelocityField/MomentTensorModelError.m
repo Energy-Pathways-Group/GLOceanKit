@@ -3,21 +3,22 @@
 % sigma = s*cosh(alpha);
 % zeta = s*sinh(alpha);
 % theta = theta
-function [error] = MomentTensorModelError( Mxx, Myy, Mxy, t, alpha, s, theta, kappa, sScale, kappaScale, divergence )
+function error = MomentTensorModelError( t, Mxx_obs, Myy_obs, Mxy_obs, Mxx_model, Myy_model, Mxy_model, divergence )
 
-if (kappaScale ~= 0)
-    kappa = kappaScale*exp(kappa);
-end
-if (sScale ~= 0)
-    s = sScale*exp(s);
-    sigma = s*cosh(alpha);
-    zeta = s*sinh(alpha);
-else
-    sigma = 0;
-    zeta = 0;
-end
+% if (kappaScale ~= 0)
+%     kappa = kappaScale*exp(kappa);
+% end
+% if (sScale ~= 0)
+%     s = sScale*exp(s);
+%     sigma = s*cosh(alpha);
+%     zeta = s*sinh(alpha);
+% else
+%     sigma = 0;
+%     zeta = 0;
+% end
+% theta = theta*thetaScale;
 
-[Mxx_model, Myy_model, Mxy_model] = MomentTensorEvolutionInStrainVorticityField( Mxx(1), Myy(1), Mxy(1), t, zeta, sigma, theta, kappa );
+
 
 error_i = zeros(size(t));
 area_i_overlap = zeros(size(t));
@@ -29,11 +30,11 @@ area_i_model = zeros(size(t));
 %     error_i = ((Mxx_model-Mxx))./Mxx + ((Myy_model-Myy))./Myy;% + ((Mxy_model-Mxy).^2)./Mxy.^2;
 % else
     for iTime=1:length(t)
-        Sigma_1 = [Mxx(iTime), Mxy(iTime); Mxy(iTime), Myy(iTime)];
+        Sigma_1 = [Mxx_obs(iTime), Mxy_obs(iTime); Mxy_obs(iTime), Myy_obs(iTime)];
         Sigma_2 = [Mxx_model(iTime), Mxy_model(iTime); Mxy_model(iTime), Myy_model(iTime)];
         
         if ( strcmp(divergence, 'Ellipse-Overlap') )
-            [a,b,angle] = ellipseComponentsFromMatrixComponents(Mxx(iTime),Myy(iTime),Mxy(iTime));
+            [a,b,angle] = ellipseComponentsFromMatrixComponents(Mxx_obs(iTime),Myy_obs(iTime),Mxy_obs(iTime));
             [aModel,bModel,angleModel] = ellipseComponentsFromMatrixComponents(Mxx_model(iTime),Myy_model(iTime),Mxy_model(iTime));
             [overlapArea,obsArea,modelArea] = ellipse_ellipse_overlap(a,b,angle,aModel,bModel,angleModel);
             error_i(iTime) = (modelArea - overlapArea) + (obsArea - overlapArea);

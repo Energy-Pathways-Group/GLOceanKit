@@ -5,13 +5,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 sigma = 4e-6;
-theta = 0*pi/180;
-kappa = 0.2;
+kappa = 0.5;
 T = round(1/sigma/86400)*86400;
-T = 2*86400;
+T = 3*86400;
 dt = 3600;
 
-velocityField = LinearVelocityField(sigma,theta,0);
+velocityField = LinearVelocityField(sigma,0,0);
 integrator = AdvectionDiffusionIntegrator(velocityField,kappa);
 
 x = linspace(-500,500,5);
@@ -22,46 +21,33 @@ x0 = [-500; -250; 0; 0; 0; 0; 0; 250; 500];
 y0 = [0; 0; -500; -250; 0; 250; 500; 0; 0;];
 
 
-totalIterations = 15;
-kappaEst = zeros(totalIterations,1);
-sigmaEst = zeros(totalIterations,1);
-thetaEst = zeros(totalIterations,1);
+totalIterations = 100;
+kappaEst = zeros(totalIterations,2);
+sigmaEst = zeros(totalIterations,2);
+thetaEst = zeros(totalIterations,2);
 
 for i=1:totalIterations
     [t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
         
     parameters = FitTrajectoriesToEllipseModel( x, y, t, 'strain-diffusive' );
         
-    kappaEst(i) = parameters.kappa;
-    sigmaEst(i) = parameters.sigma;
-    thetaEst(i) = parameters.theta;
+    kappaEst(i,1) = parameters.kappa;
+    sigmaEst(i,1) = parameters.sigma;
+    thetaEst(i,1) = parameters.theta;
+    
+    parameters = FitTrajectoriesToEllipseModelWithJacknife( x, y, t, 'strain-diffusive' );
+    
+    kappaEst(i,2) = parameters.kappa;
+    sigmaEst(i,2) = parameters.sigma;
+    thetaEst(i,2) = parameters.theta;
 end
 
-sigma_n = sigmaEst.*cos(2*thetaEst);
-sigma_s = sigmaEst.*sin(2*thetaEst);
+for iEst=1:2
 
-% Kernel density estimate of the distribution.
-% https://www.mathworks.com/matlabcentral/fileexchange/17204-kernel-density-estimation
-data = cat(2,sigma_n,sigma_s);
-[bandwidth,density,X,Y]=kde2d(data);
-
-figure
-contourf(X,Y,density);
-hold on
-for i=2:2:10
-    rectangle('Position',[-i -i 2*i 2*i]*1e-6, 'Curvature', [1 1]);
-end
-scatter(sigma_n, sigma_s, 5^2, 0*[1 1 1],'filled');
-axis equal
-xlabel('\sigma_n')
-ylabel('\sigma_s')
-
-% make the zeros be white
-cmap = colormap;
-cmap(1,:)=1;
-colormap(cmap)
-
-    return
+    % Kernel density estimate of the distribution.
+    % https://www.mathworks.com/matlabcentral/fileexchange/17204-kernel-density-estimation
+    data = cat(2,sigmaEst(:,iEst).*cos(2*thetaEst(:,iEst)),sigmaEst(:,iEst).*sin(2*thetaEst(:,iEst)));
+    [bandwidth,density,X,Y]=kde2d(data);
     
     % Now let's identify the cumulative values enclosed by the different
     % contours.
@@ -118,4 +104,6 @@ colormap(cmap)
     histogram((kappaEst(:,iEst)),10)
     xlabel('\kappa')
     title('diffusivity estimate')
+    
+end
 

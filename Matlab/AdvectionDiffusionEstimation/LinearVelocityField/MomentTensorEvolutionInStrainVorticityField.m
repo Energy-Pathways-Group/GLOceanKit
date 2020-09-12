@@ -5,7 +5,7 @@
 % theta is the angle of the principal strain axis, a counter-clockwise rotation.
 % kappa is the diffusivity, meters^2/second
 % Mxx, Myy, Mxy will be returned
-function [Mxx, Myy, Mxy] = MomentTensorEvolutionInStrainVorticityField( Mxx0, Myy0, Mxy0, t, zeta, sigma, theta, kappa )
+function varargout = MomentTensorEvolutionInStrainVorticityField( Mxx0, Myy0, Mxy0, t, zeta, sigma, theta, kappa )
 
 % Force t to be a column vector [n 1]
 % if (isrow(t))
@@ -132,4 +132,15 @@ elseif zeta*zeta > sigma*sigma
 	Mxx = cos2*Maa + sin2*Mbb - 2*cos_t*sin_t*Mab;
 	Myy = sin2*Maa + cos2*Mbb + 2*cos_t*sin_t*Mab;
 	Mxy = cossin*Maa - cossin*Mbb + (cos2 - sin2)*Mab;
+end
+
+if nargout == 1
+   varargout{1} = cat(2,Mxx,Myy,Mxy);
+elseif nargout == 3
+    varargout = cell(1,3);
+    varargout{1} = Mxx;
+    varargout{2} = Myy;
+    varargout{3} = Mxy;
+else
+    error('invalid number of output arguments');
 end
