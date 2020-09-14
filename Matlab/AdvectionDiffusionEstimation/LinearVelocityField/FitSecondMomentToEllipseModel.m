@@ -1,9 +1,15 @@
-function [parameters,error] = FitSecondMomentToEllipseModel( Mxx, Myy, Mxy, t, model, searchAlgorithm)
+function [parameters,error] = FitSecondMomentToEllipseModel( Mxx, Myy, Mxy, t, model, searchAlgorithm, expectedKappaRange, expectedSigmaRange)
 % The angle-gridded search algorithm appears to be the most robust, with
 % some simple testing.
 
 if nargin < 6
-    searchAlgorithm = 'angle-gridded';
+    searchAlgorithm = 'fminsearch';
+end
+if nargin < 7
+    expectedKappaRange = [0.1 5];
+end
+if nargin < 8
+    expectedSigmaRange = [1e-6 5e-5];
 end
 
 % fminsearch does not allow us to specify the initial step size,
@@ -18,12 +24,12 @@ end
 %   dparam0 = 0.05*log(kappa0/kappaScale)
 % I know I want dparam0 to be about 0.5, and I know kappa0. So,
 %   kappaScale = kappa0/exp(20*dparam0)
-initialDeltaLogKappa = 0.4;
-initialKappa = 0.5;
+initialDeltaLogKappa = (log(max(expectedKappaRange))-log(min(expectedKappaRange)))/11;
+initialKappa = exp((log(max(expectedKappaRange))+log(min(expectedKappaRange)))/2);
 kappaScale = initialKappa/exp(20*initialDeltaLogKappa);
 
-initialDeltaLogSigma = 0.4;
-initialSigma = 5e-6;
+initialDeltaLogSigma = (log(max(expectedSigmaRange))-log(min(expectedSigmaRange)))/11;
+initialSigma = exp((log(max(expectedSigmaRange))+log(min(expectedSigmaRange)))/2);
 sigmaScale = initialSigma/exp(20*initialDeltaLogSigma);
 
 % Theta has a similar problem. We need a step size of around 25 degrees. We
