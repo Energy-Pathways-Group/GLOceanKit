@@ -8,15 +8,15 @@ sigma = 2e-6;
 theta = 0*pi/180;
 kappa = 1.0;
 T = round(1/sigma/86400)*86400;
-T = 6*86400;
+T = 2*86400;
 dt = 3600;
 
 velocityField = LinearVelocityField(sigma,theta,0);
 integrator = AdvectionDiffusionIntegrator(velocityField,kappa);
 
-% x = linspace(-500,500,15);
-% y = linspace(-500,500,15);
-% [x0,y0] = ndgrid(x,y);
+x = linspace(-500,500,5);
+y = linspace(-500,500,5);
+[x0,y0] = ndgrid(x,y);
 
 x0 = [-500; -250; 0; 0; 0; 0; 0; 250; 500];
 y0 = [0; 0; -500; -250; 0; 250; 500; 0; 0;];

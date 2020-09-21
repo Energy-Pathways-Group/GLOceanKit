@@ -26,10 +26,13 @@ end
 
 [~, ~, q, r] = CenterOfMass( x, y );
 
+n = size(q,2);
+debiased = n/(n-1);
+
 % Create the second moment matrix
-M_qq = mean(q.*q,2);
-M_rr = mean(r.*r,2);
-M_qr = mean(q.*r,2);
+M_qq = debiased*mean(q.*q,2);
+M_rr = debiased*mean(r.*r,2);
+M_qr = debiased*mean(q.*r,2);
 
 if ( strcmp(basis, 'eigen') || strcmp(basis, 'eigenbasis') )
     nT = size(x,1);

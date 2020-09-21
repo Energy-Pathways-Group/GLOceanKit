@@ -59,7 +59,7 @@ classdef AdvectionDiffusionIntegrator
             
             x(1,:) = x0;
             y(1,:) = y0;
-            for i=2:tn
+            for i=1:tn
                 integrator.StepForwardToTime(i*integrator.stepSize);
                 p = integrator.currentY;
                 x(i,:)=p(:,1).';

@@ -61,11 +61,18 @@ area_i_model = zeros(size(t));
     end
 % end
 if ( strcmp(divergence, 'Ellipse-Overlap') )
-    error = sum(error_i)/sum(area_i_obs);
-%     error = error_i(end)/area_i_obs(end);
+     error = sum(error_i)/sum(area_i_obs);
+%      error = error_i(end)/area_i_obs(end);
+%      error = mean(error_i)/area_i_obs(end);
+%      error = mean(error_i./area_i_obs);
 %     fprintf('(%.2g,%.2f) ',kappa,error);
 else
     error = sum(error_i);
 end
 
 %error = sum( ((Mxx_model-Mxx).^2)/sigma2_xx + ((Myy_model-Myy).^2)/sigma2_yy + ((Mxy_model-Mxy).^2)/sigma2_xy );
+
+for iTime=1:length(t)
+    [a(iTime),b(iTime),angle(iTime)] = ellipseComponentsFromMatrixComponents(Mxx_obs(iTime),Myy_obs(iTime),Mxy_obs(iTime));
+    [aModel(iTime),bModel(iTime),angleModel(iTime)] = ellipseComponentsFromMatrixComponents(Mxx_model(iTime),Myy_model(iTime),Mxy_model(iTime));
+end
