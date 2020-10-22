@@ -79,7 +79,7 @@ classdef LinearVelocityField < StreamfunctionModel
             v = (1/2)*((self.sigma_s + self.zeta)*x - self.sigma_n*y);
         end
         
-        function [x, y] = ParticlePathInLinearVelocityField( x0, y0, t, kappa, u_0, v_0 )
+        function [x, y] = ParticlePath(self, x0, y0, t, kappa, u_0, v_0 )
             %% ParticlePathInLinearVelocityField
             %
             %	Jeffrey J. Early, 2014
