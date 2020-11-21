@@ -32,7 +32,7 @@ thetaEst = zeros(totalIterations,1);
 for i=1:totalIterations
     [t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
         
-    parameters = FitTrajectoriesToEllipseModel( x, y, t, 'strain-diffusive' );
+    parameters = FitTrajectoriesToConstantLinearVelocityField( x, y, t, 'strain-diffusive' );
         
     kappaEst(i) = parameters.kappa;
     sigmaEst(i) = parameters.sigma;

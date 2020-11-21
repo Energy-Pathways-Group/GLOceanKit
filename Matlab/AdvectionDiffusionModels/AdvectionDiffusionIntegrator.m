@@ -53,7 +53,7 @@ classdef AdvectionDiffusionIntegrator
             
             integrator = IntegratorWithObstacles( flux, p0,dt,self.kappa,[xMin yMin],[xMax yMax], self.kinematicModel.obstacles, [self.kinematicModel.xIsPeriodic self.kinematicModel.yIsPeriodic] );
             
-            t = zeros(tn,1);
+            t = zeros(tn+1,1);
             x = zeros(length(t),n);
             y = zeros(length(t),n);
             
@@ -62,9 +62,9 @@ classdef AdvectionDiffusionIntegrator
             for i=1:tn
                 integrator.StepForwardToTime(i*integrator.stepSize);
                 p = integrator.currentY;
-                x(i,:)=p(:,1).';
-                y(i,:)=p(:,2).';
-                t(i)=integrator.currentTime;
+                x(i+1,:)=p(:,1).';
+                y(i+1,:)=p(:,2).';
+                t(i+1)=integrator.currentTime;
             end
         end
        
