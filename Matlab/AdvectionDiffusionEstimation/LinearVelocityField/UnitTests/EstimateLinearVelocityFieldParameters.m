@@ -6,14 +6,19 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-sigma = 2e-6;
-theta = 0*pi/180;
-kappa = 1.0;
+u0 = 0.1*0;
+v0 = -0.2*0;
+sigma = 1e-5;
+zeta = -3e-6;
+theta = 30*pi/180;
+kappa = 0.1;
 T = round(1/sigma/86400)*86400;
 T = 2*86400;
 dt = 3600;
+model='strain-diffusive';
+model='vorticity-strain-diffusive';
 
-velocityField = LinearVelocityField(sigma,theta,0);
+velocityField = LinearVelocityField(sigma,theta,zeta,u0,v0);
 integrator = AdvectionDiffusionIntegrator(velocityField,kappa);
 
 x = linspace(-500,500,5);
@@ -25,18 +30,24 @@ y0 = [0; 0; -500; -250; 0; 250; 500; 0; 0;];
 
 
 totalIterations = 100;
+u0Est = zeros(totalIterations,1);
+v0Est = zeros(totalIterations,1);
 kappaEst = zeros(totalIterations,1);
 sigmaEst = zeros(totalIterations,1);
 thetaEst = zeros(totalIterations,1);
+zetaEst = zeros(totalIterations,1);
 
 for i=1:totalIterations
     [t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
         
-    parameters = FitTrajectoriesToConstantLinearVelocityField( x, y, t, 'strain-diffusive' );
-        
+    parameters = FitTrajectoriesToConstantLinearVelocityField( x, y, t, model );
+    
+    u0Est(i) = parameters.u0;
+    v0Est(i) = parameters.v0;
     kappaEst(i) = parameters.kappa;
     sigmaEst(i) = parameters.sigma;
     thetaEst(i) = parameters.theta;
+    zetaEst(i) = parameters.zeta;
 end
 
 sigma_n = sigmaEst.*cos(2*thetaEst);
@@ -48,6 +59,7 @@ data = cat(2,sigma_n,sigma_s);
 [bandwidth,density,X,Y]=kde2d(data);
 
 figure
+subplot(2,4,[1 2 5 6])
 contourf(X,Y,density);
 hold on
 for i=2:2:10
@@ -62,6 +74,26 @@ ylabel('\sigma_s')
 cmap = colormap;
 cmap(1,:)=1;
 colormap(cmap)
+
+subplot(2,4,3)
+histogram(u0Est,'Normalization','pdf')
+vlines(u0,'k--')
+title('u_0')
+
+subplot(2,4,4)
+histogram(v0Est,'Normalization','pdf')
+vlines(v0,'k--')
+title('v_0')
+
+subplot(2,4,7)
+histogram(zetaEst,'Normalization','pdf')
+vlines(zeta,'k--')
+title('\zeta')
+
+subplot(2,4,8)
+histogram(kappaEst,'Normalization','pdf')
+vlines(kappa,'k--')
+title('\kappa')
 
     return
     

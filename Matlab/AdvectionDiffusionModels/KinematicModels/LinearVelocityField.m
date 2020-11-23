@@ -7,8 +7,8 @@ classdef LinearVelocityField < StreamfunctionModel
         theta
         zeta
         
-        u0
-        v0
+        u0=0
+        v0=0
     end
     
     properties (Dependent)
@@ -68,15 +68,15 @@ classdef LinearVelocityField < StreamfunctionModel
         
         function psi = psi(self,t,x,y)
             % Pulled from Sarah Oscroft's thesis chapter
-            psi = 0.25*(self.sigma_s + self.zeta)*x.*x - 0.5*self.sigma_n*x.*y - 0.25*(self.sigma_s - self.zeta)*y.*y;
+            psi = -self.u0*y + self.v0*x + 0.25*(self.sigma_s + self.zeta)*x.*x - 0.5*self.sigma_n*x.*y - 0.25*(self.sigma_s - self.zeta)*y.*y;
         end
         
-        function u = u(self,t,x,y)
-            u = (1/2)*(self.sigma_n*x + (self.sigma_s - self.zeta)*y);
+        function u = u(self,t,x,y) % u = - d/dy \psi
+            u = self.u0 + (1/2)*(self.sigma_n*x + (self.sigma_s - self.zeta)*y);
         end
         
-        function v = v(self,t,x,y)
-            v = (1/2)*((self.sigma_s + self.zeta)*x - self.sigma_n*y);
+        function v = v(self,t,x,y) % v = d/dx \psi
+            v = self.v0 + (1/2)*((self.sigma_s + self.zeta)*x - self.sigma_n*y);
         end
         
         function [x, y] = ParticlePath(self, x0, y0, t, kappa, u_0, v_0 )
@@ -300,7 +300,7 @@ classdef LinearVelocityField < StreamfunctionModel
 
         function [sigma,theta] = SigmaThetaFromNormalAndShear(sigma_n,sigma_s)
             sigma = sqrt(sigma_n.*sigma_n + sigma_s.*sigma_s);
-            theta = atan2(sigma_n,sigma_s)/2;
+            theta = atan2(sigma_s,sigma_n)/2;
         end
     end
 end
