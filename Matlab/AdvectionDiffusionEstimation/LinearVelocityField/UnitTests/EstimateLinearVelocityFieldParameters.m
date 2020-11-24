@@ -16,7 +16,7 @@ T = round(1/sigma/86400)*86400;
 T = 2*86400;
 dt = 3600;
 model='strain-diffusive';
-model='vorticity-strain-diffusive';
+% model='vorticity-strain-diffusive';
 
 velocityField = LinearVelocityField(sigma,theta,zeta,u0,v0);
 integrator = AdvectionDiffusionIntegrator(velocityField,kappa);
@@ -40,7 +40,7 @@ zetaEst = zeros(totalIterations,1);
 for i=1:totalIterations
     [t,x,y] = integrator.particleTrajectories(x0,y0,T,dt);
         
-    parameters = FitTrajectoriesToConstantLinearVelocityField( x, y, t, model );
+    parameters = EstimateLinearVelocityFieldParametersWithLeastSquares( x, y, t, model );
     
     u0Est(i) = parameters.u0;
     v0Est(i) = parameters.v0;
