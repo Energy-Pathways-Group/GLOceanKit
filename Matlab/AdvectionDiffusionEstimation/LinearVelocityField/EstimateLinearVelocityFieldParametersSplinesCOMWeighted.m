@@ -1,7 +1,7 @@
 function [parameters,B] = EstimateLinearVelocityFieldParametersSplinesCOMWeighted( x, y, t, parametersToEstimate, K, dof)
 
 shouldEstimateU0V0 = 0;
-shouldEstimateUtVt = 0;
+shouldEstimateU1V1 = 0;
 shouldEstimateStrain = 0;
 shouldEstimateVorticity = 0;
 shouldEstimateDivergence = 0;
@@ -11,11 +11,11 @@ if isequal(class(parametersToEstimate),'ModelParameter')
     for i=1:length(parametersToEstimate)
        if  parametersToEstimate(i) == ModelParameter.u0v0
            shouldEstimateU0V0 = 1; nParameters = nParameters + 2;
-       elseif  parametersToEstimate(i) == ModelParameter.utvt
+       elseif  parametersToEstimate(i) == ModelParameter.u1v1
            if K > 1
-              error('Is an invalid option utvt is invalid with splines K>1!'); 
+              error('u1v1 is invalid with splines K>1!'); 
            end
-           shouldEstimateUtVt = 1; nParameters = nParameters + 2;
+           shouldEstimateU1V1 = 1; nParameters = nParameters + 2;
        elseif  parametersToEstimate(i) == ModelParameter.strain
            shouldEstimateStrain = 1; nParameters = nParameters + 2;
        elseif  parametersToEstimate(i) == ModelParameter.vorticity
@@ -33,14 +33,14 @@ elseif isequal(class(parametersToEstimate),'char')
     end
 end
 
-u0 = 0;
-v0 = 0;
-ut = 0;
-vt = 0;
-sigma_n = 0;
-sigma_s = 0;
-zeta = 0;
-delta = 0;
+u0 = zeros(length(t),1);
+v0 = zeros(length(t),1);
+u1 = zeros(length(t),1);
+v1 = zeros(length(t),1);
+sigma_n = zeros(length(t),1);
+sigma_s = zeros(length(t),1);
+zeta = zeros(length(t),1);
+delta = zeros(length(t),1);
 
 nDrifters = size(x,2);
 
@@ -107,7 +107,7 @@ if shouldEstimateU0V0 == 1
     Ru_cm = cat(2,Ru_cm,onesM,zerosM);
     Rv_cm = cat(2,Rv_cm,zerosM,onesM);
 end
-if shouldEstimateUtVt == 1
+if shouldEstimateU1V1 == 1
     Ru = cat(2,Ru,zerosB,zerosB);
     Rv = cat(2,Rv,zerosB,zerosB);
     Ru_cm = cat(2,Ru_cm,tM,zerosM);
@@ -145,9 +145,9 @@ if shouldEstimateU0V0 == 1
     p = p + 1; u0 = B*m((1:nSplines) + (p-1)*nSplines);
     p = p + 1; v0 = B*m((1:nSplines) + (p-1)*nSplines);
 end
-if shouldEstimateUtVt == 1
-    p = p + 1; ut = B*m((1:nSplines) + (p-1)*nSplines);
-    p = p + 1; vt = B*m((1:nSplines) + (p-1)*nSplines);
+if shouldEstimateU1V1 == 1
+    p = p + 1; u1 = B*m((1:nSplines) + (p-1)*nSplines);
+    p = p + 1; v1 = B*m((1:nSplines) + (p-1)*nSplines);
 end
 if shouldEstimateStrain == 1
     p = p + 1; sigma_n = B*m((1:nSplines) + (p-1)*nSplines);
@@ -179,19 +179,17 @@ end
 % x_sm = cumtrapz(t,u_sm);
 % y_sm = cumtrapz(t,v_sm);
 
-
-
 parameters.u0 = u0;
 parameters.v0 = v0;
-parameters.ut = ut;
-parameters.vt = vt;
+parameters.u1 = u1;
+parameters.v1 = v1;
 parameters.sigma_n = sigma_n;
 parameters.sigma_s = sigma_s;
 parameters.zeta = zeta;
 parameters.delta = delta;
-parameters.sigma = sqrt(sigma_n.^2 + sigma_s.^2);
-parameters.theta = atan2(sigma_s,sigma_n)/2;
-parameters.kappa = 0; %mean(x_sm(end,:).^2 + y_sm(end,:).^2)/(4*(t(end)-t(1)));
+% parameters.sigma = sqrt(sigma_n.^2 + sigma_s.^2);
+% parameters.theta = atan2(sigma_s,sigma_n)/2;
+%parameters.kappa = 0; %mean(x_sm(end,:).^2 + y_sm(end,:).^2)/(4*(t(end)-t(1)));
 
 end
 
