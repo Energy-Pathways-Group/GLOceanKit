@@ -160,25 +160,6 @@ if shouldEstimateDivergence == 1
     p = p + 1; delta = B*m((1:nSplines) + (p-1)*nSplines);
 end
 
-% 
-% uv_model=R*m;
-% u = uv_model(1:(length(uv_model)/2));
-% v = uv_model((length(uv_model)/2+1):end);
-% u = reshape(u,[length(t) nDrifters]);
-% v = reshape(v,[length(t) nDrifters]);
-% 
-% u_res = dxdt - u;
-% v_res = dydt - v;
-% 
-% u_bg = mean(u_res,2);
-% v_bg = mean(v_res,2);
-% 
-% u_sm = u_res - u_bg;
-% v_sm = v_res - v_bg;
-% 
-% x_sm = cumtrapz(t,u_sm);
-% y_sm = cumtrapz(t,v_sm);
-
 parameters.u0 = u0;
 parameters.v0 = v0;
 parameters.u1 = u1;
