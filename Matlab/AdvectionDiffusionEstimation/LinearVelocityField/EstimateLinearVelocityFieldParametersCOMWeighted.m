@@ -1,7 +1,7 @@
 function [parameters,error] = EstimateLinearVelocityFieldParametersCOMWeighted( x, y, t, parametersToEstimate)
 
 shouldEstimateU0V0 = 0;
-shouldEstimateUtVt = 0;
+shouldEstimateU1V1 = 0;
 shouldEstimateStrain = 0;
 shouldEstimateVorticity = 0;
 shouldEstimateDivergence = 0;
@@ -11,8 +11,8 @@ if isequal(class(parametersToEstimate),'ModelParameter')
     for i=1:length(parametersToEstimate)
        if  parametersToEstimate(i) == ModelParameter.u0v0
            shouldEstimateU0V0 = 1; nParameters = nParameters + 2;
-       elseif  parametersToEstimate(i) == ModelParameter.utvt
-           shouldEstimateUtVt = 1; nParameters = nParameters + 2;
+       elseif  parametersToEstimate(i) == ModelParameter.u1v1
+           shouldEstimateU1V1 = 1; nParameters = nParameters + 2;
        elseif  parametersToEstimate(i) == ModelParameter.strain
            shouldEstimateStrain = 1; nParameters = nParameters + 2;
        elseif  parametersToEstimate(i) == ModelParameter.vorticity
@@ -32,8 +32,8 @@ end
 
 u0 = 0;
 v0 = 0;
-ut = 0;
-vt = 0;
+u1 = 0;
+v1 = 0;
 sigma_n = 0;
 sigma_s = 0;
 zeta = 0;
@@ -90,7 +90,7 @@ if shouldEstimateU0V0 == 1
     Ru_cm = cat(2,Ru_cm,onesM,zerosM);
     Rv_cm = cat(2,Rv_cm,zerosM,onesM);
 end
-if shouldEstimateUtVt == 1
+if shouldEstimateU1V1 == 1
     Ru = cat(2,Ru,zerosB,zerosB);
     Rv = cat(2,Rv,zerosB,zerosB);
     Ru_cm = cat(2,Ru_cm,t,zerosM);
@@ -128,9 +128,9 @@ if shouldEstimateU0V0 == 1
     p = p + 1; u0 = m(p);
     p = p + 1; v0 = m(p);
 end
-if shouldEstimateUtVt == 1
-    p = p + 1; ut = m(p);
-    p = p + 1; vt = m(p);
+if shouldEstimateU1V1 == 1
+    p = p + 1; u1 = m(p);
+    p = p + 1; v1 = m(p);
 end
 if shouldEstimateStrain == 1
     p = p + 1; sigma_n = m(p);
@@ -166,8 +166,8 @@ end
 
 parameters.u0 = u0;
 parameters.v0 = v0;
-parameters.ut = ut;
-parameters.vt = vt;
+parameters.ut = u1;
+parameters.vt = v1;
 parameters.sigma_n = sigma_n;
 parameters.sigma_s = sigma_s;
 parameters.zeta = zeta;
