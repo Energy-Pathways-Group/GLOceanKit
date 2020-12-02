@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 1. Generate particles in a linear velocity field
-% 2. Fit estimate the linear velocity field parameters using 2nd moment
+% 2. Fit estimate the linear velocity field parameters
 % 3. Plot the estimates for a range of ensembles
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
