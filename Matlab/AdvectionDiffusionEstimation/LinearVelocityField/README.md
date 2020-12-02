@@ -1,7 +1,7 @@
 Linear velocity field parameter estimation
 ==============
 
-This directory contains tools for estimating the flow field of the advection-diffusion of the linear velocity field model using Lagrangian data. There are two basic techniques 1) fit the second moment ellipse of the data to analyatical solutions and 2) do a least squares fit to a Taylor expansion of the velocity field.
+This directory contains tools for estimating the flow field of the advection-diffusion of the linear velocity field model using Lagrangian data. There are two basic techniques 1) do a least squares fit to a Taylor expansion of the velocity field and, 2)  fit the second moment ellipse of the data to analyatical solutions.
 
 ### Table of contents
 1. [Overview](#overview)
@@ -14,9 +14,9 @@ This directory contains tools for estimating the flow field of the advection-dif
 Overview
 -----------
 
-All methods attempt to estimate (at least) strain rate, vorticity, and divergence from a cluster of drifters. The `ModelParameter` class contains a list of these (and other) parameters that can be estimated from the drifters.
+Both estimation methods estimate linear velocity field parameters such as  strain rate, vorticity, and divergence from a cluster of drifters. The `ModelParameter` class contains a list of these (and other) parameters that can be estimated from the drifters.
 
-The simplest example of how this works is to either a) generate trajectories using the [advection-diffusion models](../AdvectionDiffusionModels), or b) use your own trajectories and then use those trajectories to estimate parameters.
+The simplest example of how this works is to either a) generate trajectories using the [advection-diffusion models](../../AdvectionDiffusionModels), or b) use your own trajectories and then use those trajectories to estimate parameters.
 
 ```matlab
 
@@ -52,17 +52,21 @@ This methodology was published in Oscroft, Sykulski and Early.
 
 ### [EstimateLinearVelocityFieldParameters.m](EstimateLinearVelocityFieldParameters.m)
 
-Given a cluster Lagrangian trajectories and a list of parameters to estimate, this functional will return the best estimates possible.
+This function estimates linear velocity field parameters strain, vorticity and divergence from a cluster of Lagrangian particles.
 
 The degrees-of-freedom (dof) can optionally be given in order to set how many degrees-of-freedom each parameter is allowed to have. Anything above 1 will generate a B-spline basis to allow for time variation in the parameter estimates, which will then call `EstimateLinearVelocityFieldParametersBSplines`.
 
-### EstimateLinearVelocityFieldParametersBSplines.m
+The unit test [EstimateLinearVelocityFieldParametersUnitTest](UnitTests/EstimateLinearVelocityFieldParametersUnitTest.m) demonstrates the estimation procedure on a range of different parameters.
 
-This is a more primative function than `EstimateLinearVelocityFieldParameters`, where you can manually choose the splines (or any basis function really) that you want to use. 
+### [EstimateLinearVelocityFieldParametersBSplines.m](EstimateLinearVelocityFieldParametersBSplines.m)
+
+This is a more primative function than `EstimateLinearVelocityFieldParameters`, where you can manually choose the splines (or any basis function really) that you want to use for the time variation in the parameter estimates.
 
 ### DecomposeTrajectories.m
 
-Given a Lagrangian trajectories and a set of parameter estimates, this will decompose the velocity time series of each trajectory into background, mesoscale, and submesoscale parts. 
+Given a Lagrangian trajectories and a set of parameter estimates, this will decompose the velocity time series of each trajectory into background, mesoscale, and submesoscale parts, following the approach in the manuscript.
+
+The unit test [EstimateLinearVelocityFieldParametersUnitTest](UnitTests/EstimateLinearVelocityFieldParametersUnitTest.m) demonstrates how estimated parameters can be used to decompose the signal, and then estimate submesoscale diffusivity.
 
 ### EstimateSolutionLikelihoodFromBootstraps.m
 
