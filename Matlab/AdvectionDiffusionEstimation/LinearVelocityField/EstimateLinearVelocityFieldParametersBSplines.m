@@ -1,4 +1,4 @@
-function [parameters,B] = EstimateLinearVelocityFieldParametersSplinesCOMWeighted( x, y, t, parametersToEstimate, K, dof)
+function [parameters] = EstimateLinearVelocityFieldParametersBSplines( x, y, t, parametersToEstimate, B)
 
 shouldEstimateU0V0 = 0;
 shouldEstimateU1V1 = 0;
@@ -61,16 +61,7 @@ r = y-my;
 dqdt = D*q;
 drdt = D*r;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Method 1: This treats the center of each interval as a data point
-% Results in edge splines being wider than below
-t_data = linspace(t(1),t(end),dof+1).';
-t_knot = InterpolatingSpline.KnotPointsForPoints((t_data(1:end-1)+t_data(2:end))/2,K);
-t_knot(1:K) = t_data(1);
-t_knot((end-K+1):end) = t_data(end);
-B = BSpline.Spline(t,t_knot,K,0);
 nSplines = size(B,2);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Now put all the data together
 onesB = zeros(length(t)*nDrifters,nSplines);
@@ -160,14 +151,27 @@ if shouldEstimateDivergence == 1
     p = p + 1; delta = B*m((1:nSplines) + (p-1)*nSplines);
 end
 
-parameters.u0 = u0;
-parameters.v0 = v0;
-parameters.u1 = u1;
-parameters.v1 = v1;
-parameters.sigma_n = sigma_n;
-parameters.sigma_s = sigma_s;
-parameters.zeta = zeta;
-parameters.delta = delta;
+if nSplines == 1
+    % In this case there a a single spline, and it is just 1s. So return a
+    % scalar value instead of the whole time series.
+    parameters.u0 = u0(1);
+    parameters.v0 = v0(1);
+    parameters.u1 = u1(1);
+    parameters.v1 = v1(1);
+    parameters.sigma_n = sigma_n(1);
+    parameters.sigma_s = sigma_s(1);
+    parameters.zeta = zeta(1);
+    parameters.delta = delta(1);
+else
+    parameters.u0 = u0;
+    parameters.v0 = v0;
+    parameters.u1 = u1;
+    parameters.v1 = v1;
+    parameters.sigma_n = sigma_n;
+    parameters.sigma_s = sigma_s;
+    parameters.zeta = zeta;
+    parameters.delta = delta;
+end
 % parameters.sigma = sqrt(sigma_n.^2 + sigma_s.^2);
 % parameters.theta = atan2(sigma_s,sigma_n)/2;
 %parameters.kappa = 0; %mean(x_sm(end,:).^2 + y_sm(end,:).^2)/(4*(t(end)-t(1)));

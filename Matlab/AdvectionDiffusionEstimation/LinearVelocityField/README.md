@@ -1,14 +1,46 @@
 Linear velocity field parameter estimation
 ==============
 
-This directory contains tools for estimating the flow field of the advection-diffusion of the linear velocity field model using Lagrangian data. There are two basic techniques 1) fit the second moment ellipse of the data to analyatical solutions and 2) do a least squares fit to a Taylor (or B-Spline) expansion of the velocity field.
+This directory contains tools for estimating the flow field of the advection-diffusion of the linear velocity field model using Lagrangian data. There are two basic techniques 1) fit the second moment ellipse of the data to analyatical solutions and 2) do a least squares fit to a Taylor expansion of the velocity field.
 
 ### Table of contents
+1. [Overview](#overview)
+1. [Least squares fits](#least-squares-fits)
 1. [Second moment fits](#second-moment-fits)
-2. [Least squares fits](#least-squares-fits)
 
 
 ------------------------
+
+Overview
+-----------
+
+All methods attempt to estimate (at least) strain rate, vorticity, and divergence from a cluster of drifters. The `ModelParameter` class contains a list of these (and other) parameters that can be estimated from the drifters.
+
+
+Least squares fits
+------------
+
+This methodology was published in Oscroft, Sykulski and Early. 
+
+### EstimateLinearVelocityFieldParameters.m
+
+Given Lagrangian trajectories and a list of parameters to estimate, this functional will return the best estimates possible.
+
+The degrees-of-freedom (dof) can optionally be given in order to set how many degrees-of-freedom each parameter is allowed to have. Anything above 1 will generate a B-spline basis to allow for time variation in the parameter estimates, which will then call `EstimateLinearVelocityFieldParametersBSplines`.
+
+### EstimateLinearVelocityFieldParametersBSplines.m
+
+This is a more primative function than `EstimateLinearVelocityFieldParameters`, where you can manually choose the splines (or any basis function really) that you want to use. 
+
+### DecomposeTrajectories.m
+
+Given a Lagrangian trajectories and a set of parameter estimates, this will decompose the velocity time series of each trajectory into background, mesoscale, and submesoscale parts. 
+
+### EstimateSolutionLikelihoodFromBootstraps.m
+
+Given a struct of bootstrap estimates, this will construct PDFs from the estimates, and use that to score the likelihood of each bootstrap estimate. This can be used to determine the most probably solution.
+
+
 
 Second moment fits
 ------------
@@ -53,7 +85,6 @@ Attempts to the use B-splines to allow for slowy varying fit parameters. While i
 jet = MeanderingJet();
 ```
 
-Least squares fits
-------------
+
 
 
