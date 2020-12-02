@@ -43,10 +43,12 @@ parametersToEstimate = [ModelParameter.strain];
 parameterEstimates = EstimateLinearVelocityFieldParameters( x, y, t, parametersToEstimate );
 ```
 
+The structure `parameterEstimates` now contains values for `sigma_n` and `sigma_s` which, hopefully, give you back something close to what you put in.
+
 Least squares fits
 ------------
 
-This methodology was published in Oscroft, Sykulski and Early. 
+This methodology was published in Oscroft, Sykulski and Early.
 
 ### EstimateLinearVelocityFieldParameters.m
 
