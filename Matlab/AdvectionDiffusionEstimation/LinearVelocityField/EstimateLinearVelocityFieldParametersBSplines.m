@@ -1,4 +1,25 @@
 function [parameters] = EstimateLinearVelocityFieldParametersBSplines( x, y, t, parametersToEstimate, B)
+% EstimateLinearVelocityFieldParametersBSplines This function estimates
+% linear velocity field parameters strain, vorticity and divergence from a
+% cluster of Lagrangian particles and set of basis function B.
+%
+% Required inputs are,
+%   x ? [nT nDrifters] x position in meters of the nDrifters
+%   y - [nT nDrifters] y position in meters of the nDrifters
+%   t - [nT 1] times in seconds of the observation times
+%   parametersToEstimate - array of ModelParameter objects.
+%   B - [nT nSplines] B-splines (or really any basis functions) to be used
+%   for the parameters.
+%
+% Output is,
+%   parameters - struct containing,
+%       [u0,v0,u1,v1,sigma_n,sigma_s,zeta,delta] ? these will be [nT 1]
+%       unless dof=1, in which case they will be scalar values.
+%
+% Note that this implements equations 18-20 in Oscroft, Sykulski & Early. A
+% proper implementation would remove the artificial requirement that
+% drifter observations occur at the same time.
+%
 
 shouldEstimateU0V0 = 0;
 shouldEstimateU1V1 = 0;

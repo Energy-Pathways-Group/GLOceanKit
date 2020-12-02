@@ -1,4 +1,29 @@
 function [parameters,B] = EstimateLinearVelocityFieldParameters( x, y, t, parametersToEstimate, dof)
+% EstimateLinearVelocityFieldParameters This function estimates linear
+% velocity field parameters strain, vorticity and divergence from a cluster
+% of Lagrangian particles.
+%
+% Required inputs are,
+%   x ? [nT nDrifters] x position in meters of the nDrifters
+%   y - [nT nDrifters] y position in meters of the nDrifters
+%   t - [nT 1] times in seconds of the observation times
+%   parametersToEstimate - array of ModelParameter objects.
+%   dof (optional) ? positive integer indicating number of
+%   degrees-of-freedom to allow in time for each parameter.
+%
+% Outputs are,
+%   parameters - struct containing,
+%       [u0,v0,u1,v1,sigma_n,sigma_s,zeta,delta] ? these will be [nT 1]
+%       unless dof=1, in which case they will be scalar values.
+%   B - array [nT nSplines] containing the B-splines used for the fit.
+%
+% Note that this implements equations 18-20 in Oscroft, Sykulski & Early. A
+% proper implementation would remove the artificial requirement that
+% drifter observations occur at the same time.
+%
+% This function calls EstimateLinearVelocityFieldParametersBSplines after
+% generating B-splines following the description in the manuscript. Note
+% that setting dof=1 is equivalent to constant parameters.
 
 if ~exist('dof','var') || isempty(dof) || dof == 1
     K = 1;

@@ -16,7 +16,7 @@ Overview
 
 All methods attempt to estimate (at least) strain rate, vorticity, and divergence from a cluster of drifters. The `ModelParameter` class contains a list of these (and other) parameters that can be estimated from the drifters.
 
-The simplest example of how this works is to generate trajectories, then use those trajectories to estimate parameters.
+The simplest example of how this works is to either a) generate trajectories using the [advection-diffusion models](../AdvectionDiffusionModels), or b) use your own trajectories and then use those trajectories to estimate parameters.
 
 ```matlab
 
@@ -50,9 +50,9 @@ Least squares fits
 
 This methodology was published in Oscroft, Sykulski and Early.
 
-### EstimateLinearVelocityFieldParameters.m
+### [EstimateLinearVelocityFieldParameters.m](EstimateLinearVelocityFieldParameters.m)
 
-Given Lagrangian trajectories and a list of parameters to estimate, this functional will return the best estimates possible.
+Given a cluster Lagrangian trajectories and a list of parameters to estimate, this functional will return the best estimates possible.
 
 The degrees-of-freedom (dof) can optionally be given in order to set how many degrees-of-freedom each parameter is allowed to have. Anything above 1 will generate a B-spline basis to allow for time variation in the parameter estimates, which will then call `EstimateLinearVelocityFieldParametersBSplines`.
 

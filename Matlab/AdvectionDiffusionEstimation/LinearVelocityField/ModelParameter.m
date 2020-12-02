@@ -1,4 +1,15 @@
 classdef ModelParameter
+    % ModelParameter A simple enumeration class used to specify valid model
+    % parameters.
+    %
+    % Typical usage is that a model needs a list of parameters, e.g.,
+    %   params = [ModelParameter.strain, ModelParameter.vorticity]
+    %
+    % A nice function that is included prints a human-readable version of
+    % the model parameters, e.g.,
+    %   s=ModelParameter.modelName(params)
+    % will return a string 's' with the parameter names.
+    
     enumeration
         u0v0, u1v1, strain, vorticity, divergence
     end

@@ -1,7 +1,17 @@
 function [u_meso,v_meso,u_bg,v_bg,u_sm,v_sm] = DecomposeTrajectories(x, y, t, parameterEstimates)
-%DecomposeTrajectories Peforms the decomposition of trajectories into
-%mesoscale, background and submesoscale, following equations (23)-(25) in
-%Oscroft, Sykulski and Early (2020).
+% DecomposeTrajectories Peforms the decomposition of trajectories into
+% mesoscale, background and submesoscale, following equations (23)-(25) in
+% Oscroft, Sykulski and Early (2020).
+%
+% Required inputs are,
+%   x ? [nT nDrifters] x position in meters of the nDrifters
+%   y - [nT nDrifters] y position in meters of the nDrifters
+%   t - [nT 1] times in seconds of the observation times
+%
+% Outputs are,
+%   [u_meso,v_meso] - [nT nDrifters] mesoscale velocity in m/s
+%   [u_bg,v_bg] - [nT 1] background velocity in m/s
+%   [u_sm,v_sm] - [nt nDrifters] submesoscale velocity in m/s
 
 u0 = parameterEstimates.u0;
 v0 = parameterEstimates.v0;
