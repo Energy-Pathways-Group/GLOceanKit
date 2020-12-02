@@ -4,16 +4,16 @@ function [parameters,B] = EstimateLinearVelocityFieldParameters( x, y, t, parame
 % of Lagrangian particles.
 %
 % Required inputs are,
-%   x ? [nT nDrifters] x position in meters of the nDrifters
+%   x - [nT nDrifters] x position in meters of the nDrifters
 %   y - [nT nDrifters] y position in meters of the nDrifters
 %   t - [nT 1] times in seconds of the observation times
 %   parametersToEstimate - array of ModelParameter objects.
-%   dof (optional) ? positive integer indicating number of
+%   dof (optional) - positive integer indicating number of
 %   degrees-of-freedom to allow in time for each parameter.
 %
 % Outputs are,
 %   parameters - struct containing,
-%       [u0,v0,u1,v1,sigma_n,sigma_s,zeta,delta] ? these will be [nT 1]
+%       [u0,v0,u1,v1,sigma_n,sigma_s,zeta,delta] - these will be [nT 1]
 %       unless dof=1, in which case they will be scalar values.
 %   B - array [nT nSplines] containing the B-splines used for the fit.
 %

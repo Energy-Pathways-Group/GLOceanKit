@@ -62,15 +62,15 @@ The unit test [EstimateLinearVelocityFieldParametersUnitTest](UnitTests/Estimate
 
 This is a more primative function than `EstimateLinearVelocityFieldParameters`, where you can manually choose the splines (or any basis function really) that you want to use for the time variation in the parameter estimates.
 
-### DecomposeTrajectories.m
+### [DecomposeTrajectories.m](DecomposeTrajectories.m)
 
 Given a Lagrangian trajectories and a set of parameter estimates, this will decompose the velocity time series of each trajectory into background, mesoscale, and submesoscale parts, following the approach in the manuscript.
 
 The unit test [EstimateLinearVelocityFieldParametersUnitTest](UnitTests/EstimateLinearVelocityFieldParametersUnitTest.m) demonstrates how estimated parameters can be used to decompose the signal, and then estimate submesoscale diffusivity.
 
-### EstimateSolutionLikelihoodFromBootstraps.m
+### [EstimateSolutionLikelihoodFromBootstraps.m](EstimateSolutionLikelihoodFromBootstraps.m)
 
-Given a struct of bootstrap estimates, this will construct PDFs from the estimates, and use that to score the likelihood of each bootstrap estimate. This can be used to determine the most probably solution.
+Given a struct of bootstrap estimates, this will construct PDFs from the estimates, and use that to score the likelihood of each bootstrap estimate. This can be used to determine the most probable solution.
 
 
 
