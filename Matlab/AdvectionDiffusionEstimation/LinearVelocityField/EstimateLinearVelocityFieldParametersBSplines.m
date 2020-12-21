@@ -28,6 +28,8 @@ shouldEstimateVorticity = 0;
 shouldEstimateDivergence = 0;
 nParameters = 0;
 
+K = max(sum(B > 0,2));
+
 if isequal(class(parametersToEstimate),'ModelParameter')
     for i=1:length(parametersToEstimate)
        if  parametersToEstimate(i) == ModelParameter.u0v0

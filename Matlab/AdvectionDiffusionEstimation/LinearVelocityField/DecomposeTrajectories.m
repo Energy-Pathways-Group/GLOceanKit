@@ -23,8 +23,8 @@ sigma_s = parameterEstimates.sigma_s;
 zeta = parameterEstimates.zeta;
 delta = parameterEstimates.delta;
 
-u_meso = u0 + u1*t + 0.5*(sigma_n+delta).*x + 0.5*(sigma_s-zeta).*y;
-v_meso = v0 + v1*t + 0.5*(sigma_s+zeta).*x + 0.5*(delta-sigma_n).*y;
+u_meso = u0 + u1.*t + 0.5*(sigma_n+delta).*x + 0.5*(sigma_s-zeta).*y;
+v_meso = v0 + v1.*t + 0.5*(sigma_s+zeta).*x + 0.5*(delta-sigma_n).*y;
 
 % To compute the background velocity, we need the center-of-mass velocity.
 D = FiniteDifferenceMatrix(1,t,1,1,2);

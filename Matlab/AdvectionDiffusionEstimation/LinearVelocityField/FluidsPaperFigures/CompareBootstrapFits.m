@@ -1,5 +1,5 @@
 % Load our giant list of possible paths.
-SiteNumber=2;
+SiteNumber=1;
 totalPermutations = 1000;
 load(sprintf('smoothedGriddedRho%dDrifters.mat',SiteNumber));
 % The last drifter at both sites is only partial time series.
@@ -26,6 +26,8 @@ for dof = 1:6
         p = bootstraps{iModel};
         parameterEstimates.u0 = p.u0(:,mostLikelyIndices(1));
         parameterEstimates.v0 = p.v0(:,mostLikelyIndices(1));
+        parameterEstimates.u1 = p.u1(:,mostLikelyIndices(1));
+        parameterEstimates.v1 = p.v1(:,mostLikelyIndices(1));
         parameterEstimates.sigma_n = p.sigma_n(:,mostLikelyIndices(1));
         parameterEstimates.sigma_s = p.sigma_s(:,mostLikelyIndices(1));
         parameterEstimates.zeta = p.zeta(:,mostLikelyIndices(1));

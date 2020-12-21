@@ -1,4 +1,4 @@
-SiteNumber=2;
+SiteNumber=1;
 load(sprintf('smoothedGriddedRho%dDrifters.mat',SiteNumber));
 % The last drifter at both sites is only partial time series.
 x = x(:,1:(end-1));
@@ -40,6 +40,15 @@ for dof = 1:6
     b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.strain,ModelParameter.vorticity];
     b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.strain,ModelParameter.divergence];
     b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.strain,ModelParameter.vorticity,ModelParameter.divergence];
+    if dof == 1 && shouldFitToSecondMomentOnly == 0
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.vorticity];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.divergence];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.strain];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.vorticity,ModelParameter.divergence];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.strain,ModelParameter.vorticity];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.strain,ModelParameter.divergence];
+        b=b+1; bootstraps{b} = emptyStruct; bootstraps{b}.parameters = [u0v0,ModelParameter.u1v1,ModelParameter.strain,ModelParameter.vorticity,ModelParameter.divergence];
+    end
     
     % Now let's walk through all the possible combinations
     drifterPermutations = zeros(totalPermutations,nDrifters);
@@ -66,6 +75,8 @@ for dof = 1:6
             if dof == 1
                 bootstraps{iModel}.u0(:,iPermutation)=B*p.u0;
                 bootstraps{iModel}.v0(:,iPermutation)=B*p.v0;
+                bootstraps{iModel}.u1(:,iPermutation)=B*p.u1;
+                bootstraps{iModel}.v1(:,iPermutation)=B*p.v1;
                 bootstraps{iModel}.sigma_n(:,iPermutation)=B*p.sigma_n;
                 bootstraps{iModel}.sigma_s(:,iPermutation)=B*p.sigma_s;
                 bootstraps{iModel}.zeta(:,iPermutation)=B*p.zeta;
@@ -73,6 +84,8 @@ for dof = 1:6
             else
                 bootstraps{iModel}.u0(:,iPermutation)=p.u0;
                 bootstraps{iModel}.v0(:,iPermutation)=p.v0;
+                bootstraps{iModel}.u1(:,iPermutation)=p.u1;
+                bootstraps{iModel}.v1(:,iPermutation)=p.v1;
                 bootstraps{iModel}.sigma_n(:,iPermutation)=p.sigma_n;
                 bootstraps{iModel}.sigma_s(:,iPermutation)=p.sigma_s;
                 bootstraps{iModel}.zeta(:,iPermutation)=p.zeta;
