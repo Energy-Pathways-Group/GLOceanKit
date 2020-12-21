@@ -29,7 +29,7 @@ if ~exist('dof','var') || isempty(dof) || dof == 1
     K = 1;
     t_knot = [t(1) t(end)];
 else
-    K = min([dof 4],[]); % Only go as high as a cubic spline.
+    K = min([dof 4]); % Only go as high as a cubic spline.
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This treats the center of each interval as a data point

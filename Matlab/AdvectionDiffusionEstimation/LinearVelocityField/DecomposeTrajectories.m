@@ -1,4 +1,4 @@
-function [u_meso,v_meso,u_bg,v_bg,u_sm,v_sm] = DecomposeTrajectories(x, y, t, parameterEstimates)
+function [u_meso,v_meso,u_bg,v_bg,u_sm,v_sm,dmxdt,dmydt] = DecomposeTrajectories(x, y, t, parameterEstimates)
 % DecomposeTrajectories Peforms the decomposition of trajectories into
 % mesoscale, background and submesoscale, following equations (23)-(25) in
 % Oscroft, Sykulski and Early (2020).
@@ -11,7 +11,8 @@ function [u_meso,v_meso,u_bg,v_bg,u_sm,v_sm] = DecomposeTrajectories(x, y, t, pa
 % Outputs are,
 %   [u_meso,v_meso] - [nT nDrifters] mesoscale velocity in m/s
 %   [u_bg,v_bg] - [nT 1] background velocity in m/s
-%   [u_sm,v_sm] - [nt nDrifters] submesoscale velocity in m/s
+%   [u_sm,v_sm] - [nT nDrifters] submesoscale velocity in m/s
+%   [dmxdt,dmydt] - [nT 1] center-of-mass velocity in m/s
 
 u0 = parameterEstimates.u0;
 v0 = parameterEstimates.v0;
@@ -39,6 +40,13 @@ dxdt = D*x;
 dydt = D*y;
 u_sm = dxdt - u_meso - u_bg;
 v_sm = dydt - v_meso - v_bg;
+
+% q = (x-mx);
+% r = (y-my);
+% dqdt = D*q;
+% drdt = D*r;
+% dqdt_meso = 0.5*(sigma_n+delta).*q + 0.5*(sigma_s-zeta).*r;
+% drdt_meso = 0.5*(sigma_s+zeta).*q + 0.5*(delta-sigma_n).*r;
 
 end
 
