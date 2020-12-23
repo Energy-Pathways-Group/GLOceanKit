@@ -1,10 +1,14 @@
 InternalWaveModel
 ==============
 
-The InternalWaveModel class creates linear internal wave model for user specified stratification.
+The InternalWaveModel class is a linear rotating Boussinesq model with arbitrary stratification. This system consists of geostrophic motions and interia-gravity waves.
 
-If you use these classes, please cite the following paper,
-- J. Early. Linear internal wave model, Ocean Modelling, in prep
+This model has several significant features.
+
+1. The internal waves can be initialized with Garrett-Munk spectrum, consistent for bounded domains and arbitrary stratification.
+2. The model can be initialized from variables (u,v,rho), and thus performs a wave-vortex decomposition following the methodology in [Early, Lelong and Sundermeyer, 2021 JFM](https://arxiv.org/abs/2002.06267).
+
+If you use these classes, please cite the JFM paper.
 
 ### Table of contents
 1. [Quick Start](#quick-start)

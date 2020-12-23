@@ -6,23 +6,24 @@ figure('Units', 'points', 'Position', [50 50 figure_width_1col+22 250*scaleFacto
 set(gcf,'PaperPositionMode','auto')
 set(gcf, 'Color', 'w');
 
-for Site=1:1
+for Site=1:2
 % Choose which drifters to analyze.
     if Site == 1
         dof=4;
         iModel=3;
-        filename = sprintf('BootstrapData/Rho%dDrifterSplineFits1000_dof%d.mat',Site,dof);
-        load(sprintf('smoothedGriddedRho%dDrifters.mat',Site));
         ylimit = [2e-3 1.5e3];
     else
-        file = './observations/griddedRho2DrifterMomementEllipses/BestFitParams_area_div_total_area_rolling_24_hour_window_Fine.m';
-        drifters = griddedRho2Drifters;
+        dof=4;
+        iModel=5;
         ylimit = [2e-2 5e4];
     end
+    
+    load(sprintf('smoothedGriddedRho%dDrifters.mat',Site));
     % The last drifter at both sites is only partial time series.
     x = x(:,1:(end-1));
     y = y(:,1:(end-1));
 
+    filename = sprintf('BootstrapData/Rho%dDrifterSplineFits1000_dof%d.mat',Site,dof);
     load(filename);
     [~,mostLikelyIndices] = sort(bootstraps{iModel}.jointlikelihood,'descend');
     p = bootstraps{iModel};
@@ -94,4 +95,4 @@ for Site=1:1
 end
 
 packfig(2,1)
-% print('-depsc', sprintf('%s/site1and2_decomposed_spectra.eps', drifters.figuresFolder))
+print('-depsc', 'site1and2_decomposed_spectra.eps')
