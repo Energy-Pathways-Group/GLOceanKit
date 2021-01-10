@@ -39,23 +39,25 @@ Ubar = wm.TransformFromSpatialDomainWithF(u);
 Vbar = wm.TransformFromSpatialDomainWithF(v);
 Nbar = wm.TransformFromSpatialDomainWithG(eta);
 
+K = wm.K;
+L = wm.L;
 alpha = atan2(wm.L,wm.K);
 g = wm.g;
 omega = wm.Omega;
 fOmega = wm.f0./omega;
 Kh = wm.Kh;
 
-ApU = (1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-ApV = (1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-ApN = -g*Kh./(2*omega);
+ApU = wm.MakeHermitian((1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
+ApV = wm.MakeHermitian((1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
+ApN = wm.MakeHermitian(-g*Kh./(2*omega));
 
-AmU = (1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-AmV = (1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-AmN = g*Kh./(2*omega);
+AmU = wm.MakeHermitian((1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
+AmV = wm.MakeHermitian((1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
+AmN = wm.MakeHermitian(g*Kh./(2*omega));
 
-A0U = sqrt(-1)*wm.h.*(fOmega./omega) .* wm.L;
-A0V = -sqrt(-1)*wm.h.*(fOmega./omega) .* wm.K; 
-A0N = fOmega.^2;
+A0U = wm.MakeHermitian(sqrt(-1)*wm.h.*(fOmega./omega) .* wm.L);
+A0V = wm.MakeHermitian(-sqrt(-1)*wm.h.*(fOmega./omega) .* wm.K); 
+A0N = wm.MakeHermitian(fOmega.^2);
 
 Ap = ApU.*Ubar + ApV.*Vbar + ApN.*Nbar;
 Am = AmU.*Ubar + AmV.*Vbar + AmN.*Nbar;
