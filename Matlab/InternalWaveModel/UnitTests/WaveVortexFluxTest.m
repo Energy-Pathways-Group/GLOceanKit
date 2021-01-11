@@ -63,5 +63,8 @@ Ap = ApU.*Ubar + ApV.*Vbar + ApN.*Nbar;
 Am = AmU.*Ubar + AmV.*Vbar + AmN.*Nbar;
 A0 = A0U.*Ubar + A0V.*Vbar + A0N.*Nbar;
 
-Ap = sqrt(wm.h).*Ap;
-Am = sqrt(wm.h).*Am;
+bm = Boussinesq3DConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+[App,Amm,A00] = bm.Project(u,v,eta);
+
+% Ap = sqrt(wm.h).*Ap;
+% Am = sqrt(wm.h).*Am;

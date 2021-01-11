@@ -3,7 +3,13 @@ classdef Boussinesq3DConstantStratification
     %space
     
     properties
-        Property1
+        x, y, z
+        Nx, Ny, Nz, nz
+        dctScratch, dstScratch;
+        F,G
+        ApU, ApV, ApN
+        AmU, AmV, AmN
+        A0U, A0V, A0N
     end
     
     methods
@@ -27,13 +33,68 @@ classdef Boussinesq3DConstantStratification
             dz = Lz/nz;
             z = dz*(0:Nz-1)' - Lz;
             
+            Lx = dims(1);
+            Ly = dims(2);
             
+            self.Nx = n(1);
+            self.Ny = n(2);
+            self.Nz = n(3);
+            self.nz = nz;
+            
+            % Preallocate this array for a faster dct
+            self.dctScratch = zeros(self.Nx,self.Ny,2*nz);
+            self.dstScratch = complex(zeros(self.Nx,self.Ny,2*nz));
+            
+            dx = Lx/self.Nx;
+            dy = Ly/self.Ny;
+            
+            self.x = dx*(0:self.Nx-1)'; % periodic basis
+            self.y = dy*(0:self.Ny-1)'; % periodic basis
+            self.z = z; % cosine basis (not your usual dct basis, however)
+                        
+            dk = 1/Lx;          % fourier frequency
+            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+            dl = 1/Ly;          % fourier frequency
+            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+            j = (1:(nz-1))';
+            
+            [K,L,J] = ndgrid(k,l,j);
+            alpha = atan2(L,K);
+            f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+            K2 = K.*K + L.*L;
+            Kh = sqrt(K2);
+            
+            g = 9.81;
+            M = J*pi/Lz;        % Vertical wavenumber
+            h = (1/g)*(N0*N0-f0*f0)./(M.*M+K2);
+            omega = sqrt(g*h.*K2 + f0*f0);
+            fOmega = f0./omega;
+            
+            signNorm = -2*(mod(J,2) == 1)+1;
+            self.F = signNorm .* (h.*M)*sqrt(2*g/(Lz*(N0*N0-f0*f0)));
+            self.G = signNorm .* sqrt(2*g/(Lz*(N0*N0-f0*f0)));
+            
+            self.ApU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
+            self.ApV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
+            self.ApN = InternalWaveModel.MakeHermitian(-g*Kh./(2*omega));
+            
+            self.AmU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
+            self.AmV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
+            self.AmN = InternalWaveModel.MakeHermitian(g*Kh./(2*omega));
+            
+            self.A0U = InternalWaveModel.MakeHermitian(sqrt(-1)*h.*(fOmega./omega) .* L);
+            self.A0V = InternalWaveModel.MakeHermitian(-sqrt(-1)*h.*(fOmega./omega) .* K);
+            self.A0N = InternalWaveModel.MakeHermitian(fOmega.^2);
         end
         
         function [Ap,Am,A0] = Project(self,U,V,N)
-            Ubar = self.TransformFromSpatialDomainWithF(u);
-            Vbar = self.TransformFromSpatialDomainWithF(v);
-            Nbar = self.TransformFromSpatialDomainWithG(eta);
+            Ubar = self.TransformFromSpatialDomainWithF(U);
+            Vbar = self.TransformFromSpatialDomainWithF(V);
+            Nbar = self.TransformFromSpatialDomainWithG(N);
+            
+            Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
+            Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
+            A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
