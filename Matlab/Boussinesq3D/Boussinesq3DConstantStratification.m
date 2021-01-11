@@ -97,6 +97,16 @@ classdef Boussinesq3DConstantStratification
             A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
         end
         
+        function [Ap,Am,A0] = ProjectFull(self,U,V,N)
+            Ubar = self.TransformFromSpatialDomainWithFFull(U);
+            Vbar = self.TransformFromSpatialDomainWithFFull(V);
+            Nbar = self.TransformFromSpatialDomainWithGFull(N);
+            
+            Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
+            Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
+            A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -178,6 +188,24 @@ classdef Boussinesq3DConstantStratification
             self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
             w_bar = 2*imag(self.dstScratch(:,:,2:self.nz));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)./self.G/self.Nx/self.Ny;
+        end
+        
+        function u_bar = TransformFromSpatialDomainWithFFull(self, u)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-1)*df
+            self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
+            u_bar = 2*real(self.dctScratch(:,:,1:self.nz)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
+            u_bar = u_bar(:,:,2:end)./self.F;
+        end
+        
+        function w_bar = TransformFromSpatialDomainWithGFull(self, w)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-2)*df
+            self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
+            w_bar = 2*imag(self.dstScratch(:,:,1:self.nz));
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            w_bar = w_bar(:,:,2:end)./self.G;
         end
     end
 end
