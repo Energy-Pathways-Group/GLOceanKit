@@ -103,11 +103,11 @@ classdef Boussinesq3DConstantStratification
                 
                 self.UAp = InternalWaveModel.MakeHermitian((cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
                 self.UAm = InternalWaveModel.MakeHermitian((cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
-                self.UA0 = InternalWaveModel.MakeHermitian(-sqrt(-1)*(g/f)*L);
+                self.UA0 = InternalWaveModel.MakeHermitian(-sqrt(-1)*(g/f0)*L);
                 
                 self.VAp = InternalWaveModel.MakeHermitian((sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
                 self.VAm = InternalWaveModel.MakeHermitian((sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
-                self.VA0 = InternalWaveModel.MakeHermitian(sqrt(-1)*(g/f)*K);
+                self.VA0 = InternalWaveModel.MakeHermitian(sqrt(-1)*(g/f0)*K);
                 
                 self.WAp = InternalWaveModel.MakeHermitian(-sqrt(-1)*Kh.*h);
                 self.WAm = InternalWaveModel.MakeHermitian(sqrt(-1)*Kh.*h);
@@ -247,8 +247,8 @@ classdef Boussinesq3DConstantStratification
         
         function u = TransformToSpatialDomainWithFFull(self, u_bar)
             u = self.Nx*self.Ny*ifft(ifft(u_bar.*self.F,self.Nx,1),self.Ny,2,'symmetric');
-            self.dctScratch = cat(3, 0.5*u(:,:,1:self.nz), u(:,:,self.nz+1), 0.5*u(:,:,self.nz:-1:2));
-            u = fft(self.dctScratch,2*self.nz,3);
+            self.dctScratch = cat(3, 0.5*u(:,:,1:self.Nz-1), zeros(self.Nx,self.Ny), 0.5*u(:,:,(self.Nz-1):-1:2));
+            u = fft(self.dctScratch,2*(self.Nz-1),3);
 
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
@@ -262,19 +262,19 @@ classdef Boussinesq3DConstantStratification
             w = self.Nx*self.Ny*ifft(ifft(w_bar.* self.G,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            self.dstScratch = 0.5*sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), w(:,:,2:self.nz), zeros(self.Nx,self.Ny), -w(:,:,self.nz:-1:2));
+            self.dstScratch = 0.5*sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), w(:,:,2:(self.Nz-1)), zeros(self.Nx,self.Ny), -w(:,:,(self.Nz-1):-1:2));
             
-            w = fft( self.dstScratch,2*self.nz,3);
+            w = fft( self.dstScratch,2*(self.Nz-1),3);
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            w = real(w(:,:,1:self.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+            w = real(w(:,:,1:self.Nz)); 
         end
         
         function u_bar = TransformFromSpatialDomainWithFFull(self, u)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-1)*df
-            self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
-            u_bar = 2*real(self.dctScratch(:,:,1:self.nz)); 
+            self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+            u_bar = 2*real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
             u_bar = u_bar./self.F;
         end
@@ -282,8 +282,8 @@ classdef Boussinesq3DConstantStratification
         function w_bar = TransformFromSpatialDomainWithGFull(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
-            self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
-            w_bar = 2*imag(self.dstScratch(:,:,1:self.nz));
+            self.dstScratch = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+            w_bar = 2*imag(self.dstScratch(:,:,1:(self.Nz-1)));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
             w_bar = w_bar./self.G;
         end
