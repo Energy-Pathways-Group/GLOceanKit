@@ -85,16 +85,18 @@ error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 % [App,Amm,A00] = boussinesq.ProjectFull(u,v,eta);
 
 % First check the G transform
-w_bar = boussinesq.TransformFromSpatialDomainWithGFull( w );
-w_back = boussinesq.TransformToSpatialDomainWithGFull(w_bar);
+w_bar = boussinesq.TransformFromSpatialDomainWithG( w );
+w_back = boussinesq.TransformToSpatialDomainWithG(w_bar);
 w_error = error2(w,w_back);
 fprintf('\tG-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
 % First check the F transform
-u_bar = boussinesq.TransformFromSpatialDomainWithFFull( u );
-u_back = boussinesq.TransformToSpatialDomainWithFFull(u_bar);
+u_bar = boussinesq.TransformFromSpatialDomainWithF( u );
+u_back = boussinesq.TransformToSpatialDomainWithF(u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+
+return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
