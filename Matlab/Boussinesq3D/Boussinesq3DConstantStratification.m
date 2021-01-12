@@ -10,6 +10,11 @@ classdef Boussinesq3DConstantStratification
         ApU, ApV, ApN
         AmU, AmV, AmN
         A0U, A0V, A0N
+        
+        UAp, UAm, UA0
+        VAp, VAm, VA0
+        WAp, WAm
+        NAp, NAm, NA0
     end
     
     methods
@@ -56,35 +61,72 @@ classdef Boussinesq3DConstantStratification
             k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
             dl = 1/Ly;          % fourier frequency
             l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-            j = (1:(nz-1))';
             
-            [K,L,J] = ndgrid(k,l,j);
-            alpha = atan2(L,K);
-            f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
-            K2 = K.*K + L.*L;
-            Kh = sqrt(K2);
-            
-            g = 9.81;
-            M = J*pi/Lz;        % Vertical wavenumber
-            h = (1/g)*(N0*N0-f0*f0)./(M.*M+K2);
-            omega = sqrt(g*h.*K2 + f0*f0);
-            fOmega = f0./omega;
-            
-            signNorm = -2*(mod(J,2) == 1)+1;
-            self.F = signNorm .* (h.*M)*sqrt(2*g/(Lz*(N0*N0-f0*f0)));
-            self.G = signNorm .* sqrt(2*g/(Lz*(N0*N0-f0*f0)));
-            
-            self.ApU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
-            self.ApV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
-            self.ApN = InternalWaveModel.MakeHermitian(-g*Kh./(2*omega));
-            
-            self.AmU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
-            self.AmV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
-            self.AmN = InternalWaveModel.MakeHermitian(g*Kh./(2*omega));
-            
-            self.A0U = InternalWaveModel.MakeHermitian(sqrt(-1)*h.*(fOmega./omega) .* L);
-            self.A0V = InternalWaveModel.MakeHermitian(-sqrt(-1)*h.*(fOmega./omega) .* K);
-            self.A0N = InternalWaveModel.MakeHermitian(fOmega.^2);
+            shouldUseBarotropicMode = 1;
+            if shouldUseBarotropicMode == 0
+                j = (1:(nz-1))';
+            else
+                j = (0:(nz-1))';
+            end 
+                [K,L,J] = ndgrid(k,l,j);
+                alpha = atan2(L,K);
+                f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+                K2 = K.*K + L.*L;
+                Kh = sqrt(K2);
+                
+                g = 9.81;
+                M = J*pi/Lz;        % Vertical wavenumber
+                h = (1/g)*(N0*N0-f0*f0)./(M.*M+K2);
+                
+                if shouldUseBarotropicMode == 1
+                   h(:,:,1) = 1; % prevent divide by zero 
+                end
+                
+                omega = sqrt(g*h.*K2 + f0*f0);
+                fOmega = f0./omega;
+                
+                signNorm = -2*(mod(J,2) == 1)+1;
+                self.F = signNorm .* (h.*M)*sqrt(2*g/(Lz*(N0*N0-f0*f0)));
+                self.G = signNorm .* sqrt(2*g/(Lz*(N0*N0-f0*f0)));
+                
+                self.ApU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
+                self.ApV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
+                self.ApN = InternalWaveModel.MakeHermitian(-g*Kh./(2*omega));
+                
+                self.AmU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
+                self.AmV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
+                self.AmN = InternalWaveModel.MakeHermitian(g*Kh./(2*omega));
+                
+                self.A0U = InternalWaveModel.MakeHermitian(sqrt(-1)*h.*(fOmega./omega) .* L);
+                self.A0V = InternalWaveModel.MakeHermitian(-sqrt(-1)*h.*(fOmega./omega) .* K);
+                self.A0N = InternalWaveModel.MakeHermitian(fOmega.^2);
+                
+                self.UAp = InternalWaveModel.MakeHermitian((cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
+                self.UAm = InternalWaveModel.MakeHermitian((cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
+                self.UA0 = InternalWaveModel.MakeHermitian(-sqrt(-1)*(g/f)*L);
+                
+                self.VAp = InternalWaveModel.MakeHermitian((sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
+                self.VAm = InternalWaveModel.MakeHermitian((sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
+                self.VA0 = InternalWaveModel.MakeHermitian(sqrt(-1)*(g/f)*K);
+                
+                self.WAp = InternalWaveModel.MakeHermitian(-sqrt(-1)*Kh.*h);
+                self.WAm = InternalWaveModel.MakeHermitian(sqrt(-1)*Kh.*h);
+                
+                self.NAp = InternalWaveModel.MakeHermitian(-Kh.*h./omega);
+                self.NAm = InternalWaveModel.MakeHermitian(Kh.*h./omega);
+                self.NA0 = ones(size(Kh));
+                
+           if shouldUseBarotropicMode == 1   
+                self.F(:,:,1) = 1;
+                self.G(:,:,1) = 1;
+                
+                % k=l=0 (inertial) should be fine other than,
+                self.A0N(1,1,:) = 0;
+                
+                % k
+                self.A0U(:,:,1) = -sqrt(-1)*(f0/g)*K(:,:,1)./K2(:,:,1);
+                self.A0V(:,:,1) =  sqrt(-1)*(f0/g)*L(:,:,1)./K2(:,:,1);
+            end
         end
         
         function [Ap,Am,A0] = Project(self,U,V,N)
@@ -105,6 +147,18 @@ classdef Boussinesq3DConstantStratification
             Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
             Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
             A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
+        end
+        
+        function [U,V,W,N] = VelocityFieldFull(self,Ap,Am,A0)
+            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
+            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
+            Wbar = self.WAp.*Ap + self.WAm.*Am;
+            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
+            
+            U = self.TransformToSpatialDomainWithFFull(Ubar);
+            V = self.TransformToSpatialDomainWithFFull(Vbar);
+            W = self.TransformToSpatialDomainWithFFull(Wbar);
+            N = self.TransformToSpatialDomainWithFFull(Nbar);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,13 +244,39 @@ classdef Boussinesq3DConstantStratification
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)./self.G/self.Nx/self.Ny;
         end
         
+        
+        function u = TransformToSpatialDomainWithFFull(self, u_bar)
+            u = self.Nx*self.Ny*ifft(ifft(u_bar.*self.F,self.Nx,1),self.Ny,2,'symmetric');
+            self.dctScratch = cat(3, 0.5*u(:,:,1:self.nz), u(:,:,self.nz+1), 0.5*u(:,:,self.nz:-1:2));
+            u = fft(self.dctScratch,2*self.nz,3);
+
+            % should not have to call real, but for some reason, with enough
+            % points, it starts generating some small imaginary component.
+            u = real(u(:,:,1:self.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+        end
+        
+        
+        function w = TransformToSpatialDomainWithGFull(self, w_bar )
+            % Here we use what I call the 'Fourier series' definition of the ifft, so
+            % that the coefficients in frequency space have the same units in time.
+            w = self.Nx*self.Ny*ifft(ifft(w_bar.* self.G,self.Nx,1),self.Ny,2,'symmetric');
+            
+            % Re-order to convert to an fast cosine transform
+            self.dstScratch = 0.5*sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), w(:,:,2:self.nz), zeros(self.Nx,self.Ny), -w(:,:,self.nz:-1:2));
+            
+            w = fft( self.dstScratch,2*self.nz,3);
+            % should not have to call real, but for some reason, with enough
+            % points, it starts generating some small imaginary component.
+            w = real(w(:,:,1:self.Nz)); % Here we use Nz (not nz) because the user may want the end point.
+        end
+        
         function u_bar = TransformFromSpatialDomainWithFFull(self, u)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-1)*df
             self.dctScratch = ifft(cat(3,u,u(:,:,self.nz:-1:2)),2*self.nz,3);
-            u_bar = 2*real(self.dctScratch(:,:,1:self.nz)); % we *ignore* the barotropic mode, starting at 2, instead of 1 in the transform
+            u_bar = 2*real(self.dctScratch(:,:,1:self.nz)); 
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
-            u_bar = u_bar(:,:,2:end)./self.F;
+            u_bar = u_bar./self.F;
         end
         
         function w_bar = TransformFromSpatialDomainWithGFull(self, w)
@@ -205,7 +285,7 @@ classdef Boussinesq3DConstantStratification
             self.dstScratch = ifft(cat(3,w,-w(:,:,self.nz:-1:2)),2*self.nz,3);
             w_bar = 2*imag(self.dstScratch(:,:,1:self.nz));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
-            w_bar = w_bar(:,:,2:end)./self.G;
+            w_bar = w_bar./self.G;
         end
     end
 end
