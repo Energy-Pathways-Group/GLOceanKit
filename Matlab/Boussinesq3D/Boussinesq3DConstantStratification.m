@@ -6,6 +6,7 @@ classdef Boussinesq3DConstantStratification < handle
         x, y, z
         k, l, j
         Nx, Ny, Nz
+        Lx, Ly, Lz
         f0, N0
         
         dctScratch, dstScratch;
@@ -18,6 +19,22 @@ classdef Boussinesq3DConstantStratification < handle
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
+    end
+    
+    properties (Dependent)
+        % These convert the coefficients to their depth integrated energies
+        Apm_HKE_factor
+        Apm_VKE_factor
+        Apm_PE_factor
+        Apm_TE_factor
+
+        A0_HKE_factor
+        A0_PE_factor
+        A0_TE_factor
+    end
+    
+    properties (Constant)
+        g = 9.81;
     end
     
     methods
@@ -35,25 +52,25 @@ classdef Boussinesq3DConstantStratification < handle
                 error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
             end
                         
-            Lx = dims(1);
-            Ly = dims(2);
-            Lz = dims(3);
+            self.Lx = dims(1);
+            self.Ly = dims(2);
+            self.Lz = dims(3);
             
             self.Nx = n(1);
             self.Ny = n(2);
             self.Nz = n(3);
 
-            dx = Lx/self.Nx;
-            dy = Ly/self.Ny;
-            dz = Lz/(self.Nz-1);
+            dx = self.Lx/self.Nx;
+            dy = self.Ly/self.Ny;
+            dz = self.Lz/(self.Nz-1);
             
             self.x = dx*(0:self.Nx-1)'; % periodic basis
             self.y = dy*(0:self.Ny-1)'; % periodic basis
-            self.z = dz*(0:(self.Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
+            self.z = dz*(0:(self.Nz-1))' - self.Lz; % Cosine basis for DCT-I and DST-I
                         
-            dk = 1/Lx;          % fourier frequency
+            dk = 1/self.Lx;          % fourier frequency
             self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-            dl = 1/Ly;          % fourier frequency
+            dl = 1/self.Ly;          % fourier frequency
             self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
             self.j = (0:(self.Nz-2))';
             
@@ -68,77 +85,168 @@ classdef Boussinesq3DConstantStratification < handle
         end
         
         function self = BuildTransformationMatrices(self)
-                % Build wavenumbers
-                [K,L,J] = ndgrid(self.k,self.l,self.j);
-                alpha = atan2(L,K);
-                K2 = K.*K + L.*L;
-                Kh = sqrt(K2);      % Total horizontal wavenumber
-                Lz = max(self.z)-min(self.z);
-                M = J*pi/Lz;        % Vertical wavenumber
+            % Build wavenumbers
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            alpha = atan2(L,K);
+            K2 = K.*K + L.*L;
+            Kh = sqrt(K2);      % Total horizontal wavenumber
+            M = J*pi/self.Lz;        % Vertical wavenumber
+            
+            N = self.N0;
+            f = self.f0;
+            
+            g_ = 9.81;
+            h = (1/g_)*(N*N-f*f)./(M.*M+K2);
+            h(:,:,1) = 1; % prevent divide by zero
+            
+            omega = sqrt(g_*h.*K2 + f*f);
+            fOmega = f./omega;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Normalization for the vertical modes
+            % This comes from equations B12 in the manuscript.
+            signNorm = -2*(mod(J,2) == 1)+1;
+            self.F = signNorm .* (h.*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
+            self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
+            self.F(:,:,1) = 1; % j=0 mode
+            self.G(:,:,1) = 1; % j=0 mode
+            
+            MakeHermitian = @(f) InternalWaveModel.MakeHermitian(f);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Transform matrices (U,V,N) -> (Ap,Am,A0)
+            % This comes from equations B13 and B14 in the manuscript
+            % or equation 5.5 without the factor of h.
+            self.ApU = (1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
+            self.ApV = (1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
+            self.ApN = -g_*Kh./(2*omega);
+            
+            self.AmU = (1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
+            self.AmV = (1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
+            self.AmN = g_*Kh./(2*omega);
+            
+            % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
+            % solution exists at k=l=j=0.
+            self.ApU(:,:,1) = 0; %self.ApU(1,1,1) = 1/2;
+            self.ApV(:,:,1) = 0; %self.ApV(1,1,1) = -sqrt(-1)/2;
+            self.ApN(:,:,1) = 0;
+            
+            self.AmU(:,:,1) = 0; %self.AmU(1,1,1) = 1/2;
+            self.AmV(:,:,1) = 0; %self.AmV(1,1,1) = sqrt(-1)/2;
+            self.AmN(:,:,1) = 0;
+            
+            % Now set the inertial stuff
+            self.ApU(1,1,:) = 1/2;
+            self.ApV(1,1,:) = -sqrt(-1)/2;
+            self.AmU(1,1,:) = 1/2;
+            self.AmV(1,1,:) = sqrt(-1)/2;
+            
+            % Equation B14
+            self.A0U = sqrt(-1)*h.*(fOmega./omega) .* L;
+            self.A0V = -sqrt(-1)*h.*(fOmega./omega) .* K;
+            self.A0N = fOmega.^2;
+            
+            % k > 0, l > 0, j=0; Equation B11 in the manuscript
+            self.A0U(:,:,1) =  sqrt(-1)*(f/g_)*L(:,:,1)./K2(:,:,1); % Note the divide by zero at k=l=0
+            self.A0V(:,:,1) = -sqrt(-1)*(f/g_)*K(:,:,1)./K2(:,:,1);
+            self.A0N(:,:,1) = 0;
+            
+            % There are no k=l=0, j>=0 geostrophic solutions
+            self.A0U(1,1,:) = 0;
+            self.A0V(1,1,:) = 0;
+            self.A0N(1,1,:) = 0;
+            
+            % Now make the Hermitian conjugate match.
+            self.ApU = MakeHermitian(self.ApU);
+            self.ApV = MakeHermitian(self.ApV);
+            self.ApN = MakeHermitian(self.ApN);
+            
+            self.AmU = MakeHermitian(self.AmU);
+            self.AmV = MakeHermitian(self.AmV);
+            self.AmN = MakeHermitian(self.AmN);
+            
+            self.A0U = MakeHermitian(self.A0U);
+            self.A0V = MakeHermitian(self.A0V);
+            self.A0N = MakeHermitian(self.A0N);
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
+            % These can be pulled from equation C4 in the manuscript
+            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
+            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
+            self.UA0 = -sqrt(-1)*(g_/f)*L;
+            
+            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
+            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
+            self.VA0 = sqrt(-1)*(g_/f)*K;
                 
-                N = self.N0;
-                f = self.f0;
-                
-                g = 9.81;
-                h = (1/g)*(N*N-f*f)./(M.*M+K2);
-                h(:,:,1) = 1; % prevent divide by zero 
-                
-                omega = sqrt(g*h.*K2 + f*f);
-                fOmega = f./omega;
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Normalization for the vertical modes
-                % This comes from equations B12 in the manuscript.
-                signNorm = -2*(mod(J,2) == 1)+1;
-                self.F = signNorm .* (h.*M)*sqrt(2*g/(Lz*(N*N-f*f)));
-                self.G = signNorm .* sqrt(2*g/(Lz*(N*N-f*f)));
-                self.F(:,:,1) = 1; % j=0 mode
-                self.G(:,:,1) = 1; % j=0 mode
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Transform matrices (U,V,N) -> (Ap,Am,A0)
-                % This comes from equations B13 and B14 in the manuscript
-                self.ApU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
-                self.ApV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
-                self.ApN = InternalWaveModel.MakeHermitian(-g*Kh./(2*omega));
-                
-                self.AmU = InternalWaveModel.MakeHermitian((1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
-                self.AmV = InternalWaveModel.MakeHermitian((1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
-                self.AmN = InternalWaveModel.MakeHermitian(g*Kh./(2*omega));
-                
-                self.A0U = InternalWaveModel.MakeHermitian(sqrt(-1)*h.*(fOmega./omega) .* L);
-                self.A0V = InternalWaveModel.MakeHermitian(-sqrt(-1)*h.*(fOmega./omega) .* K);
-                self.A0N = InternalWaveModel.MakeHermitian(fOmega.^2);
-                
-                % k=l=0, j>=0 has only an inertial solution, which is
-                % correctly created using the internal wave relations.
-                % However, this means we need zero the j=0 geostrophic mode
-                self.A0U(1,1,:) = 0;
-                self.A0V(1,1,:) = 0;
-                self.A0N(1,1,:) = 0;
-                
-                % k > 0, l > 0, j=0; Equation B11 in the manuscript
-                self.A0U(:,:,1) =  sqrt(-1)*(f/g)*L(:,:,1)./K2(:,:,1);
-                self.A0V(:,:,1) = -sqrt(-1)*(f/g)*K(:,:,1)./K2(:,:,1);
-                self.A0N(:,:,1) = 0;
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
-                % These can be pulled from equation C4 in the manuscript
-                self.UAp = InternalWaveModel.MakeHermitian((cos(alpha)-sqrt(-1)*fOmega.*sin(alpha)));
-                self.UAm = InternalWaveModel.MakeHermitian((cos(alpha)+sqrt(-1)*fOmega.*sin(alpha)));
-                self.UA0 = InternalWaveModel.MakeHermitian(-sqrt(-1)*(g/f)*L);
-                
-                self.VAp = InternalWaveModel.MakeHermitian((sin(alpha)+sqrt(-1)*fOmega.*cos(alpha)));
-                self.VAm = InternalWaveModel.MakeHermitian((sin(alpha)-sqrt(-1)*fOmega.*cos(alpha)));
-                self.VA0 = InternalWaveModel.MakeHermitian(sqrt(-1)*(g/f)*K);
-                
-                self.WAp = InternalWaveModel.MakeHermitian(-sqrt(-1)*Kh.*h);
-                self.WAm = InternalWaveModel.MakeHermitian(sqrt(-1)*Kh.*h);
-                
-                self.NAp = InternalWaveModel.MakeHermitian(-Kh.*h./omega);
-                self.NAm = InternalWaveModel.MakeHermitian(Kh.*h./omega);
-                self.NA0 = ones(size(Kh));
+            self.WAp = -sqrt(-1)*Kh.*h;
+            self.WAm = sqrt(-1)*Kh.*h;
+            
+            self.NAp = -Kh.*h./omega;
+            self.NAm = Kh.*h./omega;
+            self.NA0 = ones(size(Kh));
+            
+            % No buoyancy anomaly for j=0 geostrophic solutions
+            self.NA0(:,:,1) = 0;
+            
+            % There are no k^2+l^2>0, j=0 wave solutions. 
+            self.UAp(:,:,1) = 0;
+            self.VAp(:,:,1) = 0;
+            self.NAp(:,:,1) = 0;
+            
+            self.UAm(:,:,1) = 0;
+            self.VAm(:,:,1) = 0;
+            self.NAm(:,:,1) = 0;
+            
+            % Only the inertial solution exists at k=l=j=0 as a negative
+            % wave.
+            self.UAp(1,1,:) = 1;
+            self.VAp(1,1,:) = sqrt(-1);
+            self.UAm(1,1,:) = 1;
+            self.VAm(1,1,:) = -sqrt(-1);
+            
+            % Now make the Hermitian conjugate match.
+            self.UAp = MakeHermitian(self.UAp);
+            self.UAm = MakeHermitian(self.UAm);
+            self.UA0 = MakeHermitian(self.UA0);
+            
+            self.VAp = MakeHermitian(self.VAp);
+            self.VAm = MakeHermitian(self.VAm);
+            self.VA0 = MakeHermitian(self.VA0);
+            
+            self.NAp = MakeHermitian(self.NAp);
+            self.NAm = MakeHermitian(self.NAm);
+            self.NA0 = MakeHermitian(self.NA0);
+        end
+        
+        function value = get.Apm_TE_factor(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
+            value = h/2;
+            value(:,:,1) = self.Lz/4;
+        end
+        
+        function value = get.A0_HKE_factor(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
+            h(:,:,1) = 1; % prevent divide by zero 
+%             omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
+            
+            % This comes from equation (3.10) in the manuscript, but using
+            % the relation from equation A2b
+%             value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+            value = (self.g^3/(self.f0*self.f0)) * K2.*h.*h.*M.*M / (4 * (self.N0*self.N0 - self.f0*self.f0) );
+            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/4;
+        end
+        function value = get.A0_PE_factor(self)
+            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/4;
+        end
+        function value = get.A0_TE_factor(self)
+            value = self.A0_HKE_factor + self.A0_PE_factor;
         end
                 
         function [Ap,Am,A0] = Project(self,U,V,N)
@@ -161,6 +269,25 @@ classdef Boussinesq3DConstantStratification < handle
             V = self.TransformToSpatialDomainWithF(Vbar);
             W = self.TransformToSpatialDomainWithF(Wbar);
             N = self.TransformToSpatialDomainWithF(Nbar);
+        end
+        
+        function [C11,C21,C31,C12,C22,C32,C13,C23,C33] = Validate(self)
+            % This is S*S^{-1} and therefore returns the values in
+            % wave-vortex space. So, C11 represents Ap and should be 1s
+            % where we expected Ap solutions to exist.
+            C11 = self.ApU.*self.UAp + self.ApV.*self.VAp + self.ApN.*self.NAp;
+            C21 = self.AmU.*self.UAp + self.AmV.*self.VAp + self.AmN.*self.NAp;
+            C31 = self.A0U.*self.UAp + self.A0V.*self.VAp + self.A0N.*self.NAp;
+            
+            C12 = self.ApU.*self.UAm + self.ApV.*self.VAm + self.ApN.*self.NAm;
+            C22 = self.AmU.*self.UAm + self.AmV.*self.VAm + self.AmN.*self.NAm;
+            C32 = self.A0U.*self.UAm + self.A0V.*self.VAm + self.A0N.*self.NAm;
+            
+            C13 = self.ApU.*self.UA0 + self.ApV.*self.VA0 + self.ApN.*self.NA0;
+            C23 = self.AmU.*self.UA0 + self.AmV.*self.VA0 + self.AmN.*self.NA0;
+            C33 = self.A0U.*self.UA0 + self.A0V.*self.VA0 + self.A0N.*self.NA0;
+            
+            % Maybe check that max(abs(C12(:))) is very small.
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

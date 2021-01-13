@@ -81,7 +81,7 @@ fprintf('\n********** Transform tests **********\n');
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))), 1e-15] )))), 1e-15]);
 error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 
-[u,w]=wavemodel.VariableFieldsAtTime(0,'u','w');
+[u,w]=wavemodel.VariableFieldsAtTime(354,'u','zeta');
 % [App,Amm,A00] = boussinesq.ProjectFull(u,v,eta);
 
 % First check the G transform
@@ -96,8 +96,6 @@ u_back = boussinesq.TransformToSpatialDomainWithF(u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
-return
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Decomposition test
@@ -105,15 +103,11 @@ return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('\n********** Decomposition tests **********\n');
 
-if shouldUseArbitraryStratificationModel == 0
-    newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-else
-    newmodel = InternalWaveModelArbitraryStratification([Lx, Ly, Lz], [Nx, Ny, Nz], rho, z, latitude, 'method','spectral','cacheFile','evp-cache.mat'); %, 'method','spectral'
-end
+newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));
 
-t = 360;
+t = 351;
 for i=1:8
     if i <= 4 % First we walk through the four types of solutions in isolation
         mask = zeros(4,1);
@@ -129,7 +123,7 @@ for i=1:8
     wavemodel.GenerateGeostrophicCurrents(mask(3)*B0,mask(4)*B);
     [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
     newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
-    
+        
     fprintf('\nmask %d\n',i);
     
     spectralEnergy = 0;
@@ -159,6 +153,15 @@ for i=1:8
     integratedEnergy = trapz(wavemodel.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(wavemodel.N2,-2).*eta.*eta, 1 ),2 ) )/2;
     fprintf('total integrated energy: %f m^3/s\n', integratedEnergy);
     fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
+    
+    [App,Amm,A00] = boussinesq.Project(u,v,eta);
+    [U,V,W,N] = boussinesq.VelocityField(App,Amm,A00);
+    integratedEnergyBoussinesq = trapz(boussinesq.z,mean(mean( U.^2 + V.^2 + W.^2 + boussinesq.N0*boussinesq.N0.*N.*N, 1 ),2 ) )/2;
+    spectralEnergyBoussinesq = sum(sum(sum( boussinesq.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + boussinesq.A0_TE_factor.*( A00.*conj(A00) ) )));
+    fprintf('total integrated energy (BM): %f m^3/s\n', integratedEnergyBoussinesq);
+    fprintf('total spectral energy (BM): %f m^3/s\n', spectralEnergyBoussinesq);
+    
+    fprintf('\n');
 end
 
 return
