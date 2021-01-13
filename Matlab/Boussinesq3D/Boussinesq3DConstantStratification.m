@@ -108,8 +108,8 @@ classdef Boussinesq3DConstantStratification < handle
             signNorm = -2*(mod(J,2) == 1)+1;
             self.F = signNorm .* (h.*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
             self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
-            self.F(:,:,1) = 1; % j=0 mode
-            self.G(:,:,1) = 1; % j=0 mode
+            self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
+            self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
             
             MakeHermitian = @(f) InternalWaveModel.MakeHermitian(f);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,38 +224,7 @@ classdef Boussinesq3DConstantStratification < handle
             self.NAm = MakeHermitian(self.NAm);
             self.NA0 = MakeHermitian(self.NA0);
         end
-        
-        function value = get.Apm_TE_factor(self)
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
-            M = J*pi/self.Lz;
-            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
-            
-            value = h; % factor of 2 larger than in the manuscript
-            value(:,:,1) = self.Lz/4; % factor of 4 smaller, to account for the j=0 scaling of the DCT-I
-        end
-        
-        function value = get.A0_HKE_factor(self)
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
-            M = J*pi/self.Lz;
-            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
-            h(:,:,1) = 1; % prevent divide by zero 
-            %omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
-            
-            % This comes from equation (3.10) in the manuscript, but using
-            % the relation from equation A2b
-%             value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
-            value = (self.g^3/(self.f0*self.f0)) * K2.*h.*h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
-            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/8; % factor of 4 smaller, to account for the j=0 scaling of the DCT-I
-        end
-        function value = get.A0_PE_factor(self)
-            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
-        end
-        function value = get.A0_TE_factor(self)
-            value = self.A0_HKE_factor + self.A0_PE_factor;
-        end
-                
+          
         function [Ap,Am,A0] = Project(self,U,V,N)
             Ubar = self.TransformFromSpatialDomainWithF(U);
             Vbar = self.TransformFromSpatialDomainWithF(V);
@@ -280,7 +249,44 @@ classdef Boussinesq3DConstantStratification < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Transformations to and from the spatial domain
+        % Energetics
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function value = get.Apm_TE_factor(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
+            
+            value = h; % factor of 2 larger than in the manuscript
+            value(:,:,1) = self.Lz;
+        end
+        
+        function value = get.A0_HKE_factor(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
+            h(:,:,1) = 1; % prevent divide by zero 
+            
+            % This comes from equation (3.10) in the manuscript, but using
+            % the relation from equation A2b
+            % omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
+            % value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+            value = (self.g^3/(self.f0*self.f0)) * K2.*h.*h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
+            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/2;
+        end
+        function value = get.A0_PE_factor(self)
+            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
+        end
+        function value = get.A0_TE_factor(self)
+            value = self.A0_HKE_factor + self.A0_PE_factor;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Validation and internal unit testing
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -308,8 +314,28 @@ classdef Boussinesq3DConstantStratification < handle
         % Transformations to and from the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        function u_bar = TransformFromSpatialDomainWithF(self, u)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-1)*df
+            self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+            u_bar = 2*real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
+            u_bar = u_bar./self.F;
+        end
+        
+        function w_bar = TransformFromSpatialDomainWithG(self, w)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-2)*df
+            self.dstScratch = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+            w_bar = 2*imag(self.dstScratch(:,:,1:(self.Nz-1)));
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
+            w_bar = w_bar./self.G;
+        end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
+            % *of course* using a proper real function fft, followed by a
+            % fast cosine transform is the best here. But, without that
+            % option directly in Matlab...
             u = self.Nx*self.Ny*ifft(ifft(u_bar.*self.F,self.Nx,1),self.Ny,2,'symmetric');
             self.dctScratch = cat(3, 0.5*u(:,:,1:self.Nz-1), zeros(self.Nx,self.Ny), 0.5*u(:,:,(self.Nz-1):-1:2));
             u = fft(self.dctScratch,2*(self.Nz-1),3);
@@ -333,23 +359,7 @@ classdef Boussinesq3DConstantStratification < handle
             w = real(w(:,:,1:self.Nz)); 
         end
         
-        function u_bar = TransformFromSpatialDomainWithF(self, u)
-            % df = 1/(2*(Nz-1)*dz)
-            % nyquist = (Nz-1)*df
-            self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-            u_bar = 2*real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
-            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
-            u_bar = u_bar./self.F;
-        end
-        
-        function w_bar = TransformFromSpatialDomainWithG(self, w)
-            % df = 1/(2*(Nz-1)*dz)
-            % nyquist = (Nz-2)*df
-            self.dstScratch = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-            w_bar = 2*imag(self.dstScratch(:,:,1:(self.Nz-1)));
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
-            w_bar = w_bar./self.G;
-        end
+ 
     end
 end
 
