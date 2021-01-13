@@ -155,6 +155,9 @@ classdef Boussinesq3DConstantStratification < handle
             self.A0V(1,1,:) = 0;
             self.A0N(1,1,:) = 0;
             
+            % Finally, we need to take care of the extra factor of 2 that
+            % comes out of the discrete cosine transform
+            
             % Now make the Hermitian conjugate match.
             self.ApU = MakeHermitian(self.ApU);
             self.ApV = MakeHermitian(self.ApV);
@@ -227,8 +230,9 @@ classdef Boussinesq3DConstantStratification < handle
             K2 = K.*K + L.*L;
             M = J*pi/self.Lz;
             h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
-            value = h/2;
-            value(:,:,1) = self.Lz/4;
+            
+            value = h; % factor of 2 larger than in the manuscript
+            value(:,:,1) = self.Lz/4; % factor of 4 smaller, to account for the j=0 scaling of the DCT-I
         end
         
         function value = get.A0_HKE_factor(self)
@@ -237,16 +241,16 @@ classdef Boussinesq3DConstantStratification < handle
             M = J*pi/self.Lz;
             h = (1/self.g)*(self.N0*self.N0-self.f0*self.f0)./(M.*M+K2);
             h(:,:,1) = 1; % prevent divide by zero 
-%             omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
+            %omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
             
             % This comes from equation (3.10) in the manuscript, but using
             % the relation from equation A2b
-%             value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
-            value = (self.g^3/(self.f0*self.f0)) * K2.*h.*h.*M.*M / (4 * (self.N0*self.N0 - self.f0*self.f0) );
-            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/4;
+%             value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+            value = (self.g^3/(self.f0*self.f0)) * K2.*h.*h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
+            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/8; % factor of 4 smaller, to account for the j=0 scaling of the DCT-I
         end
         function value = get.A0_PE_factor(self)
-            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/4;
+            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;
@@ -274,6 +278,12 @@ classdef Boussinesq3DConstantStratification < handle
             N = self.TransformToSpatialDomainWithG(Nbar);
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations to and from the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function [C11,C21,C31,C12,C22,C32,C13,C23,C33] = Validate(self)
             % This is S*S^{-1} and therefore returns the values in
             % wave-vortex space. So, C11 represents Ap and should be 1s
@@ -295,7 +305,7 @@ classdef Boussinesq3DConstantStratification < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Computes the phase information given the amplitudes (internal)
+        % Transformations to and from the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         
