@@ -126,15 +126,15 @@ classdef Boussinesq3DConstantStratification < handle
             
             % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
             % solution exists at k=l=j=0.
-            self.ApU(:,:,1) = 0; %self.ApU(1,1,1) = 1/2;
-            self.ApV(:,:,1) = 0; %self.ApV(1,1,1) = -sqrt(-1)/2;
+            self.ApU(:,:,1) = 0;
+            self.ApV(:,:,1) = 0;
             self.ApN(:,:,1) = 0;
             
-            self.AmU(:,:,1) = 0; %self.AmU(1,1,1) = 1/2;
-            self.AmV(:,:,1) = 0; %self.AmV(1,1,1) = sqrt(-1)/2;
+            self.AmU(:,:,1) = 0;
+            self.AmV(:,:,1) = 0;
             self.AmN(:,:,1) = 0;
             
-            % Now set the inertial stuff
+            % Now set the inertial stuff (this is just a limit of above)
             self.ApU(1,1,:) = 1/2;
             self.ApV(1,1,:) = -sqrt(-1)/2;
             self.AmU(1,1,:) = 1/2;
@@ -180,7 +180,7 @@ classdef Boussinesq3DConstantStratification < handle
             self.VA0 = sqrt(-1)*(g_/f)*K;
                 
             self.WAp = -sqrt(-1)*Kh.*h;
-            self.WAm = sqrt(-1)*Kh.*h;
+            self.WAm = -sqrt(-1)*Kh.*h;
             
             self.NAp = -Kh.*h./omega;
             self.NAm = Kh.*h./omega;
@@ -213,6 +213,9 @@ classdef Boussinesq3DConstantStratification < handle
             self.VAp = MakeHermitian(self.VAp);
             self.VAm = MakeHermitian(self.VAm);
             self.VA0 = MakeHermitian(self.VA0);
+            
+            self.WAp = MakeHermitian(self.WAp);
+            self.WAm = MakeHermitian(self.WAm);
             
             self.NAp = MakeHermitian(self.NAp);
             self.NAm = MakeHermitian(self.NAm);
@@ -267,8 +270,8 @@ classdef Boussinesq3DConstantStratification < handle
             
             U = self.TransformToSpatialDomainWithF(Ubar);
             V = self.TransformToSpatialDomainWithF(Vbar);
-            W = self.TransformToSpatialDomainWithF(Wbar);
-            N = self.TransformToSpatialDomainWithF(Nbar);
+            W = self.TransformToSpatialDomainWithG(Wbar);
+            N = self.TransformToSpatialDomainWithG(Nbar);
         end
         
         function [C11,C21,C31,C12,C22,C32,C13,C23,C33] = Validate(self)
