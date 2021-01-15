@@ -8,6 +8,7 @@ classdef Boussinesq3DConstantStratification < handle
         Nx, Ny, Nz
         Lx, Ly, Lz
         f0, N0
+        iOmega
         
         dctScratch, dstScratch;
         F,G
@@ -19,6 +20,15 @@ classdef Boussinesq3DConstantStratification < handle
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
+        
+        dt
+        integrator
+        t0 = 0 % current time that the coefficients {Ap,Am,A0} are wound to
+        t = 0 % current time of the integrator
+        Y % cell array with {Ap,Am,A0}
+        
+        nParticles = 0
+        shouldAntialias = 0;
     end
     
     properties (Dependent)
@@ -82,6 +92,12 @@ classdef Boussinesq3DConstantStratification < handle
             % Preallocate this array for a faster dct
             self.dctScratch = zeros(self.Nx,self.Ny,2*(self.Nz-1));
             self.dstScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
+            
+            % Now set the initial conditions to zero
+            Ap0 = zeros(size(self.ApU));
+            Am0 = zeros(size(self.ApU));
+            A00 = zeros(size(self.ApU));
+            self.y = {Ap0;Am0;A00;};
         end
         
         function self = BuildTransformationMatrices(self)
@@ -101,6 +117,7 @@ classdef Boussinesq3DConstantStratification < handle
             
             omega = sqrt(g_*h.*K2 + f*f);
             fOmega = f./omega;
+            self.iOmega = sqrt(-1)*omega;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Normalization for the vertical modes
@@ -277,6 +294,161 @@ classdef Boussinesq3DConstantStratification < handle
             W = self.TransformToSpatialDomainWithG(Wbar);
             N = self.TransformToSpatialDomainWithG(Nbar);
         end
+        
+        function [Ap,Am] = TimeWind(Ap,Am,t)
+            T = exp(self.iOmega*t);
+        end
+        
+        function Ap = Ap(self)
+            Ap = self.y{1};
+        end
+        function Am = Am(self)
+            Am = self.y{2};
+        end
+        function A0 = A0(self)
+            A0 = self.y{3};
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Create a single wave (public)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function period = InitializeWithPlaneWave(self, k0, l0, j0, UAmp, sign)
+            omega = self.SetGriddedWavesWithWavemodes(k0,l0,j0,0,UAmp,sign);
+            period = 2*pi/abs(omega);
+        end
+        
+        function RemoveAllGriddedWaves(self)
+            self.y = {zeros(size(self.ApU)); zeros(size(self.ApU)); self.A0;};
+        end
+        
+        function [omega,k,l] = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+            self.RemoveAllGriddedWaves();
+            [omega,k,l] = self.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+        end
+        
+        function [omega,k,l] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+            % Add wavemodes on the gridded field.
+            % The values given must meet the following requirements:
+            % (k0 > -Nx/2 && k0 < Nx/2)
+            % (l0 > -Ny/2 && l0 < Ny/2)
+            % (j0 >= 1 && j0 <= nModes)
+            % phi is in radians, from 0-2pi
+            % Amp is the fluid velocity U
+            % sign is +/-1, indicating the sign of the frequency.
+            
+            if ~isequal(size(kMode), size(lMode), size(jMode), size(phi), size(Amp), size(signs))
+                error('All input array must be of equal size');
+            end
+            
+            % These will be the initial conditions
+            ApTotal = self.Am;
+            AmTotal = self.Ap;
+            A0Total = self.A0;
+            
+            omega = zeros(size(kMode));
+            k = zeros(size(kMode));
+            l = zeros(size(kMode));
+            
+            for iMode = 1:length(kMode)
+                k0 = kMode(iMode);
+                l0 = lMode(iMode);
+                j0 = jMode(iMode);
+                phi0 = phi(iMode);
+                A = Amp(iMode);
+                sign = signs(iMode);
+                
+                % User input sanity checks. We don't deal with the Nyquist.
+                if (k0 <= -self.Nx/2 || k0 >= self.Nx/2)
+                    error('Invalid choice for k0 (%d). Must be an integer %d < k0 < %d',k0,-self.Nx/2+1,self.Nx/2-1);
+                end
+                if (l0 <= -self.Ny/2 || l0 >= self.Ny/2)
+                    error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
+                end
+                
+                if ~( (j0 == 0 && l0 == 0 && k0 == 0) || (j0 >= 1 && j0 <= self.nModes) )
+                    warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d, unless k=l=0, in which case j=0 is okay.',j0, self.nModes);
+                end
+                
+                % Deal with the negative wavenumber cases (and inertial)
+                if l0 == 0 && k0 == 0 % inertial
+                    if sign < 1
+                        sign=1;
+                        phi0 = -phi0;
+                    end
+                    if j0 == 0
+                        if abs(self.f0) >= 1e-14
+                            self.A0 = A*exp(-sqrt(-1)*phi0);
+                            omega(iMode) = self.f0;
+                            k(iMode) = 0;
+                            l(iMode) = 0;
+                        end
+                        continue
+                    end
+                elseif l0 == 0 && k0 < 0
+                    k0 = -k0;
+                    sign = -1*sign;
+                    A = -1*A;
+                    phi0 = -phi0;
+                elseif l0 < 0
+                    l0 = -l0;
+                    k0 = -k0;
+                    sign = -1*sign;
+                    A = -1*A;
+                    phi0 = -phi0;
+                end
+                
+                % Rewrap (k0,l0) to follow standard FFT wrapping. l0 should
+                % already be correct.
+                if (k0 < 0)
+                    k0 = self.Nx + k0;
+                end
+                
+                ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
+                
+                U = zeros(size(self.K));
+                U(k0+1,l0+1,j0) = A*ratio/2*exp(sqrt(-1)*phi0);
+                if sign > 0
+                    A_plus = InternalWaveModel.MakeHermitian(U);
+                    A_minus = zeros(size(U));
+                    A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial oscillations are created using this trick.
+                else
+                    A_plus = zeros(size(U));
+                    A_minus = InternalWaveModel.MakeHermitian(U);
+                end
+                
+                AmTotal = AmTotal + A_minus;
+                ApTotal = ApTotal + A_plus;
+                
+                % When we hand back the actual frequency and wavenumbers,
+                % we honor the users original intent and the match the
+                % signs they provided.
+                if (kMode(iMode) < 0)
+                    k_out = self.Nx + kMode(iMode);
+                else
+                    k_out = kMode(iMode);
+                end
+                if (lMode(iMode) < 0)
+                    l_out = self.Ny + lMode(iMode);
+                else
+                    l_out = lMode(iMode);
+                end
+                omega(iMode) = signs(iMode)*abs(self.Omega(k0+1,l0+1,j0));
+                k(iMode) = self.K(k_out+1,l_out+1,j0);
+                l(iMode) = self.L(k_out+1,l_out+1,j0);
+            end
+            
+            self.y = {ApTotal; AmTotal; A0Total;};
+        end
+        
+        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+            if j0 == 0
+                ratio = 1;
+            else
+                ratio = 1/self.F(k0+1,l0+1,j0+1);
+            end
+        end     
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
