@@ -37,8 +37,8 @@ for iMode = 1:length(kMode)
         error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-self.Ny/2+1,self.Ny/2+1);
     end
     
-    if ~( (j0 == 0 && l0 == 0 && k0 == 0) || (j0 >= 1 && j0 <= self.nModes) )
-        warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d, unless k=l=0, in which case j=0 is okay.',j0, self.nModes);
+    if ~( (j0 == 0 && l0 == 0 && k0 == 0) || (j0 >= 1 && j0 <= self.Nz-1) )
+        warning('Invalid choice for j0 (%d). Must be an integer 1 <= j <= %d, unless k=l=0, in which case j=0 is okay.',j0, self.Nz-1);
     end
     
     % Deal with the negative wavenumber cases (and inertial)
@@ -47,15 +47,15 @@ for iMode = 1:length(kMode)
             sign=1;
             phi0 = -phi0;
         end
-        if j0 == 0
-            if abs(self.f0) >= 1e-14
-                self.A0 = A*exp(-sqrt(-1)*phi0);
-                omega(iMode) = self.f0;
-                k(iMode) = 0;
-                l(iMode) = 0;
-            end
-            continue
-        end
+%         if j0 == 0
+%             if abs(self.f0) >= 1e-14
+%                 self.A0 = A*exp(-sqrt(-1)*phi0);
+%                 omega(iMode) = self.f0;
+%                 k(iMode) = 0;
+%                 l(iMode) = 0;
+%             end
+%             continue
+%         end
     elseif l0 == 0 && k0 < 0
         k0 = -k0;
         sign = -1*sign;
@@ -77,8 +77,8 @@ for iMode = 1:length(kMode)
     
     ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
     
-    U = zeros(size(self.K));
-    U(k0+1,l0+1,j0) = A*ratio/2*exp(sqrt(-1)*phi0);
+    U = zeros(size(self.ApU));
+    U(k0+1,l0+1,j0+1) = A*ratio/2*exp(sqrt(-1)*phi0);
     if sign > 0
         A_plus = InternalWaveModel.MakeHermitian(U);
         A_minus = zeros(size(U));
@@ -104,10 +104,12 @@ for iMode = 1:length(kMode)
     else
         l_out = lMode(iMode);
     end
-    omega(iMode) = signs(iMode)*abs(self.Omega(k0+1,l0+1,j0));
-    k(iMode) = self.K(k_out+1,l_out+1,j0);
-    l(iMode) = self.L(k_out+1,l_out+1,j0);
+    omegaT = self.Omega;
+    omega(iMode) = signs(iMode)*abs(omegaT(k0+1,l0+1,j0+1));
+    [K,L,~] = ndgrid(self.k,self.l,self.j);
+    k(iMode) = K(k_out+1,l_out+1,j0+1);
+    l(iMode) = L(k_out+1,l_out+1,j0+1);
 end
 
-self.y = {ApTotal; AmTotal; A0Total;};
+self.Y = {ApTotal; AmTotal; A0Total;};
 end

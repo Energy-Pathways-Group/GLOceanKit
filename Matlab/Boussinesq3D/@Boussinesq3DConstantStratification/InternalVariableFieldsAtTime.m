@@ -10,10 +10,11 @@ if length(varargin) < 1
     return;
 end
 
-u = []; v = []; w = []; zeta = []; p = [];
+phase = exp(self.iOmega*(t-self.t0));
 
-phase_plus = exp(sqrt(-1)*self.Omega*t);
-phase_minus = exp(-sqrt(-1)*self.Omega*t);
+Ap = self.Ap .* phase;
+Am = self.Am .* conj(phase);
+A0 = self.A0;
 
 varargout = cell(size(varargin));
 for iArg=1:length(varargin)
@@ -26,7 +27,7 @@ for iArg=1:length(varargin)
     elseif ( strcmp(varargin{iArg}, 'p') )
         varargout{iArg} = self.rho0*self.g*self.TransformToSpatialDomainWithF(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     elseif ( strcmp(varargin{iArg}, 'rho_prime') )
-        varargout{iArg} = (self.rho0/9.81)*self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
+        varargout{iArg} = (self.rho0/9.81)*self.N0*self.N0*self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     elseif ( strcmp(varargin{iArg}, 'eta') )
         varargout{iArg} = self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     else

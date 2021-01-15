@@ -7,7 +7,7 @@ classdef Boussinesq3DConstantStratification < handle
         k, l, j
         Nx, Ny, Nz
         Lx, Ly, Lz
-        f0, N0
+        f0, N0, rho0
         iOmega
         
         dctScratch, dstScratch;
@@ -86,6 +86,11 @@ classdef Boussinesq3DConstantStratification < handle
             
             self.N0 = N0;
             self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+            if ~exist('rho0','var')
+                self.rho0 = 1025;
+            else
+                self.rho0 = rho0;
+            end
             
             self.BuildTransformationMatrices();
             
@@ -97,7 +102,20 @@ classdef Boussinesq3DConstantStratification < handle
             Ap0 = zeros(size(self.ApU));
             Am0 = zeros(size(self.ApU));
             A00 = zeros(size(self.ApU));
-            self.y = {Ap0;Am0;A00;};
+            self.Y = {Ap0;Am0;A00;};
+        end
+        
+        function h = h(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0 - self.f0*self.f0)./(M.*M+K2);
+            h(:,:,1) = 1; % prevent divide by zero
+        end
+        
+        function Omega = Omega(self)
+            [K,L,~] = ndgrid(self.k,self.l,self.j);
+            Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
         function self = BuildTransformationMatrices(self)
@@ -116,6 +134,9 @@ classdef Boussinesq3DConstantStratification < handle
             h(:,:,1) = 1; % prevent divide by zero
             
             omega = sqrt(g_*h.*K2 + f*f);
+            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+                omega(omega == 0) = 1;
+            end
             fOmega = f./omega;
             self.iOmega = sqrt(-1)*omega;
             
@@ -225,6 +246,12 @@ classdef Boussinesq3DConstantStratification < handle
             self.UAm(1,1,:) = 1;
             self.VAm(1,1,:) = -sqrt(-1);
             
+            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+                self.UA0 = zeros(size(Kh));
+                self.VA0 = zeros(size(Kh));
+                self.NA0 = zeros(size(Kh));
+            end
+            
             % Now make the Hermitian conjugate match.
             self.UAp = MakeHermitian(self.UAp);
             self.UAm = MakeHermitian(self.UAm);
@@ -306,13 +333,13 @@ classdef Boussinesq3DConstantStratification < handle
         end
         
         function Ap = Ap(self)
-            Ap = self.y{1};
+            Ap = self.Y{1};
         end
         function Am = Am(self)
-            Am = self.y{2};
+            Am = self.Y{2};
         end
         function A0 = A0(self)
-            A0 = self.y{3};
+            A0 = self.Y{3};
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -333,7 +360,7 @@ classdef Boussinesq3DConstantStratification < handle
             if j0 == 0
                 ratio = 1;
             else
-                ratio = 1/self.F(k0+1,l0+1,j0+1);
+                ratio = abs(1/self.F(k0+1,l0+1,j0+1));
             end
         end     
         
