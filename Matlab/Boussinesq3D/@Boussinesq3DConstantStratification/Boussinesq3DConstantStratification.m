@@ -95,7 +95,7 @@ classdef Boussinesq3DConstantStratification < handle
             self.BuildTransformationMatrices();
             
             % Preallocate this array for a faster dct
-            self.dctScratch = zeros(self.Nx,self.Ny,2*(self.Nz-1));
+            self.dctScratch = zeros(self.Nx,self.Ny,(2*self.Nz+1));
             self.dstScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
             
             % Now set the initial conditions to zero
@@ -197,17 +197,19 @@ classdef Boussinesq3DConstantStratification < handle
             % comes out of the discrete cosine transform
             
             % Now make the Hermitian conjugate match.
-            self.ApU = MakeHermitian(self.ApU);
-            self.ApV = MakeHermitian(self.ApV);
-            self.ApN = MakeHermitian(self.ApN);
+            iFTransformScaling = 2./(self.Nx*self.Ny*self.F);
+            iGTransformScaling = 2./(self.Nx*self.Ny*self.G);
+            self.ApU = iFTransformScaling .* MakeHermitian(self.ApU);
+            self.ApV = iFTransformScaling .* MakeHermitian(self.ApV);
+            self.ApN = iGTransformScaling .* MakeHermitian(self.ApN);
             
-            self.AmU = MakeHermitian(self.AmU);
-            self.AmV = MakeHermitian(self.AmV);
-            self.AmN = MakeHermitian(self.AmN);
+            self.AmU = iFTransformScaling .* MakeHermitian(self.AmU);
+            self.AmV = iFTransformScaling .* MakeHermitian(self.AmV);
+            self.AmN = iGTransformScaling .* MakeHermitian(self.AmN);
             
-            self.A0U = MakeHermitian(self.A0U);
-            self.A0V = MakeHermitian(self.A0V);
-            self.A0N = MakeHermitian(self.A0N);
+            self.A0U = iFTransformScaling .* MakeHermitian(self.A0U);
+            self.A0V = iFTransformScaling .* MakeHermitian(self.A0V);
+            self.A0N = iGTransformScaling .* MakeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -252,21 +254,24 @@ classdef Boussinesq3DConstantStratification < handle
                 self.NA0 = zeros(size(Kh));
             end
             
-            % Now make the Hermitian conjugate match.
-            self.UAp = MakeHermitian(self.UAp);
-            self.UAm = MakeHermitian(self.UAm);
-            self.UA0 = MakeHermitian(self.UA0);
+            % Now make the Hermitian conjugate match AND pre-multiply the
+            % coefficients for the transformations.
+            FTransformScaling = 0.5*self.Nx*self.Ny*(2*self.Nz-2)*self.F;
+            self.UAp = FTransformScaling .* MakeHermitian(self.UAp);
+            self.UAm = FTransformScaling .* MakeHermitian(self.UAm);
+            self.UA0 = FTransformScaling .* MakeHermitian(self.UA0);
             
-            self.VAp = MakeHermitian(self.VAp);
-            self.VAm = MakeHermitian(self.VAm);
-            self.VA0 = MakeHermitian(self.VA0);
+            self.VAp = FTransformScaling .* MakeHermitian(self.VAp);
+            self.VAm = FTransformScaling .* MakeHermitian(self.VAm);
+            self.VA0 = FTransformScaling .* MakeHermitian(self.VA0);
             
-            self.WAp = MakeHermitian(self.WAp);
-            self.WAm = MakeHermitian(self.WAm);
+            GTransformScaling = 0.5*self.Nx*self.Ny*(2*self.Nz-2)*self.G;
+            self.WAp = GTransformScaling .* MakeHermitian(self.WAp);
+            self.WAm = GTransformScaling .* MakeHermitian(self.WAm);
             
-            self.NAp = MakeHermitian(self.NAp);
-            self.NAm = MakeHermitian(self.NAm);
-            self.NA0 = MakeHermitian(self.NA0);
+            self.NAp = GTransformScaling .* MakeHermitian(self.NAp);
+            self.NAm = GTransformScaling .* MakeHermitian(self.NAm);
+            self.NA0 = GTransformScaling .* MakeHermitian(self.NA0);
         end
           
         function [Ap,Am,A0] = Project(self,U,V,N)
@@ -289,6 +294,12 @@ classdef Boussinesq3DConstantStratification < handle
             V = self.TransformToSpatialDomainWithF(Vbar);
             W = self.TransformToSpatialDomainWithG(Wbar);
             N = self.TransformToSpatialDomainWithG(Nbar);
+        end
+        
+        function [uNL,vNL,nNL] = NonlinearFlux(self,u,v,w,eta)
+            uNL = u.*DiffFourier(self.x,u,1,1) + v.*DiffFourier(self.y,u,1,2) + w.*DiffCosine(self.z,u,1,3);
+            vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
+            nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*DiffSine(self.z,eta,1,3);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -395,51 +406,46 @@ classdef Boussinesq3DConstantStratification < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         function u_bar = TransformFromSpatialDomainWithF(self, u)
-            % df = 1/(2*(Nz-1)*dz)
-            % nyquist = (Nz-1)*df
-            self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-            u_bar = 2*real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
-            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)./self.Nx/self.Ny;
-            u_bar = u_bar./self.F;
+            % All coefficients are subsumbed into the transform
+            % coefficients ApU,ApV,etc.
+%             self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+%             u_bar = real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
+%             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
+%             
+            self.dstScratch = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
+            u_bar = fft(fft(self.dstScratch(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2);
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
             self.dstScratch = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-            w_bar = 2*imag(self.dstScratch(:,:,1:(self.Nz-1)));
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/self.Nx/self.Ny;
-            w_bar = w_bar./self.G;
+            w_bar = imag(self.dstScratch(:,:,1:(self.Nz-1)));
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
-            % *of course* using a proper real function fft, followed by a
-            % fast cosine transform is the best here. But, without that
-            % option directly in Matlab...
-            u = self.Nx*self.Ny*ifft(ifft(u_bar.*self.F,self.Nx,1),self.Ny,2,'symmetric');
-            self.dctScratch = cat(3, 0.5*u(:,:,1:self.Nz-1), zeros(self.Nx,self.Ny), 0.5*u(:,:,(self.Nz-1):-1:2));
-            u = fft(self.dctScratch,2*(self.Nz-1),3);
-
-            % should not have to call real, but for some reason, with enough
-            % points, it starts generating some small imaginary component.
-            u = real(u(:,:,1:self.Nz));
-        end
-        
+            % All coefficients are subsumbed into the transform
+            % coefficients UAp,UAm,etc.
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
+            
+            % Re-order to convert to a DCT-I via FFT
+            self.dctScratch = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
+            u = ifft( self.dctScratch,2*(self.Nz-1),3,'symmetric');
+            u = u(:,:,1:self.Nz);
+        end  
+                
         function w = TransformToSpatialDomainWithG(self, w_bar )
-            % Here we use what I call the 'Fourier series' definition of the ifft, so
-            % that the coefficients in frequency space have the same units in time.
-            w = self.Nx*self.Ny*ifft(ifft(w_bar.* self.G,self.Nx,1),self.Ny,2,'symmetric');
+            % All coefficients are subsumbed into the transform
+            % coefficients NAp,NAm,etc.
+            w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             
-            % Re-order to convert to an fast cosine transform
-            self.dstScratch = 0.5*sqrt(-1)*cat(3, zeros(self.Nx,self.Ny), w(:,:,2:(self.Nz-1)), zeros(self.Nx,self.Ny), -w(:,:,(self.Nz-1):-1:2));
-            
-            w = fft( self.dstScratch,2*(self.Nz-1),3);
-            % should not have to call real, but for some reason, with enough
-            % points, it starts generating some small imaginary component.
-            w = real(w(:,:,1:self.Nz)); 
+            % Re-order to convert to a DST-I via FFT
+            self.dstScratch = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));
+            w = ifft( self.dstScratch,2*(self.Nz-1),3,'symmetric');
+            w = w(:,:,1:self.Nz);
         end
-        
- 
+
     end
 end
 

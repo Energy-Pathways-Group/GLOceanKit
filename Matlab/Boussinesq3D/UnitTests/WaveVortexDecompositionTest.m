@@ -84,6 +84,9 @@ error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 [u,w]=wavemodel.VariableFieldsAtTime(354,'u','zeta');
 % [App,Amm,A00] = boussinesq.ProjectFull(u,v,eta);
 
+% Having subsumed the coefficients for these transformations into the
+% coefficients, these are no longer direct inverses. They should differ by
+% a factor of 2*(Nz-1).
 % First check the G transform
 w_bar = boussinesq.TransformFromSpatialDomainWithG( w );
 w_back = boussinesq.TransformToSpatialDomainWithG(w_bar);
