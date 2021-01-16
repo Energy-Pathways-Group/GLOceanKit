@@ -44,23 +44,24 @@ Ap = InternalWaveModel.GenerateHermitianRandomMatrix( size(boussinesq.ApU), shou
 Am = InternalWaveModel.GenerateHermitianRandomMatrix( size(boussinesq.ApU), shouldExcludeNyquist );
 A0 = InternalWaveModel.GenerateHermitianRandomMatrix( size(boussinesq.ApU), shouldExcludeNyquist );
 
-Ubar = boussinesq.UAp.*Ap + boussinesq.UAm.*Am + boussinesq.UA0.*A0;
-Nbar = boussinesq.NAp.*Ap + boussinesq.NAm.*Am + boussinesq.NA0.*A0;
-
-profile on
-for i=1:100
-    u = boussinesq.TransformToSpatialDomainWithF(Ubar);
-    ubar = boussinesq.TransformFromSpatialDomainWithF(u);
-    eta = boussinesq.TransformToSpatialDomainWithG(Nbar);
-    nbar = boussinesq.TransformFromSpatialDomainWithG(eta);
-end
-profile viewer
-
+% Ubar = boussinesq.UAp.*Ap + boussinesq.UAm.*Am + boussinesq.UA0.*A0;
+% Nbar = boussinesq.NAp.*Ap + boussinesq.NAm.*Am + boussinesq.NA0.*A0;
+% 
 % profile on
-% for i=1:10
-%     [u,v,w,eta] = boussinesq.VelocityField(Ap,Am,A0);
-%     [uNL,vNL,nNL] = boussinesq.NonlinearFlux(u,v,w,eta);
-%     [Ap,Am,A0] = boussinesq.Project(uNL,vNL,nNL);
+% for i=1:100
+%     u = boussinesq.TransformToSpatialDomainWithF(Ubar);
+%     ubar = boussinesq.TransformFromSpatialDomainWithF(u);
+%     eta = boussinesq.TransformToSpatialDomainWithG(Nbar);
+%     nbar = boussinesq.TransformFromSpatialDomainWithG(eta);
 % end
 % profile viewer
+
+profile on
+for i=1:10
+%     [u,v,w,eta] = boussinesq.VelocityField(Ap,Am,A0);
+%     [uNL,vNL,nNL] = boussinesq.NonlinearFluxFromSpatial(u,v,w,eta);
+    [uNL,vNL,nNL] = boussinesq.NonlinearFlux(Ap,Am,A0);
+    [Ap,Am,A0] = boussinesq.Project(uNL,vNL,nNL);
+end
+profile viewer
 

@@ -10,7 +10,7 @@ classdef Boussinesq3DConstantStratification < handle
         f0, N0, rho0
         iOmega
         
-        dctScratch, dstScratch;
+        realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
         F,G
         ApU, ApV, ApN
         AmU, AmV, AmN
@@ -95,8 +95,8 @@ classdef Boussinesq3DConstantStratification < handle
             self.BuildTransformationMatrices();
             
             % Preallocate this array for a faster dct
-            self.dctScratch = zeros(self.Nx,self.Ny,(2*self.Nz+1));
-            self.dstScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
+            self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
+            self.complexScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
             
             % Now set the initial conditions to zero
             Ap0 = zeros(size(self.ApU));
@@ -256,7 +256,7 @@ classdef Boussinesq3DConstantStratification < handle
             
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            FTransformScaling = 0.5*self.Nx*self.Ny*(2*self.Nz-2)*self.F;
+            FTransformScaling = 0.5*self.Nx*self.Ny*self.F;
             self.UAp = FTransformScaling .* MakeHermitian(self.UAp);
             self.UAm = FTransformScaling .* MakeHermitian(self.UAm);
             self.UA0 = FTransformScaling .* MakeHermitian(self.UA0);
@@ -265,7 +265,7 @@ classdef Boussinesq3DConstantStratification < handle
             self.VAm = FTransformScaling .* MakeHermitian(self.VAm);
             self.VA0 = FTransformScaling .* MakeHermitian(self.VA0);
             
-            GTransformScaling = 0.5*self.Nx*self.Ny*(2*self.Nz-2)*self.G;
+            GTransformScaling = 0.5*self.Nx*self.Ny*self.G;
             self.WAp = GTransformScaling .* MakeHermitian(self.WAp);
             self.WAm = GTransformScaling .* MakeHermitian(self.WAm);
             
@@ -296,10 +296,26 @@ classdef Boussinesq3DConstantStratification < handle
             N = self.TransformToSpatialDomainWithG(Nbar);
         end
         
-        function [uNL,vNL,nNL] = NonlinearFlux(self,u,v,w,eta)
+        function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)
             uNL = u.*DiffFourier(self.x,u,1,1) + v.*DiffFourier(self.y,u,1,2) + w.*DiffCosine(self.z,u,1,3);
             vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
             nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*DiffSine(self.z,eta,1,3);
+        end
+        
+        function [uNL,vNL,nNL] = NonlinearFlux(self,Ap,Am,A0)
+            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
+            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
+            Wbar = self.WAp.*Ap + self.WAm.*Am;
+            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
+            
+            [U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
+            [V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
+            W = self.TransformToSpatialDomainWithG(Wbar);
+            [ETA,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+            
+            uNL = U.*Ux + V.*Uy + W.*Uz;
+            vNL = U.*Vx + V.*Vy + W.*Vz;
+            nNL = U.*ETAx + V.*ETAy + W.*ETAz;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -412,15 +428,15 @@ classdef Boussinesq3DConstantStratification < handle
 %             u_bar = real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
 %             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
 %             
-            self.dstScratch = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
-            u_bar = fft(fft(self.dstScratch(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2);
+            u = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
+            u_bar = fft(fft(u(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2);
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
-            self.dstScratch = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-            w_bar = imag(self.dstScratch(:,:,1:(self.Nz-1)));
+            w = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
+            w_bar = imag(w(:,:,1:(self.Nz-1)));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
         end
         
@@ -430,9 +446,9 @@ classdef Boussinesq3DConstantStratification < handle
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
             
             % Re-order to convert to a DCT-I via FFT
-            self.dctScratch = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
-            u = ifft( self.dctScratch,2*(self.Nz-1),3,'symmetric');
-            u = u(:,:,1:self.Nz);
+            u = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
+            u = ifft( u,2*(self.Nz-1),3,'symmetric');
+            u = u(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end  
                 
         function w = TransformToSpatialDomainWithG(self, w_bar )
@@ -441,11 +457,54 @@ classdef Boussinesq3DConstantStratification < handle
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             
             % Re-order to convert to a DST-I via FFT
-            self.dstScratch = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));
-            w = ifft( self.dstScratch,2*(self.Nz-1),3,'symmetric');
-            w = w(:,:,1:self.Nz);
+            w = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));
+            w = ifft( w,2*(self.Nz-1),3,'symmetric');
+            w = w(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end
-
+        
+        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            % All coefficients are subsumbed into the transform
+            % coefficients UAp,UAm,etc.
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
+            
+            % Re-order to convert to a DCT-I via FFT
+            self.realScratch = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
+            u = ifft( self.realScratch,2*(self.Nz-1),3,'symmetric');
+            u = u(:,:,1:self.Nz)*(2*self.Nz-2);
+            
+            ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
+            uy = ifft( sqrt(-1)*shiftdim(self.k,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
+            
+            % To take the derivative, we multiply, then sine transform back
+            m = reshape(-pi*self.j/self.Lz,1,1,[]);
+            % That would be the normal multiplier, but we want to get it
+            % ready for a DST, so.. -i*m,0,i*flip(m)
+            m = cat(3,-sqrt(-1)*m,0,sqrt(-1)*flip(m,3));
+            uz = ifft( m.*self.realScratch,2*(self.Nz-1),3,'symmetric');
+            uz = uz(:,:,1:self.Nz)*(2*self.Nz-2);
+        end  
+        
+        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            % All coefficients are subsumbed into the transform
+            % coefficients NAp,NAm,etc.
+            w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+            
+            % Re-order to convert to a DST-I via FFT
+            self.complexScratch = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));
+            w = ifft( self.complexScratch,2*(self.Nz-1),3,'symmetric');
+            w = w(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
+            
+            wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
+            wy = ifft( sqrt(-1)*shiftdim(self.k,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
+            
+            % To take the derivative, we multiply, then cosine transform back
+            m = reshape(pi*self.j/self.Lz,1,1,[]);
+            % That would be the normal multiplier, but we want to get it
+            % ready for a DST, so.. i*m,0,-i*flip(m)
+            m = cat(3,sqrt(-1)*m,0,-sqrt(-1)*flip(m,3));
+            wz = ifft( m.*self.complexScratch,2*(self.Nz-1),3,'symmetric');
+            wz = wz(:,:,1:self.Nz)*(2*self.Nz-2);
+        end
     end
 end
 

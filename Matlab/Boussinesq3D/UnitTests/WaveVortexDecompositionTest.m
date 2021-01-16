@@ -81,7 +81,7 @@ fprintf('\n********** Transform tests **********\n');
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))), 1e-15] )))), 1e-15]);
 error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 
-[u,w]=wavemodel.VariableFieldsAtTime(354,'u','zeta');
+[u,v,w,eta] = wavemodel.VariableFieldsAtTime(354,'u','v','w','zeta');
 % [App,Amm,A00] = boussinesq.ProjectFull(u,v,eta);
 
 % Having subsumed the coefficients for these transformations into the
@@ -98,6 +98,50 @@ u_bar = boussinesq.TransformFromSpatialDomainWithF( u );
 u_back = boussinesq.TransformToSpatialDomainWithF(u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Derivative test
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fprintf('\n********** Derivative tests **********\n');
+
+[App,Amm,A00] = boussinesq.Project(u,v,eta);
+Ubar = boussinesq.UAp.*App + boussinesq.UAm.*Amm + boussinesq.UA0.*A00;
+
+u_unit = boussinesq.VelocityField(App,Amm,A00);
+ux_unit = DiffFourier(boussinesq.x,u_unit,1,1);
+uy_unit = DiffFourier(boussinesq.y,u_unit,1,2);
+uz_unit = DiffCosine(boussinesq.z,u_unit,1,3);
+
+[u,ux,uy,uz] = boussinesq.TransformToSpatialDomainWithFAllDerivatives( Ubar );
+
+u_error = error2(u,u_unit);
+fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(ux,ux_unit);
+fprintf('\tx-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(uy,uy_unit);
+fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(uz,uz_unit);
+fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+
+Nbar = boussinesq.NAp.*App + boussinesq.NAm.*Amm + boussinesq.NA0.*A00;
+
+[~,~,~,eta_unit] = boussinesq.VelocityField(App,Amm,A00);
+etax_unit = DiffFourier(boussinesq.x,eta_unit,1,1);
+etay_unit = DiffFourier(boussinesq.y,eta_unit,1,2);
+etaz_unit = DiffSine(boussinesq.z,eta_unit,1,3);
+
+[eta,etax,etay,etaz] = boussinesq.TransformToSpatialDomainWithGAllDerivatives( Nbar );
+
+u_error = error2(eta,eta_unit);
+fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(etax,etax_unit);
+fprintf('\tx-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(etay,etay_unit);
+fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+u_error = error2(etaz,etaz_unit);
+fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
