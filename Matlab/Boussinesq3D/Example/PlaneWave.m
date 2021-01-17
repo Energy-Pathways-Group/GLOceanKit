@@ -26,9 +26,14 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 boussinesq = Boussinesq3DConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
+U = .2;
+boussinesq.InitializeWithPlaneWave(2,2,1,U,1);  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Create an initial plane wave
-%
+% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for i=1:10
+   boussinesq.IncrementForward();
+   boussinesq.summarizeEnergyContent();
+end

@@ -103,6 +103,14 @@ classdef Boussinesq3DConstantStratification < handle
             Am0 = zeros(size(self.ApU));
             A00 = zeros(size(self.ApU));
             self.Y = {Ap0;Am0;A00;};
+            
+            self.integrator = ArrayIntegrator(@(t,y0) self.NonlinearFluxAtTimeArray(t,y0),self.Y,2*pi/self.f0/10);
+        end
+        
+        function IncrementForward(self)
+            self.integrator.currentY = self.Y;
+            self.Y = self.integrator.IncrementForward();
+            self.t = self.integrator.currentTime;
         end
         
         function h = h(self)
@@ -196,20 +204,27 @@ classdef Boussinesq3DConstantStratification < handle
             % Finally, we need to take care of the extra factor of 2 that
             % comes out of the discrete cosine transform
             
+            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
+            shouldAntiAlias = 1;
+            AntiAliasFilter = ones(size(self.ApU));
+            if shouldAntiAlias == 1
+                AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
+            end
+            
             % Now make the Hermitian conjugate match.
             iFTransformScaling = 2./(self.Nx*self.Ny*self.F);
             iGTransformScaling = 2./(self.Nx*self.Ny*self.G);
-            self.ApU = iFTransformScaling .* MakeHermitian(self.ApU);
-            self.ApV = iFTransformScaling .* MakeHermitian(self.ApV);
-            self.ApN = iGTransformScaling .* MakeHermitian(self.ApN);
+            self.ApU = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.ApU);
+            self.ApV = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.ApV);
+            self.ApN = AntiAliasFilter .* iGTransformScaling .* MakeHermitian(self.ApN);
             
-            self.AmU = iFTransformScaling .* MakeHermitian(self.AmU);
-            self.AmV = iFTransformScaling .* MakeHermitian(self.AmV);
-            self.AmN = iGTransformScaling .* MakeHermitian(self.AmN);
+            self.AmU = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.AmU);
+            self.AmV = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.AmV);
+            self.AmN = AntiAliasFilter .* iGTransformScaling .* MakeHermitian(self.AmN);
             
-            self.A0U = iFTransformScaling .* MakeHermitian(self.A0U);
-            self.A0V = iFTransformScaling .* MakeHermitian(self.A0V);
-            self.A0N = iGTransformScaling .* MakeHermitian(self.A0N);
+            self.A0U = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.A0U);
+            self.A0V = AntiAliasFilter .* iFTransformScaling .* MakeHermitian(self.A0V);
+            self.A0N = AntiAliasFilter .* iGTransformScaling .* MakeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -275,6 +290,7 @@ classdef Boussinesq3DConstantStratification < handle
         end
           
         function [Ap,Am,A0] = Project(self,U,V,N)
+            % This is the 'S^{-1}' operator (C5) in the manuscript
             Ubar = self.TransformFromSpatialDomainWithF(U);
             Vbar = self.TransformFromSpatialDomainWithF(V);
             Nbar = self.TransformFromSpatialDomainWithG(N);
@@ -285,6 +301,7 @@ classdef Boussinesq3DConstantStratification < handle
         end
         
         function [U,V,W,N] = VelocityField(self,Ap,Am,A0)
+            % This is the 'S' operator (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
             Wbar = self.WAp.*Ap + self.WAm.*Am;
@@ -302,20 +319,44 @@ classdef Boussinesq3DConstantStratification < handle
             nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*DiffSine(self.z,eta,1,3);
         end
         
-        function [uNL,vNL,nNL] = NonlinearFlux(self,Ap,Am,A0)
+        function F = NonlinearFluxAtTimeArray(self,t,Y0)
+            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Y0{1},Y0{2},Y0{3});
+            F = {Fp,Fm,F0};
+        end
+        
+        function [Fp,Fm,F0] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
+            % Apply operator T_\omega---defined in (C2) in the manuscript
+            phase = exp(self.iOmega*(t-self.t0));
+            Ap = Ap .* phase;
+            Am = Am .* conj(phase);
+            
+            % Apply operator S---defined in (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
             Wbar = self.WAp.*Ap + self.WAm.*Am;
             Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
             
+            % Finishing applying S, but also compute derivatives at the
+            % same time
             [U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
             [V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
             W = self.TransformToSpatialDomainWithG(Wbar);
             [ETA,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
             
-            uNL = U.*Ux + V.*Uy + W.*Uz;
-            vNL = U.*Vx + V.*Vy + W.*Vz;
-            nNL = U.*ETAx + V.*ETAy + W.*ETAz;
+            % Compute the nonlinear terms in the spatial domain
+            % (pseudospectral!)
+            uNL = -U.*Ux - V.*Uy - W.*Uz;
+            vNL = -U.*Vx - V.*Vy - W.*Vz;
+            nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+            
+            % Now apply the operator S^{-1} and then T_\omega^{-1}
+            uNLbar = self.TransformFromSpatialDomainWithF(uNL);
+            vNLbar = self.TransformFromSpatialDomainWithF(vNL);
+            nNLbar = self.TransformFromSpatialDomainWithG(nNL);
+
+            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
+            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
+            F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -355,9 +396,96 @@ classdef Boussinesq3DConstantStratification < handle
             value = self.A0_HKE_factor + self.A0_PE_factor;
         end
         
-        function [Ap,Am] = TimeWind(Ap,Am,t)
-            T = exp(self.iOmega*t);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Energetics (total)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = totalEnergy(self)
+            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','zeta');
+            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + self.N0*self.N0*eta.*eta, 1 ),2 ) )/2;
         end
+        
+        function energy = totalSpectralEnergy(self)
+            energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Major constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = inertialEnergy(self)
+            energy = self.barotropicInertialEnergy + self.baroclinicInertialEnergy;
+        end
+        
+        function energy = waveEnergy(self)
+            energy = self.internalWaveEnergyPlus + self.internalWaveEnergyMinus;
+        end
+        
+        function energy = geostrophicEnergy(self)
+            energy = self.barotropicGeostrophicEnergy + self.baroclinicGeostrophicEnergy;
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Geostrophic constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = barotropicGeostrophicEnergy(self)
+            C = self.Apm_TE_factor;
+            B = self.A0;
+            energy = sum(sum(sum( C(:,:,1) .* (B(:,:,1).*conj(B(:,:,1))) )));
+        end
+        
+        function energy = baroclinicGeostrophicEnergy(self)
+            C = self.Apm_TE_factor;
+            B = self.A0;
+            energy = sum(sum(sum( C(:,:,2:end) .* (B(:,:,2:end).*conj(B(:,:,2:end))) )));
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Inertia-gravity wave constituents
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function energy = barotropicInertialEnergy(self)
+            App = self.Ap;
+            Amm = self.Am;
+            C = self.Apm_TE_factor;
+            energy = C(1,1,1)*( App(1,1,1).^2 + Amm(1,1,1).^2 );
+        end
+        
+        function energy = baroclinicInertialEnergy(self)
+            App = self.Ap;
+            Amm = self.Am;
+            C = self.Apm_TE_factor;
+            energy = sum(sum(sum( C(1,1,2:end).*abs(App(1,1,2:end)).^2 + abs(Amm(1,1,2:end)).^2 )));
+        end
+        
+        function energy = internalWaveEnergyPlus(self)
+            A = self.Ap;
+            A(1,1,:) = 0;
+            C = self.Apm_TE_factor;
+            energy = sum( C(:).*A(:).*conj(A(:))  );
+        end
+        
+        function energy = internalWaveEnergyMinus(self)
+            A = self.Am;
+            A(1,1,:) = 0;
+            C = self.Apm_TE_factor;
+            energy = sum( C(:).*A(:).*conj(A(:))  );
+        end
+        
+        function summarizeEnergyContent(self)
+            total = self.totalSpectralEnergy;
+            ioPct = 100*self.inertialEnergy/total;
+            wavePct = 100*self.waveEnergy/total;
+            gPct = 100*self.geostrophicEnergy/total;
+            wavePlusPct = 100*self.internalWaveEnergyPlus/self.waveEnergy;
+            waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
+            
+            fprintf('%.1f m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
+        end
+        
         
         function Ap = Ap(self)
             Ap = self.Y{1};

@@ -60,8 +60,9 @@ profile on
 for i=1:10
 %     [u,v,w,eta] = boussinesq.VelocityField(Ap,Am,A0);
 %     [uNL,vNL,nNL] = boussinesq.NonlinearFluxFromSpatial(u,v,w,eta);
-    [uNL,vNL,nNL] = boussinesq.NonlinearFlux(Ap,Am,A0);
-    [Ap,Am,A0] = boussinesq.Project(uNL,vNL,nNL);
+%     [uNL,vNL,nNL] = boussinesq.NonlinearFlux(Ap,Am,A0);
+%     [Ap,Am,A0] = boussinesq.Project(uNL,vNL,nNL);
+[Fp,Fm,F0] = boussinesq.NonlinearFluxAtTime(Ap,Am,A0,10);
 end
 profile viewer
 
