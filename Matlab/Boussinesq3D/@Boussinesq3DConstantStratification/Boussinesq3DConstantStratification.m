@@ -104,7 +104,7 @@ classdef Boussinesq3DConstantStratification < handle
             A00 = zeros(size(self.ApU));
             self.Y = {Ap0;Am0;A00;};
             
-            self.integrator = ArrayIntegrator(@(t,y0) self.NonlinearFluxAtTimeArray(t,y0),self.Y,2*pi/self.f0/10);
+%             self.integrator = ArrayIntegrator(@(t,y0) self.NonlinearFluxAtTimeArray(t,y0),self.Y,2*pi/self.f0/100);
         end
         
         function IncrementForward(self)
@@ -205,7 +205,7 @@ classdef Boussinesq3DConstantStratification < handle
             % comes out of the discrete cosine transform
             
             % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            shouldAntiAlias = 1;
+            shouldAntiAlias = 0;
             AntiAliasFilter = ones(size(self.ApU));
             if shouldAntiAlias == 1
                 AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
@@ -403,12 +403,14 @@ classdef Boussinesq3DConstantStratification < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = totalEnergy(self)
-            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','zeta');
+            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + self.N0*self.N0*eta.*eta, 1 ),2 ) )/2;
         end
         
         function energy = totalSpectralEnergy(self)
-            energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
+%             energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
+App = self.Ap; Amm = self.Am; A00 = self.A0;
+energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -432,13 +434,13 @@ classdef Boussinesq3DConstantStratification < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = barotropicGeostrophicEnergy(self)
-            C = self.Apm_TE_factor;
+            C = self.A0_TE_factor;
             B = self.A0;
             energy = sum(sum(sum( C(:,:,1) .* (B(:,:,1).*conj(B(:,:,1))) )));
         end
         
         function energy = baroclinicGeostrophicEnergy(self)
-            C = self.Apm_TE_factor;
+            C = self.A0_TE_factor;
             B = self.A0;
             energy = sum(sum(sum( C(:,:,2:end) .* (B(:,:,2:end).*conj(B(:,:,2:end))) )));
         end
@@ -451,28 +453,28 @@ classdef Boussinesq3DConstantStratification < handle
             App = self.Ap;
             Amm = self.Am;
             C = self.Apm_TE_factor;
-            energy = C(1,1,1)*( App(1,1,1).^2 + Amm(1,1,1).^2 );
+            energy = C(1,1,1)*( App(1,1,1).*conj(App(1,1,1)) + Amm(1,1,1).*conj(Amm(1,1,1)) );
         end
         
         function energy = baroclinicInertialEnergy(self)
             App = self.Ap;
             Amm = self.Am;
             C = self.Apm_TE_factor;
-            energy = sum(sum(sum( C(1,1,2:end).*abs(App(1,1,2:end)).^2 + abs(Amm(1,1,2:end)).^2 )));
+            energy = sum(sum(sum( C(1,1,2:end).* (abs(App(1,1,2:end)).^2 + abs(Amm(1,1,2:end)).^2) )));
         end
         
         function energy = internalWaveEnergyPlus(self)
             A = self.Ap;
             A(1,1,:) = 0;
             C = self.Apm_TE_factor;
-            energy = sum( C(:).*A(:).*conj(A(:))  );
+            energy = sum( C(:).* (A(:).*conj(A(:)))  );
         end
         
         function energy = internalWaveEnergyMinus(self)
             A = self.Am;
             A(1,1,:) = 0;
             C = self.Apm_TE_factor;
-            energy = sum( C(:).*A(:).*conj(A(:))  );
+            energy = sum( C(:).* (A(:).*conj(A(:)))  );
         end
         
         function summarizeEnergyContent(self)
@@ -601,7 +603,7 @@ classdef Boussinesq3DConstantStratification < handle
             u = u(:,:,1:self.Nz)*(2*self.Nz-2);
             
             ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
-            uy = ifft( sqrt(-1)*shiftdim(self.k,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
+            uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
             
             % To take the derivative, we multiply, then sine transform back
             m = reshape(-pi*self.j/self.Lz,1,1,[]);
@@ -623,7 +625,7 @@ classdef Boussinesq3DConstantStratification < handle
             w = w(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
             
             wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
-            wy = ifft( sqrt(-1)*shiftdim(self.k,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
+            wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
             
             % To take the derivative, we multiply, then cosine transform back
             m = reshape(pi*self.j/self.Lz,1,1,[]);

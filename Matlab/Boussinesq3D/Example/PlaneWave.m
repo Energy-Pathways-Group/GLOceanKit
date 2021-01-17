@@ -9,7 +9,7 @@ aspectRatio = 1;
 
 Lx = 100e3;
 Ly = aspectRatio*100e3;
-Lz = 5000;
+Lz = 1300;
 
 Nx = N;
 Ny = aspectRatio*N;
@@ -33,7 +33,20 @@ boussinesq.InitializeWithPlaneWave(2,2,1,U,1);
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i=1:10
-   boussinesq.IncrementForward();
-   boussinesq.summarizeEnergyContent();
+dt = 2*pi/boussinesq.f0/100;
+integrator = ArrayIntegrator(@(t,y0) boussinesq.NonlinearFluxAtTimeArray(t,y0),boussinesq.Y,dt);
+
+nT=100;
+totalEnergy = zeros(nT,1);
+totalSpectralEnergy = zeros(nT,1);
+% profile on
+for i=1:100
+   integrator.currentY = boussinesq.Y;
+   boussinesq.Y = integrator.IncrementForward();
+   totalEnergy(i) = boussinesq.totalEnergy;
+   totalSpectralEnergy(i) = boussinesq.totalSpectralEnergy;
+   if mod(i,10)==0
+       boussinesq.summarizeEnergyContent();
+   end
 end
+% profile viewer

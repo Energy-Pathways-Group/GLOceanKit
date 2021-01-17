@@ -154,6 +154,13 @@ newmodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], l
 
 error2 = @(u,u_unit) max(max(max( abs((u(abs(u_unit)>1e-15)-u_unit(abs(u_unit)>1e-15)))./abs(u_unit(abs(u_unit)>1e-15)) )));
 
+a = Ap(1,1,:);
+b = Am(1,1,:);
+Ap(:) = 0;
+Am(:) = 0;
+Ap(1,1,:) = a;
+Am(1,1,:) = b;
+
 t = 351;
 for i=1:8
     if i <= 4 % First we walk through the four types of solutions in isolation
@@ -202,11 +209,14 @@ for i=1:8
     fprintf('total spectral energy: %f m^3/s\n', spectralEnergy);
     
     [App,Amm,A00] = boussinesq.Project(u,v,eta);
+    boussinesq.Y = {App,Amm,A00};
     [U,V,W,N] = boussinesq.VelocityField(App,Amm,A00);
     integratedEnergyBoussinesq = trapz(boussinesq.z,mean(mean( U.^2 + V.^2 + W.^2 + boussinesq.N0*boussinesq.N0.*N.*N, 1 ),2 ) )/2;
     spectralEnergyBoussinesq = sum(sum(sum( boussinesq.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + boussinesq.A0_TE_factor.*( A00.*conj(A00) ) )));
     fprintf('total integrated energy (BM): %f m^3/s\n', integratedEnergyBoussinesq);
     fprintf('total spectral energy (BM): %f m^3/s\n', spectralEnergyBoussinesq);
+    fprintf('total integrated energy (BM-internal): %f m^3/s\n', boussinesq.totalEnergy);
+    fprintf('total spectral energy (BM-internal): %f m^3/s\n', boussinesq.totalSpectralEnergy);
     
     fprintf('\n');
 end
