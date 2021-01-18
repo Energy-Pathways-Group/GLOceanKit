@@ -29,7 +29,7 @@ latitude = [0 31];
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 U = 0.01; % m/s
 phi = 0*0.232; % random, just to see if its doing the right thing API = 1 will fail, because you can't set the phase using that API.
-t = 0*2.13*86400;
+t = 2.13*86400;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
