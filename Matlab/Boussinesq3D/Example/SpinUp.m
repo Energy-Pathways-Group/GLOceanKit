@@ -4,10 +4,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 64;
-aspectRatio = 1;
+N = 32;
+aspectRatio = 4;
 
-Lx = 500e3;
+Lx = 125e3;
 Ly = aspectRatio*Lx;
 Lz = 1300;
 
@@ -15,8 +15,8 @@ Nx = N;
 Ny = aspectRatio*N;
 Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
-latitude = 25;
-N0 = 5.2e-3; % Choose your stratification 7.6001e-04
+latitude = 22;
+N0 = (5.2e-3)/2; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -30,12 +30,22 @@ U = .2;
 % boussinesq.InitializeWithPlaneWave(0,0,1,U,1); 
 % boussinesq.InitializeWithPlaneWave(2,2,1,U,1);  
 
-kModes = [0; 5; 0];
-lModes = [0; 0; 5];
-jModes = [1; 1; 1];
-phi = [0; 0; 0];
-U = [0.2; 0.05; 0.08];
-signs = [1; 1; -1];
+% Starts to grow exponentially in energy at around 20 days, at 25 lat
+% kModes = [0; 0; 0];
+% lModes = [0; 8; 8];
+% jModes = [1; 1; 1];
+% phi = [0; 0; 0];
+% U = [0.2; 0.05; 0.08];
+% signs = [1; 1; -1];
+
+% At 22 lat, there are now two active psi modes. And boom, this fills out a
+% spectrum :-)
+kModes = [0; 0; 0; 0];
+lModes = [0; 1; 8; 8];
+jModes = [1; 1; 1; 1];
+phi = [0; 0; 0; 0];
+U = [0.2; 0.05; 0.05; 0.08];
+signs = [1; 1; 1; -1];
 
 [omega,k,l] = boussinesq.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
 
@@ -80,3 +90,7 @@ for i=1:nT
    end
 end
 % profile viewer
+
+% Need to convert this to energy...
+[k,j,ApKJ,AmKJ] = boussinesq.ConvertToWavenumberAndMode(abs(boussinesq.Ap).^2,abs(boussinesq.Am).^2);
+figure, plot(k,sum(ApKJ,2)), hold on, plot(k,sum(AmKJ,2)), ylog

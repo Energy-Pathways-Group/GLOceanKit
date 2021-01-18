@@ -121,6 +121,11 @@ classdef Boussinesq3DConstantStratification < handle
             h(:,:,1) = 1; % prevent divide by zero
         end
         
+        function Kh = Kh(self)
+            [K,L,~] = ndgrid(self.k,self.l,self.j);
+            Kh = sqrt(K.*K + L.*L);
+        end
+        
         function Omega = Omega(self)
             [K,L,~] = ndgrid(self.k,self.l,self.j);
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
@@ -205,7 +210,7 @@ classdef Boussinesq3DConstantStratification < handle
             % comes out of the discrete cosine transform
             
             % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            shouldAntiAlias = 0;
+            shouldAntiAlias = 1;
             AntiAliasFilter = ones(size(self.ApU));
             if shouldAntiAlias == 1
                 AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
@@ -642,24 +647,143 @@ energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + 
             wz = wz(:,:,1:self.Nz)*(2*self.Nz-2);
         end
     end
-end
+    
+    methods (Static)
+        function A = CheckHermitian(A)
+            M = size(A,1);
+            N = size(A,2);
+            K = size(A,3);
+            
+            for k=1:K
+                for i=M:-1:1
+                    for j=N:-1:1
+                        ii = mod(M-i+1, M) + 1;
+                        jj = mod(N-j+1, N) + 1;
+                        if A(i,j,k) ~= conj(A(ii,jj,k))
+                            error('(i,j,k)=(%d,%d,%d) is not conjugate with (%d,%d,%d)\n',i,j,k,ii,jj,k)
+                        end
+                    end
+                end
+            end
+            
+        end
+        
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
+        %
+        % The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
+        % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
+        % conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
+        % numbers are set to zero to avoid complications.
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function A = MakeHermitian(A)
+            M = size(A,1);
+            N = size(A,2);
+            K = size(A,3);
+            
+            % The order of the for-loop is chosen carefully here.
+            for k=1:K
+                for j=1:(N/2+1)
+                    for i=1:M
+                        ii = mod(M-i+1, M) + 1;
+                        jj = mod(N-j+1, N) + 1;
+                        if i == ii && j == jj
+                            % A(i,j,k) = real(A(i,j,k)); % self-conjugate term
+                            % This is not normally what you'd do, but we're being
+                            % tricky by later adding the conjugate
+                            if i == 1 && j == 1
+                                continue;
+                            else
+                                A(i,j,k) = 0;
+                            end
+                        elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
+                            A(i,j,k) = 0;
+                        else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay
+                            A(ii,jj,k) = conj(A(i,j,k));
+                        end
+                    end
+                end
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Returns a matrix the same size as A with 1s at the 'redundant'
+        % hermiation indices.
+        function A = RedundantHermitianCoefficients(A)
+            A = zeros(size(A));
+            
+            M = size(A,1);
+            N = size(A,2);
+            K = size(A,3);
+            
+            % The order of the for-loop is chosen carefully here.
+            for k=1:K
+                for j=1:(N/2+1)
+                    for i=1:M
+                        ii = mod(M-i+1, M) + 1;
+                        jj = mod(N-j+1, N) + 1;
+                        if i == ii && j == jj
+                            if i == 1 && j == 1
+                                continue;
+                            else
+                                A(i,j,k) = 0;
+                            end
+                        elseif j == N/2+1
+                            A(i,j,k) = 0;
+                        else
+                            if j == 1 && i > M/2
+                                continue;
+                            end
+                            A(ii,jj,k) = 1;
+                        end
+                    end
+                end
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Returns a matrix the same size as A with 1s at the Nyquist
+        % frequencies.
+        function A = NyquistWavenumbers(A)
+            A = zeros(size(A));
+            Nx = size(A,1);
+            Ny = size(A,2);
+            if Nx > 1
+                A(ceil(Nx/2)+1,:) = 1;
+            end
+            if Ny > 1
+                A(:,ceil(Ny/2)+1) = 1;
+            end
+        end
+        
+        function A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
+            
+            nX = size(1); nY = size(2);
+            if length(size) > 2
+                nZ = size(3);
+            else
+                nZ = 1;
+            end
+            A = InternalWaveModel.MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+            if shouldExcludeNyquist == 1
+                mask = ~InternalWaveModel.NyquistWavenumbers(A(:,:,1));
+                A = mask.*A;
+            else
+                A(1,1,:) = 2*A(1,1,:); % Double the zero frequency
+                A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
+                A(1,nY/2+1,:) = -2*real(A(1,nY/2+1,:)); % Double the Nyquist frequency
+                A(nX/2+1,nY/2+1,:) = -2*real(A(nX/2+1,nY/2+1,:)); % Double the Nyquist frequency
+            end
+            
+        end
+    end
+        
+        
+end 
 
-function A = CheckHermitian(A)
-M = size(A,1);
-N = size(A,2);
-K = size(A,3);
 
-for k=1:K
-   for i=M:-1:1
-       for j=N:-1:1
-           ii = mod(M-i+1, M) + 1;
-           jj = mod(N-j+1, N) + 1;
-           if A(i,j,k) ~= conj(A(ii,jj,k))
-               error('(i,j,k)=(%d,%d,%d) is not conjugate with (%d,%d,%d)\n',i,j,k,ii,jj,k)
-           end
-       end
-   end
-end
-
-end
 
