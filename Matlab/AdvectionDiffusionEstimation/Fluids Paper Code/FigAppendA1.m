@@ -16,7 +16,7 @@ sigma_n = sigma.*cosd(2*theta);
     xl = x(1,1:9); yl = y(1,1:9);
     xlc = mean(xl); ylc = mean(yl);
     cmd = mean(sqrt((xl-xlc).^2+(yl-ylc).^2));
-KK = 2:10;
+KK = 2:48;
 profile on
 for NX = KK
     NX
@@ -29,8 +29,15 @@ for j=1:NSim
     xc = x-mean(x,2); yc = y-mean(y,2);
     u = diff(xc)/dt; v = diff(yc)/dt;
     xc = xc(1:length(x)-1,:); yc = yc(1:length(y)-1,:);
-    [divest(j), vortest(j), nstrainest(j), sstrainest(j)] = DivVortStrainEst(xc,yc,u,v,dt,1,0,0,0);
-%     parameterEstimates = EstimateLinearVelocityFieldParameters( xc, yc, dt*(1:NT)', ModelParameter.strain );
+    if 1 == 1
+        [divest(j), vortest(j), nstrainest(j), sstrainest(j)] = DivVortStrainEst(xc,yc,u,v,dt,1,0,0,0);
+    else
+        parameterEstimates = EstimateLinearVelocityFieldParameters( xc, yc, dt*(1:NT)', [ModelParameter.strain,ModelParameter.vorticity] );
+        divest(j) = parameterEstimates.delta;
+        vortest(j) = parameterEstimates.zeta;
+        nstrainest(j) = parameterEstimates.sigma_n;
+        sstrainest(j) = parameterEstimates.sigma_s;
+    end
     strainest(j)=sqrt(nstrainest(j).^2 + sstrainest(j).^2);
     thetaest(j)=atan2d(sstrainest(j),nstrainest(j))/2;
 end

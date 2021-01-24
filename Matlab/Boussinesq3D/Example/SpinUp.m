@@ -91,6 +91,8 @@ for i=1:nT
 end
 % profile viewer
 
+figure, plot(totalEnergy), hold on, plot(totalSpectralEnergy)
+
 % Need to convert this to energy...
 [k,j,ApKJ,AmKJ] = boussinesq.ConvertToWavenumberAndMode(abs(boussinesq.Ap).^2,abs(boussinesq.Am).^2);
 figure, plot(k,sum(ApKJ,2)), hold on, plot(k,sum(AmKJ,2)), ylog

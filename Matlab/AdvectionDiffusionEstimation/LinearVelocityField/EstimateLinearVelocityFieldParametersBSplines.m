@@ -67,22 +67,50 @@ delta = zeros(length(t),1);
 
 nDrifters = size(x,2);
 
-% Compute velocities with 2nd order accuracy
-D = FiniteDifferenceMatrix(1,t,1,1,2);
-
-% Center-of-mass, and velocity of center-of-mass
+% Center-of-mass position, and positions relative to the center-of-mass
 mx = mean(x,2);
 my = mean(y,2);
 
-dmxdt = D*mx;
-dmydt = D*my;
-
-% Positions and velocities relative to the center-of-mass
 q = x-mx;
 r = y-my;
+% Center-of-mass velocity, and velocities relative to the center-of-mass
 
-dqdt = D*q;
-drdt = D*r;
+if length(unique(diff(t))) > 1
+    % Compute velocities with 2nd order accuracy
+    D = FiniteDifferenceMatrix(1,t,1,1,2);
+    
+    dmxdt = D*mx;
+    dmydt = D*my;
+    
+    dqdt = D*q;
+    drdt = D*r;
+else
+    % 2nd order finite difference for evenly spaced dt
+    dmxdt = zeros(length(t),1);
+    dmydt = zeros(length(t),1);
+    dqdt = zeros(length(t),nDrifters);
+    drdt = zeros(length(t),nDrifters);
+    dt = t(2)-t(1);
+    
+    dmiddle = @(x) (x(3:end,:)-x(1:end-2,:))/(2*dt);
+    dleft = @(x) (-x(3,:) + 4*x(2,:) - 3*x(1,:))/(2*dt);
+    dright = @(x) (x(end-2,:) - 4*x(end-1,:) + 3*x(end,:))/(2*dt);
+    
+    dmxdt(2:end-1) = dmiddle(mx);
+    dmydt(2:end-1) = dmiddle(my);
+    dqdt(2:end-1,:) = dmiddle(q);
+    drdt(2:end-1,:) = dmiddle(r);
+    
+    dmxdt(1) = dleft(mx);
+    dmydt(1) = dleft(my);
+    dqdt(1,:) = dleft(q);
+    drdt(1,:) = dleft(r);
+    
+    dmxdt(end) = dright(mx);
+    dmydt(end) = dright(my);
+    dqdt(end,:) = dright(q);
+    drdt(end,:) = dright(r);
+end
 
 nSplines = size(B,2);
 
