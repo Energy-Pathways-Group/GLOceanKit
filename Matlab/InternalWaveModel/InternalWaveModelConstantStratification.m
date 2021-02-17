@@ -176,7 +176,11 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             Kh(Kh<1e-14) = 1;
             negate_zeta = abs(self.Omega)./(Kh .* sqrt(self.h));
             A_plus = -zeta_bar .* negate_zeta ./ self.G; % extra factor from constant stratification case.
-            self.GenerateWavePhases(A_plus,zeros(size(self.K)));
+            A_minus = A_plus;
+            A_plus(self.K < 0) = 0;
+            A_minus(self.K > 0) = 0;
+%             self.GenerateWavePhases(A_plus,zeros(size(self.K)));
+            self.GenerateWavePhases(A_plus,A_minus);
         end
         
         function InitializeGeostrophicSolutionWithRhoPrimeField(self, rho_prime)

@@ -6,9 +6,17 @@ Nx = 256;
 Ny = 256;
 Nz = 257;
 
+Nx = 64;
+Ny = 64;
+Nz = 65;
+
+Nx = 128;
+Ny = 128;
+Nz = 129;
+
 latitude = 31;
 N0 = 5.2e-3/2;
-t = 8*3600; 1*86400;
+t = 12*3600; 1*86400;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
@@ -29,7 +37,7 @@ zeta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/
 
 wavemodel.InitializeWithIsopycnalDisplacementField(zeta0);
 
-[u, v, w, rho_prime, zeta]= wavemodel.VariableFieldsAtTime(t, 'u', 'v', 'w', 'rho_prime', 'zeta');
+[u, v, w, rho_prime, zeta]= wavemodel.VariableFieldsAtTime(0*3600, 'u', 'v', 'w', 'rho_prime', 'zeta');
 
 maxU = max(max(max(abs(u))));
 maxV = max(max(max(abs(v))));
@@ -38,6 +46,9 @@ fprintf('Maximum fluid velocity (u,v,w)=(%.2f,%.2f,%.2f) cm/s\n',100*maxU,100*ma
 
 dispvar = zeta;
 figure
+subplot(2,1,1)
 pcolor(wavemodel.x,wavemodel.z,squeeze(dispvar(:,Ny/2,:))'),shading flat
+subplot(2,1,2)
+pcolor(wavemodel.x,wavemodel.y,squeeze(dispvar(:,:,floor(Nz/2)))'),shading flat
 figure
 plot(wavemodel.x,squeeze(dispvar(:,Ny/2,floor(Nz/2))));

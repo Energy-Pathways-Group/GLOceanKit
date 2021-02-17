@@ -156,7 +156,7 @@ classdef Boussinesq3DConstantStratification < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Normalization for the vertical modes
             % This comes from equations B12 in the manuscript.
-            signNorm = -2*(mod(J,2) == 1)+1;
+            signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
             self.F = signNorm .* (h.*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
             self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
@@ -201,10 +201,11 @@ classdef Boussinesq3DConstantStratification < handle
             self.A0V(:,:,1) = -sqrt(-1)*(f/g_)*K(:,:,1)./K2(:,:,1);
             self.A0N(:,:,1) = 0;
             
-            % There are no k=l=0, j>=0 geostrophic solutions
+            % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
             self.A0U(1,1,:) = 0;
             self.A0V(1,1,:) = 0;
-            self.A0N(1,1,:) = 0;
+            self.A0N(1,1,:) = 1;
+            self.A0N(1,1,1) = 0;
             
             % Finally, we need to take care of the extra factor of 2 that
             % comes out of the discrete cosine transform
