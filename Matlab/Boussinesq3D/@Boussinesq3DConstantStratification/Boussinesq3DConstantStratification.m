@@ -295,7 +295,7 @@ classdef Boussinesq3DConstantStratification < handle
             self.NA0 = GTransformScaling .* MakeHermitian(self.NA0);
         end
           
-        function [Ap,Am,A0] = Project(self,U,V,N)
+        function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N)
             % This is the 'S^{-1}' operator (C5) in the manuscript
             Ubar = self.TransformFromSpatialDomainWithF(U);
             Vbar = self.TransformFromSpatialDomainWithF(V);
@@ -306,7 +306,7 @@ classdef Boussinesq3DConstantStratification < handle
             A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
         end
         
-        function [U,V,W,N] = VelocityField(self,Ap,Am,A0)
+        function [U,V,W,N] = TransformWaveVortexToUVWEta(self,Ap,Am,A0)
             % This is the 'S' operator (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
@@ -647,6 +647,45 @@ energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + 
             wz = ifft( m.*self.complexScratch,2*(self.Nz-1),3,'symmetric');
             wz = wz(:,:,1:self.Nz)*(2*self.Nz-2);
         end
+        
+        function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)
+            % Random flow state, separated out by solution type.
+            % Adding the solution types together, gives a complete state.
+            % Ap = ApIO + ApIGW;
+            % Am = AmIO + AmIGW;
+            % A0 = A0G + A0G0 + A0rhobar;
+            shouldExcludeNyquist = 1;
+            ApIGW = Boussinesq3DConstantStratification.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
+            AmIGW = Boussinesq3DConstantStratification.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
+            A0G = 6e-2*Boussinesq3DConstantStratification.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
+            
+            ApIO = zeros(size(self.G));
+            AmIO = zeros(size(self.G));
+            A0G0 = zeros(size(self.G));
+            A0rhobar = zeros(size(self.G));
+            
+            % inertial oscillations only exist at k=l=0
+            ApIO(1,1,:) = ApIGW(1,1,:);
+            AmIO(1,1,:) = conj(ApIGW(1,1,:));
+            
+            % zero out all j=0, and k=l=0 values.
+            ApIGW(:,:,1) = 0;
+            ApIGW(1,1,:) = 0;
+            AmIGW(:,:,1) = 0;
+            AmIGW(1,1,:) = 0;
+            
+            % barotropic geostrophic at all k and l>0, j=0
+            A0G0(:,:,1) = 0.1*A0G(:,:,1);
+            A0G0(1,1,1) = 0;
+            
+            % mean density anomaly
+            A0rhobar(1,1,2:end) = real(A0G(1,1,2:end));
+            
+            % zero out all j=0, and k=l=0 values.
+            A0G(1,1,:) = 0;
+            A0G(:,:,1) = 0;
+        end
+        
     end
     
     methods (Static)
@@ -677,6 +716,9 @@ energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + 
         % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
         % conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
         % numbers are set to zero to avoid complications.
+        %
+        % This function is NOT a true "Make Hermitian" function because it
+        % doesn't force the k=l=0 to be real.
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function A = MakeHermitian(A)
