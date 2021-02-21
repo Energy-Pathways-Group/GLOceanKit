@@ -135,8 +135,8 @@ for iLat = 1:length(latitude)
                     %
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
-                    for API = 1:1
-%                         wavemodel.RemoveAllExternalWaves();
+                    for API = 1:4
+                        wavemodel.RemoveAllExternalWaves();
                         wavemodel.RemoveAllGriddedWaves();
                         
                         if API == 1

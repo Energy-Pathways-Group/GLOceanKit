@@ -110,6 +110,7 @@ for iMode = 1:length(kMode)
     k(iMode) = K(k_out+1,l_out+1,j0+1);
     l(iMode) = L(k_out+1,l_out+1,j0+1);
 end
-
-self.Y = {ApTotal; AmTotal; A0Total;};
+self.Ap = ApTotal;
+self.Am = AmTotal;
+self.A0 = A0Total;
 end

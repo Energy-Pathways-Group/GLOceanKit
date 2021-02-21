@@ -1,3 +1,4 @@
 function RemoveAllGriddedWaves(self)
-self.Y = {zeros(size(self.ApU)); zeros(size(self.ApU)); self.A0;};
+self.Ap = 0*self.Ap;
+self.Am = 0*self.Am;
 end

@@ -6,4 +6,11 @@ function [varargout] = VariableFieldsAtTime(self, t, varargin)
 % 'zeta'.
 varargout = cell(size(varargin));
 [varargout{:}] = self.InternalVariableFieldsAtTime(t, varargin{:});
+if ~isempty(self.externalModes.k_ext)
+    varargoutExt = cell(size(varargin));
+    [varargoutExt{:}] = self.ExternalVariableFieldsAtTime(t, varargin{:});
+    for iArg=1:length(varargout)
+        varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
+    end
+end
 end

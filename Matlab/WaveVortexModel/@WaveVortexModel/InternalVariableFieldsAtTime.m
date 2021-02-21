@@ -27,7 +27,7 @@ for iArg=1:length(varargin)
     elseif ( strcmp(varargin{iArg}, 'p') )
         varargout{iArg} = self.rho0*self.g*self.TransformToSpatialDomainWithF(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     elseif ( strcmp(varargin{iArg}, 'rho_prime') )
-        varargout{iArg} = (self.rho0/9.81)*self.N2.*self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
+        varargout{iArg} = (self.rho0/9.81)*reshape(self.N2,1,1,[]).*self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     elseif ( strcmp(varargin{iArg}, 'eta') )
         varargout{iArg} = self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     else

@@ -5,7 +5,7 @@ classdef WaveVortexModel < handle
     properties
         x, y, z
         k, l, j
-        Nx, Ny, Nz
+        Nx, Ny, Nz, nModes
         Lx, Ly, Lz
         f0, Nmax, rho0
         iOmega
@@ -23,6 +23,8 @@ classdef WaveVortexModel < handle
         t0 = 0
         Ap, Am, A0
         shouldAntialias = 0;
+        
+        externalModes
     end
     
     properties (Abstract)
@@ -76,6 +78,7 @@ classdef WaveVortexModel < handle
             self.Nx = n(1);
             self.Ny = n(2);
             self.Nz = n(3);
+            self.nModes = nModes;
 
             dx = self.Lx/self.Nx;
             dy = self.Ly/self.Ny;
@@ -100,11 +103,11 @@ classdef WaveVortexModel < handle
             else
                 self.rho0 = rho0;
             end
-                        
+            
             % Now set the initial conditions to zero
-            self.Ap = zeros(size(self.ApU));
-            self.Am = zeros(size(self.ApU));
-            self.A0 = zeros(size(self.ApU));            
+            self.Ap = zeros(self.Nx,self.Ny,self.nModes);
+            self.Am = zeros(self.Nx,self.Ny,self.nModes);
+            self.A0 = zeros(self.Nx,self.Ny,self.nModes);          
         end
         
         function Kh = Kh(self)
@@ -441,7 +444,45 @@ classdef WaveVortexModel < handle
         
         [omega,k,l] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)  
         
+        [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self);
+        
         [varargout] = VariableFieldsAtTime(self, t, varargin);
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Add and remove off-grid internal waves
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function RemoveAllExternalWaves(self)
+            self.externalModes.RemoveAllExternalWaves();
+        end
+        
+        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            omega = self.externalModes.SetExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        end
+        
+        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            omega = self.externalModes.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        end
+        
+        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            k = self.externalModes.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+        end
+        
+        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            k = self.externalModes.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+        end
+        
+        function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
+            % Returns the external wave modes at the grid points.
+            varargout = cell(size(varargin));
+            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
+            [varargout{:}] = self.externalModes.ExternalVariablesAtTimePosition(t,reshape(X,[],1),reshape(Y,[],1), reshape(Z,[],1), varargin{:});
+            for iArg=1:length(varargout)
+                varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
+            end
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -490,6 +531,11 @@ classdef WaveVortexModel < handle
         %
         % Generate a 3D matrix to be Hermitian, except at k=l=0
         A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Takes a Hermitian matrix and resets it back to the real amplitude.
+        [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
     end
         
         
