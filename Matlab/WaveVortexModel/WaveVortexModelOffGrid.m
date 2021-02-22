@@ -302,7 +302,7 @@ classdef WaveVortexModelOffGrid < handle
                 isU = isU | strcmp(varargin{iArg}, 'u');
                 isV = isV | strcmp(varargin{iArg}, 'v');
                 isW = isW | strcmp(varargin{iArg}, 'w');
-                isZeta = isZeta | strcmp(varargin{iArg}, 'zeta');
+                isZeta = isZeta | strcmp(varargin{iArg}, 'eta');
                 isRho = isRho | strcmp(varargin{iArg}, 'rho_prime');
             end
             

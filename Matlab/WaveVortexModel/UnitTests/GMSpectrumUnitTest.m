@@ -40,9 +40,9 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-wavemodel.FillOutWaveSpectrum();
-wavemodel.InitializeWithGMSpectrum(1.0);
+wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvm.FillOutWaveSpectrum();
+wvm.InitializeWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -52,11 +52,11 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 depth = Lz/2;
-depthIndex = find(wavemodel.z > -depth,1,'first');
+depthIndex = find(wvm.z > -depth,1,'first');
 stride = 4;
 numInertialPeriods = 2;
 timeStep = 15*60;
-t = 0:timeStep:timeStep*(floor(numInertialPeriods*(2*pi/wavemodel.f0)/timeStep)-1);
+t = 0:timeStep:timeStep*(floor(numInertialPeriods*(2*pi/wvm.f0)/timeStep)-1);
 xIndices = 1:stride:Nx;
 yIndices = 1:stride:Ny;
 cv_mooring = zeros([length(t) length(xIndices)*length(yIndices)]);
@@ -68,7 +68,7 @@ for iTime=1:length(t)
         fprintf('\ttime step %d of %d. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
     
-    [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
+    [u,v]=wvm.VelocityFieldAtTime(t(iTime));
     
     cv_mooring(iTime,:) = reshape(u(xIndices,yIndices,depthIndex),1,[]) + sqrt(-1)*reshape(v(xIndices,yIndices,depthIndex),1,[]);
 end
@@ -102,13 +102,13 @@ legend('model output', 'GM')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 t = 0;
-[u,v,w,zeta]=wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
+[u,v,w,eta]=wvm.VariableFieldsAtTime(t,'u','v','w','eta');
 
-z = wavemodel.z;
+z = wvm.z;
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));
-zetaVariance = squeeze(mean(mean(zeta.*zeta,1),2));
+zetaVariance = squeeze(mean(mean(eta.*eta,1),2));
 
-zeta2 = squeeze(mean(mean(zeta.*zeta,1),2));
+zeta2 = squeeze(mean(mean(eta.*eta,1),2));
 u2 = squeeze(mean(mean(u.*u,1),2)+mean(vmean(v.*v,1),2));
 w2 = squeeze(mean(mean(w.*w,1),2));
 
@@ -139,7 +139,7 @@ HKE_int = trapz(z,HKE,3);
 VKE = 0.5*(w.*w);
 VKE_int = trapz(z,VKE,3);
 
-PE = 0.5*(N0^2)*zeta.*zeta;
+PE = 0.5*(N0^2)*eta.*eta;
 PE_int = trapz(z,PE,3);
 
 totalGM = mean(mean(HKE_int + VKE_int + PE_int))*1032; % scaled by the density of water

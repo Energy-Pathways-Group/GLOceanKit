@@ -228,7 +228,7 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
         A_minus = A.*WaveVortexModel.GenerateHermitianRandomMatrix( size(K) );
 
         self.externalModes.U_ext = sqrt(2*GM3Dext./self.externalModes.h_ext).*randn( size(self.externalModes.h_ext) );
-%         self.PrecomputeExternalWaveCoefficients();                
+        self.externalModes.PrecomputeExternalWaveCoefficients();                
     else
         % Randomize phases, but keep unit length
         A_plus = WaveVortexModel.GenerateHermitianRandomMatrix( size(K), excludeNyquist );
@@ -244,7 +244,7 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
         % Check this factor of 2!!! Is the correct? squared
         % velocity to energy, I think.
         self.externalModes.U_ext = sqrt(2*GM3Dext./self.externalModes.h_ext);
-%         self.PrecomputeExternalWaveCoefficients();   
+        self.externalModes.PrecomputeExternalWaveCoefficients();   
     end
 
     A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial motions go only one direction!

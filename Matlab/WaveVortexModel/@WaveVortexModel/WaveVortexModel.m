@@ -464,6 +464,8 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        FillOutWaveSpectrum(self,maxTimeGap)
+        
         function RemoveAllExternalWaves(self)
             self.externalModes.RemoveAllExternalWaves();
         end
