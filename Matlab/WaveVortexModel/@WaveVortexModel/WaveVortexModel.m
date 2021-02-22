@@ -446,6 +446,16 @@ classdef WaveVortexModel < handle
         
         [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self);
         
+        InitializeWithGMSpectrum(self, GMAmplitude, varargin);
+        
+        [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   ;
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Physical fields
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         [varargout] = VariableFieldsAtTime(self, t, varargin);
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
