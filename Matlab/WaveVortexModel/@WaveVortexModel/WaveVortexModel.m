@@ -7,7 +7,7 @@ classdef WaveVortexModel < handle
         k, l, j
         Nx, Ny, Nz, nModes
         Lx, Ly, Lz
-        f0, Nmax, rho0
+        f0, Nmax, rho0, latitude
         iOmega
         rhobar, N2 % size(N2) = [length(z) 1];
         rhoFunction, N2Function % function handles
@@ -101,6 +101,7 @@ classdef WaveVortexModel < handle
             
             self.Nmax = sqrt(max(N2));
             self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+            self.latitude = latitude;
             if ~exist('rho0','var')
                 self.rho0 = 1025;
             else
