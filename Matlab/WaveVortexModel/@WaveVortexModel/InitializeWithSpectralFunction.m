@@ -89,9 +89,9 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
     % negative part of the hermitian conjugate. However, we also
     % have negative frequency waves, so this is justified.
     internalOmegaLinearIndices = reshape(1:numel(Omega),size(Omega));
-    externalOmegaLinearIndices = 1:length(self.externalModes.omega_ext);
+    externalOmegaLinearIndices = 1:length(self.offgridModes.omega_ext);
     GM3Dint = zeros(size(Kh));
-    GM3Dext = zeros(size(self.externalModes.k_ext));
+    GM3Dext = zeros(size(self.offgridModes.k_ext));
     indicesToSkip = reshape(internalOmegaLinearIndices(abs(Kh) < minK | abs(Kh) > maxK),[],1);
     for iMode = minMode:maxMode
         intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode+1),[],1); % Find the indices of everything with this iMode (iMode+1 b/c of j=0 mode)
@@ -104,8 +104,8 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
         intOmegas = abs(Omega(intOmegasLinearIndicesForIMode));
 
         % Now do the same for the external modes
-        indices = find(self.externalModes.j_ext == iMode);
-        extOmegas = reshape(abs(self.externalModes.omega_ext(indices)),[],1);
+        indices = find(self.offgridModes.j_ext == iMode);
+        extOmegas = reshape(abs(self.offgridModes.omega_ext(indices)),[],1);
         extOmegasLinearIndicesForIMode = reshape(externalOmegaLinearIndices(indices),[],1);
 
         % Make a combined list, but note which list each omega came
@@ -227,8 +227,8 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
         A_plus = A.*WaveVortexModel.GenerateHermitianRandomMatrix( size(K) );
         A_minus = A.*WaveVortexModel.GenerateHermitianRandomMatrix( size(K) );
 
-        self.externalModes.U_ext = sqrt(2*GM3Dext./self.externalModes.h_ext).*randn( size(self.externalModes.h_ext) );
-        self.externalModes.PrecomputeExternalWaveCoefficients();                
+        self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext).*randn( size(self.offgridModes.h_ext) );
+        self.offgridModes.PrecomputeExternalWaveCoefficients();                
     else
         % Randomize phases, but keep unit length
         A_plus = WaveVortexModel.GenerateHermitianRandomMatrix( size(K), excludeNyquist );
@@ -243,8 +243,8 @@ function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, vara
 
         % Check this factor of 2!!! Is the correct? squared
         % velocity to energy, I think.
-        self.externalModes.U_ext = sqrt(2*GM3Dext./self.externalModes.h_ext);
-        self.externalModes.PrecomputeExternalWaveCoefficients();   
+        self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext);
+        self.offgridModes.PrecomputeExternalWaveCoefficients();   
     end
 
     A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial motions go only one direction!

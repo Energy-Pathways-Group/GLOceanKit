@@ -3,7 +3,7 @@ classdef WaveVortexModelOffGrid < handle
     %   Detailed explanation goes here
     
     properties
-        f0, rho0
+        f0, rho0, latitude
         internalModes
         Lz
         z
@@ -26,6 +26,7 @@ classdef WaveVortexModelOffGrid < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = WaveVortexModelOffGrid(internalModes, latitude,N2Function)
             self.internalModes = internalModes;
+            self.latitude = latitude;
             self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
             self.Lz = self.internalModes.Lz;
             self.z = self.internalModes.z;

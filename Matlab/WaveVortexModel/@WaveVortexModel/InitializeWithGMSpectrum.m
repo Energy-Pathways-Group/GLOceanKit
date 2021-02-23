@@ -63,6 +63,6 @@ function InitializeWithGMSpectrum(self, GMAmplitude, varargin)
     GM_sum_ext = sum(GM3Dext)/E;
     C = self.Apm_TE_factor;
     GM_random_sum_int = sum( C(:).*(self.Ap(:).*conj(self.Ap(:)) + self.Am(:).*conj(self.Am(:))) )/E;
-    GM_random_sum_ext = sum((self.externalModes.U_cos_ext.*self.externalModes.U_cos_ext + self.externalModes.V_cos_ext.*self.externalModes.V_cos_ext).*self.externalModes.h_ext/2)/E;
+    GM_random_sum_ext = sum((self.offgridModes.U_cos_ext.*self.offgridModes.U_cos_ext + self.offgridModes.V_cos_ext.*self.offgridModes.V_cos_ext).*self.offgridModes.h_ext/2)/E;
     fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
 end

@@ -46,10 +46,12 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             self@WaveVortexModel(dims, n, z, rhobar, N2, nModes, latitude, rho0);
             
             self.N0 = N0;
+            self.rhoFunction = rhoFunction;
+            self.N2Function = N2Function;
             
             self.BuildTransformationMatrices();
             internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
-            self.externalModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function);
+            self.offgridModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));

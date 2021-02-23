@@ -10,6 +10,7 @@ classdef WaveVortexModel < handle
         f0, Nmax, rho0
         iOmega
         rhobar, N2 % size(N2) = [length(z) 1];
+        rhoFunction, N2Function % function handles
         
         ApU, ApV, ApN
         AmU, AmV, AmN
@@ -24,7 +25,9 @@ classdef WaveVortexModel < handle
         Ap, Am, A0
         shouldAntialias = 0;
         
-        externalModes
+        offgridModes % subclass should initialize
+        ongridModes % This is a cached copy 
+        advectionSanityCheck = 0;
     end
     
     properties (Abstract)
@@ -299,6 +302,9 @@ classdef WaveVortexModel < handle
             nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*DiffSine(self.z,eta,1,3);
         end
         
+        F = NonlinearFluxWithParticlesAtTimeArray(self,t,Y0);
+        [Fp,Fm,F0,u,v,w] = NonlinearFluxWithParticlesAtTime(self,t,Ap,Am,A0,x,y,z);
+        
         function F = NonlinearFluxAtTimeArray(self,t,Y0)
             [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Y0{1},Y0{2},Y0{3});
             F = {Fp,Fm,F0};
@@ -452,11 +458,94 @@ classdef WaveVortexModel < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Physical fields
+        % Eulerian---the dynamical fields on the grid at a given time
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        % Primary method for accessing the dynamical variables on the
+        % internal grid. Valid variable options are 'u', 'v', 'w',
+        % 'rho_prime', and 'eta'.
         [varargout] = VariableFieldsAtTime(self, t, varargin);
+        
+        % Return the velocity field, which is the sum of the gridded and
+        % external/free waves at time t. Note that if you do not need w,
+        % don't request it and it won't be computed.
+        [u,v,w] = VelocityFieldAtTime(self, t);
+        
+        % Return the density field, which is the sum of the density
+        % mean field (variable in z) and the perturbation field
+        % (variable in time and space).
+        function rho = DensityFieldAtTime(self, t)
+            rho = reshape(self.rhobar,1,1,[]) + self.VariableFieldsAtTime(t,'rho_prime');
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Lagrangian---return the dynamical fields at a given location and time
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % Primary method for accessing the dynamical variables on the at
+        % any position or time.
+        %
+        % The method argument specifies how off-grid values should be
+        % interpolated. Use 'exact' for the slow, but accurate, spectral
+        % interpolation. Otherwise use 'spline' or some other method used
+        % by Matlab's interp function.
+        %
+        % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+        % 'eta'.
+        [varargout] = VariablesAtTimePosition(self,t,x,y,z,interpolationMethod,varargin);
+        
+        % useful for integration methods where dy/dt is best given with
+        % y as a single variable.
+        function [u] = VelocityAtTimePositionVector(self,t,p, interpolationMethod,shouldUseW)
+            % Return the velocity at time t and position p, where size(p) =
+            % [3 n]. The rows of p represent [x,y,z].
+            % Optional argument is passed to the interpolation method. I
+            % recommend either linear or spline.
+            psize = size(p);
+            if psize(1) == 3
+                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
+                if exist('shouldUseW','var')
+                    u = cat(1,u,v,shouldUseW.*w);
+                else
+                    u = cat(1,u,v,w);
+                end
+            else
+                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
+                if exist('shouldUseW','var')
+                    u = cat(2,u,v,shouldUseW.*w);
+                else
+                    u = cat(2,u,v,w);
+                end
+            end
+        end
+        
+        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, interpolationMethod)
+            % Return the velocity at time t and position p, where size(p) =
+            % [3 n]. The rows of p represent [x,y,z].
+            psize = size(p);
+            if psize(1) == 3
+                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
+                u = cat(1,u,v,zeros(1,psize(2)));
+            else
+                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
+                u = cat(2,u,v,zeros(psize(1),1));
+            end
+        end
+        
+        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,interpolationMethod)
+            if nargout == 3
+                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w');
+            else
+                [u,v] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v');
+            end
+        end
+        
+        function rho = DensityAtTimePosition(self,t,x,y,z,interpolationMethod)
+            rho = self.rhoFunction(z) + self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -467,33 +556,38 @@ classdef WaveVortexModel < handle
         FillOutWaveSpectrum(self,maxTimeGap)
         
         function RemoveAllExternalWaves(self)
-            self.externalModes.RemoveAllExternalWaves();
+            self.offgridModes.RemoveAllExternalWaves();
         end
         
         function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.externalModes.SetExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+            omega = self.offgridModes.SetExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
         end
         
         function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.externalModes.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+            omega = self.offgridModes.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
         end
         
         function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.externalModes.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+            k = self.offgridModes.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
         function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.externalModes.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+            k = self.offgridModes.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
         function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
             % Returns the external wave modes at the grid points.
             varargout = cell(size(varargin));
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            [varargout{:}] = self.externalModes.ExternalVariablesAtTimePosition(t,reshape(X,[],1),reshape(Y,[],1), reshape(Z,[],1), varargin{:});
+            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,reshape(X,[],1),reshape(Y,[],1), reshape(Z,[],1), varargin{:});
             for iArg=1:length(varargout)
                 varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
             end
+        end
+        
+        function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,x,y,z, varargin{:});
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
