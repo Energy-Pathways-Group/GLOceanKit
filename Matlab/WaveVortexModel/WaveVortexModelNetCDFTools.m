@@ -44,6 +44,11 @@ classdef WaveVortexModelNetCDFTools < handle
         EnergyGeostrophicBaroclinicKJVarID
         EnergyGeostrophicBarotropicKVarID
         
+        floatDimID, nFloats
+        xFloatID, yFloatID, zFloatID, densityFloatID
+        drifterDimID, nDrifters
+        xDrifterID, yDrifterID, zDrifterID, densityDrifterID
+        
         NK2unique
         K2uniqueDimID
         K2uniqueVarID
@@ -60,7 +65,7 @@ classdef WaveVortexModelNetCDFTools < handle
     end
     
     methods
-        function self = InternalWaveModelNetCDFTools(netcdfFile)
+        function self = WaveVortexModelNetCDFTools(netcdfFile)
             %UNTITLED Construct an instance of this class
             %   Detailed explanation goes here
             self.netcdfFile = netcdfFile;
@@ -259,8 +264,8 @@ classdef WaveVortexModelNetCDFTools < handle
             self.EnergyGeostrophicBaroclinicVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBaroclinic', self.ncPrecision, self.tDimID);
             self.EnergyGeostrophicBarotropicVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBarotropic', self.ncPrecision, self.tDimID);
             
-            self.EnergyResidualVarID = netcdf.defVar(self.ncid, 'EnergyResidual', self.ncPrecision, self.tDimID);
-            self.EnergyDepthIntegratedVarID = netcdf.defVar(self.ncid, 'EnergyDepthIntegrated', self.ncPrecision, self.tDimID);
+%             self.EnergyResidualVarID = netcdf.defVar(self.ncid, 'EnergyResidual', self.ncPrecision, self.tDimID);
+%             self.EnergyDepthIntegratedVarID = netcdf.defVar(self.ncid, 'EnergyDepthIntegrated', self.ncPrecision, self.tDimID);
             
             netcdf.endDef(self.ncid);
         end
@@ -288,6 +293,38 @@ classdef WaveVortexModelNetCDFTools < handle
             
             netcdf.putVar(self.ncid, self.khVarID, k);
             netcdf.putVar(self.ncid, omegaKJVarID, omegaKJ);
+        end
+        
+        function self = CreateFloatVariables(self,nFloats)
+            netcdf.reDef(self.ncid);
+            
+            self.nFloats = nFloats;
+            self.floatDimID = netcdf.defDim(self.ncid, 'float_id', nFloats);
+            self.xFloatID = netcdf.defVar(self.ncid, 'x-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            self.yFloatID = netcdf.defVar(self.ncid, 'y-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            self.zFloatID = netcdf.defVar(self.ncid, 'z-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            self.densityFloatID = netcdf.defVar(self.ncid, 'density-float', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            netcdf.putAtt(self.ncid,self.xFloatID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.yFloatID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.zFloatID, 'units', 'm');
+            
+            netcdf.endDef(self.ncid);
+        end
+        
+        function self = CreateDrifterVariables(self,nDrifters)
+            netcdf.reDef(self.ncid);
+            
+            self.nDrifters = nDrifters;
+            self.drifterDimID = netcdf.defDim(self.ncid, 'drifter_id', nDrifters);
+            self.xDrifterID = netcdf.defVar(self.ncid, 'x-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            self.yDrifterID = netcdf.defVar(self.ncid, 'y-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            self.zDrifterID = netcdf.defVar(self.ncid, 'z-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            self.densityDrifterID = netcdf.defVar(self.ncid, 'density-drifter', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            netcdf.putAtt(self.ncid,self.xDrifterID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.yDrifterID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.zDrifterID, 'units', 'm');
+            
+            netcdf.endDef(self.ncid);
         end
         
         function self = CreateTransformationVariables(self)
@@ -335,7 +372,8 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.AmImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wm.Am));
         end
         
-        function self = WriteEnergeticsAtIndex(self,iTime,residualEnergy,depthIntegrated)
+%         function self = WriteEnergeticsAtIndex(self,iTime,residualEnergy,depthIntegrated)
+        function self = WriteEnergeticsAtIndex(self,iTime)
             netcdf.putVar(self.ncid, self.EnergyIGWPlusVarID, iTime-1, 1, self.wm.internalWaveEnergyPlus);
             netcdf.putVar(self.ncid, self.EnergyIGWMinusVarID, iTime-1, 1, self.wm.internalWaveEnergyMinus);
             netcdf.putVar(self.ncid, self.EnergyIOBaroclinicVarID, iTime-1, 1, self.wm.baroclinicInertialEnergy);
@@ -343,8 +381,22 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicVarID, iTime-1, 1, self.wm.baroclinicGeostrophicEnergy);
             netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicVarID, iTime-1, 1, self.wm.barotropicGeostrophicEnergy);
             
-            netcdf.putVar(self.ncid, self.EnergyResidualVarID, iTime-1, 1, residualEnergy);
-            netcdf.putVar(self.ncid, self.EnergyDepthIntegratedVarID, iTime-1, 1, depthIntegrated);
+%             netcdf.putVar(self.ncid, self.EnergyResidualVarID, iTime-1, 1, residualEnergy);
+%             netcdf.putVar(self.ncid, self.EnergyDepthIntegratedVarID, iTime-1, 1, depthIntegrated);
+        end
+        
+        function self = WriteFloatPositionsAtIndex(self,iTime,x,y,z,density)
+            netcdf.putVar(self.ncid, self.xFloatID, [0 iTime-1], [self.nFloats 1], x);
+            netcdf.putVar(self.ncid, self.yFloatID, [0 iTime-1], [self.nFloats 1], y);
+            netcdf.putVar(self.ncid, self.zFloatID, [0 iTime-1], [self.nFloats 1], z);
+            netcdf.putVar(self.ncid, self.densityFloatID, [0 iTime-1], [self.nFloats 1], density);
+        end
+        
+        function self = WriteDrifterPositionsAtIndex(self,iTime,x,y,z,density)
+            netcdf.putVar(self.ncid, self.xDrifterID, [0 iTime-1], [self.nDrifters 1], x);
+            netcdf.putVar(self.ncid, self.yDrifterID, [0 iTime-1], [self.nDrifters 1], y);
+            netcdf.putVar(self.ncid, self.zDrifterID, [0 iTime-1], [self.nDrifters 1], z);
+            netcdf.putVar(self.ncid, self.densityDrifterID, [0 iTime-1], [self.nDrifters 1], density);
         end
         
         function self = WriteEnergeticsKJAtIndex(self,iTime)

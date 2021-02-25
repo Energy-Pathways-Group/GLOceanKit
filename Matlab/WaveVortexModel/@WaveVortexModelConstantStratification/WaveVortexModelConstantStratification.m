@@ -55,7 +55,8 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
-            self.complexScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));         
+            self.complexScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
+            warning('Need to check 2*(Nz-1), it gets extended to 2*Nz-1 during simulation');
         end
                 
         function h = get.h(self)

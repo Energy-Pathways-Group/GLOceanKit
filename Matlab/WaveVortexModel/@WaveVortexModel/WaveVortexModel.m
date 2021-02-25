@@ -28,6 +28,7 @@ classdef WaveVortexModel < handle
         offgridModes % subclass should initialize
         ongridModes % This is a cached copy 
         advectionSanityCheck = 0;
+        version = 2.0;
     end
     
     properties (Abstract)
@@ -305,6 +306,9 @@ classdef WaveVortexModel < handle
         
         F = NonlinearFluxWithParticlesAtTimeArray(self,t,Y0);
         [Fp,Fm,F0,u,v,w] = NonlinearFluxWithParticlesAtTime(self,t,Ap,Am,A0,x,y,z);
+        
+        F = NonlinearFluxWithFloatsAndDriftersAtTimeArray(self,t,Y0,z_d);
+        [Fp,Fm,F0,u_f,v_f,w_f,u_d,v_d] = NonlinearFluxWithFloatsAndDriftersAtTime(self,t,Ap,Am,A0,x_f,y_f,z_f,x_d,y_d,z_d);
         
         function F = NonlinearFluxAtTimeArray(self,t,Y0)
             [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Y0{1},Y0{2},Y0{3});
