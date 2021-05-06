@@ -4,7 +4,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 64;
+N = 256;
 aspectRatio = 1/2;
 
 Lx = 30e3;
@@ -25,6 +25,17 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+
+cg_x = wvm.cg_x;
+cg_y = wvm.cg_y;
+cg_z = wvm.cg_z;
+
+a = squeeze(cg_z(:,1,:));
+figure, pcolor(a), shading interp, colorbar('eastoutside')
+b = squeeze(cg_x(:,1,:));
+figure, pcolor(b), shading interp, colorbar('eastoutside')
+
+return;
 
 U = .2;
 % boussinesq.InitializeWithPlaneWave(0,0,1,U,1); 

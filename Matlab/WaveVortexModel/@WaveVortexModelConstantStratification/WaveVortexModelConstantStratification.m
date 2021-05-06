@@ -8,6 +8,9 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
         F,G
         
         h
+        
+        cg_x, cg_y, cg_z
+        
         Apm_TE_factor
         A0_HKE_factor
         A0_PE_factor
@@ -152,6 +155,39 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             value = self.A0_HKE_factor + self.A0_PE_factor;
         end
           
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Wave properties
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function cg_x = get.cg_x(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
+            cg_x = (K./Omega) .*M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            cg_x(isnan(cg_x)) = 0;
+        end
+        
+        function cg_y = get.cg_y(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
+            cg_y = (L./Omega) .* M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            cg_y(isnan(cg_y)) = 0;
+        end
+        
+        function cg_z = get.cg_z(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+            M = J*pi/self.Lz;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
+            cg_z = -(M./Omega) .* K2 .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            cg_z(isnan(cg_z)) = 0;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations to and from the spatial domain
