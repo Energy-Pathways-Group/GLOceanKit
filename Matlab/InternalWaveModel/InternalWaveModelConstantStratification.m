@@ -179,8 +179,8 @@ classdef InternalWaveModelConstantStratification < InternalWaveModel
             A_minus = A_plus;
             A_plus(self.K < 0) = 0;
             A_minus(self.K > 0) = 0;
-%             self.GenerateWavePhases(A_plus,zeros(size(self.K)));
-            self.GenerateWavePhases(A_plus,A_minus);
+             self.GenerateWavePhases(A_plus,zeros(size(self.K)));
+%             self.GenerateWavePhases(A_plus,A_minus);
         end
         
         function InitializeGeostrophicSolutionWithRhoPrimeField(self, rho_prime)

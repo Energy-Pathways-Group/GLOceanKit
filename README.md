@@ -7,11 +7,11 @@ The code is in written in two different languages: Matlab and Objective-C, but n
 [Matlab](Matlab/)
 -------
 The Matlab directory contains the following subdirectories of models and tools,
-- [Advection-Diffusion Estimation](Matlab/AdvectionDiffusionEstimation) Tools for computing estimating velocity field parameters (strain, vorticity, divergence).
+- [Advection-Diffusion Estimation](Matlab/AdvectionDiffusionEstimation) Tools for computing estimating velocity field parameters (strain, vorticity, divergence). From Oscroft, Sykulski & Early (2021).
 - [Advection-Diffusion Models](Matlab/AdvectionDiffusionModels) Code for generating particles in advection diffusion models with boundaries.
 - [Boussinesq2D](Matlab/Boussinesq2D) 2D nonlinear spectral Boussinesq model.
 - [Diffusivity](Matlab/Diffusivity) A collection of analysis tools for computing relative diffusivity from particles.
-- [InternalModes](Matlab/InternalModes) Tools solving the vertical mode eigenvalue problem with very high accuracy.
+- [InternalModes](Matlab/InternalModes) Tools solving the vertical mode eigenvalue problem with very high accuracy. From Early, Lelong & Smith (2020).
 - [InternalWaveModel](Matlab/InternalWaveModel) A linear internal wave model.
 - [InternalWaveSpectrum](Matlab/InternalWaveSpectrum) Tools for computing the Garrett-Munk spectrum and its approximations.
 - [OceanBoundaryLayer](Matlab/OceanBoundaryLayer) A few simple ocean boundary layer models taken from Elipot and Gille (2009).
