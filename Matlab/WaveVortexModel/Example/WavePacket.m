@@ -4,7 +4,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 256;
+N = 64;
 aspectRatio = 1/2;
 
 Lx = 30e3;
@@ -15,7 +15,7 @@ Nx = N;
 Ny = aspectRatio*N;
 Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
-latitude = 25;
+latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,9 +31,44 @@ cg_y = wvm.cg_y;
 cg_z = wvm.cg_z;
 
 a = squeeze(cg_z(:,1,:));
-figure, pcolor(a), shading interp, colorbar('eastoutside')
+figure, pcolor(a), shading interp, colorbar('eastoutside'), xlog
 b = squeeze(cg_x(:,1,:));
-figure, pcolor(b), shading interp, colorbar('eastoutside')
+figure, pcolor(b), shading interp, colorbar('eastoutside'), xlog
+
+[X,Y,Z] = ndgrid(wvm.x,wvm.y,wvm.z);
+[K,L,J] = ndgrid(wvm.k,wvm.l,wvm.j);
+alpha = atan2(L,K);
+K2 = K.*K + L.*L;
+Kh = sqrt(K2);
+
+Lh = Lx/32;
+Lv = Lz/8;
+x0 = Lx/2;
+y0 = Ly/2;
+z0 = -Lz/2;
+eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/8)+Z/(Lv/4));
+
+eta0_bar = wvm.TransformFromSpatialDomainWithG(eta0);
+A_plus = eta0_bar ./ wvm.NAp;
+A_plus(isnan(A_plus)) = 0;
+A_plus(isinf(A_plus)) = 0;
+% A_plus = wvm.ApN .* eta0_bar;
+A_plus(K < 0) = 0;
+wvm.Ap = A_plus;
+
+[u, v, w, rho_prime, eta, p_wave]= wvm.VariableFieldsAtTime(0*3600, 'u', 'v', 'w', 'rho_prime', 'eta', 'p');
+
+maxU = max(max(max(abs(u))));
+maxV = max(max(max(abs(v))));
+maxW = max(max(max(abs(w))));
+fprintf('Maximum fluid velocity (u,v,w)=(%.2f,%.2f,%.2f) cm/s\n',100*maxU,100*maxV,100*maxW);
+
+dispvar = eta;
+figure
+subplot(2,1,1)
+pcolor(wvm.x/1000,wvm.z,squeeze(dispvar(:,Ny/2,:))'),shading flat
+subplot(2,1,2)
+pcolor(wvm.x/1000,wvm.y/1000,squeeze(dispvar(:,:,floor(Nz/2)))'),shading flat, axis equal
 
 return;
 

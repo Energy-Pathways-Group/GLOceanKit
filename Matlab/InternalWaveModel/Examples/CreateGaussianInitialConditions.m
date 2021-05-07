@@ -1,14 +1,14 @@
 Lx = 30e3;
 Ly = 15e3;
-Lz = 5000;
+Lz = 1300;
 
 Nx = 256;
 Ny = 128;
 Nz = 257;
 
-% Nx = 64;
-% Ny = 64;
-% Nz = 65;
+Nx = 64;
+Ny = 32;
+Nz = 65;
 % 
 % Nx = 128;
 % Ny = 64;
@@ -38,7 +38,7 @@ zeta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/
 
 wavemodel.InitializeWithIsopycnalDisplacementField(zeta0);
 
-[u, v, w, rho_prime, zeta, p_wave]= wavemodel.VariableFieldsAtTime(13*3600, 'u', 'v', 'w', 'rho_prime', 'zeta', 'p');
+[u, v, w, rho_prime, zeta, p_wave]= wavemodel.VariableFieldsAtTime(0*3600, 'u', 'v', 'w', 'rho_prime', 'zeta', 'p');
 
 maxU = max(max(max(abs(u))));
 maxV = max(max(max(abs(v))));
