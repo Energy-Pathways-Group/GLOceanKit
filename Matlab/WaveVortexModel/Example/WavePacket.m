@@ -7,7 +7,7 @@
 N = 128;
 aspectRatio = 1/2;
 
-Lx = 30e3;
+Lx = 10e3;
 Ly = aspectRatio*Lx;
 Lz = 1300;
 
@@ -41,12 +41,12 @@ alpha = atan2(L,K);
 K2 = K.*K + L.*L;
 Kh = sqrt(K2);
 
-Lh = Lx/32;
-Lv = Lz/16;
+Lh = Lx/16;
+Lv = Lz/8;
 x0 = Lx/2;
 y0 = Ly/2;
 z0 = -Lz/2;
-eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/8)+Z/(Lv/8));
+eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/32)+Z/(Lv/16));
 
 eta0_bar = wvm.TransformFromSpatialDomainWithG(eta0);
 A_plus = eta0_bar ./ wvm.NAp;
@@ -56,7 +56,7 @@ A_plus(isinf(A_plus)) = 0;
 A_plus(K < 0) = 0;
 wvm.Ap = A_plus;
 
-[u, v, w, rho_prime, eta, p_wave]= wvm.VariableFieldsAtTime(0*3600, 'u', 'v', 'w', 'rho_prime', 'eta', 'p');
+[u, v, w, rho_prime, eta, p_wave]= wvm.VariableFieldsAtTime(75*3600, 'u', 'v', 'w', 'rho_prime', 'eta', 'p');
 
 maxU = max(max(max(abs(u))));
 maxV = max(max(max(abs(v))));
@@ -70,7 +70,6 @@ histogram( 100*cg_x(abs(A_plus(:))>cutoff), 'Normalization', 'cdf' )
 subplot(1,2,2)
 histogram( 100*cg_z(abs(A_plus(:))>cutoff), 'Normalization', 'cdf' )
 
-return
 dispvar = eta;
 figure
 subplot(2,1,1)
