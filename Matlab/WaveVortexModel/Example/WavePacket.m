@@ -4,7 +4,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 64;
+N = 128;
 aspectRatio = 1/2;
 
 Lx = 30e3;
@@ -30,10 +30,10 @@ cg_x = wvm.cg_x;
 cg_y = wvm.cg_y;
 cg_z = wvm.cg_z;
 
-a = squeeze(cg_z(:,1,:));
+a = squeeze(cg_z(:,10,:));
 figure, pcolor(a), shading interp, colorbar('eastoutside'), xlog
-b = squeeze(cg_x(:,1,:));
-figure, pcolor(b), shading interp, colorbar('eastoutside'), xlog
+% b = squeeze(cg_x(:,1,:));
+% figure, pcolor(b), shading interp, colorbar('eastoutside'), xlog
 
 [X,Y,Z] = ndgrid(wvm.x,wvm.y,wvm.z);
 [K,L,J] = ndgrid(wvm.k,wvm.l,wvm.j);
@@ -42,11 +42,11 @@ K2 = K.*K + L.*L;
 Kh = sqrt(K2);
 
 Lh = Lx/32;
-Lv = Lz/8;
+Lv = Lz/16;
 x0 = Lx/2;
 y0 = Ly/2;
 z0 = -Lz/2;
-eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/8)+Z/(Lv/4));
+eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/8)+Z/(Lv/8));
 
 eta0_bar = wvm.TransformFromSpatialDomainWithG(eta0);
 A_plus = eta0_bar ./ wvm.NAp;
@@ -63,6 +63,14 @@ maxV = max(max(max(abs(v))));
 maxW = max(max(max(abs(w))));
 fprintf('Maximum fluid velocity (u,v,w)=(%.2f,%.2f,%.2f) cm/s\n',100*maxU,100*maxV,100*maxW);
 
+cutoff = max(abs(A_plus(:)))/20;
+figure
+subplot(1,2,1)
+histogram( 100*cg_x(abs(A_plus(:))>cutoff), 'Normalization', 'cdf' )
+subplot(1,2,2)
+histogram( 100*cg_z(abs(A_plus(:))>cutoff), 'Normalization', 'cdf' )
+
+return
 dispvar = eta;
 figure
 subplot(2,1,1)
