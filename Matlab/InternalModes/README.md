@@ -91,7 +91,7 @@ im.ShowLowestModesAtWavenumber(2*pi/1000)
 and
 
 ```matlab
-im.ShowLowestModesAtFrequency(5*modes.f0)
+im.ShowLowestModesAtFrequency(5*im.f0)
 ```
 to quickly visualize the four lowest modes.
 
@@ -212,7 +212,7 @@ im.ShowRelativeErrorAtWavenumber(2*pi/1000)
 or
 
 ```matlab
-im.ShowRelativeErrorAtFrequency(5*modes.f0)
+im.ShowRelativeErrorAtFrequency(5*im.f0)
 ```
 to estimate the error.
 
