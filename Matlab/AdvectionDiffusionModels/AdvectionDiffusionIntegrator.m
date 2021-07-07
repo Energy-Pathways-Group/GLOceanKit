@@ -53,8 +53,10 @@ classdef AdvectionDiffusionIntegrator
 %             end
             
             if self.stepSize == 0
+                singleIncrement = 1;
                 step = dt;
             else
+                singleIncrement = 0;
                 step = self.stepSize;
             end
 
@@ -67,7 +69,11 @@ classdef AdvectionDiffusionIntegrator
             x(1,:) = x0;
             y(1,:) = y0;
             for i=1:tn
-                integrator.StepForwardToTime(i*dt);
+                if singleIncrement == 1
+                    integrator.StepForwardOneIncrement;
+                else
+                    integrator.StepForwardToTime(i*dt);
+                end
                 p = integrator.currentY;
                 x(i+1,:)=p(:,1).';
                 y(i+1,:)=p(:,2).';
