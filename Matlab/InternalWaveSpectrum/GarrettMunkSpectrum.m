@@ -44,7 +44,7 @@ classdef GarrettMunkSpectrum < handle
         nModes = 64
         
         nEVPMin = 256 % assumed minimum, can be overriden by the user
-        nEVPMax = 512
+        nEVPMax = 1024
     end
         
     properties (Dependent)
@@ -933,7 +933,7 @@ omega = reshape(omega,[],1);
             F2_out = nan(nX,self.nModes);
             N2G2_out = nan(nX,self.nModes);
             for i = 1:length(x)
-                [F, G, h, ~, F2, N2G2] = im.(methodName)(x(i));
+                [F, G, h, ~, F2, N2G2,~] = im.(methodName)(x(i));
                 
                 % Increase the number of grid points until we get the
                 % desired number of good quality modes (or reach some max).
@@ -945,7 +945,7 @@ omega = reshape(omega,[],1);
                         im = InternalModesAdaptiveSpectral(self.rho,self.z_in,self.zInternal,self.latitude, 'nEVP', nEVP, 'normalization', Normalization.kConstant);
                     end
                     im.normalization = Normalization.kConstant;
-                    [F, G, h, ~, F2, N2G2] = im.(methodName)(x(i));
+                    [F, G, h, ~, F2, N2G2,~] = im.(methodName)(x(i));
                 end
                 if length(h) < self.nModes
                    fprintf('Only found %d good modes (of %d requested). Proceeding anyway.\n',length(h),self.nModes);
@@ -964,18 +964,137 @@ omega = reshape(omega,[],1);
         
         function PrecomputeComputeInternalModesForOmega(self)
             if self.didPrecomputePhiAndGammaForOmega==0
-                nOmega = 128;      
-                self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
-                self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
+                 nOmega = 25;      
+%                 self.omega = linspace(self.f0,0.99*self.N_max,nOmega);
+%                  self.omega = exp(linspace(log(self.f0),log(0.99*self.N_max),nOmega));
+                
+
+              
+%                 dL = zeros(size(self.omega));
+%                 for i=1:length(self.omega)
+%                     [zBoundariesAndTPs, thesign, boundaryIndices] = InternalModesSpectral.FindTurningPointBoundariesAtFrequency(self.N2internal, self.zInternal, self.omega(i));
+%                     for j=1:length(thesign)
+%                        if thesign(j)>0
+%                            dL(i) = dL(i) + zBoundariesAndTPs(j+1)-zBoundariesAndTPs(j);
+%                        end
+%                     end
+%                 end
+                
+                
+%                 % first find all the extrema, including end points.
+                [~,indices,~] = blocknum(diff(self.N2internal)>0);
+                extrema = sort(sqrt([self.f0*self.f0; self.N2internal(indices); self.N2internal(end)]));
+                extrema(end) = 0.99*extrema(end);
+
+                % Numerically integrate N to find the thickness at each
+                % frequency.
+                [omegaAxis,intStrat] = self.integrateStratificationForEachOmega();
+                
+                % now make this unique, for interpolation
+%                 [intStratUnique,ia,~] = unique(intStrat);
+%                 intStratUnique = flip(intStratUnique);
+%                 omegaAxisUnique = flip(omegaAxis(ia));
+%                 
+%                 
+%                 nOmega = 30;
+%                 L = interp1(omegaAxis,intStrat,extrema);
+%                 dL = abs(diff(L));
+%                 numAdditionalPoints = round((nOmega-length(self.omega))*dL/sum(dL));
+%                 self.omega = extrema.';
+%                 for idL = 1:length(dL)
+%                     if numAdditionalPoints(idL) > 0
+%                         dPoint = dL(idL)/(numAdditionalPoints(idL)+1);
+%                         self.omega = cat(2,self.omega,interp1(intStratUnique,omegaAxisUnique,L(idL) - ((1:numAdditionalPoints(idL)))*dPoint ));
+%                     end
+%                 end
+                
+                self.omega = sort(self.omega);
+                
+%                 scatter(self.omega,interp1(omegaAxis,intStrat,self.omega),'filled')
+                
+%                 logOmegaAxis = log10(omegaAxis);
+%                 logOmegaAxis = omegaAxis;
+                
+                shouldLogSpace = 1;
+                if shouldLogSpace == 1
+                    f = @(x) log10(x);
+                    finv = @(x) 10.^x;
+%                     f = @(x) sqrt(x);
+%                     finv = @(x) x.^2;
+%                     f = @(x) x.^(2/3);
+%                     finv = @(x) x.^(3/2);
+                else
+                    f = @(x) x;
+                    finv = @(x) x;
+                end
+                
+                q = f(omegaAxis);
+                r = intStrat;
+                
+                qScale = max(q)-min(q);
+                rScale = max(r)-min(r);
+                theta = atan2((r(end)-r(1))/rScale,(q(end)-q(1))/qScale);
+
+                Tx = @(q,r) ((q-q(1))/qScale).*cos(theta) + ((r-r(1))/rScale).*sin(theta);
+                Ty = @(q,r) -((q-q(1))/qScale).*sin(theta) + ((r-r(1))/rScale).*cos(theta);
+                Tq = @(x,y) qScale*(x.*cos(theta) - y.*sin(theta)) + q(1);
+                Tr = @(x,y) rScale*(x.*sin(theta) + y.*cos(theta)) + r(1);
+                
+                x = Tx(q,r);
+                y = Ty(q,r);
+                xRequired = Tx( f(extrema), interp1(omegaAxis,intStrat,extrema));
+                yRequired = Ty( f(extrema), interp1(omegaAxis,intStrat,extrema));
+                
+
+                xPoints = self.evenlyDistributePointsBetweenRequiredPoints(xRequired,nOmega);
+                yPoints = interp1(x,y,xPoints);
+                
+%                 figure, plot(x,y), hold on
+%                 scatter(xRequired,yRequired,'filled');
+%                 scatter(xPoints,yPoints,'filled');
+                
+                self.omega = finv( Tq(xPoints,yPoints) );
+                intStratPoints = Tr(xPoints,yPoints);
+                
+                figure, plot(omegaAxis,intStrat), hold on
+                scatter(extrema, interp1(omegaAxis,intStrat,extrema),'filled')
+                scatter(self.omega,intStratPoints,'filled');
+                
                 [self.F_omega,self.G_omega,self.h_omega,self.F2_omega,self.N2G2_omega] = self.InternalModesForCoordinate(self.omega,'ModesAtFrequency');
                 self.k_omega = sqrt(((self.omega.*self.omega - self.f0*self.f0).')./(self.g*self.h_omega));
                 self.didPrecomputePhiAndGammaForOmega = 1;
             end
         end
         
+        function [omegaAxis,intStrat] = integrateStratificationForEachOmega(self)
+            N = sqrt(self.N2internal);
+            nOmegaDense = 201;
+            omegaAxis = exp(linspace(log(self.f0),log(self.N_max),nOmegaDense));
+            logZAxis = log10(abs(self.zInternal)+1);
+            intStrat = zeros(size(omegaAxis));
+            for iOmega = 1:length(omegaAxis)
+                intStrat(iOmega) = trapz(logZAxis,(N-omegaAxis(iOmega)*ones(size(logZAxis)))>0);
+            end % intStrat must be monotonically decreasing, right?
+        end
+        
+        function x = evenlyDistributePointsBetweenRequiredPoints(self,xRequired,nPoints)
+            xRequired = reshape(sort(xRequired),1,[]);
+            x = xRequired;
+            L = max(xRequired)-min(xRequired);
+            dL = diff(xRequired);
+            numAdditionalPoints = round((nPoints-length(xRequired))*dL/L);
+            for idL = 1:length(dL)
+                if numAdditionalPoints(idL) > 0
+                    dPoint = dL(idL)/(numAdditionalPoints(idL)+1);
+                    x = cat(2,x,xRequired(idL) + ((1:numAdditionalPoints(idL)))*dPoint);
+                end
+            end
+            x = sort(x);
+        end
+        
         function PrecomputeComputeInternalModesForK(self)
             if self.didPrecomputePhiAndGammaForK==0
-                nK = 128;
+                nK = 21;
                 self.k = zeros(1,nK);
                 self.k(2:nK) = exp(linspace(log(2*pi/1e7),log(1e1),nK-1));
                 [self.F_k, self.G_k,self.h_k,self.F2_k,self.N2G2_k] = self.InternalModesForCoordinate(self.k,'ModesAtWavenumber');

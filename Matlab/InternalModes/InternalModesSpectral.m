@@ -601,11 +601,11 @@ classdef InternalModesSpectral < InternalModesBase
 
         end
         
-        function zTPs = FindTurningPointsAtFrequency(self, omega)
-            f_cheb = self.N2_zCheb;
-            f_cheb(1) = f_cheb(1) - omega*omega;
-            zTPs= InternalModesSpectral.FindRootsFromChebyshevVector(f_cheb,self.zLobatto);
-        end
+%         function zTPs = FindTurningPointsAtFrequency(self, omega)
+%             f_cheb = self.N2_zCheb;
+%             f_cheb(1) = f_cheb(1) - omega*omega;
+%             zTPs= InternalModesSpectral.FindRootsFromChebyshevVector(f_cheb,self.zLobatto);
+%         end
     end
     
     methods (Static)
