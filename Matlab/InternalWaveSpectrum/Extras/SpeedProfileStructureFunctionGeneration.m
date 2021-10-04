@@ -206,8 +206,55 @@ space = 0.02;
 p2.Position = [p1.Position(1)+p1.Position(3)+space p1.Position(2) p1.Position(3) p1.Position(4)];
 cb.Position = [p2.Position(1)+p2.Position(3)+space cb.Position(2) cb.Position(3) cb.Position(4)];
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Vertical structure function figure for K
+%
+Phi = GM.Phi_k;
+Gamma = GM.Gamma_k;
 
+% change this function between log10(z) and (z) to change the scale
+f = @(z) log10(z);
 
+% unnormalized version
+PhiPlot = sum(Phi,3,'omitnan');
+GammaPlot = sum(Gamma,3,'omitnan');
+
+% Now apply the function
+PhiVariance = f(PhiPlot);
+GammaVariance = f(GammaPlot);
+
+PhiVariance_range = f( [1e-4 1]*max(PhiPlot(:,1)) );
+GammaVariance_range = f( [1e-4 1]*max(GammaPlot(:,1)) );
+
+FigureSize = [50 50 figure_width_1col+8 225*scaleFactor];
+fig1 = figure('Units', 'points', 'Position', FigureSize);
+% set(gcf,'PaperPositionMode','auto')
+set(gcf, 'Color', 'w');
+fig1.PaperUnits = 'points';
+fig1.PaperPosition = FigureSize;
+fig1.PaperSize = [FigureSize(3) FigureSize(4)];
+
+p1 = subplot(1,2,1);
+pcolor( GM.k, axis_depth, PhiVariance ), xlog, shading flat, hold on
+caxis(PhiVariance_range)
+set( gca, 'FontSize', figure_axis_tick_size);
+set(gca, 'YTick', 1000*(-5:1:0));
+ylabel('depth (m)', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+title('$\Phi(k,z)$','Interpreter','LaTex', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+% xticks(ticks_x)
+%xticklabels(labels_x)
+yticks(ticks_y)
+yticklabels(labels_y)
+
+p2 = subplot(1,2,2);
+pcolor( GM.k, axis_depth, GammaVariance ),xlog , shading flat, hold on
+caxis(GammaVariance_range)
+set( gca, 'FontSize', figure_axis_tick_size);
+set(gca, 'YTick', []);
+title('$\Gamma(k,z)$','Interpreter','LaTex', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+% xticks(ticks_x(2:end))
+% xticklabels(labels_x(2:end))
 
 
 return
