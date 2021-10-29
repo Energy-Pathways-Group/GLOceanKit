@@ -4,10 +4,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-N = 128;
+N = 256;
 aspectRatio = 1/2;
 
-Lx = 10e3;
+Lx = 100e3;
 Ly = aspectRatio*Lx;
 Lz = 1300;
 
@@ -77,6 +77,13 @@ pcolor(wvm.x/1000,wvm.z,squeeze(dispvar(:,Ny/2,:))'),shading flat
 subplot(2,1,2)
 pcolor(wvm.x/1000,wvm.y/1000,squeeze(dispvar(:,:,floor(Nz/2)))'),shading flat, axis equal
 
+[u, v, w, rho_prime, eta, p_wave]= wvm.VariableFieldsAtTime(250*3600, 'u', 'v', 'w', 'rho_prime', 'eta', 'p');
+dispvar = eta;
+figure
+subplot(2,1,1)
+pcolor(wvm.x/1000,wvm.z,squeeze(dispvar(:,Ny/2,:))'),shading interp
+subplot(2,1,2)
+pcolor(wvm.x/1000,wvm.y/1000,squeeze(dispvar(:,:,floor(Nz/2)))'),shading interp, axis equal
 return;
 
 U = .2;
