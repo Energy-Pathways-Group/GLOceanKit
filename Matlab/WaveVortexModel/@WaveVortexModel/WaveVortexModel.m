@@ -66,15 +66,7 @@ classdef WaveVortexModel < handle
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
-            
-            if mod(log2(n(3)),1) == 0
-                error('You are implicitly asking for periodic boundary conditions in the vertical. This is not supported.');
-            elseif mod(log2(n(3)-1),1) == 0
-                self.Nz = n(3);
-            else
-                error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
-            end
-                        
+                                    
             self.Lx = dims(1);
             self.Ly = dims(2);
             self.Lz = dims(3);
