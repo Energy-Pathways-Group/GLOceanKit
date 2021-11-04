@@ -37,7 +37,11 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvmConst = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+
+rho0 = 1025; g = 9.81;
+rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -145,6 +149,10 @@ for i=1:11
     wvm.Ap = mask(1)*ApIO + mask(2)*ApIGW;
     wvm.Am = mask(1)*AmIO + mask(2)*AmIGW;
     wvm.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
+
+    wvmConst.Ap = mask(1)*ApIO + mask(2)*ApIGW;
+    wvmConst.Am = mask(1)*AmIO + mask(2)*AmIGW;
+    wvmConst.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
     
 %     wvm.Y = {App,Amm,A00};
     
@@ -180,8 +188,11 @@ for i=1:11
 %         spectralEnergy = spectralEnergy + sum(sum(sum( (newmodel.B_HKE_factor+newmodel.B_PE_factor) .* newmodel.B.*conj(newmodel.B) )));
 %     end
     
-    fprintf('total integrated energy: %f m^3/s\n', wvm.totalEnergy);
+    fprintf('total integrated energy: %f m^3/s\n', wvm.totalHydrostaticEnergy);
     fprintf('total spectral energy: %f m^3/s\n', wvm.totalSpectralEnergy);
+
+    fprintf('total integrated energy: %f m^3/s\n', wvmConst.totalEnergy);
+    fprintf('total spectral energy: %f m^3/s\n', wvmConst.totalSpectralEnergy);
     
 %     [App,Amm,A00] = boussinesq.Project(u,v,eta);
 %     boussinesq.Y = {App,Amm,A00};

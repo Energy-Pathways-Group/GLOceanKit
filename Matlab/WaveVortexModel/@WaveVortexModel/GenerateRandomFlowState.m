@@ -12,14 +12,14 @@ function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(sel
     % Am = AmIO + AmIGW;
     % A0 = A0G + A0G0 + A0rhobar;
     shouldExcludeNyquist = 1;
-    ApIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
-    AmIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
-    A0G = 6e-2*WaveVortexModel.GenerateHermitianRandomMatrix( size(self.G), shouldExcludeNyquist );
+    ApIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    AmIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    A0G = 6e-2*WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
 
-    ApIO = zeros(size(self.G));
-    AmIO = zeros(size(self.G));
-    A0G0 = zeros(size(self.G));
-    A0rhobar = zeros(size(self.G));
+    ApIO = zeros(size(self.Ap));
+    AmIO = zeros(size(self.Ap));
+    A0G0 = zeros(size(self.Ap));
+    A0rhobar = zeros(size(self.Ap));
 
     % inertial oscillations only exist at k=l=0
     ApIO(1,1,:) = ApIGW(1,1,:);

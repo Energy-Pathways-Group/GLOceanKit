@@ -350,7 +350,7 @@ classdef WaveVortexModel < handle
         
         function energy = totalEnergy(self)
             [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','eta');
-            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + self.N0*self.N0*eta.*eta, 1 ),2 ) )/2;
+            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
         
         function energy = totalSpectralEnergy(self)
@@ -359,6 +359,11 @@ classdef WaveVortexModel < handle
             energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
         end
         
+        function energy = totalHydrostaticEnergy(self)
+            [u,v,eta] = self.VariableFieldsAtTime(0,'u','v','eta');
+            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

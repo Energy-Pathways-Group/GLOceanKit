@@ -15,8 +15,8 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         internalModes
         
         % Transformation matrices
-        Fp % size(F)=[Nz x Nmodes+1], barotropic mode AND extra Nyquist mode
-        Gp % size(G)=[Nz-2 x Nmodes-1], no barotropic mode
+        Fp, Gp % size(F,G)=[Nz x Nmodes], barotropic mode AND extra Nyquist mode
+        FpInv, GpInv % size(F,G)=[Nmodes x Nz], barotropic mode AND extra Nyquist mode
         h % [1 x Nmodes]
         
         Pf % Preconditioner for F, size(Fp)=[1 Nmodes+1]. u = F*m, u = Pf*inv(Pf)*F*m, so Fp==inv(Pf)*F. 
@@ -43,130 +43,142 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             % First thing we do is find the Gauss-quadrature points for
             % this stratification profile.
             nModes = n(3);
-            z = linspace(-dims(3),0,nModes*10)';
+            Nz = nModes+1;
+            z = linspace(-dims(3),0,Nz*10)';
             im = InternalModesWKBSpectral(rhoFunc,[-dims(3) 0],z,latitude);
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
-            
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
+                        
+            % If the user requests nModes---we will have that many fully
+            % resolved modes. It works as follows for rigid lid:
+            % - There is one barotropic mode that appears in F
+            % - There are nModes-1 *internal modes* for G and F.
+            % - We compute the nModes+1 internal mode for F, to make it
+            % complete.
+            % This is nModes+1 grid points necessary to make this happen.
+            % This should make sense because there are nModes-1 internal
+            % modes, but the boundaries.
             im = InternalModesWKBSpectral(rhoFunc,[-dims(3) 0],z,latitude,'nModes',nModes);
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
-            
+
             % This is enough information to initialize
-            self@WaveVortexModel(dims, n, z, im.rho, im.N2, nModes, latitude, im.rho_function(0));
-            self.rhoFunction = im.rho_function;
+            self@WaveVortexModel(dims, [n(1) n(2) Nz], z, im.rho, im.N2, nModes, latitude, im.rho_function(0));
+            self.rhoFunction = rhoFunc;
             self.N2Function = im.N2_function;
             self.internalModes = im;
-            [F,G,self.h] = self.internalModes.ModesAtFrequency(0);
 
-            % Add the barotropic mode
+            self.BuildTransformationMatrices();
+            self.offgridModes = WaveVortexModelOffGrid(im,latitude, self.N2Function);
+        end
+                                
+        function self = BuildTransformationMatrices(self)
+            % Now go compute the appropriate number of modes at the
+            % quadrature points.
+
+
+            [F,G,self.h] = self.internalModes.ModesAtFrequency(0);
+            
+            % Make these matrices invertible by adding the barotropic mode
+            % to F, and removing the boundaries of G.
             F = cat(2,ones(self.Nz,1),F);
-            self.h = cat(2,1,self.h);
-            self.h = shiftdim(self.h,-1);
+            G = G(2:end-1,1:end-1);
 
             % Compute the precondition matrices (really, diagonals)
             self.Pf = max(abs(F),[],1);
             self.Pg = max(abs(G),[],1);
 
             % Now create the actual transformation matrices
-            self.Fp = F./Pf;
-            self.Gp = G./Gf;
+            self.Fp = F./self.Pf;
+            self.Gp = G./self.Pg;
+            self.FpInv = inv(self.Fp);
+            self.GpInv = inv(self.Gp);
 
-            self.BuildTransformationMatrices();
-            self.offgridModes = WaveVortexModelOffGrid(im,latitude, self.N2Function);
+            % size(F)=[Nz x Nmodes+1], barotropic mode AND extra Nyquist mode
+            % but, we will only multiply by vectors [Nmodes 1], so dump the
+            % last column. Now size(Fp) = [Nz x Nmodes].
+            self.Fp = self.Fp(:,1:end-1);
+
+            % size(Finv)=[Nmodes+1, Nz], but we don't care about the last mode
+            self.FpInv = self.FpInv(1:end-1,:);
+            
+            % size(G) = [Nz-2, Nmodes-1], need zeros for the boundaries
+            % and add the 0 barotropic mode, so size(G) = [Nz, Nmodes],
+            self.Gp = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.nModes-1),self.Gp,zeros(1,self.nModes-1)));
+
+            % size(Ginv) = [Nmodes-1, Nz-2], need a zero for the barotropic
+            % mode, but also need zeros for the boundary
+            self.GpInv = cat(2,zeros(self.nModes,1), cat(1,zeros(1,self.Nz-2),self.GpInv),zeros(self.nModes,1));
+
+            % want size(h)=[1 1 nModes]
+            self.h = cat(2,1,self.h(1:end-1)); % remove the extra mode at the end
+            self.h = shiftdim(self.h,-1);
+
+            self.Pf = shiftdim(self.Pf(1:end-1),-1);
+            self.Pg = shiftdim(cat(2,1,self.Pg),-1);
+
+            BuildTransformationMatrices@WaveVortexModel(self);
+  
+            % Now make the Hermitian conjugate match.
+            iFTransformScaling = 1./(self.Nx*self.Ny*self.Pf);
+            iGTransformScaling = 1./(self.Nx*self.Ny*self.Pg);
+            self.ApU = iFTransformScaling .* self.ApU;
+            self.ApV = iFTransformScaling .* self.ApV;
+            self.ApN = iGTransformScaling .* self.ApN;
+            
+            self.AmU = iFTransformScaling .* self.AmU;
+            self.AmV = iFTransformScaling .* self.AmV;
+            self.AmN = iGTransformScaling .* self.AmN;
+            
+            self.A0U = iFTransformScaling .* self.A0U;
+            self.A0V = iFTransformScaling .* self.A0V;
+            self.A0N = iGTransformScaling .* self.A0N;
+                        
+            % Now make the Hermitian conjugate match AND pre-multiply the
+            % coefficients for the transformations.
+            FTransformScaling = self.Nx*self.Ny*self.Pf;
+            self.UAp = FTransformScaling .* self.UAp;
+            self.UAm = FTransformScaling .* self.UAm;
+            self.UA0 = FTransformScaling .* self.UA0;
+            
+            self.VAp = FTransformScaling .* self.VAp;
+            self.VAm = FTransformScaling .* self.VAm;
+            self.VA0 = FTransformScaling .* self.VA0;
+            
+            GTransformScaling = self.Nx*self.Ny*self.Pg;
+            self.WAp = GTransformScaling .* self.WAp;
+            self.WAm = GTransformScaling .* self.WAm;
+            
+            self.NAp = GTransformScaling .* self.NAp;
+            self.NAm = GTransformScaling .* self.NAm;
+            self.NA0 = GTransformScaling .* self.NA0;
         end
-                                
-%         function self = BuildTransformationMatrices(self)
-%             BuildTransformationMatrices@WaveVortexModel(self);
-%             
-%             
-% 
-% 
-%             % We renormalization the transformation matrices to directly
-%             % incorporate normalization of the modes and the DFT.          
-%             [~,~,J] = ndgrid(self.k,self.l,self.j);
-%             M = J*pi/self.Lz;
-%             N = self.N0;
-%             f = self.f0; 
-%             g_ = 9.81;
-%        
-%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%             % Normalization for the vertical modes
-%             % This comes from equations B12 in the manuscript.
-%             signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
-%             self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
-%             self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
-%             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
-%             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
-%   
-%             % Now make the Hermitian conjugate match.
-%             iFTransformScaling = 2./(self.Nx*self.Ny*self.F);
-%             iGTransformScaling = 2./(self.Nx*self.Ny*self.G);
-%             self.ApU = iFTransformScaling .* self.ApU;
-%             self.ApV = iFTransformScaling .* self.ApV;
-%             self.ApN = iGTransformScaling .* self.ApN;
-%             
-%             self.AmU = iFTransformScaling .* self.AmU;
-%             self.AmV = iFTransformScaling .* self.AmV;
-%             self.AmN = iGTransformScaling .* self.AmN;
-%             
-%             self.A0U = iFTransformScaling .* self.A0U;
-%             self.A0V = iFTransformScaling .* self.A0V;
-%             self.A0N = iGTransformScaling .* self.A0N;
-%                         
-%             % Now make the Hermitian conjugate match AND pre-multiply the
-%             % coefficients for the transformations.
-%             FTransformScaling = 0.5*self.Nx*self.Ny*self.F;
-%             self.UAp = FTransformScaling .* self.UAp;
-%             self.UAm = FTransformScaling .* self.UAm;
-%             self.UA0 = FTransformScaling .* self.UA0;
-%             
-%             self.VAp = FTransformScaling .* self.VAp;
-%             self.VAm = FTransformScaling .* self.VAm;
-%             self.VA0 = FTransformScaling .* self.VA0;
-%             
-%             GTransformScaling = 0.5*self.Nx*self.Ny*self.G;
-%             self.WAp = GTransformScaling .* self.WAp;
-%             self.WAm = GTransformScaling .* self.WAm;
-%             
-%             self.NAp = GTransformScaling .* self.NAp;
-%             self.NAm = GTransformScaling .* self.NAm;
-%             self.NA0 = GTransformScaling .* self.NA0;
-%         end
-%         
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         %
-%         % Energetics
-%         %
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         
-%         function value = get.Apm_TE_factor(self)
-%             value = self.h; % factor of 2 larger than in the manuscript
-%             value(:,:,1) = self.Lz;
-%         end
-%         
-%         function value = get.A0_HKE_factor(self)
-%             [K,L,J] = ndgrid(self.k,self.l,self.j);
-%             K2 = K.*K + L.*L;
-%             M = J*pi/self.Lz;
-%             
-%             % This comes from equation (3.10) in the manuscript, but using
-%             % the relation from equation A2b
-%             % omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
-%             % value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
-%             value = (self.g^3/(self.f0*self.f0)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
-%             value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/2;
-%         end
-%         function value = get.A0_PE_factor(self)
-%             value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
-%         end
-%         function value = get.A0_TE_factor(self)
-%             value = self.A0_HKE_factor + self.A0_PE_factor;
-%         end
-%           
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Energetics
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function value = get.Apm_TE_factor(self)
+            value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
+            value(:,:,1) = self.Lz;
+        end
+        
+        function value = get.A0_HKE_factor(self)
+            [K,L,~] = ndgrid(self.k,self.l,self.j);
+            K2 = K.*K + L.*L;
+
+            value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
+        end
+        function value = get.A0_PE_factor(self)
+            value = self.g*ones(self.Nx,self.Ny,self.nModes)/2;
+        end
+        function value = get.A0_TE_factor(self)
+            value = self.A0_HKE_factor + self.A0_PE_factor;
+        end
+          
 %         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %         %
 %         % Wave properties
@@ -206,23 +218,92 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
 %         %
 %         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         function u_bar = TransformFromSpatialDomainWithF(self, u)
-
+            % hydrostatic modes commute with the DFT
+            u_tmp = zeros(self.Nx,self.Ny,self.nModes);
+            % u = permute(u,[3 1 2]); % keep adjacent in memory
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    u_tmp(i,j,:) = self.FpInv*squeeze(u(i,j,:)); %self.FpInv*u(:,i,j);
+                end
+            end
+            u_bar = fft(fft(u_tmp,self.Nx,1),self.Ny,2);
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
-
+            % hydrostatic modes commute with the DFT
+            w_tmp = zeros(self.Nx,self.Ny,self.nModes);
+            % u = permute(u,[3 1 2]); % keep adjacent in memory
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    w_tmp(i,j,:) = self.GpInv*squeeze(w(i,j,:)); %self.FpInv*u(:,i,j);
+                end
+            end
+            w_bar = fft(fft(w_tmp,self.Nx,1),self.Ny,2);
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
+            % hydrostatic modes commute with the DFT
+            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            u = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    u(i,j,:) = self.Fp*squeeze(u_bar(i,j,:));
+                end
+            end
         end  
                 
         function w = TransformToSpatialDomainWithG(self, w_bar )
+            % hydrostatic modes commute with the DFT
+            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+            w = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    w(i,j,:) = self.Gp*squeeze(w_bar(i,j,:));
+                end
+            end
         end
         
         function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            u = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    u(i,j,:) = self.Fp*squeeze(u_bar(i,j,:));
+                end
+            end
+
+            ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
+            uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
+
+            % F_z = -N^2 G/g
+            uz = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    uz(i,j,:) = self.Gp*squeeze((self.Pg./self.Pf).*u_bar(i,j,:));
+                end
+            end
+            uz = (-shiftdim(self.N2,-2)/self.g).*uz;
         end  
         
         function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+            w = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    w(i,j,:) = self.Gp*squeeze(w_bar(i,j,:));
+                end
+            end
+
+            wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
+            wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
+
+            % Gz = F/h
+            wz = zeros(self.Nx,self.Ny,self.Nz);
+            for i=1:self.Nx
+                for j=1:self.Ny
+                    wz(i,j,:) = self.Fp*squeeze( (self.Pf./(self.Pg .* self.h)) .* w_bar(i,j,:));
+                end
+            end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
