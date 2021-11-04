@@ -70,9 +70,8 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             h(:,:,1) = 1; % prevent divide by zero
         end
                 
-        function self = BuildTransformationMatrices(self)  
-            BuildTransformationMatrices@WaveVortexModel(self);
-            
+        function self = BuildTransformationMatrices(self)
+
             % We renormalization the transformation matrices to directly
             % incorporate normalization of the modes and the DFT.          
             [~,~,J] = ndgrid(self.k,self.l,self.j);
@@ -89,40 +88,11 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
-  
-            % Now make the Hermitian conjugate match.
-            iFTransformScaling = 2./(self.Nx*self.Ny*self.F);
-            iGTransformScaling = 2./(self.Nx*self.Ny*self.G);
-            self.ApU = iFTransformScaling .* self.ApU;
-            self.ApV = iFTransformScaling .* self.ApV;
-            self.ApN = iGTransformScaling .* self.ApN;
-            
-            self.AmU = iFTransformScaling .* self.AmU;
-            self.AmV = iFTransformScaling .* self.AmV;
-            self.AmN = iGTransformScaling .* self.AmN;
-            
-            self.A0U = iFTransformScaling .* self.A0U;
-            self.A0V = iFTransformScaling .* self.A0V;
-            self.A0N = iGTransformScaling .* self.A0N;
-                        
-            % Now make the Hermitian conjugate match AND pre-multiply the
-            % coefficients for the transformations.
-            FTransformScaling = 0.5*self.Nx*self.Ny*self.F;
-            self.UAp = FTransformScaling .* self.UAp;
-            self.UAm = FTransformScaling .* self.UAm;
-            self.UA0 = FTransformScaling .* self.UA0;
-            
-            self.VAp = FTransformScaling .* self.VAp;
-            self.VAm = FTransformScaling .* self.VAm;
-            self.VA0 = FTransformScaling .* self.VA0;
-            
-            GTransformScaling = 0.5*self.Nx*self.Ny*self.G;
-            self.WAp = GTransformScaling .* self.WAp;
-            self.WAm = GTransformScaling .* self.WAm;
-            
-            self.NAp = GTransformScaling .* self.NAp;
-            self.NAm = GTransformScaling .* self.NAm;
-            self.NA0 = GTransformScaling .* self.NA0;
+
+            PP = 0.5*self.Nx*self.Ny*self.F;
+            QQ = 0.5*self.Nx*self.Ny*self.G;
+
+            BuildTransformationMatrices@WaveVortexModel(self,PP,QQ);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

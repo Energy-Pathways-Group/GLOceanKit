@@ -15,12 +15,12 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         internalModes
         
         % Transformation matrices
-        Fp, Gp % size(F,G)=[Nz x Nmodes], barotropic mode AND extra Nyquist mode
-        FpInv, GpInv % size(F,G)=[Nmodes x Nz], barotropic mode AND extra Nyquist mode
+        PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nmodes]
+        PF, QG % size(PF,PG)=[Nmodes x Nz]
         h % [1 x Nmodes]
         
-        Pf % Preconditioner for F, size(Fp)=[1 Nmodes+1]. u = F*m, u = Pf*inv(Pf)*F*m, so Fp==inv(Pf)*F. 
-        Pg % Preconditioner for G, size(Gp)=[1 Nmodes-1]. eta = G*m, eta = Pg*inv(Pg)*G*m, so Gp==inv(Pg)*G. 
+        P % Preconditioner for F, size(P)=[1 Nmodes]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
+        Q % Preconditioner for G, size(Q)=[1 Nmodes]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
 
         Apm_TE_factor
         A0_HKE_factor
@@ -76,83 +76,50 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         function self = BuildTransformationMatrices(self)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
-
-
-            [F,G,self.h] = self.internalModes.ModesAtFrequency(0);
+            [Finv,Ginv,self.h] = self.internalModes.ModesAtFrequency(0);
             
             % Make these matrices invertible by adding the barotropic mode
             % to F, and removing the boundaries of G.
-            F = cat(2,ones(self.Nz,1),F);
-            G = G(2:end-1,1:end-1);
+            Finv = cat(2,ones(self.Nz,1),Finv);
+            Ginv = Ginv(2:end-1,1:end-1);
 
             % Compute the precondition matrices (really, diagonals)
-            self.Pf = max(abs(F),[],1);
-            self.Pg = max(abs(G),[],1);
+            self.P = max(abs(Finv),[],1);
+            self.Q = max(abs(Ginv),[],1);
 
             % Now create the actual transformation matrices
-            self.Fp = F./self.Pf;
-            self.Gp = G./self.Pg;
-            self.FpInv = inv(self.Fp);
-            self.GpInv = inv(self.Gp);
+            self.PFinv = Finv./self.P;
+            self.QGinv = Ginv./self.Q;
+            self.PF = inv(self.PFinv);
+            self.QG = inv(self.QGinv);
 
             % size(F)=[Nz x Nmodes+1], barotropic mode AND extra Nyquist mode
             % but, we will only multiply by vectors [Nmodes 1], so dump the
             % last column. Now size(Fp) = [Nz x Nmodes].
-            self.Fp = self.Fp(:,1:end-1);
+            self.PFinv = self.PFinv(:,1:end-1);
 
             % size(Finv)=[Nmodes+1, Nz], but we don't care about the last mode
-            self.FpInv = self.FpInv(1:end-1,:);
+            self.PF = self.PF(1:end-1,:);
             
             % size(G) = [Nz-2, Nmodes-1], need zeros for the boundaries
             % and add the 0 barotropic mode, so size(G) = [Nz, Nmodes],
-            self.Gp = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.nModes-1),self.Gp,zeros(1,self.nModes-1)));
+            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.nModes-1),self.QGinv,zeros(1,self.nModes-1)));
 
             % size(Ginv) = [Nmodes-1, Nz-2], need a zero for the barotropic
             % mode, but also need zeros for the boundary
-            self.GpInv = cat(2,zeros(self.nModes,1), cat(1,zeros(1,self.Nz-2),self.GpInv),zeros(self.nModes,1));
+            self.QG = cat(2,zeros(self.nModes,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(self.nModes,1));
 
             % want size(h)=[1 1 nModes]
             self.h = cat(2,1,self.h(1:end-1)); % remove the extra mode at the end
             self.h = shiftdim(self.h,-1);
 
-            self.Pf = shiftdim(self.Pf(1:end-1),-1);
-            self.Pg = shiftdim(cat(2,1,self.Pg),-1);
+            self.P = shiftdim(self.P(1:end-1),-1);
+            self.Q = shiftdim(cat(2,1,self.Q),-1);
+            
+            PP = self.Nx*self.Ny*self.P;
+            QQ = self.Nx*self.Ny*self.Q;
 
-            BuildTransformationMatrices@WaveVortexModel(self);
-  
-            % Now make the Hermitian conjugate match.
-            iFTransformScaling = 1./(self.Nx*self.Ny*self.Pf);
-            iGTransformScaling = 1./(self.Nx*self.Ny*self.Pg);
-            self.ApU = iFTransformScaling .* self.ApU;
-            self.ApV = iFTransformScaling .* self.ApV;
-            self.ApN = iGTransformScaling .* self.ApN;
-            
-            self.AmU = iFTransformScaling .* self.AmU;
-            self.AmV = iFTransformScaling .* self.AmV;
-            self.AmN = iGTransformScaling .* self.AmN;
-            
-            self.A0U = iFTransformScaling .* self.A0U;
-            self.A0V = iFTransformScaling .* self.A0V;
-            self.A0N = iGTransformScaling .* self.A0N;
-                        
-            % Now make the Hermitian conjugate match AND pre-multiply the
-            % coefficients for the transformations.
-            FTransformScaling = self.Nx*self.Ny*self.Pf;
-            self.UAp = FTransformScaling .* self.UAp;
-            self.UAm = FTransformScaling .* self.UAm;
-            self.UA0 = FTransformScaling .* self.UA0;
-            
-            self.VAp = FTransformScaling .* self.VAp;
-            self.VAm = FTransformScaling .* self.VAm;
-            self.VA0 = FTransformScaling .* self.VA0;
-            
-            GTransformScaling = self.Nx*self.Ny*self.Pg;
-            self.WAp = GTransformScaling .* self.WAp;
-            self.WAm = GTransformScaling .* self.WAm;
-            
-            self.NAp = GTransformScaling .* self.NAp;
-            self.NAm = GTransformScaling .* self.NAm;
-            self.NA0 = GTransformScaling .* self.NA0;
+            BuildTransformationMatrices@WaveVortexModel(self,PP,QQ);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,7 +155,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             % hydrostatic modes commute with the DFT
             u = permute(u,[3 1 2]); % keep adjacent in memory
             u = reshape(u,self.Nz,[]);
-            u_bar = self.FpInv*u;
+            u_bar = self.PF*u;
             u_bar = reshape(u_bar,self.nModes,self.Nx,self.Ny);
             u_bar = permute(u_bar,[2 3 1]);
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
@@ -198,7 +165,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             % hydrostatic modes commute with the DFT
             w = permute(w,[3 1 2]); % keep adjacent in memory
             w = reshape(w,self.Nz,[]);
-            w_bar = self.GpInv*w;
+            w_bar = self.QG*w;
             w_bar = reshape(w_bar,self.nModes,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
@@ -209,7 +176,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
             u_bar = reshape(u_bar,self.nModes,[]);
-            u = self.Fp*u_bar;
+            u = self.PFinv*u_bar;
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
         end  
@@ -219,7 +186,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
             w_bar = reshape(w_bar,self.nModes,[]);
-            w = self.Gp*w_bar;
+            w = self.QGinv*w_bar;
             w = reshape(w,self.Nz,self.Nx,self.Ny);
             w = permute(w,[2 3 1]);
         end
@@ -229,14 +196,14 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
 
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
             u_bar = reshape(u_bar,self.nModes,[]);
-            u = self.Fp*u_bar;
+            u = self.PFinv*u_bar;
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
 
             ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
             uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
 
-            uz = self.Gp*( squeeze(self.Pg./self.Pf).*u_bar );
+            uz = self.QGinv*( squeeze(self.Q./self.P).*u_bar );
             uz = reshape(uz,self.Nz,self.Nx,self.Ny);
             uz = permute(uz,[2 3 1]);
             uz = (-shiftdim(self.N2,-2)/self.g).*uz;
@@ -247,14 +214,14 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
 
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
             w_bar = reshape(w_bar,self.nModes,[]);
-            w = self.Gp*w_bar;
+            w = self.QGinv*w_bar;
             w = reshape(w,self.Nz,self.Nx,self.Ny);
             w = permute(w,[2 3 1]);
 
             wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
             wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
             
-            wz = self.Fp* ( squeeze(self.Pf./(self.Pg .* self.h)) .* w_bar);
+            wz = self.PFinv* ( squeeze(self.P./(self.Q .* self.h)) .* w_bar);
             wz = reshape(wz,self.Nz,self.Nx,self.Ny);
             wz = permute(wz,[2 3 1]);
         end

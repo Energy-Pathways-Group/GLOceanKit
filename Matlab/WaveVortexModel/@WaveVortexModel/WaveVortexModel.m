@@ -117,7 +117,7 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
-        function self = BuildTransformationMatrices(self)
+        function self = BuildTransformationMatrices(self,PP,QQ)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
@@ -137,6 +137,13 @@ classdef WaveVortexModel < handle
             MakeHermitian = @(f) WaveVortexModel.MakeHermitian(f);
             
             self.iOmega = MakeHermitian(sqrt(-1)*omega);
+
+            if ~exist("PP","var") || isempty(PP)
+                PP = ones(size(K));
+            end
+            if ~exist("QQ","var") || isempty(QQ)
+                QQ = ones(size(K));
+            end
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (U,V,N) -> (Ap,Am,A0)
@@ -193,17 +200,17 @@ classdef WaveVortexModel < handle
             end
             
             % Now make the Hermitian conjugate match.
-            self.ApU = AntiAliasFilter .* MakeHermitian(self.ApU);
-            self.ApV = AntiAliasFilter .* MakeHermitian(self.ApV);
-            self.ApN = AntiAliasFilter .* MakeHermitian(self.ApN);
+            self.ApU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApU);
+            self.ApV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApV);
+            self.ApN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.ApN);
             
-            self.AmU = AntiAliasFilter .* MakeHermitian(self.AmU);
-            self.AmV = AntiAliasFilter .* MakeHermitian(self.AmV);
-            self.AmN = AntiAliasFilter .* MakeHermitian(self.AmN);
+            self.AmU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmU);
+            self.AmV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmV);
+            self.AmN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.AmN);
             
-            self.A0U = AntiAliasFilter .* MakeHermitian(self.A0U);
-            self.A0V = AntiAliasFilter .* MakeHermitian(self.A0V);
-            self.A0N = AntiAliasFilter .* MakeHermitian(self.A0N);
+            self.A0U = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0U);
+            self.A0V = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0V);
+            self.A0N = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -250,20 +257,20 @@ classdef WaveVortexModel < handle
             
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = MakeHermitian(self.UAp);
-            self.UAm = MakeHermitian(self.UAm);
-            self.UA0 = MakeHermitian(self.UA0);
+            self.UAp = PP .* MakeHermitian(self.UAp);
+            self.UAm = PP .* MakeHermitian(self.UAm);
+            self.UA0 = PP .* MakeHermitian(self.UA0);
             
-            self.VAp = MakeHermitian(self.VAp);
-            self.VAm = MakeHermitian(self.VAm);
-            self.VA0 = MakeHermitian(self.VA0);
+            self.VAp = PP .* MakeHermitian(self.VAp);
+            self.VAm = PP .* MakeHermitian(self.VAm);
+            self.VA0 = PP .* MakeHermitian(self.VA0);
             
-            self.WAp = MakeHermitian(self.WAp);
-            self.WAm = MakeHermitian(self.WAm);
+            self.WAp = QQ .* MakeHermitian(self.WAp);
+            self.WAm = QQ .* MakeHermitian(self.WAm);
             
-            self.NAp = MakeHermitian(self.NAp);
-            self.NAm = MakeHermitian(self.NAm);
-            self.NA0 = MakeHermitian(self.NA0);
+            self.NAp = QQ .* MakeHermitian(self.NAp);
+            self.NAm = QQ .* MakeHermitian(self.NAm);
+            self.NA0 = QQ .* MakeHermitian(self.NA0);
         end
           
         function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N)
