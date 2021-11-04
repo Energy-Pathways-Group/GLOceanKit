@@ -179,131 +179,84 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             value = self.A0_HKE_factor + self.A0_PE_factor;
         end
           
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         %
-%         % Wave properties
-%         %
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         
-%         function cg_x = get.cg_x(self)
-%             [K,L,J] = ndgrid(self.k,self.l,self.j);
-%             K2 = K.*K + L.*L;
-%             M = J*pi/self.Lz;
-%             Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-%             cg_x = (K./Omega) .*M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
-%             cg_x(isnan(cg_x)) = 0;
-%         end
-%         
-%         function cg_y = get.cg_y(self)
-%             [K,L,J] = ndgrid(self.k,self.l,self.j);
-%             K2 = K.*K + L.*L;
-%             M = J*pi/self.Lz;
-%             Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-%             cg_y = (L./Omega) .* M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
-%             cg_y(isnan(cg_y)) = 0;
-%         end
-%         
-%         function cg_z = get.cg_z(self)
-%             [K,L,J] = ndgrid(self.k,self.l,self.j);
-%             K2 = K.*K + L.*L;
-%             M = J*pi/self.Lz;
-%             Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-%             cg_z = -(M./Omega) .* K2 .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
-%             cg_z(isnan(cg_z)) = 0;
-%         end
-%         
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         %
-%         % Transformations to and from the spatial domain
-%         %
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations to and from the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         function u_bar = TransformFromSpatialDomainWithF(self, u)
             % hydrostatic modes commute with the DFT
-            u_tmp = zeros(self.Nx,self.Ny,self.nModes);
-            % u = permute(u,[3 1 2]); % keep adjacent in memory
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    u_tmp(i,j,:) = self.FpInv*squeeze(u(i,j,:)); %self.FpInv*u(:,i,j);
-                end
-            end
-            u_bar = fft(fft(u_tmp,self.Nx,1),self.Ny,2);
+            u = permute(u,[3 1 2]); % keep adjacent in memory
+            u = reshape(u,self.Nz,[]);
+            u_bar = self.FpInv*u;
+            u_bar = reshape(u_bar,self.nModes,self.Nx,self.Ny);
+            u_bar = permute(u_bar,[2 3 1]);
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
             % hydrostatic modes commute with the DFT
-            w_tmp = zeros(self.Nx,self.Ny,self.nModes);
-            % u = permute(u,[3 1 2]); % keep adjacent in memory
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    w_tmp(i,j,:) = self.GpInv*squeeze(w(i,j,:)); %self.FpInv*u(:,i,j);
-                end
-            end
-            w_bar = fft(fft(w_tmp,self.Nx,1),self.Ny,2);
+            w = permute(w,[3 1 2]); % keep adjacent in memory
+            w = reshape(w,self.Nz,[]);
+            w_bar = self.GpInv*w;
+            w_bar = reshape(w_bar,self.nModes,self.Nx,self.Ny);
+            w_bar = permute(w_bar,[2 3 1]);
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
             % hydrostatic modes commute with the DFT
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-            u = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    u(i,j,:) = self.Fp*squeeze(u_bar(i,j,:));
-                end
-            end
+            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            u_bar = reshape(u_bar,self.nModes,[]);
+            u = self.Fp*u_bar;
+            u = reshape(u,self.Nz,self.Nx,self.Ny);
+            u = permute(u,[2 3 1]);
         end  
                 
         function w = TransformToSpatialDomainWithG(self, w_bar )
             % hydrostatic modes commute with the DFT
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-            w = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    w(i,j,:) = self.Gp*squeeze(w_bar(i,j,:));
-                end
-            end
+            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+            w_bar = reshape(w_bar,self.nModes,[]);
+            w = self.Gp*w_bar;
+            w = reshape(w,self.Nz,self.Nx,self.Ny);
+            w = permute(w,[2 3 1]);
         end
         
         function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-            u = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    u(i,j,:) = self.Fp*squeeze(u_bar(i,j,:));
-                end
-            end
+
+            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            u_bar = reshape(u_bar,self.nModes,[]);
+            u = self.Fp*u_bar;
+            u = reshape(u,self.Nz,self.Nx,self.Ny);
+            u = permute(u,[2 3 1]);
 
             ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
             uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
 
-            % F_z = -N^2 G/g
-            uz = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    uz(i,j,:) = self.Gp*squeeze((self.Pg./self.Pf).*u_bar(i,j,:));
-                end
-            end
+            uz = self.Gp*( squeeze(self.Pg./self.Pf).*u_bar );
+            uz = reshape(uz,self.Nz,self.Nx,self.Ny);
+            uz = permute(uz,[2 3 1]);
             uz = (-shiftdim(self.N2,-2)/self.g).*uz;
         end  
         
         function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-            w = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    w(i,j,:) = self.Gp*squeeze(w_bar(i,j,:));
-                end
-            end
+
+            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+            w_bar = reshape(w_bar,self.nModes,[]);
+            w = self.Gp*w_bar;
+            w = reshape(w,self.Nz,self.Nx,self.Ny);
+            w = permute(w,[2 3 1]);
 
             wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
             wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
-
-            % Gz = F/h
-            wz = zeros(self.Nx,self.Ny,self.Nz);
-            for i=1:self.Nx
-                for j=1:self.Ny
-                    wz(i,j,:) = self.Fp*squeeze( (self.Pf./(self.Pg .* self.h)) .* w_bar(i,j,:));
-                end
-            end
+            
+            wz = self.Fp* ( squeeze(self.Pf./(self.Pg .* self.h)) .* w_bar);
+            wz = reshape(wz,self.Nz,self.Nx,self.Ny);
+            wz = permute(wz,[2 3 1]);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
