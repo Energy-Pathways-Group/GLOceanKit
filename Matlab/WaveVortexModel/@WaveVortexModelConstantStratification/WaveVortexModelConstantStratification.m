@@ -6,9 +6,9 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
         N0   
         realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
         F,G
-        
         h
         
+        isHydrostatic = 0
         cg_x, cg_y, cg_z
         
         Apm_TE_factor
@@ -18,7 +18,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
     end
         
     methods
-        function self = WaveVortexModelConstantStratification(dims, n, latitude, N0, rho0)
+        function self = WaveVortexModelConstantStratification(dims, n, latitude, N0, rho0, varargin)
             % rho0 is optional.
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
@@ -31,14 +31,24 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             else
                 error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
             end
-                        
+            
+            nargs = length(varargin);
+            if mod(nargs,2) ~= 0
+                error('Arguments must be given as name/value pairs');
+            end
+            isHydrostatic = 0;
+            for k = 1:2:length(varargin)
+                if strcmp(varargin{k}, 'hydrostatic')
+                    isHydrostatic = varargin{k+1};
+                end
+            end
 
             Lz = dims(3);  
             dz = Lz/(Nz-1);
             z = dz*(0:(Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
             nModes = Nz-1;
             
-            if ~exist('rho0','var')
+            if ~exist('rho0','var') || isempty(rho0)
                 rho0 = 1025;
             end
             rhoFunction = @(z) -(N0*N0*rho0/9.81)*z + rho0;
@@ -48,6 +58,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             
             self@WaveVortexModel(dims, n, z, rhobar, N2, nModes, latitude, rho0);
             
+            self.isHydrostatic = isHydrostatic;
             self.N0 = N0;
             self.rhoFunction = rhoFunction;
             self.N2Function = N2Function;
@@ -64,10 +75,15 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
                 
         function h = get.h(self)
             [K,L,J] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
             M = J*pi/self.Lz;
-            h = (1/self.g)*(self.N0*self.N0 - self.f0*self.f0)./(M.*M+K2);
-            h(:,:,1) = 1; % prevent divide by zero
+            if self.isHydrostatic == 1
+                h = (1/self.g)*(self.N0*self.N0)./(M.*M);
+                h(:,:,1) = 1; % prevent divide by zero
+            else
+                K2 = K.*K + L.*L;
+                h = (1/self.g)*(self.N0*self.N0 - self.f0*self.f0)./(M.*M+K2);
+                h(:,:,1) = 1; % prevent divide by zero
+            end
         end
                 
         function self = BuildTransformationMatrices(self)
@@ -84,8 +100,13 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             % Normalization for the vertical modes
             % This comes from equations B12 in the manuscript.
             signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
-            self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
-            self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
+            if self.isHydrostatic == 1
+                self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*N*N));
+                self.G = signNorm .* sqrt(2*g_/(self.Lz*N*N));
+            else
+                self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
+                self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
+            end
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
 

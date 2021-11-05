@@ -116,6 +116,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             self.P = shiftdim(self.P(1:end-1),-1);
             self.Q = shiftdim(cat(2,1,self.Q),-1);
             
+            % Includes the extra factors from the FFTs.
             PP = self.Nx*self.Ny*self.P;
             QQ = self.Nx*self.Ny*self.Q;
 
@@ -233,7 +234,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
-
+            ratio = 1/self.P(j0+1);
         end   
         
     end

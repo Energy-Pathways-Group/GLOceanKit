@@ -37,7 +37,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvmConst = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvmConst = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, [],'hydrostatic',1);
 
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
@@ -191,7 +191,7 @@ for i=1:11
     fprintf('total integrated energy: %f m^3/s\n', wvm.totalHydrostaticEnergy);
     fprintf('total spectral energy: %f m^3/s\n', wvm.totalSpectralEnergy);
 
-    fprintf('total integrated energy: %f m^3/s\n', wvmConst.totalEnergy);
+    fprintf('total integrated energy: %f m^3/s\n', wvmConst.totalHydrostaticEnergy);
     fprintf('total spectral energy: %f m^3/s\n', wvmConst.totalSpectralEnergy);
     
 %     [App,Amm,A00] = boussinesq.Project(u,v,eta);
