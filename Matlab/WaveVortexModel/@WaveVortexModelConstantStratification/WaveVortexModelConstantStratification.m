@@ -65,7 +65,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             
             self.BuildTransformationMatrices();
             internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
-            self.offgridModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function);
+            self.offgridModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function,self.isHydrostatic);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
@@ -130,17 +130,26 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
         function value = get.A0_HKE_factor(self)
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
-            M = J*pi/self.Lz;
-            
-            % This comes from equation (3.10) in the manuscript, but using
-            % the relation from equation A2b
-            % omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
-            % value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
-            value = (self.g^3/(self.f0*self.f0)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
-            value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/2;
+
+            if self.isHydrostatic == 1
+                value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
+            else
+                M = J*pi/self.Lz;
+
+                % This comes from equation (3.10) in the manuscript, but using
+                % the relation from equation A2b
+                % omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
+                % value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
+                value = (self.g^3/(self.f0*self.f0)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
+                value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/2;
+            end
         end
         function value = get.A0_PE_factor(self)
-            value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
+            if self.isHydrostatic == 1
+                value = self.g*ones(self.Nx,self.Ny,self.nModes)/2;
+            else
+                value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
+            end
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;

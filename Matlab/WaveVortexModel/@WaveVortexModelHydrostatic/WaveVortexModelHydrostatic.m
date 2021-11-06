@@ -45,7 +45,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             nModes = n(3);
             Nz = nModes+1;
             z = linspace(-dims(3),0,Nz*10)';
-            im = InternalModesWKBSpectral(rhoFunc,[-dims(3) 0],z,latitude);
+            im = InternalModesSpectral(rhoFunc,[-dims(3) 0],z,latitude);
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
@@ -59,7 +59,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
-            im = InternalModesWKBSpectral(rhoFunc,[-dims(3) 0],z,latitude,'nModes',nModes);
+            im = InternalModesSpectral(rhoFunc,[-dims(3) 0],z,latitude,'nModes',nModes);
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
 
@@ -70,7 +70,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             self.internalModes = im;
 
             self.BuildTransformationMatrices();
-            self.offgridModes = WaveVortexModelOffGrid(im,latitude, self.N2Function);
+            self.offgridModes = WaveVortexModelOffGrid(im,latitude, self.N2Function,1);
         end
                                 
         function self = BuildTransformationMatrices(self)
@@ -92,7 +92,11 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             self.QGinv = Ginv./self.Q;
             self.PF = inv(self.PFinv);
             self.QG = inv(self.QGinv);
-
+            
+            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],1);
+            if maxCond > 1000
+                warning('Condition number is %f the vertical transformations.',maxCond);
+            end
             % size(F)=[Nz x Nmodes+1], barotropic mode AND extra Nyquist mode
             % but, we will only multiply by vectors [Nmodes 1], so dump the
             % last column. Now size(Fp) = [Nz x Nmodes].

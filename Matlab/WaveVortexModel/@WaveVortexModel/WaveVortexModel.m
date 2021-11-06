@@ -21,6 +21,8 @@ classdef WaveVortexModel < handle
         WAp, WAm
         NAp, NAm, NA0
         
+        PP, QQ
+
         t0 = 0
         Ap, Am, A0
         shouldAntialias = 0;
@@ -133,7 +135,8 @@ classdef WaveVortexModel < handle
             end
             fOmega = f./omega;
             
-            
+            self.PP = PP;
+            self.QQ = QQ;
             MakeHermitian = @(f) WaveVortexModel.MakeHermitian(f);
             
             self.iOmega = MakeHermitian(sqrt(-1)*omega);
@@ -465,6 +468,16 @@ classdef WaveVortexModel < handle
         
         [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   ;
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Add and remove geostrophic features from the model
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        SetGeostrophicStreamfunction(self,psi);
+
+        SetInertialMotions(self,u,v);
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Eulerian---the dynamical fields on the grid at a given time
