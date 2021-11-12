@@ -55,8 +55,9 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             N2Function = @(z) N0*N0*ones(size(z));
             rhobar = rhoFunction(z);
             N2 = N0*N0*ones(size(z));
+            dLnN2 = zeros(size(z));
             
-            self@WaveVortexModel(dims, n, z, rhobar, N2, nModes, latitude, rho0);
+            self@WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0);
             
             self.isHydrostatic = isHydrostatic;
             self.N0 = N0;

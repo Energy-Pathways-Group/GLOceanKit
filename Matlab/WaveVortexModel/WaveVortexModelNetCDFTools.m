@@ -4,8 +4,9 @@ classdef WaveVortexModelNetCDFTools < handle
     
     properties
         netcdfFile
+        matFilePath
         ncid
-        wm
+        wvm
         
         ncPrecision
         bytePerFloat
@@ -53,10 +54,17 @@ classdef WaveVortexModelNetCDFTools < handle
         K2uniqueDimID
         K2uniqueVarID
         
+        % hydrostatic arbitrary stratification
+        PFinvVarID, QGinvVarID
+        PFVarID, QGVarID
+        hVarID
+        PVarID, QVarID
+
+        % used for non-hydrostatic arbitrary stratification
         iK2uniqueVarID
         SVarID
         SprimeVarID
-        hVarID
+        % hVarID (defined above)
         F2VarID
         G2VarID
         N2G2VarID
@@ -69,16 +77,18 @@ classdef WaveVortexModelNetCDFTools < handle
             %UNTITLED Construct an instance of this class
             %   Detailed explanation goes here
             self.netcdfFile = netcdfFile;
+            [filepath,name,~] = fileparts(self.netcdfFile);
+            self.matFilePath = sprintf('%s/%s.mat',filepath,name);
         end
         
-        function self = CreateNetCDFFileFromModel(self,internalWaveModel,Nt,precision)
+        function self = CreateNetCDFFileFromModel(self,waveVortexModel,Nt,precision)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
-            self.wm = internalWaveModel;
+            self.wvm = waveVortexModel;
             
-            self.Nk = length(self.wm.k);
-            self.Nl = length(self.wm.l);
-            self.Nj = length(self.wm.j);
+            self.Nk = length(self.wvm.k);
+            self.Nl = length(self.wvm.l);
+            self.Nj = length(self.wvm.j);
             self.Nt = Nt;
             
             if strcmp(precision,'single')
@@ -103,9 +113,9 @@ classdef WaveVortexModelNetCDFTools < handle
             
             
             % Define the dimensions
-            self.xDimID = netcdf.defDim(self.ncid, 'x', self.wm.Nx);
-            self.yDimID = netcdf.defDim(self.ncid, 'y', self.wm.Ny);
-            self.zDimID = netcdf.defDim(self.ncid, 'z', self.wm.Nz);
+            self.xDimID = netcdf.defDim(self.ncid, 'x', self.wvm.Nx);
+            self.yDimID = netcdf.defDim(self.ncid, 'y', self.wvm.Ny);
+            self.zDimID = netcdf.defDim(self.ncid, 'z', self.wvm.Nz);
             % Define the coordinate variables
             self.xVarID = netcdf.defVar(self.ncid, 'x', self.ncPrecision, self.xDimID);
             self.yVarID = netcdf.defVar(self.ncid, 'y', self.ncPrecision, self.yDimID);
@@ -131,47 +141,65 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putAtt(self.ncid,self.jVarID, 'units', 'mode number');
             netcdf.putAtt(self.ncid,self.tVarID, 'units', 's');
             
-            if isa(self.wm,'WaveVortexModelConstantStratification')
+            if isa(self.wvm,'WaveVortexModelConstantStratification')
                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'stratification','constant');
-                netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'N0', self.wm.N0);
-            elseif isa(self.wm,'InternalWaveModelExponentialStratification')
+                netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'N0', self.wvm.N0);
+            elseif isa(self.wvm,'InternalWaveModelExponentialStratification')
                 error('Not implemented');
 %                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'stratification','exponential');
 %                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'N0', self.wm.N0);
 %                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'b', self.wm.b);
-            elseif isa(self.wm,'InternalWaveModelArbitraryStratification')
-                error('Not implemented');
-%                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'stratification','custom');
-%                 N2VarID = netcdf.defVar(self.ncid, 'N2', self.ncPrecision, self.zDimID);
-%                 RhobarVarID = netcdf.defVar(self.ncid, 'rhobar', self.ncPrecision, self.zDimID);
+            elseif isa(self.wvm,'WaveVortexModelHydrostatic')
+                netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'stratification','custom-hydrostatic');
+                RhobarVarID = netcdf.defVar(self.ncid, 'rhobar', self.ncPrecision, self.zDimID);
+                N2VarID = netcdf.defVar(self.ncid, 'N2', self.ncPrecision, self.zDimID);
+                dLnN2VarID = netcdf.defVar(self.ncid, 'dLnN2', self.ncPrecision, self.zDimID);
             else
                 error('Not implemented');
             end
             
             % Write some metadata
-            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'latitude', self.wm.latitude);
+            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'latitude', self.wvm.latitude);
             % 
-            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'rho0', self.wm.rho0);
+            CreationDate = datestr(datetime('now'));
+            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'rho0', self.wvm.rho0);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from WaveVortexModel.m written by Jeffrey J. Early.');
-            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', self.wm.version);
-            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
+            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', self.wvm.version);
+            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', CreationDate);
             
             % End definition mode
             netcdf.endDef(self.ncid);
             
             % Add the data for the coordinate variables
-            netcdf.putVar(self.ncid, self.kVarID, self.wm.k);
-            netcdf.putVar(self.ncid, self.lVarID, self.wm.l);
-            netcdf.putVar(self.ncid, self.jVarID, self.wm.j);
+            netcdf.putVar(self.ncid, self.kVarID, self.wvm.k);
+            netcdf.putVar(self.ncid, self.lVarID, self.wvm.l);
+            netcdf.putVar(self.ncid, self.jVarID, self.wvm.j);
             
-            netcdf.putVar(self.ncid, self.xVarID, self.wm.x);
-            netcdf.putVar(self.ncid, self.yVarID, self.wm.y);
-            netcdf.putVar(self.ncid, self.zVarID, self.wm.z);
+            netcdf.putVar(self.ncid, self.xVarID, self.wvm.x);
+            netcdf.putVar(self.ncid, self.yVarID, self.wvm.y);
+            netcdf.putVar(self.ncid, self.zVarID, self.wvm.z);
             
-            if isa(self.wm,'InternalWaveModelArbitraryStratification')
-                netcdf.putVar(self.ncid, N2VarID, self.wm.N2);
-                netcdf.putVar(self.ncid, RhobarVarID, self.wm.RhoBarAtDepth(self.wm.z));
-                self.CreateTransformationVariables();
+            if isa(self.wvm,'WaveVortexModelHydrostatic')
+                netcdf.putVar(self.ncid, N2VarID, self.wvm.N2);
+                netcdf.putVar(self.ncid, RhobarVarID, self.wvm.rhobar);
+                netcdf.putVar(self.ncid, dLnN2VarID, self.wvm.dLnN2);
+                self.CreateHydrostaticTransformationVariables();
+                rhoFunction = self.wvm.rhoFunction;
+                N2Function = self.wvm.N2Function;
+                dLnN2Function = self.wvm.dLnN2Function;
+                save(self.matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');            
+
+% I wanted to save the function handle defining density, but apparently
+% there's no way to load it back in. str2func throws an error if any
+% captured variables are required.
+%                 rhobarFuncString = func2str(self.wvm.rhoFunction);
+%                 rhobarFuncStruct = functions(self.wvm.rhoFunction);
+%                 varStruct = rhobarFuncStruct.workspace{1};
+%                 varNames = fieldnames(varStruct);
+%                 for iVar=1:length(varNames)
+%                     name = varNames{iVar};
+%                     value = getfield(varStruct,name);
+%                 end
             end
             
             % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
@@ -180,7 +208,7 @@ classdef WaveVortexModelNetCDFTools < handle
             fprintf('Writing output file to %s\nExpected file size is %.2f GB.\n',self.netcdfFile,totalSize);
         end
         
-        function wavemodel = InitializeWaveModelFromNetCDFFile(self)
+        function model = InitializeWaveVortexModelFromNetCDFFile(self)
             x = ncread(self.netcdfFile,'x');
             y = ncread(self.netcdfFile,'y');
             z = ncread(self.netcdfFile,'z');
@@ -200,18 +228,25 @@ classdef WaveVortexModelNetCDFTools < handle
                 nModes = length(j);
                 rhobar = ncread(self.netcdfFile,'rhobar');
                 N2 = ncread(self.netcdfFile,'N2');
-                self.wm = InternalWaveModelArbitraryStratification([Lx Ly Lz],[self.Nx self.Ny self.Nz], rhobar, z, latitude,'nModes',nModes);
-                self.wm.N2 = N2;
-                self.wm.ReadEigenmodesFromNetCDFCache(self.netcdfFile);
-            else
+                self.wvm = InternalWaveModelArbitraryStratification([Lx Ly Lz],[self.Nx self.Ny self.Nz], rhobar, z, latitude,'nModes',nModes);
+                self.wvm.N2 = N2;
+                self.wvm.ReadEigenmodesFromNetCDFCache(self.netcdfFile);
+            elseif strcmp(stratification,'constant')
                 N0 = ncreadatt(self.netcdfFile,'/','N0');
                 rho0 = ncreadatt(self.netcdfFile,'/','rho0');
-                self.wm = WaveVortexModelConstantStratification([Lx Ly Lz],[self.Nx self.Ny self.Nz],latitude,N0,rho0);
+                self.wvm = WaveVortexModelConstantStratification([Lx Ly Lz],[self.Nx self.Ny self.Nz],latitude,N0,rho0);
+            elseif strcmp(stratification,'custom-hydrostatic')
+                nModes = length(j);
+                rho0 = ncreadatt(self.netcdfFile,'/','rho0');
+                matFile = load(self.matFilePath);
+                self.wvm = WaveVortexModelHydrostatic([Lx Ly Lz],[self.Nx self.Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
+            else
+                error("stratification not supported.");
             end
             
             self.SetWaveModelToIndex(1);
             
-            wavemodel = self.wm;
+            model = self.wvm;
         end
         
         function t = SetWaveModelToIndex(self,iTime)
@@ -224,9 +259,9 @@ classdef WaveVortexModelNetCDFTools < handle
                         
             % Stuff these values back into the wavemodel (which is where they
             % came from in the first place)
-            self.wm.A0 = A0_realp + sqrt(-1)*A0_imagp;
-            self.wm.Ap = Ap_realp + sqrt(-1)*Ap_imagp;
-            self.wm.Am = Am_realp + sqrt(-1)*Am_imagp;
+            self.wvm.A0 = A0_realp + sqrt(-1)*A0_imagp;
+            self.wvm.Ap = Ap_realp + sqrt(-1)*Ap_imagp;
+            self.wvm.Am = Am_realp + sqrt(-1)*Am_imagp;
             
             t = ncread(self.netcdfFile,'t',iTime,1);
         end
@@ -273,7 +308,7 @@ classdef WaveVortexModelNetCDFTools < handle
         function self = CreateEnergeticsKJVariables(self)
             netcdf.reDef(self.ncid);
             
-            k = self.wm.IsotropicKAxis();
+            k = self.wvm.IsotropicKAxis();
             self.Nkh = length(k);
             self.khDimID = netcdf.defDim(self.ncid, 'kh', self.Nkh);
             self.khVarID = netcdf.defVar(self.ncid, 'kh', self.ncPrecision, self.khDimID);
@@ -285,7 +320,7 @@ classdef WaveVortexModelNetCDFTools < handle
             self.EnergyGeostrophicBaroclinicKJVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBaroclinicKJ', self.ncPrecision, [self.khDimID,self.jDimID,self.tDimID]);
             self.EnergyGeostrophicBarotropicKVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBarotropicK', self.ncPrecision, [self.khDimID,self.tDimID]);
             
-            [~,~,omegaN,n] = self.wm.ConvertToWavenumberAndMode(abs(self.wm.Omega),ones(size(self.wm.Omega)));
+            [~,~,omegaN,n] = self.wvm.ConvertToWavenumberAndMode(abs(self.wvm.Omega),ones(size(self.wvm.Omega)));
             omegaKJ = omegaN./n;
             omegaKJVarID = netcdf.defVar(self.ncid, 'omegaKJ', self.ncPrecision, [self.khDimID,self.jDimID]);
             
@@ -327,10 +362,32 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.endDef(self.ncid);
         end
         
+        function self = CreateHydrostaticTransformationVariables(self)
+            netcdf.reDef(self.ncid);
+
+            self.PFinvVarID = netcdf.defVar(self.ncid, 'PFinv', self.ncPrecision, [self.zDimID, self.jDimID]);
+            self.QGinvVarID = netcdf.defVar(self.ncid, 'QGinv', self.ncPrecision, [self.zDimID, self.jDimID]);
+            self.PFVarID = netcdf.defVar(self.ncid, 'PF', self.ncPrecision, [self.jDimID, self.zDimID]);
+            self.QGVarID = netcdf.defVar(self.ncid, 'QG', self.ncPrecision, [self.jDimID, self.zDimID]);
+            self.hVarID = netcdf.defVar(self.ncid, 'h', self.ncPrecision,  [self.jDimID]);
+            self.PVarID = netcdf.defVar(self.ncid, 'P', self.ncPrecision,  [self.jDimID]);
+            self.QVarID = netcdf.defVar(self.ncid, 'Q', self.ncPrecision,  [self.jDimID]);
+
+            netcdf.endDef(self.ncid);
+            
+            netcdf.putVar(self.ncid, self.PFinvVarID, self.wvm.PFinv);
+            netcdf.putVar(self.ncid, self.QGinvVarID, self.wvm.QGinv);
+            netcdf.putVar(self.ncid, self.PFVarID, self.wvm.PF);
+            netcdf.putVar(self.ncid, self.QGVarID, self.wvm.QG);
+            netcdf.putVar(self.ncid, self.hVarID, self.wvm.h);
+            netcdf.putVar(self.ncid, self.PVarID, self.wvm.P);
+            netcdf.putVar(self.ncid, self.QVarID, self.wvm.Q);
+        end
+
         function self = CreateTransformationVariables(self)
             netcdf.reDef(self.ncid);
             
-            self.NK2unique = length(self.wm.K2unique);
+            self.NK2unique = length(self.wvm.K2unique);
             self.K2uniqueDimID = netcdf.defDim(self.ncid, 'K2unique', self.NK2unique);
             self.K2uniqueVarID = netcdf.defVar(self.ncid, 'K2unique', self.ncPrecision, self.K2uniqueDimID);
             netcdf.putAtt(self.ncid,self.K2uniqueVarID, 'units', 'radians/m');
@@ -347,16 +404,16 @@ classdef WaveVortexModelNetCDFTools < handle
             
             netcdf.endDef(self.ncid);
             
-            netcdf.putVar(self.ncid, self.K2uniqueVarID, self.wm.K2unique);
-            netcdf.putVar(self.ncid, self.iK2uniqueVarID, self.wm.iK2unique);
-            netcdf.putVar(self.ncid, self.SVarID, self.wm.S);
-            netcdf.putVar(self.ncid, self.SprimeVarID, self.wm.Sprime);
-            netcdf.putVar(self.ncid, self.hVarID, self.wm.h_unique);
-            netcdf.putVar(self.ncid, self.F2VarID, self.wm.F2_unique);
-            netcdf.putVar(self.ncid, self.G2VarID, self.wm.G2_unique);
-            netcdf.putVar(self.ncid, self.N2G2VarID, self.wm.N2G2_unique);
-            netcdf.putVar(self.ncid, self.nWellConditionedVarID, self.wm.NumberOfWellConditionedModes);
-            netcdf.putVar(self.ncid, self.didPrecomputeVarID, self.wm.didPrecomputedModesForK2unique);
+            netcdf.putVar(self.ncid, self.K2uniqueVarID, self.wvm.K2unique);
+            netcdf.putVar(self.ncid, self.iK2uniqueVarID, self.wvm.iK2unique);
+            netcdf.putVar(self.ncid, self.SVarID, self.wvm.S);
+            netcdf.putVar(self.ncid, self.SprimeVarID, self.wvm.Sprime);
+            netcdf.putVar(self.ncid, self.hVarID, self.wvm.h_unique);
+            netcdf.putVar(self.ncid, self.F2VarID, self.wvm.F2_unique);
+            netcdf.putVar(self.ncid, self.G2VarID, self.wvm.G2_unique);
+            netcdf.putVar(self.ncid, self.N2G2VarID, self.wvm.N2G2_unique);
+            netcdf.putVar(self.ncid, self.nWellConditionedVarID, self.wvm.NumberOfWellConditionedModes);
+            netcdf.putVar(self.ncid, self.didPrecomputeVarID, self.wvm.didPrecomputedModesForK2unique);
         end
         
         function self = WriteTimeAtIndex(self,iTime,t)
@@ -364,22 +421,22 @@ classdef WaveVortexModelNetCDFTools < handle
         end
         
         function self = WriteAmplitudeCoefficientsAtIndex(self,iTime)
-            netcdf.putVar(self.ncid, self.A0RealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wm.A0));
-            netcdf.putVar(self.ncid, self.A0ImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wm.A0));
-            netcdf.putVar(self.ncid, self.ApRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wm.Ap));
-            netcdf.putVar(self.ncid, self.ApImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wm.Ap));
-            netcdf.putVar(self.ncid, self.AmRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wm.Am));
-            netcdf.putVar(self.ncid, self.AmImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wm.Am));
+            netcdf.putVar(self.ncid, self.A0RealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.A0));
+            netcdf.putVar(self.ncid, self.A0ImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.A0));
+            netcdf.putVar(self.ncid, self.ApRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Ap));
+            netcdf.putVar(self.ncid, self.ApImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Ap));
+            netcdf.putVar(self.ncid, self.AmRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Am));
+            netcdf.putVar(self.ncid, self.AmImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Am));
         end
         
 %         function self = WriteEnergeticsAtIndex(self,iTime,residualEnergy,depthIntegrated)
         function self = WriteEnergeticsAtIndex(self,iTime)
-            netcdf.putVar(self.ncid, self.EnergyIGWPlusVarID, iTime-1, 1, self.wm.internalWaveEnergyPlus);
-            netcdf.putVar(self.ncid, self.EnergyIGWMinusVarID, iTime-1, 1, self.wm.internalWaveEnergyMinus);
-            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicVarID, iTime-1, 1, self.wm.baroclinicInertialEnergy);
-            netcdf.putVar(self.ncid, self.EnergyIOBarotropicVarID, iTime-1, 1, self.wm.barotropicInertialEnergy);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicVarID, iTime-1, 1, self.wm.baroclinicGeostrophicEnergy);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicVarID, iTime-1, 1, self.wm.barotropicGeostrophicEnergy);
+            netcdf.putVar(self.ncid, self.EnergyIGWPlusVarID, iTime-1, 1, self.wvm.internalWaveEnergyPlus);
+            netcdf.putVar(self.ncid, self.EnergyIGWMinusVarID, iTime-1, 1, self.wvm.internalWaveEnergyMinus);
+            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicInertialEnergy);
+            netcdf.putVar(self.ncid, self.EnergyIOBarotropicVarID, iTime-1, 1, self.wvm.barotropicInertialEnergy);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicGeostrophicEnergy);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicVarID, iTime-1, 1, self.wvm.barotropicGeostrophicEnergy);
             
 %             netcdf.putVar(self.ncid, self.EnergyResidualVarID, iTime-1, 1, residualEnergy);
 %             netcdf.putVar(self.ncid, self.EnergyDepthIntegratedVarID, iTime-1, 1, depthIntegrated);
@@ -400,7 +457,7 @@ classdef WaveVortexModelNetCDFTools < handle
         end
         
         function self = WriteEnergeticsKJAtIndex(self,iTime)
-            [~,~,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK,IOEnergyJ] = self.wm.energeticsByWavenumberAndMode();
+            [~,~,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK,IOEnergyJ] = self.wvm.energeticsByWavenumberAndMode();
             netcdf.putVar(self.ncid, self.EnergyIGWPlusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWPlusEnergyKJ);
             netcdf.putVar(self.ncid, self.EnergyIGWMinusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWMinusEnergyKJ);
             netcdf.putVar(self.ncid, self.EnergyIOBaroclinicJVarID, [0 iTime-1], [self.Nj 1], IOEnergyJ);

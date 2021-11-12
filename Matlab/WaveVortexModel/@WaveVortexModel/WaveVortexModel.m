@@ -9,8 +9,8 @@ classdef WaveVortexModel < handle
         Lx, Ly, Lz
         f0, Nmax, rho0, latitude
         iOmega
-        rhobar, N2 % size(N2) = [length(z) 1];
-        rhoFunction, N2Function % function handles
+        rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
+        rhoFunction, N2Function, dLnN2Function % function handles
         
         ApU, ApV, ApN
         AmU, AmV, AmN
@@ -63,7 +63,7 @@ classdef WaveVortexModel < handle
     end
     
     methods
-        function self = WaveVortexModel(dims, n, z, rhobar, N2, nModes, latitude, rho0)
+        function self = WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
             % rho0 is optional.
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
@@ -93,6 +93,7 @@ classdef WaveVortexModel < handle
             
             self.rhobar = rhobar;
             self.N2 = N2;
+            self.dLnN2 = dLnN2;
             
             self.Nmax = sqrt(max(N2));
             self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
@@ -106,7 +107,7 @@ classdef WaveVortexModel < handle
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nx,self.Ny,self.nModes);
             self.Am = zeros(self.Nx,self.Ny,self.nModes);
-            self.A0 = zeros(self.Nx,self.Ny,self.nModes);          
+            self.A0 = zeros(self.Nx,self.Ny,self.nModes);  
         end
         
         function Kh = Kh(self)
@@ -303,7 +304,7 @@ classdef WaveVortexModel < handle
         function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)
             uNL = u.*DiffFourier(self.x,u,1,1) + v.*DiffFourier(self.y,u,1,2) + w.*DiffCosine(self.z,u,1,3);
             vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
-            nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*DiffSine(self.z,eta,1,3);
+            nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*(DiffSine(self.z,eta,1,3) + eta.*self.dLnN2);
         end
         
         F = NonlinearFluxWithParticlesAtTimeArray(self,t,Y0);
@@ -334,13 +335,13 @@ classdef WaveVortexModel < handle
             [U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
             [V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
             W = self.TransformToSpatialDomainWithG(Wbar);
-            [~,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+            [ETA,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
             
             % Compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
             uNL = -U.*Ux - V.*Uy - W.*Uz;
             vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
             
             % Now apply the operator S^{-1} and then T_\omega^{-1}
             uNLbar = self.TransformFromSpatialDomainWithF(uNL);
@@ -350,6 +351,13 @@ classdef WaveVortexModel < handle
             Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
             Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
             F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+        end
+
+        function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
+            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
+            Ep = self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
+            Em = self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
+            E0 = self.A0_TE_factor.*real( F0 .* conj(self.A0) );
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
