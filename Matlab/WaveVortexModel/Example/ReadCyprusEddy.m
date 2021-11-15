@@ -1,4 +1,4 @@
-file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-3.nc';
+file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-8.nc';
 
 netcdfTools = WaveVortexModelNetCDFTools(file);
 wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
@@ -21,6 +21,10 @@ wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
 figure
 for i=1:10
     netcdfTools.SetWaveModelToIndex(i);
-    [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.A0).^2);
+%     [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2+abs(wvm.Am).^2);
+[k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(wvm.A0_TE_factor.*abs(wvm.A0).^2);
     plot(k,sum(A0KJ,2)), ylog, hold on
 end
+
+xlabel('horizontal wavenumber')
+ylabel('geostrophic energy')

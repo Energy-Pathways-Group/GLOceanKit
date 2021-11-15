@@ -39,16 +39,18 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 wvmConst = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, [],'hydrostatic',1);
 
-rho0 = 1025; g = 9.81;
-rho = @(z) -(N0*N0*rho0/g)*z + rho0;
+% rho0 = 1025; g = 9.81;
+% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
 
-N0 = 3*2*pi/3600; % reference buoyancy frequency, radians/seconds
+N0 = 12*2*pi/3600; % reference buoyancy frequency, radians/seconds
 rho0 = 1025; g = 9.81;
-L_gm = 1300; % thermocline exponential scale, meters
+L_gm = 145; % thermocline exponential scale, meters
 rhoFunc = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-zIn = [-4000 0];
+N2Function = @(z) N0*N0*exp(2*z/L_gm);
+dLnN2Function = @(z) 2*ones(size(z))/L_gm;
+zIn = [-2000 0];
 
-wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho);
+wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rhoFunc,'N2func', N2Function, 'dLnN2func',dLnN2Function);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

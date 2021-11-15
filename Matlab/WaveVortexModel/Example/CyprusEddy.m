@@ -1,6 +1,5 @@
 Lx = 750e3;
 Ly = 750e3;
-Lz = 4000;
 
 N = 128;
 Nx = N;
@@ -14,7 +13,7 @@ inertialPeriod = (2*pi/(2 * 7.2921E-5 * sin( latitude*pi/180 )));
 maxTime = 1*inertialPeriod;
 outputInterval = inertialPeriod/10;
 
-outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-3.nc';
+outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-9.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -23,10 +22,11 @@ outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-3.nc';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 N0 = 12*2*pi/3600; % reference buoyancy frequency, radians/seconds
+Nmin = N0*3e-2;
 rho0 = 1025; g = 9.81;
 L_gm = 145; % thermocline exponential scale, meters
-rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-N2Function = @(z) N0*N0*exp(2*z/L_gm);
+rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)) - (Nmin*Nmin/g)*z);
+N2Function = @(z) N0*N0*exp(2*z/L_gm) + Nmin*Nmin*ones(size(z));
 dLnN2Function = @(z) 2*ones(size(z))/L_gm;
 
 % save('/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-2.mat','rhoFunction','N2Function','dLnN2Function');
@@ -76,16 +76,62 @@ alpha = 8e-10; % m^{-2}
 beta = 8.2e-6; % m^{-2}
 psi = @(x,y,z) -(A/(2*alpha))*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
 
-wvm.SetGeostrophicStreamfunction(psi);
+u = @(x,y,z) -A*(y-y0).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
+v = @(x,y,z) A*(x-x0).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
+% rho = @(x,y,z) -(rho0/g)*A*wvm.f0*(beta/alpha)*z.*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - (rho0/g)*A*A*(beta/alpha)*z.*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
+eta = @(x,y,z) -A*wvm.f0*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
+[X,Y,Z]=ndgrid(wvm.x,wvm.y,wvm.z);
+U = u(X,Y,Z);
+V = v(X,Y,Z);
+N = eta(X,Y,Z);
 
-[u,v,eta] = wvm.VariableFieldsAtTime(0, 'u','v','eta');
-x = wvm.x;
-y = wvm.y;
-z = wvm.z;
-f0 = wvm.f0;
-zeta_z = (DiffFourier(x,v,1,1) - DiffFourier(y,u,1,2))/f0;
-figure, pcolor(x/1e3,z/1e3,squeeze(zeta_z(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
-figure, pcolor(x/1e3,y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside')
+wvm.shouldAntiAlias = 1;
+[Qk,Ql,Qj] = wvm.ExponentialFilter();
+Q = Qk.*Ql.*Qj;
+[Ap,Am,A0] = wvm.TransformUVEtaToWaveVortex(U,V,N);
+wvm.Ap = Q.*Ap;
+wvm.Am = Q.*Am;
+wvm.A0 = Q.*A0;
+
+% [wvm.Ap,wvm.Am,wvm.A0] = wvm.TransformUVEtaToWaveVortex(U,V,N);
+
+
+rho = wvm.DensityFieldAtTime(0);
+figure, plot(squeeze(rho(Nx/2,Ny/2,:)),wvm.z)
+hold on, plot(wvm.rhobar,wvm.z)
+
+[rho_prime,eta] = wvm.VariableFieldsAtTime(0,'rho_prime','eta');
+figure, plot(squeeze(N(Nx/2,Ny/2,:)),wvm.z), hold on
+plot(squeeze(eta(Nx/2,Ny/2,:)),wvm.z)
+figure, plot(squeeze(rho_prime(Nx/2,Ny/2,:)),wvm.z), hold on
+
+dStrat = log10(max(wvm.N2)/min(wvm.N2));
+if (dStrat > 7)
+    warning('Mean stratification (N2) changes by %d orders of magnitude. This may lead to numerical instability.',round(dStrat));
+end
+
+wvm.totalHydrostaticEnergy
+wvm.totalSpectralEnergy
+
+return
+
+
+% wvm.SetGeostrophicStreamfunction(psi);
+
+
+
+% x = wvm.x;
+% y = wvm.y;
+% z = wvm.z;
+% f0 = wvm.f0;
+% zeta_z = (DiffFourier(x,v,1,1) - DiffFourier(y,u,1,2))/f0;
+% figure, pcolor(x/1e3,z/1e3,squeeze(zeta_z(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
+% figure, pcolor(x/1e3,y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside')
+% % figure, pcolor(x/1e3,y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside')
+% 
+% var = eta-N;
+% figure, pcolor(x/1e3,z/1e3,squeeze(var(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
+% figure, pcolor(x/1e3,z/1e3,squeeze(N(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -193,11 +239,12 @@ for iTime=2:length(t)
     netcdfTool.WriteEnergeticsAtIndex(iTime);
     netcdfTool.WriteEnergeticsKJAtIndex(iTime);
 
-% [Ep,Em,E0] = wvm.EnergyFluxAtTime(integrator.currentTime,wvm.Ap,wvm.Am,wvm.A0);
-% inertialFlux = sum(Ep(1,1,:)) + sum(Em(1,1,:));
-% Ep(1,1,:) = 0; Em(1,1,:) = 0;
-% waveFlux = sum(Ep(:)) + sum(Em(:));
-% fprintf('io flux: %g, wave flux: %g, geostrophic flux: %g. Net: %g\n',inertialFlux,waveFlux,sum(E0(:)),inertialFlux+waveFlux+sum(E0(:)))
+[Ep,Em,E0] = wvm.EnergyFluxAtTime(integrator.currentTime,wvm.Ap,wvm.Am,wvm.A0);
+inertialFlux = sum(Ep(1,1,:)) + sum(Em(1,1,:));
+Ep(1,1,:) = 0; Em(1,1,:) = 0;
+waveFlux = sum(Ep(:)) + sum(Em(:));
+fprintf('total spectral: %g, total depth integrated: %g\n',wvm.totalSpectralEnergy,wvm.totalHydrostaticEnergy);
+fprintf('io flux: %g, wave flux: %g, geostrophic flux: %g. Net: %g\n',inertialFlux,waveFlux,sum(E0(:)),inertialFlux+waveFlux+sum(E0(:)))
 
 % if iTime>170
 %     [u,v] = wvm.VelocityFieldAtTime(iTime);
@@ -209,14 +256,14 @@ end
 
 [k,j,ApKJ,AmKJ,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2,abs(wvm.Am).^2,abs(wvm.A0).^2);
 % [k,j,ApKJ,AmKJ,A0KJ] = self.ConvertToWavenumberAndMode(abs(uNLbar.^2),abs(vNLbar).^2,abs(nNLbar).^2);
-% [k,j,ApKJ,AmKJ,A0KJ] = self.ConvertToWavenumberAndMode(ApEnergyFlux,AmEnergyFlux,A0EnergyFlux);
+[k,j,ApKJ,AmKJ,A0KJ] = wvm.ConvertToWavenumberAndMode(Ep,Em,E0);
 figure
 subplot(2,2,1)
-plot(k,sum(ApKJ,2)), hold on, plot(k,sum(AmKJ,2)), ylog
+plot(k,sum(ApKJ,2)), hold on, plot(k,sum(AmKJ,2))%, ylog
 subplot(2,2,2)
-plot(k,sum(A0KJ,2)), ylog
+plot(k,sum(A0KJ,2))%, ylog
 
 subplot(2,2,3)
-plot(j,sum(ApKJ,1)), hold on, plot(j,sum(AmKJ,1)), ylog
+plot(j,sum(ApKJ,1)), hold on, plot(j,sum(AmKJ,1))%, ylog
 subplot(2,2,4)
-plot(j,sum(A0KJ,1)), ylog
+plot(j,sum(A0KJ,1))%, ylog

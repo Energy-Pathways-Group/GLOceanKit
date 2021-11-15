@@ -25,7 +25,7 @@ classdef WaveVortexModel < handle
 
         t0 = 0
         Ap, Am, A0
-        shouldAntialias = 0;
+        shouldAntiAlias = 0;
         
         offgridModes % subclass should initialize
         ongridModes % This is a cached copy 
@@ -197,9 +197,9 @@ classdef WaveVortexModel < handle
             % comes out of the discrete cosine transform
             
             % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            shouldAntiAlias = 1;
+%             self.shouldAntiAlias =0;
             AntiAliasFilter = ones(size(self.ApU));
-            if shouldAntiAlias == 1
+            if self.shouldAntiAlias == 1
                 AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
             end
             
@@ -638,6 +638,10 @@ classdef WaveVortexModel < handle
         % Generate a complete set of wave-vortex coefficients with variance at all
         % physically realizable solution states.
         [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)  
+
+
+
+        [Qk,Ql,Qj] = ExponentialFilter(self);
     end
     
     methods (Static)
