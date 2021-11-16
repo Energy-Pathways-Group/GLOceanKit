@@ -123,8 +123,8 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             Ginv = Ginv(2:end-1,1:end-1);
 
             % Compute the precondition matrices (really, diagonals)
-            self.P = max(abs(Finv),[],1);
-            self.Q = max(abs(Ginv),[],1);
+            self.P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
+            self.Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
 
             % Now create the actual transformation matrices
             self.PFinv = Finv./self.P;

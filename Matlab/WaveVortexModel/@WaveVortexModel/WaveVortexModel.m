@@ -120,6 +120,15 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
+        function set.shouldAntiAlias(self,value)
+            self.shouldAntiAlias = value;
+            self.rebuildTransformationMatrices();
+        end
+        
+        function rebuildTransformationMatrices(self)
+            self.BuildTransformationMatrices(self.PP,self.QQ);
+        end
+
         function self = BuildTransformationMatrices(self,PP,QQ)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
@@ -641,7 +650,7 @@ classdef WaveVortexModel < handle
 
 
 
-        [Qk,Ql,Qj] = ExponentialFilter(self);
+        [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
     end
     
     methods (Static)
