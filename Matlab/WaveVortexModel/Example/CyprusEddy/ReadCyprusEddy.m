@@ -1,4 +1,4 @@
-file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-9.nc';
+file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-1.nc';
 
 netcdfTools = WaveVortexModelNetCDFTools(file);
 wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();

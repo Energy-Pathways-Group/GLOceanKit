@@ -113,11 +113,11 @@ figure
 subplot(2,2,[1 2])
 plot(squeeze(rho(Nx/2,Ny/2,:)),wvm.z)
 hold on, plot(wvm.rhobar,wvm.z)
-subplot(1,2,3)
+subplot(2,2,3)
 plot(squeeze(N(Nx/2,Ny/2,:)),wvm.z), hold on
 plot(squeeze(eta(Nx/2,Ny/2,:)),wvm.z)
 xlabel('eta (m)'), ylabel('depth (m)'), legend('projected, filtered', 'original')
-subplot(1,2,4)
+subplot(2,2,4)
 plot(squeeze(rho_prime(Nx/2,Ny/2,:)),wvm.z)
 xlabel('density anomaly')
 
@@ -127,7 +127,7 @@ figure('Position',[100 100 400 800])
 
 subplot(2,1,1)
 pcolor(wvm.x/1e3,wvm.z,squeeze(zeta_z(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
-xlabel('x (km)'), ylabel('z (m)'), title(sprintf('vorticity at y=%.1f km',wvm.y(Ny/2)))
+xlabel('x (km)'), ylabel('z (m)'), title(sprintf('vorticity at y=%.1f km',wvm.y(Ny/2)/1e3))
 subplot(2,1,2)
 pcolor(wvm.x/1e3,wvm.y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside') 
 xlabel('x (km)'), ylabel('y (km)'), title(sprintf('vorticity at z=%.1f m',wvm.z(35)))
@@ -155,8 +155,8 @@ if advectiveDT < oscillatoryDT
     fprintf('Using the advective dt: %.2f s\n',advectiveDT);
     deltaT = advectiveDT;
 else
-    fprintf('However, the highest frequency resolved IGW has period of %.1f s (%.1f min0.\n',period,period/60);
-    fprintf('Using the oscillatory dt: %.2f s\n',oscillatoryDT);
+    fprintf('However, the highest frequency resolved IGW has period of %.1f s (%.1f min).\n',period,period/60);
+    fprintf('Using the oscillatory dt: %.2f s (%.1f min)\n',oscillatoryDT,oscillatoryDT/60);
     deltaT = oscillatoryDT;
 end
 
@@ -220,5 +220,7 @@ for iTime=2:length(t)
     netcdfTool.WriteEnergeticsAtIndex(iTime);
     netcdfTool.WriteEnergeticsKJAtIndex(iTime);
 end
+
+netcdfTool.close();
 
 
