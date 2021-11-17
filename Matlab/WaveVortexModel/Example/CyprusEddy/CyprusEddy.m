@@ -6,14 +6,14 @@ Nx = N;
 Ny = N;
 nModes = 60;
 
-latitude = 31;
+latitude = 33.5;
 
 % Simulation length
 inertialPeriod = (2*pi/(2 * 7.2921E-5 * sin( latitude*pi/180 )));
-maxTime = 10*inertialPeriod;
+maxTime = 2*inertialPeriod;
 outputInterval = inertialPeriod/10;
 
-outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-1.nc';
+outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -23,7 +23,7 @@ outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-1.nc';
 
 N0 = 12*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
 rho0 = 1025; g = 9.81;
-L_gm = 145; % thermocline exponential scale, meters
+L_gm = 2*145; % thermocline exponential scale, meters
 L_const = 3*L_gm; % depth below which stratification stays constant—***Note*** if you use 8*L_gm, stratification will be too weak compared to the size of the buoyancy anomaly for sensible results.
 Nmin = sqrt(N0*N0*exp(-2*L_const/L_gm));
 rhoFunction = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)) - (Nmin*Nmin/g)*z);
@@ -43,8 +43,8 @@ x0 = (max(wvm.x)-min(wvm.x))/2;
 y0 = (max(wvm.y)-min(wvm.y))/2;
 
 A = -1.32e-5; % s^{-1}
-alpha = 8e-10; % m^{-2}
-beta = 8.2e-6; % m^{-2}
+alpha = 1/((35e3)^2); % m^{-2}
+beta = 1/(350^2); % m^{-2}
 psi = @(x,y,z) -(A/(2*alpha))*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
 
 u_eddy = @(x,y,z) -A*(y-y0).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
@@ -56,8 +56,8 @@ eta_eddy = @(x,y,z) -A*wvm.f0*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x-x0
 % Define the inertial flow
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-B = 0.2; % m/s
-gamma = 0.01; % m^{-1}
+B = 0.4; % m/s
+gamma = 1/100; % m^{-1}
 u_IO = @(z) B*exp(gamma*z);
 v_IO = @(z) zeros(size(z));
 

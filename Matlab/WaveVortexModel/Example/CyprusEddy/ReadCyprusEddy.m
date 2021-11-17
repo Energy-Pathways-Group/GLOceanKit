@@ -1,4 +1,4 @@
-file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-1.nc';
+file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification.nc';
 
 netcdfTools = WaveVortexModelNetCDFTools(file);
 wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
@@ -26,15 +26,26 @@ wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
 % fprintf('io flux: %g, wave flux: %g, geostrophic flux: %g. Net: %g\n',inertialFlux,waveFlux,sum(E0(:)),inertialFlux+waveFlux+sum(E0(:)))
 
 figure
+sp1 = subplot(1,2,1);
+sp2 = subplot(1,2,2);
 for i=1:10
     netcdfTools.SetWaveModelToIndex(i);
-%     [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2+abs(wvm.Am).^2);
-[k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(wvm.A0_TE_factor.*abs(wvm.A0).^2);
-    plot(k,sum(A0KJ,2)), ylog, hold on
+  % [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2+abs(wvm.Am).^2);
+  %[k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(wvm.A0_TE_factor.*abs(wvm.A0).^2);
+  [Ep,Em,E0] = wvm.EnergyFluxAtTime(currentTime,wvm.Ap,wvm.Am,wvm.A0);
+    [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(E0);
+    subplot(sp1);
+    plot(j,sum(A0KJ,1).'),xlog, hold on
+    subplot(sp2);
+    plot(k,sum(A0KJ,2)),xlog, hold on
+     pause(1)
 end
 
+% xlabel('mode number')
 xlabel('horizontal wavenumber')
 ylabel('geostrophic energy')
+
+return
 
 [k,j,ApKJ,AmKJ,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2,abs(wvm.Am).^2,abs(wvm.A0).^2);
 % [k,j,ApKJ,AmKJ,A0KJ] = self.ConvertToWavenumberAndMode(abs(uNLbar.^2),abs(vNLbar).^2,abs(nNLbar).^2);

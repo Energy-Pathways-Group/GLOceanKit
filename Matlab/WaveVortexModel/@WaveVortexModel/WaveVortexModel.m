@@ -6,6 +6,7 @@ classdef WaveVortexModel < handle
         x, y, z
         k, l, j
         Nx, Ny, Nz, nModes
+        Nk, Nl, Nj % actual sizes in the spectral domain
         Lx, Ly, Lz
         f0, Nmax, rho0, latitude
         iOmega
@@ -84,12 +85,22 @@ classdef WaveVortexModel < handle
             self.x = dx*(0:self.Nx-1)'; % periodic basis
             self.y = dy*(0:self.Ny-1)'; % periodic basis
             self.z = z;
-                        
+            
             dk = 1/self.Lx;          % fourier frequency
             self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
             dl = 1/self.Ly;          % fourier frequency
             self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
             self.j = (0:(nModes-1))';
+
+            if shouldAntiAlias == 1
+                self.k( abs(self.k) >= 2*max(abs(self.k))/3) = [];
+                self.l( abs(self.l) >= 2*max(abs(self.k))/3) = []; % yes, k, we want it isotropic
+                self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
+            end
+
+            self.Nk = length(self.k);
+            self.Nl = length(self.l);
+            self.Nj = length(self.j);
             
             self.rhobar = rhobar;
             self.N2 = N2;
@@ -105,9 +116,9 @@ classdef WaveVortexModel < handle
             end
             
             % Now set the initial conditions to zero
-            self.Ap = zeros(self.Nx,self.Ny,self.nModes);
-            self.Am = zeros(self.Nx,self.Ny,self.nModes);
-            self.A0 = zeros(self.Nx,self.Ny,self.nModes);  
+            self.Ap = zeros(self.Nk,self.Nl,self.nModes);
+            self.Am = zeros(self.Nk,self.Nl,self.nModes);
+            self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
         end
         
         function Kh = Kh(self)
@@ -364,9 +375,12 @@ classdef WaveVortexModel < handle
 
         function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
             [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-            Ep = self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
-            Em = self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
-            E0 = self.A0_TE_factor.*real( F0 .* conj(self.A0) );
+            % The phase is tricky here. It is wound forward for the flux,
+            % as it should be... but then it is wound back to zero. This is
+            % equivalent ignoring the phase below here.
+            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
+            Em = 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
+            E0 = 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -229,7 +229,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             w_bar = self.QG*w;
             w_bar = reshape(w_bar,self.nModes,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);            
         end
         
         function u = TransformToSpatialDomainWithF(self, u_bar)
@@ -240,7 +240,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             u = self.PFinv*u_bar;
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
-        end  
+        end
                 
         function w = TransformToSpatialDomainWithG(self, w_bar )
             % hydrostatic modes commute with the DFT
