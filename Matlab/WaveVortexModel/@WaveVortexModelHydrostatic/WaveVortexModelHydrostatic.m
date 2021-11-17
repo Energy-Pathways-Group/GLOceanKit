@@ -245,11 +245,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         function w = TransformToSpatialDomainWithG(self, w_bar )
             % hydrostatic modes commute with the DFT
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.nModes,[]);
-            w = self.QGinv*w_bar;
-            w = reshape(w,self.Nz,self.Nx,self.Ny);
-            w = permute(w,[2 3 1]);
+
         end
         
         function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)

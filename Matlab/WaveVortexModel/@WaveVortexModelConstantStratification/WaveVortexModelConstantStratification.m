@@ -7,6 +7,8 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
         realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
         F,G
         h
+
+        DCT, iDCT, DST, iDST, DFT, iDFT
         
         isHydrostatic = 0
         cg_x, cg_y, cg_z
@@ -72,6 +74,18 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
             self.complexScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
             warning('Need to check 2*(Nz-1), it gets extended to 2*Nz-1 during simulation');
+
+            if 1 == 1
+                self.DCT = CosineTransformForwardMatrix(self.Nz);
+                self.DCT = self.DCT(1:end-1,:); % dump the Nyquist mode
+                self.iDCT = CosineTransformBackMatrix(self.Nz);
+                self.iDCT = self.iDCT(:,1:end-1); % dump the Nyquist mode
+                self.DST = SineTransformForwardMatrix(self.Nz);
+                self.DST = cat(1,zeros(1,self.Nz),self.DST);
+                self.iDST = SineTransformBackMatrix(self.Nz);
+                self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
+            end
+
         end
                 
         function h = get.h(self)
@@ -111,8 +125,8 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
 
-            PP = 0.5*self.Nx*self.Ny*self.F;
-            QQ = 0.5*self.Nx*self.Ny*self.G;
+            PP = self.F;
+            QQ = self.G;
 
             BuildTransformationMatrices@WaveVortexModel(self,PP,QQ);
         end
@@ -191,29 +205,145 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Transformations to and from the spatial domain
+        % Transformations to and from the spatial domain, using FFTs
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF(self, u)
-            % All coefficients are subsumbed into the transform
-            % coefficients ApU,ApV,etc.
-%             self.dctScratch = ifft(cat(3,u,u(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
-%             u_bar = real(self.dctScratch(:,:,1:(self.Nz-1))); % include barotropic mode, but leave off the Nyquist.
-%             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
-%             
-            u = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
-            u_bar = fft(fft(u(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2);
+        function u_bar = TransformFromSpatialDomainWithF(self, u)     
+            u_bar = self.TransformFromSpatialDomainWithF_MM(u);
         end
         
         function w_bar = TransformFromSpatialDomainWithG(self, w)
+            w_bar = self.TransformFromSpatialDomainWithG_MM(w);
+        end
+        
+        function u = TransformToSpatialDomainWithF(self, u_bar)
+            u = self.TransformToSpatialDomainWithF_MM(u_bar);
+        end  
+                
+        function w = TransformToSpatialDomainWithG(self, w_bar )
+            w = self.TransformToSpatialDomainWithG_MM(w_bar );
+        end
+        
+        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            [u,ux,uy,uz] = self.TransformToSpatialDomainWithFAllDerivatives_MM(u_bar);
+        end  
+        
+        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            [w,wx,wy,wz] = self.TransformToSpatialDomainWithGAllDerivatives_MM(w_bar );
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations to and from the spatial domain, using matrix
+        % multiplication (MM)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        function u_bar = TransformFromSpatialDomainWithF_MM(self, u)
+            u = permute(u,[3 1 2]); % keep adjacent in memory
+            u = reshape(u,self.Nz,[]);
+            u_bar = self.DCT*u;
+            u_bar = reshape(u_bar,self.nModes,self.Nx,self.Ny);
+            u_bar = permute(u_bar,[2 3 1]);
+
+            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+        end
+        
+        function w_bar = TransformFromSpatialDomainWithG_MM(self, w)
+            % df = 1/(2*(Nz-1)*dz)
+            % nyquist = (Nz-2)*df
+            w = permute(w,[3 1 2]); % keep adjacent in memory
+            w = reshape(w,self.Nz,[]);
+            w_bar = self.DST*w;
+            w_bar = reshape(w_bar,self.nModes,self.Nx,self.Ny);
+            w_bar = permute(w_bar,[2 3 1]);
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+        end
+        
+        function u = TransformToSpatialDomainWithF_MM(self, u_bar)
+            % All coefficients are subsumbed into the transform
+            % coefficients UAp,UAm,etc.
+            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
+            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            u_bar = reshape(u_bar,self.nModes,[]);
+            u = self.iDCT*u_bar;
+            u = reshape(u,self.Nz,self.Nx,self.Ny);
+            u = permute(u,[2 3 1]);
+        end  
+                
+        function w = TransformToSpatialDomainWithG_MM(self, w_bar )
+            % All coefficients are subsumbed into the transform
+            % coefficients NAp,NAm,etc.
+            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
+            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+            w_bar = reshape(w_bar,self.nModes,[]);
+            w = self.iDST*w_bar;
+            w = reshape(w,self.Nz,self.Nx,self.Ny);
+            w = permute(w,[2 3 1]);        
+        end
+        
+        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives_MM(self, u_bar)
+            % All coefficients are subsumbed into the transform
+            % coefficients UAp,UAm,etc.
+            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
+            
+            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            u_bar = reshape(u_bar,self.nModes,[]);
+            u = self.iDCT*u_bar;
+            u = reshape(u,self.Nz,self.Nx,self.Ny);
+            u = permute(u,[2 3 1]);
+            
+            ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
+            uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
+            
+            % To take the derivative, we multiply, then sine transform back
+            m = reshape(-pi*self.j/self.Lz,[],1);
+            uz = self.iDST*(m.*u_bar);
+            uz = reshape(uz,self.Nz,self.Nx,self.Ny);
+            uz = permute(uz,[2 3 1]);
+        end  
+        
+        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives_MM(self, w_bar )
+            % All coefficients are subsumbed into the transform
+            % coefficients NAp,NAm,etc.
+            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
+            
+            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+            w_bar = reshape(w_bar,self.nModes,[]);
+            w = self.iDST*w_bar;
+            w = reshape(w,self.Nz,self.Nx,self.Ny);
+            w = permute(w,[2 3 1]);    
+            
+            wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
+            wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
+            
+            % To take the derivative, we multiply, then cosine transform back
+            m = reshape(pi*self.j/self.Lz,[],1);
+            wz = self.iDCT*(m.*w_bar);
+            wz = reshape(wz,self.Nz,self.Nx,self.Ny);
+            wz = permute(wz,[2 3 1]);
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations to and from the spatial domain, using FFTs
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        function u_bar = TransformFromSpatialDomainWithF_FFT(self, u)     
+            u = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
+            u_bar = fft(fft(u(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
+        end
+        
+        function w_bar = TransformFromSpatialDomainWithG_FFT(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
             w = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
             w_bar = imag(w(:,:,1:(self.Nz-1)));
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
         end
         
-        function u = TransformToSpatialDomainWithF(self, u_bar)
+        function u = TransformToSpatialDomainWithF_FFT(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
@@ -221,10 +351,10 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             % Re-order to convert to a DCT-I via FFT
             u = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
             u = ifft( u,2*(self.Nz-1),3,'symmetric');
-            u = u(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
+            u = u(:,:,1:self.Nz)*(2*self.Nz-2)*0.5*self.Nx*self.Ny; % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end  
                 
-        function w = TransformToSpatialDomainWithG(self, w_bar )
+        function w = TransformToSpatialDomainWithG_FFT(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
@@ -232,13 +362,13 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             % Re-order to convert to a DST-I via FFT
             w = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));
             w = ifft( w,2*(self.Nz-1),3,'symmetric');
-            w = w(:,:,1:self.Nz)*(2*self.Nz-2); % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
+            w = w(:,:,1:self.Nz)*(2*self.Nz-2)*0.5*self.Nx*self.Ny; % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end
         
-        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives_FFT(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
-            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*0.5*self.Nx*self.Ny;    
             
             % Re-order to convert to a DCT-I via FFT
             self.realScratch = cat(3,u,zeros(self.Nx,self.Ny),flip(u,3));
@@ -257,10 +387,10 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             uz = uz(:,:,1:self.Nz)*(2*self.Nz-2);
         end  
         
-        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives_FFT(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
-            w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+            w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*0.5*self.Nx*self.Ny;
             
             % Re-order to convert to a DST-I via FFT
             self.complexScratch = sqrt(-1)*cat(3,-w,zeros(self.Nx,self.Ny),flip(w,3));

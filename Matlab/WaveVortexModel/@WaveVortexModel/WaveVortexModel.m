@@ -27,6 +27,7 @@ classdef WaveVortexModel < handle
         t0 = 0
         Ap, Am, A0
         shouldAntiAlias = 0;
+        halfK = 0;
         
         offgridModes % subclass should initialize
         ongridModes % This is a cached copy 
@@ -92,15 +93,21 @@ classdef WaveVortexModel < handle
             self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
             self.j = (0:(nModes-1))';
 
-            if shouldAntiAlias == 1
-                self.k( abs(self.k) >= 2*max(abs(self.k))/3) = [];
-                self.l( abs(self.l) >= 2*max(abs(self.k))/3) = []; % yes, k, we want it isotropic
+            if self.halfK == 1
+                self.k( (self.Nx/2+2):end ) = [];
+            end
+
+            if self.shouldAntiAlias == 1
+                k_alias = 2*max(abs(self.k))/3;
+                self.k( abs(self.k) >= k_alias) = [];
+                self.l( abs(self.l) >= k_alias) = []; % yes, k, we want it isotropic
                 self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
             end
 
             self.Nk = length(self.k);
             self.Nl = length(self.l);
             self.Nj = length(self.j);
+
             
             self.rhobar = rhobar;
             self.N2 = N2;
@@ -131,10 +138,10 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
-        function set.shouldAntiAlias(self,value)
-            self.shouldAntiAlias = value;
-            self.rebuildTransformationMatrices();
-        end
+%         function set.shouldAntiAlias(self,value)
+%             self.shouldAntiAlias = value;
+%             self.rebuildTransformationMatrices();
+%         end
         
         function rebuildTransformationMatrices(self)
             self.BuildTransformationMatrices(self.PP,self.QQ);

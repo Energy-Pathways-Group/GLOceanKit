@@ -26,7 +26,7 @@ Ny = 8;
 Nz = 5;
 
 latitude = [31]; % usually we check latitude 0 as well.
-isHydrostatic = 1;
+isHydrostatic = 0;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 U = 0.01; % m/s
 phi = 0*0.232; % random, just to see if its doing the right thing API = 1 will fail, because you can't set the phase using that API.
@@ -42,7 +42,7 @@ totalTests = 0;
 
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
-    if 1 == 0
+    if 1 == 1
         wavemodel = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0,[],'hydrostatic',isHydrostatic);
         rho0 = wavemodel.rho0;
         g = 9.81;
