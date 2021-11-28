@@ -8,6 +8,7 @@ classdef WaveVortexModelOffGrid < handle
         Lz
         z
         N2Function
+        isHydrostatic = 0
         
         % These are all row vectors, e.g. size(U_ext)=[1 length(U_ext)], except F_ext, G_ext which are size(F_ext) = [length(z) length(U_ext)];
         U_ext, k_ext, l_ext, j_ext, k_z_ext, h_ext, omega_ext, phi_ext, F_ext, G_ext, norm_ext
@@ -24,7 +25,7 @@ classdef WaveVortexModelOffGrid < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = WaveVortexModelOffGrid(internalModes, latitude,N2Function)
+        function self = WaveVortexModelOffGrid(internalModes, latitude,N2Function,hydrostatic)
             self.internalModes = internalModes;
             self.latitude = latitude;
             self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
@@ -32,6 +33,7 @@ classdef WaveVortexModelOffGrid < handle
             self.z = self.internalModes.z;
             self.rho0 = self.internalModes.rho0;
             self.N2Function = N2Function;
+            self.isHydrostatic = hydrostatic;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,6 +168,8 @@ classdef WaveVortexModelOffGrid < handle
             validIndices = zeros(size(kOrOmega));
             h = zeros(size(kOrOmega));
             
+
+
             switch norm
                 case {Normalization.kConstant, Normalization.uMax}
                     self.norm_ext = norm;
@@ -189,7 +193,11 @@ classdef WaveVortexModelOffGrid < handle
                     self.phi_ext = cat(2,self.phi_ext,phi(iWave));
                     self.U_ext = cat(2,self.U_ext,A(iWave));
                 else
-                    [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
+                    if self.isHydrostatic == 1
+                        [FExt,GExt,hExt] = self.internalModes.ModesAtFrequency(0);
+                    else
+                        [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
+                    end
                     if (hExt(j(iWave)) <= 0)
                         warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));
                         continue;

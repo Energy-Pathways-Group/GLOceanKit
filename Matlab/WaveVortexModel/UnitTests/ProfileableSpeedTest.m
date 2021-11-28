@@ -37,19 +37,21 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if 1 == 1
+if 1 == 0
     wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
     rho0 = 1025; g = 9.81;
     rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-    wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho);
+    N2Function = @(z) N0*N0*ones(size(z));
+    dLnN2Function = @(z) zeros(size(z));
+    wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho,'N2func', N2Function, 'dLnN2func',dLnN2Function);
 end
 [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;
 A0 = A0G + A0G0 + A0rhobar;
 
-% Ubar = boussinesq.UAp.*Ap + boussinesq.UAm.*Am + boussinesq.UA0.*A0;
+Ubar = wvm.UAp.*Ap + wvm.UAm.*Am + wvm.UA0.*A0;
 % Nbar = boussinesq.NAp.*Ap + boussinesq.NAm.*Am + boussinesq.NA0.*A0;
 % 
 % profile on
@@ -62,12 +64,10 @@ A0 = A0G + A0G0 + A0rhobar;
 % profile viewer
 
 profile on
-for i=1:10
-%     [u,v,w,eta] = boussinesq.VelocityField(Ap,Am,A0);
-%     [uNL,vNL,nNL] = boussinesq.NonlinearFluxFromSpatial(u,v,w,eta);
-%     [uNL,vNL,nNL] = boussinesq.NonlinearFlux(Ap,Am,A0);
-%     [Ap,Am,A0] = boussinesq.Project(uNL,vNL,nNL);
-[Fp,Fm,F0] = wvm.NonlinearFluxAtTime(10,Ap,Am,A0);
+for i=1:5
+
+Fp = wvm.TransformToSpatialDomainWithF(Ubar);
+% [Fp,Fm,F0] = wvm.NonlinearFluxAtTime(10,Ap,Am,A0);
 end
 profile viewer
 

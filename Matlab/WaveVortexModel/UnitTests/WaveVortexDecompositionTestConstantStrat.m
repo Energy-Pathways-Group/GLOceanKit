@@ -37,20 +37,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvmConst = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, [],'hydrostatic',1);
-
-% rho0 = 1025; g = 9.81;
-% rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-
-N0 = 12*2*pi/3600; % reference buoyancy frequency, radians/seconds
-rho0 = 1025; g = 9.81;
-L_gm = 145; % thermocline exponential scale, meters
-rhoFunc = @(z) rho0*(1 + L_gm*N0*N0/(2*g)*(1 - exp(2*z/L_gm)));
-N2Function = @(z) N0*N0*exp(2*z/L_gm);
-dLnN2Function = @(z) 2*ones(size(z))/L_gm;
-zIn = [-2000 0];
-
-wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rhoFunc,'N2func', N2Function, 'dLnN2func',dLnN2Function);
+wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0 );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -158,60 +145,12 @@ for i=1:11
     wvm.Ap = mask(1)*ApIO + mask(2)*ApIGW;
     wvm.Am = mask(1)*AmIO + mask(2)*AmIGW;
     wvm.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
-
-    wvmConst.Ap = mask(1)*ApIO + mask(2)*ApIGW;
-    wvmConst.Am = mask(1)*AmIO + mask(2)*AmIGW;
-    wvmConst.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
-    
-%     wvm.Y = {App,Amm,A00};
-    
-%     wavemodel.A0 = mask(1)*A0;
-%     wavemodel.GenerateWavePhases(mask(2)*Ap,mask(2)*Am);
-%     wavemodel.GenerateGeostrophicCurrents(mask(3)*B0,mask(4)*B);
-%     [u,v,w,eta] = wavemodel.VariableFieldsAtTime(t,'u','v','w','zeta');
-%     newmodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);
         
     fprintf('\nmask %d\n',i);
-    
-%     spectralEnergy = 0;
-%     if ~isempty(error2(newmodel.A0,wavemodel.A0))
-%         fprintf('The A0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.A0,wavemodel.A0) ))));
-%         % 1 == newmodel.Apm_HKE_factor + newmodel.Apm_VKE_factor + newmodel.Apm_PE_factor
-%         spectralEnergy = spectralEnergy + abs(newmodel.A0)^2*newmodel.Lz/2;
-%     end
-%     if ~isempty(error2(newmodel.Amp_plus,wavemodel.Amp_plus))
-%         fprintf('The A_plus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_plus,wavemodel.Amp_plus) ))));
-%         % 1 == newmodel.Apm_HKE_factor + newmodel.Apm_VKE_factor + newmodel.Apm_PE_factor
-%         spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.Amp_plus.*conj(newmodel.Amp_plus) )));
-%     end
-%     if ~isempty(error2(newmodel.Amp_minus,wavemodel.Amp_minus))
-%         fprintf('The A_minus amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.Amp_minus,wavemodel.Amp_minus) ))));
-%         spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.Amp_minus.*conj(newmodel.Amp_minus) )));
-%     end
-%     if ~isempty(error2(newmodel.B0,wavemodel.B0))
-%         fprintf('The B0 amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B0,wavemodel.B0) ))));
-%         spectralEnergy = spectralEnergy + sum(sum(sum( newmodel.B0_HKE_factor .* newmodel.B0.*conj(newmodel.B0) )));
-%     end
-%     if ~isempty(error2(newmodel.B,wavemodel.B))
-%         fprintf('The B amplitude matches to 1 part in 10^%d\n', round((log10( error2(newmodel.B,wavemodel.B) ))));
-%         spectralEnergy = spectralEnergy + sum(sum(sum( (newmodel.B_HKE_factor+newmodel.B_PE_factor) .* newmodel.B.*conj(newmodel.B) )));
-%     end
-    
-    fprintf('total integrated energy: %f m^3/s\n', wvm.totalHydrostaticEnergy);
-    fprintf('total spectral energy: %f m^3/s\n', wvm.totalSpectralEnergy);
 
-    fprintf('total integrated energy: %f m^3/s\n', wvmConst.totalHydrostaticEnergy);
-    fprintf('total spectral energy: %f m^3/s\n', wvmConst.totalSpectralEnergy);
+    fprintf('total integrated energy: %f m^3/s\n', wvm.totalEnergy);
+    fprintf('total spectral energy: %f m^3/s\n', wvm.totalSpectralEnergy);
     
-%     [App,Amm,A00] = boussinesq.Project(u,v,eta);
-%     boussinesq.Y = {App,Amm,A00};
-%     [U,V,W,N] = boussinesq.VelocityField(App,Amm,A00);
-%     integratedEnergyBoussinesq = trapz(boussinesq.z,mean(mean( U.^2 + V.^2 + W.^2 + boussinesq.N0*boussinesq.N0.*N.*N, 1 ),2 ) )/2;
-%     spectralEnergyBoussinesq = sum(sum(sum( boussinesq.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + boussinesq.A0_TE_factor.*( A00.*conj(A00) ) )));
-%     fprintf('total integrated energy (BM): %f m^3/s\n', integratedEnergyBoussinesq);
-%     fprintf('total spectral energy (BM): %f m^3/s\n', spectralEnergyBoussinesq);
-%     fprintf('total integrated energy (BM-internal): %f m^3/s\n', boussinesq.totalEnergy);
-%     fprintf('total spectral energy (BM-internal): %f m^3/s\n', boussinesq.totalSpectralEnergy);
     
     fprintf('\n');
 end
