@@ -334,7 +334,12 @@ classdef InternalModesSpectral < InternalModesBase
                else
                    if self.upperBoundary == UpperBoundary.rigidLid
                        % n-th mode has n+1 zeros (including boundaries)
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.z_xLobatto);
+                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.xDomain);
+                       F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
+                       value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+                       [sorted,indices] = sort(abs(value),'descend');
+                       indices = indices(1:nPoints);
+                       roots = roots(indices);
                    elseif self.upperBoundary == UpperBoundary.freeSurface
                        % n-th mode has n zeros (including zero at lower
                        % boundary, and not zero at upper)
@@ -344,7 +349,7 @@ classdef InternalModesSpectral < InternalModesBase
 %                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
 %                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
 %                        q = G_cheb(:,nPoints-0);
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.z_xLobatto);
+                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.xDomain);
                    end
                    z_g = reshape(roots,[],1);
                end
@@ -354,10 +359,13 @@ classdef InternalModesSpectral < InternalModesBase
                %%%% those near zero, rather than the checks below.
                % G(z)=0
                
+               z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
+               
                z_g(z_g<min(self.z_xLobatto)) = min(self.z_xLobatto);
                z_g(z_g>max(self.z_xLobatto)) = max(self.z_xLobatto);
                z_g = unique(z_g,'stable');
-               z_g( abs(diff(z_g)) < 1e-6 ) = [];
+               z_g( abs(diff(z_g)) < 1e-1 ) = [];
+               z_g = sort(z_g);
                if length(z_g) ~= nPoints
                    error('Returned %d unique roots (requested %d). Maybe need more EVP.', length(z_g),nPoints);
                end
