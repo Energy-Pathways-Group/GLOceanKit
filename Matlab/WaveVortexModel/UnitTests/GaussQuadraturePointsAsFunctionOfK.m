@@ -4,13 +4,14 @@
 % aren't the right thing.
 
 [rhoFunc, ~, zIn] = InternalModes.StratificationProfileWithName('exponential');
-z = linspace(min(zIn),max(zIn),1024)';
 zIn = [-4000, 0];
+z = linspace(min(zIn),max(zIn),1024)';
 upperBoundary = UpperBoundary.rigidLid;
 normalization = Normalization.kConstant;
 nPoints = 10;
 
-k = 10.^(-5:0.5:-1);
+wavelength = 10.^(5:-0.5:1);
+k = (2*pi)./wavelength;
 z_g = zeros(nPoints,length(k));
 for iK=1:length(k)
     
@@ -22,7 +23,25 @@ for iK=1:length(k)
     z_g(:,iK) = im.GaussQuadraturePointsForModesAtWavenumber(nPoints,k(iK));
 end
 
-figure, plot(log10(k),z_g)
+figure
+subplot(1,3,1)
+plot(sqrt(im.N2)*3600/(2*pi),im.z)
+ylabel('depth')
+xlabel('cph')
+title('N(z)')
+
+subplot(1,3,[2 3])
+plot(log10(k),z_g)
+xlabel('wavelength')
+yticklabels([])
+xlim([min(log10(k)) max(log10(k))])
+xticks(log10(2*pi./[1e5 1e4 1e3 1e2 1e1]))
+xticklabels({'100 km','10 km', '1 km', '100 m', '10 m'})
+title('Quadrature points, mode 10')
+
+% figure, plot(log10(wavelength),z_g)
+% xlabel('wavelength (log10)')
+% ylabel('depth')
 
 return
 
