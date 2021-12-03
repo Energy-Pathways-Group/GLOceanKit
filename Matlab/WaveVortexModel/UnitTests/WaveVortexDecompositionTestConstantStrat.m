@@ -50,7 +50,7 @@ wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;
 A0 = A0G + A0G0 + A0rhobar;
-[u,v,w,eta] = wvm.TransformWaveVortexToUVWEta(Ap,Am,A0);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -61,6 +61,25 @@ fprintf('\n********** Transform tests **********\n');
 
 error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))), 1e-15] )))), 1e-15]);
 error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
+
+t = 651;
+[u,v,w,eta] = wvm.TransformWaveVortexToUVWEta(Ap,Am,A0,t);
+[App,Amm,A00] = wvm.TransformUVEtaToWaveVortex(u,v,eta,t);
+
+Ap_error = error2(Ap,App);
+Am_error = error2(Am,Amm);
+A0_error = error2(A0,A00);
+
+fprintf('\tAp error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Ap_error)))))));
+fprintf('\tAm error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Am_error)))))));
+fprintf('\tA0 error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(A0_error)))))));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Forward/back transformation tests
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fprintf('\n********** Transform tests F/G **********\n');
 
 % Having subsumed the coefficients for these transformations into the
 % coefficients, these are no longer direct inverses. They should differ by

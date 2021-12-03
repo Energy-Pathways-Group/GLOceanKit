@@ -65,6 +65,7 @@ classdef WaveVortexModel < handle
     end
     
     methods
+        %function self = WaveVortexModel(Lxyz, Nxyz, Nklj, rhobar, N2, dLnN2, latitude, rho0)
         function self = WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
             % rho0 is optional.
             if length(dims) ~=3 || length(n) ~= 3
@@ -304,7 +305,7 @@ classdef WaveVortexModel < handle
             self.NA0 = QQ .* MakeHermitian(self.NA0);
         end
           
-        function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N)
+        function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N,t)
             % This is the 'S^{-1}' operator (C5) in the manuscript
             Ubar = self.TransformFromSpatialDomainWithF(U);
             Vbar = self.TransformFromSpatialDomainWithF(V);
@@ -313,9 +314,21 @@ classdef WaveVortexModel < handle
             Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
             Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
             A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
+
+            if nargin == 5
+                phase = exp(-self.iOmega*(t-self.t0));
+                Ap = Ap .* phase;
+                Am = Am .* conj(phase);
+            end
         end
         
-        function [U,V,W,N] = TransformWaveVortexToUVWEta(self,Ap,Am,A0)
+        function [U,V,W,N] = TransformWaveVortexToUVWEta(self,Ap,Am,A0,t)
+            if nargin == 5
+                phase = exp(self.iOmega*(t-self.t0));
+                Ap = Ap .* phase;
+                Am = Am .* conj(phase);
+            end
+
             % This is the 'S' operator (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
