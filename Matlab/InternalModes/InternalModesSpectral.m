@@ -191,6 +191,9 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.buoyancyAnomaly
                     A(n,:) = T(n,:);
                     B(n,:) = 1;
+                case LowerBoundary.custom
+                    A(n,:) = Tz(n,:) + (self.N2_xLobatto(n)/self.g).*T(n,:);
+                    B(n,:) = 0;
                 case LowerBoundary.none
                 otherwise
                     error('Unknown boundary condition');
