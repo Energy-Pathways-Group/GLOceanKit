@@ -26,7 +26,7 @@ classdef WaveVortexModel < handle
 
         t0 = 0
         Ap, Am, A0
-        shouldAntiAlias = 0;
+        shouldAntiAlias = 1;
         halfK = 0;
         
         offgridModes % subclass should initialize
@@ -98,12 +98,12 @@ classdef WaveVortexModel < handle
                 self.k( (self.Nx/2+2):end ) = [];
             end
 
-            if self.shouldAntiAlias == 1
-                k_alias = 2*max(abs(self.k))/3;
-                self.k( abs(self.k) >= k_alias) = [];
-                self.l( abs(self.l) >= k_alias) = []; % yes, k, we want it isotropic
-                self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
-            end
+%             if self.shouldAntiAlias == 1
+%                 k_alias = 2*max(abs(self.k))/3;
+%                 self.k( abs(self.k) >= k_alias) = [];
+%                 self.l( abs(self.l) >= k_alias) = []; % yes, k, we want it isotropic
+%                 self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
+%             end
 
             self.Nk = length(self.k);
             self.Nl = length(self.l);
@@ -139,10 +139,10 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
-%         function set.shouldAntiAlias(self,value)
-%             self.shouldAntiAlias = value;
-%             self.rebuildTransformationMatrices();
-%         end
+        function set.shouldAntiAlias(self,value)
+            self.shouldAntiAlias = value;
+            self.rebuildTransformationMatrices();
+        end
         
         function rebuildTransformationMatrices(self)
             self.BuildTransformationMatrices(self.PP,self.QQ);
@@ -662,7 +662,15 @@ classdef WaveVortexModel < handle
             varargout = cell(size(varargin));
             [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,x,y,z, varargin{:});
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Simulations
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        [deltaT,advectiveDT,oscillatoryDT] = TimeStepForCFL(self, cfl, outputInterval);
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Validation and internal unit testing
