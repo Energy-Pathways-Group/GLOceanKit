@@ -690,6 +690,8 @@ classdef WaveVortexModel < handle
         % physically realizable solution states.
         [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)  
 
+        
+        [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
 
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
