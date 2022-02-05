@@ -20,15 +20,25 @@ A0Mask = zeros(size(self.A0));
 
 if flowConstituents.Contains(FlowConstituents.inertialOscillation)
     ApmMask = ApmMask | IO;
-elseif flowConstituents.Contains(FlowConstituents.surfaceGravityWave)
+end
+
+if flowConstituents.Contains(FlowConstituents.surfaceGravityWave)
     ApmMask = ApmMask | SGW;
-elseif flowConstituents.Contains(FlowConstituents.internalGravityWave)
+end
+
+if flowConstituents.Contains(FlowConstituents.internalGravityWave)
     ApmMask = ApmMask | IGW;
-elseif flowConstituents.Contains(FlowConstituents.meanDensityAnomaly)
+end
+
+if flowConstituents.Contains(FlowConstituents.meanDensityAnomaly)
     A0Mask = A0Mask | MDA;
-elseif flowConstituents.Contains(FlowConstituents.surfaceGeostrophic)
+end
+
+if flowConstituents.Contains(FlowConstituents.surfaceGeostrophic)
     A0Mask = A0Mask | SG;
-elseif flowConstituents.Contains(FlowConstituents.internalGeostrophic)
+end
+
+if flowConstituents.Contains(FlowConstituents.internalGeostrophic)
     A0Mask = A0Mask | IG;
 end
 
