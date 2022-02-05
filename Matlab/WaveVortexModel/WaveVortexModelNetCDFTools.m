@@ -213,12 +213,14 @@ classdef WaveVortexModelNetCDFTools < handle
             y = ncread(self.netcdfFile,'y');
             z = ncread(self.netcdfFile,'z');
             j = ncread(self.netcdfFile,'j');
+            t = ncread(self.netcdfFile,'t');
             latitude = ncreadatt(self.netcdfFile,'/','latitude');
             stratification = ncreadatt(self.netcdfFile,'/','stratification');
             
             self.Nx = length(x);
             self.Ny = length(y);
             self.Nz = length(z);
+            self.Nt = length(t);
             
             Lx = (x(2)-x(1))*self.Nx; 
             Ly = (y(2)-y(1))*self.Ny; 
