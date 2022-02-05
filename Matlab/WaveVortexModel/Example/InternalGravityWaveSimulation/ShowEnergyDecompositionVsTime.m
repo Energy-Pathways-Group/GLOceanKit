@@ -36,5 +36,7 @@ legend('total','inertial','wave','geostrophic', 'Location', 'Northeast')
 
 figure
 plot(t/86400,GeostrophicTotal/SpectralTotal(1),'LineWidth', 2)
+xlabel('time (days)')
+ylabel('geostrophic energy')
 
-% print('-depsc2', 'energy-fraction-vs-time.eps')
+print('-depsc2', 'geostrophic-energy-vs-time.eps')
