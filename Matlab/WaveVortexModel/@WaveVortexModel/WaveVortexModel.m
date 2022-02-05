@@ -403,6 +403,9 @@ classdef WaveVortexModel < handle
             E0 = 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
         end
         
+        [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
+        [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics (total)
@@ -692,6 +695,7 @@ classdef WaveVortexModel < handle
 
         
         [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
+        [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
 
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);

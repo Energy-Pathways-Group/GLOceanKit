@@ -37,7 +37,7 @@ maxTime = 2*inertialPeriod;
 outputInterval = inertialPeriod/10;
 cfl = .25;
 
-outputfile = '/Volumes/MoreStorage/Data/InternalWaveSimulation/igw-simulation.nc';
+outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

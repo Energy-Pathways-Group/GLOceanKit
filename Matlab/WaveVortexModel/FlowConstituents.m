@@ -1,47 +1,59 @@
-classdef FlowConstituents < uint8
+classdef FlowConstituents
+    properties
+        bitmask = 0
+    end
+    properties (Constant)
+        none                = 0b00000001
+
+        inertialOscillation = 0b00000001
+        surfaceGravityWave  = 0b00000010
+        internalGravityWave = 0b00000100
+        surfaceGeostrophic  = 0b00001000
+        internalGeostrophic = 0b00010000
+        meanDensityAnomaly  = 0b00100000
+        
+        inertial            = 0b00000001
+        wave                = 0b00000110
+        geostrophic         = 0b00011000
+
+        all                 = 0b00111111
+    end
     methods
         function self = FlowConstituents(varargin)
+            bitmask = 0;
             for k = 1:length(varargin)
                 if strcmp(varargin{k}, 'inertialOscillation')
-                    self = bitor(self,FlowConstituents.inertialOscillation);
+                    bitmask = bitor(bitmask,FlowConstituents.inertialOscillation);
                 elseif strcmp(varargin{k}, 'surfaceGravityWave')
-                    self = bitor(self,FlowConstituents.surfaceGravityWave);
+                    bitmask = bitor(bitmask,FlowConstituents.surfaceGravityWave);
                 elseif strcmp(varargin{k}, 'internalGravityWave')
-                    self = bitor(self,FlowConstituents.internalGravityWave);
+                    bitmask = bitor(bitmask,FlowConstituents.internalGravityWave);
                 elseif strcmp(varargin{k}, 'surfaceGeostrophic')
-                    self = bitor(self,FlowConstituents.surfaceGeostrophic);
+                    bitmask = bitor(bitmask,FlowConstituents.surfaceGeostrophic);
                 elseif strcmp(varargin{k}, 'internalGeostrophic')
-                    self = bitor(self,FlowConstituents.internalGeostrophic);
+                    bitmask = bitor(bitmask,FlowConstituents.internalGeostrophic);
                 elseif strcmp(varargin{k}, 'meanDensityAnomaly')
-                    self = bitor(self,FlowConstituents.meanDensityAnomaly);
+                    bitmask = bitor(bitmask,FlowConstituents.meanDensityAnomaly);
                 elseif strcmp(varargin{k}, 'inertial')
-                    self = bitor(self,FlowConstituents.inertial);
+                    bitmask = bitor(bitmask,FlowConstituents.inertial);
                 elseif strcmp(varargin{k}, 'wave')
-                    self = bitor(self,FlowConstituents.wave);
+                    bitmask = bitor(bitmask,FlowConstituents.wave);
                 elseif strcmp(varargin{k}, 'geostrophic')
-                    self = bitor(self,FlowConstituents.geostrophic);
+                    bitmask = bitor(bitmask,FlowConstituents.geostrophic);
                 elseif strcmp(varargin{k}, 'all')
-                    self = bitor(self,FlowConstituents.all);
+                    bitmask = bitor(bitmask,FlowConstituents.all);
                 end
             end
         end
-    end
-
-    enumeration
-        none                    (0)
-
-        inertialOscillation     (0b00000001)
-        surfaceGravityWave      (0b00000010)
-        internalGravityWave     (0b00000100)
-        surfaceGeostrophic      (0b00001000)
-        internalGeostrophic     (0b00010000)
-        meanDensityAnomaly      (0b00100000)
         
-        inertial                (0b00000001)
-        wave                    (0b00000110)
-        geostrophic             (0b00011000)
+        function bool = Contains(self,otherFlowConstituent)
+            if isa(otherFlowConstituent,"numeric")
+                bool = logical(bitor(self.bitmask,otherFlowConstituent));
+            elseif isa(otherFlowConstituent,"FlowConstituents")
+                bool = logical(bitor(self.bitmask,otherFlowConstituent.bitmask));
+            end
+        end
 
-        everything                     (0b00111111)
-    end    
+    end 
 end
 
