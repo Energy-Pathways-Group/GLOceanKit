@@ -3,20 +3,37 @@ classdef FlowConstituents
         bitmask = 0
     end
     properties (Constant)
-        none                = 0b00000001
+        none                = 0
 
-        inertialOscillation = 0b00000001
-        surfaceGravityWave  = 0b00000010
-        internalGravityWave = 0b00000100
-        surfaceGeostrophic  = 0b00001000
-        internalGeostrophic = 0b00010000
-        meanDensityAnomaly  = 0b00100000
+        inertialOscillation = 1
+        surfaceGravityWave  = 2
+        internalGravityWave = 4
+        surfaceGeostrophic  = 8
+        internalGeostrophic = 16
+        meanDensityAnomaly  = 32
         
-        inertial            = 0b00000001
-        wave                = 0b00000110
-        geostrophic         = 0b00011000
+        inertial            = 1
+        wave                = 2+4
+        geostrophic         = 8+16
 
-        all                 = 0b00111111
+        all                 = 1+2+4+8+16+32
+
+
+        % binary 'literals' are only valid starting in Matlab 2019b
+%         none                = 0b00000001
+% 
+%         inertialOscillation = 0b00000001
+%         surfaceGravityWave  = 0b00000010
+%         internalGravityWave = 0b00000100
+%         surfaceGeostrophic  = 0b00001000
+%         internalGeostrophic = 0b00010000
+%         meanDensityAnomaly  = 0b00100000
+%         
+%         inertial            = 0b00000001
+%         wave                = 0b00000110
+%         geostrophic         = 0b00011000
+% 
+%         all                 = 0b00111111
     end
     methods
         function self = FlowConstituents(varargin)
