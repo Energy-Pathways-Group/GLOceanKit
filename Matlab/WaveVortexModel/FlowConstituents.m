@@ -20,7 +20,7 @@ classdef FlowConstituents
 
 
         % binary 'literals' are only valid starting in Matlab 2019b
-%         none                = 0b00000001
+%         none                = 0b00000000
 % 
 %         inertialOscillation = 0b00000001
 %         surfaceGravityWave  = 0b00000010
