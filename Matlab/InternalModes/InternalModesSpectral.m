@@ -561,7 +561,9 @@ classdef InternalModesSpectral < InternalModesBase
                 maxModes = self.nModes;
             end
             
-            
+%             FzOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(self.Diff1_xCheb(G_cheb)));
+%             Fz = zeros(length(self.z),maxModes);
+
             F = zeros(length(self.z),maxModes);
             G = zeros(length(self.z),maxModes);
             h = reshape(h(1:maxModes),1,[]);
@@ -598,7 +600,7 @@ classdef InternalModesSpectral < InternalModesBase
                 
                 G(:,j) = GOutFromGCheb(G_cheb(:,j),h(j))/A;
                 F(:,j) = FOutFromGCheb(G_cheb(:,j),h(j))/A;
-                
+%                 Fz(:,j) = FzOutFromGCheb(G_cheb(:,j),h(j))/A;
                 % K-constant norm: G(0)^2 + \frac{1}{g} \int_{-D}^0 (N^2 -
                 % f_0^2)
 
