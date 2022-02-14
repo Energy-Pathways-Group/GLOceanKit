@@ -26,7 +26,7 @@ classdef WaveVortexModel < handle
 
         t0 = 0
         Ap, Am, A0
-        shouldAntiAlias = 1;
+        shouldAntiAlias = 0;
         halfK = 0;
         
         offgridModes % subclass should initialize
@@ -403,9 +403,44 @@ classdef WaveVortexModel < handle
             E0 = 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
         end
         
+        function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
+  	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
+  	    % The phase is tricky here. It is wound forward for the flux,
+  	    % as it should be... but then it is wound back to zero. This is
+    	    % equivalent ignoring the phase below here.
+  
+	    % This equation is C17 in the manuscript, but with addition of 1st term
+	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
+  
+	    % This differs from EnergyFluxAtTime due to the importance of the
+	    % 2*F*F*deltaT in equation C16 at the initial condition.
+  
+	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
+  	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
+  	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+	end
+
         [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
         [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
-        
+       
+
+	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
+	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
+	    % The phase is tricky here. It is wound forward for the flux,
+	    % as it should be... but then it is wound back to zero. This is
+            % equivalent ignoring the phase below here.
+
+            % This equation is C17 in the manuscript, but with addition of 1st term
+            % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
+
+            % This differs from EnergyFluxForFlowConstituentsAtTime due to the importance of the
+            % 2*F*F*deltaT in equation C16 at the initial condition.
+
+            Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
+            Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
+            E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+	end
+ 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics (total)
