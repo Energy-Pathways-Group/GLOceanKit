@@ -22,6 +22,9 @@ classdef WaveVortexModel < handle
         WAp, WAm
         NAp, NAm, NA0
         
+        IMA0, IMAp, IMAm    % InteractionMasks
+        EMA0, EMAp, EMAm    % EnergyMasks
+
         PP, QQ
 
         t0 = 0
@@ -127,6 +130,13 @@ classdef WaveVortexModel < handle
             self.Ap = zeros(self.Nk,self.Nl,self.nModes);
             self.Am = zeros(self.Nk,self.Nl,self.nModes);
             self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
+
+            self.IMA0 = ones(self.Nk,self.Nl,self.nModes);
+            self.IMAp = ones(self.Nk,self.Nl,self.nModes);
+            self.IMAm = ones(self.Nk,self.Nl,self.nModes);
+            self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
+            self.EMAp = ones(self.Nk,self.Nl,self.nModes);
+            self.EMAm = ones(self.Nk,self.Nl,self.nModes);
         end
         
         function Kh = Kh(self)
@@ -404,30 +414,29 @@ classdef WaveVortexModel < handle
         end
         
         function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
-  	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-  	    % The phase is tricky here. It is wound forward for the flux,
-  	    % as it should be... but then it is wound back to zero. This is
-    	    % equivalent ignoring the phase below here.
-  
-	    % This equation is C17 in the manuscript, but with addition of 1st term
-	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
-  
-	    % This differs from EnergyFluxAtTime due to the importance of the
-	    % 2*F*F*deltaT in equation C16 at the initial condition.
-  
-	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-  	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-  	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-	end
+      	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
+      	    % The phase is tricky here. It is wound forward for the flux,
+      	    % as it should be... but then it is wound back to zero. This is
+            % equivalent ignoring the phase below here.
+
+    	    % This equation is C17 in the manuscript, but with addition of 1st term
+    	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
+
+    	    % This differs from EnergyFluxAtTime due to the importance of the
+    	    % 2*F*F*deltaT in equation C16 at the initial condition.
+
+    	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
+      	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
+      	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+    	end
 
         [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
         [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
-       
 
-	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
-	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
-	    % The phase is tricky here. It is wound forward for the flux,
-	    % as it should be... but then it is wound back to zero. This is
+    	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
+    	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
+    	    % The phase is tricky here. It is wound forward for the flux,
+    	    % as it should be... but then it is wound back to zero. This is
             % equivalent ignoring the phase below here.
 
             % This equation is C17 in the manuscript, but with addition of 1st term
@@ -439,8 +448,56 @@ classdef WaveVortexModel < handle
             Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
             Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
             E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-	end
+    	end
  
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Reduced interaction models
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
+            self.IMA0 = or(self.IMA0,A0);
+            self.IMAm = or(self.IMAm,Am);
+            self.IMAp = or(self.IMAp,Ap);
+        end
+
+        function allowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 | A0Mask;
+            self.IMAm = self.IMAm | ApmMask;
+            self.IMAp = self.IMAp | ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 & ~A0Mask;
+            self.IMAm = self.IMAm & ~ApmMask;
+            self.IMAp = self.IMAp & ~ApmMask;
+        end
+
+        function unfreezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 | A0Mask;
+            self.EMAm = self.EMAm | ApmMask;
+            self.EMAp = self.EMAp | ApmMask;
+        end
+
+        function freezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 & ~A0Mask;
+            self.EMAm = self.EMAm & ~ApmMask;
+            self.EMAp = self.EMAp & ~ApmMask;
+        end
+
+
+
+        function stirWithConstituents(self,constituents)
+
+        end
+
+
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics (total)
