@@ -130,10 +130,13 @@ classdef WaveVortexModel < handle
             self.Ap = zeros(self.Nk,self.Nl,self.nModes);
             self.Am = zeros(self.Nk,self.Nl,self.nModes);
             self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
-
+            
+            % Allow all nonlinear interactions
             self.IMA0 = ones(self.Nk,self.Nl,self.nModes);
             self.IMAp = ones(self.Nk,self.Nl,self.nModes);
             self.IMAm = ones(self.Nk,self.Nl,self.nModes);
+
+            % Allow energy fluxes at all modes
             self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
             self.EMAp = ones(self.Nk,self.Nl,self.nModes);
             self.EMAm = ones(self.Nk,self.Nl,self.nModes);
@@ -151,7 +154,14 @@ classdef WaveVortexModel < handle
         
         function set.shouldAntiAlias(self,value)
             self.shouldAntiAlias = value;
-            self.rebuildTransformationMatrices();
+            
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            alpha = atan2(L,K);
+            K2 = K.*K + L.*L;
+            Kh = sqrt(K2);      % Total horizontal wavenumber
+
+            AntiAliasFilter = ones(size(self.ApU));
+            AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
         end
         
         function rebuildTransformationMatrices(self)
@@ -370,10 +380,16 @@ classdef WaveVortexModel < handle
         
         function [Fp,Fm,F0] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
             % Apply operator T_\omega---defined in (C2) in the manuscript
+
+            % We also apply the interaction masks (IMA*) and energy masks
+            % (EMA*). These *could* be precomputed multiplied directly into
+            % the coefficients. A quick speed test shows this about a 5%
+            % performance hit by not doing this.
             phase = exp(self.iOmega*(t-self.t0));
-            Ap = Ap .* phase;
-            Am = Am .* conj(phase);
-            
+            Ap = self.IMAp .* Ap .* phase;
+            Am = self.IMAm .* Am .* conj(phase);
+            A0 = self.IMA0 .* A0;
+
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
@@ -398,9 +414,9 @@ classdef WaveVortexModel < handle
             vNLbar = self.TransformFromSpatialDomainWithF(vNL);
             nNLbar = self.TransformFromSpatialDomainWithG(nNL);
 
-            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+            Fp = self.EMAp .* (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
+            Fm = self.EMAm .* (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
+            F0 = self.EMA0 .* (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
         end
 
         function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
