@@ -152,17 +152,7 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
-        function set.shouldAntiAlias(self,value)
-            self.shouldAntiAlias = value;
-            
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            alpha = atan2(L,K);
-            K2 = K.*K + L.*L;
-            Kh = sqrt(K2);      % Total horizontal wavenumber
 
-            AntiAliasFilter = ones(size(self.ApU));
-            AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
-        end
         
         function rebuildTransformationMatrices(self)
             self.BuildTransformationMatrices(self.PP,self.QQ);
@@ -244,25 +234,18 @@ classdef WaveVortexModel < handle
             % Finally, we need to take care of the extra factor of 2 that
             % comes out of the discrete cosine transform
             
-            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-%             self.shouldAntiAlias =0;
-            AntiAliasFilter = ones(size(self.ApU));
-            if self.shouldAntiAlias == 1
-                AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
-            end
-            
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApU);
-            self.ApV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.ApN);
-            
-            self.AmU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmU);
-            self.AmV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.AmN);
-            
-            self.A0U = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0U);
-            self.A0V = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.A0N);
+            self.ApU = (1./PP) .* MakeHermitian(self.ApU);
+            self.ApV = (1./PP) .* MakeHermitian(self.ApV);
+            self.ApN = (1./QQ) .* MakeHermitian(self.ApN);
+           
+            self.AmU = (1./PP) .* MakeHermitian(self.AmU);
+            self.AmV = (1./PP) .* MakeHermitian(self.AmV);
+            self.AmN = (1./QQ) .* MakeHermitian(self.AmN);
+           
+            self.A0U = (1./PP) .* MakeHermitian(self.A0U);
+            self.A0V = (1./PP) .* MakeHermitian(self.A0V);
+            self.A0N = (1./QQ) .* MakeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -490,6 +473,22 @@ classdef WaveVortexModel < handle
             self.IMA0 = self.IMA0 & ~A0Mask;
             self.IMAm = self.IMAm & ~ApmMask;
             self.IMAp = self.IMAp & ~ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithAliasedModes(self)
+            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
+            % The reality is that the vertical modes will still alias.
+            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
+            self.shouldAntiAlias = 1;
+            
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            Kh = sqrt(K.*K + L.*L);
+
+            AntiAliasFilter = ones(size(self.ApU));
+            AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
+            self.IMA0 = self.IMA0 & ~AntiAliasFilter;
+            self.IMAm = self.IMAm & ~AntiAliasFilter;
+            self.IMAp = self.IMAp & ~AntiAliasFilter;
         end
 
         function unfreezeEnergyOfConstituents(self,constituents)
