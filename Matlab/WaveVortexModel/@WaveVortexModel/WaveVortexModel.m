@@ -29,7 +29,7 @@ classdef WaveVortexModel < handle
 
         t0 = 0
         Ap, Am, A0
-        shouldAntiAlias = 0;
+        shouldAntiAlias = 1;
         halfK = 0;
         
         offgridModes % subclass should initialize
@@ -140,6 +140,10 @@ classdef WaveVortexModel < handle
             self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
             self.EMAp = ones(self.Nk,self.Nl,self.nModes);
             self.EMAm = ones(self.Nk,self.Nl,self.nModes);
+
+            if self.shouldAntiAlias == 1
+                self.disallowNonlinearInteractionsWithAliasedModes();
+            end
         end
         
         function Kh = Kh(self)
@@ -481,14 +485,10 @@ classdef WaveVortexModel < handle
             % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
             self.shouldAntiAlias = 1;
             
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            Kh = sqrt(K.*K + L.*L);
-
-            AntiAliasFilter = ones(size(self.ApU));
-            AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
-            self.IMA0 = self.IMA0 & ~AntiAliasFilter;
-            self.IMAm = self.IMAm & ~AntiAliasFilter;
-            self.IMAp = self.IMAp & ~AntiAliasFilter;
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.IMA0 = self.IMA0 & ~AntiAliasMask;
+            self.IMAm = self.IMAm & ~AntiAliasMask;
+            self.IMAp = self.IMAp & ~AntiAliasMask;
         end
 
         function unfreezeEnergyOfConstituents(self,constituents)
@@ -504,7 +504,16 @@ classdef WaveVortexModel < handle
             self.EMAm = self.EMAm & ~ApmMask;
             self.EMAp = self.EMAp & ~ApmMask;
         end
-
+        
+        function freezeEnergyOfAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.EMA0 = self.EMA0 & ~AntiAliasMask;
+            self.EMAm = self.EMAm & ~AntiAliasMask;
+            self.EMAp = self.EMAp & ~AntiAliasMask;
+        end
 
 
         function stirWithConstituents(self,constituents)
@@ -803,7 +812,7 @@ classdef WaveVortexModel < handle
         
         [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
         [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
-
+        AntiAliasMask= MaskForAliasedModes(self);
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
     end

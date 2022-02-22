@@ -13,7 +13,7 @@ inertialPeriod = (2*pi/(2 * 7.2921E-5 * sin( latitude*pi/180 )));
 maxTime = 2*inertialPeriod;
 outputInterval = inertialPeriod/10;
 
-outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong.nc';
+outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
