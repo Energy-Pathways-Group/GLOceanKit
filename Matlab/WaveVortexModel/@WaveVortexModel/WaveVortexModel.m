@@ -526,6 +526,21 @@ classdef WaveVortexModel < handle
             self.Ap = self.Ap .* ~AntiAliasMask;
         end
 
+        
+        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
+            [omega,k,l] = self.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
+            for iMode=1:length(kModes)
+                if (signs(iMode) == 1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
+                    self.EMAp( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
+                    self.EMAp = WaveVortexModel.MakeHermitian(self.EMAp);
+                end
+
+                if (signs(iMode) == -1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
+                    self.EMAm( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
+                    self.EMAm = WaveVortexModel.MakeHermitian(self.EMAm);
+                end
+            end
+        end
 
         function stirWithConstituents(self,constituents)
 
