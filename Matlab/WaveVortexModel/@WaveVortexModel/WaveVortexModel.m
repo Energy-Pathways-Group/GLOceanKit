@@ -143,6 +143,7 @@ classdef WaveVortexModel < handle
 
             if self.shouldAntiAlias == 1
                 self.disallowNonlinearInteractionsWithAliasedModes();
+                self.freezeEnergyOfAliasedModes();
             end
         end
         
@@ -513,6 +514,16 @@ classdef WaveVortexModel < handle
             self.EMA0 = self.EMA0 & ~AntiAliasMask;
             self.EMAm = self.EMAm & ~AntiAliasMask;
             self.EMAp = self.EMAp & ~AntiAliasMask;
+        end
+
+        function clearEnergyOfAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.A0 = self.A0 .* ~AntiAliasMask;
+            self.Am = self.Am .* ~AntiAliasMask;
+            self.Ap = self.Ap .* ~AntiAliasMask;
         end
 
 
