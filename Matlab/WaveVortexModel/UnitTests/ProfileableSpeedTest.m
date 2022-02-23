@@ -63,11 +63,19 @@ Ubar = wvm.UAp.*Ap + wvm.UAm.*Am + wvm.UA0.*A0;
 % end
 % profile viewer
 
-profile on
-for i=1:5
-
-Fp = wvm.TransformToSpatialDomainWithF(Ubar);
-% [Fp,Fm,F0] = wvm.NonlinearFluxAtTime(10,Ap,Am,A0);
+% profile on
+tic
+for i=1:15
+[Fp,Fm,F0] = wvm.NonlinearFluxAtTimeNoMask(10,Ap,Am,A0);
 end
-profile viewer
+toc
+
+tic
+for i=1:15
+[Fp,Fm,F0] = wvm.NonlinearFluxAtTime(10,Ap,Am,A0);
+end
+toc
+
+
+% profile viewer
 

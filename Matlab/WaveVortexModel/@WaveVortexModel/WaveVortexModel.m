@@ -22,11 +22,14 @@ classdef WaveVortexModel < handle
         WAp, WAm
         NAp, NAm, NA0
         
+        IMA0, IMAp, IMAm    % InteractionMasks
+        EMA0, EMAp, EMAm    % EnergyMasks
+
         PP, QQ
 
         t0 = 0
         Ap, Am, A0
-        shouldAntiAlias = 0;
+        shouldAntiAlias = 1;
         halfK = 0;
         
         offgridModes % subclass should initialize
@@ -127,6 +130,21 @@ classdef WaveVortexModel < handle
             self.Ap = zeros(self.Nk,self.Nl,self.nModes);
             self.Am = zeros(self.Nk,self.Nl,self.nModes);
             self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
+            
+            % Allow all nonlinear interactions
+            self.IMA0 = ones(self.Nk,self.Nl,self.nModes);
+            self.IMAp = ones(self.Nk,self.Nl,self.nModes);
+            self.IMAm = ones(self.Nk,self.Nl,self.nModes);
+
+            % Allow energy fluxes at all modes
+            self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
+            self.EMAp = ones(self.Nk,self.Nl,self.nModes);
+            self.EMAm = ones(self.Nk,self.Nl,self.nModes);
+
+            if self.shouldAntiAlias == 1
+                self.disallowNonlinearInteractionsWithAliasedModes();
+                self.freezeEnergyOfAliasedModes();
+            end
         end
         
         function Kh = Kh(self)
@@ -139,10 +157,7 @@ classdef WaveVortexModel < handle
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
         
-        function set.shouldAntiAlias(self,value)
-            self.shouldAntiAlias = value;
-            self.rebuildTransformationMatrices();
-        end
+
         
         function rebuildTransformationMatrices(self)
             self.BuildTransformationMatrices(self.PP,self.QQ);
@@ -224,25 +239,18 @@ classdef WaveVortexModel < handle
             % Finally, we need to take care of the extra factor of 2 that
             % comes out of the discrete cosine transform
             
-            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-%             self.shouldAntiAlias =0;
-            AntiAliasFilter = ones(size(self.ApU));
-            if self.shouldAntiAlias == 1
-                AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > 2*max(abs(self.j))/3) = 0;
-            end
-            
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApU);
-            self.ApV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.ApN);
-            
-            self.AmU = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmU);
-            self.AmV = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.AmN);
-            
-            self.A0U = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0U);
-            self.A0V = (1./PP) .* AntiAliasFilter .* MakeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* AntiAliasFilter .* MakeHermitian(self.A0N);
+            self.ApU = (1./PP) .* MakeHermitian(self.ApU);
+            self.ApV = (1./PP) .* MakeHermitian(self.ApV);
+            self.ApN = (1./QQ) .* MakeHermitian(self.ApN);
+           
+            self.AmU = (1./PP) .* MakeHermitian(self.AmU);
+            self.AmV = (1./PP) .* MakeHermitian(self.AmV);
+            self.AmN = (1./QQ) .* MakeHermitian(self.AmN);
+           
+            self.A0U = (1./PP) .* MakeHermitian(self.A0U);
+            self.A0V = (1./PP) .* MakeHermitian(self.A0V);
+            self.A0N = (1./QQ) .* MakeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -360,10 +368,16 @@ classdef WaveVortexModel < handle
         
         function [Fp,Fm,F0] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
             % Apply operator T_\omega---defined in (C2) in the manuscript
+
+            % We also apply the interaction masks (IMA*) and energy masks
+            % (EMA*). These *could* be precomputed multiplied directly into
+            % the coefficients. A quick speed test shows this about a 5%
+            % performance hit by not doing this.
             phase = exp(self.iOmega*(t-self.t0));
-            Ap = Ap .* phase;
-            Am = Am .* conj(phase);
-            
+            Ap = self.IMAp .* Ap .* phase;
+            Am = self.IMAm .* Am .* conj(phase);
+            A0 = self.IMA0 .* A0;
+
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
             Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
@@ -388,9 +402,9 @@ classdef WaveVortexModel < handle
             vNLbar = self.TransformFromSpatialDomainWithF(vNL);
             nNLbar = self.TransformFromSpatialDomainWithG(nNL);
 
-            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+            Fp = self.EMAp .* (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
+            Fm = self.EMAm .* (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
+            F0 = self.EMA0 .* (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
         end
 
         function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
@@ -404,30 +418,29 @@ classdef WaveVortexModel < handle
         end
         
         function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
-  	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-  	    % The phase is tricky here. It is wound forward for the flux,
-  	    % as it should be... but then it is wound back to zero. This is
-    	    % equivalent ignoring the phase below here.
-  
-	    % This equation is C17 in the manuscript, but with addition of 1st term
-	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
-  
-	    % This differs from EnergyFluxAtTime due to the importance of the
-	    % 2*F*F*deltaT in equation C16 at the initial condition.
-  
-	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-  	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-  	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-	end
+      	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
+      	    % The phase is tricky here. It is wound forward for the flux,
+      	    % as it should be... but then it is wound back to zero. This is
+            % equivalent ignoring the phase below here.
+
+    	    % This equation is C17 in the manuscript, but with addition of 1st term
+    	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
+
+    	    % This differs from EnergyFluxAtTime due to the importance of the
+    	    % 2*F*F*deltaT in equation C16 at the initial condition.
+
+    	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
+      	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
+      	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+    	end
 
         [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
         [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
-       
 
-	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
-	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
-	    % The phase is tricky here. It is wound forward for the flux,
-	    % as it should be... but then it is wound back to zero. This is
+    	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
+    	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
+    	    % The phase is tricky here. It is wound forward for the flux,
+    	    % as it should be... but then it is wound back to zero. This is
             % equivalent ignoring the phase below here.
 
             % This equation is C17 in the manuscript, but with addition of 1st term
@@ -439,8 +452,87 @@ classdef WaveVortexModel < handle
             Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
             Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
             E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-	end
+    	end
  
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Reduced interaction models
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
+            self.IMA0 = or(self.IMA0,A0);
+            self.IMAm = or(self.IMAm,Am);
+            self.IMAp = or(self.IMAp,Ap);
+        end
+
+        function allowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 | A0Mask;
+            self.IMAm = self.IMAm | ApmMask;
+            self.IMAp = self.IMAp | ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 & ~A0Mask;
+            self.IMAm = self.IMAm & ~ApmMask;
+            self.IMAp = self.IMAp & ~ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithAliasedModes(self)
+            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
+            % The reality is that the vertical modes will still alias.
+            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
+            self.shouldAntiAlias = 1;
+            
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.IMA0 = self.IMA0 & ~AntiAliasMask;
+            self.IMAm = self.IMAm & ~AntiAliasMask;
+            self.IMAp = self.IMAp & ~AntiAliasMask;
+        end
+
+        function unfreezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 | A0Mask;
+            self.EMAm = self.EMAm | ApmMask;
+            self.EMAp = self.EMAp | ApmMask;
+        end
+
+        function freezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 & ~A0Mask;
+            self.EMAm = self.EMAm & ~ApmMask;
+            self.EMAp = self.EMAp & ~ApmMask;
+        end
+        
+        function freezeEnergyOfAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.EMA0 = self.EMA0 & ~AntiAliasMask;
+            self.EMAm = self.EMAm & ~AntiAliasMask;
+            self.EMAp = self.EMAp & ~AntiAliasMask;
+        end
+
+        function clearEnergyOfAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.MaskForAliasedModes();
+            self.A0 = self.A0 .* ~AntiAliasMask;
+            self.Am = self.Am .* ~AntiAliasMask;
+            self.Ap = self.Ap .* ~AntiAliasMask;
+        end
+
+
+        function stirWithConstituents(self,constituents)
+
+        end
+
+
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics (total)
@@ -731,7 +823,7 @@ classdef WaveVortexModel < handle
         
         [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
         [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
-
+        AntiAliasMask= MaskForAliasedModes(self);
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
     end

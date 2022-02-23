@@ -2,7 +2,7 @@
 scaleFactor = 1;
 LoadFigureDefaults
 
-file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong.nc';
+file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2.nc';
 
 % load('NonlinearFluxes.mat');
 energies.t = ncread(file,'t');
