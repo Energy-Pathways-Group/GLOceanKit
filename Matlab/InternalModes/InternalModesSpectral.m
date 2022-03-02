@@ -216,29 +216,28 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             self.gridFrequency = 0;
             
             [A,B] = self.EigenmatricesForWavenumber(k);
             
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPSpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPSpectral(A,B); 
-            end
+            [F,G,h,varargout] = self.ModesFromGEPSpectral(A,B, varargin{:});
+
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             self.gridFrequency = omega;
             
             [A,B] = self.EigenmatricesForFrequency(omega);
             
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPSpectral(A,B);
-            else
+            if isempty(varargin)
                 [F,G,h] = self.ModesFromGEPSpectral(A,B);
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,varargout{:}] = self.ModesFromGEPSpectral(A,B, varargin{:});
             end
+            
             k = self.kFromOmega(h,omega);
         end 
         
@@ -524,7 +523,7 @@ classdef InternalModesSpectral < InternalModesBase
                         
         % This function is an intermediary used by ModesAtFrequency and
         % ModesAtWavenumber to establish the various norm functions.
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEPSpectral(self,A,B)
+        function [F,G,h,varargout] = ModesFromGEPSpectral(self,A,B,varargin)
             hFromLambda = @(lambda) 1.0 ./ lambda;
             GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
             FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
@@ -532,17 +531,18 @@ classdef InternalModesSpectral < InternalModesBase
             FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
             FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
-            if nargout == 6
-                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            else
+            if isempty(varargin)
                 [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,varargout{:}] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb,varargin{:});
             end
         end
         
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The last seven arguments are all
         % function handles that do as they say.
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
+        function [F,G,h,varargout] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb,varargin)
             if ( any(any(isnan(A))) || any(any(isnan(B))) )
                 error('EVP setup fail. Found at least one nan in matrices A and B.\n');
             end
@@ -568,10 +568,10 @@ classdef InternalModesSpectral < InternalModesBase
             G = zeros(length(self.z),maxModes);
             h = reshape(h(1:maxModes),1,[]);
             
-            % only used if nargout == 5
-            N2G2 = zeros(1,maxModes);
-            F2 = zeros(1,maxModes);
-            G2 = zeros(1,maxModes);
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                varargout{iArg} = zeros(1,maxModes);
+            end
             
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.
@@ -603,12 +603,17 @@ classdef InternalModesSpectral < InternalModesBase
 %                 Fz(:,j) = FzOutFromGCheb(G_cheb(:,j),h(j))/A;
                 % K-constant norm: G(0)^2 + \frac{1}{g} \int_{-D}^0 (N^2 -
                 % f_0^2)
-
-                if nargout == 6
-                    F2(j) = self.Lz*FNorm( Fj/A );
-                    G2(j) = self.Lz*FNorm( Gj/A );
-                    N2G2(j) = self.g*(GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*G2(j); % this is being clever, but should give \int N2*G2 dz
-                end   
+                for iArg=1:length(varargin)
+                    if ( strcmp(varargin{iArg}, 'F2') )
+                        varargout{iArg}(j) = self.Lz*FNorm( Fj/A );
+                    elseif ( strcmp(varargin{iArg}, 'G2') )
+                        varargout{iArg}(j) = self.Lz*FNorm( Gj/A );
+                    elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                        varargout{iArg}(j) = self.g*(GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*G2(j); % this is being clever, but should give \int N2*G2 dz
+                    else
+                        error('Invalid option. You may request F2, G2, N2G2');
+                    end
+                end
             end
             
 

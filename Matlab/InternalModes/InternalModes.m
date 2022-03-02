@@ -463,21 +463,18 @@ classdef InternalModes < handle
         % Primary methods to construct the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             % Return the normal modes and eigenvalue at a given wavenumber.
-            if nargout == 7
-                [F,G,h,omega,F2,N2G2,G2] = self.internalModes.ModesAtWavenumber( k );
-            else
-                [F,G,h,omega] = self.internalModes.ModesAtWavenumber( k );
-            end
+            [F,G,h,omega,varargout] = self.internalModes.ModesAtWavenumber( k, varargin{:} );
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             % Return the normal modes and eigenvalue at a given frequency.
-            if nargout == 7
-                [F,G,h,k,F2,N2G2,G2] = self.internalModes.ModesAtFrequency( omega );
-            else
+            if isempty(varargin)
                 [F,G,h,k] = self.internalModes.ModesAtFrequency( omega );
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,k,varargout{:}] = self.internalModes.ModesAtFrequency( omega, varargin{:} );
             end
         end
         
