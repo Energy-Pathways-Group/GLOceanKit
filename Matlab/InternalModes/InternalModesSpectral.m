@@ -221,7 +221,12 @@ classdef InternalModesSpectral < InternalModesBase
             
             [A,B] = self.EigenmatricesForWavenumber(k);
             
-            [F,G,h,varargout] = self.ModesFromGEPSpectral(A,B, varargin{:});
+            if isempty(varargin)
+                [F,G,h] = self.ModesFromGEPSpectral(A,B);
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,varargout{:}] = self.ModesFromGEPSpectral(A,B, varargin{:});
+            end
 
             omega = self.omegaFromK(h,k);
         end
@@ -609,7 +614,7 @@ classdef InternalModesSpectral < InternalModesBase
                     elseif ( strcmp(varargin{iArg}, 'G2') )
                         varargout{iArg}(j) = self.Lz*FNorm( Gj/A );
                     elseif ( strcmp(varargin{iArg}, 'N2G2') )
-                        varargout{iArg}(j) = self.g*(GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*G2(j); % this is being clever, but should give \int N2*G2 dz
+                        varargout{iArg}(j) = self.g*(GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*self.Lz*FNorm( Gj/A ); % this is being clever, but should give \int N2*G2 dz
                     else
                         error('Invalid option. You may request F2, G2, N2G2');
                     end

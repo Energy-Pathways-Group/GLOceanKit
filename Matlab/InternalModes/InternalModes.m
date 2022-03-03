@@ -465,7 +465,12 @@ classdef InternalModes < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             % Return the normal modes and eigenvalue at a given wavenumber.
-            [F,G,h,omega,varargout] = self.internalModes.ModesAtWavenumber( k, varargin{:} );
+            if isempty(varargin)
+                [F,G,h,omega] = self.internalModes.ModesAtWavenumber( k );
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,omega,varargout{:}] = self.internalModes.ModesAtWavenumber( k, varargin{:} );
+            end
         end
         
         function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
