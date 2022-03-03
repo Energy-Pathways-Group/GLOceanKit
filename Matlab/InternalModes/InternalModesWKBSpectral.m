@@ -66,33 +66,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
         end
-        
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
-            self.gridFrequency = 0;
-            
-            [A,B] = self.EigenmatricesForWavenumber(k);
-            
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPWKBSpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
-            end
-            omega = self.omegaFromK(h,k);
-        end
-        
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
-            self.gridFrequency = omega;
-            
-            [A,B] = self.EigenmatricesForFrequency(omega);
-                        
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPWKBSpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
-            end
-            k = self.kFromOmega(h,omega);
-        end
-        
+                
         function [A,B] = ApplyBoundaryConditions(self,A,B)
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
@@ -172,26 +146,15 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
             self.Nz_function = diff(N_function);
             self.Nz_xLobatto = self.Nz_function(self.z_xLobatto);
+
+            self.hFromLambda = @(lambda) 1.0 ./ lambda;
+            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
+            self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
         end   
-    end
-    
-    methods (Access = private)             
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEPWKBSpectral(self,A,B)
-            % This function is an intermediary used by ModesAtFrequency and
-            % ModesAtWavenumber to establish the various norm functions.
-            hFromLambda = @(lambda) 1.0 ./ lambda;
-            GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
-            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
-            FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
-            if nargout == 6
-                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            else
-                [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            end
-        end
     end
     
 end

@@ -64,7 +64,7 @@ classdef InternalModesExponentialStratification < InternalModesBase
             fprintf('Using the analytical form for exponential stratification N0=%.7g and b=%d\n',self.N0,self.b);
         end
                 
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )            
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )            
             epsilon = self.f0/self.N0;
             lambda = k*self.b;
             
@@ -109,14 +109,15 @@ classdef InternalModesExponentialStratification < InternalModesBase
             
             omega = self.omegaFromK(h,k);
             
-            if nargout == 7
-                [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+            if isempty(varargin)
+                [F,G] = self.NormalizedModesForOmegaAndC(omega,sqrt(self.g*h));
             else
-                [F,G] = NormalizedModesForOmegaAndC(self,omega,sqrt(self.g*h));
+                varargout = cell(size(varargin));
+                [F,G,varargout{:}] = self.NormalizedModesForOmegaAndC(omega,sqrt(self.g*h), varargin{:});
             end
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )            
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )            
             % This is the function that we use to find the eigenvalues,
             % by finding its roots.
             if omega > self.N0*exp(-self.Lz/self.b) % This is from equation 2.18 in Desaubies (1973)
@@ -148,12 +149,13 @@ classdef InternalModesExponentialStratification < InternalModesBase
             if length(h) > self.nModes
                 h = h(1:self.nModes);
             end
-            
-            if nargout == 7
-                [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
+
+            if isempty(varargin)
+                [F,G] = self.NormalizedModesForOmegaAndC(omega*ones(size(h)),sqrt(self.g*h));
             else
-                [F,G] = NormalizedModesForOmegaAndC(self,omega*ones(size(h)),sqrt(self.g*h));
-            end   
+                varargout = cell(size(varargin));
+                [F,G,varargout{:}] = self.NormalizedModesForOmegaAndC(omega*ones(size(h)),sqrt(self.g*h), varargin{:});
+            end
             
             k = self.kFromOmega(h,omega);
         end
@@ -281,13 +283,14 @@ classdef InternalModesExponentialStratification < InternalModesBase
             end
         end
         
-        function [F,G,F2,N2G2,G2] = NormalizedModesForOmegaAndC(self,omega,c)
+        function [F,G,varargout] = NormalizedModesForOmegaAndC(self,omega,c,varargin)
             F = zeros(length(self.z),length(c));
             G = zeros(length(self.z),length(c));
-            N2G2 = zeros(1,length(c));
-            F2 = zeros(1,length(c));
-            G2 = zeros(1,length(c));
-            
+
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                varargout{iArg} = zeros(1,length(c));
+            end
             for j=1:length(c)
                 if omega(j) < self.N0
                     lowerIntegrationBound = max(5*self.b*log(omega(j)/self.N0),-self.Lz);
@@ -312,11 +315,17 @@ classdef InternalModesExponentialStratification < InternalModesBase
                 end
                 F(:,j) = Ffunc(self.z,omega(j),c(j))/A;
                 G(:,j) = Gfunc(self.z,omega(j),c(j))/A;
-                
-                if nargout == 5
-                    G2(j) = integral( @(z) Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
-                    F2(j) = integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
-                    N2G2(j) = integral( @(z) self.N0^2*exp(2*z/self.b).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+
+                for iArg=1:length(varargin)
+                    if ( strcmp(varargin{iArg}, 'F2') )
+                        varargout{iArg}(j) = integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                    elseif ( strcmp(varargin{iArg}, 'G2') )
+                        varargout{iArg}(j) = integral( @(z) Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                    elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                        varargout{iArg}(j) = integral( @(z) self.N0^2*exp(2*z/self.b).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                    else
+                        error('Invalid option. You may request F2, G2, N2G2');
+                    end
                 end
                     
             end

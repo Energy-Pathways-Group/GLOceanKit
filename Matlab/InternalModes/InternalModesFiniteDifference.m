@@ -77,7 +77,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             % Return the normal modes and eigenvalue at a given wavenumber.
             
             self.gridFrequency = 0;
@@ -92,11 +92,12 @@ classdef InternalModesFiniteDifference < InternalModesBase
             [A,B] = self.ApplyBoundaryConditions(A,B);
             
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func);
+            varargout = cell(size(varargin));
+            [F,G,h,varargout{:}] = ModesFromGEP(self,A,B,h_func, varargin{:});
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             % Return the normal modes and eigenvalue at a given frequency.
             
             self.gridFrequency = omega;
@@ -107,7 +108,8 @@ classdef InternalModesFiniteDifference < InternalModesBase
             [A,B] = self.ApplyBoundaryConditions(A,B);
                         
             h_func = @(lambda) 1.0 ./ lambda;
-            [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func);
+            varargout = cell(size(varargin));
+            [F,G,h,varargout{:}] = ModesFromGEP(self,A,B,h_func, varargin{:});
             k = self.kFromOmega(h,omega);
         end
         
@@ -260,7 +262,7 @@ classdef InternalModesFiniteDifference < InternalModesBase
         end
         
 
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,h_func)
+        function [F,G,h,varargout] = ModesFromGEP(self,A,B,h_func, varargin)
             % Take matrices A and B from the generalized eigenvalue problem
             % (GEP) and returns F,G,h. The h_func parameter is a function that
             % returns the eigendepth, h, given eigenvalue lambda from the GEP.
@@ -274,7 +276,12 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 F(:,j) = h(j) * self.Diff1 * G(:,j);
             end
             
-            [F_norm,G_norm,F2,N2G2,G2] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff);
+            if isempty(varargin)
+                [F_norm,G_norm] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff);
+            else
+                varargout = cell(size(varargin));
+                [F_norm,G_norm,varargout{:}] = self.NormalizeModes(F,G,self.N2_z_diff, self.z_diff, varargin{:});
+            end
             
             F = zeros(length(self.z),self.nModes);
             G = zeros(length(self.z),self.nModes);
@@ -283,6 +290,73 @@ classdef InternalModesFiniteDifference < InternalModesBase
                 G(:,iMode) = self.T_out(G_norm(:,iMode));
             end
             h = reshape(h(1:self.nModes),1,[]);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Generical function to normalize
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [F,G,varargout] = NormalizeModes(self,F,G,N2,z,varargin)
+            % This method normalizes the modes F,G using trapezoidal
+            % integration on the given z grid. At the moment, this is only
+            % used by the finite differencing algorithm, as the spectral
+            % methods can use a superior (more accurate) technique of
+            % directly integrating the polynomials.
+            if z(2)-z(1) > 0
+                direction = 'last';
+            else
+                direction = 'first';
+            end
+            
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                varargout{iArg} = zeros(1,length(G(1,:)));
+            end
+            
+            [maxIndexZ] = find(N2-self.gridFrequency*self.gridFrequency>0,1,direction);  
+            for j=1:length(G(1,:))
+                switch self.normalization
+                    case Normalization.uMax
+                        A = max( abs(F(:,j)) );
+                        G(:,j) = G(:,j) / A;
+                        F(:,j) = F(:,j) / A;
+                    case Normalization.wMax
+                        A = max( abs(G(:,j)) );
+                        G(:,j) = G(:,j) / A;
+                        F(:,j) = F(:,j) / A;
+                    case Normalization.kConstant
+                        if z(2)-z(1) > 0
+                            G20 = G(end,j)^2;
+                        else
+                            G20 = G(1,j)^2;
+                        end
+                        A = abs(G20 + trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
+                        G(:,j) = G(:,j) / sqrt(A);
+                        F(:,j) = F(:,j) / sqrt(A);
+                    case Normalization.omegaConstant
+                        A = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
+                        G(:,j) = G(:,j) / sqrt(A);
+                        F(:,j) = F(:,j) / sqrt(A);
+                end
+                
+                if F(maxIndexZ,j)< 0
+                    F(:,j) = -F(:,j);
+                    G(:,j) = -G(:,j);
+                end
+                
+                for iArg=1:length(varargin)
+                    if ( strcmp(varargin{iArg}, 'F2') )
+                        varargout{iArg}(j) = abs(trapz( z, F(:,j) .^ 2));
+                    elseif ( strcmp(varargin{iArg}, 'G2') )
+                        varargout{iArg}(j) = abs(trapz(z, G(:,j).^2));
+                    elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                        varargout{iArg}(j) = abs(trapz(z, N2.* (G(:,j).^2)));
+                    else
+                        error('Invalid option. You may request F2, G2, N2G2');
+                    end
+                end
+            end
         end
     end
     

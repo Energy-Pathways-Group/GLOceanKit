@@ -35,7 +35,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
         end
                 
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -62,10 +62,24 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F(:,1) = F0;
                 G(:,1) = G0;
             end
+
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                if ( strcmp(varargin{iArg}, 'F2') )
+                    varargout{iArg} = F2;
+                elseif ( strcmp(varargin{iArg}, 'G2') )
+                    varargout{iArg} = G2;
+                elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                    varargout{iArg} = N2G2;
+                else
+                    error('Invalid option. You may request F2, G2, N2G2');
+                end
+            end
+
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
                 for i=1:self.nModes
@@ -95,6 +109,20 @@ classdef InternalModesConstantStratification < InternalModesBase
                 F(:,1) = F0;
                 G(:,1) = G0;
             end
+
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                if ( strcmp(varargin{iArg}, 'F2') )
+                    varargout{iArg} = F2;
+                elseif ( strcmp(varargin{iArg}, 'G2') )
+                    varargout{iArg} = G2;
+                elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                    varargout{iArg} = N2G2;
+                else
+                    error('Invalid option. You may request F2, G2, N2G2');
+                end
+            end
+
             k = self.kFromOmega(h,omega);
         end
         

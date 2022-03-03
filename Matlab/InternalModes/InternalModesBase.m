@@ -219,65 +219,7 @@ classdef (Abstract) InternalModesBase < handle
             % boundary condition. By overriding this function, a subclass
             % can respond as necessary.
         end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Generical function to normalize
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,F2,N2G2,G2] = NormalizeModes(self,F,G,N2,z)
-            % This method normalizes the modes F,G using trapezoidal
-            % integration on the given z grid. At the moment, this is only
-            % used by the finite differencing algorithm, as the spectral
-            % methods can use a superior (more accurate) technique of
-            % directly integrating the polynomials.
-            if z(2)-z(1) > 0
-                direction = 'last';
-            else
-                direction = 'first';
-            end
-            
-            N2G2 = zeros(1,length(G(1,:)));
-            F2 = zeros(1,length(G(1,:)));
-            G2 = zeros(1,length(G(1,:)));
-            
-            [maxIndexZ] = find(N2-self.gridFrequency*self.gridFrequency>0,1,direction);  
-            for j=1:length(G(1,:))
-                switch self.normalization
-                    case Normalization.uMax
-                        A = max( abs(F(:,j)) );
-                        G(:,j) = G(:,j) / A;
-                        F(:,j) = F(:,j) / A;
-                    case Normalization.wMax
-                        A = max( abs(G(:,j)) );
-                        G(:,j) = G(:,j) / A;
-                        F(:,j) = F(:,j) / A;
-                    case Normalization.kConstant
-                        if z(2)-z(1) > 0
-                            G20 = G(end,j)^2;
-                        else
-                            G20 = G(1,j)^2;
-                        end
-                        A = abs(G20 + trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
-                        G(:,j) = G(:,j) / sqrt(A);
-                        F(:,j) = F(:,j) / sqrt(A);
-                    case Normalization.omegaConstant
-                        A = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
-                        G(:,j) = G(:,j) / sqrt(A);
-                        F(:,j) = F(:,j) / sqrt(A);
-                end
-                
-                if F(maxIndexZ,j)< 0
-                    F(:,j) = -F(:,j);
-                    G(:,j) = -G(:,j);
-                end
-                
-                F2(j) = abs(trapz( z, F(:,j) .^ 2));
-                N2G2(j) = abs(trapz(z, N2.* (G(:,j).^2)));
-                G2(j) = abs(trapz(z, G(:,j).^2));
-            end
-        end
-        
+   
     end
 end
 
