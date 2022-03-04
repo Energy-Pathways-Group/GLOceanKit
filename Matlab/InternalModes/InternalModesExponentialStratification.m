@@ -304,15 +304,21 @@ classdef InternalModesExponentialStratification < InternalModesBase
                         % Doesn't the surface have the maximum value???
                         A = Ffunc(0,omega(j),c(j));
                     case Normalization.wMax
-                        A = max( abs( Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) ) )  );
+                        Gtmp = Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) );
+                        [~,I] = max( abs( Gtmp )  );
+                        A = Gtmp(I); % Need to get the sign correct
                     case Normalization.kConstant
                         A = sqrt(Gfunc(0,omega(j),c(j))^2 + Scale*integral( @(z) (1/Scale)*(self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
+                        if Ffunc(0,omega(j),c(j)) < 0
+                            A = -A;
+                        end
                     case Normalization.omegaConstant
                         A = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
+                        if Ffunc(0,omega(j),c(j)) < 0
+                            A = -A;
+                        end
                 end
-                if Ffunc(0,omega(j),c(j)) < 0
-                    A = -A;
-                end
+                
                 F(:,j) = Ffunc(self.z,omega(j),c(j))/A;
                 G(:,j) = Gfunc(self.z,omega(j),c(j))/A;
 
@@ -323,8 +329,27 @@ classdef InternalModesExponentialStratification < InternalModesBase
                         varargout{iArg}(j) = integral( @(z) Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
                     elseif ( strcmp(varargin{iArg}, 'N2G2') )
                         varargout{iArg}(j) = integral( @(z) self.N0^2*exp(2*z/self.b).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/(A*A);
+                    elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                        B = Ffunc(0,omega(j),c(j));
+                        varargout{iArg}(j) = A/B;
+                    elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                        Gtmp = Gfunc(linspace(lowerIntegrationBound,0,5000), omega(j), c(j) );
+                        [~,I] = max( abs( Gtmp )  );
+                        varargout{iArg}(j) = A/Gtmp(I);
+                    elseif  ( strcmp(varargin{iArg}, 'kConstant') )
+                        B = sqrt(Gfunc(0,omega(j),c(j))^2 + Scale*integral( @(z) (1/Scale)*(self.N0^2*exp(2*z/self.b) - self.f0^2).*Gfunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.g);
+                        if Ffunc(0,omega(j),c(j)) < 0
+                            B = -B;
+                        end
+                        varargout{iArg}(j) = A/B;
+                    elseif  ( strcmp(varargin{iArg}, 'omegaConstant') )
+                        B = sqrt(integral( @(z) Ffunc(z,omega(j),c(j)).^2,lowerIntegrationBound,0)/self.Lz);
+                        if Ffunc(0,omega(j),c(j)) < 0
+                            B = -B;
+                        end
+                        varargout{iArg}(j) = A/B;
                     else
-                        error('Invalid option. You may request F2, G2, N2G2');
+                        error('Invalid option. You may request F2, G2, N2G2, uMax, wMax, kConstant, omegaConstant');
                     end
                 end
                     
