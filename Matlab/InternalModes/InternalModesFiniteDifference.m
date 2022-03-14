@@ -352,6 +352,23 @@ classdef InternalModesFiniteDifference < InternalModesBase
                         varargout{iArg}(j) = abs(trapz(z, G(:,j).^2));
                     elseif ( strcmp(varargin{iArg}, 'N2G2') )
                         varargout{iArg}(j) = abs(trapz(z, N2.* (G(:,j).^2)));
+                    elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                        B = max( abs(F(:,j)) );
+                        varargout{iArg}(j) = abs(1/B);
+                    elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                        B = max( abs(G(:,j)) );
+                        varargout{iArg}(j) = abs(1/B);
+                    elseif ( strcmp(varargin{iArg}, 'kConstant') )
+                        if z(2)-z(1) > 0
+                            G20 = G(end,j)^2;
+                        else
+                            G20 = G(1,j)^2;
+                        end
+                        B = abs(G20 + trapz( z, (1/self.g) * (N2 - self.f0*self.f0) .* G(:,j) .^ 2));
+                        varargout{iArg}(j) = sqrt(abs(1/B));
+                    elseif ( strcmp(varargin{iArg}, 'omegaConstant') )
+                        B = abs(trapz( z, (1/abs(z(end)-z(1))) .* F(:,j) .^ 2));
+                        varargout{iArg}(j) = sqrt(abs(1/B));
                     else
                         error('Invalid option. You may request F2, G2, N2G2');
                     end

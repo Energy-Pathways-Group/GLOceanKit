@@ -45,22 +45,20 @@ classdef InternalModesConstantStratification < InternalModesBase
             end
             h = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k+k_z.*k_z)); 
             
-            % Now compute the baroclinic modes
-            [F,G,F2,N2G2,G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
+            [F,G,F2,G2,N2G2,uMaxRatio,wMaxRatio,kConstantRatio,omegaConstantRatio] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % Make some room for the barotropic mode
-                h = circshift(h,1);
-                F = circshift(F,1,2);
-                G = circshift(G,1,2);
-                F2 = circshift(F2,1,2);
-                N2G2 = circshift(N2G2,1,2);
-                G2 = circshift(G2,1,2);
-                
-                [F0,G0,h0] = self.BarotropicModeAtWavenumber(k);
-                h(1) = h0;
-                F(:,1) = F0;
-                G(:,1) = G0;
+            if self.upperBoundary == UpperBoundary.freeSurface                
+                [F0,G0,h0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = self.BarotropicModeAtWavenumber(k);
+                h = cat(2,h0,h(1:end-1));
+                F = cat(2,F0,F(:,1:end-1));
+                G = cat(2,G0,G(:,1:end-1));
+                F2 = cat(2,F20,F2(1:end-1));
+                G2 = cat(2,G20,G2(1:end-1));
+                N2G2 = cat(2,N2G20,N2G2(1:end-1));
+                uMaxRatio = cat(2,uMaxRatio0,uMaxRatio(1:end-1));
+                wMaxRatio = cat(2,wMaxRatio0,wMaxRatio(1:end-1));
+                kConstantRatio = cat(2,kConstantRatio0,kConstantRatio(1:end-1));
+                omegaConstantRatio = cat(2,omegaConstantRatio0,omegaConstantRatio(1:end-1));
             end
 
             varargout = cell(size(varargin));
@@ -71,14 +69,24 @@ classdef InternalModesConstantStratification < InternalModesBase
                     varargout{iArg} = G2;
                 elseif ( strcmp(varargin{iArg}, 'N2G2') )
                     varargout{iArg} = N2G2;
+                elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                    varargout{iArg} = uMaxRatio;
+                elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                    varargout{iArg} = wMaxRatio;
+                elseif  ( strcmp(varargin{iArg}, 'kConstant') )
+                    varargout{iArg} = kConstantRatio;
+                elseif  ( strcmp(varargin{iArg}, 'omegaConstant') )
+                    varargout{iArg} = omegaConstantRatio;
                 else
-                    error('Invalid option. You may request F2, G2, N2G2');
+                    error('Invalid option. You may request F2, G2, N2G2, uMax, wMax, kConstant, omegaConstant');
                 end
             end
 
             omega = self.omegaFromK(h,k);
         end
         
+        % k_z and h should be of size [1, nModes]
+        % [F,G] will return with size [length(z), nModes]
         function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             k_z = (1:self.nModes)*pi/self.Lz;
             if self.upperBoundary == UpperBoundary.freeSurface % add the free surface correction to the vertical wavenumber
@@ -93,21 +101,20 @@ classdef InternalModesConstantStratification < InternalModesBase
                h = zeros(size(h));
             end
             
-            [F,G,F2,N2G2,G2] = self.BaroclinicModesWithEigenvalue(k_z,h);
+            [F,G,F2,G2,N2G2,uMaxRatio,wMaxRatio,kConstantRatio,omegaConstantRatio] = self.BaroclinicModesWithEigenvalue(k_z,h);
             
-            if self.upperBoundary == UpperBoundary.freeSurface
-                % Make some room for the barotropic mode
-                h = circshift(h,1);
-                F = circshift(F,1,2);
-                G = circshift(G,1,2);
-                F2 = circshift(F2,1,2);
-                N2G2 = circshift(N2G2,1,2);
-                G2 = circshift(G2,1,2);
-                
-                [F0,G0,h0] = self.BarotropicModeAtFrequency(omega);
-                h(1) = h0;
-                F(:,1) = F0;
-                G(:,1) = G0;
+            if self.upperBoundary == UpperBoundary.freeSurface                
+                [F0,G0,h0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = self.BarotropicModeAtFrequency(omega);
+                h = cat(2,h0,h(1:end-1));
+                F = cat(2,F0,F(:,1:end-1));
+                G = cat(2,G0,G(:,1:end-1));
+                F2 = cat(2,F20,F2(1:end-1));
+                G2 = cat(2,G20,G2(1:end-1));
+                N2G2 = cat(2,N2G20,N2G2(1:end-1));
+                uMaxRatio = cat(2,uMaxRatio0,uMaxRatio(1:end-1));
+                wMaxRatio = cat(2,wMaxRatio0,wMaxRatio(1:end-1));
+                kConstantRatio = cat(2,kConstantRatio0,kConstantRatio(1:end-1));
+                omegaConstantRatio = cat(2,omegaConstantRatio0,omegaConstantRatio(1:end-1));
             end
 
             varargout = cell(size(varargin));
@@ -118,8 +125,16 @@ classdef InternalModesConstantStratification < InternalModesBase
                     varargout{iArg} = G2;
                 elseif ( strcmp(varargin{iArg}, 'N2G2') )
                     varargout{iArg} = N2G2;
+                elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                    varargout{iArg} = uMaxRatio;
+                elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                    varargout{iArg} = wMaxRatio;
+                elseif  ( strcmp(varargin{iArg}, 'kConstant') )
+                    varargout{iArg} = kConstantRatio;
+                elseif  ( strcmp(varargin{iArg}, 'omegaConstant') )
+                    varargout{iArg} = omegaConstantRatio;
                 else
-                    error('Invalid option. You may request F2, G2, N2G2');
+                    error('Invalid option. You may request F2, G2, N2G2, uMax, wMax, kConstant, omegaConstant');
                 end
             end
 
@@ -162,65 +177,21 @@ classdef InternalModesConstantStratification < InternalModesBase
         
         % k_z and h should be of size [1, nModes]
         % [F,G] will return with size [length(z), nModes]
-        function [F,G,F2,N2G2,G2] = BaroclinicModesWithEigenvalue(self, k_z, h, varargin)
+        function [F,G,F2,G2,N2G2,uMaxRatio,wMaxRatio,kConstantRatio,omegaConstantRatio] = BaroclinicModesWithEigenvalue(self, k_z, h)
             N0_ = self.N0; % reference buoyancy frequency, radians/seconds
             A = self.BaroclinicModeNormalization(self.normalization,k_z);
             G = A .*  sin(k_z .* (self.z + self.Lz));
             F = A .*  repmat(h.*k_z,length(self.z),1) .* cos(k_z .* (self.z + self.Lz));
-            
-            % compute \int F^2 dz and \int N^2 G^2 dz
             F2 = A.*A.*h.*h.*k_z.*k_z*self.Lz/2;
             N2G2 = A.*A*N0_*N0_*self.Lz/2;
             G2 = A.*A*self.Lz/2;
-
-            varargout = cell(size(varargin));
-            for iArg=1:length(varargin)
-                varargout{iArg} = zeros(1,1);
-            end
-            for iArg=1:length(varargin)
-                if ( strcmp(varargin{iArg}, 'F2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*(self.Lz)^3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A.*h0.*h0.*k_z.*k_z*(sinh(2*k_z*self.Lz)./(4*k_z*self.Lz) - 1/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A.*h0.*h0.*k_z.*k_z*(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz));
-                    end
-                elseif ( strcmp(varargin{iArg}, 'G2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*((self.Lz)^3)/3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
-                    end
-                elseif ( strcmp(varargin{iArg}, 'N2G2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*self.N0*self.N0*((self.Lz)^3)/3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A*self.N0*self.N0*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A*self.N0*self.N0*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
-                    end
-                elseif  ( strcmp(varargin{iArg}, 'uMax') )
-                    B = self.BarotropicModeNormalization(Normalization.uMax, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'wMax') )
-                    B = self.BarotropicModeNormalization(Normalization.wMax, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'kConstant') )
-                    B = self.BarotropicModeNormalization(Normalization.kConstant, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'omegaConstant') )
-                    B = self.BarotropicModeNormalization(Normalization.omegaConstant, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                else
-                    error('Invalid option. You may request F2, G2, N2G2, uMax, wMax, kConstant, omegaConstant');
-                end
-            end
+            uMaxRatio = self.BaroclinicModeNormalization(Normalization.uMax, k_z, h)./A;
+            wMaxRatio = self.BaroclinicModeNormalization(Normalization.wMax, k_z, h)./A;
+            kConstantRatio = self.BaroclinicModeNormalization(Normalization.kConstant, k_z, h)./A;
+            omegaConstantRatio = self.BaroclinicModeNormalization(Normalization.omegaConstant, k_z, h)./A;
         end
 
-        function A = BaroclinicModeNormalization(self, norm, k_z)
+        function A = BaroclinicModeNormalization(self, norm, k_z, h)
             j = 1:self.nModes;
             switch norm
                 case Normalization.kConstant
@@ -236,7 +207,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             end
         end
         
-        function [F0,G0,h0,varargout] = BarotropicModeAtWavenumber(self, k, varargin)
+        function [F0,G0,h0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = BarotropicModeAtWavenumber(self, k)
             k_star = sqrt( (self.N0*self.N0 - self.f0*self.f0)/(self.g*self.Lz) );
                 
             if (abs(k-k_star)/k_star < 1e-6) % transition (linear) solution
@@ -257,15 +228,10 @@ classdef InternalModesConstantStratification < InternalModesBase
                 h0 = (self.N0*self.N0 - self.f0*self.f0)./(self.g*(k*k + k_z*k_z ));        
             end
             
-            if isempty(varargin)
-                [F0,G0] = self.BarotropicMode(solutionType, k_z, h0);
-            else
-                varargout = cell(size(varargin));
-                [F0,G0,varargout{:}] = self.BarotropicMode(solutionType, k_z, h0, varargin{:});
-            end
+            [F0,G0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = self.BarotropicMode(solutionType, k_z, h0);
         end
         
-        function [F0,G0,h0,varargout] = BarotropicModeAtFrequency(self, omega, varargin)
+        function [F0,G0,h0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = BarotropicModeAtFrequency(self, omega)
             if (abs(omega-self.N0)/self.N0 < 1e-6)
                 solutionType = 'linear';
                 h0 = self.Lz;
@@ -282,20 +248,10 @@ classdef InternalModesConstantStratification < InternalModesBase
                 h0 = (self.N0*self.N0 - omega*omega)./(self.g * k_z.*k_z);
             end
 
-            if isempty(varargin)
-                [F0,G0] = self.BarotropicMode(solutionType, k_z, h0);
-            else
-                varargout = cell(size(varargin));
-                [F0,G0,varargout{:}] = self.BarotropicMode(solutionType, k_z, h0, varargin{:});
-            end
+            [F0,G0,F20,G20,N2G20,uMaxRatio0,wMaxRatio0,kConstantRatio0,omegaConstantRatio0] = self.BarotropicMode(solutionType, k_z, h0);
         end
 
-        function [F0,G0,varargout] = BarotropicMode(self, solutionType, k_z, h0, varargin)
-            varargout = cell(size(varargin));
-            for iArg=1:length(varargin)
-                varargout{iArg} = zeros(1,1);
-            end
-
+        function [F0,G0,F2,G2,N2G2,uMaxRatio,wMaxRatio,kConstantRatio,omegaConstantRatio] = BarotropicMode(self, solutionType, k_z, h0)
             A = self.BarotropicModeNormalization(self.normalization, solutionType, k_z, h0);
 
             % It's safer to do a switch on solutionType, rather than check
@@ -303,55 +259,27 @@ classdef InternalModesConstantStratification < InternalModesBase
             if strcmp(solutionType, 'linear')
                 G0 = A*(self.z + self.Lz);
                 F0 = A*self.Lz*ones(size(self.z));
+                F2 = A*A*(self.Lz)^3;
+                G2 = A*A*((self.Lz)^3)/3;
+                N2G2 = A*A*self.N0*self.N0*((self.Lz)^3)/3;
             elseif strcmp(solutionType, 'hyperbolic')
                 G0 = A*sinh(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cosh(k_z*(self.z + self.Lz));
+                F2 = A.*A.*h0.*h0.*k_z.*k_z*(sinh(2*k_z*self.Lz)./(4*k_z*self.Lz) - 1/2);
+                G2 = A.*A*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
+                N2G2 = A.*A*self.N0*self.N0*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
             elseif strcmp(solutionType, 'trig')
                 G0 = A*sin(k_z*(self.z + self.Lz));
                 F0 = A*h0*k_z*cos(k_z*(self.z + self.Lz));
+                F2 = A.*A.*h0.*h0.*k_z.*k_z*(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz));
+                G2 = A.*A*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
+                N2G2 = A.*A*self.N0*self.N0*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
             end
-
-            for iArg=1:length(varargin)
-                if ( strcmp(varargin{iArg}, 'F2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*(self.Lz)^3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A.*h0.*h0.*k_z.*k_z*(sinh(2*k_z*self.Lz)./(4*k_z*self.Lz) - 1/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A.*h0.*h0.*k_z.*k_z*(1/2 + sin(2*k_z*self.Lz)./(4*k_z*self.Lz));
-                    end
-                elseif ( strcmp(varargin{iArg}, 'G2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*((self.Lz)^3)/3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
-                    end
-                elseif ( strcmp(varargin{iArg}, 'N2G2') )
-                    if strcmp(solutionType, 'linear')
-                        varargout{iArg}(1) = A*A*self.N0*self.N0*((self.Lz)^3)/3;
-                    elseif strcmp(solutionType, 'hyperbolic')
-                        varargout{iArg}(1) = A.*A*self.N0*self.N0*(sinh(2*k_z*self.Lz)/(4*k_z) - self.Lz/2);
-                    elseif strcmp(solutionType, 'trig')
-                        varargout{iArg}(1) = A.*A*self.N0*self.N0*(self.Lz/2 - sin(2*k_z*self.Lz)/(4*k_z));
-                    end
-                elseif  ( strcmp(varargin{iArg}, 'uMax') )
-                    B = self.BarotropicModeNormalization(Normalization.uMax, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'wMax') )
-                    B = self.BarotropicModeNormalization(Normalization.wMax, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'kConstant') )
-                    B = self.BarotropicModeNormalization(Normalization.kConstant, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                elseif  ( strcmp(varargin{iArg}, 'omegaConstant') )
-                    B = self.BarotropicModeNormalization(Normalization.omegaConstant, solutionType, k_z, h0);
-                    varargout{iArg}(1) = A/B;
-                else
-                    error('Invalid option. You may request F2, G2, N2G2, uMax, wMax, kConstant, omegaConstant');
-                end
-            end
+        
+            uMaxRatio = self.BarotropicModeNormalization(Normalization.uMax, solutionType, k_z, h0)/A;
+            wMaxRatio = self.BarotropicModeNormalization(Normalization.wMax, solutionType, k_z, h0)/A;
+            kConstantRatio = self.BarotropicModeNormalization(Normalization.kConstant, solutionType, k_z, h0)/A;
+            omegaConstantRatio = self.BarotropicModeNormalization(Normalization.omegaConstant, solutionType, k_z, h0)/A;
         end
 
         function A = BarotropicModeNormalization(self, norm, solutionType, k_z, h0)

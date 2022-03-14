@@ -616,6 +616,18 @@ classdef InternalModesSpectral < InternalModesBase
                         varargout{iArg}(j) = self.Lz*self.FNorm( Gj/A );
                     elseif ( strcmp(varargin{iArg}, 'N2G2') )
                         varargout{iArg}(j) = self.g*(self.GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*self.Lz*self.FNorm( Gj/A ); % this is being clever, but should give \int N2*G2 dz
+                    elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                        B = max( abs( Fj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                        B = max( abs( Gj ) );
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif ( strcmp(varargin{iArg}, 'kConstant') )
+                        B = sqrt(self.GNorm( Gj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif ( strcmp(varargin{iArg}, 'omegaConstant') )
+                        B = sqrt(self.FNorm( Fj ));
+                        varargout{iArg}(j) = abs(A/B);
                     else
                         error('Invalid option. You may request F2, G2, N2G2');
                     end
