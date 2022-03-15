@@ -1,6 +1,6 @@
 upperBoundary = UpperBoundary.freeSurface;
 normalization = Normalization.kConstant;
-nPoints = 128;
+nPoints = 100;
 
 [rhoFunc, ~, zIn] = InternalModes.StratificationProfileWithName('exponential');
 z = linspace(min(zIn),max(zIn),1024)';
@@ -14,7 +14,7 @@ im_gauss = InternalModesSpectral(rhoFunc,zIn,z_g,33,'nEVP',512,'nModes',nPoints)
 im_gauss.normalization = normalization;
 im_gauss.upperBoundary = upperBoundary;
 
-[F,G,h] = im_gauss.ModesAtFrequency(0);
+[F,G,h,~,uMaxRatio,wMaxRatio] = im_gauss.ModesAtFrequency(0,'uMax','wMax');
 [F_hr,G_hr] = im.ModesAtFrequency(0);
 
 if im_gauss.upperBoundary ==  UpperBoundary.rigidLid
@@ -25,13 +25,16 @@ elseif im_gauss.upperBoundary == UpperBoundary.freeSurface
     figure('Name','Gauss-quadrature points, free surface')
 end
 subplot(1,2,1)
-plot(G_hr(:,maxGMode),im.z), hold on
-scatter(G(:,maxGMode),z_g)
+plot(G_hr(:,maxGMode)*wMaxRatio(maxGMode),im.z), hold on
+scatter(G(:,maxGMode)*wMaxRatio(maxGMode),z_g)
 title(sprintf('Highest resolvable G mode (%d)',maxGMode))
 subplot(1,2,2)
-plot(F_hr(:,maxGMode+1),im.z), hold on
-scatter(F(:,maxGMode+1),z_g)
+plot(F_hr(:,maxGMode+1)*uMaxRatio(maxGMode+1),im.z), hold on
+scatter(F(:,maxGMode+1)*uMaxRatio(maxGMode+1),z_g)
 title(sprintf('Highest resolvable F mode (%d)',maxGMode+1))
+
+kappaF = InternalModes.ConditionNumberAsFunctionOfModeNumberForModeIndices(F.*uMaxRatio,1:nPoints);
+kappaG = InternalModes.ConditionNumberAsFunctionOfModeNumberForModeIndices(G.*wMaxRatio,1:nPoints);
 
 return
 
