@@ -360,13 +360,19 @@ classdef InternalModesSpectral < InternalModesBase
                    elseif self.upperBoundary == UpperBoundary.freeSurface
                        % n-th mode has n zeros (including zero at lower
                        % boundary, and not zero at upper)
-                       a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-0));
-                       b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-1));
-                       q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
-%                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
-%                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
-%                        q = G_cheb(:,nPoints-0);
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.xDomain);
+%                        a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-0));
+%                        b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-1));
+%                        q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
+% %                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
+% %                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
+% %                        q = G_cheb(:,nPoints-0);
+%                        roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.xDomain);
+roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints), self.xDomain);
+                       F = self.Diff1_xCheb(G_cheb(:,nPoints));
+                       value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+                       [sorted,indices] = sort(abs(value),'descend');
+                       indices = indices(1:nPoints);
+                       roots = roots(indices);
                    end
                    z_g = reshape(roots,[],1);
                end
