@@ -497,8 +497,12 @@ roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints), se
             if ~exist('chebfun','class')
                error('The package chebfun is required when initializing with a function.')
             end
-
-            self.rho_function = chebfun(rho,[zMin zMax]);
+            
+            if isa(rho,'chebfun')
+                self.rho_function = rho;
+            else
+                self.rho_function = chebfun(rho,[zMin zMax]);
+            end
             self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
             
             if self.requiresMonotonicDensity == 1
