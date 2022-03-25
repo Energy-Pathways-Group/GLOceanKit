@@ -331,69 +331,60 @@ classdef InternalModesSpectral < InternalModesBase
             if 2*nPoints < self.nEVP
                [A,B] = self.(methodName)(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
-                   error('EVP setup fail. Found at least one nan in matrices A and B.\n');
+                   error('GLOceanKit:NaNInMatrix', 'EVP setup fail. Found at least one nan in matrices A and B.\n');
                end
                [V,D] = eig( A, B );
                
-               hFromLambda = @(lambda) 1.0 ./ lambda;
-               [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
+               [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
                G_cheb=V(:,permutation);
                maxModes = ceil(find(h>0,1,'last')/2);
                
                if maxModes < (nPoints+1)
-                   error('We tried, but you are gonna need more points.');
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d valid modes (%d quadrature points requested) using nEVPs=%d.',maxModes,nPoints,self.nEVP);
                end
+  
+               % Could compute the roots of the F-modes, but nah.
+%                F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
+%                roots = InternalModesSpectral.FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
+%                z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
+
+               if self.upperBoundary == UpperBoundary.rigidLid
+                   % n-th mode has n+1 zeros (including boundaries)
+                   rootMode = nPoints-1;
+               elseif self.upperBoundary == UpperBoundary.freeSurface
+                   % n-th mode has n zeros (including zero at lower
+                   % boundary, and not zero at upper)
+                   rootMode = nPoints;
+               end
+               roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
+
+               % First we make sure the roots are within the bounds
+               roots(roots<self.xMin) = self.xMin;
+               roots(roots>self.xMax) = self.xMax;
+
+               % Then we eliminate any repeats (it happens)
+               roots = unique(roots,'stable');
                
-               if 1 == 0
-                   F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
-                   roots = InternalModesSpectral.FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
-                   z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
-               else
-                   if self.upperBoundary == UpperBoundary.rigidLid
-                       % n-th mode has n+1 zeros (including boundaries)
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.xDomain);
-                       F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
-                       value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                       [sorted,indices] = sort(abs(value),'descend');
-                       indices = indices(1:nPoints);
-                       roots = roots(indices);
-                   elseif self.upperBoundary == UpperBoundary.freeSurface
-                       % n-th mode has n zeros (including zero at lower
-                       % boundary, and not zero at upper)
-%                        a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-0));
-%                        b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-1));
-%                        q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
-% %                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
-% %                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
-% %                        q = G_cheb(:,nPoints-0);
-%                        roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.xDomain);
-roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints), self.xDomain);
-                       F = self.Diff1_xCheb(G_cheb(:,nPoints));
-                       value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                       [sorted,indices] = sort(abs(value),'descend');
-                       indices = indices(1:nPoints);
-                       roots = roots(indices);
+               if length(roots) < nPoints
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
+               end
+               while (length(roots) > nPoints)
+                   roots = sort(roots);
+                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
+                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+                   dr = diff(roots);
+                   [~,minIndex] = min(abs(dr));
+                   if abs(value(minIndex)) < abs(value(minIndex+1))
+                       roots(minIndex) = [];
+                   else
+                       roots(minIndex+1) = [];
                    end
-                   z_g = reshape(roots,[],1);
                end
-               
-               %%%% February 5th, 2020
-               %%%% Need to compute the values of the extrema and discard
-               %%%% those near zero, rather than the checks below.
-               % G(z)=0
-               
+
+               z_g = reshape(roots,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
-               
-               z_g(z_g<min(self.z_xLobatto)) = min(self.z_xLobatto);
-               z_g(z_g>max(self.z_xLobatto)) = max(self.z_xLobatto);
-               z_g = unique(z_g,'stable');
-               z_g( abs(diff(z_g)) < 1e-1 ) = [];
-               z_g = sort(z_g);
-               if length(z_g) ~= nPoints
-                   error('Returned %d unique roots (requested %d). Maybe need more EVP.', length(z_g),nPoints);
-               end
             else
-                error('need more points');
+                error('GLOceanKit:NeedMorePoints', 'You need at least twice as many nEVP as points you request');
             end
         end
         
