@@ -5,6 +5,9 @@ classdef WaveVortexModel < handle
     properties
         x, y, z
         k, l, j
+
+        X,Y,Z
+
         Nx, Ny, Nz, nModes
         Nk, Nl, Nj % actual sizes in the spectral domain
         Lx, Ly, Lz
@@ -125,6 +128,9 @@ classdef WaveVortexModel < handle
             else
                 self.rho0 = rho0;
             end
+
+            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
+            self.X = X; self.Y = Y; self.Z = Z;
             
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.nModes);
