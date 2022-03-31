@@ -54,20 +54,31 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             % We just need to make sure we're using the right grid,
             % otherwise we can use the superclass method as is.
             self.CreateGridForFrequency(0.0);
-            if nargout == 7
-                [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+            if isempty(varargin)
+                [F,G,h,omega] = ModesAtWavenumber@InternalModesSpectral(self,k);
             else
-                [F,G,h,omega] = ModesAtWavenumber@InternalModesWKBSpectral(self,k);
+                varargout = cell(size(varargin));
+                [F,G,h,omega,varargout{:}] = ModesAtWavenumber@InternalModesSpectral(self,k, varargin{:});
             end
         end
-        
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )        
+
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
+            % We just need to make sure we're using the right grid,
+            % otherwise we can use the superclass method as is.
             self.CreateGridForFrequency(omega);
-            
+            if isempty(varargin)
+                [F,G,h,k] = ModesAtFrequency@InternalModesSpectral(self,omega);
+            else
+                varargout = cell(size(varargin));
+                [F,G,h,k,varargout{:}] = ModesAtFrequency@InternalModesSpectral(self,omega, varargin{:});
+            end
+        end
+
+        function [A,B] = EigenmatricesForFrequency(self, omega )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -98,13 +109,6 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                 A(max(self.eqIndices{i-1})+2,self.polyIndices{i}) = -Tz(min(self.eqIndices{i}),self.polyIndices{i});
                 B(max(self.eqIndices{i-1})+2,:) = 0;
             end
-            
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPWKBSpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPWKBSpectral(A,B);
-            end
-            k = self.kFromOmega(h,omega);
         end
  
         function v_xCheb = T_xLobatto_xCheb( self, v_xLobatto)
@@ -198,6 +202,14 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
                     fprintf(' points.\n');
                 end
             end
+
+            self.hFromLambda = @(lambda) 1.0 ./ lambda;
+            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xChebFunction(G_cheb));
+            self.GFromGCheb = @(G_cheb,h) self.T_xCheb_xLobatto(G_cheb);
+            self.FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* self.T_xCheb_xLobatto(self.Diff1_xChebFunction(G_cheb));
+            self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
+            self.FNorm = @(Fj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
         end
         
         function SetupCoupledEquationsAtBoundaries( self, boundaries, nEVPPoints )
@@ -334,26 +346,7 @@ classdef InternalModesAdaptiveSpectral < InternalModesWKBSpectral
             
         end
     end
-    
-    methods (Access = private)             
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEPWKBSpectral(self,A,B)
-            % This function is an intermediary used by ModesAtFrequency and
-            % ModesAtWavenumber to establish the various norm functions.
-            hFromLambda = @(lambda) 1.0 ./ lambda;
-            GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xChebFunction(G_cheb));
-            GFromGCheb = @(G_cheb,h) self.T_xCheb_xLobatto(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* self.T_xCheb_xLobatto(self.Diff1_xChebFunction(G_cheb));
-            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
-            FNorm = @(Fj) abs(sum(self.Int_xCheb .* self.T_xLobatto_xCheb((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
-            if nargout == 6
-                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            else
-                [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            end
-        end
-    end
-    
+        
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     % Static Methods (that do not depend on self)

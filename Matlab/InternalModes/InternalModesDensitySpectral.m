@@ -42,9 +42,7 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
         % Computation of the modes
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
-            self.gridFrequency = 0;
-            
+        function [A,B] = EigenmatricesForWavenumber(self, k )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -53,18 +51,9 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B = diag( (self.f0*self.f0 - self.N2_xLobatto)/self.g )*T;
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
-            
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPDensitySpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
-            end
-            omega = self.omegaFromK(h,k);
         end
-        
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
-            self.gridFrequency = omega;
-            
+
+        function [A,B] = EigenmatricesForFrequency(self, omega )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -73,13 +62,6 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
-            
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPDensitySpectral(A,B);
-            else
-                [F,G,h] = self.ModesFromGEPDensitySpectral(A,B);
-            end
-            k = self.kFromOmega(h,omega);
         end
 
         function [A,B] = ApplyBoundaryConditions(self,A,B)
@@ -163,25 +145,14 @@ classdef InternalModesDensitySpectral < InternalModesSpectral
             
             N2z_function = diff(self.N2_function);
             self.N2z_xLobatto = N2z_function(self.z_xLobatto);
-        end
-    end
-    
-    methods (Access = private)
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEPDensitySpectral(self,A,B)
-            % This function is an intermediary used by ModesAtFrequency and
-            % ModesAtWavenumber to establish the various norm functions.
-            hFromLambda = @(lambda) 1.0 ./ lambda;
-            GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
-            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
-            FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
-            if nargout == 6
-                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            else
-                [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            end
+
+            self.hFromLambda = @(lambda) 1.0 ./ lambda;
+            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromGCheb = @(G_cheb,h) h * self.N2 .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromGCheb = @(G_cheb,h) h * self.N2_xLobatto .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (1 - self.f0*self.f0./self.N2_xLobatto) .* Gj .^ 2)));
+            self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2)./self.N2_xLobatto)));
         end
     end
     

@@ -100,6 +100,16 @@ classdef InternalModesSpectral < InternalModesBase
         T_xCheb_zOut        
         Int_xCheb          % Vector that multiplies Cheb coeffs, then sum for integral
         N2_xLobatto        % N2 on the z2Lobatto grid
+
+        % Set on initialization by the subclass, these transformations are
+        % applied after solving the EVP to transform back into z-space.
+        hFromLambda;
+        GOutFromGCheb;
+        FOutFromGCheb;
+        GFromGCheb;
+        FFromGCheb;
+        GNorm;
+        FNorm;
     end
     
     properties (Dependent)
@@ -192,8 +202,8 @@ classdef InternalModesSpectral < InternalModesBase
                     A(n,:) = T(n,:);
                     B(n,:) = 1;
                 case LowerBoundary.custom
-                    A(n,:) = Tz(n,:) + (self.N2_xLobatto(n)/self.g).*T(n,:);
-                    B(n,:) = 0;
+                    A(n,:) = Tz(n,:);% + (self.N2_xLobatto(n)/self.g).*T(n,:);
+                    B(n,:) = -T(n,:);
                 case LowerBoundary.none
                 otherwise
                     error('Unknown boundary condition');
@@ -216,29 +226,33 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
-        function [F,G,h,omega,F2,N2G2,G2] = ModesAtWavenumber(self, k )
+        function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             self.gridFrequency = 0;
             
             [A,B] = self.EigenmatricesForWavenumber(k);
             
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPSpectral(A,B);
+            if isempty(varargin)
+                [F,G,h] = self.ModesFromGEP(A,B);
             else
-                [F,G,h] = self.ModesFromGEPSpectral(A,B); 
+                varargout = cell(size(varargin));
+                [F,G,h,varargout{:}] = self.ModesFromGEP(A,B, varargin{:});
             end
+
             omega = self.omegaFromK(h,k);
         end
         
-        function [F,G,h,k,F2,N2G2,G2] = ModesAtFrequency(self, omega )
+        function [F,G,h,k,varargout] = ModesAtFrequency(self, omega, varargin )
             self.gridFrequency = omega;
             
             [A,B] = self.EigenmatricesForFrequency(omega);
             
-            if nargout == 7
-                [F,G,h,F2,N2G2,G2] = self.ModesFromGEPSpectral(A,B);
+            if isempty(varargin)
+                [F,G,h] = self.ModesFromGEP(A,B);
             else
-                [F,G,h] = self.ModesFromGEPSpectral(A,B);
+                varargout = cell(size(varargin));
+                [F,G,h,varargout{:}] = self.ModesFromGEP(A,B, varargin{:});
             end
+            
             k = self.kFromOmega(h,omega);
         end 
         
@@ -317,63 +331,60 @@ classdef InternalModesSpectral < InternalModesBase
             if 2*nPoints < self.nEVP
                [A,B] = self.(methodName)(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
-                   error('EVP setup fail. Found at least one nan in matrices A and B.\n');
+                   error('GLOceanKit:NaNInMatrix', 'EVP setup fail. Found at least one nan in matrices A and B.\n');
                end
                [V,D] = eig( A, B );
                
-               hFromLambda = @(lambda) 1.0 ./ lambda;
-               [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
+               [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
                G_cheb=V(:,permutation);
                maxModes = ceil(find(h>0,1,'last')/2);
                
                if maxModes < (nPoints+1)
-                   error('We tried, but you are gonna need more points.');
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d valid modes (%d quadrature points requested) using nEVPs=%d.',maxModes,nPoints,self.nEVP);
                end
+  
+               % Could compute the roots of the F-modes, but nah.
+%                F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
+%                roots = InternalModesSpectral.FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
+%                z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
+
+               if self.upperBoundary == UpperBoundary.rigidLid
+                   % n-th mode has n+1 zeros (including boundaries)
+                   rootMode = nPoints-1;
+               elseif self.upperBoundary == UpperBoundary.freeSurface
+                   % n-th mode has n zeros (including zero at lower
+                   % boundary, and not zero at upper)
+                   rootMode = nPoints;
+               end
+               roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
+
+               % First we make sure the roots are within the bounds
+               roots(roots<self.xMin) = self.xMin;
+               roots(roots>self.xMax) = self.xMax;
+
+               % Then we eliminate any repeats (it happens)
+               roots = unique(roots,'stable');
                
-               if 1 == 0
-                   F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
-                   roots = InternalModesSpectral.FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
-                   z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
-               else
-                   if self.upperBoundary == UpperBoundary.rigidLid
-                       % n-th mode has n+1 zeros (including boundaries)
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,nPoints-1), self.xDomain);
-                       F = self.Diff1_xCheb(G_cheb(:,nPoints-1));
-                       value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                       [sorted,indices] = sort(abs(value),'descend');
-                       indices = indices(1:nPoints);
-                       roots = roots(indices);
-                   elseif self.upperBoundary == UpperBoundary.freeSurface
-                       % n-th mode has n zeros (including zero at lower
-                       % boundary, and not zero at upper)
-                       a = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-0));
-                       b = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.z_xLobatto),self.z_xLobatto,G_cheb(:,nPoints-1));
-                       q = G_cheb(:,nPoints-0) - (a/b)*G_cheb(:,nPoints-1);
-%                        t1 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(max(self.zLobatto),self.zLobatto,q);
-%                        t2 = InternalModesSpectral.ValueOfFunctionAtPointOnGrid(min(self.zLobatto),self.zLobatto,q);
-%                        q = G_cheb(:,nPoints-0);
-                       roots = InternalModesSpectral.FindRootsFromChebyshevVector(q, self.xDomain);
+               if length(roots) < nPoints
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
+               end
+               while (length(roots) > nPoints)
+                   roots = sort(roots);
+                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
+                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+                   dr = diff(roots);
+                   [~,minIndex] = min(abs(dr));
+                   if abs(value(minIndex)) < abs(value(minIndex+1))
+                       roots(minIndex) = [];
+                   else
+                       roots(minIndex+1) = [];
                    end
-                   z_g = reshape(roots,[],1);
                end
-               
-               %%%% February 5th, 2020
-               %%%% Need to compute the values of the extrema and discard
-               %%%% those near zero, rather than the checks below.
-               % G(z)=0
-               
+
+               z_g = reshape(roots,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
-               
-               z_g(z_g<min(self.z_xLobatto)) = min(self.z_xLobatto);
-               z_g(z_g>max(self.z_xLobatto)) = max(self.z_xLobatto);
-               z_g = unique(z_g,'stable');
-               z_g( abs(diff(z_g)) < 1e-1 ) = [];
-               z_g = sort(z_g);
-               if length(z_g) ~= nPoints
-                   error('Returned %d unique roots (requested %d). Maybe need more EVP.', length(z_g),nPoints);
-               end
             else
-                error('need more points');
+                error('GLOceanKit:NeedMorePoints', 'You need at least twice as many nEVP as points you request');
             end
         end
         
@@ -425,7 +436,15 @@ classdef InternalModesSpectral < InternalModesBase
         
         function self = SetupEigenvalueProblem(self)
             % Subclasses will override this function.
-            self.x_function = @(z) z;                           
+            self.x_function = @(z) z;             
+
+            self.hFromLambda = @(lambda) 1.0 ./ lambda;
+            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
+            self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
         end
         
         function self = InitializeWithBSpline(self, rho)
@@ -469,8 +488,12 @@ classdef InternalModesSpectral < InternalModesBase
             if ~exist('chebfun','class')
                error('The package chebfun is required when initializing with a function.')
             end
-
-            self.rho_function = chebfun(rho,[zMin zMax]);
+            
+            if isa(rho,'chebfun')
+                self.rho_function = rho;
+            else
+                self.rho_function = chebfun(rho,[zMin zMax]);
+            end
             self.N2_function = -(self.g/self.rho0)*diff(self.rho_function);
             
             if self.requiresMonotonicDensity == 1
@@ -502,7 +525,7 @@ classdef InternalModesSpectral < InternalModesBase
                 error('The package chebfun is required when initializing with a function.')
             end
             
-            N2_func = chebfun(N2,[zMin,zMax]);
+            N2_func = chebfun(N2,[zMin,zMax],'splitting','on');
             rho_func = -(self.rho0/self.g)*cumsum(N2_func);
             rho_func = rho_func - rho_func(zMax) + self.rho0;
             
@@ -522,33 +545,17 @@ classdef InternalModesSpectral < InternalModesBase
             end            
         end
                         
-        % This function is an intermediary used by ModesAtFrequency and
-        % ModesAtWavenumber to establish the various norm functions.
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEPSpectral(self,A,B)
-            hFromLambda = @(lambda) 1.0 ./ lambda;
-            GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
-            GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
-            FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
-            if nargout == 6
-                [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            else
-                [F,G,h] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb,FFromGCheb,GNorm,FNorm,GOutFromGCheb,FOutFromGCheb);
-            end
-        end
         
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The last seven arguments are all
         % function handles that do as they say.
-        function [F,G,h,F2,N2G2,G2] = ModesFromGEP(self,A,B,hFromLambda,GFromGCheb, FFromGCheb, GNorm,FNorm, GOutFromGCheb,FOutFromGCheb)
+        function [F,G,h,varargout] = ModesFromGEP(self,A,B,varargin)
             if ( any(any(isnan(A))) || any(any(isnan(B))) )
                 error('EVP setup fail. Found at least one nan in matrices A and B.\n');
             end
             [V,D] = eig( A, B );
             
-            [h, permutation] = sort(real(hFromLambda(diag(D))),'descend');
+            [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
             G_cheb=V(:,permutation);
             
             if isempty(self.nModes)
@@ -568,10 +575,10 @@ classdef InternalModesSpectral < InternalModesBase
             G = zeros(length(self.z),maxModes);
             h = reshape(h(1:maxModes),1,[]);
             
-            % only used if nargout == 5
-            N2G2 = zeros(1,maxModes);
-            F2 = zeros(1,maxModes);
-            G2 = zeros(1,maxModes);
+            varargout = cell(size(varargin));
+            for iArg=1:length(varargin)
+                varargout{iArg} = zeros(1,maxModes);
+            end
             
             % This still need to be optimized to *not* do the transforms
             % twice, when the EVP grid is the same as the output grid.
@@ -582,33 +589,50 @@ classdef InternalModesSpectral < InternalModesBase
                 maxIndexZ = 1;
             end
             for j=1:maxModes
-                Fj = FFromGCheb(G_cheb(:,j),h(j));
-                Gj = GFromGCheb(G_cheb(:,j),h(j));
+                Fj = self.FFromGCheb(G_cheb(:,j),h(j));
+                Gj = self.GFromGCheb(G_cheb(:,j),h(j));
                 switch self.normalization
                     case Normalization.uMax
                         A = max( abs( Fj ));
                     case Normalization.wMax
                         A = max( abs( Gj ) );
                     case Normalization.kConstant
-                        A = sqrt(GNorm( Gj ));
+                        A = sqrt(self.GNorm( Gj ));
                     case Normalization.omegaConstant
-                        A = sqrt(FNorm( Fj ));
+                        A = sqrt(self.FNorm( Fj ));
                 end
                 if Fj(maxIndexZ) < 0
                     A = -A;
                 end
                 
-                G(:,j) = GOutFromGCheb(G_cheb(:,j),h(j))/A;
-                F(:,j) = FOutFromGCheb(G_cheb(:,j),h(j))/A;
+                G(:,j) = self.GOutFromGCheb(G_cheb(:,j),h(j))/A;
+                F(:,j) = self.FOutFromGCheb(G_cheb(:,j),h(j))/A;
 %                 Fz(:,j) = FzOutFromGCheb(G_cheb(:,j),h(j))/A;
                 % K-constant norm: G(0)^2 + \frac{1}{g} \int_{-D}^0 (N^2 -
                 % f_0^2)
-
-                if nargout == 6
-                    F2(j) = self.Lz*FNorm( Fj/A );
-                    G2(j) = self.Lz*FNorm( Gj/A );
-                    N2G2(j) = self.g*(GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*G2(j); % this is being clever, but should give \int N2*G2 dz
-                end   
+                for iArg=1:length(varargin)
+                    if ( strcmp(varargin{iArg}, 'F2') )
+                        varargout{iArg}(j) = self.Lz*self.FNorm( Fj/A );
+                    elseif ( strcmp(varargin{iArg}, 'G2') )
+                        varargout{iArg}(j) = self.Lz*self.FNorm( Gj/A );
+                    elseif ( strcmp(varargin{iArg}, 'N2G2') )
+                        varargout{iArg}(j) = self.g*(self.GNorm( Gj/A )-Gj(1)*Gj(1)) + self.f0*self.f0*self.Lz*self.FNorm( Gj/A ); % this is being clever, but should give \int N2*G2 dz
+                    elseif  ( strcmp(varargin{iArg}, 'uMax') )
+                        B = max( abs( Fj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif  ( strcmp(varargin{iArg}, 'wMax') )
+                        B = max( abs( Gj ) );
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif ( strcmp(varargin{iArg}, 'kConstant') )
+                        B = sqrt(self.GNorm( Gj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif ( strcmp(varargin{iArg}, 'omegaConstant') )
+                        B = sqrt(self.FNorm( Fj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    else
+                        error('Invalid option. You may request F2, G2, N2G2');
+                    end
+                end
             end
             
 
