@@ -202,8 +202,8 @@ classdef InternalModesSpectral < InternalModesBase
                     A(n,:) = T(n,:);
                     B(n,:) = 1;
                 case LowerBoundary.custom
-                    A(n,:) = Tz(n,:) + (self.N2_xLobatto(n)/self.g).*T(n,:);
-                    B(n,:) = 0;
+                    A(n,:) = Tz(n,:);% + (self.N2_xLobatto(n)/self.g).*T(n,:);
+                    B(n,:) = -T(n,:);
                 case LowerBoundary.none
                 otherwise
                     error('Unknown boundary condition');
@@ -525,7 +525,7 @@ classdef InternalModesSpectral < InternalModesBase
                 error('The package chebfun is required when initializing with a function.')
             end
             
-            N2_func = chebfun(N2,[zMin,zMax]);
+            N2_func = chebfun(N2,[zMin,zMax],'splitting','on');
             rho_func = -(self.rho0/self.g)*cumsum(N2_func);
             rho_func = rho_func - rho_func(zMax) + self.rho0;
             
