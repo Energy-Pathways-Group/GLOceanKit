@@ -196,8 +196,8 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.noSlip
                     A(n,:) = Tz(n,:);
                     B(n,:) = 0;
-                    A(n-1,:) = T(n,:);
-                    B(n-1,:) = 0;
+%                     A(n-1,:) = T(n,:);
+%                     B(n-1,:) = 0;
                 case LowerBoundary.buoyancyAnomaly
                     A(n,:) = T(n,:);
                     B(n,:) = 1;
