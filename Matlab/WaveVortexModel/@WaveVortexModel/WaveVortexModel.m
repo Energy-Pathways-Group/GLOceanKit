@@ -522,7 +522,7 @@ classdef WaveVortexModel < handle
             self.EMAp = self.EMAp & ~AntiAliasMask;
         end
 
-        function clearEnergyOfAliasedModes(self)
+        function clearEnergyFromAliasedModes(self)
             % In addition to disallowing interaction to occur between modes
             % that are aliased, you may actually want to disallow energy to
             % even enter the aliased modes.
