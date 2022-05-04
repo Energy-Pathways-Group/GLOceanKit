@@ -142,4 +142,39 @@ integrationTool.SetNetCDFFileForModelOutput(outputfile,outputInterval);
 integrationTool.IntegrateToTime(maxTime/8);
 
 
+restartIntegrationTool = WaveVortexModelIntegrationTools();
+restartIntegrationTool.IntegrationToolForModelRestart(outputfile,Inf);
+
+outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2.nc';
+netcdfTool = WaveVortexModelNetCDFTools(outputfile);
+netcdfTool.InitializeWaveVortexModelFromNetCDFFile();
+t = netcdfTool.SetWaveModelToIndex(length(ncread(outputfile,'t')));
+
+wvm = netcdfTool.wvm;
+wvm = wvm.waveVortexModelWithResolution(2*[wvm.Nx,wvm.Ny,wvm.nModes]);
+[u,v] = wvm.VariableFieldsAtTime(t,'u','v');
+zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f0;
+figure('Position',[100 100 400 800])
+subplot(2,1,1)
+pcolor(wvm.x/1e3,wvm.z,squeeze(zeta_z(:,wvm.Ny/2,:)).'), shading interp; colorbar('eastoutside')
+xlabel('x (km)'), ylabel('z (m)'), title(sprintf('vorticity at y=%.1f km',wvm.y(wvm.Ny/2)/1e3))
+subplot(2,1,2)
+pcolor(wvm.x/1e3,wvm.y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside') 
+xlabel('x (km)'), ylabel('y (km)'), title(sprintf('vorticity at z=%.1f m',wvm.z(35)))
+
+outputfileX2 = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-x2.nc';
+netcdfToolX2 = WaveVortexModelNetCDFTools(outputfileX2);
+netcdfToolX2.InitializeWaveVortexModelFromNetCDFFile();
+t = netcdfToolX2.SetWaveModelToIndex(1);
+
+wvm = netcdfToolX2.wvm;
+[u,v] = wvm.VariableFieldsAtTime(t,'u','v');
+zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f0;
+figure('Position',[100 100 400 800])
+subplot(2,1,1)
+pcolor(wvm.x/1e3,wvm.z,squeeze(zeta_z(:,wvm.Ny/2,:)).'), shading interp; colorbar('eastoutside')
+xlabel('x (km)'), ylabel('z (m)'), title(sprintf('vorticity at y=%.1f km',wvm.y(wvm.Ny/2)/1e3))
+subplot(2,1,2)
+pcolor(wvm.x/1e3,wvm.y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside') 
+xlabel('x (km)'), ylabel('y (km)'), title(sprintf('vorticity at z=%.1f m',wvm.z(35)))
 

@@ -180,6 +180,7 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'latitude', self.wvm.latitude);
             % 
             CreationDate = datestr(datetime('now'));
+            netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 't0', self.wvm.t0);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'rho0', self.wvm.rho0);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from WaveVortexModel.m written by Jeffrey J. Early.');
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', self.wvm.version);
@@ -248,7 +249,8 @@ classdef WaveVortexModelNetCDFTools < handle
             t = ncread(self.netcdfFile,'t');
             latitude = ncreadatt(self.netcdfFile,'/','latitude');
             stratification = ncreadatt(self.netcdfFile,'/','stratification');
-            
+            t0 = ncreadatt(self.netcdfFile,'/','t0');
+
             self.Nx = length(x);
             self.Ny = length(y);
             self.Nz = length(z);
@@ -285,6 +287,8 @@ classdef WaveVortexModelNetCDFTools < handle
             self.wvm.EMAm = logical(ncread(self.netcdfFile,'EMAm'));
             self.wvm.EMAp = logical(ncread(self.netcdfFile,'EMAp'));
             
+            self.wvm.t0 = t0;
+
             self.SetWaveModelToIndex(1);
             
             model = self.wvm;

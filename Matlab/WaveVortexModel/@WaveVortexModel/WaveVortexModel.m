@@ -38,7 +38,7 @@ classdef WaveVortexModel < handle
         offgridModes % subclass should initialize
         ongridModes % This is a cached copy 
         advectionSanityCheck = 0;
-        version = 2.0;
+        version = 2.1;
     end
     
     properties (Abstract)
@@ -150,6 +150,42 @@ classdef WaveVortexModel < handle
             if self.shouldAntiAlias == 1
                 self.disallowNonlinearInteractionsWithAliasedModes();
                 self.freezeEnergyOfAliasedModes();
+            end
+        end
+
+        function wvmX2 = waveVortexModelWithResolution(self,m)
+            wvmX2 = WaveVortexModelHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
+            wvmX2.t0 = self.t0;
+            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.nModes >= self.nModes
+                kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
+                lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
+                wvmX2.Ap(kIndices,lIndices,1:self.nModes) = self.Ap;
+                wvmX2.Am(kIndices,lIndices,1:self.nModes) = self.Am;
+                wvmX2.A0(kIndices,lIndices,1:self.nModes) = self.A0;
+                
+                if self.IsAntiAliased == 1
+                    fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
+                    AntiAliasMask = self.MaskForAliasedModes();
+                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
+                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
+                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
+                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0 | AntiAliasMask;
+                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp | AntiAliasMask;
+                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm | AntiAliasMask;
+
+                    wvmX2.disallowNonlinearInteractionsWithAliasedModes();
+                    wvmX2.freezeEnergyOfAliasedModes();
+                else
+                    fprintf('You do NOT appear to be anti-aliased. Thus the interaction masks will be copied as-is.\n');
+                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0;
+                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp;
+                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm;
+                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0;
+                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp;
+                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm;
+                end
+            else
+                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
             end
         end
         
@@ -530,6 +566,18 @@ classdef WaveVortexModel < handle
             self.A0 = self.A0 .* ~AntiAliasMask;
             self.Am = self.Am .* ~AntiAliasMask;
             self.Ap = self.Ap .* ~AntiAliasMask;
+        end
+
+        function flag = IsAntiAliased(self)
+            AntiAliasMask = self.MaskForAliasedModes();
+
+            % check if there are zeros at all the anti-alias indices
+            flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.IMAm & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.IMAp & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMA0 & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMAp & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMAm & AntiAliasMask) == AntiAliasMask,'all');
         end
 
         

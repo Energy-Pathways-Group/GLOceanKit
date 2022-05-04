@@ -20,14 +20,26 @@ classdef WaveVortexModelIntegrationTools < handle
         end
 
         function self = IntegrationToolForModelRestart(self,existingModelOutput,restartIndex,shouldDoubleResolution)
-        %IntegratorForModelRestart Initializes a new instance of the
-        %   WaveVortexModel using existing output.
-        %   existingModelOutput     path to existing netcdf file
-        %   restartIndex            time point to start from. Inf will
-        %                           restart from the last time point (default).
-        %   shouldDoubleResolution  double the model resolution.
+            %IntegratorForModelRestart Initializes a new instance of the
+            %   WaveVortexModel using existing output.
+            %   existingModelOutput     path to existing netcdf file
+            %   restartIndex            time point to start from. Inf will
+            %                           restart from the last time point (default).
+            %   shouldDoubleResolution  double the model resolution.
+            nctool = WaveVortexModelNetCDFTools(existingModelOutput);
+            wvm2 = nctool.InitializeWaveVortexModelFromNetCDFFile();
+            
+            if restartIndex == 0 || isinf(restartIndex)
+                restartIndex = length(ncread(existingModelOutput,'t'));
+            end
 
-
+            self.t = nctool.SetWaveModelToIndex(restartIndex);
+            self.t0 = self.t;
+            if (nargin < 4 || shouldDoubleResolution == 0)
+                self.wvm = wvm2;
+            else
+                self.wvm = wvm2.waveVortexModelWithResolution(2*[wvm2.Nx,wvm2.Ny,wvm2.nModes]);
+            end
         end
 
         function self = SetNetCDFFileForModelOutput(self,outputFile,outputInterval)
