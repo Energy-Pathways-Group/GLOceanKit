@@ -85,7 +85,7 @@ classdef WaveVortexModelNetCDFTools < handle
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
             self.wvm = waveVortexModel;
-            
+
             self.Nk = length(self.wvm.k);
             self.Nl = length(self.wvm.l);
             self.Nj = length(self.wvm.j);
@@ -94,9 +94,11 @@ classdef WaveVortexModelNetCDFTools < handle
             if strcmp(precision,'single')
                 self.ncPrecision = 'NC_FLOAT';
                 self.bytePerFloat = 4;
-            else
+            elseif strcmp(precision,'double')
                 self.ncPrecision = 'NC_DOUBLE';
                 self.bytePerFloat = 8;
+            else
+                error('Precision can be either single or double.\n')
             end
             
             % Chunking: https://www.unidata.ucar.edu/blogs/developer/en/entry/chunking_data_choosing_shapes
@@ -129,7 +131,11 @@ classdef WaveVortexModelNetCDFTools < handle
             self.kDimID = netcdf.defDim(self.ncid, 'k', self.Nk);
             self.lDimID = netcdf.defDim(self.ncid, 'l', self.Nl);
             self.jDimID = netcdf.defDim(self.ncid, 'j', self.Nj);
-            self.tDimID = netcdf.defDim(self.ncid, 't', self.Nt);
+            if isinf(self.Nt)
+                self.tDimID = netcdf.defDim(self.ncid, 't', netcdf.getConstant('NC_UNLIMITED'));
+            else
+                self.tDimID = netcdf.defDim(self.ncid, 't', self.Nt);
+            end
             
             % Define the coordinate variables
             self.kVarID = netcdf.defVar(self.ncid, 'k', self.ncPrecision, self.kDimID);
@@ -204,8 +210,13 @@ classdef WaveVortexModelNetCDFTools < handle
             
             % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
             totalFields = 6;
-            totalSize = totalFields*self.bytePerFloat*self.Nt*self.Nk*self.Nl*self.Nj/1e9;
-            fprintf('Writing output file to %s\nExpected file size is %.2f GB.\n',self.netcdfFile,totalSize);
+            if isinf(self.Nt)
+                totalSize = totalFields*self.bytePerFloat*self.Nk*self.Nl*self.Nj/1e9;
+                fprintf('Writing output file to %s\nExpected file size is %.2f GB per time step.\n',self.netcdfFile,totalSize);
+            else
+                totalSize = totalFields*self.bytePerFloat*self.Nt*self.Nk*self.Nl*self.Nj/1e9;
+                fprintf('Writing output file to %s\nExpected file size is %.2f GB.\n',self.netcdfFile,totalSize);
+            end
         end
         
         function model = InitializeWaveVortexModelFromNetCDFFile(self)
@@ -467,8 +478,13 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicKVarID, [0 iTime-1], [self.Nkh 1], GeostrophicBarotropicEnergyK);
         end
         
+        function self = open(self)
+            self.ncid = netcdf.open(self.netcdfFile, 'SHARE');
+        end
+
         function self = close(self)
-           netcdf.close(self.ncid); 
+           netcdf.close(self.ncid);
+           self.ncid = [];
         end
     end
 end

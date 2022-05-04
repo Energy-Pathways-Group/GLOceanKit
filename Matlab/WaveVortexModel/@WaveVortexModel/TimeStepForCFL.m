@@ -1,7 +1,8 @@
 function [deltaT,advectiveDT,oscillatoryDT] = TimeStepForCFL(self, cfl, outputInterval)
-% Return the velocity field, which is the sum of the gridded
-% and external/free waves at time t. Note that if you do not
-% need w, don't request it and it won't be computed.
+% Return the time step (in seconds) to maintain the given cfl condition.
+% If the cfl condition is not given, 0.25 will be assumed.
+% If outputInterval is given, the time step will be rounded to evenly
+% divide the outputInterval.
 if nargin == 1
     cfl = 0.25;
 end
@@ -24,7 +25,7 @@ else
     deltaT = oscillatoryDT;
 end
 
-if nargin == 3
+if nargin == 3 && ~isempty(outputInterval)
     deltaT = outputInterval/ceil(outputInterval/deltaT);
     stepsPerOutput = round(outputInterval/deltaT);
     fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',deltaT,stepsPerOutput);
