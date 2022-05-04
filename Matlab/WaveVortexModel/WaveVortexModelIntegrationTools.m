@@ -36,7 +36,6 @@ classdef WaveVortexModelIntegrationTools < handle
             self.outputInterval = outputInterval;
         end
 
-
         function self = IntegrateToTime(self,time,cfl)
             if nargin < 3 || isempty(cfl)
                 cfl=0.5;
@@ -107,12 +106,6 @@ classdef WaveVortexModelIntegrationTools < handle
 
             if ~isempty(self.outputFile)
                 fprintf('Ending simulation. Wrote %d time points to file\n',incrementsWrittenToFile);
-            end
-% closing and re-opening is leading to an error:
-% The NetCDF library encountered an error during execution of 'putVaraDouble' function - 'HDF error (NC_EHDFERR)'
-% Lots of people started having this issue, and there is no explanation for
-% what is going wrong or what the work around is.
-            if ~isempty(self.outputFile)
                 self.netcdfTool.close();
             end
         end

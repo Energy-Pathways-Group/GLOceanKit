@@ -511,7 +511,7 @@ classdef WaveVortexModelNetCDFTools < handle
         end
 
         function self = open(self)
-            self.ncid = netcdf.open(self.netcdfFile, 'SHARE');
+            self.ncid = netcdf.open(self.netcdfFile, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
         end
 
         function self = close(self)
