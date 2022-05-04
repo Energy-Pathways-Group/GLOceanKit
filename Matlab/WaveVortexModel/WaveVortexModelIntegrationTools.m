@@ -98,6 +98,7 @@ classdef WaveVortexModelIntegrationTools < handle
                         self.netcdfTool.WriteAmplitudeCoefficientsAtIndex(self.iTime);
                         self.netcdfTool.WriteEnergeticsAtIndex(self.iTime);
                         self.netcdfTool.WriteEnergeticsKJAtIndex(self.iTime);
+                        self.netcdfTool.sync();
                         self.iTime = self.iTime + 1;
                         incrementsWrittenToFile = incrementsWrittenToFile + 1;
                     end
@@ -111,9 +112,9 @@ classdef WaveVortexModelIntegrationTools < handle
 % The NetCDF library encountered an error during execution of 'putVaraDouble' function - 'HDF error (NC_EHDFERR)'
 % Lots of people started having this issue, and there is no explanation for
 % what is going wrong or what the work around is.
-%             if ~isempty(self.outputFile)
-%                 self.netcdfTool.close();
-%             end
+            if ~isempty(self.outputFile)
+                self.netcdfTool.close();
+            end
         end
 
         function self = SetupNetCDFToolsForOutputFile(self)

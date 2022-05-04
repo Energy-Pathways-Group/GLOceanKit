@@ -25,6 +25,9 @@ classdef WaveVortexModelNetCDFTools < handle
         ApImagVarID
         AmRealVarID
         AmImagVarID
+
+        IMA0VarID, IMApVarID, IMAmVarID    % InteractionMasks
+        EMA0VarID, EMApVarID, EMAmVarID    % EnergyMasks
         
         EnergyIGWPlusVarID
         EnergyIGWMinusVarID
@@ -147,6 +150,15 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putAtt(self.ncid,self.jVarID, 'units', 'mode number');
             netcdf.putAtt(self.ncid,self.tVarID, 'units', 's');
             
+
+            % Define interaction and energy masks
+            self.IMA0VarID = netcdf.defVar(self.ncid, 'IMA0', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+            self.IMApVarID = netcdf.defVar(self.ncid, 'IMAp', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+            self.IMAmVarID = netcdf.defVar(self.ncid, 'IMAm', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+            self.EMA0VarID = netcdf.defVar(self.ncid, 'EMA0', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+            self.EMApVarID = netcdf.defVar(self.ncid, 'EMAp', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+            self.EMAmVarID = netcdf.defVar(self.ncid, 'EMAm', 'NC_BYTE', [self.kDimID,self.lDimID,self.jDimID]);
+
             if isa(self.wvm,'WaveVortexModelConstantStratification')
                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'stratification','constant');
                 netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), 'N0', self.wvm.N0);
@@ -184,6 +196,15 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.xVarID, self.wvm.x);
             netcdf.putVar(self.ncid, self.yVarID, self.wvm.y);
             netcdf.putVar(self.ncid, self.zVarID, self.wvm.z);
+
+            % Add the data for the interaction and energy masks
+            netcdf.putVar(self.ncid, self.IMA0VarID, uint8(self.wvm.IMA0));
+            netcdf.putVar(self.ncid, self.IMApVarID, uint8(self.wvm.IMAp));
+            netcdf.putVar(self.ncid, self.IMAmVarID, uint8(self.wvm.IMAm));
+
+            netcdf.putVar(self.ncid, self.EMA0VarID, uint8(self.wvm.EMA0));
+            netcdf.putVar(self.ncid, self.EMApVarID, uint8(self.wvm.EMAp));
+            netcdf.putVar(self.ncid, self.EMAmVarID, uint8(self.wvm.EMAm));
             
             if isa(self.wvm,'WaveVortexModelHydrostatic')
                 netcdf.putVar(self.ncid, N2VarID, self.wvm.N2);
@@ -256,6 +277,13 @@ classdef WaveVortexModelNetCDFTools < handle
             else
                 error("stratification not supported.");
             end
+
+            self.wvm.IMA0 = logical(ncread(self.netcdfFile,'IMA0'));
+            self.wvm.IMAm = logical(ncread(self.netcdfFile,'IMAm'));
+            self.wvm.IMAp = logical(ncread(self.netcdfFile,'IMAp'));
+            self.wvm.EMA0 = logical(ncread(self.netcdfFile,'EMA0'));
+            self.wvm.EMAm = logical(ncread(self.netcdfFile,'EMAm'));
+            self.wvm.EMAp = logical(ncread(self.netcdfFile,'EMAp'));
             
             self.SetWaveModelToIndex(1);
             
@@ -478,6 +506,10 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicKVarID, [0 iTime-1], [self.Nkh 1], GeostrophicBarotropicEnergyK);
         end
         
+        function self = sync(self)
+            netcdf.sync(self.ncid);
+        end
+
         function self = open(self)
             self.ncid = netcdf.open(self.netcdfFile, 'SHARE');
         end
