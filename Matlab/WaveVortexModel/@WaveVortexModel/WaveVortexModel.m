@@ -582,15 +582,15 @@ classdef WaveVortexModel < handle
 
         
         function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
-            [omega,k,l] = self.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
+            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
             for iMode=1:length(kModes)
-                if (signs(iMode) == 1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
-                    self.EMAp( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
+                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
+                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
                     self.EMAp = WaveVortexModel.MakeHermitian(self.EMAp);
                 end
 
-                if (signs(iMode) == -1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
-                    self.EMAm( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
+                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
+                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
                     self.EMAm = WaveVortexModel.MakeHermitian(self.EMAm);
                 end
             end
@@ -710,7 +710,7 @@ classdef WaveVortexModel < handle
         
         [omega,k,l] = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
         
-        [omega,k,l] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)  
+        [omega,k,l,kIndex,lIndex,jIndex,signIndex] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)  
         
         [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self);
         

@@ -92,7 +92,7 @@ classdef WaveVortexModelIntegrationTools < handle
                     stepsPerInform = ceil(30/seconds(timePerStep));
                     if (i==3 || mod(i,stepsPerInform) == 0)
                         timeRemaining = (nIncrements-i+1)*timePerStep;
-                        fprintf('\ttime step %d of %d. Estimated finish time %s (%s from now)\n', i, nIncrements, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+                        fprintf('\tmodel time t=%.2f inertial periods, RK4 time step %d of %d. Estimated finish time %s (%s from now)\n', self.t/inertialPeriod, i, nIncrements, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
                         self.wvm.summarizeEnergyContent();
                     end
                 end

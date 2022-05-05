@@ -1,4 +1,4 @@
-function [omega,k,l] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+function [omega,k,l,kIndex,lIndex,jIndex,signIndex] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
 % Add wavemodes on the gridded field.
 % The values given must meet the following requirements:
 % (k0 > -Nx/2 && k0 < Nx/2)
@@ -20,6 +20,11 @@ A0Total = self.A0;
 omega = zeros(size(kMode));
 k = zeros(size(kMode));
 l = zeros(size(kMode));
+
+kIndex = zeros(size(kMode));
+lIndex = zeros(size(kMode));
+jIndex = zeros(size(kMode));
+signIndex = zeros(size(kMode));
 
 for iMode = 1:length(kMode)
     k0 = kMode(iMode);
@@ -77,6 +82,11 @@ for iMode = 1:length(kMode)
     
     ratio = self.UmaxGNormRatioForWave(k0, l0, j0);
     
+    kIndex(iMode)=k0+1;
+    lIndex(iMode)=l0+1;
+    jIndex(iMode)=j0+1;
+    signIndex(iMode)=sign;
+
     U = zeros(size(self.ApU));
     U(k0+1,l0+1,j0+1) = A*ratio/2*exp(sqrt(-1)*phi0);
     if sign > 0
