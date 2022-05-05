@@ -136,21 +136,46 @@ wvm.summarizeEnergyContent;
 
 pause(1)
 
-integrationTool = WaveVortexModelIntegrationTools();
-integrationTool.IntegrationToolForModel(wvm);
-integrationTool.SetNetCDFFileForModelOutput(outputfile,outputInterval);
-integrationTool.IntegrateToTime(maxTime/8);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Initialize new integrator, overwrite existing file, integrate
+%
+integrationTool = WaveVortexModelIntegrationTools(wvm, outputfile, outputInterval,'shouldOverwriteExisting',1);
+integrationTool.IntegrateToTime(2*outputInterval);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Append/continue integration to the same file
+%
+integrationTool.IntegrateToTime(4*outputInterval);
 
-restartIntegrationTool = WaveVortexModelIntegrationTools();
-restartIntegrationTool.IntegrationToolForModelRestart(outputfile,Inf);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Restart from existing output, create new file
+%
+existingModelOutput = outputfile;
+restartModelOutput = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2-restart.nc';
+integrationTool = WaveVortexModelIntegrationTools(existingModelOutput, restartModelOutput);
+integrationTool.IntegrateToTime(6*outputInterval);
 
-outputfile = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2.nc';
-netcdfTool = WaveVortexModelNetCDFTools(outputfile);
-netcdfTool.InitializeWaveVortexModelFromNetCDFFile();
-t = netcdfTool.SetWaveModelToIndex(length(ncread(outputfile,'t')));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Restart from existing output, create new file, double the resolution
+%
+restartX2ModelOutput = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2-restart-x2.nc';
+integrationTool = WaveVortexModelIntegrationTools(existingModelOutput, restartX2ModelOutput,[],'shouldDoubleResolution',1);
+integrationTool.IntegrateToTime(6*outputInterval);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Restart from existing output, append to existing output
+%
+% integrationTool = WaveVortexModelIntegrationTools(newModelOutput, newModelOutput);
+% integrationTool.IntegrateToTime(4*maxTime/8);
+
+netcdfTool = WaveVortexModelNetCDFTools(restartModelOutput,'timeIndex',Inf);
 wvm = netcdfTool.wvm;
+t = netcdfTool.t;
 wvm = wvm.waveVortexModelWithResolution(2*[wvm.Nx,wvm.Ny,wvm.nModes]);
 [u,v] = wvm.VariableFieldsAtTime(t,'u','v');
 zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f0;
@@ -162,12 +187,9 @@ subplot(2,1,2)
 pcolor(wvm.x/1e3,wvm.y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside') 
 xlabel('x (km)'), ylabel('y (km)'), title(sprintf('vorticity at z=%.1f m',wvm.z(35)))
 
-outputfileX2 = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-x2.nc';
-netcdfToolX2 = WaveVortexModelNetCDFTools(outputfileX2);
-netcdfToolX2.InitializeWaveVortexModelFromNetCDFFile();
-t = netcdfToolX2.SetWaveModelToIndex(1);
-
+netcdfToolX2 = WaveVortexModelNetCDFTools(restartX2ModelOutput,'timeIndex',Inf);
 wvm = netcdfToolX2.wvm;
+t = netcdfTool.t;
 [u,v] = wvm.VariableFieldsAtTime(t,'u','v');
 zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f0;
 figure('Position',[100 100 400 800])

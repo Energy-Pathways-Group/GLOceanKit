@@ -1,13 +1,22 @@
 classdef WaveVortexModelNetCDFTools < handle
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
-    
+    %WaveVortexModelNetCDFTools Tools for reading and writing the
+    %   WaveVortexModel to NetCDF files.
+    %
+    %   nctool = WaveVortexModelNetCDFTools(wvm,netcdfFile) creates a new
+    %   NetCDF file appropriate for the given WaveVortexModel instance
+    %   (wvm).
+    %
+    %   nctool = WaveVortexModelNetCDFTools(netcdfFile) opens existing
+    %   NetCDF output from the WaveVortexModel. The WaveVortexModel
+    %   instance can be accessed with nctool.wvm.
+
     properties
         netcdfFile
         matFilePath
         ncid
-        wvm
-        
+        wvm     % waveVortexModel instance
+        t       % model time of the wvm coefficients
+
         ncPrecision
         bytePerFloat
         
@@ -76,15 +85,72 @@ classdef WaveVortexModelNetCDFTools < handle
     end
     
     methods
-        function self = WaveVortexModelNetCDFTools(netcdfFile)
-            %UNTITLED Construct an instance of this class
-            %   Detailed explanation goes here
-            self.netcdfFile = netcdfFile;
-            [filepath,name,~] = fileparts(self.netcdfFile);
-            self.matFilePath = sprintf('%s/%s.mat',filepath,name);
+        function self = WaveVortexModelNetCDFTools(varargin)
+            if isa(varargin{1},'WaveVortexModel') && isa(varargin{2},'char' )
+                waveVortexModel = varargin{1};
+                netcdfFile = varargin{2};
+                [filepath,name,~] = fileparts(netcdfFile);
+                matFilePath = sprintf('%s/%s.mat',filepath,name);
+
+                extraargs = varargin(3:end);
+                if mod(length(extraargs),2) ~= 0
+                    error('Arguments must be given as name/value pairs.');
+                end
+
+                Nt = Inf;
+                precision = 'double';
+                shouldOverwriteExisting = 0;
+                for k = 1:2:length(extraargs)
+                    if strcmp(extraargs{k}, 'precision')
+                        precision = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'Nt')
+                        Nt = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'shouldOverwriteExisting')
+                        shouldOverwriteExisting = extraargs{k+1};
+                    else
+                        error('Unknown argument, %s', extraargs{k});
+                    end
+                end
+                
+                if isfile(netcdfFile) || isfile(matFilePath)
+                    if shouldOverwriteExisting == 1
+                        if isfile(netcdfFile)
+                            delete(netcdfFile);
+                        end
+                        if isfile(matFilePath)
+                            delete(matFilePath);
+                        end
+                    else
+                        error('File already exists!');
+                    end
+                end
+                self.netcdfFile = netcdfFile;
+                self.matFilePath = matFilePath;
+                self.CreateNetCDFFileFromModel(waveVortexModel,Nt,precision);
+            elseif isa(varargin{1},'char' )
+                netcdfFile = varargin{1};
+                extraargs = varargin(2:end);
+                if mod(length(extraargs),2) ~= 0
+                    error('Arguments must be given as name/value pairs.');
+                end
+
+                timeIndex = 1;
+                for k = 1:2:length(extraargs)
+                    if strcmp(extraargs{k}, 'timeIndex')
+                        timeIndex = extraargs{k+1};
+                    else
+                        error('Unknown argument, %s', extraargs{k});
+                    end
+                end
+
+                self.netcdfFile = netcdfFile;
+                [filepath,name,~] = fileparts(self.netcdfFile);
+                self.matFilePath = sprintf('%s/%s.mat',filepath,name);
+                self.InitializeWaveVortexModelFromNetCDFFile(timeIndex);
+            end
         end
         
-        function self = CreateNetCDFFileFromModel(self,waveVortexModel,Nt,precision)
+        function CreateNetCDFFileFromModel(self,waveVortexModel,Nt,precision)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
             self.wvm = waveVortexModel;
@@ -241,7 +307,7 @@ classdef WaveVortexModelNetCDFTools < handle
             end
         end
         
-        function model = InitializeWaveVortexModelFromNetCDFFile(self)
+        function [model, t] = InitializeWaveVortexModelFromNetCDFFile(self,timeIndex)
             x = ncread(self.netcdfFile,'x');
             y = ncread(self.netcdfFile,'y');
             z = ncread(self.netcdfFile,'z');
@@ -288,8 +354,16 @@ classdef WaveVortexModelNetCDFTools < handle
             self.wvm.EMAp = logical(ncread(self.netcdfFile,'EMAp'));
             
             self.wvm.t0 = t0;
-
-            self.SetWaveModelToIndex(1);
+            
+            Ntime = length(ncread(self.netcdfFile,'t'));
+            if isinf(timeIndex)
+                timeIndex = Ntime;
+            elseif timeIndex > Ntime
+                error('Index out of bounds! There are %d time points in this file, you requested %d.',Ntime,timeIndex);
+            elseif timeIndex < 1
+                timeIndex = 1;
+            end
+            self.SetWaveModelToIndex(timeIndex);
             
             model = self.wvm;
         end
@@ -309,6 +383,7 @@ classdef WaveVortexModelNetCDFTools < handle
             self.wvm.Am = Am_realp + sqrt(-1)*Am_imagp;
             
             t = ncread(self.netcdfFile,'t',iTime,1);
+            self.t = t;
         end
         
         function self = CreateAmplitudeCoefficientVariables(self)
@@ -463,6 +538,7 @@ classdef WaveVortexModelNetCDFTools < handle
         
         function self = WriteTimeAtIndex(self,iTime,t)
             netcdf.putVar(self.ncid, self.tVarID, iTime-1, 1, t);
+            self.t = t;
         end
         
         function self = WriteAmplitudeCoefficientsAtIndex(self,iTime)

@@ -27,13 +27,17 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 U = .2;
-% boussinesq.InitializeWithPlaneWave(0,0,1,U,1); 
 period = wvm.InitializeWithPlaneWave(10,0,1,U,1);  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+iTool = WaveVortexModelIntegrationTools(wvm);
+iTool.IntegrateToTime(wvm.inertialPeriod);
+
+return
 
 dt = period/50;
 nT=5*50;

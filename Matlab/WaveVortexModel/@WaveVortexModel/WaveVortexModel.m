@@ -30,7 +30,7 @@ classdef WaveVortexModel < handle
 
         PP, QQ
 
-        t0 = 0
+        t0 = 0 % reference time---all wave phases are wound to this time
         Ap, Am, A0
         shouldAntiAlias = 1;
         halfK = 0;
@@ -39,6 +39,10 @@ classdef WaveVortexModel < handle
         ongridModes % This is a cached copy 
         advectionSanityCheck = 0;
         version = 2.1;
+    end
+
+    properties (Dependent)
+        inertialPeriod
     end
     
     properties (Abstract)
@@ -198,8 +202,10 @@ classdef WaveVortexModel < handle
             [K,L,~] = ndgrid(self.k,self.l,self.j);
             Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
         end
-        
 
+        function value = get.inertialPeriod(self)
+            value = (2*pi/(2 * 7.2921E-5 * sin( self.latitude*pi/180 )));
+        end
         
         function rebuildTransformationMatrices(self)
             self.BuildTransformationMatrices(self.PP,self.QQ);
@@ -408,7 +414,7 @@ classdef WaveVortexModel < handle
             F = {Fp,Fm,F0};
         end
         
-        function [Fp,Fm,F0] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
+        function [Fp,Fm,F0,U,V,W] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
             % Apply operator T_\omega---defined in (C2) in the manuscript
 
             % We also apply the interaction masks (IMA*) and energy masks
