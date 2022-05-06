@@ -26,7 +26,7 @@ classdef WaveVortexModelIntegrationTools < handle
 
         integrator      % Array integrator
         
-        isDynamicsLinear = 0
+        linearDynamics = 0
         xFloat, yFloat, zFloat
         xDrifter, yDrifter, zDrifter
         tracers
@@ -50,6 +50,7 @@ classdef WaveVortexModelIntegrationTools < handle
                 outputInterval = varargin{3};
             end
             existingModelOutput = [];
+            linearDynamics = 0;
 
             extraargs = varargin(4:end);
             if mod(length(extraargs),2) ~= 0
@@ -62,6 +63,8 @@ classdef WaveVortexModelIntegrationTools < handle
                 for k = 1:2:length(extraargs)
                     if strcmp(extraargs{k}, 'shouldOverwriteExisting')
                         shouldOverwriteExisting = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'linearDynamics')
+                        linearDynamics = extraargs{k+1};
                     else
                         error('Unknown argument, %s', extraargs{k});
                     end
@@ -78,6 +81,8 @@ classdef WaveVortexModelIntegrationTools < handle
                         restartIndex = extraargs{k+1};
                     elseif strcmp(extraargs{k}, 'shouldOverwriteExisting')
                         shouldOverwriteExisting = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'linearDynamics')
+                        linearDynamics = extraargs{k+1};
                     else
                         error('Unknown argument, %s', extraargs{k});
                     end
@@ -96,6 +101,7 @@ classdef WaveVortexModelIntegrationTools < handle
 
             self.wvm = waveVortexModel;
             self.outputFile = newModelOutput;
+            self.linearDynamics = linearDynamics;
             if ~isempty(self.outputFile)
                 % user wants us to output to a netcdf file
                 
@@ -148,6 +154,32 @@ classdef WaveVortexModelIntegrationTools < handle
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % Floats and drifters and tracer!
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function SetFloatPositions(self,x,y,z)
+            self.xFloat = reshape(x,1,[]);
+            self.yFloat = reshape(y,1,[]);
+            self.zFloat = reshape(z,1,[]);
+        end
+
+        function SetDrifterPositions(self,x,y,z)
+            self.xDrifter = reshape(x,1,[]);
+            self.yDrifter = reshape(y,1,[]);
+            self.zDrifter = reshape(z,1,[]);
+        end
+
+        function AddTracer(self,phi)
+            if isempty(self.tracers)
+                self.tracers{1} = phi;
+            else
+                self.tracers{end+1} = phi;
+            end
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
         % Integration loop
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,10 +203,7 @@ classdef WaveVortexModelIntegrationTools < handle
 
                 % Save the initial conditions
                 if outputIncrements(self.iTime)==0 
-                    self.netcdfTool.WriteTimeAtIndex(self.iTime,self.t);
-                    self.netcdfTool.WriteAmplitudeCoefficientsAtIndex(self.iTime);
-                    self.netcdfTool.WriteEnergeticsAtIndex(self.iTime);
-                    self.netcdfTool.WriteEnergeticsKJAtIndex(self.iTime);
+                    self.WriteTimeStepToFile(self.iTime,outputTimes(self.iTime));
                     self.iTime = self.iTime + 1;
                     incrementsWrittenToFile = incrementsWrittenToFile + 1;
                 end
@@ -201,20 +230,36 @@ classdef WaveVortexModelIntegrationTools < handle
                     end
                 end
                 
-                % TODO: update this handle variable time-stepped inputs
                 self.integrator.IncrementForward();
-                self.wvm.Ap = self.integrator.currentY{1};
-                self.wvm.Am = self.integrator.currentY{2};
-                self.wvm.A0 = self.integrator.currentY{3};
+                n=0;
+                if self.linearDynamics == 0
+                    n=n+1; self.wvm.Ap = self.integrator.currentY{n};
+                    n=n+1; self.wvm.Am = self.integrator.currentY{n};
+                    n=n+1; self.wvm.A0 = self.integrator.currentY{n};
+                end
+
+                if ~isempty(self.xFloat)
+                    n=n+1; self.xFloat = self.integrator.currentY{n};
+                    n=n+1; self.yFloat = self.integrator.currentY{n};
+                    n=n+1; self.zFloat = self.integrator.currentY{n};
+                end
+
+                if ~isempty(self.xDrifter)
+                    n=n+1; self.xDrifter = self.integrator.currentY{n};
+                    n=n+1; self.yDrifter = self.integrator.currentY{n};
+                end
+
+                if ~isempty(self.tracers)
+                    for iTracer=1:length(self.tracers)
+                        n=n+1; self.tracers{iTracer} = self.integrator.currentY{n};
+                    end
+                end
+                
                 self.t = self.integrator.currentTime;
 
                 if ~isempty(self.outputFile) && self.iTime <= length(outputIncrements)
                     if outputIncrements(self.iTime) == i   
-                        self.netcdfTool.WriteTimeAtIndex(self.iTime,outputTimes(self.iTime));
-                        self.netcdfTool.WriteAmplitudeCoefficientsAtIndex(self.iTime);
-                        self.netcdfTool.WriteEnergeticsAtIndex(self.iTime);
-                        self.netcdfTool.WriteEnergeticsKJAtIndex(self.iTime);
-                        self.netcdfTool.sync();
+                        self.WriteTimeStepToFile(self.iTime,outputTimes(self.iTime));
                         self.iTime = self.iTime + 1;
                         incrementsWrittenToFile = incrementsWrittenToFile + 1;
                     end
@@ -263,11 +308,29 @@ classdef WaveVortexModelIntegrationTools < handle
             self.integrator = ArrayIntegrator(@(t,y0) self.FluxAtTime(t,y0),Y0,deltaT);
             self.integrator.currentTime = initialTime;
         end
+
+        function WriteTimeStepToFile(self, timeIndex, modelTime)
+            self.netcdfTool.WriteTimeAtIndex(timeIndex,modelTime);
+            
+            if self.linearDynamics == 0
+                self.netcdfTool.WriteAmplitudeCoefficientsAtIndex(timeIndex);
+                self.netcdfTool.WriteEnergeticsAtIndex(timeIndex);
+                self.netcdfTool.WriteEnergeticsKJAtIndex(timeIndex);
+            end
+
+            if ~isempty(self.xFloat)
+                self.netcdfTool.WriteFloatPositionsAtIndex(timeIndex,self.xFloat,self.yFloat,self.zFloat);
+            end
+            if ~isempty(self.xDrifter)
+                self.netcdfTool.WriteDrifterPositionsAtIndex(timeIndex,self.xFloat,self.yFloat,self.zFloat);
+            end
+            self.netcdfTool.sync();
+        end
         
         function Y0 = InitialConditionsArray(self)
             Y0 = cell(1,1);
             n = 0;
-            if self.isDynamicsLinear == 0
+            if self.linearDynamics == 0
                 n=n+1;Y0{n} = self.wvm.Ap;
                 n=n+1;Y0{n} = self.wvm.Am;
                 n=n+1;Y0{n} = self.wvm.A0;
@@ -294,7 +357,7 @@ classdef WaveVortexModelIntegrationTools < handle
         function F = FluxAtTime(self,t,y0)
             F = cell(1,1);
             n = 0;
-            if self.isDynamicsLinear == 0
+            if self.linearDynamics == 0
                 [Fp,Fm,F0,U,V,W] = self.wvm.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
                 n=n+1;F{n} = Fp;
                 n=n+1;F{n} = Fm;

@@ -450,7 +450,11 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, omegaKJVarID, omegaKJ);
         end
         
-        function self = CreateFloatVariables(self,nFloats)
+        function self = CreateFloatVariables(self,nFloats,varargin)
+            % You can pass a list of strings for named other scalar values
+            % that track with the floats, e.g., density. Make the name
+            % unique though!
+            % https://www.mathworks.com/help/matlab/map-containers.html
             netcdf.reDef(self.ncid);
             
             self.nFloats = nFloats;
@@ -458,7 +462,9 @@ classdef WaveVortexModelNetCDFTools < handle
             self.xFloatID = netcdf.defVar(self.ncid, 'x-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
             self.yFloatID = netcdf.defVar(self.ncid, 'y-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
             self.zFloatID = netcdf.defVar(self.ncid, 'z-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
-            self.densityFloatID = netcdf.defVar(self.ncid, 'density-float', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            for k=1:length(varargin)
+                self.densityFloatID = netcdf.defVar(self.ncid, varargin{k}, self.ncPrecision, [self.floatDimID,self.tDimID]);
+            end
             netcdf.putAtt(self.ncid,self.xFloatID, 'units', 'm');
             netcdf.putAtt(self.ncid,self.yFloatID, 'units', 'm');
             netcdf.putAtt(self.ncid,self.zFloatID, 'units', 'm');
@@ -474,7 +480,7 @@ classdef WaveVortexModelNetCDFTools < handle
             self.xDrifterID = netcdf.defVar(self.ncid, 'x-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
             self.yDrifterID = netcdf.defVar(self.ncid, 'y-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
             self.zDrifterID = netcdf.defVar(self.ncid, 'z-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
-            self.densityDrifterID = netcdf.defVar(self.ncid, 'density-drifter', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+%             self.densityDrifterID = netcdf.defVar(self.ncid, 'density-drifter', self.ncPrecision, [self.drifterDimID,self.tDimID]);
             netcdf.putAtt(self.ncid,self.xDrifterID, 'units', 'm');
             netcdf.putAtt(self.ncid,self.yDrifterID, 'units', 'm');
             netcdf.putAtt(self.ncid,self.zDrifterID, 'units', 'm');
@@ -567,14 +573,14 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.xFloatID, [0 iTime-1], [self.nFloats 1], x);
             netcdf.putVar(self.ncid, self.yFloatID, [0 iTime-1], [self.nFloats 1], y);
             netcdf.putVar(self.ncid, self.zFloatID, [0 iTime-1], [self.nFloats 1], z);
-            netcdf.putVar(self.ncid, self.densityFloatID, [0 iTime-1], [self.nFloats 1], density);
+%             netcdf.putVar(self.ncid, self.densityFloatID, [0 iTime-1], [self.nFloats 1], density);
         end
         
         function self = WriteDrifterPositionsAtIndex(self,iTime,x,y,z,density)
             netcdf.putVar(self.ncid, self.xDrifterID, [0 iTime-1], [self.nDrifters 1], x);
             netcdf.putVar(self.ncid, self.yDrifterID, [0 iTime-1], [self.nDrifters 1], y);
             netcdf.putVar(self.ncid, self.zDrifterID, [0 iTime-1], [self.nDrifters 1], z);
-            netcdf.putVar(self.ncid, self.densityDrifterID, [0 iTime-1], [self.nDrifters 1], density);
+%             netcdf.putVar(self.ncid, self.densityDrifterID, [0 iTime-1], [self.nDrifters 1], density);
         end
         
         function self = WriteEnergeticsKJAtIndex(self,iTime)
