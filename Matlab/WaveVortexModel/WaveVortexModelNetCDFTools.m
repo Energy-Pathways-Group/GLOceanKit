@@ -10,6 +10,10 @@ classdef WaveVortexModelNetCDFTools < handle
     %   NetCDF output from the WaveVortexModel. The WaveVortexModel
     %   instance can be accessed with nctool.wvm.
 
+% May 6th, 2022
+% This needs to be way more dynamic
+% varIDMap -- variable name, map to id, other stuff?
+
     properties
         netcdfFile
         matFilePath
@@ -61,7 +65,8 @@ classdef WaveVortexModelNetCDFTools < handle
         xFloatID, yFloatID, zFloatID, densityFloatID
         drifterDimID, nDrifters
         xDrifterID, yDrifterID, zDrifterID, densityDrifterID
-        
+        tracerVarIDMap % Map container, key=name, value=varID
+
         NK2unique
         K2uniqueDimID
         K2uniqueVarID
@@ -385,8 +390,21 @@ classdef WaveVortexModelNetCDFTools < handle
             t = ncread(self.netcdfFile,'t',iTime,1);
             self.t = t;
         end
+
+        function self = WriteTimeAtIndex(self,iTime,t)
+            netcdf.putVar(self.ncid, self.tVarID, iTime-1, 1, t);
+            self.t = t;
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Amplitude coefficients (Ap,Am,A0)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function self = CreateAmplitudeCoefficientVariables(self)
+        function flag = ContainsAmplitudeCoefficients(self)
+            flag = ~isempty(self.A0RealVarID) & ~isempty(self.A0ImagVarID) & ~isempty(self.ApRealVarID) & ~isempty(self.ApImagVarID) & ~isempty(self.AmRealVarID) & ~isempty(self.AmImagVarID);
+        end
+
+        function InitializeAmplitudeCoefficientStorage(self)
             netcdf.reDef(self.ncid);
             
             % Define the wave-vortex variables
@@ -397,19 +415,126 @@ classdef WaveVortexModelNetCDFTools < handle
             self.AmRealVarID = netcdf.defVar(self.ncid, 'Am_realp', self.ncPrecision, [self.kDimID,self.lDimID,self.jDimID,self.tDimID]);
             self.AmImagVarID = netcdf.defVar(self.ncid, 'Am_imagp', self.ncPrecision, [self.kDimID,self.lDimID,self.jDimID,self.tDimID]);
 
-            % netcdf.putAtt(self.ncid,ApRealVarID, 'units', 'm^{3/2}/s');
-            % netcdf.putAtt(self.ncid,ApImagVarID, 'units', 'm^{3/2}/s');
-            % netcdf.putAtt(self.ncid,AmRealVarID, 'units', 'm^{3/2}/s');
-            % netcdf.putAtt(self.ncid,AmImagVarID, 'units', 'm^{3/2}/s');
-            % netcdf.putAtt(self.ncid,BRealVarID, 'units', 'm');
-            % netcdf.putAtt(self.ncid,BImagVarID, 'units', 'm');
-            % netcdf.putAtt(self.ncid,B0RealVarID, 'units', 'm');
-            % netcdf.putAtt(self.ncid,B0ImagVarID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.A0RealVarID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.A0RealVarID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.ApRealVarID, 'units', 'm/s');
+            netcdf.putAtt(self.ncid,self.ApImagVarID, 'units', 'm/s');
+            netcdf.putAtt(self.ncid,self.AmRealVarID, 'units', 'm/s');
+            netcdf.putAtt(self.ncid,self.AmImagVarID, 'units', 'm/s');
+            
+            netcdf.endDef(self.ncid);
+        end
+
+        function self = WriteAmplitudeCoefficientsAtIndex(self,iTime)
+            netcdf.putVar(self.ncid, self.A0RealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.A0));
+            netcdf.putVar(self.ncid, self.A0ImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.A0));
+            netcdf.putVar(self.ncid, self.ApRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Ap));
+            netcdf.putVar(self.ncid, self.ApImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Ap));
+            netcdf.putVar(self.ncid, self.AmRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Am));
+            netcdf.putVar(self.ncid, self.AmImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Am));
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Tracers
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function flag = ContainsTracers(self)
+            flag = ~isempty(self.tracerVarIDMap);
+        end
+
+        function InitializeTracerStorageWithName(self,name)
+            if isempty(self.tracerVarIDMap)
+                self.tracerVarIDMap = containers.Map;
+            end
+
+            netcdf.reDef(self.ncid);
+            self.tracerVarIDMap(name) = netcdf.defVar(self.ncid, name, self.ncPrecision, [self.xDimID,self.yDimID,self.zDimID,self.tDimID]);
+            netcdf.putAtt(self.ncid,self.tracerVarIDMap(name), 'isTracer', '1');
+            netcdf.endDef(self.ncid);
+        end
+
+        function WriteTracerWithNameAtIndex(self,iTime,phi,name)
+            netcdf.putVar(self.ncid, self.tracerVarIDMap(name), [0 0 0 iTime-1], [self.Nx self.Ny self.Nz 1], phi);
+        end
+       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Floats
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function flag = ContainsFloats(self)
+            flag = ~isempty(self.xFloatID) & ~isempty(self.yFloatID) & ~isempty(self.zFloatID);
+        end
+
+        function self = InitializeFloatStorage(self,nFloats,varargin)
+            % You can pass a list of strings for named other scalar values
+            % that track with the floats, e.g., density. Make the name
+            % unique though!
+            % https://www.mathworks.com/help/matlab/map-containers.html
+            netcdf.reDef(self.ncid);
+            
+            self.nFloats = nFloats;
+            self.floatDimID = netcdf.defDim(self.ncid, 'float_id', nFloats);
+            self.xFloatID = netcdf.defVar(self.ncid, 'x-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            self.yFloatID = netcdf.defVar(self.ncid, 'y-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            self.zFloatID = netcdf.defVar(self.ncid, 'z-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
+            for k=1:length(varargin)
+                self.densityFloatID = netcdf.defVar(self.ncid, varargin{k}, self.ncPrecision, [self.floatDimID,self.tDimID]);
+            end
+            netcdf.putAtt(self.ncid,self.xFloatID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.yFloatID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.zFloatID, 'units', 'm');
+            
+            netcdf.endDef(self.ncid);
+        end
+
+        function self = WriteFloatPositionsAtIndex(self,iTime,x,y,z)
+            netcdf.putVar(self.ncid, self.xFloatID, [0 iTime-1], [self.nFloats 1], x);
+            netcdf.putVar(self.ncid, self.yFloatID, [0 iTime-1], [self.nFloats 1], y);
+            netcdf.putVar(self.ncid, self.zFloatID, [0 iTime-1], [self.nFloats 1], z);
+            %             netcdf.putVar(self.ncid, self.densityFloatID, [0 iTime-1], [self.nFloats 1], density);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Drifters
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function flag = ContainsDrifters(self)
+            flag = ~isempty(self.xDrifterID) & ~isempty(self.yDrifterID) & ~isempty(self.zDrifterID);
+        end
+
+        function self = InitializeDrifterStorage(self,nDrifters)
+            netcdf.reDef(self.ncid);
+            
+            self.nDrifters = nDrifters;
+            self.drifterDimID = netcdf.defDim(self.ncid, 'drifter_id', nDrifters);
+            self.xDrifterID = netcdf.defVar(self.ncid, 'x-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            self.yDrifterID = netcdf.defVar(self.ncid, 'y-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            self.zDrifterID = netcdf.defVar(self.ncid, 'z-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+%             self.densityDrifterID = netcdf.defVar(self.ncid, 'density-drifter', self.ncPrecision, [self.drifterDimID,self.tDimID]);
+            netcdf.putAtt(self.ncid,self.xDrifterID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.yDrifterID, 'units', 'm');
+            netcdf.putAtt(self.ncid,self.zDrifterID, 'units', 'm');
             
             netcdf.endDef(self.ncid);
         end
         
-        function self = CreateEnergeticsVariables(self)
+        function self = WriteDrifterPositionsAtIndex(self,iTime,x,y,z,density)
+            netcdf.putVar(self.ncid, self.xDrifterID, [0 iTime-1], [self.nDrifters 1], x);
+            netcdf.putVar(self.ncid, self.yDrifterID, [0 iTime-1], [self.nDrifters 1], y);
+            netcdf.putVar(self.ncid, self.zDrifterID, [0 iTime-1], [self.nDrifters 1], z);
+%             netcdf.putVar(self.ncid, self.densityDrifterID, [0 iTime-1], [self.nDrifters 1], density);
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Energetics (scalar)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function flag = ContainsEnergetics(self)
+            flag = ~isempty(self.EnergyIGWPlusVarID) & ~isempty(self.EnergyIGWMinusVarID) & ~isempty(self.EnergyIOBaroclinicVarID) & ~isempty(self.EnergyIOBarotropicVarID) & ~isempty(self.EnergyGeostrophicBaroclinicVarID) & ~isempty(self.EnergyGeostrophicBarotropicVarID);
+        end
+
+        function self = InitializeEnergeticsStorage(self)
             netcdf.reDef(self.ncid);
             
             self.EnergyIGWPlusVarID = netcdf.defVar(self.ncid, 'EnergyIGWPlus', self.ncPrecision, self.tDimID);
@@ -419,13 +544,27 @@ classdef WaveVortexModelNetCDFTools < handle
             self.EnergyGeostrophicBaroclinicVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBaroclinic', self.ncPrecision, self.tDimID);
             self.EnergyGeostrophicBarotropicVarID = netcdf.defVar(self.ncid, 'EnergyGeostrophicBarotropic', self.ncPrecision, self.tDimID);
             
-%             self.EnergyResidualVarID = netcdf.defVar(self.ncid, 'EnergyResidual', self.ncPrecision, self.tDimID);
-%             self.EnergyDepthIntegratedVarID = netcdf.defVar(self.ncid, 'EnergyDepthIntegrated', self.ncPrecision, self.tDimID);
-            
             netcdf.endDef(self.ncid);
         end
+
+        function self = WriteEnergeticsAtIndex(self,iTime)
+            netcdf.putVar(self.ncid, self.EnergyIGWPlusVarID, iTime-1, 1, self.wvm.internalWaveEnergyPlus);
+            netcdf.putVar(self.ncid, self.EnergyIGWMinusVarID, iTime-1, 1, self.wvm.internalWaveEnergyMinus);
+            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicInertialEnergy);
+            netcdf.putVar(self.ncid, self.EnergyIOBarotropicVarID, iTime-1, 1, self.wvm.barotropicInertialEnergy);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicGeostrophicEnergy);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicVarID, iTime-1, 1, self.wvm.barotropicGeostrophicEnergy);
+        end
         
-        function self = CreateEnergeticsKJVariables(self)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Energetics (2d k-j)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function flag = ContainsEnergeticsKJ(self)
+            flag = ~isempty(self.EnergyIGWPlusKJVarID) & ~isempty(self.EnergyIGWMinusKJVarID) & ~isempty(self.EnergyIOBaroclinicJVarID) & ~isempty(self.EnergyGeostrophicBaroclinicKJVarID) & ~isempty(self.EnergyGeostrophicBarotropicKVarID);
+        end
+
+        function self = InitializeEnergeticsKJStorage(self)
             netcdf.reDef(self.ncid);
             
             k = self.wvm.IsotropicKAxis();
@@ -450,43 +589,16 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, omegaKJVarID, omegaKJ);
         end
         
-        function self = CreateFloatVariables(self,nFloats,varargin)
-            % You can pass a list of strings for named other scalar values
-            % that track with the floats, e.g., density. Make the name
-            % unique though!
-            % https://www.mathworks.com/help/matlab/map-containers.html
-            netcdf.reDef(self.ncid);
-            
-            self.nFloats = nFloats;
-            self.floatDimID = netcdf.defDim(self.ncid, 'float_id', nFloats);
-            self.xFloatID = netcdf.defVar(self.ncid, 'x-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
-            self.yFloatID = netcdf.defVar(self.ncid, 'y-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
-            self.zFloatID = netcdf.defVar(self.ncid, 'z-position', self.ncPrecision, [self.floatDimID,self.tDimID]);
-            for k=1:length(varargin)
-                self.densityFloatID = netcdf.defVar(self.ncid, varargin{k}, self.ncPrecision, [self.floatDimID,self.tDimID]);
-            end
-            netcdf.putAtt(self.ncid,self.xFloatID, 'units', 'm');
-            netcdf.putAtt(self.ncid,self.yFloatID, 'units', 'm');
-            netcdf.putAtt(self.ncid,self.zFloatID, 'units', 'm');
-            
-            netcdf.endDef(self.ncid);
+
+        function self = WriteEnergeticsKJAtIndex(self,iTime)
+            [~,~,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK,IOEnergyJ] = self.wvm.energeticsByWavenumberAndMode();
+            netcdf.putVar(self.ncid, self.EnergyIGWPlusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWPlusEnergyKJ);
+            netcdf.putVar(self.ncid, self.EnergyIGWMinusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWMinusEnergyKJ);
+            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicJVarID, [0 iTime-1], [self.Nj 1], IOEnergyJ);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], GeostrophicEnergyKJ);
+            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicKVarID, [0 iTime-1], [self.Nkh 1], GeostrophicBarotropicEnergyK);
         end
-        
-        function self = CreateDrifterVariables(self,nDrifters)
-            netcdf.reDef(self.ncid);
-            
-            self.nDrifters = nDrifters;
-            self.drifterDimID = netcdf.defDim(self.ncid, 'drifter_id', nDrifters);
-            self.xDrifterID = netcdf.defVar(self.ncid, 'x-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
-            self.yDrifterID = netcdf.defVar(self.ncid, 'y-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
-            self.zDrifterID = netcdf.defVar(self.ncid, 'z-drifter-position', self.ncPrecision, [self.drifterDimID,self.tDimID]);
-%             self.densityDrifterID = netcdf.defVar(self.ncid, 'density-drifter', self.ncPrecision, [self.drifterDimID,self.tDimID]);
-            netcdf.putAtt(self.ncid,self.xDrifterID, 'units', 'm');
-            netcdf.putAtt(self.ncid,self.yDrifterID, 'units', 'm');
-            netcdf.putAtt(self.ncid,self.zDrifterID, 'units', 'm');
-            
-            netcdf.endDef(self.ncid);
-        end
+
         
         function self = CreateHydrostaticTransformationVariables(self)
             netcdf.reDef(self.ncid);
@@ -541,56 +653,9 @@ classdef WaveVortexModelNetCDFTools < handle
             netcdf.putVar(self.ncid, self.nWellConditionedVarID, self.wvm.NumberOfWellConditionedModes);
             netcdf.putVar(self.ncid, self.didPrecomputeVarID, self.wvm.didPrecomputedModesForK2unique);
         end
+
         
-        function self = WriteTimeAtIndex(self,iTime,t)
-            netcdf.putVar(self.ncid, self.tVarID, iTime-1, 1, t);
-            self.t = t;
-        end
-        
-        function self = WriteAmplitudeCoefficientsAtIndex(self,iTime)
-            netcdf.putVar(self.ncid, self.A0RealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.A0));
-            netcdf.putVar(self.ncid, self.A0ImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.A0));
-            netcdf.putVar(self.ncid, self.ApRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Ap));
-            netcdf.putVar(self.ncid, self.ApImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Ap));
-            netcdf.putVar(self.ncid, self.AmRealVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], real(self.wvm.Am));
-            netcdf.putVar(self.ncid, self.AmImagVarID, [0 0 0 iTime-1], [self.Nk self.Nl self.Nj 1], imag(self.wvm.Am));
-        end
-        
-%         function self = WriteEnergeticsAtIndex(self,iTime,residualEnergy,depthIntegrated)
-        function self = WriteEnergeticsAtIndex(self,iTime)
-            netcdf.putVar(self.ncid, self.EnergyIGWPlusVarID, iTime-1, 1, self.wvm.internalWaveEnergyPlus);
-            netcdf.putVar(self.ncid, self.EnergyIGWMinusVarID, iTime-1, 1, self.wvm.internalWaveEnergyMinus);
-            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicInertialEnergy);
-            netcdf.putVar(self.ncid, self.EnergyIOBarotropicVarID, iTime-1, 1, self.wvm.barotropicInertialEnergy);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicVarID, iTime-1, 1, self.wvm.baroclinicGeostrophicEnergy);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicVarID, iTime-1, 1, self.wvm.barotropicGeostrophicEnergy);
-            
-%             netcdf.putVar(self.ncid, self.EnergyResidualVarID, iTime-1, 1, residualEnergy);
-%             netcdf.putVar(self.ncid, self.EnergyDepthIntegratedVarID, iTime-1, 1, depthIntegrated);
-        end
-        
-        function self = WriteFloatPositionsAtIndex(self,iTime,x,y,z,density)
-            netcdf.putVar(self.ncid, self.xFloatID, [0 iTime-1], [self.nFloats 1], x);
-            netcdf.putVar(self.ncid, self.yFloatID, [0 iTime-1], [self.nFloats 1], y);
-            netcdf.putVar(self.ncid, self.zFloatID, [0 iTime-1], [self.nFloats 1], z);
-%             netcdf.putVar(self.ncid, self.densityFloatID, [0 iTime-1], [self.nFloats 1], density);
-        end
-        
-        function self = WriteDrifterPositionsAtIndex(self,iTime,x,y,z,density)
-            netcdf.putVar(self.ncid, self.xDrifterID, [0 iTime-1], [self.nDrifters 1], x);
-            netcdf.putVar(self.ncid, self.yDrifterID, [0 iTime-1], [self.nDrifters 1], y);
-            netcdf.putVar(self.ncid, self.zDrifterID, [0 iTime-1], [self.nDrifters 1], z);
-%             netcdf.putVar(self.ncid, self.densityDrifterID, [0 iTime-1], [self.nDrifters 1], density);
-        end
-        
-        function self = WriteEnergeticsKJAtIndex(self,iTime)
-            [~,~,IGWPlusEnergyKJ,IGWMinusEnergyKJ,GeostrophicEnergyKJ,GeostrophicBarotropicEnergyK,IOEnergyJ] = self.wvm.energeticsByWavenumberAndMode();
-            netcdf.putVar(self.ncid, self.EnergyIGWPlusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWPlusEnergyKJ);
-            netcdf.putVar(self.ncid, self.EnergyIGWMinusKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], IGWMinusEnergyKJ);
-            netcdf.putVar(self.ncid, self.EnergyIOBaroclinicJVarID, [0 iTime-1], [self.Nj 1], IOEnergyJ);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBaroclinicKJVarID, [0 0 iTime-1], [self.Nkh self.Nj 1], GeostrophicEnergyKJ);
-            netcdf.putVar(self.ncid, self.EnergyGeostrophicBarotropicKVarID, [0 iTime-1], [self.Nkh 1], GeostrophicBarotropicEnergyK);
-        end
+
         
         function self = sync(self)
             netcdf.sync(self.ncid);

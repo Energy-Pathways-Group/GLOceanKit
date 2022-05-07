@@ -203,6 +203,87 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             cg_z(isnan(cg_z)) = 0;
         end
         
+        function ProfileTransforms(self)
+            Ubar = self.UAp.*self.Ap + self.UAm.*self.Am + self.UA0.*self.A0;
+            Nbar = self.NAp.*self.Ap + self.NAm.*self.Am + self.NA0.*self.A0;
+            MM = zeros(6,1);
+            FF = zeros(6,1);
+            names = {'    Finv', '    Ginv', '       F', '       G', 'Finv-all', 'Ginv-all'};
+            N = 3;
+            
+            tic;
+            for i=1:N
+                U = self.TransformToSpatialDomainWithF_MM(Ubar);
+            end
+            MM(1) = toc;
+            tic;
+            for i=1:N
+                ETA = self.TransformToSpatialDomainWithG_MM(Nbar);
+            end
+            MM(2) = toc;
+            tic;
+            for i=1:N
+                self.TransformFromSpatialDomainWithF_MM(U);
+            end
+            MM(3) = toc;
+            tic;
+            for i=1:N
+                self.TransformFromSpatialDomainWithG_MM(ETA);
+            end
+            MM(4) = toc;
+            tic;
+            for i=1:N
+                self.TransformToSpatialDomainWithFAllDerivatives_MM(Ubar);
+            end
+            MM(5) = toc;
+            tic;
+            for i=1:N
+                self.TransformToSpatialDomainWithGAllDerivatives_MM(Nbar);
+            end
+            MM(6) = toc;
+
+            tic;
+            for i=1:N
+                U = self.TransformToSpatialDomainWithF_FFT(Ubar);
+            end
+            FF(1) = toc;
+            tic;
+            for i=1:N
+                ETA = self.TransformToSpatialDomainWithG_FFT(Nbar);
+            end
+            FF(2) = toc;
+            tic;
+            for i=1:N
+                self.TransformFromSpatialDomainWithF_FFT(U);
+            end
+            FF(3) = toc;
+            tic;
+            for i=1:N
+                self.TransformFromSpatialDomainWithG_FFT(ETA);
+            end
+            FF(4) = toc;
+            tic;
+            for i=1:N
+                self.TransformToSpatialDomainWithFAllDerivatives_FFT(Ubar);
+            end
+            FF(5) = toc;
+            tic;
+            for i=1:N
+                self.TransformToSpatialDomainWithGAllDerivatives_FFT(Nbar);
+            end
+            FF(6) = toc;
+            
+            fprintf('--------|-- MM (s) --|-- FFT (s) --|\n')
+            for i=1:6
+                fprintf('%s|   %.4f   |   %.4f    | ', names{i}, MM(i), FF(i))
+                if (MM(i)<FF(i))
+                    fprintf('MM is %.2f faster\n',FF(i)/MM(i));
+                else
+                    fprintf('FFT is %.2f faster\n',MM(i)/FF(i));
+                end
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations to and from the spatial domain, using FFTs
