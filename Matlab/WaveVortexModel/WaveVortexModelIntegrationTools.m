@@ -23,11 +23,24 @@ classdef WaveVortexModelIntegrationTools < handle
     % - need method of doing fancy stuff during the integration loop
     % - want to write float and drifter paths to memory
     % - Maybe a list of variables (as enums) that we want to write
-    % - 
+    % - Definitely want to output physical variables some time
+    % - OpenNetCDFFileForTimeStepping should report expected file size
     properties
         wvm             % WaveVortexModel
         t=0             % current model time (in seconds)
     
+        linearDynamics = 0
+
+        % Variables integrated by this integration tool
+        xFloat, yFloat, zFloat
+        xDrifter, yDrifter, zDrifter
+        tracers, tracerNames
+
+        integrator      % Array integrator
+        startTime       % wall clock, to keep track of integration length
+        nIncrements     % total number of expected RK4 increments
+
+        % *if* outputting to NetCDF file, these will be populated
         outputFile
         netcdfTool      % WaveVortexModelNetCDFTools instance---empty indicates no file output
         outputInterval  % model output interval (seconds)
@@ -35,18 +48,6 @@ classdef WaveVortexModelIntegrationTools < handle
         timeIndex=1     % current index of outputTimes written to file.
         outputIncrements
         incrementsWrittenToFile
-
-        saveFloatsAndDriftersToMemory = 0   % set to true if no output file is specified
-        xFloatT, yFloatT, zFloatT, xDrifterT, yDrifterT, zDrifterT
-
-        integrator      % Array integrator
-        startTime
-        nIncrements
-        
-        linearDynamics = 0
-        xFloat, yFloat, zFloat
-        xDrifter, yDrifter, zDrifter
-        tracers, tracerNames
     end
 
     methods
@@ -135,51 +136,128 @@ classdef WaveVortexModelIntegrationTools < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = IntegrateToTime(self,time,cfl)
+        function self = IntegrateToTime(self,finalTime,cfl)
             if nargin < 3 || isempty(cfl)
                 cfl=0.5;
             end
-            self.SetupIntegrator(self.t,cfl);
-            
-            % total dT time steps to meet or exceed the requested time.
-            self.nIncrements = ceil((time-self.t)/self.integrator.stepSize);
-            
+            deltaT = self.wvm.TimeStepForCFL(cfl,self.outputInterval);
+            totalIncrements = self.SetupIntegrator(self.t,finalTime,deltaT);
+   
             self.OpenNetCDFFileForTimeStepping();
             
-            for iIncrement=1:self.nIncrements
+            for iIncrement=1:totalIncrements
                 self.ShowIntegrationTimeDiagnostics(iIncrement);
                 
-                self.integrator.IncrementForward();
-                n=0;
-                if self.linearDynamics == 0
-                    n=n+1; self.wvm.Ap = self.integrator.currentY{n};
-                    n=n+1; self.wvm.Am = self.integrator.currentY{n};
-                    n=n+1; self.wvm.A0 = self.integrator.currentY{n};
-                end
-
-                if ~isempty(self.xFloat)
-                    n=n+1; self.xFloat = self.integrator.currentY{n};
-                    n=n+1; self.yFloat = self.integrator.currentY{n};
-                    n=n+1; self.zFloat = self.integrator.currentY{n};
-                end
-
-                if ~isempty(self.xDrifter)
-                    n=n+1; self.xDrifter = self.integrator.currentY{n};
-                    n=n+1; self.yDrifter = self.integrator.currentY{n};
-                end
-
-                if ~isempty(self.tracers)
-                    for iTracer=1:length(self.tracers)
-                        n=n+1; self.tracers{iTracer} = self.integrator.currentY{n};
-                    end
-                end
-                
-                self.t = self.integrator.currentTime;
+                self.IncrementForward();
 
                 self.WriteTimeStepToNetCDFFile(iIncrement);
             end
 
             self.CloseNetCDFFile();
+        end
+
+        function totalIncrements = SetupIntegrator(self,initialTime,finalTime,deltaT)
+            Y0 = self.InitialConditionsArray();
+            if isempty(Y0{1})
+                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
+            end
+
+            self.integrator = ArrayIntegrator(@(t,y0) self.FluxAtTime(t,y0),Y0,deltaT);
+            self.integrator.currentTime = initialTime;
+
+            % total dT time steps to meet or exceed the requested time.
+            totalIncrements = ceil((finalTime-initialTime)/self.integrator.stepSize);
+            self.nIncrements = totalIncrements;
+        end
+        
+        function Y0 = InitialConditionsArray(self)
+            Y0 = cell(1,1);
+            n = 0;
+            if self.linearDynamics == 0
+                n=n+1;Y0{n} = self.wvm.Ap;
+                n=n+1;Y0{n} = self.wvm.Am;
+                n=n+1;Y0{n} = self.wvm.A0;
+            end
+
+            if ~isempty(self.xFloat)
+                n=n+1;Y0{n} = self.xFloat;
+                n=n+1;Y0{n} = self.yFloat;
+                n=n+1;Y0{n} = self.zFloat;
+            end
+
+            if ~isempty(self.xDrifter)
+                n=n+1;Y0{n} = self.xDrifter;
+                n=n+1;Y0{n} = self.yDrifter;
+            end
+
+            if ~isempty(self.tracers)
+                for i=1:length(self.tracers)
+                    n=n+1;Y0{n} = self.tracers{i};
+                end
+            end
+        end
+
+        function IncrementForward(self)
+            self.integrator.IncrementForward();
+            n=0;
+            if self.linearDynamics == 0
+                n=n+1; self.wvm.Ap = self.integrator.currentY{n};
+                n=n+1; self.wvm.Am = self.integrator.currentY{n};
+                n=n+1; self.wvm.A0 = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.xFloat)
+                n=n+1; self.xFloat = self.integrator.currentY{n};
+                n=n+1; self.yFloat = self.integrator.currentY{n};
+                n=n+1; self.zFloat = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.xDrifter)
+                n=n+1; self.xDrifter = self.integrator.currentY{n};
+                n=n+1; self.yDrifter = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.tracers)
+                for iTracer=1:length(self.tracers)
+                    n=n+1; self.tracers{iTracer} = self.integrator.currentY{n};
+                end
+            end
+
+            self.t = self.integrator.currentTime;
+        end
+
+        function F = FluxAtTime(self,t,y0)
+            F = cell(1,1);
+            n = 0;
+            if self.linearDynamics == 0
+                [Fp,Fm,F0,U,V,W] = self.wvm.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
+                n=n+1;F{n} = Fp;
+                n=n+1;F{n} = Fm;
+                n=n+1;F{n} = F0;
+            else
+                [U,V,W] = self.wvm.VelocityFieldAtTime(t);
+            end
+
+            if ~isempty(self.xFloat)
+                [Fx,Fy,Fz] = self.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
+                n=n+1;Y0{n} = Fx;
+                n=n+1;Y0{n} = Fy;
+                n=n+1;Y0{n} = Fz;
+            end
+
+            if ~isempty(self.xDrifter)
+                [Fx,Fy] = self.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
+                n=n+1;Y0{n} = Fx;
+                n=n+1;Y0{n} = Fy;
+            end
+
+            if ~isempty(self.tracers)
+                for i=1:length(self.tracers)
+                    phibar = self.TransformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.TransformToSpatialDomainWithFAllDerivatives(phibar);
+                    n=n+1;Y0{n} = -U.*Phi_x - V.*Phi_y - W.*Phi_z;
+                end
+            end
         end
 
         function ShowIntegrationTimeDiagnostics(self,integratorIncrement)
@@ -343,77 +421,7 @@ classdef WaveVortexModelIntegrationTools < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = SetupIntegrator(self,initialTime,cfl)
-            deltaT = self.wvm.TimeStepForCFL(cfl,self.outputInterval);
-            Y0 = self.InitialConditionsArray();
-            if isempty(Y0{1})
-                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
-            end
-
-            self.integrator = ArrayIntegrator(@(t,y0) self.FluxAtTime(t,y0),Y0,deltaT);
-            self.integrator.currentTime = initialTime;
-        end
         
-        function Y0 = InitialConditionsArray(self)
-            Y0 = cell(1,1);
-            n = 0;
-            if self.linearDynamics == 0
-                n=n+1;Y0{n} = self.wvm.Ap;
-                n=n+1;Y0{n} = self.wvm.Am;
-                n=n+1;Y0{n} = self.wvm.A0;
-            end
-
-            if ~isempty(self.xFloat)
-                n=n+1;Y0{n} = self.xFloat;
-                n=n+1;Y0{n} = self.yFloat;
-                n=n+1;Y0{n} = self.zFloat;
-            end
-
-            if ~isempty(self.xDrifter)
-                n=n+1;Y0{n} = self.xDrifter;
-                n=n+1;Y0{n} = self.yDrifter;
-            end
-
-            if ~isempty(self.tracers)
-                for i=1:length(self.tracers)
-                    n=n+1;Y0{n} = self.tracers{i};
-                end
-            end
-        end
-
-        function F = FluxAtTime(self,t,y0)
-            F = cell(1,1);
-            n = 0;
-            if self.linearDynamics == 0
-                [Fp,Fm,F0,U,V,W] = self.wvm.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
-                n=n+1;F{n} = Fp;
-                n=n+1;F{n} = Fm;
-                n=n+1;F{n} = F0;
-            else
-                [U,V,W] = self.wvm.VelocityFieldAtTime(t);
-            end
-
-            if ~isempty(self.xFloat)
-                [Fx,Fy,Fz] = self.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
-                n=n+1;Y0{n} = Fx;
-                n=n+1;Y0{n} = Fy;
-                n=n+1;Y0{n} = Fz;
-            end
-
-            if ~isempty(self.xDrifter)
-                [Fx,Fy] = self.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
-                n=n+1;Y0{n} = Fx;
-                n=n+1;Y0{n} = Fy;
-            end
-
-            if ~isempty(self.tracers)
-                for i=1:length(self.tracers)
-                    phibar = self.TransformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.TransformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;Y0{n} = -U.*Phi_x - V.*Phi_y - W.*Phi_z;
-                end
-            end
-        end
 
     end
 end
