@@ -34,8 +34,51 @@ period = wvm.InitializeWithPlaneWave(10,0,1,U,1);
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% initialize the integrator with the model
 iTool = WaveVortexModelIntegrationTools(wvm);
-iTool.IntegrateToTime(wvm.inertialPeriod);
+
+% set initial positions for a bunch of floats
+nTrajectories = 101;
+iTool.xFloat = Lx/2*ones(1,nTrajectories);
+iTool.yFloat = Ly/2*ones(1,nTrajectories);
+iTool.zFloat = linspace(-Lz,0,nTrajectories);
+
+% Set up the integrator
+outputInterval = period/10;
+deltaT = iTool.TimeStepForCFL(0.5,outputInterval);
+finalTime = 3*period;
+nT = iTool.SetupIntegrator(deltaT, outputInterval,finalTime);
+
+% write the float trajectories to memory
+xFloatT = zeros(nT,nTrajectories);
+yFloatT = zeros(nT,nTrajectories);
+zFloatT = zeros(nT,nTrajectories);
+t = zeros(nT,1);
+
+xFloatT(1,:) = iTool.xFloat;
+yFloatT(1,:) = iTool.yFloat;
+zFloatT(1,:) = iTool.zFloat;
+
+while(iTool.t < finalTime)
+    t(iTool.outputIndex) = iTool.integrateToNextOutputTime();
+    xFloatT(iTool.outputIndex,:) = iTool.xFloat;
+    yFloatT(iTool.outputIndex,:) = iTool.yFloat;
+    zFloatT(iTool.outputIndex,:) = iTool.zFloat;
+end
+
+
+
+return
+
+for iIncrement=1:totalIncrements
+    self.ShowIntegrationTimeDiagnostics(iIncrement);
+
+    self.IncrementForward();
+
+
+end
+
+% iTool.IntegrateToTime(wvm.inertialPeriod);
 
 return
 
