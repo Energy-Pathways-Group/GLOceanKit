@@ -441,54 +441,64 @@ classdef WaveVortexModelIntegrationTools < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function CreateNetCDFFileForModelOutput(self,modelOutputFile,outputInterval,overwriteExisting)
+        function CreateNetCDFFileForModelOutput(self,modelOutputFile,overwriteExisting)
             %CreateNetCDFFileForModelOutput
             % modelOutputFile   file path for output
-            % outputInterval    (optional) interval (in seconds) to write
-            %                   to file. If restarting, will use previous time step,
-            %                   otherwise will write at inertialPeriod/10.
-            % overwriteExisting (optional) default to 0
+            % overwriteExisting (optional) Pass 'OVERWRITE_EXISTING' to
+            %                   overwrite existing model output.
             self.outputFile = modelOutputFile;
 
-            % Figure out the output interval
-            if ~isempty(outputInterval)
-                % if they set an output interval, obviously use that
-                self.outputInterval = outputInterval;
-            elseif isempty(self.outputInterval)
-                % if one hasn't been set, use the default
-                self.outputInterval = self.wvm.inertialPeriod/10;
-            end
-
-            if ~isempty(existingModelOutput) && strcmp(self.outputFile,existingModelOutput) == 1
-                % okay, they want us to append to the existing file.
-                % We just need to set t0 and iTime accordingly
-                error('Cannot append to existing file!');
-                % Can't do this yet because the NetCDFTools don't fetch
-                % all the varIDs, etc.
-                self.netcdfTool = nctool;
-                time = ncread(nctool.netcdfFile,'t');
-                self.initialOutputTime = time(1);
-                self.outputIndex = length(time);
-            else
-                [filepath,name,~] = fileparts(self.outputFile);
-                matFilePath = sprintf('%s/%s.mat',filepath,name);
-                if isfile(self.outputFile) || isfile(matFilePath)
-                    if overwriteExisting == 1
-                        if isfile(self.outputFile)
-                            delete(self.outputFile);
-                        end
-                        if isfile(matFilePath)
-                            delete(matFilePath);
-                        end
-                    else
-                        error('File already exists!');
+            [filepath,name,~] = fileparts(self.outputFile);
+            matFilePath = sprintf('%s/%s.mat',filepath,name);
+            if isfile(self.outputFile) || isfile(matFilePath)
+                if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
+                    if isfile(self.outputFile)
+                        delete(self.outputFile);
                     end
+                    if isfile(matFilePath)
+                        delete(matFilePath);
+                    end
+                else
+                    error('File already exists!');
                 end
             end
+
+%             if ~isempty(existingModelOutput) && strcmp(self.outputFile,existingModelOutput) == 1
+%                 % okay, they want us to append to the existing file.
+%                 % We just need to set t0 and iTime accordingly
+%                 error('Cannot append to existing file!');
+%                 % Can't do this yet because the NetCDFTools don't fetch
+%                 % all the varIDs, etc.
+%                 self.netcdfTool = nctool;
+%                 time = ncread(nctool.netcdfFile,'t');
+%                 self.initialOutputTime = time(1);
+%                 self.outputIndex = length(time);
+%             else
+%                 
+%             end
             
         end
 
         function OpenNetCDFFileForTimeStepping(self)
+           % Possible flags of what to write:
+           % amplitude coefficients--initial conditions or time series
+           % (u,v,eta)--initial conditions or time series
+           % w
+           % rho
+           % floats
+           % drifters
+           % energetics
+           % tracers
+           % .no, .initialConditions, .timeSeries
+           % writeAmplitudeCoefficients
+           % writePhysicalVariables (u,v,eta)
+           % writeVelocityField (u,v,w)
+           % writeFloats
+           % writeDrifters
+           % writeTracers
+           % writeFlowConstituentEnergetics
+           % writeFlowConstituentEnergetics2D
+           % But when I do QG only?
             if isempty(self.outputFile)
                 % user didn't request output, so move on
                 return;

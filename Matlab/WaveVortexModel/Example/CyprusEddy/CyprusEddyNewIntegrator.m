@@ -136,6 +136,10 @@ wvm.summarizeEnergyContent;
 
 pause(1)
 
+nctool = WaveVortexModelNetCDFTools( outputfile );
+
+return
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Initialize new integrator, overwrite existing file, integrate
