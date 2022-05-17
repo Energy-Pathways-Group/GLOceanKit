@@ -35,32 +35,40 @@ will delete any existing file and create a new file.
 ### `addAttribute(name,value)`
 > Adds a global attribute to the NetCDF file.
 >
+> Usage
+> `ncfile.addAttribute('model','WaveVortexModel');`
+>
+> Parameters
 > - `name` (key) string with the name of the property
 > - `value` value
->
-> Usage: `ncfile.addAttribute('model','WaveVortexModel');`
+
 
 ---
 
-### [dimension,variable] = addDimension(name,value,properties,dimLength)
-> Adds a new dimension to the NetCDF file.
+### `[dimension,variable] = addDimension(name,value,properties,dimLength)`
+> Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
+> 
+> Usage
+> ```matlab
+> x = linspace(0,10,11);
+> ncfile.addDimension('x',x,[]);
+> ```
 >
+> Parameters
 > - `name` string with the name of the dimension
 > - `value` array of values along that dimension, or empty
 > - `properties` containers.Map containing any key-value pairs to be associated with the dimension.
 > - `dimLength` 
 >
-> Usage:
-> ```matlab
-> x = linspace(0,10,11);
-> ncfile.addDimension('x',x,[]);
-> ```
+> Return Value
+> - `dimension` a `NetCDFDimension` object with the newly create dimension
+> - `variable` a `NetCDFVariable` object with the associated coordinate variable
+
 
 ---
 
 ### `[dimension,variable] = addMutableDimension(name,properties)`
-
-> Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
+> Add a new mutable dimension with coordinate variable to the NetCDF file.
 
 ---
 
