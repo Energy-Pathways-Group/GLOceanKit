@@ -36,12 +36,24 @@ will delete any existing file and create a new file.
 : Here is a description that follows
 : And another line
 
-#### [dimension,variable] = addDimension(name,data,properties,dimLength)
-> Here is a description that follows
+### [dimension,variable] = addDimension(name,data,properties,dimLength)
+> Here is a description that follows. Here is a description that follows. Here is a description that followsHere is a description that followsHere is a description that followsHere is a description that follows
  And another line
 
 * `[dimension,variable] = addMutableDimension(name,properties)`
 
   Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
+  
+* [dimension,variable] = addMutableDimension(name,properties)
+
+  Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
+
+addAttribute(name,data)
+: Here is a description that follows
+: And another line
+
+addAttribute(name,data)
+: Here is a description that follows
+: And another line
 
 
