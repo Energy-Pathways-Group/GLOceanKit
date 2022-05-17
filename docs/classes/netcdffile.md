@@ -30,7 +30,7 @@ ncfile = NetCDFFile(path,'OVERWRITE_EXISTING')
 ```
 will delete any existing file and create a new file.
 
-### Adding attributes, dimensions and variables
+## Adding attributes, dimensions and variables
 
 ### `addAttribute(name,value)`
 > Adds a global attribute to the NetCDF file.
@@ -40,33 +40,33 @@ will delete any existing file and create a new file.
 >
 > Usage: `ncfile.addAttribute('model','WaveVortexModel');`
 
+---
+
 ### [dimension,variable] = addDimension(name,value,properties,dimLength)
 > Adds a new dimension to the NetCDF file.
 >
 > - `name` string with the name of the dimension
-> - `value' array of values along that dimension, or empty
-> - `properties' containers.Map containing any key-value pairs to be associated with the dimension.
-> - `dimLength' 
+> - `value` array of values along that dimension, or empty
+> - `properties` containers.Map containing any key-value pairs to be associated with the dimension.
+> - `dimLength` 
 >
+> Usage:
 > ```matlab
 > x = linspace(0,10,11);
 > ncfile.addDimension('x',x,[]);
 > ```
 
-* `[dimension,variable] = addMutableDimension(name,properties)`
+---
+
+### `[dimension,variable] = addMutableDimension(name,properties)`
+
+> Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
+
+---
+
+### [dimension,variable] = addMutableDimension(name,properties)
 
   Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
-  
-* [dimension,variable] = addMutableDimension(name,properties)
 
-  Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
-
-addAttribute(name,data)
-: Here is a description that follows
-: And another line
-
-addAttribute(name,data)
-: Here is a description that follows
-: And another line
 
 
