@@ -1,3 +1,11 @@
+---
+layout: default
+title: Home
+nav_order: 1
+description: "The WaveVortexModel decomposes a rotating stratified fluid into internal waves and geostrophic vortices"
+permalink: /
+---
+
 WaveVortexModel
 ==============
 

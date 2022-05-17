@@ -1,3 +1,8 @@
+---
+layout: default
+title: NetCDFFile
+parent: Classes
+---
 #  NetCDFFile
 
 Initialize from an existing file or create new file.
