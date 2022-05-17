@@ -13,24 +13,52 @@ NetCDF files are a standard file format for reading and writing data. This class
 
 
 ## Topics
++ [Initialization](#initialization)
++ [Global Attributes]
+  + [`attributes`]
+  + [`addAttribute`]
++ [Coordinate Dimensions]
+  + [`dimensions`]
+  + [`dimensionWithName`]
+  + [`addDimension`]
+  + [`addMutableDimension`]
++ [Variables]
+  + [`variables`]
+  + [`variablesWithName`]
+  + [`complexVariables`]
+  + [`complexVariableWithName`]
+  + [`initVariable`]
+  + [`initComplexVariable`]
+  + [`setVariable`]
+  + [`addVariable`]
+  + [`concatenateVariableAlongDimension`]
+  + [`readVariables`]
+  + [`readVariablesAtIndexAlongDimension`]
 
----
+## Initialization
 
-### Initialization
+### `self = NetCDFFile(path,overwriteExisting)`
+> Open an existing file or create a new empty file.
+>
+> Usage
+> ```matlab
+> ncfile = NetCDFFile(path)
+> ```
+> will load an existing file (if one exists) or create a new file (if none exists).
+> ```matlab
+> ncfile = NetCDFFile(path,'OVERWRITE_EXISTING')
+> ```
+> will delete any existing file and create a new file.
 
-`self = NetCDFFile(path,overwriteExisting)`
+## Global Attributes
 
-Calling,
-```matlab
-ncfile = NetCDFFile(path)
-```
-will load an existing file (if one exists) or create a new file (if none exists).
-```matlab
-ncfile = NetCDFFile(path,'OVERWRITE_EXISTING')
-```
-will delete any existing file and create a new file.
-
-## Adding attributes, dimensions and variables
+### `attributes`
+> A `containers.Map` type that contains the key-value pairs of all global attributes in the NetCDF file.
+>
+> Usage
+> ```matlab
+> model = ncfile.attributes('model');
+> ```
 
 ### `addAttribute(name,value)`
 > Adds a global attribute to the NetCDF file.
@@ -43,7 +71,23 @@ will delete any existing file and create a new file.
 > - `value` value
 
 
----
+## Coordinate Dimensions
+
+### `dimensions`
+> An array of NetCDFDimension objects for each coordinate dimension defined in the NetCDF file. The dimensions order in the array should reflect the underlying dimensionID defined in the NetCDF file.
+>
+> Usage
+> ```matlab
+> dim = ncfile.dimensions(dimID+1); % get the dimension with dimID
+> ```
+
+### `dimensionWithName`
+> An container.Map of NetCDFDimension objects keyed by dimension name.
+>
+> Usage
+> ```matlab
+> xDim = ncfile.dimensionWithName('x');
+> ```
 
 ### `[dimension,variable] = addDimension(name,value,properties,dimLength)`
 > Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
@@ -72,9 +116,6 @@ will delete any existing file and create a new file.
 
 ---
 
-### [dimension,variable] = addMutableDimension(name,properties)
-
-  Here is a description that follows with a lot of random text Here is a description that follows with a lot of random textHere is a description that follows with a lot of random text. And, oh, hey
 
 
 
