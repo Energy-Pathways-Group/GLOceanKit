@@ -33,9 +33,15 @@ will delete any existing file and create a new file.
 ### Adding attributes, dimensions and variables
 
 `addAttribute(name,data)`
+: Here is a description that follows
+: And another line
 
 `[dimension,variable] = addDimension(name,data,properties,dimLength)`
+: Here is a description that follows
+: And another line
 
 `[dimension,variable] = addMutableDimension(name,properties)`
+: Here is a description that follows
+: And another line
 
 
