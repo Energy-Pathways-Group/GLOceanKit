@@ -32,13 +32,26 @@ will delete any existing file and create a new file.
 
 ### Adding attributes, dimensions and variables
 
-### `addAttribute(name,data)`
-: Here is a description that follows
-: And another line
+### `addAttribute(name,value)`
+> Adds a global attribute to the NetCDF file.
+>
+> - `name` (key) string with the name of the property
+> - `value` value
+>
+> Usage: `ncfile.addAttribute('model','WaveVortexModel');`
 
-### [dimension,variable] = addDimension(name,data,properties,dimLength)
-> Here is a description that follows. Here is a description that follows. Here is a description that followsHere is a description that followsHere is a description that followsHere is a description that follows
- And another line
+### [dimension,variable] = addDimension(name,value,properties,dimLength)
+> Adds a new dimension to the NetCDF file.
+>
+> - `name` string with the name of the dimension
+> - `value' array of values along that dimension, or empty
+> - `properties' containers.Map containing any key-value pairs to be associated with the dimension.
+> - `dimLength' 
+>
+> ```matlab
+> x = linspace(0,10,11);
+> ncfile.addDimension('x',x,[]);
+> ```
 
 * `[dimension,variable] = addMutableDimension(name,properties)`
 
