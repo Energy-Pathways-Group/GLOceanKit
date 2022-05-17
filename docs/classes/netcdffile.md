@@ -9,7 +9,22 @@ Initialize from an existing file or create new file.
 
 ## Overview
 
-NetCDF files are a standard file format for reading and writing data. This class is designed to simply the task of adding new dimensions, variables, and attributes to a NetCDF file.
+NetCDF files are a standard file format for reading and writing data. This class is designed to simplify the task of adding new dimensions, variables, and attributes to a NetCDF file compared to using the built-in `ncread` and `ncwrite` functions.
+
+```matlab
+ncfile = NetCDFFile('myfile.nc')
+
+% create two new dimensions and add them to the file
+x = linspace(0,10,11);
+y = linspace(-10,0,11);
+ncfile.addDimension('x',x);
+ncfile.addDimension('y',y);
+
+% Create new multi-dimensional variables, and add those to the file
+[X,Y] = ncgrid(x,y);
+ncfile.addVariable(X,{'x','y'});
+ncfile.addVariable(Y,{'x','y'});
+```
 
 
 ## Topics
@@ -35,7 +50,11 @@ NetCDF files are a standard file format for reading and writing data. This class
   + [`readVariables`]
   + [`readVariablesAtIndexAlongDimension`]
 
+---
+
 ## Initialization
+
+---
 
 ### `self = NetCDFFile(path,overwriteExisting)`
 > Open an existing file or create a new empty file.
@@ -50,15 +69,21 @@ NetCDF files are a standard file format for reading and writing data. This class
 > ```
 > will delete any existing file and create a new file.
 
+---
+
 ## Global Attributes
 
+---
+
 ### `attributes`
-> A `containers.Map` type that contains the key-value pairs of all global attributes in the NetCDF file.
+> A `containers.Map` type that contains the key-value pairs of all global attributes in the NetCDF file. This is intended to be *read only*. If you need to add a new attribute to file, use [`addAttribute`](#addattribute).
 >
 > Usage
 > ```matlab
 > model = ncfile.attributes('model');
 > ```
+
+---
 
 ### `addAttribute(name,value)`
 > Adds a global attribute to the NetCDF file.
@@ -70,8 +95,11 @@ NetCDF files are a standard file format for reading and writing data. This class
 > - `name` (key) string with the name of the property
 > - `value` value
 
+---
 
 ## Coordinate Dimensions
+
+---
 
 ### `dimensions`
 > An array of NetCDFDimension objects for each coordinate dimension defined in the NetCDF file. The dimensions order in the array should reflect the underlying dimensionID defined in the NetCDF file.
@@ -81,6 +109,8 @@ NetCDF files are a standard file format for reading and writing data. This class
 > dim = ncfile.dimensions(dimID+1); % get the dimension with dimID
 > ```
 
+---
+
 ### `dimensionWithName`
 > An container.Map of NetCDFDimension objects keyed by dimension name.
 >
@@ -88,6 +118,8 @@ NetCDF files are a standard file format for reading and writing data. This class
 > ```matlab
 > xDim = ncfile.dimensionWithName('x');
 > ```
+
+---
 
 ### `[dimension,variable] = addDimension(name,value,properties,dimLength)`
 > Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
