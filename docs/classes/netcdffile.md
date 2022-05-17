@@ -14,15 +14,15 @@ NetCDF files are a standard file format for reading and writing data. This class
 
 ## Topics
 + [Initialization](#initialization)
-+ [Global Attributes]
-  + [`attributes`]
-  + [`addAttribute`]
-+ [Coordinate Dimensions]
-  + [`dimensions`]
-  + [`dimensionWithName`]
-  + [`addDimension`]
-  + [`addMutableDimension`]
-+ [Variables]
++ [Global Attributes](#global-attributes)
+  + [`attributes`](#attributes)
+  + [`addAttribute`](#addattributenamevalue)
++ [Coordinate Dimensions](#coordinate-dimensions)
+  + [`dimensions`](#dimensions)
+  + [`dimensionWithName`](#dimensionwithname)
+  + [`addDimension`](#dimensionvariable--adddimensionnamevaluepropertiesdimlength)
+  + [`addMutableDimension`](#dimensionvariable--addmutabledimensionnameproperties)
++ [Variables](#variables)
   + [`variables`]
   + [`variablesWithName`]
   + [`complexVariables`]

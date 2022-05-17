@@ -10,7 +10,23 @@ permalink: docs/classes
 
 The `WaveVortexModel` consists of several classes and subclasses.
 
-1. [WaveVortexModel]()
-2. [NetCDFFile](netcdffile.html)
+- [WaveVortexModel]()
+- [WaveVortexModelIntegrationTools]()
+- [WaveVortexModelNetCDFFile]()
 
+## WaveVortexModel
 
+There are two usable subclasses at the moment,
+
+- [WaveVortexModelConstantStratification]()
+- [WaveVortexModelHydrostatic]()
+
+## WaveVortexModelIntegrationTools
+
+Tools for integrating (time-stepping) the model forward.
+
+## WaveVortexModelNetCDFFile
+
+Tools for reading and writing the model to file, including support for tracers, floats and model restarts.
+
+- [NetCDFFile](./netcdffile.html)
