@@ -98,6 +98,19 @@ classdef WaveVortexModelIntegrationTools < handle
         outputFile
         netcdfTool      % WaveVortexModelNetCDFTools instance---empty indicates no file output
 
+
+        shouldWriteA0, shouldWriteAp, shouldWriteAm
+        shouldWriteU, shouldWriteV, shouldWriteEta, shouldWriteW, shouldWriteP, shouldWriteRho
+        shouldWriteFloats
+        shouldWriteDrifters
+        shouldWriteTracers
+        shouldWriteFlowConstituentEnergetics
+        shouldWriteFlowConstituentEnergetics2D
+
+        amplitudeCoefficientsToWriteAsTimeSeries
+        physicalVariablesToWriteAsTimeSeries % internal use only
+
+
         incrementsWrittenToFile
     end
 
@@ -203,7 +216,7 @@ classdef WaveVortexModelIntegrationTools < handle
                 cfl=0.5;
             end
             deltaT = self.wvm.TimeStepForCFL(cfl,self.outputInterval);
-            totalIncrements = self.SetupIntegrator(finalTime,deltaT,self.outputInterval);
+            totalIncrements = self.SetupIntegrator(deltaT,self.outputInterval,finalTime);
    
             self.OpenNetCDFFileForTimeStepping();
             
@@ -480,25 +493,6 @@ classdef WaveVortexModelIntegrationTools < handle
         end
 
         function OpenNetCDFFileForTimeStepping(self)
-           % Possible flags of what to write:
-           % amplitude coefficients--initial conditions or time series
-           % (u,v,eta)--initial conditions or time series
-           % w
-           % rho
-           % floats
-           % drifters
-           % energetics
-           % tracers
-           % .no, .initialConditions, .timeSeries
-           % writeAmplitudeCoefficients
-           % writePhysicalVariables (u,v,eta)
-           % writeVelocityField (u,v,w)
-           % writeFloats
-           % writeDrifters
-           % writeTracers
-           % writeFlowConstituentEnergetics
-           % writeFlowConstituentEnergetics2D
-           % But when I do QG only?
             if isempty(self.outputFile)
                 % user didn't request output, so move on
                 return;
@@ -507,23 +501,60 @@ classdef WaveVortexModelIntegrationTools < handle
             if isempty(self.netcdfTool)
                 % initialize the file, and appropriate variables
                 self.netcdfTool = WaveVortexModelNetCDFTools(self.wvm,self.outputFile);
+    
+                self.amplitudeCoefficientsToWriteAsTimeSeries = {};
+                self.physicalVariablesToWriteAsTimeSeries = {};
 
-                if self.linearDynamics == 0
-                    self.netcdfTool.InitializeAmplitudeCoefficientStorage();
-                    self.netcdfTool.InitializeEnergeticsStorage();
-                    self.netcdfTool.InitializeEnergeticsKJStorage();
+                if self.shouldWriteA0 == ShouldWrite.timeSeries
+                    self.amplitudeCoefficientsToWriteAsTimeSeries{end+1} = 'A0';
+                elseif self.shouldWriteA0 == ShouldWrite.initialConditions
+                    
                 end
+                if self.shouldWriteAp == ShouldWrite.timeSeries
+                    self.amplitudeCoefficientsToWriteAsTimeSeries{end+1} = 'Ap';
+                end
+                if self.shouldWriteAm == ShouldWrite.timeSeries
+                    self.amplitudeCoefficientsToWriteAsTimeSeries{end+1} = 'Am';
+                end
+                self.netcdfTool.InitializeStorageForTimeSeries(self.amplitudeCoefficientsToWriteAsTimeSeries);
 
-                if ~isempty(self.xFloat)
-                    self.netcdfTool.InitializeFloatStorage(length(self.xFloat));
+                if self.shouldWriteU == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'u';
                 end
-                if ~isempty(self.xDrifter)
-                    self.netcdfTool.InitializeDrifterStorage(length(self.xDrifter));
+                if self.shouldWriteV == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'v';
                 end
-                if ~isempty(self.tracers)
+                if self.shouldWriteW == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'w';
+                end
+                if self.shouldWriteEta == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'eta';
+                end
+                if self.shouldWriteP == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'p';
+                end
+                if self.shouldWriteRho == ShouldWrite.timeSeries
+                    self.physicalVariablesToWriteAsTimeSeries{end+1} = 'rho_prime';
+                end
+                self.netcdfTool.InitializeStorageForTimeSeries(self.physicalVariablesToWriteAsTimeSeries);
+
+                if self.shouldWriteFloats == ShouldWrite.timeSeries
+                    self.netcdfTool.WriteFloatPositionsAtTimeIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
+                end
+                if self.shouldWriteDrifters == ShouldWrite.timeSeries
+                    self.netcdfTool.WriteDrifterPositionsTimeAtIndex(self.outputIndex,self.xDrifter,self.yDrifter,self.zDrifter);
+                end
+                if self.shouldWriteTracers == ShouldWrite.timeSeries
                     for iTracer = 1:length(self.tracers)
-                        self.netcdfTool.InitializeTracerStorageWithName(self.tracerNames{iTracer});
+                        self.netcdfTool.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracers{iTracer});
                     end
+                end
+
+                if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
+                    self.netcdfTool.WriteEnergeticsAtTimeIndex(self.outputIndex);
+                end
+                if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
+                    self.netcdfTool.WriteEnergeticsKJAtTimeIndex(self.outputIndex);
                 end
             else
                 if isempty(self.netcdfTool.ncid)
@@ -545,25 +576,42 @@ classdef WaveVortexModelIntegrationTools < handle
                 if self.outputSteps(self.outputIndex) == integratorIncrement
                     self.netcdfTool.WriteTimeAtIndex(self.outputIndex,self.t);
 
-                    if self.linearDynamics == 0
-                        self.netcdfTool.WriteAmplitudeCoefficientsAtIndex(self.outputIndex);
-                        self.netcdfTool.WriteEnergeticsAtIndex(self.outputIndex);
-                        self.netcdfTool.WriteEnergeticsKJAtIndex(self.outputIndex);
+                    if self.shouldWriteA0 == ShouldWrite.timeSeries
+                        self.netcdfTool.concatenateVariableAlongDimension('A0',self.wvm.A0,'t',iTime);
+                    end
+                    if self.shouldWriteAp == ShouldWrite.timeSeries
+                        self.netcdfTool.concatenateVariableAlongDimension('Ap',self.wvm.Ap,'t',iTime);
+                    end
+                    if self.shouldWriteAm == ShouldWrite.timeSeries
+                        self.netcdfTool.concatenateVariableAlongDimension('Am',self.wvm.Am,'t',iTime);
                     end
 
-                    if ~isempty(self.xFloat)
-                        self.netcdfTool.WriteFloatPositionsAtIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
-                    end
-                    if ~isempty(self.xDrifter)
-                        self.netcdfTool.WriteDrifterPositionsAtIndex(self.outputIndex,self.xDrifter,self.yDrifter,self.zDrifter);
-                    end
-                    if ~isempty(self.tracers)
-                        for iTracer = 1:length(self.tracers)
-                            self.netcdfTool.WriteTracerWithNameAtIndex(self.outputIndex,self.tracers{iTracer},self.tracerNames{iTracer});
+                    if ~isempty(self.physicalVariablesToWriteAsTimeSeries)
+                        vars = self.wvm.VariableFieldsAtTime(self.t,self.physicalVariablesToWriteAsTimeSeries);
+                        for iVar=1:length(self.physicalVariablesToWriteAsTimeSeries)
+                            self.netcdfTool.concatenateVariableAlongDimension(self.physicalVariablesToWriteAsTimeSeries{iVar},vars{iVar},'t',iTime);
                         end
                     end
 
-                    self.netcdfTool.sync();
+                    if self.shouldWriteFloats == ShouldWrite.timeSeries
+                        self.netcdfTool.WriteFloatPositionsAtTimeIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
+                    end
+                    if self.shouldWriteDrifters == ShouldWrite.timeSeries
+                        self.netcdfTool.WriteDrifterPositionsTimeAtIndex(self.outputIndex,self.xDrifter,self.yDrifter,self.zDrifter);
+                    end
+                    if self.shouldWriteTracers == ShouldWrite.timeSeries
+                        for iTracer = 1:length(self.tracers)
+                            self.netcdfTool.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracers{iTracer});
+                        end
+                    end
+
+                    if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
+                        self.netcdfTool.WriteEnergeticsAtTimeIndex(self.outputIndex);
+                    end
+                    if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
+                        self.netcdfTool.WriteEnergeticsKJAtTimeIndex(self.outputIndex);
+                    end
+
                     self.outputIndex = self.outputIndex + 1;
                     self.incrementsWrittenToFile = self.incrementsWrittenToFile + 1;
                 end

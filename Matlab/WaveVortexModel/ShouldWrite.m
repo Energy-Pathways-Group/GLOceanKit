@@ -1,4 +1,4 @@
-classdef WriteOptions
+classdef ShouldWrite
     properties (Constant)
         no                = 0
         initialConditions = 1
