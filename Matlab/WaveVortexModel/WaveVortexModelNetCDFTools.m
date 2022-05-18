@@ -209,7 +209,7 @@ classdef WaveVortexModelNetCDFTools < handle
             % Write some metadata
             keyNames = keys(self.attributes);
             for iKey = 1:length(keyNames)
-                netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), keyNames(iKey), self.attributes(keyNames(iKey)));
+                netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), keyNames{iKey}, self.attributes(keyNames{iKey}));
             end
 
             % End definition mode

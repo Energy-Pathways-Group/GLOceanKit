@@ -34,33 +34,20 @@ period = wvm.InitializeWithPlaneWave(10,0,1,U,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-iTool = WaveVortexModelIntegrationTools(wvm);
+integrator = WaveVortexModelIntegrationTools(wvm);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
-iTool.xFloat = Lx/2*ones(1,nTrajectories);
-iTool.yFloat = Ly/2*ones(1,nTrajectories);
-iTool.zFloat = linspace(-Lz,0,nTrajectories);
+integrator.xFloat = Lx/2*ones(1,nTrajectories);
+integrator.yFloat = Ly/2*ones(1,nTrajectories);
+integrator.zFloat = linspace(-Lz,0,nTrajectories);
 
 % Set up the integrator
 outputInterval = period/10;
-deltaT = iTool.TimeStepForCFL(0.5,outputInterval);
+deltaT = integrator.TimeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
-nT = iTool.SetupIntegrator(deltaT, outputInterval,finalTime);
+nT = integrator.SetupIntegrator(deltaT, outputInterval,finalTime);
 
-% write the float trajectories to memory
-xFloatT = zeros(nT,nTrajectories);
-yFloatT = zeros(nT,nTrajectories);
-zFloatT = zeros(nT,nTrajectories);
-t = zeros(nT,1);
+integrator.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc','OVERWRITE_EXISTING');
 
-xFloatT(1,:) = iTool.xFloat;
-yFloatT(1,:) = iTool.yFloat;
-zFloatT(1,:) = iTool.zFloat;
-
-while(iTool.t < finalTime)
-    t(iTool.outputIndex) = iTool.integrateToNextOutputTime();
-    xFloatT(iTool.outputIndex,:) = iTool.xFloat;
-    yFloatT(iTool.outputIndex,:) = iTool.yFloat;
-    zFloatT(iTool.outputIndex,:) = iTool.zFloat;
-end
+integrator.IntegrateToTime(finalTime);

@@ -1,11 +1,11 @@
 classdef WaveVortexModelNetCDFFile < NetCDFFile
 
     properties
-        wvm     % waveVortexModel instance
-        t       % model time of the wvm coefficients
+        wvm         % waveVortexModel instance
+        currentTime % model time of the wvm coefficients
+        timeIndex   % associated index in the NetCDF file
 
-        Nx, Ny, Nz
-        Nk, Nl, Nj, Nt
+        Nt
         Nkh
 
         tracersWithName
@@ -19,14 +19,73 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
     end
 
     methods
-        function self = WaveVortexModelNetCDFFile(path,varargin)
-            if nargin == 0
+        function self = WaveVortexModelNetCDFFile(varargin)
+            if isa(varargin{1},'WaveVortexModel') && isa(varargin{2},'char' )
+                isCreatingNewFile = 1;
+                waveVortexModel = varargin{1};
+                netcdfFile = varargin{2};
+                Nt = Inf;
+                precision = 'double';
+                shouldOverwriteExisting = 0;
 
-            elseif isa(varargin{1},'char' ) % overwriteExisting
-            self@NetCDFFile(path,varargin{1});
-            elseif isa(varargin{2},"double")
+                extraargs = varargin(3:end);
+                if mod(length(extraargs),2) ~= 0
+                    error('Arguments must be given as name/value pairs.');
+                end
 
+                for k = 1:2:length(extraargs)
+                    if strcmp(extraargs{k}, 'precision')
+                        precision = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'Nt')
+                        Nt = extraargs{k+1};
+                    elseif strcmp(extraargs{k}, 'shouldOverwriteExisting')
+                        shouldOverwriteExisting = extraargs{k+1};
+                    else
+                        error('Unknown argument, %s', extraargs{k});
+                    end
+                end
+
+                [filepath,name,~] = fileparts(netcdfFile);
+                matFilePath = sprintf('%s/%s.mat',filepath,name);
+            elseif isa(varargin{1},'char' )
+                isCreatingNewFile = 0;
+                netcdfFile = varargin{1};
+                extraargs = varargin(2:end);
+                if mod(length(extraargs),2) ~= 0
+                    error('Arguments must be given as name/value pairs.');
+                end
+
+                timeIndex = 1;
+                for k = 1:2:length(extraargs)
+                    if strcmp(extraargs{k}, 'timeIndex')
+                        timeIndex = extraargs{k+1};
+                    else
+                        error('Unknown argument, %s', extraargs{k});
+                    end
+                end
             end
+
+            if isCreatingNewFile == 1 && shouldOverwriteExisting == 1
+                if isfile(netcdfFile)
+                    delete(netcdfFile);
+                end
+                if isfile(matFilePath)
+                    delete(matFilePath);
+                end
+            elseif isCreatingNewFile == 1 && shouldOverwriteExisting == 0
+                if isfile(netcdfFile) || isfile(matFilePath)
+                    error('A file already exists with that name.')
+                end
+            end
+
+            self@NetCDFFile(netcdfFile);
+
+            if isCreatingNewFile == 1
+                self.CreateNetCDFFileFromModel(waveVortexModel,Nt,precision);
+            else
+                self.InitializeWaveVortexModelFromNetCDFFile(timeIndex);
+            end
+
             self.tracersWithName = containers.Map;
         end
 
@@ -36,7 +95,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             
         end
 
-        function [model, t] = InitializeWaveVortexModelFromNetCDFFile(self,timeIndex)
+        function [model, t] = InitializeWaveVortexModelFromNetCDFFile(self,aTimeIndex)
             requiredVariables = {'x','y','z','j'};
             requiredAttributes = {'latitude','stratification','t0'};
             if ~all(isKey(self.variables,requiredVariables)) || ~all(isKey(self.attributes,requiredAttributes))
@@ -46,11 +105,11 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
 
             [x,y,z] = self.readVariables('x','y','z');
             latitude = self.attributes('latitude');
-            self.Nx = length(x);
-            self.Ny = length(y);
-            self.Nz = length(z);
-            Lx = (x(2)-x(1))*self.Nx; 
-            Ly = (y(2)-y(1))*self.Ny; 
+            Nx = length(x);
+            Ny = length(y);
+            Nz = length(z);
+            Lx = (x(2)-x(1))*Nx; 
+            Ly = (y(2)-y(1))*Ny; 
             Lz = max(z)-min(z);
 
             if strcmp(self.attributes('stratification'),'constant')
@@ -59,7 +118,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 end
                 N0 = self.attributes('N0');
                 rho0 = self.attributes('rho0');
-                self.wvm = WaveVortexModelConstantStratification([Lx Ly Lz],[self.Nx self.Ny self.Nz],latitude,N0,rho0);
+                self.wvm = WaveVortexModelConstantStratification([Lx Ly Lz],[Nx Ny Nz],latitude,N0,rho0);
             elseif strcmp(self.attributes('stratification'),'custom-hydrostatic')
                 if ~all(isKey(self.varID,{'j'})) || ~all(isKey(self.attributes,{'rho0'}))
                     error('Missing j or rho0');
@@ -67,7 +126,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 nModes = length(self.readVariables('j'));
                 rho0 = self.attributes('rho0');
                 matFile = load(self.matFilePath);
-                self.wvm = WaveVortexModelHydrostatic([Lx Ly Lz],[self.Nx self.Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
+                self.wvm = WaveVortexModelHydrostatic([Lx Ly Lz],[Nx Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
             else
                 error("stratification not supported.");
             end
@@ -87,14 +146,14 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             if isKey(self.dimensionWithName,'t')
                 t = self.readVariables('t');
                 self.Nt = length(t);
-                if isinf(timeIndex)
-                    timeIndex = length(t);
-                elseif timeIndex > length(t)
-                    error('Index out of bounds! There are %d time points in this file, you requested %d.',length(t),timeIndex);
-                elseif timeIndex < 1
-                    timeIndex = 1;
+                if isinf(aTimeIndex)
+                    aTimeIndex = length(t);
+                elseif aTimeIndex > length(t)
+                    error('Index out of bounds! There are %d time points in this file, you requested %d.',length(t),aTimeIndex);
+                elseif aTimeIndex < 1
+                    aTimeIndex = 1;
                 end
-                self.SetWaveModelToIndex(timeIndex);
+                self.SetWaveModelToIndex(aTimeIndex);
             else
                 self.SetWaveModelToIndex([]);
             end
@@ -108,11 +167,12 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             if isKey(self.dimensionWithName,'drifter_id')
                 self.nDrifters = self.dimensionWithName('drifter_id').nPoints;
             end
-            if all(isKey(self.dimensionWithName,{'k','l','j'}))
-                self.Nk = self.dimensionWithName('k').nPoints;
-                self.Nl = self.dimensionWithName('l').nPoints;
-                self.Nj = self.dimensionWithName('j').nPoints;
+            for iVar=1:length(self.variables)
+                if isKey(variables(iVar).attributes,'isTracer') && variables(iVar).attributes('isTracer') == 1
+                    self.tracersWithName(variables(iVar).name) = variables(iVar);
+                end
             end
+            self.nTracers = length(self.tracersWithName);
 
             model = self.wvm;
         end
@@ -134,20 +194,20 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 error('Precision can be either single or double.\n')
             end
 
-            self.addDimension('x',self.wvm.x,containers.Map({'units'},{'m'}));
-            self.addDimension('y',self.wvm.y,containers.Map({'units'},{'m'}));
-            self.addDimension('z',self.wvm.z,containers.Map({'units'},{'m'}));
-            self.addDimension('k',self.wvm.k,containers.Map({'units'},{'radians/m'}));
-            self.addDimension('l',self.wvm.l,containers.Map({'units'},{'radians/m'}));
-            self.addDimension('j',self.wvm.j,containers.Map({'units'},{'mode number'}));
-            self.addDimension('t',[],containers.Map({'units'},{'s'}),Nt);
+            self.addDimension('x',self.wvm.x,containers.Map({'units'},{self.wvm.unitsForVariable('x')}));
+            self.addDimension('y',self.wvm.y,containers.Map({'units'},{self.wvm.unitsForVariable('y')}));
+            self.addDimension('z',self.wvm.z,containers.Map({'units'},{self.wvm.unitsForVariable('z')}));
+            self.addDimension('k',self.wvm.k,containers.Map({'units'},{self.wvm.unitsForVariable('k')}));
+            self.addDimension('l',self.wvm.l,containers.Map({'units'},{self.wvm.unitsForVariable('l')}));
+            self.addDimension('j',self.wvm.j,containers.Map({'units'},{self.wvm.unitsForVariable('j')}));
+            self.addDimension('t',[],containers.Map({'units'},{self.wvm.unitsForVariable('t')}),Nt);
 
-            self.addVariable('IMA0',self.wvm.IMA0,{'k','l','j'});
-            self.addVariable('IMAp',self.wvm.IMAp,{'k','l','j'});
-            self.addVariable('IMAm',self.wvm.IMAm,{'k','l','j'});
-            self.addVariable('EMA0',self.wvm.EMA0,{'k','l','j'});
-            self.addVariable('EMAp',self.wvm.EMAp,{'k','l','j'});
-            self.addVariable('EMAm',self.wvm.EMAm,{'k','l','j'});
+            self.addVariable('IMA0',int8(self.wvm.IMA0),{'k','l','j'});
+            self.addVariable('IMAp',int8(self.wvm.IMAp),{'k','l','j'});
+            self.addVariable('IMAm',int8(self.wvm.IMAm),{'k','l','j'});
+            self.addVariable('EMA0',int8(self.wvm.EMA0),{'k','l','j'});
+            self.addVariable('EMAp',int8(self.wvm.EMAp),{'k','l','j'});
+            self.addVariable('EMAm',int8(self.wvm.EMAm),{'k','l','j'});
 
             CreationDate = datestr(datetime('now'));
             self.addAttribute('latitude', self.wvm.latitude);
@@ -163,15 +223,15 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             elseif isa(self.wvm,'WaveVortexModelHydrostatic')
                 self.addAttribute('stratification','custom-hydrostatic');
 
-                self.addVariable('rhobar',self.wvm.rhobar,{'z'});
-                self.addVariable('N2',self.wvm.N2,{'z'});
-                self.addVariable('dLnN2',self.wvm.dLnN2,{'z'});
+                self.addVariable('rhobar',self.wvm.rhobar,{'z'},containers.Map({'units'},{self.wvm.unitsForVariable('rhobar')}));
+                self.addVariable('N2',self.wvm.N2,{'z'},containers.Map({'units'},{self.wvm.unitsForVariable('N2')}));
+                self.addVariable('dLnN2',self.wvm.dLnN2,{'z'},containers.Map({'units'},{self.wvm.unitsForVariable('dLnN2')}));
 
                 self.addVariable('PFinv',self.wvm.PFinv,{'z','j'});
                 self.addVariable('QGinv',self.wvm.QGinv,{'z','j'});
                 self.addVariable('PF',self.wvm.PF,{'j','z'});
                 self.addVariable('QG',self.wvm.QG,{'j','z'});
-                self.addVariable('h',self.wvm.h,{'j'});
+                self.addVariable('h',self.wvm.h,{'j'},containers.Map({'units'},{self.wvm.unitsForVariable('h')}));
                 self.addVariable('P',self.wvm.P,{'j'});
                 self.addVariable('Q',self.wvm.Q,{'j'});
 
@@ -196,9 +256,11 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 elseif iTime < 1
                     iTime = 1;
                 end
-                self.t = t(iTime);
+                self.currentTime = t(iTime);
+                self.timeIndex = iTime;
             else
-                self.t = self.t0;
+                self.currentTime = self.t0;
+                self.timeIndex = [];
             end
             if all(isKey(self.complexVariableWithName,{'Ap','Am','A0'}))
                 if hasTimeDimension == 1
@@ -212,7 +274,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 else
                     [u,v,eta] = self.readVariables('u','v','eta');
                 end
-                [self.wvm.Ap,self.wvm.Am,self.wvm.A0] = self.wvm.TransformUVEtaToWaveVortex(u,v,eta,self.t);
+                [self.wvm.Ap,self.wvm.Am,self.wvm.A0] = self.wvm.TransformUVEtaToWaveVortex(u,v,eta,self.currentTime);
             else
                 error('Unable to find A_{+,-,0} or (u,v,\eta).')
             end
@@ -224,35 +286,83 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
 
         function WriteTimeAtIndex(self,iTime,t)
             self.concatenateVariableAlongDimension('t',t,'t',iTime);
-            self.t = t;
+            self.currentTime = t;
+            self.timeIndex = iTime;
+            if iTime > self.Nt
+                self.Nt = iTime;
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Amplitude coefficients
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function InitializeStorageForTimeSeries(self,varargin)
+        function InitializeStorageForVariableFieldsTimeSeries(self,varargin)
             for iVar=1:length(varargin)
                 if strcmp(varargin{iVar},'A0')
-                    self.initComplexVariable('A0',{'k','l','j','t'},self.ncPrecision,containers.Map({'units'},{'m'}));
+                    self.initComplexVariable('A0',{'k','l','j','t'},containers.Map({'units'},{self.wvm.unitsForVariable('A0')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'Ap')
-                    self.initComplexVariable('Ap',{'k','l','j','t'},self.ncPrecision,containers.Map({'units'},{'m/s'}));
+                    self.initComplexVariable('Ap',{'k','l','j','t'},containers.Map({'units'},{self.wvm.unitsForVariable('Ap')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'Am')
-                    self.initComplexVariable('Am',{'k','l','j','t'},self.ncPrecision,containers.Map({'units'},{'m/s'}));
+                    self.initComplexVariable('Am',{'k','l','j','t'},containers.Map({'units'},{self.wvm.unitsForVariable('Am')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'u')
-                    self.initVariable('u',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'m/s'}));
+                    self.initVariable('u',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('u')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'v')
-                    self.initVariable('v',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'m/s'}));
+                    self.initVariable('v',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('v')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'w')
-                    self.initVariable('w',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'m/s'}));
+                    self.initVariable('w',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('w')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'p')
-                    self.initVariable('p',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'kg/m/s2'})); % kg/m^3 m/s^2 m
+                    self.initVariable('p',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('p')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'rho_prime')
-                    self.initVariable('rho_prime',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'kg/m3'}));
+                    self.initVariable('rho_prime',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('rho_prime')}),self.ncPrecision);
                 elseif strcmp(varargin{iVar},'eta')
-                    self.initVariable('eta',{'x','y','z','t'},self.ncPrecision,containers.Map({'units'},{'m'}));
+                    self.initVariable('eta',{'x','y','z','t'},containers.Map({'units'},{self.wvm.unitsForVariable('eta')}),self.ncPrecision);
                 else
                     error('unknown variable')
+                end
+            end
+        end
+
+        function WriteVariableFieldsAtTimeIndex(self,iTime,varargin)
+            if isempty(varargin)
+                return;
+            end
+
+            if ismember('A0',varargin)
+                self.concatenateVariableAlongDimension('A0',self.wvm.A0,'t',iTime);
+            end
+            if ismember('Am',varargin)
+                self.concatenateVariableAlongDimension('Am',self.wvm.Am,'t',iTime);
+            end
+            if ismember('Ap',varargin)
+                self.concatenateVariableAlongDimension('Ap',self.wvm.Ap,'t',iTime);
+            end
+
+            varNames = intersect(varargin,{'u','v','w','p','rho_prime','eta'});
+            if ~isempty(varNames)
+                varValues = self.wvm.VariableFieldsAtTime(self.t,varNames);
+                for iVar=1:length(varNames)
+                    self.concatenateVariableAlongDimension(varNames{iVar},varValues{iVar},'t',iTime);
+                end
+            end
+        end
+
+        function WriteInitialVariableFields(self,varargin)
+            if ismember('A0',varargin)
+                self.addVariable('A0',self.wvm.A0,{'k','l','j'},containers.Map({'units'},{self.wvm.unitsForVariable('A0')}));
+            end
+            if ismember('Am',varargin)
+                self.addVariable('Am',self.wvm.Am,{'k','l','j'},containers.Map({'units'},{self.wvm.unitsForVariable('Am')}));
+            end
+            if ismember('Ap',varargin)
+                self.addVariable('Ap',self.wvm.Ap,{'k','l','j'},containers.Map({'units'},{self.wvm.unitsForVariable('Ap')}));
+            end
+
+            varNames = intersect(varargin,{'u','v','w','p','rho_prime','eta'});
+            if ~isempty(varNames)
+                varValues = self.wvm.VariableFieldsAtTime(self.t,varNames);
+                for iVar=1:length(varNames)
+                    self.addVariable(varNames{iVar},varValues{iVar},{'x','y','z'},containers.Map({'units'},{self.wvm.unitsForVariable(varNames{iVar})}));
                 end
             end
         end
@@ -266,10 +376,10 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
         end
 
         function InitializeTracerStorageWithName(self,name)
-            self.tracersWithName(name) = self.initVariable(name, {'x','y','z','t'},self.ncPrecision,containers.Map({'isTracer'},{'1'}));
+            self.tracersWithName(name) = self.initVariable(name, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),self.ncPrecision);
         end
 
-        function WriteTracerWithNameTimeAtIndex(self,iTime,name,phi)
+        function WriteTracerWithNameAtTimeIndex(self,iTime,name,phi)
             self.concatenateVariableAlongDimension(name,phi,'t',iTime);
         end
 
@@ -293,7 +403,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.nFloats = nFloats;
             self.addDimension('float_id',(1:nFloats).',containers.Map({'units'},{'unitless id number'}));
             for iVar=1:length(self.floatVariableNames)
-                self.initVariable(self.floatVariableNames(iVar), self.ncPrecision,{'float_id','t'},containers.Map({'units'},{'m'}));
+                self.initVariable(self.floatVariableNames{iVar},{'float_id','t'},containers.Map({'units'},{'m'}),self.ncPrecision);
             end
         end
 
@@ -309,6 +419,10 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.addVariable('x-position',x,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
             self.addVariable('y-position',y,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
             self.addVariable('z-position',z,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
+        end
+
+        function [x,y,z] = FloatPositions(self)
+            [x,y,z] = self.readVariables('x-position','y-position','z-position');
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,11 +441,11 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.nDrifters = nDrifters;
             self.addDimension('drifter_id',(1:self.nDrifters).',containers.Map({'units'},{'unitless id number'}));
             for iVar=1:length(self.drifterVariableNames)
-                self.initVariable(self.drifterVariableNames(iVar), self.ncPrecision,{'drifter_id','t'},containers.Map({'units'},{'m'}));
+                self.initVariable(self.drifterVariableNames{iVar},{'drifter_id','t'},containers.Map({'units'},{'m'}), self.ncPrecision);
             end
         end
 
-        function WriteDrifterPositionsTimeAtIndex(self,iTime,x,y,z)
+        function WriteDrifterPositionsAtTimeIndex(self,iTime,x,y,z)
             self.concatenateVariableAlongDimension('x-drifter-position',x,'t',iTime);
             self.concatenateVariableAlongDimension('y-drifter-position',y,'t',iTime);
             self.concatenateVariableAlongDimension('z-drifter-position',z,'t',iTime);
@@ -359,7 +473,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
 
         function self = InitializeEnergeticsStorageForTimeSeries(self)
             for iVar=1:length(self.energeticsVariableNames)
-                self.initVariable(self.energeticsVariableNames(iVar), self.ncPrecision,'t',containers.Map({'units'},{'m^3/s^2'}));
+                self.initVariable(self.energeticsVariableNames(iVar),'t',containers.Map({'units'},{'m^3/s^2'}), self.ncPrecision);
             end
         end
 
@@ -399,11 +513,11 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
 
             self.addDimension('kh',self.wvm.IsotropicKAxis(),containers.Map({'units'},{'radians/m'}));
             self.addVariable('omegaKJ',omegaKJ,{'kj','j'});
-            self.initVariable('EnergyIGWPlusKJ', self.ncPrecision,{'kh','j','t'});
-            self.initVariable('EnergyIGWMinusKJ', self.ncPrecision,{'kh','j','t'});
-            self.initVariable('EnergyIOBaroclinicJ', self.ncPrecision,{'j','t'});
-            self.initVariable('EnergyGeostrophicBaroclinicKJ', self.ncPrecision,{'kh','j','t'});
-            self.initVariable('EnergyGeostrophicBarotropicK', self.ncPrecision,{'kh','t'});
+            self.initVariable('EnergyIGWPlusKJ',{'kh','j','t'},[], self.ncPrecision);
+            self.initVariable('EnergyIGWMinusKJ',{'kh','j','t'},[], self.ncPrecision);
+            self.initVariable('EnergyIOBaroclinicJ',{'j','t'},[], self.ncPrecision);
+            self.initVariable('EnergyGeostrophicBaroclinicKJ',{'kh','j','t'},[], self.ncPrecision);
+            self.initVariable('EnergyGeostrophicBarotropicK',{'kh','t'},[], self.ncPrecision);
         end
 
         function self = WriteEnergeticsKJAtTimeIndex(self,iTime)

@@ -213,29 +213,30 @@ classdef NetCDFFile < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function complexVariable = initComplexVariable(self,name,dimNames,ncType,properties)
+        %addVariable(self,name,data,dimNames,properties,ncType)
+        function complexVariable = initComplexVariable(self,name,dimNames,properties,ncType)
             if isKey(self.complexVariableWithName,name)
                 error('A variable with that name already exists.');
             end
-            if nargin < 5 || isempty(properties)
+            if isempty(properties)
                 properties = containers.Map;
             end
             properties(self.GLNetCDFSchemaIsComplexKey) = 1;
 
             properties(self.GLNetCDFSchemaIsRealPartKey) = 1;
             properties(self.GLNetCDFSchemaIsImaginaryPartKey) = 0;
-            realVar = self.initVariable(strcat(name,"_realp"),dimNames,ncType,properties);
+            realVar = self.initVariable(strcat(name,"_realp"),dimNames,properties,ncType);
 
             properties(self.GLNetCDFSchemaIsRealPartKey) = 0;
             properties(self.GLNetCDFSchemaIsImaginaryPartKey) = 1;
-            imagVar = self.initVariable(strcat(name,"_imagp"),dimNames,ncType,properties);
+            imagVar = self.initVariable(strcat(name,"_imagp"),dimNames,properties,ncType);
             
             complexVariable = NetCDFComplexVariable(name,realVar,imagVar);
             self.complexVariables(end+1) = complexVariable;
             self.complexVariableWithName(name) = complexVariable;
         end
 
-        function variable = initVariable(self,name,dimNames,ncType,properties)
+        function variable = initVariable(self,name,dimNames,properties,ncType)
             if isKey(self.variableWithName,name)
                 error('A variable with that name already exists.');
             end
@@ -371,11 +372,14 @@ classdef NetCDFFile < handle
             if nargin < 6 || isempty(ncType)
                 ncType = self.netCDFTypeForData(data);
             end
+            if nargin < 5
+                properties = [];
+            end
 
             if isreal(data)
-                variable = self.initVariable(name,dimNames,ncType,properties);
+                variable = self.initVariable(name,dimNames,properties,ncType);
             else
-                variable = self.initComplexVariable(name,dimNames,ncType,properties);
+                variable = self.initComplexVariable(name,dimNames,properties,ncType);
             end
 
             self.setVariable(data,name);
@@ -431,8 +435,8 @@ classdef NetCDFFile < handle
         end
 
         function val = netCDFTypeForData(self,data)
-            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string'};
-            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR'};
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
             map = containers.Map(keys, values);
             if ~isKey(map,class(data))
                 error('unknown data type');

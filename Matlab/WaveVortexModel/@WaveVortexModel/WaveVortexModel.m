@@ -39,6 +39,8 @@ classdef WaveVortexModel < handle
         ongridModes % This is a cached copy 
         advectionSanityCheck = 0;
         version = 2.1;
+
+        unitsForVariable;
     end
 
     properties (Dependent)
@@ -155,6 +157,32 @@ classdef WaveVortexModel < handle
                 self.disallowNonlinearInteractionsWithAliasedModes();
                 self.freezeEnergyOfAliasedModes();
             end
+
+            self.unitsForVariable = containers.Map();
+            self.unitsForVariable('x') = 'm';
+            self.unitsForVariable('y') = 'm';
+            self.unitsForVariable('z') = 'm';
+            self.unitsForVariable('k') = 'radians/m';
+            self.unitsForVariable('l') = 'radians/m';
+            self.unitsForVariable('j') = 'mode number';
+            self.unitsForVariable('t') = 's';
+            self.unitsForVariable('latitude') = 'degrees_north';
+            self.unitsForVariable('rho0') = 'kg/m3';
+            self.unitsForVariable('rhobar') = 'kg/m3';
+            self.unitsForVariable('N0') = 'radians/s';
+            self.unitsForVariable('Nmax') = 'radians/s';
+            self.unitsForVariable('N2') = 'radians2/s2';
+            self.unitsForVariable('dLnN2') = 'unitless';
+            self.unitsForVariable('h') = 'm';
+            self.unitsForVariable('A0') = 'm';
+            self.unitsForVariable('Ap') = 'm/s';
+            self.unitsForVariable('Am') = 'm/s';
+            self.unitsForVariable('u') = 'm/s';
+            self.unitsForVariable('v') = 'm/s';
+            self.unitsForVariable('w') = 'm/s';
+            self.unitsForVariable('p') = 'kg/m/s2';
+            self.unitsForVariable('rho_prime') = 'kg/m3';
+            self.unitsForVariable('eta') = 'm';
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)
