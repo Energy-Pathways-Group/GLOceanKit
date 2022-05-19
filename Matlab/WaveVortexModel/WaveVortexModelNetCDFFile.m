@@ -163,15 +163,24 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             if isKey(self.dimensionWithName,'kh')
                 self.Nkh = self.dimensionWithName('kh').nPoints;
             end
-            if isKey(self.dimensionWithName,'float_id')
-                self.nFloats = self.dimensionWithName('float_id').nPoints;
+            if isKey(self.dimensionWithName,'float-id')
+                self.nFloats = self.dimensionWithName('float-id').nPoints;
             end
-            if isKey(self.dimensionWithName,'drifter_id')
-                self.nDrifters = self.dimensionWithName('drifter_id').nPoints;
+            if isKey(self.dimensionWithName,'drifter-id')
+                self.nDrifters = self.dimensionWithName('drifter-id').nPoints;
             end
             for iVar=1:length(self.variables)
                 if isKey(variables(iVar).attributes,'isTracer') && variables(iVar).attributes('isTracer') == 1
                     self.tracersWithName(variables(iVar).name) = variables(iVar);
+                end
+                if isKey(variables(iVar).attributes,'isParticle') && variables(iVar).attributes('isParticle') == 1
+                    particleName = variables(iVar).attributes('particleName');
+                    particleVariableName = variables(iVar).attributes('particleVariableName');
+                    if ~isKey(self.particlesWithName,particleName)
+                        self.particlesWithName(particleName) = containers.Map();
+                    end
+                    variables = self.particlesWithName(particleName);
+                    variables(particleVariableName) = variables(iVar);
                 end
             end
             self.nTracers = length(self.tracersWithName);
@@ -388,12 +397,8 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
         end
 
         function InitializeTracerStorageWithName(self,name)
-            if isKey(self.variableWithName,name)
-                if ismember(tDim,ncfile.variableWithName(name).dimensions)
-                    return;
-                else
-                    error('The tracer %s already exists, but without a timeout dimension',name);
-                end
+            if isKey(self.tracersWithName,name)
+                return;
             end
             self.tracersWithName(name) = self.initVariable(name, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),self.ncPrecision);
         end
@@ -402,33 +407,44 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.concatenateVariableAlongDimension(name,phi,'t',iTime);
         end
 
-        function WriteInitialTracerWithName(self,name,phi)
-            if isKey(self.variableWithName,name)
-                if ~ismember(tDim,ncfile.variableWithName(name).dimensions)
-                    return;
-                else
-                    error('The tracer %s already exists, but with a timeout dimension',name);
-                end
-            end
-            self.tracersWithName(name) = self.addVariable(name,phi,{'x','y','z'},containers.Map({'isTracer'},{'1'}));
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Particles
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function InitializeParticleStorageForTimeSeries(self,particleName, nParticles, variableFields)
-            [dim,~] = self.addDimension(strcat(particleName,'-id'),(1:nParticles).',containers.Map({'units'},{'unitless id number'}));
-            
             variables = containers.Map();
-            variables('x') = self.initVariable(strcat(particleName,'-x'),{dim.name,'t'},containers.Map({'units'},{self.wvm.unitsForVariable('x')}),self.ncPrecision);
-            variables('y') = self.initVariable(strcat(particleName,'-y'),{dim.name,'t'},containers.Map({'units'},{self.wvm.unitsForVariable('y')}),self.ncPrecision);
-            variables('z') = self.initVariable(strcat(particleName,'-z'),{dim.name,'t'},containers.Map({'units'},{self.wvm.unitsForVariable('z')}),self.ncPrecision);
+
+            commonKeys = {'isParticle','particleName'};
+            commonVals = {1,particleName};
+            attributes = containers.Map(commonKeys,commonVals);
+            attributes('units') = 'unitless id number';
+            attributes('particleVariableName') = 'id';
+            [dim,var] = self.addDimension(strcat(particleName,'-id'),(1:nParticles).',attributes);
+            variables('id') = var;
+            
+            % careful to create a new object each time we init
+            attributes = containers.Map(commonKeys,commonVals);
+            attributes('units') = self.wvm.unitsForVariable('x');
+            attributes('particleVariableName') = 'x';
+            variables('x') = self.initVariable(strcat(particleName,'-x'),{dim.name,'t'},attributes,self.ncPrecision);
+
+            attributes = containers.Map(commonKeys,commonVals);
+            attributes('units') = self.wvm.unitsForVariable('y');
+            attributes('particleVariableName') = 'y';
+            variables('y') = self.initVariable(strcat(particleName,'-y'),{dim.name,'t'},attributes,self.ncPrecision);
+
+            attributes = containers.Map(commonKeys,commonVals);
+            attributes('units') = self.wvm.unitsForVariable('z');
+            attributes('particleVariableName') = 'z';
+            variables('z') = self.initVariable(strcat(particleName,'-z'),{dim.name,'t'},attributes,self.ncPrecision);
 
             if nargin == 4
                 for iVar=1:length(variableFields)
                     if ismember(variableFields{iVar},self.wvm.availablePhysicalFields)
-                        variables(variableFields{iVar}) = self.initVariable(strcat(particleName,'-',variableFields{iVar}),{dim.name,'t'},containers.Map({'units'},{self.wvm.unitsForVariable(variableFields{iVar})}),self.ncPrecision);
+                        attributes = containers.Map(commonKeys,commonVals);
+                        attributes('units') = self.wvm.unitsForVariable(variableFields{iVar});
+                        attributes('particleVariableName') = variableFields{iVar};
+                        variables(variableFields{iVar}) = self.initVariable(strcat(particleName,'-',variableFields{iVar}),{dim.name,'t'},attributes,self.ncPrecision);
                     else
                         error('The field %s is not available. Particles can only record the value of physical fields defined in wvm.availablePhysicalFields', variableFields{iVar});
                     end
@@ -442,7 +458,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
             self.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
 
-            varNames = setdiff(self.particlesWithName(particleName).keys,{'x','y','z'});
+            varNames = setdiff(self.particlesWithName(particleName).keys,{'id','x','y','z'});
             if ~isempty(varNames)
                 varEulerianValues = self.wvm.VariableFieldsAtTime(self.t,varNames);
                 varLagrangianValues = cell(1,length(varNames));
@@ -463,79 +479,18 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                     error('This file contains multiple particle sets: %s',strjoin(self.particlesWithName.keys,', '));
                 end
             end
+            if ~isKey(self.particlesWithName,particleName)
+                error('There are no %s particles in this file!',particleName);
+            end
             [x,y,z] = self.readVariables(strcat(particleName,'-x'),strcat(particleName,'-y'),strcat(particleName,'-z'));
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Floats
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function flag = ContainsFloats(self)
-            flag = all(isKey(self.variableWithName,self.floatVariableNames));
-        end
-
-        function names = floatVariableNames(self)
-            names = {'float-x','float-y','float-z'};
-        end
-
-        function InitializeFloatStorageForTimeSeries(self,nFloats)
-            self.nFloats = nFloats;
-            self.addDimension('float_id',(1:nFloats).',containers.Map({'units'},{'unitless id number'}));
-            for iVar=1:length(self.floatVariableNames)
-                self.initVariable(self.floatVariableNames{iVar},{'float_id','t'},containers.Map({'units'},{'m'}),self.ncPrecision);
-            end
-        end
-
-        function WriteFloatPositionsAtTimeIndex(self,iTime,x,y,z)
-            self.concatenateVariableAlongDimension('float-x',x,'t',iTime);
-            self.concatenateVariableAlongDimension('float-y',y,'t',iTime);
-            self.concatenateVariableAlongDimension('float-z',z,'t',iTime);
-        end
-
-        function WriteInitialFloatPositions(self,x,y,z)
-            self.nFloats = length(x);
-            self.addDimension('float_id',(1:self.nFloats).',containers.Map({'units'},{'unitless id number'}));
-            self.addVariable('float-x',x,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
-            self.addVariable('float-y',y,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
-            self.addVariable('float-z',z,'float_id',containers.Map({'units'},{'m'}), self.ncPrecision);
-        end
-
         function [x,y,z] = FloatPositions(self)
-            [x,y,z] = self.readVariables('float-x','float-y','float-z');
+            [x,y,z] = self.ParticlePositions('float');
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Drifters
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function flag = ContainsDrifters(self)
-            flag = all(isKey(self.variableWithName,self.drifterVariableNames));
-        end
-
-        function names = drifterVariableNames(self)
-            names = {'drifter-x','drifter-y','drifter-z'};
-        end
-
-        function InitializeDrifterStorageForTimeSeries(self,nDrifters)
-            self.nDrifters = nDrifters;
-            self.addDimension('drifter_id',(1:self.nDrifters).',containers.Map({'units'},{'unitless id number'}));
-            for iVar=1:length(self.drifterVariableNames)
-                self.initVariable(self.drifterVariableNames{iVar},{'drifter_id','t'},containers.Map({'units'},{'m'}), self.ncPrecision);
-            end
-        end
-
-        function WriteDrifterPositionsAtTimeIndex(self,iTime,x,y,z)
-            self.concatenateVariableAlongDimension('drifter-x',x,'t',iTime);
-            self.concatenateVariableAlongDimension('drifter-y',y,'t',iTime);
-            self.concatenateVariableAlongDimension('drifter-z',z,'t',iTime);
-        end
-
-        function WriteInitialDrifterPositions(self,x,y,z)
-            self.nDrifters = length(x);
-            self.addDimension('drifter_id',(1:self.nDrifters).',containers.Map({'units'},{'unitless id number'}));
-            self.addVariable('drifter-x',x,'drifter_id',containers.Map({'units'},{'m'}), self.ncPrecision);
-            self.addVariable('drifter-y',y,'drifter_id',containers.Map({'units'},{'m'}), self.ncPrecision);
-            self.addVariable('drifter-z',z,'drifter_id',containers.Map({'units'},{'m'}), self.ncPrecision);
+        function [x,y,z] = DrifterPositions(self)
+            [x,y,z] = self.ParticlePositions('drifter');
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -42,6 +42,7 @@ classdef WaveVortexModel < handle
 
         unitsForVariable;
         availablePhysicalFields;
+        variables;
     end
 
     properties (Dependent)
@@ -186,6 +187,77 @@ classdef WaveVortexModel < handle
             self.unitsForVariable('eta') = 'm';
 
             self.availablePhysicalFields = {'u','v','w','eta','p','rho_prime'};
+
+
+        end
+
+        function InitializeVariableMetadata(self)
+            self.variables = containers.Map();
+
+            var = WaveVortexVariable('x',{'x'},'m', 'x-coordinate dimension');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('y',{'y'},'m', 'y-coordinate dimension');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('z',{'z'},'m', 'z-coordinate dimension');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('k',{'k'},'radians/m', 'wavenumber-coordinate dimension in the x-direction');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('l',{'l'},'radians/m', 'wavenumber-coordinate dimension in the y-direction');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('j',{'j'},'mode number', 'vertical mode number');
+            var.isDimension = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('t0',{},'s', 'reference time of Ap, Am, A0');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('latitude',{},'degrees_north', 'latitude of the simulation');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('rho0',{},'kg/m3', 'mean density at the surface (z=0)');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('Nmax',{},'radians/s', 'maximum buoyancy frequency');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('rhobar',{'z'},'kg/m3', 'mean density');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('dLnN2',{'z'},'unitless', 'd/dz ln N2');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('h',{'j'},'m', 'equivalent depth of each mode');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('Ap',{'k','l','j'},'m/s', 'wave coefficients, positive');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('Am',{'k','l','j'},'m/s', 'wave coefficients, negative');
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)
