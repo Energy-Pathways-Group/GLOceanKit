@@ -64,3 +64,5 @@ while(iTool.t < finalTime)
     yFloatT(iTool.outputIndex,:) = iTool.yFloat;
     zFloatT(iTool.outputIndex,:) = iTool.zFloat;
 end
+
+figure, plot(xFloatT,zFloatT)

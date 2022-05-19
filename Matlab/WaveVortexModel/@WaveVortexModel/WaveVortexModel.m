@@ -41,6 +41,7 @@ classdef WaveVortexModel < handle
         version = 2.1;
 
         unitsForVariable;
+        availablePhysicalFields;
     end
 
     properties (Dependent)
@@ -183,6 +184,8 @@ classdef WaveVortexModel < handle
             self.unitsForVariable('p') = 'kg/m/s2';
             self.unitsForVariable('rho_prime') = 'kg/m3';
             self.unitsForVariable('eta') = 'm';
+
+            self.availablePhysicalFields = {'u','v','w','eta','p','rho_prime'};
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)

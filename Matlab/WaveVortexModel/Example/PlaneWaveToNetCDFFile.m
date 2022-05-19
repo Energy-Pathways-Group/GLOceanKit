@@ -51,3 +51,8 @@ nT = integrator.SetupIntegrator(deltaT, outputInterval,finalTime);
 integrator.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc','OVERWRITE_EXISTING');
 
 integrator.IntegrateToTime(finalTime);
+
+ncfile = integrator.ncfile;
+[x,y,z] = ncfile.FloatPositions();
+
+figure, plot(x.',z.')

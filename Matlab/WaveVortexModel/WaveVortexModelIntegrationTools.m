@@ -82,21 +82,23 @@ classdef WaveVortexModelIntegrationTools < handle
         xDrifter, yDrifter, zDrifter
         tracers, tracerNames
 
+        outputInterval      % model output interval (seconds)
+        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
+
         integrator      % Array integrator
         
+        % These methods all assume a fixed time-step integrator
         startTime       % wall clock, to keep track of the expected integration time
         stepsTaken=0    % number of RK4 steps/increments that have been made
         nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
 
-        outputInterval      % model output interval (seconds)
         stepsPerOutput      % number of RK4 steps between each output
         firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
         outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
+        
         
         % *if* outputting to NetCDF file, these will be populated
-        outputFile
-        ncfile      % WaveVortexModelNetCDFTools instance---empty indicates no file output
+        ncfile      % WaveVortexModelNetCDFFile instance---empty indicates no file output
 
         % Set these to {ShouldWrite.timeSeries, ShouldWrite.initialConditions, ShouldWrite.no}
         shouldWriteA0, shouldWriteAp, shouldWriteAm
@@ -398,7 +400,7 @@ classdef WaveVortexModelIntegrationTools < handle
             if integratorIncrement == 0
                 fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
                 fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvm.inertialPeriod,0/self.wvm.inertialPeriod,self.nSteps);
-                if ~isempty(self.outputFile)
+                if ~isempty(self.ncfile)
                     %fprintf('\tWriting %d of those time steps to file. Will write to output file starting at index %d.\n',sum(self.outputSteps>=0),self.outputIndex-self.incrementsWrittenToFile);
                 end
             elseif integratorIncrement == 1
@@ -456,53 +458,17 @@ classdef WaveVortexModelIntegrationTools < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function CreateNetCDFFileForModelOutput(self,modelOutputFile,overwriteExisting)
-            %CreateNetCDFFileForModelOutput
-            % modelOutputFile   file path for output
-            % overwriteExisting (optional) Pass 'OVERWRITE_EXISTING' to
-            %                   overwrite existing model output.
-            self.outputFile = modelOutputFile;
-
-            [filepath,name,~] = fileparts(self.outputFile);
-            matFilePath = sprintf('%s/%s.mat',filepath,name);
-            if isfile(self.outputFile) || isfile(matFilePath)
-                if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
-                    if isfile(self.outputFile)
-                        delete(self.outputFile);
-                    end
-                    if isfile(matFilePath)
-                        delete(matFilePath);
-                    end
-                else
-                    error('File already exists!');
-                end
+        function ncfile = CreateNetCDFFileForModelOutput(self,modelOutputFile,overwriteExisting)
+            shouldOverwriteExisting = 0;
+            if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
+                shouldOverwriteExisting = 1;
             end
-
-%             if ~isempty(existingModelOutput) && strcmp(self.outputFile,existingModelOutput) == 1
-%                 % okay, they want us to append to the existing file.
-%                 % We just need to set t0 and iTime accordingly
-%                 error('Cannot append to existing file!');
-%                 % Can't do this yet because the NetCDFTools don't fetch
-%                 % all the varIDs, etc.
-%                 self.netcdfTool = nctool;
-%                 time = ncread(nctool.netcdfFile,'t');
-%                 self.initialOutputTime = time(1);
-%                 self.outputIndex = length(time);
-%             else
-%                 
-%             end
-            
+            ncfile = WaveVortexModelNetCDFFile(self.wvm,modelOutputFile,'shouldOverwriteExisting',shouldOverwriteExisting);            
+            self.ncfile = ncfile;
         end
 
         function OpenNetCDFFileForTimeStepping(self)
-            if isempty(self.outputFile)
-                % user didn't request output, so move on
-                return;
-            end
-
-            if isempty(self.ncfile)
-                % initialize the file, and appropriate variables
-                self.ncfile = WaveVortexModelNetCDFFile(self.wvm,self.outputFile);
+            if ~isempty(self.ncfile)
     
                 % Gather up all the field variables and sort them into bins
                 % on whether or not the user wants the entire time series
@@ -646,7 +612,7 @@ classdef WaveVortexModelIntegrationTools < handle
         end
 
         function CloseNetCDFFile(self)
-            if ~isempty(self.outputFile)
+            if ~isempty(self.ncfile)
                 fprintf('Ending simulation. Wrote %d time points to file\n',self.incrementsWrittenToFile);
                 self.ncfile.close();
             end

@@ -10,11 +10,17 @@ if length(varargin) < 1
     return;
 end
 
-phase = exp(self.iOmega*(t-self.t0));
+if abs(t-self.t0) == 0
+    Ap = self.Ap;
+    Am = self.Am;
+    A0 = self.A0;
+else
+    phase = exp(self.iOmega*(t-self.t0));
 
-Ap = self.Ap .* phase;
-Am = self.Am .* conj(phase);
-A0 = self.A0;
+    Ap = self.Ap .* phase;
+    Am = self.Am .* conj(phase);
+    A0 = self.A0;
+end
 
 varargout = cell(size(varargin));
 for iArg=1:length(varargin)
@@ -30,6 +36,12 @@ for iArg=1:length(varargin)
         varargout{iArg} = (self.rho0/9.81)*reshape(self.N2,1,1,[]).*self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
     elseif ( strcmp(varargin{iArg}, 'eta') )
         varargout{iArg} = self.TransformToSpatialDomainWithG(self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0);
+    elseif ( strcmp(varargin{iArg}, 'A0') )
+        varargout{iArg} = A0;
+    elseif ( strcmp(varargin{iArg}, 'Ap') )
+        varargout{iArg} = Ap;
+    elseif ( strcmp(varargin{iArg}, 'Am') )
+        varargout{iArg} = Am;
     else
         error('Invalid option. You may request u, v, w, rho_prime, or eta.');
     end
