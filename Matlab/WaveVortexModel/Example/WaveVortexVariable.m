@@ -7,6 +7,7 @@ classdef WaveVortexVariable < handle
         dimensions
         units
         description
+        isComplex = 0 % does it have a non-zero imaginary part?
         isDimension = 0
         isVariableWithLinearTimeStep = 0
         isVariableWithNonlinearTimeStep = 0

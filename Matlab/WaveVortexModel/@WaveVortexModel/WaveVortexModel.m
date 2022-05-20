@@ -245,19 +245,54 @@ classdef WaveVortexModel < handle
             var = WaveVortexVariable('h',{'j'},'m', 'equivalent depth of each mode');
             self.variables(var.name) = var;
 
-            var = WaveVortexVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients');
+            var = WaveVortexVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
+            var.isComplex = 1;
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
-            var = WaveVortexVariable('Ap',{'k','l','j'},'m/s', 'wave coefficients, positive');
+            var = WaveVortexVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
+            var.isComplex = 1;
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
-            var = WaveVortexVariable('Am',{'k','l','j'},'m/s', 'wave coefficients, negative');
+            var = WaveVortexVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
+            var.isComplex = 1;
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
             var = WaveVortexVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             var.isVariableWithLinearTimeStep = 1;
             var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
+
+            var = WaveVortexVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
+            var.isVariableWithLinearTimeStep = 1;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)
