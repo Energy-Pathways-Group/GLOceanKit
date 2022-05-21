@@ -1,4 +1,4 @@
-classdef StateVariable < handle
+classdef ModelAttribute < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -7,15 +7,11 @@ classdef StateVariable < handle
         dimensions
         units
         description
-        modelOp
         isComplex = 0 % does it have a non-zero imaginary part?
-        isDimension = 0
-        isVariableWithLinearTimeStep = 1
-        isVariableWithNonlinearTimeStep = 1
     end
 
     methods
-        function self = StateVariable(name,dimensions,units,description)
+        function self = ModelAttribute(name,dimensions,units,description)
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             if ~iscell(dimensions)

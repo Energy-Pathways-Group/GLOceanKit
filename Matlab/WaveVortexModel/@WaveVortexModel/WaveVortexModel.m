@@ -33,6 +33,7 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
 
         PP, QQ
 
+        kIso
         
         Ap, Am, A0
         shouldAntiAlias = 1;
@@ -43,11 +44,9 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
         advectionSanityCheck = 0;
         version = 2.1;
 
-        unitsForVariable;
-        availablePhysicalFields;
-        variables;
-
-        stateVariableWithName
+        modelDimensionWithName
+        modelAttributeWithName
+        modelVariableWithName
         modelOperationWithName
 
         variableCache
@@ -88,8 +87,8 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
     
     methods (Access=protected)
         function varargout = dotReference(self,indexOp)
-            if isKey(self.stateVariableWithName,indexOp.Name)
-                varargout{1} = self.StateVariables(indexOp.Name);
+            if isKey(self.modelVariableWithName,indexOp.Name)
+                varargout{1} = self.ModelVariables(indexOp.Name);
             elseif isKey(self.modelOperationWithName,indexOp.Name)
                 modelOp = self.modelOperationWithName(indexOp.Name); 
                 varargout=cell(1,length(modelOp.outputVariables));
@@ -97,15 +96,14 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             else
                 error("Unknown operation");
             end
-
-            
         end
+
         function obj = dotAssign(self,indexOp,varargin)
             error("Nope")
         end
         
         function n = dotListLength(self,indexOp,indexContext)
-            if isKey(self.stateVariableWithName,indexOp.Name)
+            if isKey(self.modelVariableWithName,indexOp.Name)
                 n = 1;
             elseif isKey(self.modelOperationWithName,indexOp.Name)
                 modelOp = self.modelOperationWithName(indexOp.Name);
@@ -161,7 +159,8 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             self.Nl = length(self.l);
             self.Nj = length(self.j);
 
-            
+            self.kIso = self.IsotropicWavenumberAxis;
+
             self.rhobar = rhobar;
             self.N2 = N2;
             self.dLnN2 = dLnN2;
@@ -198,48 +197,91 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
                 self.freezeEnergyOfAliasedModes();
             end
 
-            self.unitsForVariable = containers.Map();
-            self.unitsForVariable('x') = 'm';
-            self.unitsForVariable('y') = 'm';
-            self.unitsForVariable('z') = 'm';
-            self.unitsForVariable('k') = 'radians/m';
-            self.unitsForVariable('l') = 'radians/m';
-            self.unitsForVariable('j') = 'mode number';
-            self.unitsForVariable('t') = 's';
-            self.unitsForVariable('latitude') = 'degrees_north';
-            self.unitsForVariable('rho0') = 'kg/m3';
-            self.unitsForVariable('rhobar') = 'kg/m3';
-            self.unitsForVariable('N0') = 'radians/s';
-            self.unitsForVariable('Nmax') = 'radians/s';
-            self.unitsForVariable('N2') = 'radians2/s2';
-            self.unitsForVariable('dLnN2') = 'unitless';
-            self.unitsForVariable('h') = 'm';
-            self.unitsForVariable('A0') = 'm';
-            self.unitsForVariable('Ap') = 'm/s';
-            self.unitsForVariable('Am') = 'm/s';
-            self.unitsForVariable('u') = 'm/s';
-            self.unitsForVariable('v') = 'm/s';
-            self.unitsForVariable('w') = 'm/s';
-            self.unitsForVariable('p') = 'kg/m/s2';
-            self.unitsForVariable('rho_prime') = 'kg/m3';
-            self.unitsForVariable('eta') = 'm';
-
-            self.availablePhysicalFields = {'u','v','w','eta','p','rho_prime'};
-
             self.clearVariableCache();
 
-            self.stateVariableWithName = containers.Map();
+            self.modelDimensionWithName = containers.Map();
+            self.modelAttributeWithName = containers.Map();
+            self.modelVariableWithName = containers.Map();
             self.modelOperationWithName = containers.Map();
 
-            outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
+
+            self.modelDimensionWithName('x') = ModelDimension('x',length(self.x), 'm', 'x-coordinate dimension');
+            self.modelDimensionWithName('y') = ModelDimension('y',length(self.y), 'm', 'y-coordinate dimension');
+            self.modelDimensionWithName('z') = ModelDimension('z',length(self.z), 'm', 'z-coordinate dimension');
+            self.modelDimensionWithName('k') = ModelDimension('k',length(self.k), 'radians/m', 'wavenumber-coordinate dimension in the x-direction');
+            self.modelDimensionWithName('l') = ModelDimension('l',length(self.l), 'radians/m', 'wavenumber-coordinate dimension in the y-direction');
+            self.modelDimensionWithName('j') = ModelDimension('j',length(self.j), 'mode number', 'vertical mode number');
+            self.modelDimensionWithName('kIso') = ModelDimension('kIso',length(self.kIso), 'radians/m', 'isotropic wavenumber dimension');
+
+            self.modelAttributeWithName('t') = ModelAttribute('t',{}, 's', 'time of observations');
+            self.modelAttributeWithName('t0') = ModelAttribute('t0',{},'s', 'reference time of Ap, Am, A0');
+            self.modelAttributeWithName('latitude') = ModelAttribute('latitude',{},'degrees_north', 'latitude of the simulation');
+            self.modelAttributeWithName('rho0') = ModelAttribute('rho0',{},'kg/m3', 'mean density at the surface (z=0)');
+            self.modelAttributeWithName('N0') = ModelAttribute('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)');
+            self.modelAttributeWithName('Nmax') = ModelAttribute('Nmax',{},'radians/s', 'maximum buoyancy frequency');
+            self.modelAttributeWithName('rhobar') = ModelAttribute('rhobar',{'z'},'kg/m3', 'mean density');
+            self.modelAttributeWithName('N2') = ModelAttribute('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density');
+            self.modelAttributeWithName('dLnN2') = ModelAttribute('dLnN2',{'z'},'unitless', 'd/dz ln N2');
+            self.modelAttributeWithName('h') = ModelAttribute('h',{'j'},'m', 'equivalent depth of each mode');
+
+
+            modelVar = ModelVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
+            modelVar.isComplex = 1;
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Ap));
+
+            modelVar = ModelVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
+            modelVar.isComplex = 1;
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.A0));
+
+            modelVar = ModelVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
+            modelVar.isComplex = 1;
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Am));
+
+            modelVar = ModelVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyPlus));
+
+            modelVar = ModelVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyMinus));
+
+            modelVar = ModelVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicInertialEnergy));
+
+            modelVar = ModelVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicInertialEnergy));
+
+            modelVar = ModelVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
+
+            modelVar = ModelVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
+            modelVar.isVariableWithLinearTimeStep = 0;
+            modelVar.isVariableWithNonlinearTimeStep = 1;
+            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicGeostrophicEnergy));
+
+            outputVar(1) = ModelVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
             outputVar(1).isComplex = 1;
             outputVar(1).isVariableWithLinearTimeStep = 0;
 
-            outputVar(2) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
+            outputVar(2) = ModelVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
             outputVar(2).isComplex = 1;
             outputVar(2).isVariableWithLinearTimeStep = 0;
 
-            outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
+            outputVar(3) = ModelVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
             outputVar(3).isComplex = 1;
             outputVar(3).isVariableWithLinearTimeStep = 0;
 
@@ -249,9 +291,30 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             self.addModelOperation(modelOp);
 
 
-            outputVar = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+            outputVar = ModelVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
             self.addModelOperation(ModelOperation(outputVar,f));
+
+            outputVar = ModelVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
+            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
+            self.addModelOperation(ModelOperation(outputVar,f));
+
+            outputVar = ModelVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
+            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
+            self.addModelOperation(ModelOperation(outputVar,f));
+
+            outputVar = ModelVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
+            f = @(wvt) wvt.rho0*wvt.g*wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            self.addModelOperation(ModelOperation(outputVar,f));
+
+            outputVar = ModelVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            self.addModelOperation(ModelOperation(outputVar,f));
+
+            outputVar = ModelVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
+            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            self.addModelOperation(ModelOperation(outputVar,f));
+
         end
 
         function addModelOperation(self,modelOp)
@@ -260,10 +323,10 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             end
 
             for iVar=1:length(modelOp.outputVariables)
-                if isKey(self.stateVariableWithName,modelOp.outputVariables(iVar).name)
+                if isKey(self.modelVariableWithName,modelOp.outputVariables(iVar).name)
                     warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
                 end
-                self.stateVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
+                self.modelVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
             end
 
             if ~isempty(modelOp.name)
@@ -274,7 +337,7 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function [varargout] = StateVariables(self, varargin)
+        function [varargout] = ModelVariables(self, varargin)
             varargout = cell(size(varargin));
 
             didFetchAll = 0;
@@ -283,7 +346,7 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
 
                 for iVar=1:length(varargout)
                     if isempty(varargout{iVar})
-                        stateVar = self.stateVariableWithName(varargin{iVar});
+                        stateVar = self.modelVariableWithName(varargin{iVar});
                         opOut = cell(1,length(stateVar.modelOp.outputVariables));
                         [opOut{:}] = stateVar.modelOp.Compute(self);
                         for iOpOut=1:length(opOut)
@@ -329,159 +392,6 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
                     varargout{iVar} = [];
                 end
             end
-        end
-
-        % ModelDimension, ModelAttribute, ModelVariable
-        % Variables give a way of computing stuff
-        % simplest cases is one variable back
-        % multivariables back, for one operation
-        % Operations get added at initialization, but you can also add them
-        % afterwards
-        % when adding them, it logs all the possible returns.
-        % Just need a clean API
-        % can we feed the api "at time"? This is the big stumblign
-        % block---we need this for linear runs
-        %
-        % The beautiful thing here is that requesting variables can return
-        % cached variables automatically.
-        %
-        % Maybe calling "at time" winds the clock, i.e., sets obsTime. That
-        % would dramatically simplify things.
-        %
-        % Of course, we need to define abstract linear operators
-        function InitializeVariableMetadata(self)
-            self.variables = containers.Map();
-
-            var = WaveVortexVariable('x',{'x'},'m', 'x-coordinate dimension');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('y',{'y'},'m', 'y-coordinate dimension');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('z',{'z'},'m', 'z-coordinate dimension');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('k',{'k'},'radians/m', 'wavenumber-coordinate dimension in the x-direction');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('l',{'l'},'radians/m', 'wavenumber-coordinate dimension in the y-direction');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('j',{'j'},'mode number', 'vertical mode number');
-            var.isDimension = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('t0',{},'s', 'reference time of Ap, Am, A0');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('latitude',{},'degrees_north', 'latitude of the simulation');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('rho0',{},'kg/m3', 'mean density at the surface (z=0)');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('Nmax',{},'radians/s', 'maximum buoyancy frequency');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('rhobar',{'z'},'kg/m3', 'mean density');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('dLnN2',{'z'},'unitless', 'd/dz ln N2');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('h',{'j'},'m', 'equivalent depth of each mode');
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
-            var.isComplex = 1;
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
-            var.isComplex = 1;
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
-            var.isComplex = 1;
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
-            var.isVariableWithLinearTimeStep = 0;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-
-            var = WaveVortexVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
-            var = WaveVortexVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
-            var.isVariableWithLinearTimeStep = 1;
-            var.isVariableWithNonlinearTimeStep = 1;
-            self.variables(var.name) = var;
-
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)

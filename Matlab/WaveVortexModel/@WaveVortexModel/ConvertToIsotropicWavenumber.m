@@ -1,4 +1,4 @@
-function [k,j,varargout] = ConvertToWavenumberAndMode(self,varargin)     
+function [varargout] = ConvertToIsotropicWavenumber(self,varargin)     
 
 Kh = self.Kh;
 
@@ -8,10 +8,7 @@ deltaK = max(diff(allKs));
 kAxis = 0:deltaK:max(allKs);
 
 % Thi is the final output axis for wavenumber
-k = reshape(kAxis(1:(length(kAxis)-1)),[],1);
-
-% Mode axis is just what we already have
-j = self.j;
+k = self.kIso;
 
 RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
 OmNyquist = InternalWaveModel.NyquistWavenumbers(self.Omega);
