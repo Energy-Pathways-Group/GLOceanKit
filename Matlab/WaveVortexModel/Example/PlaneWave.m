@@ -28,6 +28,7 @@ wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude
 U = .2;
 period = wvm.InitializeWithPlaneWave(10,0,1,U,1);  
 
+return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up the integrator

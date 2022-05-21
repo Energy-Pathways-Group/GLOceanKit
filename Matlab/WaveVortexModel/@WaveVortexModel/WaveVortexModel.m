@@ -1,8 +1,11 @@
-classdef WaveVortexModel < handle
+classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
     %3D Boussinesq model with constant stratification solved in wave-vortex
     %space
     
     properties
+        obsTime = 0 % time that these observations are from
+        t0 = 0 % reference time---all wave phases are wound to this time
+
         x, y, z
         k, l, j
 
@@ -30,7 +33,7 @@ classdef WaveVortexModel < handle
 
         PP, QQ
 
-        t0 = 0 % reference time---all wave phases are wound to this time
+        
         Ap, Am, A0
         shouldAntiAlias = 1;
         halfK = 0;
@@ -43,6 +46,9 @@ classdef WaveVortexModel < handle
         unitsForVariable;
         availablePhysicalFields;
         variables;
+
+        stateVariables
+        variableCache
     end
 
     properties (Dependent)
@@ -78,6 +84,19 @@ classdef WaveVortexModel < handle
         g = 9.81;
     end
     
+    methods (Access=protected)
+        function varargout = dotReference(self,indexOp)
+            varargout{1} = self.VariableFields(indexOp.Name);
+        end
+        function obj = dotAssign(obj,indexOp,varargin)
+            error("Nope")
+        end
+        
+        function n = dotListLength(obj,indexOp,indexContext)
+            error("Just no.")
+        end
+    end
+
     methods
         %function self = WaveVortexModel(Lxyz, Nxyz, Nklj, rhobar, N2, dLnN2, latitude, rho0)
         function self = WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
@@ -188,9 +207,78 @@ classdef WaveVortexModel < handle
 
             self.availablePhysicalFields = {'u','v','w','eta','p','rho_prime'};
 
+            self.clearVariableCache();
 
+            self.stateVariables = containers.Map();
+
+            var(1) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
+            var(1).isComplex = 1;
+            var(1).isVariableWithLinearTimeStep = 0;
+
+            var(2) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
+            var(2).isComplex = 1;
+            var(2).isVariableWithLinearTimeStep = 0;
+
+            var(3) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
+            var(3).isComplex = 1;
+            var(3).isVariableWithLinearTimeStep = 0;
+
+            f = @(wvt) wvt.WaveVortexCoefficientsAtTimeT();
+
+            self.addModelOperation(ModelOperation(var,f));
+
+
+            var = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Ap + wvt.UAm.*wvt.Am + wvt.UA0.*wvt.A0);
+            self.addModelOperation(ModelOperation(var,f));
         end
 
+        function [varargout] = VariableFields(self, varargin)
+            varargout = cell(size(varargin));
+            [varargout{:}] = self.fetchFromVariableCache(varargin{:});
+            for iVar=1:length(varargout)
+                if isempty(varargout{iVar})
+                    varargout{iVar} = self.VariableFieldsAtTime(self.obsTime,varargin{iVar});
+                    self.addToVariableCache(varargin{iVar},varargout{iVar})
+                end
+            end
+        end
+
+        function addToVariableCache(self,name,var)
+            self.variableCache(name) = var;
+        end
+        function clearVariableCache(self)
+            self.variableCache = containers.Map();
+        end
+        function varargout = fetchFromVariableCache(self,varargin)
+            varargout = cell(size(varargin));
+            for iVar=1:length(varargin)
+                if isKey(self.variableCache,varargin{iVar})
+                    varargout{iVar} = self.variableCache(varargin{iVar});
+                else
+                    varargout{iVar} = [];
+                end
+            end
+        end
+
+        % ModelDimension, ModelAttribute, ModelVariable
+        % Variables give a way of computing stuff
+        % simplest cases is one variable back
+        % multivariables back, for one operation
+        % Operations get added at initialization, but you can also add them
+        % afterwards
+        % when adding them, it logs all the possible returns.
+        % Just need a clean API
+        % can we feed the api "at time"? This is the big stumblign
+        % block---we need this for linear runs
+        %
+        % The beautiful thing here is that requesting variables can return
+        % cached variables automatically.
+        %
+        % Maybe calling "at time" winds the clock, i.e., sets obsTime. That
+        % would dramatically simplify things.
+        %
+        % Of course, we need to define abstract linear operators
         function InitializeVariableMetadata(self)
             self.variables = containers.Map();
 
@@ -263,6 +351,37 @@ classdef WaveVortexModel < handle
             var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
+            var = WaveVortexVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+            var = WaveVortexVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
+            var.isVariableWithLinearTimeStep = 0;
+            var.isVariableWithNonlinearTimeStep = 1;
+            self.variables(var.name) = var;
+
+
             var = WaveVortexVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             var.isVariableWithLinearTimeStep = 1;
             var.isVariableWithNonlinearTimeStep = 1;
@@ -293,6 +412,19 @@ classdef WaveVortexModel < handle
             var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
+        end
+
+        function addModelOperation(self,modelOp)
+            if isempty(modelOp.outputVariables)
+                error('This model operation has no output variables.')
+            end
+
+            for iVar=1:length(modelOp.outputVariables)
+                if isKey(self.stateVariables,modelOp.outputVariables(iVar).name)
+                    warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
+                end
+                self.stateVariables(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
+            end
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)
@@ -533,6 +665,13 @@ classdef WaveVortexModel < handle
             V = self.TransformToSpatialDomainWithF(Vbar);
             W = self.TransformToSpatialDomainWithG(Wbar);
             N = self.TransformToSpatialDomainWithG(Nbar);
+        end
+
+        function [Apt,Amt,A0t] = WaveVortexCoefficientsAtTimeT(self,Ap,Am,A0)
+            phase = exp(self.iOmega*(t-self.t0));
+            Apt = Ap .* phase;
+            Amt = Am .* conj(phase);
+            A0t = A0;
         end
         
         function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)
@@ -895,6 +1034,12 @@ classdef WaveVortexModel < handle
             rho = reshape(self.rhobar,1,1,[]) + self.VariableFieldsAtTime(t,'rho_prime');
         end
         
+        % same as above, but at obsTime
+%         [varargout] = VariableFields(self, varargin);
+%         [u,v,w] = VelocityField(self);
+
+
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Lagrangian---return the dynamical fields at a given location and time
