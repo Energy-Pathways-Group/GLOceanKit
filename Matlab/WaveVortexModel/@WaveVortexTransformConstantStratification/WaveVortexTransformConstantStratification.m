@@ -1,4 +1,4 @@
-classdef WaveVortexModelConstantStratification < WaveVortexModel
+classdef WaveVortexTransformConstantStratification < WaveVortexTransform
     %3D Boussinesq model with constant stratification solved in wave-vortex
     %space
     
@@ -20,7 +20,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
     end
         
     methods
-        function self = WaveVortexModelConstantStratification(dims, n, latitude, N0, rho0, varargin)
+        function self = WaveVortexTransformConstantStratification(dims, n, latitude, N0, rho0, varargin)
             % rho0 is optional.
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
@@ -59,7 +59,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             N2 = N0*N0*ones(size(z));
             dLnN2 = zeros(size(z));
             
-            self@WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0);
+            self@WaveVortexTransform(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0);
             
             self.isHydrostatic = isHydrostatic;
             self.N0 = N0;
@@ -128,7 +128,7 @@ classdef WaveVortexModelConstantStratification < WaveVortexModel
             PP = self.F;
             QQ = self.G;
 
-            BuildTransformationMatrices@WaveVortexModel(self,PP,QQ);
+            BuildTransformationMatrices@WaveVortexTransform(self,PP,QQ);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

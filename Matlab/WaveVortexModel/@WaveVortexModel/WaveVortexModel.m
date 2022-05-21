@@ -1,1186 +1,630 @@
-classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
-    %3D Boussinesq model with constant stratification solved in wave-vortex
-    %space
-    
+classdef WaveVortexModel < handle
+    %WaveVortexModel Tools for integrating (time-stepping)
+    %the WaveVortexModel.
+    %
+    %   inttool = WaveVortexModel(wvm,t) creates a new
+    %   integration tool for the model. If a time (t) is given, the model
+    %   coefficients are assumed represent that model time. Otherwise t=0.
+    %
+    %   inttool = WaveVortexModel(existingModelOutput,restartIndex,shouldDoubleResolution)
+    %   opens existing NetCDF output from the WaveVortexModel and uses that
+    %   for a restart. restartIndex is optional, defaults to Inf (last time
+    %   point). shouldDoubleResolution is optional, defaults to 0.
+    %
+    %   'shouldOverwriteExisting', default 0
+    %   'shouldDoubleResolution', 0 or 1
+    %   'restartIndex', index in existingModelOutput to use as restart.
+
+    % TODO, May 5th, 2022
+    % - add multiple tracers, store ids and names in struct?
+    % - remove tracer variance at aliased wavenumbers?
+    % - add scalar option for floats and drifters, e.g., save density or pv
+    % - linear dynamics should only save the coefficients once (actually
+    %   option should be to only write initial conditions)
+    % - need method of doing fancy stuff during the integration loop
+    % - want to write float and drifter paths to memory
+    % - Maybe a list of variables (as enums) that we want to write
+    % - Definitely want to output physical variables some time
+    % - OpenNetCDFFileForTimeStepping should report expected file size
+
+    % AAGH. Getting myself twisted in knots over the right API.
+    % while ( tool.integrateToTime(finalTime) )
+    %   tool.incrementForward()
+    %   tool.WriteToFile()
+    %
+    %
+    % Conflicts: once you've chosen an outputInterval, etc., you can't be
+    % allowed to reset it. Same with output file.
+    % Deal is though, writing to file or writing to memory should have the
+    % same loop.
+    %
+    % Usages:
+    % 1) init, 2) integrate to some final value, 3) integrate to another
+    % 1) init, 2) set output interval, 3) int to final value, with stops
+    % along the way at the output intervals.
+    % init, set output interval to netcdf file, 
+    %
+    % To set the deltaT you *need* an outputInterval.
+    % - Do you need the netcdf output file first? I don't think so
+    % So,
+    % Initialization (allowed once):
+    % Option 1: WaveVortexModel(wvm,t)
+    % Option 2: WaveVortexModel(existingModelOutput)
+    % 
+    % Setup the integrator (allowed once):
+    % Option 1: <nothing>
+    % Option 2: SetupIntegrator(deltaT)
+    % Option 3: SetupIntegrator(deltaT,outputInterval)
+    % Option 4: SetupIntegrator(deltaT,outputInterval,finalTime) -- alt: SetupIntegratorForFixedIntegrationTime
+    % return estimated time steps?
+    %
+    % Integrate (called repeatedly):
+    % Option 1: modelTime = integrateOneTimeStep()
+    % Option 2: modelTime = integrateToNextOutputTime()
+    % Option 3: modelTime = integrateToTime(futureTime)
+    %
+    % ShowIntegrationTimeDiagnostics( ???? )
+    %
+    %
+    % Setup NetCDF
+    % CreateNetCDFFileForModelOutput
+    % AppendToExisting
+
     properties
-        t = 0 % time that these observations are from
-        t0 = 0 % reference time---all wave phases are wound to this time
-
-        x, y, z
-        k, l, j
-
-        X,Y,Z
-
-        Nx, Ny, Nz, nModes
-        Nk, Nl, Nj % actual sizes in the spectral domain
-        Lx, Ly, Lz
-        f0, Nmax, rho0, latitude
-        iOmega
-        rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
-        rhoFunction, N2Function, dLnN2Function % function handles
-        
-        ApU, ApV, ApN
-        AmU, AmV, AmN
-        A0U, A0V, A0N
-        
-        UAp, UAm, UA0
-        VAp, VAm, VA0
-        WAp, WAm
-        NAp, NAm, NA0
-        
-        IMA0, IMAp, IMAm    % InteractionMasks
-        EMA0, EMAp, EMAm    % EnergyMasks
-
-        PP, QQ
-
-        kIso
-        
-        Ap, Am, A0
-        shouldAntiAlias = 1;
-        halfK = 0;
-        
-        offgridModes % subclass should initialize
-        ongridModes % This is a cached copy 
-        advectionSanityCheck = 0;
-        version = 2.1;
-
-        modelDimensionWithName
-        modelAttributeWithName
-        modelVariableWithName
-        modelOperationWithName
-
-        variableCache
-    end
-
-    properties (Dependent)
-        inertialPeriod
-    end
+        wvm             % WaveVortexTransform
+        t=0             % current model time (in seconds)
+        initialTime=0
     
-    properties (Abstract)
-        h % all subclasses need to have a function that returns the eigendepths
-        
-        % These convert the coefficients to their depth integrated energies
-%         Apm_HKE_factor
-%         Apm_VKE_factor
-%         Apm_PE_factor
-        Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor
-        A0_TE_factor
-    end
-    
-    methods (Abstract)
-       u_bar = TransformFromSpatialDomainWithF(self, u)
-       w_bar = TransformFromSpatialDomainWithG(self, w)
-       u = TransformToSpatialDomainWithF(self, u_bar)
-       w = TransformToSpatialDomainWithG(self, w_bar )
-       [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
-       [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
-       
-       % Needed to add and remove internal waves from the model
-       ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
-    end
-    
-    properties (Constant)
-        g = 9.81;
-    end
-    
-    methods (Access=protected)
-        function varargout = dotReference(self,indexOp)
-            if isKey(self.modelVariableWithName,indexOp.Name)
-                varargout{1} = self.ModelVariables(indexOp.Name);
-            elseif isKey(self.modelOperationWithName,indexOp.Name)
-                modelOp = self.modelOperationWithName(indexOp.Name); 
-                varargout=cell(1,length(modelOp.outputVariables));
-                [varargout{:}] = self.PerformModelOperation(indexOp.Name);
-            else
-                error("Unknown operation");
-            end
-        end
+        linearDynamics = 0
 
-        function obj = dotAssign(self,indexOp,varargin)
-            error("Nope")
-        end
+        % Variables integrated by this integration tool
+        xFloat, yFloat, zFloat
+        xDrifter, yDrifter, zDrifter
+        tracers, tracerNames
+
+        outputInterval      % model output interval (seconds)
+        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
+
+        integrator      % Array integrator
         
-        function n = dotListLength(self,indexOp,indexContext)
-            if isKey(self.modelVariableWithName,indexOp.Name)
-                n = 1;
-            elseif isKey(self.modelOperationWithName,indexOp.Name)
-                modelOp = self.modelOperationWithName(indexOp.Name);
-                n = length(modelOp.outputVariables);
-            else
-                error("Unknown operation");
-            end
-        end
+        % These methods all assume a fixed time-step integrator
+        startTime       % wall clock, to keep track of the expected integration time
+        stepsTaken=0    % number of RK4 steps/increments that have been made
+        nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
+
+        stepsPerOutput      % number of RK4 steps between each output
+        firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
+        outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+        
+        
+        % *if* outputting to NetCDF file, these will be populated
+        ncfile      % WaveVortexModelNetCDFFile instance---empty indicates no file output
+
+        % Set these to {ShouldWrite.timeSeries, ShouldWrite.initialConditions, ShouldWrite.no}
+        shouldWriteA0, shouldWriteAp, shouldWriteAm
+        shouldWriteU, shouldWriteV, shouldWriteEta, shouldWriteW, shouldWriteP, shouldWriteRho
+        shouldWriteFloats = ShouldWrite.timeSeries
+        shouldWriteDrifters
+        shouldWriteTracers
+        shouldWriteFlowConstituentEnergetics
+        shouldWriteFlowConstituentEnergetics2D
+
+        incrementsWrittenToFile
+    end
+
+    properties (SetAccess = private)
+        didSetupIntegrator=0
+        initialConditionOnlyVariables
+        timeSeriesVariables % internal use only
     end
 
     methods
-        %function self = WaveVortexModel(Lxyz, Nxyz, Nklj, rhobar, N2, dLnN2, latitude, rho0)
-        function self = WaveVortexModel(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
-            % rho0 is optional.
-            if length(dims) ~=3 || length(n) ~= 3
-                error('The dims and n variables must be of length 3. You need to specify x,y,z');
-            end
-                                    
-            self.Lx = dims(1);
-            self.Ly = dims(2);
-            self.Lz = dims(3);
-            
-            self.Nx = n(1);
-            self.Ny = n(2);
-            self.Nz = n(3);
-            self.nModes = nModes;
 
-            dx = self.Lx/self.Nx;
-            dy = self.Ly/self.Ny;
-            
-            self.x = dx*(0:self.Nx-1)'; % periodic basis
-            self.y = dy*(0:self.Ny-1)'; % periodic basis
-            self.z = z;
-            
-            dk = 1/self.Lx;          % fourier frequency
-            self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-            dl = 1/self.Ly;          % fourier frequency
-            self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-            self.j = (0:(nModes-1))';
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            if self.halfK == 1
-                self.k( (self.Nx/2+2):end ) = [];
-            end
-
-%             if self.shouldAntiAlias == 1
-%                 k_alias = 2*max(abs(self.k))/3;
-%                 self.k( abs(self.k) >= k_alias) = [];
-%                 self.l( abs(self.l) >= k_alias) = []; % yes, k, we want it isotropic
-%                 self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
-%             end
-
-            self.Nk = length(self.k);
-            self.Nl = length(self.l);
-            self.Nj = length(self.j);
-
-            self.kIso = self.IsotropicWavenumberAxis;
-
-            self.rhobar = rhobar;
-            self.N2 = N2;
-            self.dLnN2 = dLnN2;
-            
-            self.Nmax = sqrt(max(N2));
-            self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
-            self.latitude = latitude;
-            if ~exist('rho0','var')
-                self.rho0 = 1025;
-            else
-                self.rho0 = rho0;
-            end
-
-            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            self.X = X; self.Y = Y; self.Z = Z;
-            
-            % Now set the initial conditions to zero
-            self.Ap = zeros(self.Nk,self.Nl,self.nModes);
-            self.Am = zeros(self.Nk,self.Nl,self.nModes);
-            self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
-            
-            % Allow all nonlinear interactions
-            self.IMA0 = ones(self.Nk,self.Nl,self.nModes);
-            self.IMAp = ones(self.Nk,self.Nl,self.nModes);
-            self.IMAm = ones(self.Nk,self.Nl,self.nModes);
-
-            % Allow energy fluxes at all modes
-            self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
-            self.EMAp = ones(self.Nk,self.Nl,self.nModes);
-            self.EMAm = ones(self.Nk,self.Nl,self.nModes);
-
-            if self.shouldAntiAlias == 1
-                self.disallowNonlinearInteractionsWithAliasedModes();
-                self.freezeEnergyOfAliasedModes();
-            end
-
-            self.clearVariableCache();
-
-            self.modelDimensionWithName = containers.Map();
-            self.modelAttributeWithName = containers.Map();
-            self.modelVariableWithName = containers.Map();
-            self.modelOperationWithName = containers.Map();
-
-
-            self.modelDimensionWithName('x') = ModelDimension('x',length(self.x), 'm', 'x-coordinate dimension');
-            self.modelDimensionWithName('y') = ModelDimension('y',length(self.y), 'm', 'y-coordinate dimension');
-            self.modelDimensionWithName('z') = ModelDimension('z',length(self.z), 'm', 'z-coordinate dimension');
-            self.modelDimensionWithName('k') = ModelDimension('k',length(self.k), 'radians/m', 'wavenumber-coordinate dimension in the x-direction');
-            self.modelDimensionWithName('l') = ModelDimension('l',length(self.l), 'radians/m', 'wavenumber-coordinate dimension in the y-direction');
-            self.modelDimensionWithName('j') = ModelDimension('j',length(self.j), 'mode number', 'vertical mode number');
-            self.modelDimensionWithName('kIso') = ModelDimension('kIso',length(self.kIso), 'radians/m', 'isotropic wavenumber dimension');
-
-            self.modelAttributeWithName('t') = ModelAttribute('t',{}, 's', 'time of observations');
-            self.modelAttributeWithName('t0') = ModelAttribute('t0',{},'s', 'reference time of Ap, Am, A0');
-            self.modelAttributeWithName('latitude') = ModelAttribute('latitude',{},'degrees_north', 'latitude of the simulation');
-            self.modelAttributeWithName('rho0') = ModelAttribute('rho0',{},'kg/m3', 'mean density at the surface (z=0)');
-            self.modelAttributeWithName('N0') = ModelAttribute('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)');
-            self.modelAttributeWithName('Nmax') = ModelAttribute('Nmax',{},'radians/s', 'maximum buoyancy frequency');
-            self.modelAttributeWithName('rhobar') = ModelAttribute('rhobar',{'z'},'kg/m3', 'mean density');
-            self.modelAttributeWithName('N2') = ModelAttribute('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density');
-            self.modelAttributeWithName('dLnN2') = ModelAttribute('dLnN2',{'z'},'unitless', 'd/dz ln N2');
-            self.modelAttributeWithName('h') = ModelAttribute('h',{'j'},'m', 'equivalent depth of each mode');
-
-
-            modelVar = ModelVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
-            modelVar.isComplex = 1;
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Ap));
-
-            modelVar = ModelVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
-            modelVar.isComplex = 1;
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.A0));
-
-            modelVar = ModelVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
-            modelVar.isComplex = 1;
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Am));
-
-            modelVar = ModelVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyPlus));
-
-            modelVar = ModelVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyMinus));
-
-            modelVar = ModelVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicInertialEnergy));
-
-            modelVar = ModelVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicInertialEnergy));
-
-            modelVar = ModelVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
-
-            modelVar = ModelVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
-            modelVar.isVariableWithLinearTimeStep = 0;
-            modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicGeostrophicEnergy));
-
-            outputVar(1) = ModelVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
-            outputVar(1).isComplex = 1;
-            outputVar(1).isVariableWithLinearTimeStep = 0;
-
-            outputVar(2) = ModelVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
-            outputVar(2).isComplex = 1;
-            outputVar(2).isVariableWithLinearTimeStep = 0;
-
-            outputVar(3) = ModelVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
-            outputVar(3).isComplex = 1;
-            outputVar(3).isVariableWithLinearTimeStep = 0;
-
-            f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
-            modelOp = ModelOperation(outputVar,f);
-            modelOp.name = 'ApAmA0';
-            self.addModelOperation(modelOp);
-
-
-            outputVar = ModelVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-            outputVar = ModelVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-            outputVar = ModelVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-            outputVar = ModelVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
-            f = @(wvt) wvt.rho0*wvt.g*wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-            outputVar = ModelVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-            outputVar = ModelVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
-            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
-
-        end
-
-        function addModelOperation(self,modelOp)
-            if isempty(modelOp.outputVariables)
-                error('This model operation has no output variables.')
-            end
-
-            for iVar=1:length(modelOp.outputVariables)
-                if isKey(self.modelVariableWithName,modelOp.outputVariables(iVar).name)
-                    warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
-                end
-                self.modelVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
-            end
-
-            if ~isempty(modelOp.name)
-                if isKey(self.modelOperationWithName,modelOp.name)
-                    warning('This model operation will replace the existing operation %s',modelOp.name);
-                end
-                self.modelOperationWithName(modelOp.name) = modelOp;
-            end
-        end
-
-        function [varargout] = ModelVariables(self, varargin)
-            varargout = cell(size(varargin));
-
-            didFetchAll = 0;
-            while didFetchAll ~= 1
-                [varargout{:}] = self.fetchFromVariableCache(varargin{:});
-
-                for iVar=1:length(varargout)
-                    if isempty(varargout{iVar})
-                        stateVar = self.modelVariableWithName(varargin{iVar});
-                        opOut = cell(1,length(stateVar.modelOp.outputVariables));
-                        [opOut{:}] = stateVar.modelOp.Compute(self);
-                        for iOpOut=1:length(opOut)
-                            self.addToVariableCache(stateVar.modelOp.outputVariables(iOpOut).name,opOut{iOpOut})
-                        end
-                        continue;
-                    end
-                    didFetchAll = 1;
-                end
-            end
-        end
-
-        function varargout = PerformModelOperation(self,opName)
-            modelOp = self.modelOperationWithName(opName);
-            varNames = cell(1,length(modelOp.outputVariables));
-            varargout = cell(1,length(modelOp.outputVariables));
-            for iVar=1:length(modelOp.outputVariables)
-                varNames{iVar} = modelOp.outputVariables(iVar).name;
-            end
-
-            if all(isKey(self.variableCache,varNames))
-                [varargout{:}] = self.fetchFromVariableCache(varNames{:});
-            else
-                [varargout{:}] = modelOp.Compute(self);
-                for iOpOut=1:length(varargout)
-                    self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
-                end
-            end
-        end
-
-        function addToVariableCache(self,name,var)
-            self.variableCache(name) = var;
-        end
-        function clearVariableCache(self)
-            self.variableCache = containers.Map();
-        end
-        function varargout = fetchFromVariableCache(self,varargin)
-            varargout = cell(size(varargin));
-            for iVar=1:length(varargin)
-                if isKey(self.variableCache,varargin{iVar})
-                    varargout{iVar} = self.variableCache(varargin{iVar});
+        function self = WaveVortexModel(varargin)
+            if isa(varargin{1},'WaveVortexTransform')
+                WaveVortexTransform = varargin{1};
+                if nargin > 1 && isa(varargin{2},"double")
+                    self.t = varargin{2};
                 else
-                    varargout{iVar} = [];
+                    self.t = 0;
                 end
-            end
-        end
+            elseif isa(varargin{1},'char' )
+                existingModelOutput = varargin{1};
 
-        function wvmX2 = waveVortexModelWithResolution(self,m)
-            wvmX2 = WaveVortexModelHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
-            wvmX2.t0 = self.t0;
-            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.nModes >= self.nModes
-                kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
-                lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
-                wvmX2.Ap(kIndices,lIndices,1:self.nModes) = self.Ap;
-                wvmX2.Am(kIndices,lIndices,1:self.nModes) = self.Am;
-                wvmX2.A0(kIndices,lIndices,1:self.nModes) = self.A0;
+                restartIndex = Inf;
+                shouldDoubleResolution = 0;
+                if nargin > 1
+                    restartIndex = varargin{2};
+                end
+                if nargin > 2
+                    restartIndex = varargin{3};
+                end
+
+                nctool = WaveVortexModelNetCDFFile(existingModelOutput,'timeIndex',restartIndex);
+
+                self.t = nctool.t;
                 
-                if self.IsAntiAliased == 1
-                    fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
-                    AntiAliasMask = self.MaskForAliasedModes();
-                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
-                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
-                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
-                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0 | AntiAliasMask;
-                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp | AntiAliasMask;
-                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm | AntiAliasMask;
-
-                    wvmX2.disallowNonlinearInteractionsWithAliasedModes();
-                    wvmX2.freezeEnergyOfAliasedModes();
+                if (shouldDoubleResolution == 0)
+                    WaveVortexTransform = nctool.wvm;
                 else
-                    fprintf('You do NOT appear to be anti-aliased. Thus the interaction masks will be copied as-is.\n');
-                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0;
-                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp;
-                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm;
-                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0;
-                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp;
-                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm;
+                    WaveVortexTransform = nctool.wvm.WaveVortexTransformWithResolution(2*[nctool.wvm.Nx,nctool.wvm.Ny,nctool.wvm.nModes]);
                 end
+
+                % if there's existing model output, use that output interval
+                time = ncread(existingModelOutput,'t');
+                if length(time)>1
+                    self.outputInterval = time(2)-time(1);
+                end
+            end
+
+            self.initialOutputTime = self.t;
+            self.initialTime = self.t;
+            self.wvm = WaveVortexTransform;  
+        end
+        
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Floats and drifters and tracer!
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function SetFloatPositions(self,x,y,z)
+            self.xFloat = reshape(x,1,[]);
+            self.yFloat = reshape(y,1,[]);
+            self.zFloat = reshape(z,1,[]);
+            if (length(self.xFloat) ~= length(self.yFloat)) || (length(self.xFloat) ~= length(self.zFloat))
+                error('SetFloatPositions failed! (x,y,z) must have the same length.')
+            end
+        end
+
+        function SetDrifterPositions(self,x,y,z)
+            self.xDrifter = reshape(x,1,[]);
+            self.yDrifter = reshape(y,1,[]);
+            self.zDrifter = reshape(z,1,[]);
+            if (length(self.xDrifter) ~= length(self.yDrifter)) || (length(self.xDrifter) ~= length(self.zDrifter))
+                error('SetDrifterPositions failed! (x,y,z) must have the same length.')
+            end
+        end
+
+        function AddTracer(self,phi,name)
+            if isempty(self.tracers)
+                self.tracers{1} = phi;
+                self.tracerNames{1} = name;
             else
-                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
+                self.tracers{end+1} = phi;
+                self.tracerNames{end+1} = name;
             end
         end
-        
-        function Kh = Kh(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            Kh = sqrt(K.*K + L.*L);
-        end 
-        
-        function Omega = Omega(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
-        end
 
-        function value = get.inertialPeriod(self)
-            value = (2*pi/(2 * 7.2921E-5 * sin( self.latitude*pi/180 )));
-        end
-        
-        function rebuildTransformationMatrices(self)
-            self.BuildTransformationMatrices(self.PP,self.QQ);
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Integration loop
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = BuildTransformationMatrices(self,PP,QQ)
-            % Build wavenumbers
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            alpha = atan2(L,K);
-            K2 = K.*K + L.*L;
-            Kh = sqrt(K2);      % Total horizontal wavenumber
-            
-            f = self.f0;
-            g_ = 9.81;
-            
-            omega = self.Omega;
-            if abs(self.f0) < 1e-14 % This handles the f=0 case.
-                omega(omega == 0) = 1;
+        function self = IntegrateToTime(self,finalTime,cfl)
+            if self.didSetupIntegrator ~= 1
+                if nargin < 3 || isempty(cfl)
+                    cfl=0.5;
+                end
+                deltaT = self.wvm.TimeStepForCFL(cfl,self.outputInterval);
+                self.SetupIntegrator(deltaT,self.outputInterval,finalTime);
             end
-            fOmega = f./omega;
+   
+            self.OpenNetCDFFileForTimeStepping();
             
-            self.PP = PP;
-            self.QQ = QQ;
-            MakeHermitian = @(f) WaveVortexModel.MakeHermitian(f);
-            
-            self.iOmega = MakeHermitian(sqrt(-1)*omega);
-
-            if ~exist("PP","var") || isempty(PP)
-                PP = ones(size(K));
-            end
-            if ~exist("QQ","var") || isempty(QQ)
-                QQ = ones(size(K));
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (U,V,N) -> (Ap,Am,A0)
-            % This comes from equations B13 and B14 in the manuscript
-            % or equation 5.5 without the factor of h.
-            self.ApU = (1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.ApV = (1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.ApN = -g_*Kh./(2*omega);
-            
-            self.AmU = (1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.AmV = (1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.AmN = g_*Kh./(2*omega);
-            
-            % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
-            % solution exists at k=l=j=0.
-            self.ApU(:,:,1) = 0;
-            self.ApV(:,:,1) = 0;
-            self.ApN(:,:,1) = 0;
-            
-            self.AmU(:,:,1) = 0;
-            self.AmV(:,:,1) = 0;
-            self.AmN(:,:,1) = 0;
-            
-            % Now set the inertial stuff (this is just a limit of above)
-            self.ApU(1,1,:) = 1/2;
-            self.ApV(1,1,:) = -sqrt(-1)/2;
-            self.AmU(1,1,:) = 1/2;
-            self.AmV(1,1,:) = sqrt(-1)/2;
-            
-            % Equation B14
-            self.A0U = sqrt(-1)*self.h.*(fOmega./omega) .* L;
-            self.A0V = -sqrt(-1)*self.h.*(fOmega./omega) .* K;
-            self.A0N = fOmega.^2;
-            
-            % k > 0, l > 0, j=0; Equation B11 in the manuscript
-            self.A0U(:,:,1) =  sqrt(-1)*(f/g_)*L(:,:,1)./K2(:,:,1); % Note the divide by zero at k=l=0
-            self.A0V(:,:,1) = -sqrt(-1)*(f/g_)*K(:,:,1)./K2(:,:,1);
-            self.A0N(:,:,1) = 0;
-            
-            % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
-            self.A0U(1,1,:) = 0;
-            self.A0V(1,1,:) = 0;
-            self.A0N(1,1,:) = 1;
-            self.A0N(1,1,1) = 0;
-            
-            % Finally, we need to take care of the extra factor of 2 that
-            % comes out of the discrete cosine transform
-            
-            % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* MakeHermitian(self.ApU);
-            self.ApV = (1./PP) .* MakeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* MakeHermitian(self.ApN);
-           
-            self.AmU = (1./PP) .* MakeHermitian(self.AmU);
-            self.AmV = (1./PP) .* MakeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* MakeHermitian(self.AmN);
-           
-            self.A0U = (1./PP) .* MakeHermitian(self.A0U);
-            self.A0V = (1./PP) .* MakeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* MakeHermitian(self.A0N);
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
-            % These can be pulled from equation C4 in the manuscript
-            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.UA0 = -sqrt(-1)*(g_/f)*L;
-            
-            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.VA0 = sqrt(-1)*(g_/f)*K;
+            while(self.t < finalTime)
                 
-            self.WAp = -sqrt(-1)*Kh.*self.h;
-            self.WAm = -sqrt(-1)*Kh.*self.h;
-            
-            self.NAp = -Kh.*self.h./omega;
-            self.NAm = Kh.*self.h./omega;
-            self.NA0 = ones(size(Kh));
-            
-            % No buoyancy anomaly for j=0 geostrophic solutions
-            self.NA0(:,:,1) = 0;
-            
-            % There are no k^2+l^2>0, j=0 wave solutions. 
-            self.UAp(:,:,1) = 0;
-            self.VAp(:,:,1) = 0;
-            self.NAp(:,:,1) = 0;
-            
-            self.UAm(:,:,1) = 0;
-            self.VAm(:,:,1) = 0;
-            self.NAm(:,:,1) = 0;
-            
-            % Only the inertial solution exists at k=l=j=0 as a negative
-            % wave.
-            self.UAp(1,1,:) = 1;
-            self.VAp(1,1,:) = sqrt(-1);
-            self.UAm(1,1,:) = 1;
-            self.VAm(1,1,:) = -sqrt(-1);
-            
-            if abs(self.f0) < 1e-14 % This handles the f=0 case.
-                self.UA0 = zeros(size(Kh));
-                self.VA0 = zeros(size(Kh));
-                self.NA0 = zeros(size(Kh));
-            end
-            
-            % Now make the Hermitian conjugate match AND pre-multiply the
-            % coefficients for the transformations.
-            self.UAp = PP .* MakeHermitian(self.UAp);
-            self.UAm = PP .* MakeHermitian(self.UAm);
-            self.UA0 = PP .* MakeHermitian(self.UA0);
-            
-            self.VAp = PP .* MakeHermitian(self.VAp);
-            self.VAm = PP .* MakeHermitian(self.VAm);
-            self.VA0 = PP .* MakeHermitian(self.VA0);
-            
-            self.WAp = QQ .* MakeHermitian(self.WAp);
-            self.WAm = QQ .* MakeHermitian(self.WAm);
-            
-            self.NAp = QQ .* MakeHermitian(self.NAp);
-            self.NAm = QQ .* MakeHermitian(self.NAm);
-            self.NA0 = QQ .* MakeHermitian(self.NA0);
-        end
-          
-        function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N,t)
-            % This is the 'S^{-1}' operator (C5) in the manuscript
-            Ubar = self.TransformFromSpatialDomainWithF(U);
-            Vbar = self.TransformFromSpatialDomainWithF(V);
-            Nbar = self.TransformFromSpatialDomainWithG(N);
-            
-            Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
-            Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
-            A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
+                self.integrateToNextOutputTime();
 
-            if nargin == 5
-                phase = exp(-self.iOmega*(t-self.t0));
-                Ap = Ap .* phase;
-                Am = Am .* conj(phase);
-            end
-        end
-        
-        function [U,V,W,N] = TransformWaveVortexToUVWEta(self,Ap,Am,A0,t)
-            if nargin == 5
-                phase = exp(self.iOmega*(t-self.t0));
-                Ap = Ap .* phase;
-                Am = Am .* conj(phase);
+                self.WriteTimeStepToNetCDFFile();
             end
 
-            % This is the 'S' operator (C4) in the manuscript
-            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
-            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
-            Wbar = self.WAp.*Ap + self.WAm.*Am;
-            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
-            
-            U = self.TransformToSpatialDomainWithF(Ubar);
-            V = self.TransformToSpatialDomainWithF(Vbar);
-            W = self.TransformToSpatialDomainWithG(Wbar);
-            N = self.TransformToSpatialDomainWithG(Nbar);
+%             self.CloseNetCDFFile();
         end
 
-        function [Apt,Amt,A0t] = WaveVortexCoefficientsAtTimeT(self)
-            phase = exp(self.iOmega*(self.t-self.t0));
-            Apt = self.Ap .* phase;
-            Amt = self.Am .* conj(phase);
-            A0t = self.A0;
-        end
-        
-        function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)
-            uNL = u.*DiffFourier(self.x,u,1,1) + v.*DiffFourier(self.y,u,1,2) + w.*DiffCosine(self.z,u,1,3);
-            vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
-            nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*(DiffSine(self.z,eta,1,3) + eta.*self.dLnN2);
-        end
-        
-        F = NonlinearFluxWithParticlesAtTimeArray(self,t,Y0);
-        [Fp,Fm,F0,u,v,w] = NonlinearFluxWithParticlesAtTime(self,t,Ap,Am,A0,x,y,z);
-        
-        F = NonlinearFluxWithFloatsAndDriftersAtTimeArray(self,t,Y0,z_d);
-        [Fp,Fm,F0,u_f,v_f,w_f,u_d,v_d] = NonlinearFluxWithFloatsAndDriftersAtTime(self,t,Ap,Am,A0,x_f,y_f,z_f,x_d,y_d,z_d);
-        
-        function F = NonlinearFluxAtTimeArray(self,t,Y0)
-            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Y0{1},Y0{2},Y0{3});
-            F = {Fp,Fm,F0};
-        end
-        
-        function [Fp,Fm,F0,U,V,W] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
-            % Apply operator T_\omega---defined in (C2) in the manuscript
-
-            % We also apply the interaction masks (IMA*) and energy masks
-            % (EMA*). These *could* be precomputed multiplied directly into
-            % the coefficients. A quick speed test shows this about a 5%
-            % performance hit by not doing this.
-            phase = exp(self.iOmega*(t-self.t0));
-            Ap = self.IMAp .* Ap .* phase;
-            Am = self.IMAm .* Am .* conj(phase);
-            A0 = self.IMA0 .* A0;
-
-            % Apply operator S---defined in (C4) in the manuscript
-            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
-            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
-            Wbar = self.WAp.*Ap + self.WAm.*Am;
-            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
-            
-            % Finishing applying S, but also compute derivatives at the
-            % same time
-            [U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = self.TransformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
-            
-            % Compute the nonlinear terms in the spatial domain
-            % (pseudospectral!)
-            uNL = -U.*Ux - V.*Uy - W.*Uz;
-            vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-            
-            % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = self.TransformFromSpatialDomainWithF(uNL);
-            vNLbar = self.TransformFromSpatialDomainWithF(vNL);
-            nNLbar = self.TransformFromSpatialDomainWithG(nNL);
-
-            Fp = self.EMAp .* (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = self.EMAm .* (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = self.EMA0 .* (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
-        end
-
-        function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
-            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-            % The phase is tricky here. It is wound forward for the flux,
-            % as it should be... but then it is wound back to zero. This is
-            % equivalent ignoring the phase below here.
-            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-            Em = 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-            E0 = 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-        end
-        
-        function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
-      	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-      	    % The phase is tricky here. It is wound forward for the flux,
-      	    % as it should be... but then it is wound back to zero. This is
-            % equivalent ignoring the phase below here.
-
-    	    % This equation is C17 in the manuscript, but with addition of 1st term
-    	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
-
-    	    % This differs from EnergyFluxAtTime due to the importance of the
-    	    % 2*F*F*deltaT in equation C16 at the initial condition.
-
-    	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-      	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-      	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-    	end
-
-        [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
-        [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
-
-    	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
-    	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
-    	    % The phase is tricky here. It is wound forward for the flux,
-    	    % as it should be... but then it is wound back to zero. This is
-            % equivalent ignoring the phase below here.
-
-            % This equation is C17 in the manuscript, but with addition of 1st term
-            % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
-
-            % This differs from EnergyFluxForFlowConstituentsAtTime due to the importance of the
-            % 2*F*F*deltaT in equation C16 at the initial condition.
-
-            Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-            Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-            E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
-    	end
- 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Reduced interaction models
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
-            self.IMA0 = or(self.IMA0,A0);
-            self.IMAm = or(self.IMAm,Am);
-            self.IMAp = or(self.IMAp,Ap);
-        end
-
-        function allowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 | A0Mask;
-            self.IMAm = self.IMAm | ApmMask;
-            self.IMAp = self.IMAp | ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 & ~A0Mask;
-            self.IMAm = self.IMAm & ~ApmMask;
-            self.IMAp = self.IMAp & ~ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithAliasedModes(self)
-            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
-            % The reality is that the vertical modes will still alias.
-            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            self.shouldAntiAlias = 1;
-            
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.IMA0 = self.IMA0 & ~AntiAliasMask;
-            self.IMAm = self.IMAm & ~AntiAliasMask;
-            self.IMAp = self.IMAp & ~AntiAliasMask;
-        end
-
-        function unfreezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 | A0Mask;
-            self.EMAm = self.EMAm | ApmMask;
-            self.EMAp = self.EMAp | ApmMask;
-        end
-
-        function freezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 & ~A0Mask;
-            self.EMAm = self.EMAm & ~ApmMask;
-            self.EMAp = self.EMAp & ~ApmMask;
-        end
-        
-        function freezeEnergyOfAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.EMA0 = self.EMA0 & ~AntiAliasMask;
-            self.EMAm = self.EMAm & ~AntiAliasMask;
-            self.EMAp = self.EMAp & ~AntiAliasMask;
-        end
-
-        function clearEnergyFromAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.A0 = self.A0 .* ~AntiAliasMask;
-            self.Am = self.Am .* ~AntiAliasMask;
-            self.Ap = self.Ap .* ~AntiAliasMask;
-        end
-
-        function flag = IsAntiAliased(self)
-            AntiAliasMask = self.MaskForAliasedModes();
-
-            % check if there are zeros at all the anti-alias indices
-            flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAm & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAm & AntiAliasMask) == AntiAliasMask,'all');
-        end
-
-        
-        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
-            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
-            for iMode=1:length(kModes)
-                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAp = WaveVortexModel.MakeHermitian(self.EMAp);
-                end
-
-                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAm = WaveVortexModel.MakeHermitian(self.EMAm);
-                end
+        function varargout = SetupIntegrator(self,deltaT,outputInterval,finalTime)
+            varargout = cell(1,0);
+            if self.didSetupIntegrator == 1
+                warning('You cannot setup the same integrator more than once.')
+                return;
             end
-        end
 
-        function stirWithConstituents(self,constituents)
-
-        end
-
-
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Energetics (total)
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = totalEnergy(self)
-            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','eta');
-            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
-        end
-        
-        function energy = totalSpectralEnergy(self)
-            %             energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
-            App = self.Ap; Amm = self.Am; A00 = self.A0;
-            energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
-        end
-        
-        function energy = totalHydrostaticEnergy(self)
-            [u,v,eta] = self.VariableFieldsAtTime(0,'u','v','eta');
-            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Major constituents
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = inertialEnergy(self)
-            energy = self.barotropicInertialEnergy + self.baroclinicInertialEnergy;
-        end
-        
-        function energy = waveEnergy(self)
-            energy = self.internalWaveEnergyPlus + self.internalWaveEnergyMinus;
-        end
-        
-        function energy = geostrophicEnergy(self)
-            energy = self.barotropicGeostrophicEnergy + self.baroclinicGeostrophicEnergy;
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Geostrophic constituents
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = barotropicGeostrophicEnergy(self)
-            C = self.A0_TE_factor;
-            B = self.A0;
-            energy = sum(sum(sum( C(:,:,1) .* (B(:,:,1).*conj(B(:,:,1))) )));
-        end
-        
-        function energy = baroclinicGeostrophicEnergy(self)
-            C = self.A0_TE_factor;
-            B = self.A0;
-            energy = sum(sum(sum( C(:,:,2:end) .* (B(:,:,2:end).*conj(B(:,:,2:end))) )));
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Inertia-gravity wave constituents
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = barotropicInertialEnergy(self)
-            App = self.Ap;
-            Amm = self.Am;
-            C = self.Apm_TE_factor;
-            energy = C(1,1,1)*( App(1,1,1).*conj(App(1,1,1)) + Amm(1,1,1).*conj(Amm(1,1,1)) );
-        end
-        
-        function energy = baroclinicInertialEnergy(self)
-            App = self.Ap;
-            Amm = self.Am;
-            C = self.Apm_TE_factor;
-            energy = sum(sum(sum( C(1,1,2:end).* (abs(App(1,1,2:end)).^2 + abs(Amm(1,1,2:end)).^2) )));
-        end
-        
-        function energy = internalWaveEnergyPlus(self)
-            A = self.Ap;
-            A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
-        end
-        
-        function energy = internalWaveEnergyMinus(self)
-            A = self.Am;
-            A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
-        end
-        
-        function summarizeEnergyContent(self)
-            total = self.totalSpectralEnergy;
-            ioPct = 100*self.inertialEnergy/total;
-            wavePct = 100*self.waveEnergy/total;
-            gPct = 100*self.geostrophicEnergy/total;
-            wavePlusPct = 100*self.internalWaveEnergyPlus/self.waveEnergy;
-            waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
-            
-            fprintf('%.1f m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
-        end
-                
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Add and remove internal waves from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        period = InitializeWithPlaneWave(self, k0, l0, j0, UAmp, sign)
-        
-        RemoveAllGriddedWaves(self)
-        
-        [omega,k,l] = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
-        
-        [omega,k,l,kIndex,lIndex,jIndex,signIndex] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)  
-        
-        [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self);
-        
-        InitializeWithGMSpectrum(self, GMAmplitude, varargin);
-        
-        [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   ;
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Add and remove geostrophic features from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        SetGeostrophicStreamfunction(self,psi);
-
-        SetInertialMotions(self,u,v);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Eulerian---the dynamical fields on the grid at a given time
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        % Primary method for accessing the dynamical variables on the
-        % internal grid. Valid variable options are 'u', 'v', 'w',
-        % 'rho_prime', and 'eta'.
-        [varargout] = VariableFieldsAtTime(self, t, varargin);
-        
-        % Return the velocity field, which is the sum of the gridded and
-        % external/free waves at time t. Note that if you do not need w,
-        % don't request it and it won't be computed.
-        [u,v,w] = VelocityFieldAtTime(self, t);
-        
-        % Return the density field, which is the sum of the density
-        % mean field (variable in z) and the perturbation field
-        % (variable in time and space).
-        function rho = DensityFieldAtTime(self, t)
-            rho = reshape(self.rhobar,1,1,[]) + self.VariableFieldsAtTime(t,'rho_prime');
-        end
-        
-        % same as above, but at obsTime
-%         [varargout] = VariableFields(self, varargin);
-%         [u,v,w] = VelocityField(self);
-
-
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Lagrangian---return the dynamical fields at a given location and time
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        % Primary method for accessing the dynamical variables on the at
-        % any position or time.
-        %
-        % The method argument specifies how off-grid values should be
-        % interpolated. Use 'exact' for the slow, but accurate, spectral
-        % interpolation. Otherwise use 'spline' or some other method used
-        % by Matlab's interp function.
-        %
-        % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
-        % 'eta'.
-        [varargout] = VariablesAtTimePosition(self,t,x,y,z,interpolationMethod,varargin);
-        
-        % useful for integration methods where dy/dt is best given with
-        % y as a single variable.
-        function [u] = VelocityAtTimePositionVector(self,t,p, interpolationMethod,shouldUseW)
-            % Return the velocity at time t and position p, where size(p) =
-            % [3 n]. The rows of p represent [x,y,z].
-            % Optional argument is passed to the interpolation method. I
-            % recommend either linear or spline.
-            psize = size(p);
-            if psize(1) == 3
-                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
-                if exist('shouldUseW','var')
-                    u = cat(1,u,v,shouldUseW.*w);
-                else
-                    u = cat(1,u,v,w);
-                end
+            % logic through some default settings
+            if nargin < 2 || isempty(deltaT) || deltaT <= 0
+                didSetDeltaT = 0;
             else
-                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
-                if exist('shouldUseW','var')
-                    u = cat(2,u,v,shouldUseW.*w);
-                else
-                    u = cat(2,u,v,w);
+                didSetDeltaT = 1;
+            end
+            
+            if (nargin < 3 || isempty(outputInterval) || deltaT <= 0) && ~isempty(self.outputInterval)
+                outputInterval = self.outputInterval;
+            end
+            if nargin < 3 || isempty(outputInterval)
+                didSetOutputInterval = 0;
+            else
+                didSetOutputInterval = 1;
+            end
+
+            if didSetDeltaT == 0 && didSetOutputInterval == 0
+                deltaT = self.wvm.TimeStepForCFL(0.5);
+            elseif didSetDeltaT == 0 && didSetOutputInterval == 1
+                deltaT = self.wvm.TimeStepForCFL(0.5,outputInterval);
+            end
+            
+            % Now set the initial conditions and point the integrator to
+            % the correct flux function
+            Y0 = self.InitialConditionsArray();
+            if isempty(Y0{1})
+                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
+            end
+            self.integrator = ArrayIntegrator(@(t,y0) self.FluxAtTime(t,y0),Y0,deltaT);
+            self.integrator.currentTime = self.t;
+
+            if didSetOutputInterval == 1
+                self.outputInterval = outputInterval;
+                self.stepsPerOutput = round(outputInterval/self.integrator.stepSize);
+                self.firstOutputStep = round((self.initialOutputTime-self.t)/self.integrator.stepSize);
+            end
+
+            if ~(nargin < 4 || isempty(finalTime))
+                 % total dT time steps to meet or exceed the requested time.
+                self.nSteps = ceil((finalTime-self.t)/self.integrator.stepSize);
+                varargout{1} = length(self.firstOutputStep:self.stepsPerOutput:self.nSteps);
+            end
+
+            self.didSetupIntegrator = 1;
+        end
+        
+        function Y0 = InitialConditionsArray(self)
+            Y0 = cell(1,1);
+            n = 0;
+            if self.linearDynamics == 0
+                n=n+1;Y0{n} = self.wvm.Ap;
+                n=n+1;Y0{n} = self.wvm.Am;
+                n=n+1;Y0{n} = self.wvm.A0;
+            end
+
+            if ~isempty(self.xFloat)
+                n=n+1;Y0{n} = self.xFloat;
+                n=n+1;Y0{n} = self.yFloat;
+                n=n+1;Y0{n} = self.zFloat;
+            end
+
+            if ~isempty(self.xDrifter)
+                n=n+1;Y0{n} = self.xDrifter;
+                n=n+1;Y0{n} = self.yDrifter;
+            end
+
+            if ~isempty(self.tracers)
+                for i=1:length(self.tracers)
+                    n=n+1;Y0{n} = self.tracers{i};
                 end
             end
         end
-        
-        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, interpolationMethod)
-            % Return the velocity at time t and position p, where size(p) =
-            % [3 n]. The rows of p represent [x,y,z].
-            psize = size(p);
-            if psize(1) == 3
-                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
-                u = cat(1,u,v,zeros(1,psize(2)));
+
+        function modelTime = integrateOneTimeStep(self)
+            %self.ShowIntegrationTimeDiagnostics(self.stepsTaken);
+
+            self.integrator.IncrementForward();
+            n=0;
+            if self.linearDynamics == 0
+                n=n+1; self.wvm.Ap = self.integrator.currentY{n};
+                n=n+1; self.wvm.Am = self.integrator.currentY{n};
+                n=n+1; self.wvm.A0 = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.xFloat)
+                n=n+1; self.xFloat = self.integrator.currentY{n};
+                n=n+1; self.yFloat = self.integrator.currentY{n};
+                n=n+1; self.zFloat = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.xDrifter)
+                n=n+1; self.xDrifter = self.integrator.currentY{n};
+                n=n+1; self.yDrifter = self.integrator.currentY{n};
+            end
+
+            if ~isempty(self.tracers)
+                for iTracer=1:length(self.tracers)
+                    n=n+1; self.tracers{iTracer} = self.integrator.currentY{n};
+                end
+            end
+
+            % Rather than use the integrator time, which add floating point
+            % numbers each time step, we multiple the steps taken by the
+            % step size. This reduces rounding errors.
+            self.stepsTaken = self.stepsTaken + 1;
+            modelTime = self.initialTime + self.stepsTaken * self.integrator.stepSize;
+            self.t = modelTime;
+            if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
+                self.outputIndex = self.outputIndex + 1;
+            end
+        end
+
+        function modelTime = integrateToNextOutputTime(self)
+            if isempty(self.outputInterval)
+                fprintf('You did not set an output interval, so how could I integrateToNextOutputTime?\n');
+                return;
+            end
+            
+            modelTime = self.integrateOneTimeStep;
+            while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
+                modelTime = self.integrateOneTimeStep;
+            end
+        end
+
+        function F = FluxAtTime(self,t,y0)
+            F = cell(1,1);
+            n = 0;
+            if self.linearDynamics == 0
+                [Fp,Fm,F0,U,V,W] = self.wvm.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
+                n=n+1;F{n} = Fp;
+                n=n+1;F{n} = Fm;
+                n=n+1;F{n} = F0;
             else
-                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
-                u = cat(2,u,v,zeros(psize(1),1));
+                [U,V,W] = self.wvm.VelocityFieldAtTime(t);
+            end
+
+            if ~isempty(self.xFloat)
+                [Fx,Fy,Fz] = self.wvm.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
+                n=n+1;F{n} = Fx;
+                n=n+1;F{n} = Fy;
+                n=n+1;F{n} = Fz;
+            end
+
+            if ~isempty(self.xDrifter)
+                [Fx,Fy] = self.wvm.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
+                n=n+1;F{n} = Fx;
+                n=n+1;F{n} = Fy;
+            end
+
+            if ~isempty(self.tracers)
+                for i=1:length(self.tracers)
+                    phibar = self.wvm.TransformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.wvm.TransformToSpatialDomainWithFAllDerivatives(phibar);
+                    n=n+1;F{n} = -U.*Phi_x - V.*Phi_y - W.*Phi_z;
+                end
             end
         end
-        
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,interpolationMethod)
-            if nargout == 3
-                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w');
+
+        function ShowIntegrationTimeDiagnostics(self,integratorIncrement)
+            if integratorIncrement == 0
+                fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
+                fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvm.inertialPeriod,0/self.wvm.inertialPeriod,self.nSteps);
+                if ~isempty(self.ncfile)
+                    %fprintf('\tWriting %d of those time steps to file. Will write to output file starting at index %d.\n',sum(self.outputSteps>=0),self.outputIndex-self.incrementsWrittenToFile);
+                end
+            elseif integratorIncrement == 1
+                self.startTime = datetime('now');
             else
-                [u,v] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v');
+                timePerStep = (datetime('now')-self.startTime)/(integratorIncrement-1);
+                % We want to inform the user about every 30 seconds
+                stepsPerInform = ceil(30/seconds(timePerStep));
+                if (integratorIncrement==2 || mod(integratorIncrement,stepsPerInform) == 0)
+                    timeRemaining = (self.nSteps-integratorIncrement+1)*timePerStep;
+                    fprintf('\tmodel time t=%.2f inertial periods, RK4 time step %d of %d. Estimated finish time %s (%s from now)\n', self.t/inertialPeriod, integratorIncrement, self.nSteps, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+                    self.wvm.summarizeEnergyContent();
+                end
             end
         end
-        
-        function rho = DensityAtTimePosition(self,t,x,y,z,interpolationMethod)
-            rho = self.rhoFunction(z) + self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Add and remove off-grid internal waves
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        FillOutWaveSpectrum(self,maxTimeGap)
-        
-        function RemoveAllExternalWaves(self)
-            self.offgridModes.RemoveAllExternalWaves();
-        end
-        
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.offgridModes.SetExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
-        end
-        
-        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.offgridModes.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
-        end
-        
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.offgridModes.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
-        end
-        
-        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.offgridModes.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
-        end
-        
-        function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
-            % Returns the external wave modes at the grid points.
-            varargout = cell(size(varargin));
-            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,reshape(X,[],1),reshape(Y,[],1), reshape(Z,[],1), varargin{:});
-            for iArg=1:length(varargout)
-                varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
+
+        function [deltaT,advectiveDT,oscillatoryDT] = TimeStepForCFL(self, cfl, outputInterval)
+            % Return the time step (in seconds) to maintain the given cfl condition.
+            % If the cfl condition is not given, 0.25 will be assumed.
+            % If outputInterval is given, the time step will be rounded to evenly
+            % divide the outputInterval.
+            if nargin == 1
+                cfl = 0.25;
             end
+
+            omega = self.wvm.Omega;
+            period = 2*pi/max(abs(omega(:)));
+            [u,v] = self.wvm.VelocityFieldAtTime(0.0);
+            U = max(max(max( sqrt(u.*u + v.*v) )));
+            dx = (self.wvm.x(2)-self.wvm.x(1));
+
+            advectiveDT = cfl*dx/U;
+            oscillatoryDT = cfl*period;
+            % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
+
+            fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
+
+            if advectiveDT < oscillatoryDT
+                deltaT = advectiveDT;
+            else
+                deltaT = oscillatoryDT;
+            end
+
+            if nargin == 3 && ~isempty(outputInterval)
+                deltaT = outputInterval/ceil(outputInterval/deltaT);
+                stepsPerOutput_ = round(outputInterval/deltaT);
+                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',deltaT,stepsPerOutput_);
+            end
+
         end
-        
-        function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
-            varargout = cell(size(varargin));
-            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,x,y,z, varargin{:});
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % NetCDF Output
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ncfile = CreateNetCDFFileForModelOutput(self,modelOutputFile,overwriteExisting)
+            shouldOverwriteExisting = 0;
+            if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
+                shouldOverwriteExisting = 1;
+            end
+            ncfile = WaveVortexModelNetCDFFile(self.wvm,modelOutputFile,'shouldOverwriteExisting',shouldOverwriteExisting);            
+            self.ncfile = ncfile;
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Validation and internal unit testing
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % This is S*S^{-1} and therefore returns the values in
-        % wave-vortex space. So, C11 represents Ap and should be 1s
-        % where we expected Ap solutions to exist.
-        [C11,C21,C31,C12,C22,C32,C13,C23,C33] = ValidateTransformationMatrices(self)
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Generate a complete set of wave-vortex coefficients with variance at all
-        % physically realizable solution states.
-        [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)  
-
-        
-        [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
-        [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
-        AntiAliasMask= MaskForAliasedModes(self);
-
-        [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
-    end
+        function OpenNetCDFFileForTimeStepping(self)
+            if ~isempty(self.ncfile)
     
-    methods (Static)
+                % Gather up all the field variables and sort them into bins
+                % on whether or not the user wants the entire time series
+                % written, or just the initial conditions.
+                self.timeSeriesVariables = {};
+                self.initialConditionOnlyVariables = {};
+                if self.shouldWriteA0 == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'A0';
+                elseif self.shouldWriteA0 == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'A0';
+                end
+                if self.shouldWriteAp == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'Ap';
+                elseif self.shouldWriteAp == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'Ap';
+                end
+                if self.shouldWriteAm == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'Am';
+                elseif self.shouldWriteAm == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'Am';
+                end
+
+                if self.shouldWriteU == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'u';
+                elseif self.shouldWriteU == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'u';
+                end
+                if self.shouldWriteV == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'v';
+                elseif self.shouldWriteV == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'v';
+                end
+                if self.shouldWriteW == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'w';
+                elseif self.shouldWriteW == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'w';
+                end
+
+                if self.shouldWriteEta == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'eta';
+                elseif self.shouldWriteEta == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'eta';
+                end
+                if self.shouldWriteP == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'p';
+                elseif self.shouldWriteP == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'p';
+                end
+                if self.shouldWriteRho == ShouldWrite.timeSeries
+                    self.timeSeriesVariables{end+1} = 'rho_prime';
+                elseif self.shouldWriteRho == ShouldWrite.initialConditions
+                    self.initialConditionOnlyVariables{end+1} = 'rho_prime';
+                end
+
+                if ~isempty(self.timeSeriesVariables)
+                    self.ncfile.InitializeStorageForVariableFieldsTimeSeries(self.timeSeriesVariables);
+                end
+                if ~isempty(self.initialConditionOnlyVariables)
+                    self.ncfile.WriteInitialVariableFields(self.initialConditionOnlyVariables);
+                end
+
+                if ~isempty(self.xFloat)
+                    if self.shouldWriteFloats == ShouldWrite.timeSeries
+                        self.ncfile.InitializeFloatStorageForTimeSeries(length(self.xFloat));
+                    elseif self.shouldWriteFloats == ShouldWrite.initialConditions
+                        self.ncfile.WriteInitialFloatPositions(self.xFloat,self.yFloat,self.zFloat);
+                    end
+                end
+
+                if ~isempty(self.xDrifter)
+                    if self.shouldWriteDrifters == ShouldWrite.timeSeries
+                        self.ncfile.InitializeDrifterStorageForTimeSeries(length(self.xDrifter));
+                    elseif self.shouldWriteDrifters == ShouldWrite.initialConditions
+                        self.ncfile.WriteInitialDrifterPositions(self.xDrifter,self.yDrifter,self.zDrifter);
+                    end
+                end
+
+                if self.shouldWriteTracers == ShouldWrite.timeSeries
+                    for iTracer = 1:length(self.tracers)
+                        self.ncfile.InitializeTracerStorageWithName(self.tracerNames{iTracer});
+                    end
+                elseif self.shouldWriteTracers == ShouldWrite.initialConditions
+                    for iTracer = 1:length(self.tracers)
+                        self.ncfile.WriteInitialTracerWithName(self.tracerNames{iTracer},self.tracers{iTracer});
+                    end
+                end
+
+                if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
+                    self.ncfile.InitializeEnergeticsStorageForTimeSeries();
+                elseif self.shouldWriteFlowConstituentEnergetics == ShouldWrite.initialConditions
+                    self.ncfile.WriteInitialEnergetics();
+                end
+
+                if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
+                    self.ncfile.InitializeEnergeticsKJStorageForTimeSeries();
+                elseif self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.initialConditions
+                    self.ncfile.WriteInitialEnergeticsKJ();
+                end
+            else
+                if isempty(self.ncfile.ncid)
+                    self.ncfile.open();
+                end
+            end
+
+            self.incrementsWrittenToFile = 0;
+
+%             outputTimes = self.t + self.outputIncrements*self.integrator.stepSize;
+
+            % Save the initial conditions
+            self.WriteTimeStepToNetCDFFile();         
+        end
+
+
+        function WriteTimeStepToNetCDFFile(self)
+            if ( ~isempty(self.ncfile) && mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0 )
+                self.ncfile.WriteTimeAtIndex(self.outputIndex,self.t);
+
+                self.ncfile.WriteVariableFieldsAtTimeIndex(self.outputIndex,self.timeSeriesVariables{:});
+
+                if self.shouldWriteFloats == ShouldWrite.timeSeries
+                    self.ncfile.WriteFloatPositionsAtTimeIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
+                end
+                if self.shouldWriteDrifters == ShouldWrite.timeSeries
+                    self.ncfile.WriteDrifterPositionsTimeAtIndex(self.outputIndex,self.xDrifter,self.yDrifter,self.zDrifter);
+                end
+                if self.shouldWriteTracers == ShouldWrite.timeSeries
+                    for iTracer = 1:length(self.tracers)
+                        self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracers{iTracer});
+                    end
+                end
+
+                if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
+                    self.ncfile.WriteEnergeticsAtTimeIndex(self.outputIndex);
+                end
+                if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
+                    self.ncfile.WriteEnergeticsKJAtTimeIndex(self.outputIndex);
+                end
+
+                self.incrementsWrittenToFile = self.incrementsWrittenToFile + 1;
+            end
+        end
+
+        function CloseNetCDFFile(self)
+            if ~isempty(self.ncfile)
+                fprintf('Ending simulation. Wrote %d time points to file\n',self.incrementsWrittenToFile);
+                self.ncfile.close();
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Check if the matrix is Hermitian. Report errors.
-        A = CheckHermitian(A)
+        % Integration
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Forces a 3D matrix to be Hermitian, except at k=l=0
-        A = MakeHermitian(A)
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Returns a matrix the same size as A with 1s at the 'redundant'
-        % hermiation indices.
-        A = RedundantHermitianCoefficients(A)
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Returns a matrix the same size as A with 1s at the Nyquist
-        % frequencies.
-        A = NyquistWavenumbers(A)
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Generate a 3D matrix to be Hermitian, except at k=l=0
-        A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Takes a Hermitian matrix and resets it back to the real amplitude.
-        [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
     end
-        
-        
-end 
-
-
-
+end

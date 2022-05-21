@@ -1,4 +1,4 @@
-classdef WaveVortexModelHydrostatic < WaveVortexModel
+classdef WaveVortexTransformHydrostatic < WaveVortexTransform
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %
@@ -30,7 +30,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
         
     methods
          
-        function self = WaveVortexModelHydrostatic(dims, n, latitude, rhoFunc, varargin)
+        function self = WaveVortexTransformHydrostatic(dims, n, latitude, rhoFunc, varargin)
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
@@ -96,7 +96,7 @@ classdef WaveVortexModelHydrostatic < WaveVortexModel
             end
 
             % This is enough information to initialize
-            self@WaveVortexModel(dims, [n(1) n(2) Nz], z, im.rho, N2, dLnN2, nModes, latitude, rho0);
+            self@WaveVortexTransform(dims, [n(1) n(2) Nz], z, im.rho, N2, dLnN2, nModes, latitude, rho0);
 %             self.Init(dims, [n(1) n(2) Nz], z, im.rho, im.N2, dLnN2, nModes, latitude, im.rho_function(0));
             self.rhoFunction = rhoFunc;
             self.N2Function = N2func;
