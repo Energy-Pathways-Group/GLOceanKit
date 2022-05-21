@@ -3,7 +3,7 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
     %space
     
     properties
-        obsTime = 0 % time that these observations are from
+        t = 0 % time that these observations are from
         t0 = 0 % reference time---all wave phases are wound to this time
 
         x, y, z
@@ -47,7 +47,9 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
         availablePhysicalFields;
         variables;
 
-        stateVariables
+        stateVariableWithName
+        modelOperationWithName
+
         variableCache
     end
 
@@ -86,14 +88,31 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
     
     methods (Access=protected)
         function varargout = dotReference(self,indexOp)
-            varargout{1} = self.VariableFields(indexOp.Name);
+            if isKey(self.stateVariableWithName,indexOp.Name)
+                varargout{1} = self.StateVariables(indexOp.Name);
+            elseif isKey(self.modelOperationWithName,indexOp.Name)
+                modelOp = self.modelOperationWithName(indexOp.Name); 
+                varargout=cell(1,length(modelOp.outputVariables));
+                [varargout{:}] = self.PerformModelOperation(indexOp.Name);
+            else
+                error("Unknown operation");
+            end
+
+            
         end
-        function obj = dotAssign(obj,indexOp,varargin)
+        function obj = dotAssign(self,indexOp,varargin)
             error("Nope")
         end
         
-        function n = dotListLength(obj,indexOp,indexContext)
-            error("Just no.")
+        function n = dotListLength(self,indexOp,indexContext)
+            if isKey(self.stateVariableWithName,indexOp.Name)
+                n = 1;
+            elseif isKey(self.modelOperationWithName,indexOp.Name)
+                modelOp = self.modelOperationWithName(indexOp.Name);
+                n = length(modelOp.outputVariables);
+            else
+                error("Unknown operation");
+            end
         end
     end
 
@@ -209,37 +228,88 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
 
             self.clearVariableCache();
 
-            self.stateVariables = containers.Map();
+            self.stateVariableWithName = containers.Map();
+            self.modelOperationWithName = containers.Map();
 
-            var(1) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
-            var(1).isComplex = 1;
-            var(1).isVariableWithLinearTimeStep = 0;
+            outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
+            outputVar(1).isComplex = 1;
+            outputVar(1).isVariableWithLinearTimeStep = 0;
 
-            var(2) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
-            var(2).isComplex = 1;
-            var(2).isVariableWithLinearTimeStep = 0;
+            outputVar(2) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
+            outputVar(2).isComplex = 1;
+            outputVar(2).isVariableWithLinearTimeStep = 0;
 
-            var(3) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
-            var(3).isComplex = 1;
-            var(3).isVariableWithLinearTimeStep = 0;
+            outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
+            outputVar(3).isComplex = 1;
+            outputVar(3).isVariableWithLinearTimeStep = 0;
 
-            f = @(wvt) wvt.WaveVortexCoefficientsAtTimeT();
+            f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
+            modelOp = ModelOperation(outputVar,f);
+            modelOp.name = 'ApAmA0';
+            self.addModelOperation(modelOp);
 
-            self.addModelOperation(ModelOperation(var,f));
 
-
-            var = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Ap + wvt.UAm.*wvt.Am + wvt.UA0.*wvt.A0);
-            self.addModelOperation(ModelOperation(var,f));
+            outputVar = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
+            self.addModelOperation(ModelOperation(outputVar,f));
         end
 
-        function [varargout] = VariableFields(self, varargin)
+        function addModelOperation(self,modelOp)
+            if isempty(modelOp.outputVariables)
+                error('This model operation has no output variables.')
+            end
+
+            for iVar=1:length(modelOp.outputVariables)
+                if isKey(self.stateVariableWithName,modelOp.outputVariables(iVar).name)
+                    warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
+                end
+                self.stateVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
+            end
+
+            if ~isempty(modelOp.name)
+                if isKey(self.modelOperationWithName,modelOp.name)
+                    warning('This model operation will replace the existing operation %s',modelOp.name);
+                end
+                self.modelOperationWithName(modelOp.name) = modelOp;
+            end
+        end
+
+        function [varargout] = StateVariables(self, varargin)
             varargout = cell(size(varargin));
-            [varargout{:}] = self.fetchFromVariableCache(varargin{:});
-            for iVar=1:length(varargout)
-                if isempty(varargout{iVar})
-                    varargout{iVar} = self.VariableFieldsAtTime(self.obsTime,varargin{iVar});
-                    self.addToVariableCache(varargin{iVar},varargout{iVar})
+
+            didFetchAll = 0;
+            while didFetchAll ~= 1
+                [varargout{:}] = self.fetchFromVariableCache(varargin{:});
+
+                for iVar=1:length(varargout)
+                    if isempty(varargout{iVar})
+                        stateVar = self.stateVariableWithName(varargin{iVar});
+                        opOut = cell(1,length(stateVar.modelOp.outputVariables));
+                        [opOut{:}] = stateVar.modelOp.Compute(self);
+                        for iOpOut=1:length(opOut)
+                            self.addToVariableCache(stateVar.modelOp.outputVariables(iOpOut).name,opOut{iOpOut})
+                        end
+                        continue;
+                    end
+                    didFetchAll = 1;
+                end
+            end
+        end
+
+        function varargout = PerformModelOperation(self,opName)
+            modelOp = self.modelOperationWithName(opName);
+            varNames = cell(1,length(modelOp.outputVariables));
+            varargout = cell(1,length(modelOp.outputVariables));
+            for iVar=1:length(modelOp.outputVariables)
+                varNames{iVar} = modelOp.outputVariables(iVar).name;
+            end
+
+            if all(isKey(self.variableCache,varNames))
+                [varargout{:}] = self.fetchFromVariableCache(varNames{:});
+            else
+                [varargout{:}] = modelOp.Compute(self);
+                for iOpOut=1:length(varargout)
+                    self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
                 end
             end
         end
@@ -412,19 +482,6 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             var.isVariableWithNonlinearTimeStep = 1;
             self.variables(var.name) = var;
 
-        end
-
-        function addModelOperation(self,modelOp)
-            if isempty(modelOp.outputVariables)
-                error('This model operation has no output variables.')
-            end
-
-            for iVar=1:length(modelOp.outputVariables)
-                if isKey(self.stateVariables,modelOp.outputVariables(iVar).name)
-                    warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
-                end
-                self.stateVariables(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
-            end
         end
 
         function wvmX2 = waveVortexModelWithResolution(self,m)
@@ -667,11 +724,11 @@ classdef WaveVortexModel < handle & matlab.mixin.indexing.RedefinesDot
             N = self.TransformToSpatialDomainWithG(Nbar);
         end
 
-        function [Apt,Amt,A0t] = WaveVortexCoefficientsAtTimeT(self,Ap,Am,A0)
-            phase = exp(self.iOmega*(t-self.t0));
-            Apt = Ap .* phase;
-            Amt = Am .* conj(phase);
-            A0t = A0;
+        function [Apt,Amt,A0t] = WaveVortexCoefficientsAtTimeT(self)
+            phase = exp(self.iOmega*(self.t-self.t0));
+            Apt = self.Ap .* phase;
+            Amt = self.Am .* conj(phase);
+            A0t = self.A0;
         end
         
         function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)

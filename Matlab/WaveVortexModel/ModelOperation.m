@@ -20,7 +20,8 @@ classdef ModelOperation < handle
         end
 
         function varargout = Compute(self,wvt)
-            varargout{:} = self.f(wvt);
+            varargout = cell(1,length(self.outputVariables));
+            [varargout{:}] = self.f(wvt);
         end
     end
 end
