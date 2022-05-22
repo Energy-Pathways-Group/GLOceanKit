@@ -1,22 +1,23 @@
-classdef ParticleFluxOperation < ModelOperation
+classdef ParticleFluxOperation < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
     properties
         name % ?
-        outputVariables % Make private?
         f = []
+        xyOnly
     end
 
     methods
-        function self = ParticleFluxOperation(outputVariables,f)
-            self.outputVariables = outputVariables;
-            for iVar=1:length(self.outputVariables)
-                self.outputVariables(iVar).modelOp = self;
+        function self = ParticleFluxOperation(name,f,xyOnly)
+            arguments
+                name char {mustBeNonempty}
+                f {mustBeNonempty}
+                xyOnly double {mustBeMember(xyOnly,[0 1])} = 0 
             end
-            if nargin == 2
-                self.f = f;
-            end
+            self.name = name;
+            self.f = f;
+            self.xyOnly = xyOnly;
         end
 
         function varargout = Compute(self,wvt,x,y,z)

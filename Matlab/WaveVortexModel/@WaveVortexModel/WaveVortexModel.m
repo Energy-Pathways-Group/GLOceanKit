@@ -82,6 +82,8 @@ classdef WaveVortexModel < handle
         xDrifter, yDrifter, zDrifter
         tracers, tracerNames
 
+
+
         IMA0, IMAp, IMAm    % InteractionMasks
         EMA0, EMAp, EMAm    % EnergyMasks
         shouldAntiAlias = 1;
@@ -109,6 +111,13 @@ classdef WaveVortexModel < handle
     end
 
     properties (SetAccess = private)
+        particleIndexWithName % can't use a Map() because order matters
+        particleFlux = {}
+        particlePosition = {}
+
+        tracerIndexWithName
+        tracer = {}
+
         didSetupIntegrator=0
         initialConditionOnlyVariables
         timeSeriesVariables % internal use only
@@ -177,9 +186,46 @@ classdef WaveVortexModel < handle
                 self.disallowNonlinearInteractionsWithAliasedModes();
                 self.freezeEnergyOfAliasedModes();
             end
+
+            fluxVar(1) = ModelVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
+            fluxVar(2) = ModelVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
+            fluxVar(3) = ModelVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
+            self.wvt.addModelOperation(ModelOperation('NonlinearFlux',fluxVar,@(wvt) self.NonlinearFluxWithMasks(wvt)));
+
+            self.particleIndexWithName = containers.Map();
+            self.tracerIndexWithName = containers.Map();
         end
         
+        function SetNonlinearFlux(self,modelOp)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                modelOp ModelOperation {mustBeNonempty}
+            end
+            self.linearDynamics = 0;
+        end
 
+        function AddParticles(self,name,fluxOp,x,y,z)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                name char {mustBeNonempty}
+                fluxOp ParticleFluxOperation {mustBeNonempty}
+                x (:,1) double
+                y (:,1) double
+                z (:,1) double
+            end
+            
+            n = length(self.particleIndexWithName) + 1;
+            self.particleIndexWithName(name) = n;
+            self.particleFlux{n} = fluxOp;
+            self.particlePosition{n} = cat(2,x,y,z);
+        end
+
+        function [x,y,z] = ParticlePositions(self,name)
+            p = self.particlePosition(self.particleIndexWithName(name));
+            x = p(:,1);
+            y = p(:,2);
+            z = p(:,3);
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -188,31 +234,31 @@ classdef WaveVortexModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function SetFloatPositions(self,x,y,z)
-            self.xFloat = reshape(x,1,[]);
-            self.yFloat = reshape(y,1,[]);
-            self.zFloat = reshape(z,1,[]);
-            if (length(self.xFloat) ~= length(self.yFloat)) || (length(self.xFloat) ~= length(self.zFloat))
-                error('SetFloatPositions failed! (x,y,z) must have the same length.')
-            end
+            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w));
+            self.AddParticles('float',floatFlux,x,y,z);
+        end
+
+        function [x,y,z] = FloatPositions(self)
+            [x,y,z] = self.ParticlePosition('float');
         end
 
         function SetDrifterPositions(self,x,y,z)
-            self.xDrifter = reshape(x,1,[]);
-            self.yDrifter = reshape(y,1,[]);
-            self.zDrifter = reshape(z,1,[]);
-            if (length(self.xDrifter) ~= length(self.yDrifter)) || (length(self.xDrifter) ~= length(self.zDrifter))
-                error('SetDrifterPositions failed! (x,y,z) must have the same length.')
-            end
+            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v),0);
+            self.AddParticles('drifter',drifterFlux,x,y,z);
+        end
+
+        function [x,y,z] = DrifterPositions(self)
+            [x,y,z] = self.ParticlePosition('drifter');
         end
 
         function AddTracer(self,phi,name)
-            if isempty(self.tracers)
-                self.tracers{1} = phi;
-                self.tracerNames{1} = name;
-            else
-                self.tracers{end+1} = phi;
-                self.tracerNames{end+1} = name;
-            end
+            n = length(self.tracerIndexWithName) + 1;
+            self.tracerIndexWithName(name) = n;
+            self.tracer{n} = phi;
+        end
+
+        function phi = Tracer(self,name)
+            phi = self.tracer(self.tracerIndexWithName(name));
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,6 +363,48 @@ classdef WaveVortexModel < handle
 
         function stirWithConstituents(self,constituents)
 
+        end
+
+        function [Fp,Fm,F0] = NonlinearFluxWithMasks(self,wvt)
+            fprintf('Custom');
+            % Apply operator T_\omega---defined in (C2) in the manuscript
+
+            % We also apply the interaction masks (IMA*) and energy masks
+            % (EMA*). These *could* be precomputed multiplied directly into
+            % the coefficients. A quick speed test shows this about a 5%
+            % performance hit by not doing this.
+            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
+            Ap = self.IMAp .* wvt.Ap .* phase;
+            Am = self.IMAm .* wvt.Am .* conj(phase);
+            A0 = self.IMA0 .* wvt.A0;
+
+            % Apply operator S---defined in (C4) in the manuscript
+            Ubar = wvt.UAp.*Ap + wvt.UAm.*Am + wvt.UA0.*A0;
+            Vbar = wvt.VAp.*Ap + wvt.VAm.*Am + wvt.VA0.*A0;
+            Wbar = wvt.WAp.*Ap + wvt.WAm.*Am;
+            Nbar = wvt.NAp.*Ap + wvt.NAm.*Am + wvt.NA0.*A0;
+
+            % Finishing applying S, but also compute derivatives at the
+            % same time
+            [U,Ux,Uy,Uz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Ubar);
+            [V,Vx,Vy,Vz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Vbar);
+            W = wvt.TransformToSpatialDomainWithG(Wbar);
+            [ETA,ETAx,ETAy,ETAz] = wvt.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+
+            % Compute the nonlinear terms in the spatial domain
+            % (pseudospectral!)
+            uNL = -U.*Ux - V.*Uy - W.*Uz;
+            vNL = -U.*Vx - V.*Vy - W.*Vz;
+            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(wvt.dLnN2,-2));
+
+            % Now apply the operator S^{-1} and then T_\omega^{-1}
+            uNLbar = wvt.TransformFromSpatialDomainWithF(uNL);
+            vNLbar = wvt.TransformFromSpatialDomainWithF(vNL);
+            nNLbar = wvt.TransformFromSpatialDomainWithG(nNL);
+
+            Fp = self.EMAp .* (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
+            Fm = self.EMAm .* (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
+            F0 = self.EMA0 .* (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -437,6 +525,15 @@ classdef WaveVortexModel < handle
                 n=n+1; self.wvt.A0 = self.integrator.currentY{n};
             end
 
+            for iParticles=1:length(self.particleFlux)
+                p = self.particlePosition(iParticles);
+                if self.particleFlux(iParticles).xyOnly
+                    
+                else
+
+                end
+            end
+
             if ~isempty(self.xFloat)
                 n=n+1; self.xFloat = self.integrator.currentY{n};
                 n=n+1; self.yFloat = self.integrator.currentY{n};
@@ -482,12 +579,10 @@ classdef WaveVortexModel < handle
             n = 0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                [Fp,Fm,F0,U,V,W] = self.wvt.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
+                [Fp,Fm,F0] = self.wvt.NonlinearFlux;
                 n=n+1;F{n} = Fp;
                 n=n+1;F{n} = Fm;
                 n=n+1;F{n} = F0;
-            else
-                [U,V,W] = self.wvt.VelocityFieldAtTime(t);
             end
 
             if ~isempty(self.xFloat)

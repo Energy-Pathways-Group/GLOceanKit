@@ -96,7 +96,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                 if length(indexOp) == 1
                     [varargout{:}] = self.PerformModelOperation(indexOp(1).Name);
                 else
-                    [varargout{:}] = self.PerformModelOperation(indexOp(1).Name,indexOp(2).Indices{:});
+                    error('No indices allowed!!!')
+%                     [varargout{:}] = self.PerformModelOperation(indexOp(1).Name,indexOp(2).Indices{:});
                 end
             else
                 % User requested a variable that we only have an indirect
@@ -304,18 +305,25 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addModelOperation(ModelOperation('eta',outputVar,f));
 
-            self.modelDimensionWithName('float-id') = ModelDimension('float-id',100, 'unitless id number', 'id number of a given float');
-            particleVar(1) = ModelVariable('float-x',{'float-id'},'m', 'position of the float in the x coordinate');
-            particleVar(2) = ModelVariable('float-y',{'float-id'},'m', 'position of the float in the y coordinate');
-            particleVar(3) = ModelVariable('float-z',{'float-id'},'m', 'position of the float in the z coordinate');
-            f = @(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w);
-            self.addModelOperation(ModelOperation('FloatFlux',particleVar,f));
+            fluxVar(1) = ModelVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
+            fluxVar(2) = ModelVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
+            fluxVar(3) = ModelVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+            self.addModelOperation(ModelOperation('NonlinearFlux',fluxVar,@(wvt) wvt.NonlinearFlux_));
+
+%             self.modelDimensionWithName('float-id') = ModelDimension('float-id',100, 'unitless id number', 'id number of a given float');
+%             particleVar(1) = ModelVariable('float-x',{'float-id'},'m', 'position of the float in the x coordinate');
+%             particleVar(2) = ModelVariable('float-y',{'float-id'},'m', 'position of the float in the y coordinate');
+%             particleVar(3) = ModelVariable('float-z',{'float-id'},'m', 'position of the float in the z coordinate');
+%             f = @(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w);
+%             self.addModelOperation(ModelOperation('FloatFlux',particleVar,f));
         end
 
         function addModelOperation(self,modelOp)
-
-
             for iVar=1:length(modelOp.outputVariables)
+                if any(~isKey(self.modelDimensionWithName,modelOp.outputVariables(iVar).dimensions))
+                    error("Unable to find at least one of the dimensions for variable %s",modelOp.outputVariables(iVar).name);
+                end
+
                 if isKey(self.modelVariableWithName,modelOp.outputVariables(iVar).name)
                     warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
                 end
@@ -636,34 +644,24 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*(DiffSine(self.z,eta,1,3) + eta.*self.dLnN2);
         end
         
-        F = NonlinearFluxWithParticlesAtTimeArray(self,t,Y0);
-        [Fp,Fm,F0,u,v,w] = NonlinearFluxWithParticlesAtTime(self,t,Ap,Am,A0,x,y,z);
-        
-        F = NonlinearFluxWithFloatsAndDriftersAtTimeArray(self,t,Y0,z_d);
-        [Fp,Fm,F0,u_f,v_f,w_f,u_d,v_d] = NonlinearFluxWithFloatsAndDriftersAtTime(self,t,Ap,Am,A0,x_f,y_f,z_f,x_d,y_d,z_d);
-        
-        function F = NonlinearFluxAtTimeArray(self,t,Y0)
-            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Y0{1},Y0{2},Y0{3});
-            F = {Fp,Fm,F0};
-        end
-        
-        function [Fp,Fm,F0,U,V,W] = NonlinearFluxAtTime(self,t,Ap,Am,A0)
+        function [Fp,Fm,F0] = NonlinearFlux_(self)
+            fprintf('Built-in');
             % Apply operator T_\omega---defined in (C2) in the manuscript
 
             % We also apply the interaction masks (IMA*) and energy masks
             % (EMA*). These *could* be precomputed multiplied directly into
             % the coefficients. A quick speed test shows this about a 5%
             % performance hit by not doing this.
-            phase = exp(self.iOmega*(t-self.t0));
-            Ap = self.IMAp .* Ap .* phase;
-            Am = self.IMAm .* Am .* conj(phase);
-            A0 = self.IMA0 .* A0;
+            phase = exp(self.iOmega*(self.t-self.t0));
+            Apt = self.Ap .* phase;
+            Amt = self.Am .* conj(phase);
+            A0t = self.A0;
 
             % Apply operator S---defined in (C4) in the manuscript
-            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
-            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
-            Wbar = self.WAp.*Ap + self.WAm.*Am;
-            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
+            Ubar = self.UAp.*Apt + self.UAm.*Amt + self.UA0.*A0t;
+            Vbar = self.VAp.*Apt + self.VAm.*Amt + self.VA0.*A0t;
+            Wbar = self.WAp.*Apt + self.WAm.*Amt;
+            Nbar = self.NAp.*Apt + self.NAm.*Amt + self.NA0.*A0t;
             
             % Finishing applying S, but also compute derivatives at the
             % same time
@@ -683,19 +681,19 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             vNLbar = self.TransformFromSpatialDomainWithF(vNL);
             nNLbar = self.TransformFromSpatialDomainWithG(nNL);
 
-            Fp = self.EMAp .* (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = self.EMAm .* (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = self.EMA0 .* (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
+            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
+            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
+            F0 = (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
         end
 
-        function [Ep,Em,E0] = EnergyFluxAtTime(self,t,Ap,Am,A0)
-            [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
+        function [Ep,Em,E0] = EnergyFluxAtTime(self)
+            [Fp,Fm,F0] = self.NonlinearFlux;
             % The phase is tricky here. It is wound forward for the flux,
             % as it should be... but then it is wound back to zero. This is
             % equivalent ignoring the phase below here.
-            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-            Em = 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-            E0 = 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
+            Em = 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
+            E0 = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
         end
         
         function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
