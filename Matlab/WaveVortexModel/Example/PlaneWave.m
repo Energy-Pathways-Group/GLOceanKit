@@ -23,7 +23,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvm = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 U = .2;
 period = wvm.InitializeWithPlaneWave(10,0,1,U,1);  

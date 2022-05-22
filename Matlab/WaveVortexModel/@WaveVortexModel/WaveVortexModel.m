@@ -71,7 +71,7 @@ classdef WaveVortexModel < handle
     % AppendToExisting
 
     properties
-        wvm             % WaveVortexTransform
+        wvt             % WaveVortexTransform
         t=0             % current model time (in seconds)
         initialTime=0
     
@@ -81,6 +81,10 @@ classdef WaveVortexModel < handle
         xFloat, yFloat, zFloat
         xDrifter, yDrifter, zDrifter
         tracers, tracerNames
+
+        IMA0, IMAp, IMAm    % InteractionMasks
+        EMA0, EMAp, EMAm    % EnergyMasks
+        shouldAntiAlias = 1;
 
         outputInterval      % model output interval (seconds)
         initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
@@ -99,15 +103,7 @@ classdef WaveVortexModel < handle
         
         % *if* outputting to NetCDF file, these will be populated
         ncfile      % WaveVortexModelNetCDFFile instance---empty indicates no file output
-
-        % Set these to {ShouldWrite.timeSeries, ShouldWrite.initialConditions, ShouldWrite.no}
-        shouldWriteA0, shouldWriteAp, shouldWriteAm
-        shouldWriteU, shouldWriteV, shouldWriteEta, shouldWriteW, shouldWriteP, shouldWriteRho
-        shouldWriteFloats = ShouldWrite.timeSeries
-        shouldWriteDrifters
-        shouldWriteTracers
-        shouldWriteFlowConstituentEnergetics
-        shouldWriteFlowConstituentEnergetics2D
+        variablesToWriteToFile = {}
 
         incrementsWrittenToFile
     end
@@ -165,7 +161,22 @@ classdef WaveVortexModel < handle
 
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
-            self.wvm = WaveVortexTransform;  
+            self.wvt = WaveVortexTransform;  
+
+            % Allow all nonlinear interactions
+            self.IMA0 = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+            self.IMAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+            self.IMAm = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+
+            % Allow energy fluxes at all modes
+            self.EMA0 = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+            self.EMAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+            self.EMAm = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
+
+            if self.shouldAntiAlias == 1
+                self.disallowNonlinearInteractionsWithAliasedModes();
+                self.freezeEnergyOfAliasedModes();
+            end
         end
         
 
@@ -206,6 +217,110 @@ classdef WaveVortexModel < handle
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % Reduced interaction models
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
+            self.IMA0 = or(self.IMA0,A0);
+            self.IMAm = or(self.IMAm,Am);
+            self.IMAp = or(self.IMAp,Ap);
+        end
+
+        function allowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 | A0Mask;
+            self.IMAm = self.IMAm | ApmMask;
+            self.IMAp = self.IMAp | ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            self.IMA0 = self.IMA0 & ~A0Mask;
+            self.IMAm = self.IMAm & ~ApmMask;
+            self.IMAp = self.IMAp & ~ApmMask;
+        end
+
+        function disallowNonlinearInteractionsWithAliasedModes(self)
+            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
+            % The reality is that the vertical modes will still alias.
+            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
+            self.shouldAntiAlias = 1;
+            
+            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            self.IMA0 = self.IMA0 & ~AntiAliasMask;
+            self.IMAm = self.IMAm & ~AntiAliasMask;
+            self.IMAp = self.IMAp & ~AntiAliasMask;
+        end
+
+        function unfreezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 | A0Mask;
+            self.EMAm = self.EMAm | ApmMask;
+            self.EMAp = self.EMAp | ApmMask;
+        end
+
+        function freezeEnergyOfConstituents(self,constituents)
+            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            self.EMA0 = self.EMA0 & ~A0Mask;
+            self.EMAm = self.EMAm & ~ApmMask;
+            self.EMAp = self.EMAp & ~ApmMask;
+        end
+        
+        function freezeEnergyOfAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            self.EMA0 = self.EMA0 & ~AntiAliasMask;
+            self.EMAm = self.EMAm & ~AntiAliasMask;
+            self.EMAp = self.EMAp & ~AntiAliasMask;
+        end
+
+        function clearEnergyFromAliasedModes(self)
+            % In addition to disallowing interaction to occur between modes
+            % that are aliased, you may actually want to disallow energy to
+            % even enter the aliased modes.
+            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            self.wvt.A0 = self.wvt.A0 .* ~AntiAliasMask;
+            self.wvt.Am = self.wvt.Am .* ~AntiAliasMask;
+            self.wvt.Ap = self.wvt.Ap .* ~AntiAliasMask;
+        end
+
+        function flag = IsAntiAliased(self)
+            AntiAliasMask = self.MaskForAliasedModes();
+
+            % check if there are zeros at all the anti-alias indices
+            flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.IMAm & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.IMAp & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMA0 & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMAp & AntiAliasMask) == AntiAliasMask,'all');
+            flag = flag & all((~self.EMAm & AntiAliasMask) == AntiAliasMask,'all');
+        end
+
+        
+        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
+            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.wvt.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
+            for iMode=1:length(kModes)
+                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
+                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
+                    self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
+                end
+
+                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
+                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
+                    self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
+                end
+            end
+        end
+
+        function stirWithConstituents(self,constituents)
+
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
         % Integration loop
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,7 +330,7 @@ classdef WaveVortexModel < handle
                 if nargin < 3 || isempty(cfl)
                     cfl=0.5;
                 end
-                deltaT = self.wvm.TimeStepForCFL(cfl,self.outputInterval);
+                deltaT = self.wvt.TimeStepForCFL(cfl,self.outputInterval);
                 self.SetupIntegrator(deltaT,self.outputInterval,finalTime);
             end
    
@@ -255,9 +370,9 @@ classdef WaveVortexModel < handle
             end
 
             if didSetDeltaT == 0 && didSetOutputInterval == 0
-                deltaT = self.wvm.TimeStepForCFL(0.5);
+                deltaT = self.wvt.TimeStepForCFL(0.5);
             elseif didSetDeltaT == 0 && didSetOutputInterval == 1
-                deltaT = self.wvm.TimeStepForCFL(0.5,outputInterval);
+                deltaT = self.wvt.TimeStepForCFL(0.5,outputInterval);
             end
             
             % Now set the initial conditions and point the integrator to
@@ -288,9 +403,9 @@ classdef WaveVortexModel < handle
             Y0 = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                n=n+1;Y0{n} = self.wvm.Ap;
-                n=n+1;Y0{n} = self.wvm.Am;
-                n=n+1;Y0{n} = self.wvm.A0;
+                n=n+1;Y0{n} = self.wvt.Ap;
+                n=n+1;Y0{n} = self.wvt.Am;
+                n=n+1;Y0{n} = self.wvt.A0;
             end
 
             if ~isempty(self.xFloat)
@@ -317,9 +432,9 @@ classdef WaveVortexModel < handle
             self.integrator.IncrementForward();
             n=0;
             if self.linearDynamics == 0
-                n=n+1; self.wvm.Ap = self.integrator.currentY{n};
-                n=n+1; self.wvm.Am = self.integrator.currentY{n};
-                n=n+1; self.wvm.A0 = self.integrator.currentY{n};
+                n=n+1; self.wvt.Ap = self.integrator.currentY{n};
+                n=n+1; self.wvt.Am = self.integrator.currentY{n};
+                n=n+1; self.wvt.A0 = self.integrator.currentY{n};
             end
 
             if ~isempty(self.xFloat)
@@ -365,32 +480,33 @@ classdef WaveVortexModel < handle
         function F = FluxAtTime(self,t,y0)
             F = cell(1,1);
             n = 0;
+            self.wvt.t = t;
             if self.linearDynamics == 0
-                [Fp,Fm,F0,U,V,W] = self.wvm.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
+                [Fp,Fm,F0,U,V,W] = self.wvt.NonlinearFluxAtTime(t,y0{n+1},y0{n+2},y0{n+3});
                 n=n+1;F{n} = Fp;
                 n=n+1;F{n} = Fm;
                 n=n+1;F{n} = F0;
             else
-                [U,V,W] = self.wvm.VelocityFieldAtTime(t);
+                [U,V,W] = self.wvt.VelocityFieldAtTime(t);
             end
 
             if ~isempty(self.xFloat)
-                [Fx,Fy,Fz] = self.wvm.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
+                [Fx,Fy,Fz] = self.wvt.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
                 n=n+1;F{n} = Fx;
                 n=n+1;F{n} = Fy;
                 n=n+1;F{n} = Fz;
             end
 
             if ~isempty(self.xDrifter)
-                [Fx,Fy] = self.wvm.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
+                [Fx,Fy] = self.wvt.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
                 n=n+1;F{n} = Fx;
                 n=n+1;F{n} = Fy;
             end
 
             if ~isempty(self.tracers)
                 for i=1:length(self.tracers)
-                    phibar = self.wvm.TransformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvm.TransformToSpatialDomainWithFAllDerivatives(phibar);
+                    phibar = self.wvt.TransformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.TransformToSpatialDomainWithFAllDerivatives(phibar);
                     n=n+1;F{n} = -U.*Phi_x - V.*Phi_y - W.*Phi_z;
                 end
             end
@@ -399,7 +515,7 @@ classdef WaveVortexModel < handle
         function ShowIntegrationTimeDiagnostics(self,integratorIncrement)
             if integratorIncrement == 0
                 fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
-                fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvm.inertialPeriod,0/self.wvm.inertialPeriod,self.nSteps);
+                fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvt.inertialPeriod,0/self.wvt.inertialPeriod,self.nSteps);
                 if ~isempty(self.ncfile)
                     %fprintf('\tWriting %d of those time steps to file. Will write to output file starting at index %d.\n',sum(self.outputSteps>=0),self.outputIndex-self.incrementsWrittenToFile);
                 end
@@ -412,7 +528,7 @@ classdef WaveVortexModel < handle
                 if (integratorIncrement==2 || mod(integratorIncrement,stepsPerInform) == 0)
                     timeRemaining = (self.nSteps-integratorIncrement+1)*timePerStep;
                     fprintf('\tmodel time t=%.2f inertial periods, RK4 time step %d of %d. Estimated finish time %s (%s from now)\n', self.t/inertialPeriod, integratorIncrement, self.nSteps, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
-                    self.wvm.summarizeEnergyContent();
+                    self.wvt.summarizeEnergyContent();
                 end
             end
         end
@@ -426,11 +542,11 @@ classdef WaveVortexModel < handle
                 cfl = 0.25;
             end
 
-            omega = self.wvm.Omega;
+            omega = self.wvt.Omega;
             period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvm.VelocityFieldAtTime(0.0);
+            [u,v] = self.wvt.VelocityFieldAtTime(0.0);
             U = max(max(max( sqrt(u.*u + v.*v) )));
-            dx = (self.wvm.x(2)-self.wvm.x(1));
+            dx = (self.wvt.x(2)-self.wvt.x(1));
 
             advectiveDT = cfl*dx/U;
             oscillatoryDT = cfl*period;
@@ -463,7 +579,7 @@ classdef WaveVortexModel < handle
             if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
                 shouldOverwriteExisting = 1;
             end
-            ncfile = WaveVortexModelNetCDFFile(self.wvm,modelOutputFile,'shouldOverwriteExisting',shouldOverwriteExisting);            
+            ncfile = WaveVortexModelNetCDFFile(self.wvt,modelOutputFile,'shouldOverwriteExisting',shouldOverwriteExisting);            
             self.ncfile = ncfile;
         end
 

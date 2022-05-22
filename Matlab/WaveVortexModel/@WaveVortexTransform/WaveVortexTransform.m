@@ -28,15 +28,14 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         WAp, WAm
         NAp, NAm, NA0
         
-        IMA0, IMAp, IMAm    % InteractionMasks
-        EMA0, EMAp, EMAm    % EnergyMasks
+
 
         PP, QQ
 
         kIso
         
         Ap, Am, A0
-        shouldAntiAlias = 1;
+        
         halfK = 0;
         
         offgridModes % subclass should initialize
@@ -87,14 +86,22 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     
     methods (Access=protected)
         function varargout = dotReference(self,indexOp)
-            if isKey(self.modelVariableWithName,indexOp.Name)
-                varargout{1} = self.ModelVariables(indexOp.Name);
-            elseif isKey(self.modelOperationWithName,indexOp.Name)
-                modelOp = self.modelOperationWithName(indexOp.Name); 
-                varargout=cell(1,length(modelOp.outputVariables));
-                [varargout{:}] = self.PerformModelOperation(indexOp.Name);
+            % Typically the request will be directly for a modelOperation,
+            % but sometimes it will be for a variable that can only be
+            % produced as a bi-product of some operation.
+            if isKey(self.modelOperationWithName,indexOp(1).Name)
+                modelOp = self.modelOperationWithName(indexOp(1).Name);
+
+                varargout=cell(1,modelOp.nVarOut);
+                if length(indexOp) == 1
+                    [varargout{:}] = self.PerformModelOperation(indexOp(1).Name);
+                else
+                    [varargout{:}] = self.PerformModelOperation(indexOp(1).Name,indexOp(2).Indices{:});
+                end
             else
-                error("Unknown operation");
+                % User requested a variable that we only have an indirect
+                % way of computing.
+                varargout{1} = self.ModelVariables(indexOp(1).Name);
             end
         end
 
@@ -103,13 +110,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function n = dotListLength(self,indexOp,indexContext)
-            if isKey(self.modelVariableWithName,indexOp.Name)
-                n = 1;
-            elseif isKey(self.modelOperationWithName,indexOp.Name)
-                modelOp = self.modelOperationWithName(indexOp.Name);
-                n = length(modelOp.outputVariables);
+            if isKey(self.modelOperationWithName,indexOp(1).Name)
+                modelOp = self.modelOperationWithName(indexOp(1).Name);
+                n = modelOp.nVarOut;
             else
-                error("Unknown operation");
+                n=1;
             end
         end
     end
@@ -182,21 +187,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Am = zeros(self.Nk,self.Nl,self.nModes);
             self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
             
-            % Allow all nonlinear interactions
-            self.IMA0 = ones(self.Nk,self.Nl,self.nModes);
-            self.IMAp = ones(self.Nk,self.Nl,self.nModes);
-            self.IMAm = ones(self.Nk,self.Nl,self.nModes);
-
-            % Allow energy fluxes at all modes
-            self.EMA0 = ones(self.Nk,self.Nl,self.nModes);
-            self.EMAp = ones(self.Nk,self.Nl,self.nModes);
-            self.EMAm = ones(self.Nk,self.Nl,self.nModes);
-
-            if self.shouldAntiAlias == 1
-                self.disallowNonlinearInteractionsWithAliasedModes();
-                self.freezeEnergyOfAliasedModes();
-            end
-
             self.clearVariableCache();
 
             self.modelDimensionWithName = containers.Map();
@@ -229,49 +219,49 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             modelVar.isComplex = 1;
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Ap));
+            self.addModelOperation(ModelOperation('A0', modelVar,@(wvt) wvt.Ap));
 
             modelVar = ModelVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
             modelVar.isComplex = 1;
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.A0));
+            self.addModelOperation(ModelOperation('Ap', modelVar,@(wvt) wvt.A0));
 
             modelVar = ModelVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
             modelVar.isComplex = 1;
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.Am));
+            self.addModelOperation(ModelOperation('Am', modelVar,@(wvt) wvt.Am));
 
             modelVar = ModelVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyPlus));
+            self.addModelOperation(ModelOperation('internalWaveEnergyPlus', modelVar,@(wvt) wvt.internalWaveEnergyPlus));
 
             modelVar = ModelVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.internalWaveEnergyMinus));
+            self.addModelOperation(ModelOperation('internalWaveEnergyMinus', modelVar,@(wvt) wvt.internalWaveEnergyMinus));
 
             modelVar = ModelVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicInertialEnergy));
+            self.addModelOperation(ModelOperation('baroclinicInertialEnergy',modelVar,@(wvt) wvt.baroclinicInertialEnergy));
 
             modelVar = ModelVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicInertialEnergy));
+            self.addModelOperation(ModelOperation('barotropicInertialEnergy',modelVar,@(wvt) wvt.barotropicInertialEnergy));
 
             modelVar = ModelVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
+            self.addModelOperation(ModelOperation('baroclinicGeostrophicEnergy',modelVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
 
             modelVar = ModelVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
             modelVar.isVariableWithLinearTimeStep = 0;
             modelVar.isVariableWithNonlinearTimeStep = 1;
-            self.addModelOperation(ModelOperation(modelVar,@(wvt) wvt.barotropicGeostrophicEnergy));
+            self.addModelOperation(ModelOperation('barotropicGeostrophicEnergy',modelVar,@(wvt) wvt.barotropicGeostrophicEnergy));
 
             outputVar(1) = ModelVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
             outputVar(1).isComplex = 1;
@@ -286,41 +276,44 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             outputVar(3).isVariableWithLinearTimeStep = 0;
 
             f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
-            modelOp = ModelOperation(outputVar,f);
-            modelOp.name = 'ApAmA0';
+            modelOp = ModelOperation('ApAmA0',outputVar,f);
             self.addModelOperation(modelOp);
 
 
             outputVar = ModelVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('u',outputVar,f));
 
             outputVar = ModelVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('v',outputVar,f));
 
             outputVar = ModelVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('w',outputVar,f));
 
             outputVar = ModelVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
             f = @(wvt) wvt.rho0*wvt.g*wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('p',outputVar,f));
 
             outputVar = ModelVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('rho_prime',outputVar,f));
 
             outputVar = ModelVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addModelOperation(ModelOperation(outputVar,f));
+            self.addModelOperation(ModelOperation('eta',outputVar,f));
 
+            self.modelDimensionWithName('float-id') = ModelDimension('float-id',100, 'unitless id number', 'id number of a given float');
+            particleVar(1) = ModelVariable('float-x',{'float-id'},'m', 'position of the float in the x coordinate');
+            particleVar(2) = ModelVariable('float-y',{'float-id'},'m', 'position of the float in the y coordinate');
+            particleVar(3) = ModelVariable('float-z',{'float-id'},'m', 'position of the float in the z coordinate');
+            f = @(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w);
+            self.addModelOperation(ModelOperation('FloatFlux',particleVar,f));
         end
 
         function addModelOperation(self,modelOp)
-            if isempty(modelOp.outputVariables)
-                error('This model operation has no output variables.')
-            end
+
 
             for iVar=1:length(modelOp.outputVariables)
                 if isKey(self.modelVariableWithName,modelOp.outputVariables(iVar).name)
@@ -346,12 +339,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
                 for iVar=1:length(varargout)
                     if isempty(varargout{iVar})
-                        stateVar = self.modelVariableWithName(varargin{iVar});
-                        opOut = cell(1,length(stateVar.modelOp.outputVariables));
-                        [opOut{:}] = stateVar.modelOp.Compute(self);
-                        for iOpOut=1:length(opOut)
-                            self.addToVariableCache(stateVar.modelOp.outputVariables(iOpOut).name,opOut{iOpOut})
-                        end
+                        modelVar = self.modelVariableWithName(varargin{iVar});
+                        self.PerformModelOperation(modelVar.modelOp.name);
                         continue;
                     end
                     didFetchAll = 1;
@@ -359,10 +348,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function varargout = PerformModelOperation(self,opName)
+        function varargout = PerformModelOperation(self,opName,varargin)
             modelOp = self.modelOperationWithName(opName);
-            varNames = cell(1,length(modelOp.outputVariables));
-            varargout = cell(1,length(modelOp.outputVariables));
+            varNames = cell(1,modelOp.nVarOut);
+            varargout = cell(1,modelOp.nVarOut);
             for iVar=1:length(modelOp.outputVariables)
                 varNames{iVar} = modelOp.outputVariables(iVar).name;
             end
@@ -370,7 +359,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             if all(isKey(self.variableCache,varNames))
                 [varargout{:}] = self.fetchFromVariableCache(varNames{:});
             else
-                [varargout{:}] = modelOp.Compute(self);
+                [varargout{:}] = modelOp.Compute(self,varargin{:});
                 for iOpOut=1:length(varargout)
                     self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
                 end
@@ -746,109 +735,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
     	end
  
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Reduced interaction models
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
-            self.IMA0 = or(self.IMA0,A0);
-            self.IMAm = or(self.IMAm,Am);
-            self.IMAp = or(self.IMAp,Ap);
-        end
 
-        function allowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 | A0Mask;
-            self.IMAm = self.IMAm | ApmMask;
-            self.IMAp = self.IMAp | ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 & ~A0Mask;
-            self.IMAm = self.IMAm & ~ApmMask;
-            self.IMAp = self.IMAp & ~ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithAliasedModes(self)
-            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
-            % The reality is that the vertical modes will still alias.
-            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            self.shouldAntiAlias = 1;
-            
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.IMA0 = self.IMA0 & ~AntiAliasMask;
-            self.IMAm = self.IMAm & ~AntiAliasMask;
-            self.IMAp = self.IMAp & ~AntiAliasMask;
-        end
-
-        function unfreezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 | A0Mask;
-            self.EMAm = self.EMAm | ApmMask;
-            self.EMAp = self.EMAp | ApmMask;
-        end
-
-        function freezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 & ~A0Mask;
-            self.EMAm = self.EMAm & ~ApmMask;
-            self.EMAp = self.EMAp & ~ApmMask;
-        end
-        
-        function freezeEnergyOfAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.EMA0 = self.EMA0 & ~AntiAliasMask;
-            self.EMAm = self.EMAm & ~AntiAliasMask;
-            self.EMAp = self.EMAp & ~AntiAliasMask;
-        end
-
-        function clearEnergyFromAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.MaskForAliasedModes();
-            self.A0 = self.A0 .* ~AntiAliasMask;
-            self.Am = self.Am .* ~AntiAliasMask;
-            self.Ap = self.Ap .* ~AntiAliasMask;
-        end
-
-        function flag = IsAntiAliased(self)
-            AntiAliasMask = self.MaskForAliasedModes();
-
-            % check if there are zeros at all the anti-alias indices
-            flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAm & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAm & AntiAliasMask) == AntiAliasMask,'all');
-        end
-
-        
-        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
-            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
-            for iMode=1:length(kModes)
-                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
-                end
-
-                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
-                end
-            end
-        end
-
-        function stirWithConstituents(self,constituents)
-
-        end
 
 
 
@@ -1106,8 +993,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
             % Returns the external wave modes at the grid points.
             varargout = cell(size(varargin));
-            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,reshape(X,[],1),reshape(Y,[],1), reshape(Z,[],1), varargin{:});
+            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin{:});
             for iArg=1:length(varargout)
                 varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
             end
