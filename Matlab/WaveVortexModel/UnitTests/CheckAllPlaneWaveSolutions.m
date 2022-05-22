@@ -43,7 +43,7 @@ totalTests = 0;
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
     if 1 == 1
-        wavemodel = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0,[],'hydrostatic',isHydrostatic);
+        wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0,[],'hydrostatic',isHydrostatic);
         rho0 = wavemodel.rho0;
         g = 9.81;
     else
@@ -168,7 +168,11 @@ for iLat = 1:length(latitude)
                             end
                         end
                         
-                        [u,v,w,zeta,rho_prime] = wavemodel.VariableFieldsAtTime(t,'u','v','w','eta','rho_prime');
+%                         [u,v,w,zeta,rho_prime] = wavemodel.VariableFieldsAtTime(t,'u','v','w','eta','rho_prime');
+
+wavemodel.t = t;
+[u,v,w,zeta,rho_prime] = wavemodel.Variables('u','v','w','eta','rho_prime');
+
 %                         rho = wavemodel.DensityFieldAtTime(t);
                         
                         % Compute the relative error

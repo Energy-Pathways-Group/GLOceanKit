@@ -77,13 +77,6 @@ classdef WaveVortexModel < handle
     
         linearDynamics = 0
 
-        % Variables integrated by this integration tool
-        xFloat, yFloat, zFloat
-        xDrifter, yDrifter, zDrifter
-        tracers, tracerNames
-
-
-
         IMA0, IMAp, IMAm    % InteractionMasks
         EMA0, EMAp, EMAm    % EnergyMasks
         shouldAntiAlias = 1;
@@ -209,22 +202,22 @@ classdef WaveVortexModel < handle
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
                 fluxOp ParticleFluxOperation {mustBeNonempty}
-                x (:,1) double
-                y (:,1) double
-                z (:,1) double
+                x (1,:) double
+                y (1,:) double
+                z (1,:) double
             end
             
             n = length(self.particleIndexWithName) + 1;
             self.particleIndexWithName(name) = n;
             self.particleFlux{n} = fluxOp;
-            self.particlePosition{n} = cat(2,x,y,z);
+            self.particlePosition{n} = cat(1,x,y,z);
         end
 
         function [x,y,z] = ParticlePositions(self,name)
-            p = self.particlePosition(self.particleIndexWithName(name));
-            x = p(:,1);
-            y = p(:,2);
-            z = p(:,3);
+            p = self.particlePosition{self.particleIndexWithName(name)};
+            x = p(1,:);
+            y = p(2,:);
+            z = p(3,:);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +232,7 @@ classdef WaveVortexModel < handle
         end
 
         function [x,y,z] = FloatPositions(self)
-            [x,y,z] = self.ParticlePosition('float');
+            [x,y,z] = self.ParticlePositions('float');
         end
 
         function SetDrifterPositions(self,x,y,z)
@@ -248,7 +241,7 @@ classdef WaveVortexModel < handle
         end
 
         function [x,y,z] = DrifterPositions(self)
-            [x,y,z] = self.ParticlePosition('drifter');
+            [x,y,z] = self.ParticlePositions('drifter');
         end
 
         function AddTracer(self,phi,name)
@@ -258,7 +251,7 @@ classdef WaveVortexModel < handle
         end
 
         function phi = Tracer(self,name)
-            phi = self.tracer(self.tracerIndexWithName(name));
+            phi = self.tracer{self.tracerIndexWithName(name)};
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -366,7 +359,6 @@ classdef WaveVortexModel < handle
         end
 
         function [Fp,Fm,F0] = NonlinearFluxWithMasks(self,wvt)
-            fprintf('Custom');
             % Apply operator T_\omega---defined in (C2) in the manuscript
 
             % We also apply the interaction masks (IMA*) and energy masks
@@ -496,26 +488,26 @@ classdef WaveVortexModel < handle
                 n=n+1;Y0{n} = self.wvt.A0;
             end
 
-            if ~isempty(self.xFloat)
-                n=n+1;Y0{n} = self.xFloat;
-                n=n+1;Y0{n} = self.yFloat;
-                n=n+1;Y0{n} = self.zFloat;
-            end
-
-            if ~isempty(self.xDrifter)
-                n=n+1;Y0{n} = self.xDrifter;
-                n=n+1;Y0{n} = self.yDrifter;
-            end
-
-            if ~isempty(self.tracers)
-                for i=1:length(self.tracers)
-                    n=n+1;Y0{n} = self.tracers{i};
+            for iParticles=1:length(self.particleFlux)
+                p = self.particlePosition{iParticles};
+                if self.particleFlux{iParticles}.xyOnly
+                    n=n+1;Y0{n} = p(1,:);
+                    n=n+1;Y0{n} = p(2,:);
+                else
+                    n=n+1;Y0{n} = p(1,:);
+                    n=n+1;Y0{n} = p(2,:);
+                    n=n+1;Y0{n} = p(3,:);
                 end
+            end
+
+            for i=1:length(self.tracer)
+                n=n+1;Y0{n} = self.tracer{i};
             end
         end
 
         function modelTime = integrateOneTimeStep(self)
-            %self.ShowIntegrationTimeDiagnostics(self.stepsTaken);
+            % Ask the integrator to take one step forward, then record the
+            % results.
 
             self.integrator.IncrementForward();
             n=0;
@@ -526,30 +518,19 @@ classdef WaveVortexModel < handle
             end
 
             for iParticles=1:length(self.particleFlux)
-                p = self.particlePosition(iParticles);
-                if self.particleFlux(iParticles).xyOnly
-                    
+                if self.particleFlux{iParticles}.xyOnly
+                    self.particlePosition{iParticles} = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2});
+                    n = n+2;
                 else
-
+                    self.particlePosition{iParticles} = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2},self.integrator.currentY{n+3});
+                    n = n+3;
                 end
             end
 
-            if ~isempty(self.xFloat)
-                n=n+1; self.xFloat = self.integrator.currentY{n};
-                n=n+1; self.yFloat = self.integrator.currentY{n};
-                n=n+1; self.zFloat = self.integrator.currentY{n};
+            for iTracer=1:length(self.tracer)
+                n=n+1; self.tracer{iTracer} = self.integrator.currentY{n};
             end
-
-            if ~isempty(self.xDrifter)
-                n=n+1; self.xDrifter = self.integrator.currentY{n};
-                n=n+1; self.yDrifter = self.integrator.currentY{n};
-            end
-
-            if ~isempty(self.tracers)
-                for iTracer=1:length(self.tracers)
-                    n=n+1; self.tracers{iTracer} = self.integrator.currentY{n};
-                end
-            end
+            
 
             % Rather than use the integrator time, which add floating point
             % numbers each time step, we multiple the steps taken by the
@@ -585,24 +566,22 @@ classdef WaveVortexModel < handle
                 n=n+1;F{n} = F0;
             end
 
-            if ~isempty(self.xFloat)
-                [Fx,Fy,Fz] = self.wvt.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},y0{n+3},'spline',U,V,W);
-                n=n+1;F{n} = Fx;
-                n=n+1;F{n} = Fy;
-                n=n+1;F{n} = Fz;
+            for iParticles=1:length(self.particleFlux)
+                p = self.particlePosition{iParticles};
+                if self.particleFlux{iParticles}.xyOnly
+                    [F{n+1},F{n+2}] = self.particleFlux{iParticles}.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+                    n=n+2;
+                else
+                    [F{n+1},F{n+2},F{n+3}] = self.particleFlux{iParticles}.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+                    n=n+3;
+                end
             end
 
-            if ~isempty(self.xDrifter)
-                [Fx,Fy] = self.wvt.InterpolatedFieldAtPosition(y0{n+1},y0{n+2},self.zDrifter,'spline',U,V);
-                n=n+1;F{n} = Fx;
-                n=n+1;F{n} = Fy;
-            end
-
-            if ~isempty(self.tracers)
-                for i=1:length(self.tracers)
+            if ~isempty(self.tracer)
+                for i=1:length(self.tracer)
                     phibar = self.wvt.TransformFromSpatialDomainWithF(y0{n+1});
                     [~,Phi_x,Phi_y,Phi_z] = self.wvt.TransformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;F{n} = -U.*Phi_x - V.*Phi_y - W.*Phi_z;
+                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
                 end
             end
         end
@@ -639,7 +618,7 @@ classdef WaveVortexModel < handle
 
             omega = self.wvt.Omega;
             period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvt.VelocityFieldAtTime(0.0);
+            [u,v] = self.wvt.VelocityField();
             U = max(max(max( sqrt(u.*u + v.*v) )));
             dx = (self.wvt.x(2)-self.wvt.x(1));
 

@@ -48,6 +48,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         modelVariableWithName
         modelOperationWithName
 
+        timeDependentModelVars
+
         variableCache
     end
 
@@ -194,6 +196,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.modelAttributeWithName = containers.Map();
             self.modelVariableWithName = containers.Map();
             self.modelOperationWithName = containers.Map();
+            self.timeDependentModelVars = {};
 
 
             self.modelDimensionWithName('x') = ModelDimension('x',length(self.x), 'm', 'x-coordinate dimension');
@@ -266,20 +269,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             outputVar(1) = ModelVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
             outputVar(1).isComplex = 1;
-            outputVar(1).isVariableWithLinearTimeStep = 0;
 
             outputVar(2) = ModelVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
             outputVar(2).isComplex = 1;
-            outputVar(2).isVariableWithLinearTimeStep = 0;
 
             outputVar(3) = ModelVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
             outputVar(3).isComplex = 1;
-            outputVar(3).isVariableWithLinearTimeStep = 0;
 
             f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
             modelOp = ModelOperation('ApAmA0',outputVar,f);
             self.addModelOperation(modelOp);
-
 
             outputVar = ModelVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
@@ -305,6 +304,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addModelOperation(ModelOperation('eta',outputVar,f));
 
+            outputVar = ModelVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
+            self.addModelOperation(ModelOperation('rho_total',outputVar,f));
+
             fluxVar(1) = ModelVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = ModelVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = ModelVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
@@ -328,6 +331,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                     warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
                 end
                 self.modelVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
+                if modelOp.outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(contains(self.timeDependentModelVars,modelOp.outputVariables(iVar).name))
+                    self.timeDependentModelVars{end+1} = modelOp.outputVariables(iVar).name;
+                end
             end
 
             if ~isempty(modelOp.name)
@@ -374,11 +380,35 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
+        function set.t(self,value)
+            self.t = value;
+%             self.clearVariableCache();
+            self.clearVariableCacheOfTimeDependentVariables();
+        end
+
+        function set.Ap(self,value)
+            self.Ap = value;
+            self.clearVariableCache();
+        end
+
+        function set.Am(self,value)
+            self.Am = value;
+            self.clearVariableCache();
+        end
+
+        function set.A0(self,value)
+            self.A0 = value;
+            self.clearVariableCache();
+        end
+
         function addToVariableCache(self,name,var)
             self.variableCache(name) = var;
         end
         function clearVariableCache(self)
             self.variableCache = containers.Map();
+        end
+        function clearVariableCacheOfTimeDependentVariables(self)
+            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentModelVars));
         end
         function varargout = fetchFromVariableCache(self,varargin)
             varargout = cell(size(varargin));
@@ -744,7 +774,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = totalEnergy(self)
-            [u,v,w,eta] = self.VariableFieldsAtTime(0,'u','v','w','eta');
+            [u,v,w,eta] = self.Variables('u','v','w','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
         
@@ -755,7 +785,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function energy = totalHydrostaticEnergy(self)
-            [u,v,eta] = self.VariableFieldsAtTime(0,'u','v','eta');
+            [u,v,eta] = self.Variables('u','v','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
@@ -869,28 +899,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        % Primary method for accessing the dynamical variables on the
-        % internal grid. Valid variable options are 'u', 'v', 'w',
-        % 'rho_prime', and 'eta'.
-        [varargout] = VariableFieldsAtTime(self, t, varargin);
-        
-        % Return the velocity field, which is the sum of the gridded and
-        % external/free waves at time t. Note that if you do not need w,
-        % don't request it and it won't be computed.
-        [u,v,w] = VelocityFieldAtTime(self, t);
-        
-        % Return the density field, which is the sum of the density
-        % mean field (variable in z) and the perturbation field
-        % (variable in time and space).
-        function rho = DensityFieldAtTime(self, t)
-            rho = reshape(self.rhobar,1,1,[]) + self.VariableFieldsAtTime(t,'rho_prime');
-        end
-        
+        % Primary method for accessing the dynamical variables
+        [varargout] = Variables(self, varargin);
+                        
         % same as above, but at obsTime
-%         [varargout] = VariableFields(self, varargin);
-%         [u,v,w] = VelocityField(self);
-
-
+        [u,v,w] = VelocityField(self);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

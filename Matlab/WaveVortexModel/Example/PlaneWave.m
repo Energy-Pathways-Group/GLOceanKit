@@ -28,26 +28,27 @@ wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], lati
 U = .2;
 period = wvt.InitializeWithPlaneWave(10,0,1,U,1);  
 
-return
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-iTool = WaveVortexModelIntegrationTools(wvt);
+model = WaveVortexModel(wvt);
+% model.linearDynamics = 1;
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
-iTool.xFloat = Lx/2*ones(1,nTrajectories);
-iTool.yFloat = Ly/2*ones(1,nTrajectories);
-iTool.zFloat = linspace(-Lz,0,nTrajectories);
+xFloat = Lx/2*ones(1,nTrajectories);
+yFloat = Ly/2*ones(1,nTrajectories);
+zFloat = linspace(-Lz,0,nTrajectories);
+
+model.SetFloatPositions(xFloat,yFloat,zFloat);
 
 % Set up the integrator
 outputInterval = period/10;
-deltaT = iTool.TimeStepForCFL(0.5,outputInterval);
+deltaT = model.TimeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
-nT = iTool.SetupIntegrator(deltaT, outputInterval,finalTime);
+nT = model.SetupIntegrator(deltaT, outputInterval,finalTime);
 
 % write the float trajectories to memory
 xFloatT = zeros(nT,nTrajectories);
@@ -55,15 +56,11 @@ yFloatT = zeros(nT,nTrajectories);
 zFloatT = zeros(nT,nTrajectories);
 t = zeros(nT,1);
 
-xFloatT(1,:) = iTool.xFloat;
-yFloatT(1,:) = iTool.yFloat;
-zFloatT(1,:) = iTool.zFloat;
+[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:)] = model.FloatPositions;
 
-while(iTool.t < finalTime)
-    t(iTool.outputIndex) = iTool.integrateToNextOutputTime();
-    xFloatT(iTool.outputIndex,:) = iTool.xFloat;
-    yFloatT(iTool.outputIndex,:) = iTool.yFloat;
-    zFloatT(iTool.outputIndex,:) = iTool.zFloat;
+while(model.t < finalTime)
+    t(model.outputIndex) = model.integrateToNextOutputTime();
+    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:)] = model.FloatPositions;
 end
 
 figure, plot(xFloatT,zFloatT)
