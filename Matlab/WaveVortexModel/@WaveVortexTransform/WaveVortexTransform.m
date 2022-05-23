@@ -1113,7 +1113,11 @@ function ncfile = WriteToNetCDFFile(wvt,netcdfFile,varargin)
                 varargin
             end
             [filepath,name,~] = fileparts(netcdfFile);
-            matFilePath = sprintf('%s/%s.mat',filepath,name);
+            if isempty(filepath)
+                matFilePath = sprintf('%s.mat',name);
+            else
+                matFilePath = sprintf('%s/%s.mat',filepath,name);
+            end
 
             if isfile(netcdfFile) || isfile(matFilePath)
                 error('A file already exists with that name.')
@@ -1140,7 +1144,8 @@ function ncfile = WriteToNetCDFFile(wvt,netcdfFile,varargin)
             if isa(wvt,'WaveVortexTransformConstantStratification')
                 attributesToWrite = union({'N0'},attributesToWrite);
             elseif isa(wvt,'WaveVortexTransformHydrostatic')
-                attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
+%                 attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
+                attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG'},attributesToWrite);
 
                 rhoFunction = wvt.rhoFunction;
                 N2Function = wvt.N2Function;
@@ -1204,12 +1209,16 @@ function ncfile = WriteToNetCDFFile(wvt,netcdfFile,varargin)
             elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformHydrostatic')
                 nModes = length(ncfile.readVariables('j'));
                 [filepath,name,~] = fileparts(path);
-                matFilePath = sprintf('%s/%s.mat',filepath,name);
+                if isempty(filepath)
+                    matFilePath = sprintf('%s.mat',name);
+                else
+                    matFilePath = sprintf('%s/%s.mat',filepath,name);
+                end
                 if ~isfile(matFilePath)
                     error('The .mat sidecar file is missing, which is necessary for the hydrostatic transformations.')
                 end
                 matFile = load(matFilePath);
-                wvt = WaveVortexModelHydrostatic([Lx Ly Lz],[Nx Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
+                wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
             else
                 error("stratification not supported.");
             end
