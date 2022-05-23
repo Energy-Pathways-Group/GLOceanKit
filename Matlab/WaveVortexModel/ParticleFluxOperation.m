@@ -10,15 +10,15 @@ classdef ParticleFluxOperation < handle
     end
 
     methods
-        function self = ParticleFluxOperation(name,f,xyOnly)
+        function self = ParticleFluxOperation(name,f,options)
             arguments
                 name char {mustBeNonempty}
                 f {mustBeNonempty}
-                xyOnly double {mustBeMember(xyOnly,[0 1])} = 0 
+                options.xyOnly double {mustBeMember(options.xyOnly,[0 1])} = 0 
             end
             self.name = name;
             self.f = f;
-            self.xyOnly = xyOnly;
+            self.xyOnly = options.xyOnly;
             if self.xyOnly == 1
                 self.nVarOut = 2;
             else

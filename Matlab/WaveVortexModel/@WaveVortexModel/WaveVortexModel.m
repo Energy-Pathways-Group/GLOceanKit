@@ -98,25 +98,43 @@ classdef WaveVortexModel < handle
         
         % *if* outputting to NetCDF file, these will be populated
         ncfile      % WaveVortexModelNetCDFFile instance---empty indicates no file output
-        variablesToWriteToFile = {}
+        
 
         incrementsWrittenToFile
     end
 
     properties (SetAccess = private)
-        particleIndexWithName % can't use a Map() because order matters
-        particleFlux = {}
-        particlePosition = {}
+        particle = {}
+        particleIndexWithName % cell array containing particle names, can't use a Map() because order matters
 
         tracerIndexWithName
         tracer = {}
 
         didSetupIntegrator=0
-        initialConditionOnlyVariables
-        timeSeriesVariables % internal use only
+        variablesToWriteToFile = {}
+        initialConditionOnlyVariables = {}
+        timeSeriesVariables = {}
+
+        netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
     end
 
     methods
+
+        function WriteVariablesToFile(self,variables)
+            arguments
+                self WaveVortexModel
+            end
+            arguments (Repeating)
+                variables char
+            end
+            unknownVars = setdiff(variables,self.wvt.transformVariableWithName.keys);
+            if ~isempty(unknownVars)
+               error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
+            end
+            self.variablesToWriteToFile = variables;
+        end
+
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -189,6 +207,7 @@ classdef WaveVortexModel < handle
 
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
+            self.netcdfVariableMapForParticleWithName = containers.Map();
         end
         
         function SetNonlinearFlux(self,modelOp)
@@ -199,7 +218,7 @@ classdef WaveVortexModel < handle
             self.linearDynamics = 0;
         end
 
-        function AddParticles(self,name,fluxOp,x,y,z)
+        function AddParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
@@ -208,18 +227,51 @@ classdef WaveVortexModel < handle
                 y (1,:) double
                 z (1,:) double
             end
-            
-            n = length(self.particleIndexWithName) + 1;
+            arguments (Repeating)
+                trackedFieldNames char
+            end
+            arguments
+                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+            end
+            n = length(self.particle) + 1;
+
             self.particleIndexWithName(name) = n;
-            self.particleFlux{n} = fluxOp;
-            self.particlePosition{n} = cat(1,x,y,z);
+            self.particle{n}.name = name;
+            self.particle{n}.fluxOp = fluxOp;
+            self.particle{n}.xyz = cat(1,x,y,z);
+            self.particle{n}.trackedFieldNames = trackedFieldNames;
+            trackedFields = struct;
+            for i=1:length(trackedFieldNames)
+                trackedFields.(trackedFieldNames{i}) = zeros(1,length(x));
+            end
+            self.particle{n}.trackedFields = trackedFields;
+            self.particle{n}.trackedFieldInterpMethod = options.TrackedVarInterpolation;
+
+            self.UpdateParticleTrackedFields();
         end
 
-        function [x,y,z] = ParticlePositions(self,name)
-            p = self.particlePosition{self.particleIndexWithName(name)};
+        function [x,y,z,trackedFields] = ParticlePositions(self,name)
+            p = self.particle{self.particleIndexWithName(name)}.xyz;
             x = p(1,:);
             y = p(2,:);
             z = p(3,:);
+
+            trackedFields = self.particle{self.particleIndexWithName(name)}.trackedFields;
+        end
+
+
+        function UpdateParticleTrackedFields(self)
+            % One special thing we have to do is log the particle
+            % tracked fields
+            for iParticle=1:length(self.particle)
+                trackedFieldNames = self.particle{iParticle}.trackedFieldNames;
+                if ~isempty(trackedFieldNames)
+                    varLagrangianValues = cell(1,length(trackedFieldNames));
+                    p = self.particle{iParticle}.xyz;
+                    [varLagrangianValues{:}] = self.wvt.VariablesAtPosition(p(1,:),p(2,:),p(3,:),trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
+                    self.particle{iParticle}.trackedFields = vertcat(varLagrangianValues{:});
+                end
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,22 +280,48 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function SetFloatPositions(self,x,y,z)
-            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w));
-            self.AddParticles('float',floatFlux,x,y,z);
+        function SetFloatPositions(self,x,y,z,trackedFields,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                x (1,:) double
+                y (1,:) double
+                z (1,:) double
+            end
+            arguments (Repeating)
+                trackedFields char
+            end
+            arguments
+                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
+                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+            end
+            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.VariablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.AdvectionInterpolation));
+            self.AddParticles('float',floatFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
         end
 
-        function [x,y,z] = FloatPositions(self)
-            [x,y,z] = self.ParticlePositions('float');
+        function [x,y,z,tracked] = FloatPositions(self)
+            [x,y,z,tracked] = self.ParticlePositions('float');
         end
 
-        function SetDrifterPositions(self,x,y,z)
-            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v),0);
-            self.AddParticles('drifter',drifterFlux,x,y,z);
+        function SetDrifterPositions(self,x,y,z,trackedFields,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                x (1,:) double
+                y (1,:) double
+                z (1,:) double
+            end
+            arguments (Repeating)
+                trackedFields char
+            end
+            arguments
+                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
+                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+            end
+            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.VariablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),xyOnly=1);
+            self.AddParticles('drifter',drifterFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
         end
 
-        function [x,y,z] = DrifterPositions(self)
-            [x,y,z] = self.ParticlePositions('drifter');
+        function [x,y,z,tracked] = DrifterPositions(self)
+            [x,y,z,tracked] = self.ParticlePositions('drifter');
         end
 
         function AddTracer(self,phi,name)
@@ -490,9 +568,9 @@ classdef WaveVortexModel < handle
                 n=n+1;Y0{n} = self.wvt.A0;
             end
 
-            for iParticles=1:length(self.particleFlux)
-                p = self.particlePosition{iParticles};
-                if self.particleFlux{iParticles}.xyOnly
+            for iParticles=1:length(self.particle)
+                p = self.particle{iParticles}.xyz;
+                if self.particle{iParticles}.fluxOp.xyOnly
                     n=n+1;Y0{n} = p(1,:);
                     n=n+1;Y0{n} = p(2,:);
                 else
@@ -519,12 +597,12 @@ classdef WaveVortexModel < handle
                 n=n+1; self.wvt.A0 = self.integrator.currentY{n};
             end
 
-            for iParticles=1:length(self.particleFlux)
-                if self.particleFlux{iParticles}.xyOnly
-                    self.particlePosition{iParticles} = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2});
+            for iParticles=1:length(self.particle)
+                if self.particle{iParticles}.fluxOp.xyOnly
+                    self.particle{iParticles}.xyz = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2});
                     n = n+2;
                 else
-                    self.particlePosition{iParticles} = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2},self.integrator.currentY{n+3});
+                    self.particle{iParticles}.xyz = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2},self.integrator.currentY{n+3});
                     n = n+3;
                 end
             end
@@ -542,8 +620,11 @@ classdef WaveVortexModel < handle
             self.t = modelTime;
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 self.outputIndex = self.outputIndex + 1;
+
+                self.UpdateParticleTrackedFields();
             end
         end
+
 
         function modelTime = integrateToNextOutputTime(self)
             if isempty(self.outputInterval)
@@ -568,13 +649,13 @@ classdef WaveVortexModel < handle
                 n=n+1;F{n} = F0;
             end
 
-            for iParticles=1:length(self.particleFlux)
-                p = self.particlePosition{iParticles};
-                if self.particleFlux{iParticles}.xyOnly
-                    [F{n+1},F{n+2}] = self.particleFlux{iParticles}.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+            for iParticles=1:length(self.particle)
+                p = self.particle{iParticles}.xyz;
+                if self.particle{iParticles}.fluxOp.xyOnly
+                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
                     n=n+2;
                 else
-                    [F{n+1},F{n+2},F{n+3}] = self.particleFlux{iParticles}.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
                     n=n+3;
                 end
             end
@@ -650,115 +731,76 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function ncfile = CreateNetCDFFileForModelOutput(self,modelOutputFile,overwriteExisting)
-            shouldOverwriteExisting = 0;
-            if strcmp(overwriteExisting,'OVERWRITE_EXISTING')
-                shouldOverwriteExisting = 1;
+        function ncfile = CreateNetCDFFileForModelOutput(self,netcdfFile,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                netcdfFile char {mustBeNonempty}
+                options.Nt (1,1) double {mustBePositive} = Inf
+                options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
             end
-            ncfile = WaveVortexModelNetCDFFile(self.wvt,modelOutputFile,'shouldOverwriteExisting',shouldOverwriteExisting);            
+
+            ncfile = self.wvt.WriteToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
+
+            % Now add a time dimension
+            transformVar = self.wvt.transformAttributeWithName('t');
+            attributes = containers.Map();
+            attributes('units') = transformVar.units;
+            attributes('description') = transformVar.description;
+            ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
+
+            ncfile.addVariable('IMA0',int8(self.IMA0),{'k','l','j'});
+            ncfile.addVariable('IMAp',int8(self.IMAp),{'k','l','j'});
+            ncfile.addVariable('IMAm',int8(self.IMAm),{'k','l','j'});
+            ncfile.addVariable('EMA0',int8(self.EMA0),{'k','l','j'});
+            ncfile.addVariable('EMAp',int8(self.EMAp),{'k','l','j'});
+            ncfile.addVariable('EMAm',int8(self.EMAm),{'k','l','j'});
+
             self.ncfile = ncfile;
         end
 
         function OpenNetCDFFileForTimeStepping(self)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+            end
             if ~isempty(self.ncfile)
     
-                % Gather up all the field variables and sort them into bins
-                % on whether or not the user wants the entire time series
-                % written, or just the initial conditions.
-                self.timeSeriesVariables = {};
+                % Sort through which variables we will record a time series
+                % for, and which we will only write initial conditions.
                 self.initialConditionOnlyVariables = {};
-                if self.shouldWriteA0 == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'A0';
-                elseif self.shouldWriteA0 == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'A0';
-                end
-                if self.shouldWriteAp == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'Ap';
-                elseif self.shouldWriteAp == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'Ap';
-                end
-                if self.shouldWriteAm == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'Am';
-                elseif self.shouldWriteAm == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'Am';
-                end
+                self.timeSeriesVariables = {};
+                for iVar = 1:length(self.variablesToWriteToFile)
+                    transformVar = self.wvt.transformVariableWithName(self.variablesToWriteToFile{iVar});
+                    attributes = containers.Map();
+                    attributes('units') = transformVar.units;
+                    attributes('description') = transformVar.description;
 
-                if self.shouldWriteU == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'u';
-                elseif self.shouldWriteU == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'u';
-                end
-                if self.shouldWriteV == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'v';
-                elseif self.shouldWriteV == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'v';
-                end
-                if self.shouldWriteW == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'w';
-                elseif self.shouldWriteW == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'w';
-                end
-
-                if self.shouldWriteEta == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'eta';
-                elseif self.shouldWriteEta == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'eta';
-                end
-                if self.shouldWriteP == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'p';
-                elseif self.shouldWriteP == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'p';
-                end
-                if self.shouldWriteRho == ShouldWrite.timeSeries
-                    self.timeSeriesVariables{end+1} = 'rho_prime';
-                elseif self.shouldWriteRho == ShouldWrite.initialConditions
-                    self.initialConditionOnlyVariables{end+1} = 'rho_prime';
-                end
-
-                if ~isempty(self.timeSeriesVariables)
-                    self.ncfile.InitializeStorageForVariableFieldsTimeSeries(self.timeSeriesVariables);
-                end
-                if ~isempty(self.initialConditionOnlyVariables)
-                    self.ncfile.WriteInitialVariableFields(self.initialConditionOnlyVariables);
-                end
-
-                if ~isempty(self.xFloat)
-                    if self.shouldWriteFloats == ShouldWrite.timeSeries
-                        self.ncfile.InitializeFloatStorageForTimeSeries(length(self.xFloat));
-                    elseif self.shouldWriteFloats == ShouldWrite.initialConditions
-                        self.ncfile.WriteInitialFloatPositions(self.xFloat,self.yFloat,self.zFloat);
+                    if (self.linearDynamics == 1 && transformVar.isVariableWithLinearTimeStep == 1) || (self.linearDynamics == 0 && transformVar.isVariableWithNonlinearTimeStep == 1)
+                        self.timeSeriesVariables{end+1} = self.variablesToWriteToFile{iVar};
+                        if transformVar.isComplex == 1
+                            self.ncfile.initComplexVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
+                            self.ncfile.setVariable(transformVar.name,self.wvt.(transformVar.name));
+                        else
+                            self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),horzcat(transformVar.dimensions,'t'),attributes);
+                        end
+                    else
+                        self.initialConditionOnlyVariables{end+1} = self.variablesToWriteToFile{iVar};
+                        if transformVar.isComplex == 1
+                            self.ncfile.initComplexVariable(transformVar.name,transformVar.dimensions,attributes,'NC_DOUBLE');
+                            self.ncfile.setVariable(transformVar.name,self.wvt.(transformVar.name));
+                        else
+                            self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),transformVar.dimensions,attributes);
+                        end
                     end
-                end
 
-                if ~isempty(self.xDrifter)
-                    if self.shouldWriteDrifters == ShouldWrite.timeSeries
-                        self.ncfile.InitializeDrifterStorageForTimeSeries(length(self.xDrifter));
-                    elseif self.shouldWriteDrifters == ShouldWrite.initialConditions
-                        self.ncfile.WriteInitialDrifterPositions(self.xDrifter,self.yDrifter,self.zDrifter);
-                    end
-                end
-
-                if self.shouldWriteTracers == ShouldWrite.timeSeries
                     for iTracer = 1:length(self.tracers)
-                        self.ncfile.InitializeTracerStorageWithName(self.tracerNames{iTracer});
+                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
                     end
-                elseif self.shouldWriteTracers == ShouldWrite.initialConditions
-                    for iTracer = 1:length(self.tracers)
-                        self.ncfile.WriteInitialTracerWithName(self.tracerNames{iTracer},self.tracers{iTracer});
+
+                    for iParticle = 1:length(self.particle)
+                        self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.xyz,2),self.particle{iParticle}.trackedFieldNames);
                     end
                 end
 
-                if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
-                    self.ncfile.InitializeEnergeticsStorageForTimeSeries();
-                elseif self.shouldWriteFlowConstituentEnergetics == ShouldWrite.initialConditions
-                    self.ncfile.WriteInitialEnergetics();
-                end
-
-                if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
-                    self.ncfile.InitializeEnergeticsKJStorageForTimeSeries();
-                elseif self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.initialConditions
-                    self.ncfile.WriteInitialEnergeticsKJ();
-                end
             else
                 if isempty(self.ncfile.ncid)
                     self.ncfile.open();
@@ -767,18 +809,19 @@ classdef WaveVortexModel < handle
 
             self.incrementsWrittenToFile = 0;
 
-%             outputTimes = self.t + self.outputIncrements*self.integrator.stepSize;
-
             % Save the initial conditions
             self.WriteTimeStepToNetCDFFile();         
         end
 
 
+
         function WriteTimeStepToNetCDFFile(self)
             if ( ~isempty(self.ncfile) && mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0 )
-                self.ncfile.WriteTimeAtIndex(self.outputIndex,self.t);
+                self.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
 
-                self.ncfile.WriteVariableFieldsAtTimeIndex(self.outputIndex,self.timeSeriesVariables{:});
+                for iVar=1:length(self.timeSeriesVariables)
+                    self.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',iTime);
+                end
 
                 if self.shouldWriteFloats == ShouldWrite.timeSeries
                     self.ncfile.WriteFloatPositionsAtTimeIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
@@ -807,6 +850,71 @@ classdef WaveVortexModel < handle
             if ~isempty(self.ncfile)
                 fprintf('Ending simulation. Wrote %d time points to file\n',self.incrementsWrittenToFile);
                 self.ncfile.close();
+            end
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Particles
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function InitializeParticleStorage(self,particleName, nParticles, trackedFieldNames)
+            arguments
+                self WaveVortexModel
+                particleName char
+                nParticles (1,1) double {mustBePositive}
+            end
+            arguments (Repeating)
+                trackedFieldNames char
+            end
+
+            variables = containers.Map();
+
+            commonKeys = {'isParticle','particleName'};
+            commonVals = {1,particleName};
+            attributes = containers.Map(commonKeys,commonVals);
+            attributes('units') = 'unitless id number';
+            attributes('particleVariableName') = 'id';
+            [dim,var] = self.ncfile.addDimension(strcat(particleName,'-id'),(1:nParticles).',attributes);
+            variables('id') = var;
+            
+            % careful to create a new object each time we init
+            dimVars = {'x','y','z'};
+            for iVar=1:length(dimVars)
+                attributes = containers.Map(commonKeys,commonVals);
+                attributes('units') = self.wvt.transformDimensionWithName(dimVars{iVar});
+                attributes('particleVariableName') = dimVars{iVar};
+                variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
+            end
+
+            for iVar=1:length(trackedFieldNames)
+                if ~isKey(self.wvt.transformVariableWithName,trackedFieldNames{iVar})
+                    error('Unable to find a TransformVariable named %s.', trackedFieldNames{iVar});
+                end
+                transformVar = self.wvt.transformVariableWithName(trackedFieldNames{iVar});
+                if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
+                    error('The TransformVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                end
+
+                attributes = containers.Map(commonKeys,commonVals);
+                attributes('units') = transformVar.units;
+                attributes('particleVariableName') = trackedFieldNames{iVar};
+                variables(trackedFieldNames{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',trackedFieldNames{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
+            end
+ 
+            self.netcdfVariableMapForParticleWithName(particleName) = variables;
+        end
+
+        function WriteParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
+            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-x'),x,'t',iTime);
+            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
+            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
+
+            if ~isempty(trackedFields)
+                trackedFieldNames = fieldnames(trackedFields);
+                for iField=1:length(trackedFieldNames)
+                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-',trackedFieldNames{iField}),trackedField.(trackedFieldNames{iField}),'t',iTime);
+                end
             end
         end
 

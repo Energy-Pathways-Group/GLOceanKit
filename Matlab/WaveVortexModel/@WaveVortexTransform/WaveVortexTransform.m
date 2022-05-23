@@ -207,7 +207,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.transformDimensionWithName('j') = TransformDimension('j',length(self.j), 'mode number', 'vertical mode number');
             self.transformDimensionWithName('kIso') = TransformDimension('kIso',length(self.kIso), 'radians/m', 'isotropic wavenumber dimension');
 
-            self.addTransformAttribute(TransformAttribute('t',{}, 's', 'time of observations'));
             self.addTransformAttribute(TransformAttribute('t0',{},'s', 'reference time of Ap, Am, A0'));
             self.addTransformAttribute(TransformAttribute('latitude',{},'degrees_north', 'latitude of the simulation'));
             self.addTransformAttribute(TransformAttribute('rho0',{},'kg/m3', 'mean density at the surface (z=0)'));
@@ -218,6 +217,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addTransformAttribute(TransformAttribute('dLnN2',{'z'},'unitless', 'd/dz ln N2'));
             self.addTransformAttribute(TransformAttribute('h',{'j'},'m', 'equivalent depth of each mode'));
 
+
+            self.addTransformOperation(TransformOperation('t',TransformVariable('t',{}, 's', 'time of observations'),@(wvt) wvt.t));
 
             transformVar = TransformVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
             transformVar.isComplex = 1;
@@ -906,7 +907,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Primary method for accessing the dynamical variables
         [varargout] = Variables(self, varargin);
                         
-        % same as above, but at obsTime
+        % Same as calling Variables('u','v','w')
         [u,v,w] = VelocityField(self);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -919,63 +920,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % any position or time.
         %
         % The method argument specifies how off-grid values should be
-        % interpolated. Use 'exact' for the slow, but accurate, spectral
-        % interpolation. Otherwise use 'spline' or some other method used
-        % by Matlab's interp function.
-        %
-        % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
-        % 'eta'.
-        [varargout] = VariablesAtTimePosition(self,t,x,y,z,interpolationMethod,varargin);
-        
-        % useful for integration methods where dy/dt is best given with
-        % y as a single variable.
-        function [u] = VelocityAtTimePositionVector(self,t,p, interpolationMethod,shouldUseW)
-            % Return the velocity at time t and position p, where size(p) =
-            % [3 n]. The rows of p represent [x,y,z].
-            % Optional argument is passed to the interpolation method. I
-            % recommend either linear or spline.
-            psize = size(p);
-            if psize(1) == 3
-                [u,v,w] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
-                if exist('shouldUseW','var')
-                    u = cat(1,u,v,shouldUseW.*w);
-                else
-                    u = cat(1,u,v,w);
-                end
-            else
-                [u,v,w] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
-                if exist('shouldUseW','var')
-                    u = cat(2,u,v,shouldUseW.*w);
-                else
-                    u = cat(2,u,v,w);
-                end
-            end
-        end
-        
-        function [u] = DrifterVelocityAtTimePositionVector(self,t,p, interpolationMethod)
-            % Return the velocity at time t and position p, where size(p) =
-            % [3 n]. The rows of p represent [x,y,z].
-            psize = size(p);
-            if psize(1) == 3
-                [u,v,~] = self.VelocityAtTimePosition(t,p(1,:),p(2,:),p(3,:), interpolationMethod);
-                u = cat(1,u,v,zeros(1,psize(2)));
-            else
-                [u,v,~] = self.VelocityAtTimePosition(t,p(:,1),p(:,2),p(:,3), interpolationMethod);
-                u = cat(2,u,v,zeros(psize(1),1));
-            end
-        end
-        
-        function [u,v,w] = VelocityAtTimePosition(self,t,x,y,z,interpolationMethod)
-            if nargout == 3
-                [u,v,w] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v','w');
-            else
-                [u,v] = self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'u','v');
-            end
-        end
-        
-        function rho = DensityAtTimePosition(self,t,x,y,z,interpolationMethod)
-            rho = self.rhoFunction(z) + self.VariablesAtTimePosition(t,x,y,z,interpolationMethod,'rho_prime');
-        end
+        % interpolated: linear, spline or exact. Use 'exact' for the slow,
+        % but accurate, spectral interpolation.
+        [varargout] = VariablesAtPosition(self,x,y,z,variableNames,options)
+  
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1045,12 +993,24 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
-        function ncfile = WriteToFile(self,netcdfFile,varargin)
-            ncfile = WaveVortexTransform.WriteToNetCDFFile(self,netcdfFile,varargin{:});
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Output the transform to file
+        ncfile = WriteToFile(self,netcdfFile,variables,options);
+
     end
-    
+
+    methods (Access=protected)
+        % protected — Access from methods in class or subclasses
+        varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin);
+    end
+
     methods (Static)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialize the a transform from file
+        wvt = InitFromFile(path,iTime)
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Check if the matrix is Hermitian. Report errors.
@@ -1077,189 +1037,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         % Generate a 3D matrix to be Hermitian, except at k=l=0
         A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
-        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Takes a Hermitian matrix and resets it back to the real amplitude.
         [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
-
-%             arguments
-%                 wvt WaveVortexTransform {mustBeNonempty}
-%                 netcdfFile char {mustBeNonempty}
-%                 overwriteExisting char {mustBeMember(method,{'OVERWRITE_EXISTING',[]})} = []
-%             end
-%             [filepath,name,~] = fileparts(netcdfFile);
-%             matFilePath = sprintf('%s/%s.mat',filepath,name);
-% 
-%             if ~isempty(overwriteExisting)
-%                 if isfile(netcdfFile)
-%                     delete(netcdfFile);
-%                 end
-%                 if isfile(matFilePath)
-%                     delete(matFilePath);
-%                 end
-%             else
-%                 if isfile(netcdfFile) || isfile(matFilePath)
-%                     error('A file already exists with that name.')
-%                 end
-%             end
-
-function ncfile = WriteToNetCDFFile(wvt,netcdfFile,varargin)
-            arguments
-                wvt WaveVortexTransform {mustBeNonempty}
-                netcdfFile char {mustBeNonempty}
-            end
-            arguments (Repeating)
-                varargin
-            end
-            [filepath,name,~] = fileparts(netcdfFile);
-            if isempty(filepath)
-                matFilePath = sprintf('%s.mat',name);
-            else
-                matFilePath = sprintf('%s/%s.mat',filepath,name);
-            end
-
-            if isfile(netcdfFile) || isfile(matFilePath)
-                error('A file already exists with that name.')
-            end
-            ncfile = NetCDFFile(netcdfFile);
-
-            dims = {'x','y','z','k','l','j'};
-            for iDim=1:length(dims)
-                 transformDim = wvt.transformDimensionWithName(dims{iDim});
-                 attributes = containers.Map();
-                 attributes('units') = transformDim.units;
-                 attributes('description') = transformDim.description;
-                 ncfile.addDimension(transformDim.name,wvt.(transformDim.name),attributes);
-            end
-
-            CreationDate = datestr(datetime('now'));
-            ncfile.addAttribute('Model','Created with the WaveVortexModel, written by Jeffrey J. Early and collaborators.');
-            ncfile.addAttribute('ModelVersion',wvt.version);
-            ncfile.addAttribute('CreationDate',CreationDate);
-            ncfile.addAttribute('WaveVortexTransform',class(wvt));
-
-            attributesToWrite = {'latitude','t0','t','rho0'};
-
-            if isa(wvt,'WaveVortexTransformConstantStratification')
-                attributesToWrite = union({'N0'},attributesToWrite);
-            elseif isa(wvt,'WaveVortexTransformHydrostatic')
-%                 attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
-                attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG'},attributesToWrite);
-
-                rhoFunction = wvt.rhoFunction;
-                N2Function = wvt.N2Function;
-                dLnN2Function = wvt.dLnN2Function;
-                save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
-                fprintf('In addition to the NetCDF file, a .mat sidecar file was already created at the same path.\n');
-            else
-                error('Not implemented');
-            end
-
-            for iVar=1:length(attributesToWrite)
-                transformVar = wvt.transformAttributeWithName(attributesToWrite{iVar});
-                attributes = containers.Map();
-                attributes('units') = transformVar.units;
-                attributes('description') = transformVar.description;
-                ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
-            end
-
-            for iVar=1:length(varargin)
-                transformVar = wvt.transformVariableWithName(varargin{iVar});
-                attributes = containers.Map();
-                attributes('units') = transformVar.units;
-                attributes('description') = transformVar.description;
-                if transformVar.isComplex == 1        
-                    ncfile.initComplexVariable(transformVar.name,transformVar.dimensions,attributes,'NC_DOUBLE');
-                    ncfile.setVariable(transformVar.name,wvt.(transformVar.name));
-                else
-                    ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
-                end
-            end
-           
-        end
-
-        function wvt = InitFromNetCDFFile(path,iTime)
-            arguments
-                path char {mustBeFile}
-                iTime (1,1) double {mustBePositive} = 1
-            end
-            ncfile = NetCDFFile(path);
-
-            requiredVariables = {'x','y','z','j','latitude','t0','t','rho0'};
-            requiredAttributes = {'WaveVortexTransform'};
-            if ~all(isKey(ncfile.variableWithName,requiredVariables)) || ~all(isKey(ncfile.attributes,requiredAttributes))
-                error('This files is missing required variables or attributes to load directly into the WaveVortexModel.')
-            end
-
-            [x,y,z,rho0,latitude] = ncfile.readVariables('x','y','z','rho0','latitude');
-            Nx = length(x);
-            Ny = length(y);
-            Nz = length(z);
-            Lx = (x(2)-x(1))*Nx;
-            Ly = (y(2)-y(1))*Ny;
-            Lz = max(z)-min(z);
-
-            if strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformConstantStratification')
-                if ~all(isKey(ncfile.variableWithName,{'N0'}))
-                    error('The file is missing N0.');
-                end
-                N0 = ncfile.readVariables('N0');
-                wvt = WaveVortexTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],latitude,N0,rho0);
-            elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformHydrostatic')
-                nModes = length(ncfile.readVariables('j'));
-                [filepath,name,~] = fileparts(path);
-                if isempty(filepath)
-                    matFilePath = sprintf('%s.mat',name);
-                else
-                    matFilePath = sprintf('%s/%s.mat',filepath,name);
-                end
-                if ~isfile(matFilePath)
-                    error('The .mat sidecar file is missing, which is necessary for the hydrostatic transformations.')
-                end
-                matFile = load(matFilePath);
-                wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
-            else
-                error("stratification not supported.");
-            end
-
-            wvt.t0 = ncfile.readVariables('t0');
-
-
-            hasTimeDimension = 0;
-            if isKey(ncfile.dimensionWithName,'t')
-                hasTimeDimension = 1;
-                tDim = ncfile.readVariables('t');
-                if isinf(iTime)
-                    iTime = length(tDim);
-                elseif iTime > length(tDim)
-                    error('Index out of bounds! There are %d time points in this file, you requested %d.',length(tDim),iTime);
-                end
-                wvt.t = tDim(iTime);
-            else
-                wvt.t = ncfile.readVariables('t');
-            end
-
-            if all(isKey(ncfile.complexVariableWithName,{'Ap','Am','A0'}))
-                if hasTimeDimension == 1
-                    [wvt.A0,wvt.Ap,wvt.Am] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0','Ap','Am');
-                else
-                    [wvt.A0,wvt.Ap,wvt.Am] = ncfile.readVariables('A0','Ap','Am');
-                end
-                fprintf('%s initialized from Ap, Am, A0.\n',ncfile.attributes('WaveVortexTransform'));
-            elseif all(isKey(ncfile.variableWithName,{'u','v','eta'}))
-                if hasTimeDimension == 1
-                    [u,v,eta] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'u','v','eta');
-                else
-                    [u,v,eta] = ncfile.readVariables('u','v','eta');
-                end
-                [wvt.Ap,wvt.Am,wvt.A0] = wvt.TransformUVEtaToWaveVortex(u,v,eta,self.currentTime);
-                fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WaveVortexTransform'));
-            else
-                fprintf('%s initialized without data.\n',ncfile.attributes('WaveVortexTransform'));
-            end
-        end
-
     end
         
         

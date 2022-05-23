@@ -23,7 +23,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if 0
+if 1
     wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 else
     rho0 = 1025; g = 9.81;
@@ -36,6 +36,6 @@ end
 U = .2;
 period = wvt.InitializeWithPlaneWave(10,0,1,U,1);  
 
-wvt.WriteToFile('test.nc','Ap','Am','A0');
+wvt.WriteToFile('test.nc','Ap','Am','A0',shouldOverwriteExisting=1);
 
 wvt2 = WaveVortexTransform.InitFromNetCDFFile('test.nc',243);

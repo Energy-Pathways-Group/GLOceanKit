@@ -1,0 +1,44 @@
+function [varargout] = VariablesAtPosition(self,x,y,z,variableNames,options)
+arguments
+    self WaveVortexTransform {mustBeNonempty}
+    x (1,:) double
+    y (1,:) double
+    z (1,:) double
+end
+arguments (Repeating)
+    variableNames char
+end
+arguments
+    options.InterpolationMethod char {mustBeMember(options.InterpolationMethod,["linear","spline","exact"])} = "linear"
+end
+    % Primary method for accessing the dynamical variables on the
+    % at any position or time.
+    %
+    % The method argument specifies how off-grid values should be
+    % interpolated. Use 'exact' for the slow, but accurate,
+    % spectral interpolation. Otherwise use 'spline' or some other
+    % method used by Matlab's interp function.
+    %
+    % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
+    % 'zeta'.
+    varargout = cell(size(variableNames));
+    if strcmp(options.InterpolationMethod,"exact")
+        if isempty(self.ongridModes)
+            self.ongridModes = WaveVortexModelOffGrid(self.offgridModes.internalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
+            [omega, alpha, ~, ~, mode, phi, A, norm] = self.WaveCoefficientsFromGriddedWaves();
+            self.ongridModes.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
+        end
+        [varargout{:}] = self.ongridModes.ExternalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
+    else
+        [varargout{:}] = self.TransformVariables(variableNames{:});
+        [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
+    end
+
+    if ~isempty(self.offgridModes.k_ext)
+        varargoutExt = cell(size(variableNames));
+        [varargoutExt{:}] = self.ExternalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
+        for iArg=1:length(varargout)
+            varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
+        end
+    end
+end
