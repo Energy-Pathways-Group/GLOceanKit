@@ -1,4 +1,4 @@
-classdef ModelOperation < handle
+classdef TransformOperation < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -10,10 +10,10 @@ classdef ModelOperation < handle
     end
 
     methods
-        function self = ModelOperation(name,outputVariables,f)
+        function self = TransformOperation(name,outputVariables,f)
             arguments
                 name char {mustBeNonempty}
-                outputVariables ModelVariable {mustBeNonempty}
+                outputVariables TransformVariable {mustBeNonempty}
                 f {mustBeNonempty}
             end
 

@@ -266,7 +266,7 @@ classdef NetCDFFile < handle
             self.variableWithName(name) = variable;
         end
 
-        function setVariable(self,data,name)
+        function setVariable(self,name,data)
             if isKey(self.complexVariableWithName,name)
                 complexVariable = self.complexVariableWithName(name);
                 variable = complexVariable.realVar;
@@ -382,7 +382,7 @@ classdef NetCDFFile < handle
                 variable = self.initComplexVariable(name,dimNames,properties,ncType);
             end
 
-            self.setVariable(data,name);
+            self.setVariable(name,data);
         end
 
         function concatenateVariableAlongDimension(self,name,data,dimName,index)

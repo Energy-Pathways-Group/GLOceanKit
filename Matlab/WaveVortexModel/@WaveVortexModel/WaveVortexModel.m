@@ -180,10 +180,12 @@ classdef WaveVortexModel < handle
                 self.freezeEnergyOfAliasedModes();
             end
 
-            fluxVar(1) = ModelVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
-            fluxVar(2) = ModelVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
-            fluxVar(3) = ModelVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
-            self.wvt.addModelOperation(ModelOperation('NonlinearFlux',fluxVar,@(wvt) self.NonlinearFluxWithMasks(wvt)));
+            
+
+            fluxVar(1) = TransformVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
+            fluxVar(2) = TransformVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
+            fluxVar(3) = TransformVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
+            self.wvt.addTransformOperation(TransformOperation('NonlinearFlux',fluxVar,@(wvt) self.NonlinearFluxWithMasks(wvt)));
 
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
@@ -192,7 +194,7 @@ classdef WaveVortexModel < handle
         function SetNonlinearFlux(self,modelOp)
             arguments
                 self WaveVortexModel {mustBeNonempty}
-                modelOp ModelOperation {mustBeNonempty}
+                modelOp TransformOperation {mustBeNonempty}
             end
             self.linearDynamics = 0;
         end

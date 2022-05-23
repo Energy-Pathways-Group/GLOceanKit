@@ -105,6 +105,13 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
 
             self.BuildProjectionOperators();
             self.offgridModes = WaveVortexModelOffGrid(im,latitude, self.N2Function,1);
+
+            self.addTransformAttribute(TransformAttribute('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
+            self.addTransformAttribute(TransformAttribute('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
+            self.addTransformAttribute(TransformAttribute('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
+            self.addTransformAttribute(TransformAttribute('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
+            self.addTransformAttribute(TransformAttribute('P',{'j'},'','Preconditioner for F, size(P)=[1 Nmodes]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addTransformAttribute(TransformAttribute('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nmodes]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
         end
 
         function self = InitWithDensityGrid(self, dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0, PFinv, QGinv, PF, QG, P, Q, h)

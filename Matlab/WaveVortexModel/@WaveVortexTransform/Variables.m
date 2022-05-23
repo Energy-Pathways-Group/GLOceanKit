@@ -5,7 +5,7 @@ function [varargout] = Variables(self, varargin)
 % Valid variable options are 'u', 'v', 'w', 'rho_prime', and
 % 'zeta'.
 varargout = cell(size(varargin));
-[varargout{:}] = self.ModelVariables(varargin{:});
+[varargout{:}] = self.TransformVariables(varargin{:});
 if ~isempty(self.offgridModes.k_ext)
     varargoutExt = cell(size(varargin));
     [varargoutExt{:}] = self.ExternalVariableFieldsAtTime(self.t, varargin{:});

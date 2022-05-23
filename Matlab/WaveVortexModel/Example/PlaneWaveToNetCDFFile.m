@@ -23,10 +23,10 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 U = .2;
-period = wvm.InitializeWithPlaneWave(10,0,1,U,1);  
+period = wvt.InitializeWithPlaneWave(10,0,1,U,1);  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,25 +34,26 @@ period = wvm.InitializeWithPlaneWave(10,0,1,U,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-integrator = WaveVortexModelIntegrationTools(wvm);
+model = WaveVortexModelIntegrationTools(wvt);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
-integrator.xFloat = Lx/2*ones(1,nTrajectories);
-integrator.yFloat = Ly/2*ones(1,nTrajectories);
-integrator.zFloat = linspace(-Lz,0,nTrajectories);
+xFloat = Lx/2*ones(1,nTrajectories);
+yFloat = Ly/2*ones(1,nTrajectories);
+zFloat = linspace(-Lz,0,nTrajectories);
+model.SetFloatPositions(xFloat,yFloat,zFloat);
 
 % Set up the integrator
 outputInterval = period/10;
-deltaT = integrator.TimeStepForCFL(0.5,outputInterval);
+deltaT = model.TimeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
-nT = integrator.SetupIntegrator(deltaT, outputInterval,finalTime);
+nT = model.SetupIntegrator(deltaT, outputInterval,finalTime);
 
-integrator.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc','OVERWRITE_EXISTING');
+model.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc','OVERWRITE_EXISTING');
 
-integrator.IntegrateToTime(finalTime);
+model.IntegrateToTime(finalTime);
 
-ncfile = integrator.ncfile;
+ncfile = model.ncfile;
 [x,y,z] = ncfile.FloatPositions();
 
 figure, plot(x.',z.')
