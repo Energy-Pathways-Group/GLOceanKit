@@ -10,20 +10,20 @@ permalink: docs/classes
 
 The `WaveVortexModel` consists of several classes and subclasses.
 
+- [WaveVortexTransform]()
 - [WaveVortexModel]()
-- [WaveVortexModelIntegrationTools]()
 - [WaveVortexModelNetCDFFile]()
+
+## WaveVortexTransform
+
+The WaveVortexTransform subclasses encapsulate data representing the *state* of the ocean at a given instant in time (e.g., u, v, w, and rho). What makes the WaveVortexTransform subclasses special is that the state of the ocean is represented as energetically independent waves and geostrophic motions (vortices). These classes can be queried for other information, e.g., Ertel PV, relative vorticity, etc.
+
+- [WaveVortexTransformConstantStratification]()
+- [WaveVortexTransformHydrostatic]()
 
 ## WaveVortexModel
 
-There are two usable subclasses at the moment,
-
-- [WaveVortexModelConstantStratification]()
-- [WaveVortexModelHydrostatic]()
-
-## WaveVortexModelIntegrationTools
-
-Tools for integrating (time-stepping) the model forward.
+The WaveVortexModel uses the WaveVortexTransform to integrate (time-step) the non-linear equations of motion forward in time. The model adds robust support for particle advection, tracer advection, as well as reduced interaction models.
 
 ## WaveVortexModelNetCDFFile
 
