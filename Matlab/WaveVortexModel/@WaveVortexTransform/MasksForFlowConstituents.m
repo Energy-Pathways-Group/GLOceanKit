@@ -11,7 +11,7 @@
 %
 % For example, if you define A = ApmMask .* Ap; then A will contain only the
 % positive frequency internal gravity solutions and half the inertial solutions.
-function [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents)
+function [ApmMask,A0Mask] = MasksForFlowConstituents(self,flowConstituents)
 
 ApmMask = zeros(size(self.Ap));
 A0Mask = zeros(size(self.A0));
