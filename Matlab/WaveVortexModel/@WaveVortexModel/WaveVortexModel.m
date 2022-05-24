@@ -742,7 +742,7 @@ classdef WaveVortexModel < handle
             ncfile = self.wvt.WriteToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
 
             % Now add a time dimension
-            transformVar = self.wvt.transformAttributeWithName('t');
+            transformVar = self.wvt.transformVariableWithName('t');
             attributes = containers.Map();
             attributes('units') = transformVar.units;
             attributes('description') = transformVar.description;
@@ -762,8 +762,7 @@ classdef WaveVortexModel < handle
             arguments
                 self WaveVortexModel {mustBeNonempty}
             end
-            if ~isempty(self.ncfile)
-    
+%             if ~isempty(self.ncfile)
                 % Sort through which variables we will record a time series
                 % for, and which we will only write initial conditions.
                 self.initialConditionOnlyVariables = {};
@@ -790,22 +789,22 @@ classdef WaveVortexModel < handle
                         else
                             self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),transformVar.dimensions,attributes);
                         end
-                    end
-
-                    for iTracer = 1:length(self.tracers)
-                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
-                    end
-
-                    for iParticle = 1:length(self.particle)
-                        self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.xyz,2),self.particle{iParticle}.trackedFieldNames);
-                    end
+                    end   
                 end
 
-            else
-                if isempty(self.ncfile.ncid)
-                    self.ncfile.open();
+                for iTracer = 1:length(self.tracer)
+                    self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
                 end
-            end
+
+                for iParticle = 1:length(self.particle)
+                    self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.xyz,2),self.particle{iParticle}.trackedFieldNames{:});
+                end
+
+%             else
+%                 if isempty(self.ncfile.ncid)
+%                     self.ncfile.open();
+%                 end
+%             end
 
             self.incrementsWrittenToFile = 0;
 
@@ -813,33 +812,21 @@ classdef WaveVortexModel < handle
             self.WriteTimeStepToNetCDFFile();         
         end
 
-
-
         function WriteTimeStepToNetCDFFile(self)
             if ( ~isempty(self.ncfile) && mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0 )
-                self.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
+                self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
 
                 for iVar=1:length(self.timeSeriesVariables)
-                    self.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',iTime);
+                    selself.ncfilef.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',self.outputIndex);
                 end
 
-                if self.shouldWriteFloats == ShouldWrite.timeSeries
-                    self.ncfile.WriteFloatPositionsAtTimeIndex(self.outputIndex,self.xFloat,self.yFloat,self.zFloat);
-                end
-                if self.shouldWriteDrifters == ShouldWrite.timeSeries
-                    self.ncfile.WriteDrifterPositionsTimeAtIndex(self.outputIndex,self.xDrifter,self.yDrifter,self.zDrifter);
-                end
-                if self.shouldWriteTracers == ShouldWrite.timeSeries
-                    for iTracer = 1:length(self.tracers)
-                        self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracers{iTracer});
-                    end
+                for iParticle = 1:length(self.particle)
+                    [x,y,z,trackedFields] = self.ParticlePositions(self.particle{iParticle}.name);
+                    self.WriteParticleDataAtTimeIndex(self.particle{iParticle}.name,self.outputIndex,x,y,z,trackedFields);
                 end
 
-                if self.shouldWriteFlowConstituentEnergetics == ShouldWrite.timeSeries
-                    self.ncfile.WriteEnergeticsAtTimeIndex(self.outputIndex);
-                end
-                if self.shouldWriteFlowConstituentEnergetics2D == ShouldWrite.timeSeries
-                    self.ncfile.WriteEnergeticsKJAtTimeIndex(self.outputIndex);
+                for iTracer = 1:length(self.tracer)
+                    self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracer{iTracer});
                 end
 
                 self.incrementsWrittenToFile = self.incrementsWrittenToFile + 1;
@@ -882,7 +869,7 @@ classdef WaveVortexModel < handle
             dimVars = {'x','y','z'};
             for iVar=1:length(dimVars)
                 attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = self.wvt.transformDimensionWithName(dimVars{iVar});
+                attributes('units') = self.wvt.transformDimensionWithName(dimVars{iVar}).units;
                 attributes('particleVariableName') = dimVars{iVar};
                 variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
             end

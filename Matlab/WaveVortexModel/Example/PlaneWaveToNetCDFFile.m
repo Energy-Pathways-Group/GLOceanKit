@@ -34,7 +34,7 @@ period = wvt.InitializeWithPlaneWave(10,0,1,U,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WaveVortexModelIntegrationTools(wvt);
+model = WaveVortexModel(wvt);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
@@ -49,11 +49,12 @@ deltaT = model.TimeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
 nT = model.SetupIntegrator(deltaT, outputInterval,finalTime);
 
-model.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc','OVERWRITE_EXISTING');
+model.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc',shouldOverwriteExisting=1);
 
 model.IntegrateToTime(finalTime);
 
 ncfile = model.ncfile;
-[x,y,z] = ncfile.FloatPositions();
+% [x,y,z] = ncfile.FloatPositions();
+[x,z] = ncfile.readVariables('float-x','float-z');
 
 figure, plot(x.',z.')
