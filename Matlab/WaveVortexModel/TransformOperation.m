@@ -14,7 +14,7 @@ classdef TransformOperation < handle
             arguments
                 name char {mustBeNonempty}
                 outputVariables StateVariable {mustBeNonempty}
-                f {mustBeNonempty}
+                f function_handle
             end
 
             self.outputVariables = outputVariables;
