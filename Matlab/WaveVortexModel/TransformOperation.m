@@ -13,7 +13,7 @@ classdef TransformOperation < handle
         function self = TransformOperation(name,outputVariables,f)
             arguments
                 name char {mustBeNonempty}
-                outputVariables TransformVariable {mustBeNonempty}
+                outputVariables StateVariable {mustBeNonempty}
                 f {mustBeNonempty}
             end
 

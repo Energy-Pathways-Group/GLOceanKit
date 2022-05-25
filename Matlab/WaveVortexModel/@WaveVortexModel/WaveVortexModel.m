@@ -200,9 +200,9 @@ classdef WaveVortexModel < handle
 
             
 
-            fluxVar(1) = TransformVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
-            fluxVar(2) = TransformVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
-            fluxVar(3) = TransformVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
+            fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
+            fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
+            fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
             self.wvt.addTransformOperation(TransformOperation('NonlinearFlux',fluxVar,@(wvt) self.NonlinearFluxWithMasks(wvt)));
 
             self.particleIndexWithName = containers.Map();
@@ -876,11 +876,11 @@ classdef WaveVortexModel < handle
 
             for iVar=1:length(trackedFieldNames)
                 if ~isKey(self.wvt.transformVariableWithName,trackedFieldNames{iVar})
-                    error('Unable to find a TransformVariable named %s.', trackedFieldNames{iVar});
+                    error('Unable to find a StateVariable named %s.', trackedFieldNames{iVar});
                 end
                 transformVar = self.wvt.transformVariableWithName(trackedFieldNames{iVar});
                 if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                    error('The TransformVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                    error('The StateVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                 end
 
                 attributes = containers.Map(commonKeys,commonVals);

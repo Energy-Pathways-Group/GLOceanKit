@@ -45,10 +45,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         transformDimensionWithName
         transformAttributeWithName
-        transformVariableWithName
+        stateVariableWithName
         transformOperationWithName
 
-        timeDependentModelVars
+        timeDependentStateVariables
 
         variableCache
     end
@@ -104,12 +104,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             else
                 % User requested a variable that we only have an indirect
                 % way of computing.
-                varargout{1} = self.TransformVariables(indexOp(1).Name);
+                varargout{1} = self.StateVariables(indexOp(1).Name);
             end
         end
 
-        function obj = dotAssign(self,indexOp,varargin)
-            error("Nope")
+        function self = dotAssign(self,indexOp,varargin)
+            error("The StateVariable %s is read-only.",indexOp(1).Name)
         end
         
         function n = dotListLength(self,indexOp,indexContext)
@@ -125,6 +125,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods
         %function self = WaveVortexTransform(Lxyz, Nxyz, Nklj, rhobar, N2, dLnN2, latitude, rho0)
         function self = WaveVortexTransform(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
+%             arguments
+%                 Lxyz (1,3) double {mustBePositive}
+%                 Nklj (1,3) double {mustBePositive}
+%                 rhobar function_handle
+%                 options.latitude (1,1) double = 33
+%                 options.rho0 (1,1) double {mustBePositive} = 1025
+%                 options.N2 function_handle
+%                 options.dLnN2 function_handle
+%             end
             % rho0 is optional.
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
@@ -194,9 +203,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.transformDimensionWithName = containers.Map();
             self.transformAttributeWithName = containers.Map();
-            self.transformVariableWithName = containers.Map();
+            self.stateVariableWithName = containers.Map();
             self.transformOperationWithName = containers.Map();
-            self.timeDependentModelVars = {};
+            self.timeDependentStateVariables = {};
 
 
             self.transformDimensionWithName('x') = TransformDimension('x',length(self.x), 'm', 'x-coordinate dimension');
@@ -218,108 +227,101 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addTransformAttribute(TransformAttribute('h',{'j'},'m', 'equivalent depth of each mode'));
 
 
-            self.addTransformOperation(TransformOperation('t',TransformVariable('t',{}, 's', 'time of observations'),@(wvt) wvt.t));
+            self.addTransformOperation(TransformOperation('t',StateVariable('t',{}, 's', 'time of observations'),@(wvt) wvt.t));
 
-            transformVar = TransformVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
+            transformVar = StateVariable('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
             transformVar.isComplex = 1;
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('A0', transformVar,@(wvt) wvt.Ap));
 
-            transformVar = TransformVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
+            transformVar = StateVariable('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
             transformVar.isComplex = 1;
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('Ap', transformVar,@(wvt) wvt.A0));
 
-            transformVar = TransformVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
+            transformVar = StateVariable('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
             transformVar.isComplex = 1;
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('Am', transformVar,@(wvt) wvt.Am));
 
-            transformVar = TransformVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
+            transformVar = StateVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('internalWaveEnergyPlus', transformVar,@(wvt) wvt.internalWaveEnergyPlus));
 
-            transformVar = TransformVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
+            transformVar = StateVariable('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('internalWaveEnergyMinus', transformVar,@(wvt) wvt.internalWaveEnergyMinus));
 
-            transformVar = TransformVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
+            transformVar = StateVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('baroclinicInertialEnergy',transformVar,@(wvt) wvt.baroclinicInertialEnergy));
 
-            transformVar = TransformVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
+            transformVar = StateVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('barotropicInertialEnergy',transformVar,@(wvt) wvt.barotropicInertialEnergy));
 
-            transformVar = TransformVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
+            transformVar = StateVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('baroclinicGeostrophicEnergy',transformVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
 
-            transformVar = TransformVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
+            transformVar = StateVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('barotropicGeostrophicEnergy',transformVar,@(wvt) wvt.barotropicGeostrophicEnergy));
 
-            outputVar(1) = TransformVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
+            outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
             outputVar(1).isComplex = 1;
 
-            outputVar(2) = TransformVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
+            outputVar(2) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
             outputVar(2).isComplex = 1;
 
-            outputVar(3) = TransformVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
+            outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
             outputVar(3).isComplex = 1;
 
             f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
             transformOp = TransformOperation('ApAmA0',outputVar,f);
             self.addTransformOperation(transformOp);
 
-            outputVar = TransformVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+            outputVar = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('u',outputVar,f));
 
-            outputVar = TransformVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
+            outputVar = StateVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('v',outputVar,f));
 
-            outputVar = TransformVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
+            outputVar = StateVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
             self.addTransformOperation(TransformOperation('w',outputVar,f));
 
-            outputVar = TransformVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
+            outputVar = StateVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
             f = @(wvt) wvt.rho0*wvt.g*wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('p',outputVar,f));
 
-            outputVar = TransformVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('rho_prime',outputVar,f));
 
-            outputVar = TransformVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
+            outputVar = StateVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
             f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
 
-            outputVar = TransformVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addTransformOperation(TransformOperation('rho_total',outputVar,f));
 
-            fluxVar(1) = TransformVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
-            fluxVar(2) = TransformVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
-            fluxVar(3) = TransformVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+            fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
+            fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
+            fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             self.addTransformOperation(TransformOperation('NonlinearFlux',fluxVar,@(wvt) wvt.NonlinearFlux_));
-
-%             self.TransformDimensionWithName('float-id') = TransformDimension('float-id',100, 'unitless id number', 'id number of a given float');
-%             particleVar(1) = TransformVariable('float-x',{'float-id'},'m', 'position of the float in the x coordinate');
-%             particleVar(2) = TransformVariable('float-y',{'float-id'},'m', 'position of the float in the y coordinate');
-%             particleVar(3) = TransformVariable('float-z',{'float-id'},'m', 'position of the float in the z coordinate');
-%             f = @(wvt,x,y,z) wvt.InterpolatedFieldAtPosition(x,y,z,'spline',wvt.u,wvt.v,wvt.w);
-%             self.addTransformOperation(TransformOperation('FloatFlux',particleVar,f));
         end
 
         function addTransformAttribute(self,transformAtt)
@@ -332,12 +334,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                     error("Unable to find at least one of the dimensions for variable %s",modelOp.outputVariables(iVar).name);
                 end
 
-                if isKey(self.transformVariableWithName,modelOp.outputVariables(iVar).name)
+                if isKey(self.stateVariableWithName,modelOp.outputVariables(iVar).name)
                     warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
                 end
-                self.transformVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
-                if modelOp.outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(contains(self.timeDependentModelVars,modelOp.outputVariables(iVar).name))
-                    self.timeDependentModelVars{end+1} = modelOp.outputVariables(iVar).name;
+                self.stateVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
+                if modelOp.outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(contains(self.timeDependentStateVariables,modelOp.outputVariables(iVar).name))
+                    self.timeDependentStateVariables{end+1} = modelOp.outputVariables(iVar).name;
                 end
             end
 
@@ -349,7 +351,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function [varargout] = TransformVariables(self, varargin)
+        function [varargout] = StateVariables(self, varargin)
             varargout = cell(size(varargin));
 
             didFetchAll = 0;
@@ -358,7 +360,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
                 for iVar=1:length(varargout)
                     if isempty(varargout{iVar})
-                        modelVar = self.transformVariableWithName(varargin{iVar});
+                        modelVar = self.stateVariableWithName(varargin{iVar});
                         self.PerformTransformOperation(modelVar.modelOp.name);
                         continue;
                     end
@@ -387,7 +389,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function set.t(self,value)
             self.t = value;
-%             self.clearVariableCache();
             self.clearVariableCacheOfTimeDependentVariables();
         end
 
@@ -413,7 +414,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.variableCache = containers.Map();
         end
         function clearVariableCacheOfTimeDependentVariables(self)
-            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentModelVars));
+            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentStateVariables));
         end
         function varargout = fetchFromVariableCache(self,varargin)
             varargout = cell(size(varargin));
@@ -678,6 +679,13 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
             nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*(DiffSine(self.z,eta,1,3) + eta.*self.dLnN2);
         end
+
+        du = diff(self,u,derivs);
+        u_x = diffXbar(self,u,n);
+        u_x = diffX(self,u,n);
+        u_y = diffY(self,u,n);
+        u_z = diffZF(self,u,n);
+        u_z = diffZG(self,u,n);
         
         function [Fp,Fm,F0] = NonlinearFlux_(self)
             fprintf('Built-in');

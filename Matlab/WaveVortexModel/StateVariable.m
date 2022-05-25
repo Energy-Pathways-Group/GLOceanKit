@@ -1,4 +1,4 @@
-classdef TransformVariable < handle
+classdef StateVariable < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -14,7 +14,7 @@ classdef TransformVariable < handle
     end
 
     methods
-        function self = TransformVariable(name,dimensions,units,description)
+        function self = StateVariable(name,dimensions,units,description)
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             if ~iscell(dimensions)

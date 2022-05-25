@@ -30,7 +30,7 @@ end
         end
         [varargout{:}] = self.ongridModes.ExternalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
     else
-        [varargout{:}] = self.TransformVariables(variableNames{:});
+        [varargout{:}] = self.StateVariables(variableNames{:});
         [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
     end
 
