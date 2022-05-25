@@ -674,10 +674,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             A0t = self.A0;
         end
         
-        function [uNL,vNL,nNL] = NonlinearFluxFromSpatial(self,u,v,w,eta)
-            uNL = u.*DiffFourier(self.x,u,1,1) + v.*DiffFourier(self.y,u,1,2) + w.*DiffCosine(self.z,u,1,3);
-            vNL = u.*DiffFourier(self.x,v,1,1) + v.*DiffFourier(self.y,v,1,2) + w.*DiffCosine(self.z,v,1,3);
-            nNL = u.*DiffFourier(self.x,eta,1,1) + v.*DiffFourier(self.y,eta,1,2) + w.*(DiffSine(self.z,eta,1,3) + eta.*self.dLnN2);
+        function [uNL,vNL,nNL] = NonlinearFluxSpatialDomain(self)
+            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u)   + self.w .*  self.diffZF(self.u);
+            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v)   + self.w .*  self.diffZF(self.v);
+            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta) + self.w .* (self.diffZG(self.eta) + self.eta .* self.dLnN2);
         end
 
         du = diff(self,u,derivs);
