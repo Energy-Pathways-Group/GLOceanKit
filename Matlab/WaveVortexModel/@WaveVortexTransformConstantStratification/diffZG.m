@@ -13,7 +13,7 @@ thesign = [1,-1,-1,1];
 m = reshape(pi*self.j/self.Lz,[],1);
 du_bar = thesign(mod(n-1,4)+1)*(m.^n) .* (self.DST*u);
 
-if mod(numDerivs,2) == 0
+if mod(n,2) == 0
     du = self.iDST*du_bar;
 else
     du = self.iDCT*du_bar;

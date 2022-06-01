@@ -463,6 +463,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
         
+        function [X,Y,Z] = grid(self)
+            X = self.X; Y = self.Y; Z = self.Z;
+        end
+
         function Kh = Kh(self)
             [K,L,~] = ndgrid(self.k,self.l,self.j);
             Kh = sqrt(K.*K + L.*L);
