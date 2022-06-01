@@ -75,11 +75,7 @@ classdef WaveVortexModel < handle
         t=0             % current model time (in seconds)
         initialTime=0
     
-        linearDynamics = 0
-
-        IMA0, IMAp, IMAm    % InteractionMasks
-        EMA0, EMAp, EMAm    % EnergyMasks
-        shouldAntiAlias = 1;
+        nonlinearFlux      % TransformOperation (for now anyway).
 
         outputInterval      % model output interval (seconds)
         initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
@@ -116,6 +112,10 @@ classdef WaveVortexModel < handle
         timeSeriesVariables = {}
 
         netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
+    end
+
+    properties (Dependent)
+        linearDynamics
     end
 
     methods
@@ -183,41 +183,19 @@ classdef WaveVortexModel < handle
             self.initialTime = self.t;
             self.wvt = WaveVortexTransform;  
 
-            % Allow all nonlinear interactions
-            self.IMA0 = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-            self.IMAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-            self.IMAm = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-
-            % Allow energy fluxes at all modes
-            self.EMA0 = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-            self.EMAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-            self.EMAm = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.nModes);
-
-            if self.shouldAntiAlias == 1
-                self.disallowNonlinearInteractionsWithAliasedModes();
-                self.freezeEnergyOfAliasedModes();
-            end
-
-            
-
-            fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
-            fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
-            fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
-            self.wvt.addTransformOperation(TransformOperation('NonlinearFlux',fluxVar,@(wvt) self.NonlinearFluxWithMasks(wvt)));
+            nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
+            self.wvt.addTransformOperation(nlFlux);
 
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
             self.netcdfVariableMapForParticleWithName = containers.Map();
         end
         
-        function SetNonlinearFlux(self,modelOp)
-            arguments
-                self WaveVortexModel {mustBeNonempty}
-                modelOp TransformOperation {mustBeNonempty}
-            end
-            self.linearDynamics = 0;
-        end
 
+        function value = get.linearDynamics(self)
+            value = isempty(self.nonlinearFlux);
+        end
+        
         function AddParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
@@ -334,149 +312,10 @@ classdef WaveVortexModel < handle
             phi = self.tracer{self.tracerIndexWithName(name)};
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Reduced interaction models
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function allowNonlinearInteractionsWithModes(self,Ap,Am,A0)
-            self.IMA0 = or(self.IMA0,A0);
-            self.IMAm = or(self.IMAm,Am);
-            self.IMAp = or(self.IMAp,Ap);
-        end
 
-        function allowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 | A0Mask;
-            self.IMAm = self.IMAm | ApmMask;
-            self.IMAp = self.IMAp | ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
-            self.IMA0 = self.IMA0 & ~A0Mask;
-            self.IMAm = self.IMAm & ~ApmMask;
-            self.IMAp = self.IMAp & ~ApmMask;
-        end
-
-        function disallowNonlinearInteractionsWithAliasedModes(self)
-            % Uses the 2/3 rule to prevent aliasing of Fourier modes.
-            % The reality is that the vertical modes will still alias.
-            % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
-            self.shouldAntiAlias = 1;
-            
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
-            self.IMA0 = self.IMA0 & ~AntiAliasMask;
-            self.IMAm = self.IMAm & ~AntiAliasMask;
-            self.IMAp = self.IMAp & ~AntiAliasMask;
-        end
-
-        function unfreezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 | A0Mask;
-            self.EMAm = self.EMAm | ApmMask;
-            self.EMAp = self.EMAp | ApmMask;
-        end
-
-        function freezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
-            self.EMA0 = self.EMA0 & ~A0Mask;
-            self.EMAm = self.EMAm & ~ApmMask;
-            self.EMAp = self.EMAp & ~ApmMask;
-        end
-        
-        function freezeEnergyOfAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
-            self.EMA0 = self.EMA0 & ~AntiAliasMask;
-            self.EMAm = self.EMAm & ~AntiAliasMask;
-            self.EMAp = self.EMAp & ~AntiAliasMask;
-        end
-
-        function clearEnergyFromAliasedModes(self)
-            % In addition to disallowing interaction to occur between modes
-            % that are aliased, you may actually want to disallow energy to
-            % even enter the aliased modes.
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
-            self.wvt.A0 = self.wvt.A0 .* ~AntiAliasMask;
-            self.wvt.Am = self.wvt.Am .* ~AntiAliasMask;
-            self.wvt.Ap = self.wvt.Ap .* ~AntiAliasMask;
-        end
-
-        function flag = IsAntiAliased(self)
-            AntiAliasMask = self.MaskForAliasedModes();
-
-            % check if there are zeros at all the anti-alias indices
-            flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAm & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.IMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMA0 & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAp & AntiAliasMask) == AntiAliasMask,'all');
-            flag = flag & all((~self.EMAm & AntiAliasMask) == AntiAliasMask,'all');
-        end
-
-        
-        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
-            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.wvt.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
-            for iMode=1:length(kModes)
-                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
-                end
-
-                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
-                end
-            end
-        end
 
         function stirWithConstituents(self,constituents)
 
-        end
-
-        function [Fp,Fm,F0] = NonlinearFluxWithMasks(self,wvt)
-            % Apply operator T_\omega---defined in (C2) in the manuscript
-
-            % We also apply the interaction masks (IMA*) and energy masks
-            % (EMA*). These *could* be precomputed multiplied directly into
-            % the coefficients. A quick speed test shows this about a 5%
-            % performance hit by not doing this.
-            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
-            Ap = self.IMAp .* wvt.Ap .* phase;
-            Am = self.IMAm .* wvt.Am .* conj(phase);
-            A0 = self.IMA0 .* wvt.A0;
-
-            % Apply operator S---defined in (C4) in the manuscript
-            Ubar = wvt.UAp.*Ap + wvt.UAm.*Am + wvt.UA0.*A0;
-            Vbar = wvt.VAp.*Ap + wvt.VAm.*Am + wvt.VA0.*A0;
-            Wbar = wvt.WAp.*Ap + wvt.WAm.*Am;
-            Nbar = wvt.NAp.*Ap + wvt.NAm.*Am + wvt.NA0.*A0;
-
-            % Finishing applying S, but also compute derivatives at the
-            % same time
-            [U,Ux,Uy,Uz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = wvt.TransformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.TransformToSpatialDomainWithGAllDerivatives(Nbar);
-
-            % Compute the nonlinear terms in the spatial domain
-            % (pseudospectral!)
-            uNL = -U.*Ux - V.*Uy - W.*Uz;
-            vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(wvt.dLnN2,-2));
-
-            % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = wvt.TransformFromSpatialDomainWithF(uNL);
-            vNLbar = wvt.TransformFromSpatialDomainWithF(vNL);
-            nNLbar = wvt.TransformFromSpatialDomainWithG(nNL);
-
-            Fp = self.EMAp .* (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
-            Fm = self.EMAm .* (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
-            F0 = self.EMA0 .* (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -535,6 +374,10 @@ classdef WaveVortexModel < handle
                 deltaT = self.wvt.TimeStepForCFL(0.5,outputInterval);
             end
             
+            if ~isempty(self.nonlinearFlux)
+                self.wvt.addTransformOperation(self.nonlinearFlux);
+            end
+
             % Now set the initial conditions and point the integrator to
             % the correct flux function
             Y0 = self.InitialConditionsArray();
@@ -563,9 +406,15 @@ classdef WaveVortexModel < handle
             Y0 = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                n=n+1;Y0{n} = self.wvt.Ap;
-                n=n+1;Y0{n} = self.wvt.Am;
-                n=n+1;Y0{n} = self.wvt.A0;
+                if self.nonlinearFlux.doesFluxAp == 1
+                    n=n+1;Y0{n} = self.wvt.Ap;
+                end
+                if self.nonlinearFlux.doesFluxAm == 1
+                    n=n+1;Y0{n} = self.wvt.Am;
+                end
+                if self.nonlinearFlux.doesFluxA0 == 1
+                    n=n+1;Y0{n} = self.wvt.A0;
+                end
             end
 
             for iParticles=1:length(self.particle)
@@ -592,9 +441,15 @@ classdef WaveVortexModel < handle
             self.integrator.IncrementForward();
             n=0;
             if self.linearDynamics == 0
-                n=n+1; self.wvt.Ap = self.integrator.currentY{n};
-                n=n+1; self.wvt.Am = self.integrator.currentY{n};
-                n=n+1; self.wvt.A0 = self.integrator.currentY{n};
+                if self.nonlinearFlux.doesFluxAp == 1
+                    n=n+1; self.wvt.Ap = self.integrator.currentY{n};
+                end
+                if self.nonlinearFlux.doesFluxAm == 1
+                    n=n+1; self.wvt.Am = self.integrator.currentY{n};
+                end
+                if self.nonlinearFlux.doesFluxA0 == 1
+                    n=n+1; self.wvt.A0 = self.integrator.currentY{n};
+                end
             end
 
             for iParticles=1:length(self.particle)
@@ -643,10 +498,18 @@ classdef WaveVortexModel < handle
             n = 0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                [Fp,Fm,F0] = self.wvt.NonlinearFlux;
-                n=n+1;F{n} = Fp;
-                n=n+1;F{n} = Fm;
-                n=n+1;F{n} = F0;
+                nlF = self.nonlinearFlux.Compute(self.wvt);
+                if self.nonlinearFlux.doesFluxAp == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+                if self.nonlinearFlux.doesFluxAm == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+                if self.nonlinearFlux.doesFluxA0 == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+            else
+                
             end
 
             for iParticles=1:length(self.particle)

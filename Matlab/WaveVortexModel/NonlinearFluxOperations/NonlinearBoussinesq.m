@@ -1,12 +1,12 @@
-classdef NonlinearFluxDefault < TransformOperation
+classdef NonlinearBoussinesq < NonlinearFluxOperation
 
     methods
-        function self = NonlinearFluxDefault()
+        function self = NonlinearBoussinesq()
             fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@TransformOperation('NonlinearFluxDefault',fluxVar);
+            self@NonlinearFluxOperation('NonlinearFluxDefault',fluxVar);
         end
 
         function varargout = Compute(self,wvt,varargin)
