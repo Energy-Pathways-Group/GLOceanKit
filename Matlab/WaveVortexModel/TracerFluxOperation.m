@@ -8,13 +8,13 @@ classdef TracerFluxOperation < TransformOperation
     end
 
     methods
-        function self = TracerFluxOperation(name,isXYOnly)
+        function self = TracerFluxOperation(name,options)
             arguments
                 name char {mustBeNonempty} = 'TracerFluxNoDamping'
-                isXYOnly double {mustBeMember(isXYOnly,[0 1])} = 0 
+                options.isXYOnly double {mustBeMember(options.isXYOnly,[0 1])} = 0 
             end
             self.name = name;
-            self.isXYOnly = isXYOnly;
+            self.isXYOnly = options.isXYOnly;
         end
 
         function varargout = Compute(self,wvt,phi)
