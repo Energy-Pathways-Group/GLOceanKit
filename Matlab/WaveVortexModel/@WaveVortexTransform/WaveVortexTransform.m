@@ -558,9 +558,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.A0N(1,1,:) = 1;
             self.A0N(1,1,1) = 0;
             
-            % Finally, we need to take care of the extra factor of 2 that
-            % comes out of the discrete cosine transform
-            
             % Now make the Hermitian conjugate match.
             self.ApU = (1./PP) .* MakeHermitian(self.ApU);
             self.ApV = (1./PP) .* MakeHermitian(self.ApV);
