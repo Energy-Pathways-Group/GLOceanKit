@@ -998,7 +998,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
         [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
-        AntiAliasMask= MaskForAliasedModes(self);
+        AntiAliasMask= MaskForAliasedModes(self,options);
+
+        [Qkl,Qj] = spectralVanishingViscosityFilter(self,options);
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 

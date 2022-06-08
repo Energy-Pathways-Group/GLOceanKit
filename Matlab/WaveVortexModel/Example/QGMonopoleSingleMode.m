@@ -20,7 +20,11 @@ A = 0.15;
 L = 80e3;
 wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
 
-figure, pcolor(wvt.x,wvt.y,wvt.p.'), shading interp
+outputVar = StateVariable('ssh',{'x','y','z'},'kg/m/s2', 'sea-surface anomaly');
+f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+wvt.addTransformOperation(TransformOperation('ssh',outputVar,f));
+
+figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up the integrator
@@ -30,13 +34,13 @@ figure, pcolor(wvt.x,wvt.y,wvt.p.'), shading interp
 model = WaveVortexModel(wvt);
 model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
 
-[deltaT,advectiveDT,oscillatoryDT] = model.TimeStepForCFL(0.1);
+[deltaT,advectiveDT,oscillatoryDT] = model.TimeStepForCFL(0.15);
 
 model.SetupIntegrator(advectiveDT, 86400);
 
-model.IntegrateToTime(30*86400)
+model.IntegrateToTime(150*86400);
 
-figure, pcolor(wvt.x,wvt.y,wvt.p.'), shading interp
+figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 return;
 
