@@ -38,7 +38,7 @@ model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
 
 model.SetupIntegrator(advectiveDT, 86400);
 
-model.IntegrateToTime(150*86400);
+model.IntegrateToTime(75*86400);
 
 figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
