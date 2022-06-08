@@ -17,14 +17,14 @@ classdef NonlinearFluxOperation < TransformOperation
 
     methods
 
-        function self = NonlinearFluxOperation(name,outputVariables,f)
+        function self = NonlinearFluxOperation(name,outputVariables,options)
             arguments
                 name char {mustBeNonempty}
                 outputVariables StateVariable {mustBeNonempty}
-                f function_handle = []
+                options.f function_handle = @disp
             end
 
-            self@TransformOperation(name,outputVariables,f);
+            self@TransformOperation(name,outputVariables,options.f);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,9 +34,19 @@ classdef NonlinearFluxOperation < TransformOperation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function writeToFile(self,ncfile,wvt)
+            arguments
+                self NonlinearFluxOperation {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
         end
 
         function initFromFile(self,ncfile,wvt)
+            arguments
+                self NonlinearFluxOperation {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
         end
     end
 end

@@ -183,8 +183,9 @@ classdef WaveVortexModel < handle
             self.initialTime = self.t;
             self.wvt = WaveVortexTransform;  
 
-            nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
-            self.wvt.addTransformOperation(nlFlux);
+%             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
+            self.nonlinearFlux = SingleModeQGPVE(self.wvt);
+%             self.wvt.addTransformOperation(nlFlux);
 
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
@@ -498,7 +499,8 @@ classdef WaveVortexModel < handle
             n = 0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                nlF = self.nonlinearFlux.Compute(self.wvt);
+                nlF = cell(1,self.nonlinearFlux.nVarOut);
+                [nlF{:}] = self.nonlinearFlux.Compute(self.wvt);
                 if self.nonlinearFlux.doesFluxAp == 1
                     n=n+1; F{n} = nlF{n};
                 end
@@ -611,12 +613,9 @@ classdef WaveVortexModel < handle
             attributes('description') = transformVar.description;
             ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
 
-            ncfile.addVariable('IMA0',int8(self.IMA0),{'k','l','j'});
-            ncfile.addVariable('IMAp',int8(self.IMAp),{'k','l','j'});
-            ncfile.addVariable('IMAm',int8(self.IMAm),{'k','l','j'});
-            ncfile.addVariable('EMA0',int8(self.EMA0),{'k','l','j'});
-            ncfile.addVariable('EMAp',int8(self.EMAp),{'k','l','j'});
-            ncfile.addVariable('EMAm',int8(self.EMAm),{'k','l','j'});
+            if ~self.linearDynamics
+                self.nonlinearFlux.writeToFile(ncfile,self.wvt);
+            end
 
             self.ncfile = ncfile;
         end

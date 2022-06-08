@@ -177,6 +177,11 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function writeToFile(self,ncfile,wvt)
+            arguments
+                self NonlinearFluxOperation {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
             ncfile.addVariable('IMA0',int8(self.IMA0),{'k','l','j'});
             ncfile.addVariable('IMAp',int8(self.IMAp),{'k','l','j'});
             ncfile.addVariable('IMAm',int8(self.IMAm),{'k','l','j'});
@@ -186,6 +191,11 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
         function initFromFile(self,ncfile,wvt)
+            arguments
+                self NonlinearFluxOperation {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
             optionalVariables = {'IMA0','IMAm','IMAp','EMA0','EMAm','EMAp'};
             if all(isKey(ncfile.variableWithName,optionalVariables))
                 self.IMA0 = logical(ncfile.readVariables('IMA0'));
