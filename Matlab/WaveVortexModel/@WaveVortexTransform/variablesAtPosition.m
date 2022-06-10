@@ -1,4 +1,4 @@
-function [varargout] = VariablesAtPosition(self,x,y,z,variableNames,options)
+function [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
 arguments
     self WaveVortexTransform {mustBeNonempty}
     x (1,:) double

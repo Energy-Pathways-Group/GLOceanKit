@@ -95,7 +95,7 @@ E0_io_g_t = zeros(length(t),1);
 E0_g_igw_t = zeros(length(t),1);
 
 iTime = 1;
-[Ep,Em,E0] = wvm.EnergyFluxAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0);
+[Ep,Em,E0] = wvm.energyFlux;
 E0_all_all_t(iTime) = sum(E0(:));
 [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('wave'));
 E0_igw_igw_t(iTime) = sum(E0(:));
@@ -129,7 +129,7 @@ for iTime=2:length(t)
         wvm.A0 = integrator.currentY{3};
     end
 
-    [Ep,Em,E0] = wvm.EnergyFluxAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0);
+    [Ep,Em,E0] = wvm.energyFlux;
     E0_all_all_t(iTime) = sum(E0(:));
     [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('wave'));
     E0_igw_igw_t(iTime) = sum(E0(:));

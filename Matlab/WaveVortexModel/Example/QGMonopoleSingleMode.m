@@ -20,10 +20,6 @@ A = 0.15;
 L = 80e3;
 wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
 
-outputVar = StateVariable('ssh',{'x','y','z'},'kg/m/s2', 'sea-surface anomaly');
-f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
-wvt.addTransformOperation(TransformOperation('ssh',outputVar,f));
-
 figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

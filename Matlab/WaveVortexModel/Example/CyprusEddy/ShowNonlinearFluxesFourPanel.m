@@ -32,7 +32,7 @@ dWaveEnergy = zeros(size(t)); dGeostrophicEnergy= zeros(size(t)); dIOEnergy = ze
 stride = 1;
 for iTime=1:stride:nT
     currentTime = netcdfTools.SetWaveModelToIndex(iTime);
-    [Ep,Em,E0] = wvm.EnergyFluxAtTime(currentTime,wvm.Ap,wvm.Am,wvm.A0);
+    [Ep,Em,E0] = wvm.energyFlux;
      dIOEnergy(iTime) = 2*sum(Em(1,1,:));
      Ep(1,1,:) = 0; Em(1,1,:) = 0;
      dWaveEnergy(iTime) = sum(Ep(:)) + sum(Em(:));

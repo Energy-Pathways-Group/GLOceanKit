@@ -1,4 +1,4 @@
-function [varargout] = Variables(self, varargin)
+function [varargout] = variables(self, varargin)
 % Primary method for accessing the dynamical variables on the
 % internal grid.
 

@@ -29,6 +29,10 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             PP = self.Nx*self.Ny*ones(self.Nk,self.Nl);
             QQ = self.Nx*self.Ny*ones(self.Nk,self.Nl);
             self.buildTransformationMatrices(PP,QQ);
+
+            outputVar = StateVariable('ssh',{'x','y','z'},'kg/m/s2', 'sea-surface anomaly');
+            f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            self.addTransformOperation(TransformOperation('ssh',outputVar,f));
         end
 
         function wvtX2 = transformWithDoubleResolution(self)
@@ -187,7 +191,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         
         function value = get.Apm_TE_factor(self)
             value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
-            value(:,:,1) = self.Lz;
+%             value(:,:,1) = self.Lz;
         end
         
         function value = get.A0_HKE_factor(self)

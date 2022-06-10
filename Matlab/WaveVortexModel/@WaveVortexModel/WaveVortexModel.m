@@ -268,7 +268,7 @@ classdef WaveVortexModel < handle
                 if ~isempty(trackedFieldNames)
                     varLagrangianValues = cell(1,length(trackedFieldNames));
                     p = self.particle{iParticle}.xyz;
-                    [varLagrangianValues{:}] = self.wvt.VariablesAtPosition(p(1,:),p(2,:),p(3,:),trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
+                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p(1,:),p(2,:),p(3,:),trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
                     self.particle{iParticle}.trackedFields = vertcat(varLagrangianValues{:});
                 end
             end
@@ -294,7 +294,7 @@ classdef WaveVortexModel < handle
                 options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
                 options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
             end
-            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.VariablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.AdvectionInterpolation));
+            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.AdvectionInterpolation));
             self.AddParticles('float',floatFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
         end
 
@@ -316,7 +316,7 @@ classdef WaveVortexModel < handle
                 options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
                 options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
             end
-            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.VariablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),xyOnly=1);
+            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),xyOnly=1);
             self.AddParticles('drifter',drifterFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
         end
 
@@ -587,7 +587,7 @@ classdef WaveVortexModel < handle
 
             omega = self.wvt.Omega;
             period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvt.VelocityField();
+            [u,v] = self.wvt.velocityField();
             U = max(max(max( sqrt(u.*u + v.*v) )));
             dx = (self.wvt.x(2)-self.wvt.x(1));
 

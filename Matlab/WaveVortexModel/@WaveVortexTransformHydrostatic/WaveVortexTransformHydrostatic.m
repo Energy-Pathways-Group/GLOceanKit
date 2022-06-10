@@ -112,11 +112,6 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.addTransformOperation(TransformOperation('rho_total',outputVar,f));
         end
 
-        function self = InitWithDensityGrid(self, dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0, PFinv, QGinv, PF, QG, P, Q, h)
-            self.Init(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0);
-            self.SetProjectionOperators(PFinv, QGinv, PF, QG, P, Q, h);
-        end
-
         function self = BuildProjectionOperators(self)
             % Now go compute the appropriate number of modes at the
             % quadrature points.

@@ -628,14 +628,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             A0t = self.A0;
         end
         
-        du = diff(self,u,derivs);
-        u_x = diffXbar(self,u,n);
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
         u_z = diffZF(self,u,n);
         u_z = diffZG(self,u,n);
         
-        function [Ep,Em,E0] = EnergyFluxAtTime(self)
+        function [Ep,Em,E0] = energyFlux(self)
             [Fp,Fm,F0] = self.nonlinearFlux;
             % The phase is tricky here. It is wound forward for the flux,
             % as it should be... but then it is wound back to zero. This is
@@ -645,21 +643,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             E0 = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
         end
         
-        function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,t,deltaT,Ap,Am,A0)
-      	    [Fp,Fm,F0] = self.NonlinearFluxAtTime(t,Ap,Am,A0);
-      	    % The phase is tricky here. It is wound forward for the flux,
-      	    % as it should be... but then it is wound back to zero. This is
-            % equivalent ignoring the phase below here.
-
+        function [Ep,Em,E0] = EnergyFluxAtTimeInitial(self,deltaT)
+      	    [Fp,Fm,F0] = self.nonlinearFlux;
     	    % This equation is C17 in the manuscript, but with addition of 1st term
     	    % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
 
-    	    % This differs from EnergyFluxAtTime due to the importance of the
+    	    % This differs from energyFlux due to the importance of the
     	    % 2*F*F*deltaT in equation C16 at the initial condition.
-
-    	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-      	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-      	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+    	    Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
+      	    Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
+      	    E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
     	end
 
         [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
@@ -677,14 +670,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             % This differs from EnergyFluxForFlowConstituentsAtTime due to the importance of the
             % 2*F*F*deltaT in equation C16 at the initial condition.
 
-            Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(Ap) );
-            Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(Am) );
-            E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(A0) );
+            Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
+            Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
+            E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
     	end
  
-
-
-
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -693,7 +683,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = totalEnergySpatiallyIntegrated(self)
-            [u,v,w,eta] = self.Variables('u','v','w','eta');
+            [u,v,w,eta] = self.variables('u','v','w','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
         
@@ -704,7 +694,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function energy = totalHydrostaticEnergy(self)
-            [u,v,eta] = self.Variables('u','v','eta');
+            [u,v,eta] = self.variables('u','v','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
@@ -834,10 +824,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         % Primary method for accessing the dynamical variables
-        [varargout] = Variables(self, varargin);
+        [varargout] = variables(self, varargin);
                         
-        % Same as calling Variables('u','v','w')
-        [u,v,w] = VelocityField(self);
+        % Same as calling variables('u','v','w')
+        [u,v,w] = velocityField(self);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -851,7 +841,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % The method argument specifies how off-grid values should be
         % interpolated: linear, spline or exact. Use 'exact' for the slow,
         % but accurate, spectral interpolation.
-        [varargout] = VariablesAtPosition(self,x,y,z,variableNames,options)
+        [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
   
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
