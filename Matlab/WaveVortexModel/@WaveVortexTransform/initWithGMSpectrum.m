@@ -41,7 +41,7 @@ function initWithGMSpectrum(self, GMAmplitude, varargin)
 
     % Do a quick check to see how much energy is lost due to
     % limited vertical resolution.
-    maxMode = self.nModes;
+    maxMode = self.Nj;
     for iArg = 1:2:length(varargin)
         if strcmp(varargin{iArg}, 'maxMode')
             maxMode = varargin{iArg+1};

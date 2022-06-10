@@ -3,7 +3,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
     %space
     
     properties
-        N0   
+        N0, N2, rhobar
         realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
         F,G
         h
@@ -20,55 +20,38 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
     end
         
     methods
-        function self = WaveVortexTransformConstantStratification(dims, n, latitude, N0, rho0, varargin)
-            % rho0 is optional.
-            if length(dims) ~=3 || length(n) ~= 3
-                error('The dims and n variables must be of length 3. You need to specify x,y,z');
+        function self = WaveVortexTransformConstantStratification(Lxyz, Nxyz, N0, options)
+            arguments
+                Lxyz (1,3) double {mustBePositive}
+                Nxyz (1,3) double {mustBePositive}
+                N0 (1,1) double {mustBePositive}
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0 
             end
-            
-            if mod(log2(n(3)),1) == 0
-                error('You are implicitly asking for periodic boundary conditions in the vertical. This is not supported.');
-            elseif mod(log2(n(3)-1),1) == 0
-                Nz = n(3);
+                        
+            if mod(log2(Nxyz(3)-1),1) == 0
+                Nz = Nxyz(3);
             else
                 error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
             end
-            
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
-            isHydrostatic = 0;
-            for k = 1:2:length(varargin)
-                if strcmp(varargin{k}, 'hydrostatic')
-                    isHydrostatic = varargin{k+1};
-                end
-            end
 
-            Lz = dims(3);  
+            Lz = Lxyz(3);  
             dz = Lz/(Nz-1);
             z = dz*(0:(Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
             nModes = Nz-1;
             
-            if ~exist('rho0','var') || isempty(rho0)
-                rho0 = 1025;
-            end
-            rhoFunction = @(z) -(N0*N0*rho0/9.81)*z + rho0;
-            N2Function = @(z) N0*N0*ones(size(z));
-            rhobar = rhoFunction(z);
-            N2 = N0*N0*ones(size(z));
-            dLnN2 = zeros(size(z));
+            self@WaveVortexTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=N0);
             
-            self@WaveVortexTransform(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0);
-            
-            self.isHydrostatic = isHydrostatic;
+            self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
-            self.rhoFunction = rhoFunction;
-            self.N2Function = N2Function;
-            
+            self.N2 = N0*N0;
+            rhoFunction = @(z) -(N0*N0*self.rho0/9.81)*z + self.rho0;
+            self.rhobar = rhoFunction(z);
+
             self.buildTransformationMatrices();
-            internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
-            self.offgridModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function,self.isHydrostatic);
+            internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
+            self.offgridModes = WaveVortexModelOffGrid(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
@@ -85,6 +68,15 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
                 self.iDST = SineTransformBackMatrix(self.Nz);
                 self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
             end
+
+
+            outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            self.addTransformOperation(TransformOperation('rho_prime',outputVar,f));
+
+            outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
+            self.addTransformOperation(TransformOperation('rho_total',outputVar,f));
 
         end
                 
@@ -174,7 +166,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         end
         function value = get.A0_PE_factor(self)
             if self.isHydrostatic == 1
-                value = self.g*ones(self.Nx,self.Ny,self.nModes)/2;
+                value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
             else
                 value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
             end
@@ -337,7 +329,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             u = permute(u,[3 1 2]); % keep adjacent in memory
             u = reshape(u,self.Nz,[]);
             u_bar = self.DCT*u;
-            u_bar = reshape(u_bar,self.nModes,self.Nx,self.Ny);
+            u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
             u_bar = permute(u_bar,[2 3 1]);
 
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
@@ -349,7 +341,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w = permute(w,[3 1 2]); % keep adjacent in memory
             w = reshape(w,self.Nz,[]);
             w_bar = self.DST*w;
-            w_bar = reshape(w_bar,self.nModes,self.Nx,self.Ny);
+            w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
@@ -359,7 +351,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             % coefficients UAp,UAm,etc.
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.nModes,[]);
+            u_bar = reshape(u_bar,self.Nj,[]);
             u = self.iDCT*u_bar;
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
@@ -370,7 +362,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             % coefficients NAp,NAm,etc.
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.nModes,[]);
+            w_bar = reshape(w_bar,self.Nj,[]);
             w = self.iDST*w_bar;
             w = reshape(w,self.Nz,self.Nx,self.Ny);
             w = permute(w,[2 3 1]);        
@@ -382,7 +374,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
             
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.nModes,[]);
+            u_bar = reshape(u_bar,self.Nj,[]);
             u = self.iDCT*u_bar;
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
@@ -403,7 +395,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
             
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.nModes,[]);
+            w_bar = reshape(w_bar,self.Nj,[]);
             w = self.iDST*w_bar;
             w = reshape(w,self.Nz,self.Nx,self.Ny);
             w = permute(w,[2 3 1]);    

@@ -11,7 +11,7 @@
 % doesn't force the k=l=0 to be real.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function A = MakeHermitian(A)
+function A = makeHermitian(A)
     M = size(A,1);
     N = size(A,2);
     K = size(A,3);

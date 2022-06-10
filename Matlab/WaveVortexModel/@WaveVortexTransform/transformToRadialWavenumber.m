@@ -1,4 +1,4 @@
-function [varargout] = ConvertToIsotropicWavenumber(self,varargin)     
+function [varargout] = transformToRadialWavenumber(self,varargin)     
 
 Kh = self.Kh;
 
@@ -8,7 +8,7 @@ deltaK = max(diff(allKs));
 kAxis = 0:deltaK:max(allKs);
 
 % Thi is the final output axis for wavenumber
-k = self.kIso;
+k = self.kRadial;
 
 RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
 OmNyquist = InternalWaveModel.NyquistWavenumbers(self.Omega);

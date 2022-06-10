@@ -12,16 +12,16 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         
     methods
          
-        function self = WaveVortexTransformSingleMode(Lxy, Nkl, options)
+        function self = WaveVortexTransformSingleMode(Lxy, Nxy, options)
             arguments
                 Lxy (1,2) double {mustBePositive}
-                Nkl (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
                 options.h (1,1) double = 0.8
                 options.latitude (1,1) double = 33
             end
 
             % This is enough information to initialize
-            self@WaveVortexTransform([Lxy(1) Lxy(2) options.h], [Nkl(1) Nkl(2) 1], 0, [], [], [], 1, options.latitude);
+            self@WaveVortexTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)], 0,latitude=options.latitude,Nj=1);
             
             self.h = options.h;
 
@@ -31,6 +31,23 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.buildTransformationMatrices(PP,QQ);
         end
 
+        function wvtX2 = transformWithDoubleResolution(self)
+            wvtX2 = self.transformWithResolution(2*[self.Nx self.Ny]);
+        end
+
+        function wvmX2 = transformWithResolution(self,m)
+            wvmX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
+            wvmX2.t0 = self.t0;
+            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
+                kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
+                lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
+                wvmX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
+                wvmX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
+                wvmX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
+            else
+                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
+            end
+        end
 
         function setSSH(self,ssh)
             psi = @(X,Y,Z) (self.g/self.f0)*ssh(X,Y);
@@ -55,9 +72,9 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             
             self.PP = PP;
             self.QQ = QQ;
-            MakeHermitian = @(f) WaveVortexTransform.MakeHermitian(f);
+            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
             
-            self.iOmega = MakeHermitian(sqrt(-1)*omega);
+            self.iOmega = makeHermitian(sqrt(-1)*omega);
 
 % 2022-06-04 We are just copying the j=1 matrices into the j=0 spot. In the
 % future, this can happen automatically if we use the free surface.
@@ -94,17 +111,17 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.A0N(1,1,:) = 1;
             
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* MakeHermitian(self.ApU);
-            self.ApV = (1./PP) .* MakeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* MakeHermitian(self.ApN);
+            self.ApU = (1./PP) .* makeHermitian(self.ApU);
+            self.ApV = (1./PP) .* makeHermitian(self.ApV);
+            self.ApN = (1./QQ) .* makeHermitian(self.ApN);
            
-            self.AmU = (1./PP) .* MakeHermitian(self.AmU);
-            self.AmV = (1./PP) .* MakeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* MakeHermitian(self.AmN);
+            self.AmU = (1./PP) .* makeHermitian(self.AmU);
+            self.AmV = (1./PP) .* makeHermitian(self.AmV);
+            self.AmN = (1./QQ) .* makeHermitian(self.AmN);
            
-            self.A0U = (1./PP) .* MakeHermitian(self.A0U);
-            self.A0V = (1./PP) .* MakeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* MakeHermitian(self.A0N);
+            self.A0U = (1./PP) .* makeHermitian(self.A0U);
+            self.A0V = (1./PP) .* makeHermitian(self.A0V);
+            self.A0N = (1./QQ) .* makeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -133,22 +150,34 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
   
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = PP .* MakeHermitian(self.UAp);
-            self.UAm = PP .* MakeHermitian(self.UAm);
-            self.UA0 = PP .* MakeHermitian(self.UA0);
+            self.UAp = PP .* makeHermitian(self.UAp);
+            self.UAm = PP .* makeHermitian(self.UAm);
+            self.UA0 = PP .* makeHermitian(self.UA0);
             
-            self.VAp = PP .* MakeHermitian(self.VAp);
-            self.VAm = PP .* MakeHermitian(self.VAm);
-            self.VA0 = PP .* MakeHermitian(self.VA0);
+            self.VAp = PP .* makeHermitian(self.VAp);
+            self.VAm = PP .* makeHermitian(self.VAm);
+            self.VA0 = PP .* makeHermitian(self.VA0);
             
-            self.WAp = QQ .* MakeHermitian(self.WAp);
-            self.WAm = QQ .* MakeHermitian(self.WAm);
+            self.WAp = QQ .* makeHermitian(self.WAp);
+            self.WAm = QQ .* makeHermitian(self.WAm);
             
-            self.NAp = QQ .* MakeHermitian(self.NAp);
-            self.NAm = QQ .* MakeHermitian(self.NAm);
-            self.NA0 = QQ .* MakeHermitian(self.NA0);
+            self.NAp = QQ .* makeHermitian(self.NAp);
+            self.NAm = QQ .* makeHermitian(self.NAm);
+            self.NA0 = QQ .* makeHermitian(self.NA0);
         end
           
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Nonlinear Flux
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function [Fp,Fm,F0] = nonlinearFlux(self)
+            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u);
+            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v);
+            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta);
+            [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -168,7 +197,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
         end
         function value = get.A0_PE_factor(self)
-            value = self.g*ones(self.Nx,self.Ny,self.nModes)/2;
+            value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;

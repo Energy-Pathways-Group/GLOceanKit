@@ -1,7 +1,7 @@
 function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
 % Returns the indices (and re-normalized values) of the wave mode
 % appropriate for the Ap, Am matrices. This works in conjunction with the
-% MakeHermitian function, which then sets the appropriate conjugate. At the
+% makeHermitian function, which then sets the appropriate conjugate. At the
 % moment we made the (perhaps bad) choice that the negative l components
 % are redundant, but to take advantage of the FFT, we may change this in
 % the future.

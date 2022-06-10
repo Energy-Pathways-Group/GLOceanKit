@@ -42,15 +42,16 @@ totalTests = 0;
 
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
+    rho0 = 1025;
     if 1 == 0
-        wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0,[],'hydrostatic',isHydrostatic);
+        wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude(iLat), isHydrostatic=isHydrostatic,rho0=rho0);
         rho0 = wavemodel.rho0;
         g = 9.81;
     else
         isHydrostatic = 1;
-        rho0 = 1025; g = 9.81;
+        g = 9.81;
         rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-        wavemodel = WaveVortexTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude(iLat), rho);
+        wavemodel = WaveVortexTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho,latitude=latitude(iLat),rho0=rho0);
     end
     
     % pull out some model constants for easy reference

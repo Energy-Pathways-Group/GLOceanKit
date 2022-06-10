@@ -38,7 +38,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
     minK = 0;
     maxK = max(max(max(abs(K))));
     minMode = 1;
-    maxMode = self.nModes-1; % j=0 mode shouldn't be used/counted
+    maxMode = self.Nj-1; % j=0 mode shouldn't be used/counted
 
     % Now override the defaults with user settings
     for iArg = 1:2:length(varargin)
@@ -74,8 +74,8 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
     end
 
     if excludeNyquist == 1
-        nyquistIndicesForK = sub2ind(size(Omega),repmat((ceil(self.Nx/2)+1)*ones(1,self.Ny),[1 self.nModes]),repmat(1:self.Ny,[1 self.nModes]),reshape(ones(1,self.Ny)'*(1:self.nModes),1,[]));
-        nyquistIndicesForL = sub2ind(size(Omega),repmat(1:self.Nx,[1 self.nModes]),repmat((ceil(self.Ny/2)+1)*ones(1,self.Nx),[1 self.nModes]),reshape(ones(1,self.Nx)'*(1:self.nModes),1,[]));
+        nyquistIndicesForK = sub2ind(size(Omega),repmat((ceil(self.Nx/2)+1)*ones(1,self.Ny),[1 self.Nj]),repmat(1:self.Ny,[1 self.Nj]),reshape(ones(1,self.Ny)'*(1:self.Nj),1,[]));
+        nyquistIndicesForL = sub2ind(size(Omega),repmat(1:self.Nx,[1 self.Nj]),repmat((ceil(self.Ny/2)+1)*ones(1,self.Nx),[1 self.Nj]),reshape(ones(1,self.Nx)'*(1:self.Nj),1,[]));
         nyquistIndices = union(nyquistIndicesForK,nyquistIndicesForL);
     end
 

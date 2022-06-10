@@ -8,7 +8,7 @@ function A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
     else
         nZ = 1;
     end
-    A = InternalWaveModel.MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+    A = InternalWaveModel.makeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
     if shouldExcludeNyquist == 1
         mask = ~InternalWaveModel.NyquistWavenumbers(A(:,:,1));
         A = mask.*A;

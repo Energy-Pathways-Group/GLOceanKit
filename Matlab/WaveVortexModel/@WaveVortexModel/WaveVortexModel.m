@@ -169,7 +169,28 @@ classdef WaveVortexModel < handle
                 if (shouldDoubleResolution == 0)
                     WaveVortexTransform = nctool.wvm;
                 else
-                    WaveVortexTransform = nctool.wvm.WaveVortexTransformWithResolution(2*[nctool.wvm.Nx,nctool.wvm.Ny,nctool.wvm.nModes]);
+                    WaveVortexTransform = nctool.wvm.WaveVortexTransformWithResolution(2*[nctool.wvm.Nk,nctool.wvm.Nl,nctool.wvm.Nj]);
+%                     if self.IsAntiAliased == 1
+%                         fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
+%                         AntiAliasMask = self.MaskForAliasedModes();
+%                         wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
+%                         wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
+%                         wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
+%                         wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0 | AntiAliasMask;
+%                         wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp | AntiAliasMask;
+%                         wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm | AntiAliasMask;
+% 
+%                         wvmX2.disallowNonlinearInteractionsWithAliasedModes();
+%                         wvmX2.freezeEnergyOfAliasedModes();
+%                     else
+%                         fprintf('You do NOT appear to be anti-aliased. Thus the interaction masks will be copied as-is.\n');
+%                         wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0;
+%                         wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp;
+%                         wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm;
+%                         wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0;
+%                         wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp;
+%                         wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm;
+%                     end
                 end
 
                 % if there's existing model output, use that output interval

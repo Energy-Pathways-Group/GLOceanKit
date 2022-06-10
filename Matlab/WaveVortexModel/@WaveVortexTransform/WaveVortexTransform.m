@@ -11,13 +11,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         X,Y,Z
 
-        Nx, Ny, Nz, nModes
+        Nx, Ny, Nz
         Nk, Nl, Nj % actual sizes in the spectral domain
         Lx, Ly, Lz
         f0, Nmax, rho0, latitude
         iOmega
-        rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
-        rhoFunction, N2Function, dLnN2Function % function handles
+
         
         ApU, ApV, ApN
         AmU, AmV, AmN
@@ -32,7 +31,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         PP, QQ
 
-        kIso
+        kRadial
         
         Ap, Am, A0
         
@@ -124,81 +123,62 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods
-        %function self = WaveVortexTransform(Lxyz, Nxyz, Nklj, rhobar, N2, dLnN2, latitude, rho0)
-        function self = WaveVortexTransform(dims, n, z, rhobar, N2, dLnN2, nModes, latitude, rho0)
-%             arguments
-%                 Lxyz (1,3) double {mustBePositive}
-%                 Nklj (1,3) double {mustBePositive}
-%                 rhobar function_handle
-%                 options.latitude (1,1) double = 33
-%                 options.rho0 (1,1) double {mustBePositive} = 1025
-%                 options.N2 function_handle
-%                 options.dLnN2 function_handle
-%             end
-            % rho0 is optional.
-            if length(dims) ~=3 || length(n) ~= 3
-                error('The dims and n variables must be of length 3. You need to specify x,y,z');
+        function self = WaveVortexTransform(Lxyz, Nxy, z, options)
+            arguments
+                Lxyz (1,3) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                z (:,1) double
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.Nj (1,1) double {mustBePositive} = length(z)
+                options.Nmax (1,1) double {mustBePositive} = Inf
             end
-                                    
-            self.Lx = dims(1);
-            self.Ly = dims(2);
-            self.Lz = dims(3);
             
-            self.Nx = n(1);
-            self.Ny = n(2);
-            self.Nz = n(3);
-            self.nModes = nModes;
+            % These first properties are directly set on initialization
+            self.Lx = Lxyz(1);
+            self.Ly = Lxyz(2);
+            self.Lz = Lxyz(3);
+            
+            self.Nx = Nxy(1);
+            self.Ny = Nxy(2);
+            self.z = z;
+
+            self.latitude = options.latitude;
+            self.rho0 = options.rho0;
+            self.Nj = options.Nj;
+            self.Nmax = options.Nmax;
+
+            % These remaining properties are all derived
+            self.Nz = length(z);
 
             dx = self.Lx/self.Nx;
-            dy = self.Ly/self.Ny;
-            
+            dy = self.Ly/self.Ny;            
             self.x = dx*(0:self.Nx-1)'; % periodic basis
             self.y = dy*(0:self.Ny-1)'; % periodic basis
-            self.z = z;
             
             dk = 1/self.Lx;          % fourier frequency
             self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
             dl = 1/self.Ly;          % fourier frequency
             self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-            self.j = (0:(nModes-1))';
+            self.j = (0:(self.Nj-1))';
 
             if self.halfK == 1
                 self.k( (self.Nx/2+2):end ) = [];
             end
 
-%             if self.shouldAntiAlias == 1
-%                 k_alias = 2*max(abs(self.k))/3;
-%                 self.k( abs(self.k) >= k_alias) = [];
-%                 self.l( abs(self.l) >= k_alias) = []; % yes, k, we want it isotropic
-%                 self.j( abs(self.j) >= 2*max(abs(self.j))/3) = [];
-%             end
-
             self.Nk = length(self.k);
             self.Nl = length(self.l);
-            self.Nj = length(self.j);
+            self.kRadial = self.radialWavenumberAxis;
 
-            self.kIso = self.IsotropicWavenumberAxis;
-
-            self.rhobar = rhobar;
-            self.N2 = N2;
-            self.dLnN2 = dLnN2;
-            
-            self.Nmax = sqrt(max(N2));
-            self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
-            self.latitude = latitude;
-            if ~exist('rho0','var')
-                self.rho0 = 1025;
-            else
-                self.rho0 = rho0;
-            end
+            self.f0 = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );            
 
             [X,Y,Z] = ndgrid(self.x,self.y,self.z);
             self.X = X; self.Y = Y; self.Z = Z;
             
             % Now set the initial conditions to zero
-            self.Ap = zeros(self.Nk,self.Nl,self.nModes);
-            self.Am = zeros(self.Nk,self.Nl,self.nModes);
-            self.A0 = zeros(self.Nk,self.Nl,self.nModes);  
+            self.Ap = zeros(self.Nk,self.Nl,self.Nj);
+            self.Am = zeros(self.Nk,self.Nl,self.Nj);
+            self.A0 = zeros(self.Nk,self.Nl,self.Nj);  
             
             self.clearVariableCache();
 
@@ -215,7 +195,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.transformDimensionWithName('k') = TransformDimension('k',length(self.k), 'radians/m', 'wavenumber-coordinate dimension in the x-direction');
             self.transformDimensionWithName('l') = TransformDimension('l',length(self.l), 'radians/m', 'wavenumber-coordinate dimension in the y-direction');
             self.transformDimensionWithName('j') = TransformDimension('j',length(self.j), 'mode number', 'vertical mode number');
-            self.transformDimensionWithName('kIso') = TransformDimension('kIso',length(self.kIso), 'radians/m', 'isotropic wavenumber dimension');
+            self.transformDimensionWithName('kRadial') = TransformDimension('kRadial',length(self.kRadial), 'radians/m', 'isotropic wavenumber dimension');
 
             self.addTransformAttribute(TransformAttribute('t0',{},'s', 'reference time of Ap, Am, A0'));
             self.addTransformAttribute(TransformAttribute('latitude',{},'degrees_north', 'latitude of the simulation'));
@@ -307,17 +287,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('p',outputVar,f));
 
-            outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addTransformOperation(TransformOperation('rho_prime',outputVar,f));
-
             outputVar = StateVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
             f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
-
-            outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
-            f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
-            self.addTransformOperation(TransformOperation('rho_total',outputVar,f));
 
             fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
@@ -428,37 +400,17 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function wvmX2 = waveVortexTransformWithResolution(self,m)
+        function wvmX2 = transformWithResolution(self,m)
             wvmX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
             wvmX2.t0 = self.t0;
-            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.nModes >= self.nModes
+            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
                 kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
                 lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
-                wvmX2.Ap(kIndices,lIndices,1:self.nModes) = self.Ap;
-                wvmX2.Am(kIndices,lIndices,1:self.nModes) = self.Am;
-                wvmX2.A0(kIndices,lIndices,1:self.nModes) = self.A0;
+                wvmX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
+                wvmX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
+                wvmX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
                 
-                if self.IsAntiAliased == 1
-                    fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
-                    AntiAliasMask = self.MaskForAliasedModes();
-                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
-                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
-                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
-                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0 | AntiAliasMask;
-                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp | AntiAliasMask;
-                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm | AntiAliasMask;
 
-                    wvmX2.disallowNonlinearInteractionsWithAliasedModes();
-                    wvmX2.freezeEnergyOfAliasedModes();
-                else
-                    fprintf('You do NOT appear to be anti-aliased. Thus the interaction masks will be copied as-is.\n');
-                    wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0;
-                    wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp;
-                    wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm;
-                    wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0;
-                    wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp;
-                    wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm;
-                end
             else
                 error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
             end
@@ -504,9 +456,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             self.PP = PP;
             self.QQ = QQ;
-            MakeHermitian = @(f) WaveVortexTransform.MakeHermitian(f);
+            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
             
-            self.iOmega = MakeHermitian(sqrt(-1)*omega);
+            self.iOmega = makeHermitian(sqrt(-1)*omega);
 
             if ~exist("PP","var") || isempty(PP)
                 PP = ones(size(K));
@@ -560,17 +512,17 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.A0N(1,1,1) = 0;
             
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* MakeHermitian(self.ApU);
-            self.ApV = (1./PP) .* MakeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* MakeHermitian(self.ApN);
+            self.ApU = (1./PP) .* makeHermitian(self.ApU);
+            self.ApV = (1./PP) .* makeHermitian(self.ApV);
+            self.ApN = (1./QQ) .* makeHermitian(self.ApN);
            
-            self.AmU = (1./PP) .* MakeHermitian(self.AmU);
-            self.AmV = (1./PP) .* MakeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* MakeHermitian(self.AmN);
+            self.AmU = (1./PP) .* makeHermitian(self.AmU);
+            self.AmV = (1./PP) .* makeHermitian(self.AmV);
+            self.AmN = (1./QQ) .* makeHermitian(self.AmN);
            
-            self.A0U = (1./PP) .* MakeHermitian(self.A0U);
-            self.A0V = (1./PP) .* MakeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* MakeHermitian(self.A0N);
+            self.A0U = (1./PP) .* makeHermitian(self.A0U);
+            self.A0V = (1./PP) .* makeHermitian(self.A0V);
+            self.A0N = (1./QQ) .* makeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -617,20 +569,20 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = PP .* MakeHermitian(self.UAp);
-            self.UAm = PP .* MakeHermitian(self.UAm);
-            self.UA0 = PP .* MakeHermitian(self.UA0);
+            self.UAp = PP .* makeHermitian(self.UAp);
+            self.UAm = PP .* makeHermitian(self.UAm);
+            self.UA0 = PP .* makeHermitian(self.UA0);
             
-            self.VAp = PP .* MakeHermitian(self.VAp);
-            self.VAm = PP .* MakeHermitian(self.VAm);
-            self.VA0 = PP .* MakeHermitian(self.VA0);
+            self.VAp = PP .* makeHermitian(self.VAp);
+            self.VAm = PP .* makeHermitian(self.VAm);
+            self.VA0 = PP .* makeHermitian(self.VA0);
             
-            self.WAp = QQ .* MakeHermitian(self.WAp);
-            self.WAm = QQ .* MakeHermitian(self.WAm);
+            self.WAp = QQ .* makeHermitian(self.WAp);
+            self.WAm = QQ .* makeHermitian(self.WAm);
             
-            self.NAp = QQ .* MakeHermitian(self.NAp);
-            self.NAm = QQ .* MakeHermitian(self.NAm);
-            self.NA0 = QQ .* MakeHermitian(self.NA0);
+            self.NAp = QQ .* makeHermitian(self.NAp);
+            self.NAm = QQ .* makeHermitian(self.NAm);
+            self.NA0 = QQ .* makeHermitian(self.NA0);
         end
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
@@ -982,25 +934,23 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods (Access=protected)
         % protected — Access from methods in class or subclasses
         varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin);
-
-        [Ap,Am,omega,k,l,kIndex,lIndex,jIndex,signIndex] = waveCoefficientsForWaveModes(self, kMode, lMode, jMode, phi, Amp, signs);
     end
 
     methods (Static)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initialize the a transform from file
-        wvt = waveVortexTransformFromFile(path,iTime)
+        wvt = transformFromFile(path,iTime)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Check if the matrix is Hermitian. Report errors.
-        A = CheckHermitian(A)
+        A = checkHermitian(A)
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Forces a 3D matrix to be Hermitian, except at k=l=0
-        A = MakeHermitian(A)
+        A = makeHermitian(A)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

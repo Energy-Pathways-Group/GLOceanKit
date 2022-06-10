@@ -50,20 +50,20 @@ signs = [1; 1; 1; -1];
 for iMode=1:length(kModes)
     if (signs(iMode) == 1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
         boussinesq.ApU( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.ApU = InternalWaveModel.MakeHermitian(boussinesq.ApU);
+        boussinesq.ApU = InternalWaveModel.makeHermitian(boussinesq.ApU);
         boussinesq.ApV( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.ApV = InternalWaveModel.MakeHermitian(boussinesq.ApV);
+        boussinesq.ApV = InternalWaveModel.makeHermitian(boussinesq.ApV);
         boussinesq.ApN( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.ApN = InternalWaveModel.MakeHermitian(boussinesq.ApN);
+        boussinesq.ApN = InternalWaveModel.makeHermitian(boussinesq.ApN);
     end
     
     if (signs(iMode) == -1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )
         boussinesq.AmU( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.AmU = InternalWaveModel.MakeHermitian(boussinesq.AmU);
+        boussinesq.AmU = InternalWaveModel.makeHermitian(boussinesq.AmU);
         boussinesq.AmV( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.AmV = InternalWaveModel.MakeHermitian(boussinesq.AmV);
+        boussinesq.AmV = InternalWaveModel.makeHermitian(boussinesq.AmV);
         boussinesq.AmN( kModes(iMode)+1,lModes(iMode)+1,jModes(iMode)+1) = 0;
-        boussinesq.AmN = InternalWaveModel.MakeHermitian(boussinesq.AmN);
+        boussinesq.AmN = InternalWaveModel.makeHermitian(boussinesq.AmN);
     end
 end
 

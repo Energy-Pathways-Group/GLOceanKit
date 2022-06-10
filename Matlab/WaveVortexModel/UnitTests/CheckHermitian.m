@@ -1,4 +1,4 @@
-function A = CheckHermitian(A)
+function A = checkHermitian(A)
 M = size(A,1);
 N = size(A,2);
 K = size(A,3);

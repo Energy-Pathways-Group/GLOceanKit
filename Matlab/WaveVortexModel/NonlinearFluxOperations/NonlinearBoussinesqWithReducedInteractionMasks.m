@@ -18,14 +18,14 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             self@NonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
 
             % Allow all nonlinear interactions
-            self.IMA0 = ones(wvt.Nk,wvt.Nl,wvt.nModes);
-            self.IMAp = ones(wvt.Nk,wvt.Nl,wvt.nModes);
-            self.IMAm = ones(wvt.Nk,wvt.Nl,wvt.nModes);
+            self.IMA0 = ones(wvt.Nk,wvt.Nl,wvt.Nj);
+            self.IMAp = ones(wvt.Nk,wvt.Nl,wvt.Nj);
+            self.IMAm = ones(wvt.Nk,wvt.Nl,wvt.Nj);
 
             % Allow energy fluxes at all modes
-            self.EMA0 = ones(wvt.Nk,wvt.Nl,wvt.nModes);
-            self.EMAp = ones(wvt.Nk,wvt.Nl,wvt.nModes);
-            self.EMAm = ones(wvt.Nk,wvt.Nl,wvt.nModes);
+            self.EMA0 = ones(wvt.Nk,wvt.Nl,wvt.Nj);
+            self.EMAp = ones(wvt.Nk,wvt.Nl,wvt.Nj);
+            self.EMAm = ones(wvt.Nk,wvt.Nl,wvt.Nj);
 
             if self.shouldAntiAlias == 1
                 self.disallowNonlinearInteractionsWithAliasedModes();
@@ -160,8 +160,8 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         	self.EMAp(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = 0;
 			self.EMAm(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = 0;
 
-			self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
-			self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
+			self.EMAp = WaveVortexTransform.makeHermitian(self.EMAp);
+			self.EMAm = WaveVortexTransform.makeHermitian(self.EMAm);
 
 			[omega,k,l] = self.setWaveModes(kMode, lMode, jMode, phi, u, signs);
         end

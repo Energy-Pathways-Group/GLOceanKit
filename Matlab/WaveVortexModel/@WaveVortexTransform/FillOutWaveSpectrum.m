@@ -22,7 +22,7 @@ function FillOutWaveSpectrum(self,maxTimeGap)
     omegaExt = [];
     jExt = [];
     Omega = self.Omega;
-    for iMode = 1:(self.nModes-1)
+    for iMode = 1:(self.Nj-1)
         omegas = sort(reshape(abs(Omega(:,:,iMode+1)),[],1));
 
         % First fill in the lower triangle

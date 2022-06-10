@@ -1,4 +1,4 @@
-function wvt = waveVortexTransformFromFile(path,iTime)
+function wvt = transformFromFile(path,iTime)
     arguments
         path char {mustBeFile}
         iTime (1,1) double {mustBePositive} = 1
@@ -26,7 +26,7 @@ function wvt = waveVortexTransformFromFile(path,iTime)
         N0 = ncfile.readVariables('N0');
         wvt = WaveVortexTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],latitude,N0,rho0);
     elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformHydrostatic')
-        nModes = length(ncfile.readVariables('j'));
+        Nj = length(ncfile.readVariables('j'));
         [filepath,name,~] = fileparts(path);
         if isempty(filepath)
             matFilePath = sprintf('%s.mat',name);
@@ -37,7 +37,7 @@ function wvt = waveVortexTransformFromFile(path,iTime)
             error('The .mat sidecar file is missing, which is necessary for the hydrostatic transformations.')
         end
         matFile = load(matFilePath);
-        wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny nModes], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
+        wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny Nj], latitude, matFile.rhoFunction, 'N2func', matFile.N2Function, 'dLnN2func', matFile.dLnN2Function, 'rho0', rho0);
     else
         error("stratification not supported.");
     end

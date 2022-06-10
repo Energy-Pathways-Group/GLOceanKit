@@ -3,8 +3,8 @@ function [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, u, signs)
 self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = ApAmp(abs(ApAmp)>0);
 self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = AmAmp(abs(AmAmp)>0);
 
-self.Ap = WaveVortexTransform.MakeHermitian(self.Ap);
-self.Am = WaveVortexTransform.MakeHermitian(self.Am);
+self.Ap = WaveVortexTransform.makeHermitian(self.Ap);
+self.Am = WaveVortexTransform.makeHermitian(self.Am);
 
 % When we hand back the actual frequency and wavenumbers, but we honor the
 % users original intent and the match the signs they provided.
