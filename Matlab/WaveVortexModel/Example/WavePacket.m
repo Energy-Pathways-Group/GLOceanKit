@@ -48,7 +48,7 @@ y0 = Ly/2;
 z0 = -Lz/2;
 eta0 = 100*exp( -((X-x0).^2 + (Y-y0).^2)/(Lh)^2  - ((Z-z0).^2)/(Lv)^2 ).*sin(X/(Lh/32)+Z/(Lv/16));
 
-eta0_bar = wvm.TransformFromSpatialDomainWithG(eta0);
+eta0_bar = wvm.transformFromSpatialDomainWithG(eta0);
 A_plus = eta0_bar ./ wvm.NAp;
 A_plus(isnan(A_plus)) = 0;
 A_plus(isinf(A_plus)) = 0;
@@ -87,8 +87,9 @@ pcolor(wvm.x/1000,wvm.y/1000,squeeze(dispvar(:,:,floor(Nz/2)))'),shading interp,
 return;
 
 U = .2;
-% boussinesq.InitializeWithPlaneWave(0,0,1,U,1); 
-period = wvm.InitializeWithPlaneWave(10,0,1,U,1);  
+% boussinesq.setWaveModes(0,0,1,U,1); 
+[omega,k,l] = wvm.initWithWaveModes(10, 0, 1, 0, U, 1)
+period = 2*pi/omega; 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

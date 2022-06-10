@@ -66,7 +66,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             self.rhoFunction = rhoFunction;
             self.N2Function = N2Function;
             
-            self.BuildTransformationMatrices();
+            self.buildTransformationMatrices();
             internalModes = InternalModesConstantStratification([N0 self.rho0], [-dims(3) 0],z,latitude);
             self.offgridModes = WaveVortexModelOffGrid(internalModes,latitude, N2Function,self.isHydrostatic);
             
@@ -101,7 +101,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             end
         end
                 
-        function self = BuildTransformationMatrices(self)
+        function self = buildTransformationMatrices(self)
 
             % We renormalization the transformation matrices to directly
             % incorporate normalization of the modes and the DFT.          
@@ -128,7 +128,20 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             PP = self.F;
             QQ = self.G;
 
-            BuildTransformationMatrices@WaveVortexTransform(self,PP,QQ);
+            buildTransformationMatrices@WaveVortexTransform(self,PP,QQ);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Nonlinear Flux
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function [Fp,Fm,F0] = nonlinearFlux(self)
+            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u)   + self.w .* self.diffZF(self.u);
+            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v)   + self.w .* self.diffZF(self.v);
+            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta) + self.w .* self.diffZG(self.eta);
+            [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,63 +226,63 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             
             tic;
             for i=1:N
-                U = self.TransformToSpatialDomainWithF_MM(Ubar);
+                U = self.transformToSpatialDomainWithF_MM(Ubar);
             end
             MM(1) = toc;
             tic;
             for i=1:N
-                ETA = self.TransformToSpatialDomainWithG_MM(Nbar);
+                ETA = self.transformToSpatialDomainWithG_MM(Nbar);
             end
             MM(2) = toc;
             tic;
             for i=1:N
-                self.TransformFromSpatialDomainWithF_MM(U);
+                self.transformFromSpatialDomainWithF_MM(U);
             end
             MM(3) = toc;
             tic;
             for i=1:N
-                self.TransformFromSpatialDomainWithG_MM(ETA);
+                self.transformFromSpatialDomainWithG_MM(ETA);
             end
             MM(4) = toc;
             tic;
             for i=1:N
-                self.TransformToSpatialDomainWithFAllDerivatives_MM(Ubar);
+                self.transformToSpatialDomainWithFAllDerivatives_MM(Ubar);
             end
             MM(5) = toc;
             tic;
             for i=1:N
-                self.TransformToSpatialDomainWithGAllDerivatives_MM(Nbar);
+                self.transformToSpatialDomainWithGAllDerivatives_MM(Nbar);
             end
             MM(6) = toc;
 
             tic;
             for i=1:N
-                U = self.TransformToSpatialDomainWithF_FFT(Ubar);
+                U = self.transformToSpatialDomainWithF_FFT(Ubar);
             end
             FF(1) = toc;
             tic;
             for i=1:N
-                ETA = self.TransformToSpatialDomainWithG_FFT(Nbar);
+                ETA = self.transformToSpatialDomainWithG_FFT(Nbar);
             end
             FF(2) = toc;
             tic;
             for i=1:N
-                self.TransformFromSpatialDomainWithF_FFT(U);
+                self.transformFromSpatialDomainWithF_FFT(U);
             end
             FF(3) = toc;
             tic;
             for i=1:N
-                self.TransformFromSpatialDomainWithG_FFT(ETA);
+                self.transformFromSpatialDomainWithG_FFT(ETA);
             end
             FF(4) = toc;
             tic;
             for i=1:N
-                self.TransformToSpatialDomainWithFAllDerivatives_FFT(Ubar);
+                self.transformToSpatialDomainWithFAllDerivatives_FFT(Ubar);
             end
             FF(5) = toc;
             tic;
             for i=1:N
-                self.TransformToSpatialDomainWithGAllDerivatives_FFT(Nbar);
+                self.transformToSpatialDomainWithGAllDerivatives_FFT(Nbar);
             end
             FF(6) = toc;
             
@@ -289,28 +302,28 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         % Transformations to and from the spatial domain, using FFTs
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF(self, u)     
-            u_bar = self.TransformFromSpatialDomainWithF_MM(u);
+        function u_bar = transformFromSpatialDomainWithF(self, u)     
+            u_bar = self.transformFromSpatialDomainWithF_MM(u);
         end
         
-        function w_bar = TransformFromSpatialDomainWithG(self, w)
-            w_bar = self.TransformFromSpatialDomainWithG_MM(w);
+        function w_bar = transformFromSpatialDomainWithG(self, w)
+            w_bar = self.transformFromSpatialDomainWithG_MM(w);
         end
         
-        function u = TransformToSpatialDomainWithF(self, u_bar)
-            u = self.TransformToSpatialDomainWithF_MM(u_bar);
+        function u = transformToSpatialDomainWithF(self, u_bar)
+            u = self.transformToSpatialDomainWithF_MM(u_bar);
         end  
                 
-        function w = TransformToSpatialDomainWithG(self, w_bar )
-            w = self.TransformToSpatialDomainWithG_MM(w_bar );
+        function w = transformToSpatialDomainWithG(self, w_bar )
+            w = self.transformToSpatialDomainWithG_MM(w_bar );
         end
         
-        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
-            [u,ux,uy,uz] = self.TransformToSpatialDomainWithFAllDerivatives_MM(u_bar);
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            [u,ux,uy,uz] = self.transformToSpatialDomainWithFAllDerivatives_MM(u_bar);
         end  
         
-        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
-            [w,wx,wy,wz] = self.TransformToSpatialDomainWithGAllDerivatives_MM(w_bar );
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(w_bar );
         end
 
 
@@ -320,7 +333,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         % multiplication (MM)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF_MM(self, u)
+        function u_bar = transformFromSpatialDomainWithF_MM(self, u)
             u = permute(u,[3 1 2]); % keep adjacent in memory
             u = reshape(u,self.Nz,[]);
             u_bar = self.DCT*u;
@@ -330,7 +343,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
         
-        function w_bar = TransformFromSpatialDomainWithG_MM(self, w)
+        function w_bar = transformFromSpatialDomainWithG_MM(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
             w = permute(w,[3 1 2]); % keep adjacent in memory
@@ -341,7 +354,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
         
-        function u = TransformToSpatialDomainWithF_MM(self, u_bar)
+        function u = transformToSpatialDomainWithF_MM(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
@@ -352,7 +365,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             u = permute(u,[2 3 1]);
         end  
                 
-        function w = TransformToSpatialDomainWithG_MM(self, w_bar )
+        function w = transformToSpatialDomainWithG_MM(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
@@ -363,7 +376,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w = permute(w,[2 3 1]);        
         end
         
-        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives_MM(self, u_bar)
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives_MM(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
@@ -384,7 +397,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             uz = permute(uz,[2 3 1]);
         end  
         
-        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives_MM(self, w_bar )
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives_MM(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
@@ -411,12 +424,12 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         % Transformations to and from the spatial domain, using FFTs
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF_FFT(self, u)     
+        function u_bar = transformFromSpatialDomainWithF_FFT(self, u)     
             u = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
             u_bar = fft(fft(u(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
         end
         
-        function w_bar = TransformFromSpatialDomainWithG_FFT(self, w)
+        function w_bar = transformFromSpatialDomainWithG_FFT(self, w)
             % df = 1/(2*(Nz-1)*dz)
             % nyquist = (Nz-2)*df
             w = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
@@ -424,7 +437,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
         end
         
-        function u = TransformToSpatialDomainWithF_FFT(self, u_bar)
+        function u = transformToSpatialDomainWithF_FFT(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');    
@@ -435,7 +448,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             u = u(:,:,1:self.Nz)*(2*self.Nz-2)*0.5*self.Nx*self.Ny; % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end  
                 
-        function w = TransformToSpatialDomainWithG_FFT(self, w_bar )
+        function w = transformToSpatialDomainWithG_FFT(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
@@ -446,7 +459,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             w = w(:,:,1:self.Nz)*(2*self.Nz-2)*0.5*self.Nx*self.Ny; % We do not incorporate this coefficient into UAp, etc, so that the transforms remain inverses
         end
         
-        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives_FFT(self, u_bar)
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives_FFT(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*0.5*self.Nx*self.Ny;    
@@ -468,7 +481,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             uz = uz(:,:,1:self.Nz)*(2*self.Nz-2);
         end  
         
-        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives_FFT(self, w_bar )
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives_FFT(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*0.5*self.Nx*self.Ny;
@@ -496,7 +509,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             if j0 == 0
                 ratio = 1;
             else

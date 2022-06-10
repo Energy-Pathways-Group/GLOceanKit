@@ -20,7 +20,7 @@ shouldUseGMSpectrum = 0;
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 if shouldUseGMSpectrum == 1
-    wvm.InitializeWithGMSpectrum(1.0);
+    wvm.initWithGMSpectrum(1.0);
     maxTime = 60*60; %2*pi/wavemodel.f0;
     period = 2*pi/wvm.N0;
     [u,v] = wvm.VelocityFieldAtTime(0.0);
@@ -35,7 +35,7 @@ else
     alpha = atan2(l0,k0);
     k = 2*pi*sqrt(k0^2 + l0^2)/Lx;
     
-    period = wvm.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+    period = wvm.initWithWaveModes(k0,l0,j0,phi,U,sign);
     maxTime = period;
 end
 
@@ -106,11 +106,11 @@ z45 = p45(:,3);
 
 % Second, let's do the adaptive time-stepping integrator
 if shouldUseGMSpectrum == 1
-    [omega, alpha, mode, phi, A] = wvm.WaveCoefficientsFromGriddedWaves();
-    wvm.InitializeWithPlaneWave(1,1,1,0.0,1);
+    [omega, alpha, mode, phi, A] = wvm.waveModesFromWaveCoefficients();
+    wvm.initWithWaveModes(1,1,1,0,0.0,1);
     wvm.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);
 else
-    wvm.InitializeWithPlaneWave(1,1,1,0.0,1);
+    wvm.initWithWaveModes(1,1,1,0,0.0,1);
     k0 = k*cos(alpha);
     l0 = k*sin(alpha);
     omega = wvm.SetExternalWavesWithWavenumbers(k0,l0,j0,phi,U,Normalization.uMax);

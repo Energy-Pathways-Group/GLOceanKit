@@ -27,8 +27,6 @@ N0 = (5.2e-3)/2; % Choose your stratification 7.6001e-04
 boussinesq = Boussinesq3DConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 U = .2;
-% boussinesq.InitializeWithPlaneWave(0,0,1,U,1); 
-% boussinesq.InitializeWithPlaneWave(2,2,1,U,1);  
 
 % Starts to grow exponentially in energy at around 20 days, at 25 lat
 % kModes = [0; 0; 0];
@@ -47,7 +45,7 @@ phi = [0; 0; 0; 0];
 U = [0.2; 0.05; 0.05; 0.08];
 signs = [1; 1; 1; -1];
 
-[omega,k,l] = boussinesq.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
+[omega,k,l] = boussinesq.addWaveModes(kModes,lModes,jModes,phi,U,signs);
 
 for iMode=1:length(kModes)
     if (signs(iMode) == 1 || (kModes(iMode) == 0 && lModes(iMode) == 0) )

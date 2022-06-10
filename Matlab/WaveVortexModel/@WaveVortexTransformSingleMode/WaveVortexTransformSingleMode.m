@@ -28,7 +28,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             % Includes the extra factors from the FFTs.
             PP = self.Nx*self.Ny*ones(self.Nk,self.Nl);
             QQ = self.Nx*self.Ny*ones(self.Nk,self.Nl);
-            self.BuildTransformationMatrices(PP,QQ);
+            self.buildTransformationMatrices(PP,QQ);
         end
 
 
@@ -37,7 +37,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.SetGeostrophicStreamfunction(psi);
         end
 
-        function self = BuildTransformationMatrices(self,PP,QQ)
+        function self = buildTransformationMatrices(self,PP,QQ)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
@@ -179,29 +179,29 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         % Transformations to and from the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF(self, u)
+        function u_bar = transformFromSpatialDomainWithF(self, u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2);
         end
         
-        function w_bar = TransformFromSpatialDomainWithG(self, w)
+        function w_bar = transformFromSpatialDomainWithG(self, w)
             w_bar = fft(fft(w,self.Nx,1),self.Ny,2);            
         end
         
-        function u = TransformToSpatialDomainWithF(self, u_bar)
+        function u = transformToSpatialDomainWithF(self, u_bar)
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
                 
-        function w = TransformToSpatialDomainWithG(self, w_bar )
+        function w = transformToSpatialDomainWithG(self, w_bar )
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
         
-        function [u,ux,uy] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+        function [u,ux,uy] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
             uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
         end  
         
-        function [w,wx,wy] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+        function [w,wx,wy] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
             wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
@@ -213,7 +213,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
         end   
         

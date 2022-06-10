@@ -527,8 +527,8 @@ classdef WaveVortexModel < handle
 
             if ~isempty(self.tracer)
                 for i=1:length(self.tracer)
-                    phibar = self.wvt.TransformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.TransformToSpatialDomainWithFAllDerivatives(phibar);
+                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
                     n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
                 end
             end

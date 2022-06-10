@@ -1,4 +1,4 @@
-function [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self)
+function [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
 
     % This returns the properties of the waves being used in the
     % gridded simulation, as their properly normalized individual

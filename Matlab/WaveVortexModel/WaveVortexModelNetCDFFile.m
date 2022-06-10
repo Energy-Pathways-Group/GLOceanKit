@@ -299,7 +299,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
                 else
                     [u,v,eta] = self.readVariables('u','v','eta');
                 end
-                [self.wvt.Ap,self.wvt.Am,self.wvt.A0] = self.wvt.TransformUVEtaToWaveVortex(u,v,eta,self.currentTime);
+                [self.wvt.Ap,self.wvt.Am,self.wvt.A0] = self.wvt.transformUVEtaToWaveVortex(u,v,eta,self.currentTime);
             else
                 error('Unable to find A_{+,-,0} or (u,v,\eta).')
             end

@@ -62,11 +62,11 @@ j0 = 20; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 
-period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+period = wavemodel.setWaveModes(k0,l0,j0,U,sign);
 ```
 or a full spectrum of waves,
 ```matlab
-wavemodel.InitializeWithGMSpectrum(1.0);
+wavemodel.initWithGMSpectrum(1.0);
 ```
 
 To access the velocity field or density field, you can simply request their value at any time,
@@ -93,20 +93,20 @@ Gridded wave modes
 
 The gridded wave modes by individually added or set by specifying the mode number and amplitude,
 ```matlab
-[omega,k,l] = wavemodel.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
-[omega,k,l] = wavemodel.SetGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.addWaveModes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.setWaveModes(kMode, lMode, jMode, phi, Amp, signs);
 ```
 where  `-Nx/2 < kMode < Nx/2` and `-Ny/2 < lMode < Ny/2` are integers specifying which modes you want to initialize. The `Set` method will remove all gridded modes and then add the list you give it, and the `Add` method will append these modes to the existing list.
 
 Equivalently, you can call
 ```matlab
-period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+period = wavemodel.setWaveModes(k0,l0,j0,U,sign);
 ```
-which just calls `SetGriddedWavesWithWavemodes` with a phase of 0.
+which just calls `setWaveModes` with a phase of 0.
 
 The clear the gridded wave modes, call
 ```matlab
-wavemodel.RemoveAllGriddedWaves();
+wavemodel.removeAllWaves();
 ```
 and they will be set to 0 amplitude.
 
@@ -134,7 +134,7 @@ The amplitude of the waves is set with respect to a given norm of the internal m
 
 You can extract the nonzero *gridded* wave components, and feed those directly into the external wave modes. The amplitude in this case uses `Normalization.kConstant`. This can be done with two lines of code,
 ```matlab
-[omega, alpha, mode, phi, A, norm] = wavemodel.WaveCoefficientsFromGriddedWaves();
+[omega, alpha, mode, phi, A, norm] = wavemodel.waveModesFromWaveCoefficients();
 wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
 ```
 but of course now have you external waves with the exact same values as the gridded waves, which isn't likely very helpful.
@@ -222,7 +222,7 @@ Initialization
 
   The model can be initialized with a Garrett-Munk spectrum by calling,
   ```matlab
-  wavemodel.InitializeWithGMSpectrum(1.0);
+  wavemodel.initWithGMSpectrum(1.0);
   ```
 where the only required argument indicates the GM reference level. This function also takes the following name/value pairs.
 

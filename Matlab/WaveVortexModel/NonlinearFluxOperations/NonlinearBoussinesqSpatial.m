@@ -15,7 +15,7 @@ classdef NonlinearBoussinesqSpatial < NonlinearFluxOperation
             vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);
             nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* wvt.dLnN2);
 
-            [varargout{:}] = wvt.TransformUVEtaToWaveVortex(uNL,vNL,nNL,t);
+            [varargout{:}] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,wvt.t);
         end
     end
 

@@ -25,12 +25,12 @@ end
     if strcmp(options.InterpolationMethod,"exact")
         if isempty(self.ongridModes)
             self.ongridModes = WaveVortexModelOffGrid(self.offgridModes.internalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
-            [omega, alpha, ~, ~, mode, phi, A, norm] = self.WaveCoefficientsFromGriddedWaves();
+            [omega, alpha, ~, ~, mode, phi, A, norm] = self.waveModesFromWaveCoefficients();
             self.ongridModes.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
         end
         [varargout{:}] = self.ongridModes.ExternalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
     else
-        [varargout{:}] = self.StateVariables(variableNames{:});
+        [varargout{:}] = self.stateVariables(variableNames{:});
         [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
     end
 

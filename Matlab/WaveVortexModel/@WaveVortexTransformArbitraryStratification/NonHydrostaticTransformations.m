@@ -3,7 +3,7 @@
         % Transformations to and from the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = TransformFromSpatialDomainWithF(self, u)
+        function u_bar = transformFromSpatialDomainWithF(self, u)
             % hydrostatic modes commute with the DFT
 %             u = permute(u,[3 1 2]); % keep adjacent in memory
 %             u = reshape(u,self.Nz,[]);
@@ -20,7 +20,7 @@
             u_bar = permute(u_bar,[2 3 1]);
         end
         
-        function w_bar = TransformFromSpatialDomainWithG(self, w)
+        function w_bar = transformFromSpatialDomainWithG(self, w)
             % hydrostatic modes commute with the DFT
 %             w = permute(w,[3 1 2]); % keep adjacent in memory
 %             w = reshape(w,self.Nz,[]);
@@ -38,7 +38,7 @@
             
         end
         
-        function u = TransformToSpatialDomainWithF(self, u_bar)
+        function u = transformToSpatialDomainWithF(self, u_bar)
             % hydrostatic modes commute with the DFT
 %             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
 %             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -55,7 +55,7 @@
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
                 
-        function w = TransformToSpatialDomainWithG(self, w_bar )
+        function w = transformToSpatialDomainWithG(self, w_bar )
             % hydrostatic modes commute with the DFT
 %             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
 %             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
@@ -71,7 +71,7 @@
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
         
-        function [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
 %             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
 % 
 %             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -108,7 +108,7 @@
             uz = (-shiftdim(self.N2,-2)/self.g).*uz;
         end  
         
-        function [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
 %             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
 % 
 %             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory

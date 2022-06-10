@@ -14,10 +14,10 @@ Nbar = ApmUMask.*(self.NAp.*Ap + self.NAm.*Am) + A0UMask.*self.NA0.*A0;
 
 % Finishing applying S, but also compute derivatives at the
 % same time
-U = self.TransformToSpatialDomainWithF(Ubar);
-V = self.TransformToSpatialDomainWithF(Vbar);
-W = self.TransformToSpatialDomainWithG(Wbar);
-ETA = self.TransformToSpatialDomainWithG(Nbar);
+U = self.transformToSpatialDomainWithF(Ubar);
+V = self.transformToSpatialDomainWithF(Vbar);
+W = self.transformToSpatialDomainWithG(Wbar);
+ETA = self.transformToSpatialDomainWithG(Nbar);
 
 % Finishing applying S, but also compute derivatives at the
 % same time
@@ -25,9 +25,9 @@ ETA = self.TransformToSpatialDomainWithG(Nbar);
 Uxbar = ApmUxMask.*(self.UAp.*Ap + self.UAm.*Am) + A0UxMask.*self.UA0.*A0;
 Vxbar = ApmUxMask.*(self.VAp.*Ap + self.VAm.*Am) + A0UxMask.*self.VA0.*A0;
 Nxbar = ApmUxMask.*(self.NAp.*Ap + self.NAm.*Am) + A0UxMask.*self.NA0.*A0;
-[~,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Uxbar);
-[~,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vxbar);
-[~,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nxbar);
+[~,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Uxbar);
+[~,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Vxbar);
+[~,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Nxbar);
 
 % Compute the nonlinear terms in the spatial domain
 % (pseudospectral!)
@@ -36,9 +36,9 @@ vNL = -U.*Vx - V.*Vy - W.*Vz;
 nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
 
 % Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = self.TransformFromSpatialDomainWithF(uNL);
-vNLbar = self.TransformFromSpatialDomainWithF(vNL);
-nNLbar = self.TransformFromSpatialDomainWithG(nNL);
+uNLbar = self.transformFromSpatialDomainWithF(uNL);
+vNLbar = self.transformFromSpatialDomainWithF(vNL);
+nNLbar = self.transformFromSpatialDomainWithG(nNL);
 
 Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
 Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;

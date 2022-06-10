@@ -72,7 +72,7 @@ function wvt = InitFromFile(path,iTime)
         else
             [u,v,eta] = ncfile.readVariables('u','v','eta');
         end
-        [wvt.Ap,wvt.Am,wvt.A0] = wvt.TransformUVEtaToWaveVortex(u,v,eta,self.currentTime);
+        [wvt.Ap,wvt.Am,wvt.A0] = wvt.transformUVEtaToWaveVortex(u,v,eta,self.currentTime);
         fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WaveVortexTransform'));
     else
         fprintf('%s initialized without data.\n',ncfile.attributes('WaveVortexTransform'));

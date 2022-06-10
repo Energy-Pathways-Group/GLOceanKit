@@ -71,15 +71,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
     
     methods (Abstract)
-       u_bar = TransformFromSpatialDomainWithF(self, u)
-       w_bar = TransformFromSpatialDomainWithG(self, w)
-       u = TransformToSpatialDomainWithF(self, u_bar)
-       w = TransformToSpatialDomainWithG(self, w_bar )
-       [u,ux,uy,uz] = TransformToSpatialDomainWithFAllDerivatives(self, u_bar)
-       [w,wx,wy,wz] = TransformToSpatialDomainWithGAllDerivatives(self, w_bar )
+       u_bar = transformFromSpatialDomainWithF(self, u)
+       w_bar = transformFromSpatialDomainWithG(self, w)
+       u = transformToSpatialDomainWithF(self, u_bar)
+       w = transformToSpatialDomainWithG(self, w_bar )
+       [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
+       [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+       [Fp,Fm,F0] = nonlinearFlux(self);
        
        % Needed to add and remove internal waves from the model
-       ratio = UmaxGNormRatioForWave(self,k0, l0, j0)
+       ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
     end
     
     properties (Constant)
@@ -96,15 +97,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
                 varargout=cell(1,modelOp.nVarOut);
                 if length(indexOp) == 1
-                    [varargout{:}] = self.PerformTransformOperation(indexOp(1).Name);
+                    [varargout{:}] = self.performTransformOperation(indexOp(1).Name);
                 else
                     error('No indices allowed!!!')
-%                     [varargout{:}] = self.PerformTransformOperation(indexOp(1).Name,indexOp(2).Indices{:});
+%                     [varargout{:}] = self.performTransformOperation(indexOp(1).Name,indexOp(2).Indices{:});
                 end
             else
                 % User requested a variable that we only have an indirect
                 % way of computing.
-                varargout{1} = self.StateVariables(indexOp(1).Name);
+                varargout{1} = self.stateVariables(indexOp(1).Name);
             end
         end
 
@@ -286,32 +287,32 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
             outputVar(3).isComplex = 1;
 
-            f = @(wvt) self.WaveVortexCoefficientsAtTimeT();
+            f = @(wvt) self.waveVortexCoefficientsAtTimeT();
             transformOp = TransformOperation('ApAmA0',outputVar,f);
             self.addTransformOperation(transformOp);
 
             outputVar = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('u',outputVar,f));
 
             outputVar = StateVariable('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('v',outputVar,f));
 
             outputVar = StateVariable('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
-            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
+            f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
             self.addTransformOperation(TransformOperation('w',outputVar,f));
 
             outputVar = StateVariable('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
-            f = @(wvt) wvt.rho0*wvt.g*wvt.TransformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('p',outputVar,f));
 
             outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('rho_prime',outputVar,f));
 
             outputVar = StateVariable('eta',{'x','y','z'},'m', 'isopycnal deviation');
-            f = @(wvt) wvt.TransformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
 
             outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
@@ -321,7 +322,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
-            self.addTransformOperation(TransformOperation('NonlinearFlux',fluxVar,@(wvt) wvt.NonlinearFlux_));
+            self.addTransformOperation(TransformOperation('nonlinearFlux',fluxVar,@(wvt) wvt.nonlinearFlux));
         end
 
         function addTransformAttribute(self,transformAtt)
@@ -351,7 +352,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function [varargout] = StateVariables(self, varargin)
+        function [varargout] = stateVariables(self, varargin)
             varargout = cell(size(varargin));
 
             didFetchAll = 0;
@@ -361,7 +362,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                 for iVar=1:length(varargout)
                     if isempty(varargout{iVar})
                         modelVar = self.stateVariableWithName(varargin{iVar});
-                        self.PerformTransformOperation(modelVar.modelOp.name);
+                        self.performTransformOperation(modelVar.modelOp.name);
                         continue;
                     end
                     didFetchAll = 1;
@@ -369,7 +370,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function varargout = PerformTransformOperation(self,opName,varargin)
+        function varargout = performTransformOperation(self,opName,varargin)
             modelOp = self.transformOperationWithName(opName);
             varNames = cell(1,modelOp.nVarOut);
             varargout = cell(1,modelOp.nVarOut);
@@ -482,10 +483,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function rebuildTransformationMatrices(self)
-            self.BuildTransformationMatrices(self.PP,self.QQ);
+            self.buildTransformationMatrices(self.PP,self.QQ);
         end
 
-        function self = BuildTransformationMatrices(self,PP,QQ)
+        function self = buildTransformationMatrices(self,PP,QQ)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
@@ -632,11 +633,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.NA0 = QQ .* MakeHermitian(self.NA0);
         end
           
-        function [Ap,Am,A0] = TransformUVEtaToWaveVortex(self,U,V,N,t)
+        function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
             % This is the 'S^{-1}' operator (C5) in the manuscript
-            Ubar = self.TransformFromSpatialDomainWithF(U);
-            Vbar = self.TransformFromSpatialDomainWithF(V);
-            Nbar = self.TransformFromSpatialDomainWithG(N);
+            Ubar = self.transformFromSpatialDomainWithF(U);
+            Vbar = self.transformFromSpatialDomainWithF(V);
+            Nbar = self.transformFromSpatialDomainWithG(N);
             
             Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
             Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
@@ -649,7 +650,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
         
-        function [U,V,W,N] = TransformWaveVortexToUVWEta(self,Ap,Am,A0,t)
+        function [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
             if nargin == 5
                 phase = exp(self.iOmega*(t-self.t0));
                 Ap = Ap .* phase;
@@ -662,25 +663,19 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             Wbar = self.WAp.*Ap + self.WAm.*Am;
             Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
             
-            U = self.TransformToSpatialDomainWithF(Ubar);
-            V = self.TransformToSpatialDomainWithF(Vbar);
-            W = self.TransformToSpatialDomainWithG(Wbar);
-            N = self.TransformToSpatialDomainWithG(Nbar);
+            U = self.transformToSpatialDomainWithF(Ubar);
+            V = self.transformToSpatialDomainWithF(Vbar);
+            W = self.transformToSpatialDomainWithG(Wbar);
+            N = self.transformToSpatialDomainWithG(Nbar);
         end
 
-        function [Apt,Amt,A0t] = WaveVortexCoefficientsAtTimeT(self)
+        function [Apt,Amt,A0t] = waveVortexCoefficientsAtTimeT(self)
             phase = exp(self.iOmega*(self.t-self.t0));
             Apt = self.Ap .* phase;
             Amt = self.Am .* conj(phase);
             A0t = self.A0;
         end
         
-        function [uNL,vNL,nNL] = NonlinearFluxSpatialDomain(self)
-            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u)   + self.w .*  self.diffZF(self.u);
-            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v)   + self.w .*  self.diffZF(self.v);
-            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta) + self.w .* (self.diffZG(self.eta) + self.eta .* self.dLnN2);
-        end
-
         du = diff(self,u,derivs);
         u_x = diffXbar(self,u,n);
         u_x = diffX(self,u,n);
@@ -688,50 +683,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         u_z = diffZF(self,u,n);
         u_z = diffZG(self,u,n);
         
-        function [Fp,Fm,F0] = NonlinearFlux_(self)
-            fprintf('Built-in');
-            % Apply operator T_\omega---defined in (C2) in the manuscript
-
-            % We also apply the interaction masks (IMA*) and energy masks
-            % (EMA*). These *could* be precomputed multiplied directly into
-            % the coefficients. A quick speed test shows this about a 5%
-            % performance hit by not doing this.
-            phase = exp(self.iOmega*(self.t-self.t0));
-            Apt = self.Ap .* phase;
-            Amt = self.Am .* conj(phase);
-            A0t = self.A0;
-
-            % Apply operator S---defined in (C4) in the manuscript
-            Ubar = self.UAp.*Apt + self.UAm.*Amt + self.UA0.*A0t;
-            Vbar = self.VAp.*Apt + self.VAm.*Amt + self.VA0.*A0t;
-            Wbar = self.WAp.*Apt + self.WAm.*Amt;
-            Nbar = self.NAp.*Apt + self.NAm.*Amt + self.NA0.*A0t;
-            
-            % Finishing applying S, but also compute derivatives at the
-            % same time
-            [U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = self.TransformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
-            
-            % Compute the nonlinear terms in the spatial domain
-            % (pseudospectral!)
-            uNL = -U.*Ux - V.*Uy - W.*Uz;
-            vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-            
-            % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = self.TransformFromSpatialDomainWithF(uNL);
-            vNLbar = self.TransformFromSpatialDomainWithF(vNL);
-            nNLbar = self.TransformFromSpatialDomainWithG(nNL);
-
-            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
-        end
-
         function [Ep,Em,E0] = EnergyFluxAtTime(self)
-            [Fp,Fm,F0] = self.NonlinearFlux;
+            [Fp,Fm,F0] = self.nonlinearFlux;
             % The phase is tricky here. It is wound forward for the flux,
             % as it should be... but then it is wound back to zero. This is
             % equivalent ignoring the phase below here.
@@ -883,19 +836,24 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Add and remove internal waves from the model
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        period = InitializeWithPlaneWave(self, k0, l0, j0, UAmp, sign)
+        %
+        % Terminology:
+        %   init — clear ALL variables Ap,Am,A0, then set
+        %   set - set clears only the component requested, and sets with
+        %         new value.
+        %   add - adds to existing component
+        %   removeAll...
         
-        RemoveAllGriddedWaves(self)
+        [omega,k,l] = initWithWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
+        [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
+        [omega,k,l] = addWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)  
+        removeAllWaves(self);
         
-        [omega,k,l] = SetGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)
+        [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
+        [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
         
-        [omega,k,l,kIndex,lIndex,jIndex,signIndex] = AddGriddedWavesWithWavemodes(self, kMode, lMode, jMode, phi, Amp, signs)  
-        
-        [omega, alpha, k, l, mode, phi, A, norm] = WaveCoefficientsFromGriddedWaves(self);
-        
-        InitializeWithGMSpectrum(self, GMAmplitude, varargin);
-        
-        [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   ;
+        initWithGMSpectrum(self, GMAmplitude, varargin);
+        [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1014,6 +972,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods (Access=protected)
         % protected — Access from methods in class or subclasses
         varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin);
+
+        [Ap,Am,omega,k,l,kIndex,lIndex,jIndex,signIndex] = waveCoefficientsForWaveModes(self, kMode, lMode, jMode, phi, Amp, signs);
     end
 
     methods (Static)

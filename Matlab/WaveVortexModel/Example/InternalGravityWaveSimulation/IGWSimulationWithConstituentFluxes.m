@@ -50,7 +50,7 @@ t = 3600;
 
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0,rho0,'shouldAntiAlias',1);
 % wvm.shouldAntiAlias = 1;
-wvm.InitializeWithGMSpectrum(1.0)
+wvm.initWithGMSpectrum(1.0)
 wvm.summarizeEnergyContent;
 
 deltaT = wvm.TimeStepForCFL(cfl,outputInterval);

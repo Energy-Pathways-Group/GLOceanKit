@@ -88,14 +88,14 @@ error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 % coefficients, these are no longer direct inverses. They should differ by
 % a factor of 2*(Nz-1).
 % First check the G transform
-w_bar = boussinesq.TransformFromSpatialDomainWithG( w );
-w_back = boussinesq.TransformToSpatialDomainWithG(w_bar);
+w_bar = boussinesq.transformFromSpatialDomainWithG( w );
+w_back = boussinesq.transformToSpatialDomainWithG(w_bar);
 w_error = error2(w,w_back);
 fprintf('\tG-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
 % First check the F transform
-u_bar = boussinesq.TransformFromSpatialDomainWithF( u );
-u_back = boussinesq.TransformToSpatialDomainWithF(u_bar);
+u_bar = boussinesq.transformFromSpatialDomainWithF( u );
+u_back = boussinesq.transformToSpatialDomainWithF(u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
@@ -114,7 +114,7 @@ ux_unit = DiffFourier(boussinesq.x,u_unit,1,1);
 uy_unit = DiffFourier(boussinesq.y,u_unit,1,2);
 uz_unit = DiffCosine(boussinesq.z,u_unit,1,3);
 
-[u,ux,uy,uz] = boussinesq.TransformToSpatialDomainWithFAllDerivatives( Ubar );
+[u,ux,uy,uz] = boussinesq.transformToSpatialDomainWithFAllDerivatives( Ubar );
 
 u_error = error2(u,u_unit);
 fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
@@ -132,7 +132,7 @@ etax_unit = DiffFourier(boussinesq.x,eta_unit,1,1);
 etay_unit = DiffFourier(boussinesq.y,eta_unit,1,2);
 etaz_unit = DiffSine(boussinesq.z,eta_unit,1,3);
 
-[eta,etax,etay,etaz] = boussinesq.TransformToSpatialDomainWithGAllDerivatives( Nbar );
+[eta,etax,etay,etaz] = boussinesq.transformToSpatialDomainWithGAllDerivatives( Nbar );
 
 u_error = error2(eta,eta_unit);
 fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));

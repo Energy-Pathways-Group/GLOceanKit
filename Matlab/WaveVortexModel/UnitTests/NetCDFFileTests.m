@@ -34,7 +34,7 @@ else
 end
 
 U = .2;
-period = wvt.InitializeWithPlaneWave(10,0,1,U,1);  
+period = wvt.initWithWaveModes(10,0,1,0,U,1);  
 
 wvt.WriteToFile('test.nc','Ap','Am','A0',shouldOverwriteExisting=1);
 

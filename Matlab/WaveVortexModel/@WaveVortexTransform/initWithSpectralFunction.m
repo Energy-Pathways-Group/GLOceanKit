@@ -1,4 +1,4 @@
-function [GM3Dint,GM3Dext] = InitializeWithSpectralFunction(self, GM2D_int, varargin)   
+function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)   
     % The GM2D_int function is used to assign variance to a given
     % wave mode. It has three arguments, omega0, omega1, and j and
     % should return the amount of variance you want assigned to a

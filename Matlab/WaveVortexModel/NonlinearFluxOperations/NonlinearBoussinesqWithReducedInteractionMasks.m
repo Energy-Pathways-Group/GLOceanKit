@@ -47,10 +47,10 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
 
             % Finishing applying S, but also compute derivatives at the
             % same time
-            [U,Ux,Uy,Uz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = wvt.TransformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
+            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
+            W = wvt.transformToSpatialDomainWithG(Wbar);
+            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
             % Compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
@@ -59,9 +59,9 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
 
             % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = wvt.TransformFromSpatialDomainWithF(uNL);
-            vNLbar = wvt.TransformFromSpatialDomainWithF(vNL);
-            nNLbar = wvt.TransformFromSpatialDomainWithG(nNL);
+            uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
+            vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
+            nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
             Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
             Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
@@ -155,19 +155,15 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
 
-        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,U,signs)
-            [omega,k,l,kIndex,lIndex,jIndex,signIndex] = self.wvt.AddGriddedWavesWithWavemodes(kModes,lModes,jModes,phi,U,signs);
-            for iMode=1:length(kModes)
-                if (signIndex(iMode) == 1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAp( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
-                end
+        function [omega,k,l] = addForcingWaveModes(self,kModes,lModes,jModes,phi,u,signs)
+        	[kIndex,lIndex,jIndex,ApAmp,AmAmp] = self.waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs);
+        	self.EMAp(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = 0;
+			self.EMAm(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = 0;
 
-                if (signIndex(iMode) == -1 || (kIndex(iMode) == 1 && lIndex(iMode) == 1) )
-                    self.EMAm( kIndex(iMode),lIndex(iMode),jIndex(iMode)) = 0;
-                    self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
-                end
-            end
+			self.EMAp = WaveVortexTransform.MakeHermitian(self.EMAp);
+			self.EMAm = WaveVortexTransform.MakeHermitian(self.EMAm);
+
+			[omega,k,l] = self.setWaveModes(kMode, lMode, jMode, phi, u, signs);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -42,7 +42,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wvm.FillOutWaveSpectrum();
-wvm.InitializeWithGMSpectrum(1.0);
+wvm.initWithGMSpectrum(1.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

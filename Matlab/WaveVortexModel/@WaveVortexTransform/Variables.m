@@ -3,7 +3,7 @@ function [varargout] = Variables(self, varargin)
 % internal grid.
 
 varargout = cell(size(varargin));
-[varargout{:}] = self.StateVariables(varargin{:});
+[varargout{:}] = self.stateVariables(varargin{:});
 
 % External variables may not all be supported.
 if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)

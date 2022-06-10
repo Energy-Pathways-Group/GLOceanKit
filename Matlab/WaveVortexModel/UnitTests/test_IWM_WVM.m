@@ -85,20 +85,20 @@ wavemodel.InitializeWithHorizontalVelocityAndDensityPerturbationFields(time, u, 
 phase_plus = exp(sqrt(-1)*wavemodel.Omega*time);
 phase_minus = exp(-sqrt(-1)*wavemodel.Omega*time);
 
-u_wavep = wavemodel.TransformToSpatialDomainWithF(wavemodel.u_plus.*phase_plus);	% wave plus portion of u
-u_wavem = wavemodel.TransformToSpatialDomainWithF(wavemodel.u_minus.*phase_minus);	% wave minus portion of u
+u_wavep = wavemodel.transformToSpatialDomainWithF(wavemodel.u_plus.*phase_plus);	% wave plus portion of u
+u_wavem = wavemodel.transformToSpatialDomainWithF(wavemodel.u_minus.*phase_minus);	% wave minus portion of u
 u_g = wavemodel.u_g;								% vortical portion of u
 
-v_wavep = wavemodel.TransformToSpatialDomainWithF(wavemodel.v_plus.*phase_plus);	% wave plus portion of v
-v_wavem = wavemodel.TransformToSpatialDomainWithF(wavemodel.v_minus.*phase_minus);	% wave minus portion of v
+v_wavep = wavemodel.transformToSpatialDomainWithF(wavemodel.v_plus.*phase_plus);	% wave plus portion of v
+v_wavem = wavemodel.transformToSpatialDomainWithF(wavemodel.v_minus.*phase_minus);	% wave minus portion of v
 v_g = wavemodel.v_g;								% vortical portion of v
 
-w_wavep = wavemodel.TransformToSpatialDomainWithG(wavemodel.w_plus.*phase_plus);	% wave plus portion of w
-w_wavem = wavemodel.TransformToSpatialDomainWithG(wavemodel.w_minus.*phase_minus);	% wave minus portion of w
+w_wavep = wavemodel.transformToSpatialDomainWithG(wavemodel.w_plus.*phase_plus);	% wave plus portion of w
+w_wavem = wavemodel.transformToSpatialDomainWithG(wavemodel.w_minus.*phase_minus);	% wave minus portion of w
 w_g = 0*wavemodel.v_g;								% vortical portion of w=0 by definition
 
-zeta_wavep = wavemodel.TransformToSpatialDomainWithG(wavemodel.zeta_plus.*phase_plus);	% wave plus portion of zeta
-zeta_wavem = wavemodel.TransformToSpatialDomainWithG(wavemodel.zeta_minus.*phase_minus);	% wave minus portion of zeta
+zeta_wavep = wavemodel.transformToSpatialDomainWithG(wavemodel.zeta_plus.*phase_plus);	% wave plus portion of zeta
+zeta_wavem = wavemodel.transformToSpatialDomainWithG(wavemodel.zeta_minus.*phase_minus);	% wave minus portion of zeta
 zeta_g = wavemodel.zeta_g;									% vortical portion of zeta
 
 s1_wavep = zeta_wavep / (wavemodel.g/(wavemodel.rho0 * wavemodel.N0.^2));             % wave plus portion of s1
@@ -109,12 +109,12 @@ s1_g = wavemodel.zeta_g / (wavemodel.g/(wavemodel.rho0 * wavemodel.N0.^2));     
 % WaveVortexModel decomposition
 % decompose the fields into wave and vortical mode components using new WaveVortexModel
 eta = s1 ./ dS1_BAR_dz;  % eta = rho'/(drhobar/dz) per Early et al 2021
-[wvm.Ap,wvm.Am,wvm.A0] = wvm.TransformUVEtaToWaveVortex(u,v,eta);
+[wvm.Ap,wvm.Am,wvm.A0] = wvm.transformUVEtaToWaveVortex(u,v,eta);
 
 % zero out certain amplitudes from the WaveVortexModel decomposition to return either plus, minus, or geostrophic components of fields
-[u_wavep_wv,v_wavep_wv,w_wavep_wv,zeta_wavep_wv] = wvm.TransformWaveVortexToUVWEta(wvm.Ap,0,0); % plus component of fields
-[u_wavem_wv,v_wavem_wv,w_wavem_wv,zeta_wavem_wv] = wvm.TransformWaveVortexToUVWEta(0,wvm.Am,0); % minus component of fields
-[u_g_wv,v_g_wv,w_g_wv,zeta_g_wv] = wvm.TransformWaveVortexToUVWEta(0,0,wvm.A0); % geostrophic component of fields
+[u_wavep_wv,v_wavep_wv,w_wavep_wv,zeta_wavep_wv] = wvm.transformWaveVortexToUVWEta(wvm.Ap,0,0); % plus component of fields
+[u_wavem_wv,v_wavem_wv,w_wavem_wv,zeta_wavem_wv] = wvm.transformWaveVortexToUVWEta(0,wvm.Am,0); % minus component of fields
+[u_g_wv,v_g_wv,w_g_wv,zeta_g_wv] = wvm.transformWaveVortexToUVWEta(0,0,wvm.A0); % geostrophic component of fields
 
 s1_wavep = zeta_wavep_wv / (wvm.g/(wvm.rho0 * wvm.N0.^2));             % wave plus portion of s1
 s1_wavem = zeta_wavem_wv / (wvm.g/(wvm.rho0 * wvm.N0.^2));             % wave minus portion of s1

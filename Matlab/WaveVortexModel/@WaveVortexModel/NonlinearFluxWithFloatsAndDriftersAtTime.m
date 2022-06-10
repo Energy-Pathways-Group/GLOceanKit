@@ -12,10 +12,10 @@ Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
 
 % Finishing applying S, but also compute derivatives at the
 % same time
-[U,Ux,Uy,Uz] = self.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-[V,Vx,Vy,Vz] = self.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-W = self.TransformToSpatialDomainWithG(Wbar);
-[~,ETAx,ETAy,ETAz] = self.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+[U,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Ubar);
+[V,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Vbar);
+W = self.transformToSpatialDomainWithG(Wbar);
+[~,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
 % Compute the nonlinear terms in the spatial domain
 % (pseudospectral!)
@@ -24,9 +24,9 @@ vNL = -U.*Vx - V.*Vy - W.*Vz;
 nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
 
 % Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = self.TransformFromSpatialDomainWithF(uNL);
-vNLbar = self.TransformFromSpatialDomainWithF(vNL);
-nNLbar = self.TransformFromSpatialDomainWithG(nNL);
+uNLbar = self.transformFromSpatialDomainWithF(uNL);
+vNLbar = self.transformFromSpatialDomainWithF(vNL);
+nNLbar = self.transformFromSpatialDomainWithG(nNL);
 
 Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
 Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;

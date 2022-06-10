@@ -41,12 +41,12 @@ t = 3600;
 
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %wavemodel = InternalWaveModelExponentialStratification([Lx, Ly, Lz], [Nx, Ny, Nz], [N0 1300], linspace(-Lz,0,Nz)', latitude);
-wvm.InitializeWithGMSpectrum(1.0)
-% wavemodel.InitializeWithPlaneWave(0,0,1,1.0,1);
+wvm.initWithGMSpectrum(1.0)
+% wavemodel.initWithWaveModes(0,0,1,0,1.0,1);
 % [u_gridded,v_gridded] = wavemodel.VelocityFieldAtTime(t);
 [u_gridded,v_gridded,w_gridded,rho_prime_gridded] = wvm.VariableFieldsAtTime(t,'u','v','w','rho_prime');
 
-[omega, alpha, k, l, mode, phi, A] = wvm.WaveCoefficientsFromGriddedWaves();
+[omega, alpha, k, l, mode, phi, A] = wvm.waveModesFromWaveCoefficients();
 L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
@@ -55,7 +55,7 @@ E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
 fprintf('The wave components sum to %.2f%% GM\n', 100*(wvm.waveEnergy + wvm.inertialEnergy)/E);
 
 % Now reset the gridded field to zero.
-wvm.RemoveAllGriddedWaves();
+wvm.removeAllWaves();
 
 % wavemodel.SetExternalWavesWithFrequencies(omega,alpha,J,phi_plus,A_plus,Normalization.kConstant);
 wvm.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);

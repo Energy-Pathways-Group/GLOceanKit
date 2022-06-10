@@ -42,7 +42,7 @@ totalTests = 0;
 
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
-    if 1 == 1
+    if 1 == 0
         wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude(iLat), N0,[],'hydrostatic',isHydrostatic);
         rho0 = wavemodel.rho0;
         g = 9.81;
@@ -50,7 +50,7 @@ for iLat = 1:length(latitude)
         isHydrostatic = 1;
         rho0 = 1025; g = 9.81;
         rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-        wavemodel = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude(iLat), rho);
+        wavemodel = WaveVortexTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude(iLat), rho);
     end
     
     % pull out some model constants for easy reference
@@ -142,15 +142,15 @@ for iLat = 1:length(latitude)
                     
                     for API = 1:4
                         wavemodel.RemoveAllExternalWaves();
-                        wavemodel.RemoveAllGriddedWaves();
+                        wavemodel.removeAllWaves();
                         
                         if API == 1
-                            apiName = 'InitializeWithPlaneWave';
-                            wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,thesign);         
+                            apiName = 'initWithWaveModes';
+                            wavemodel.initWithWaveModes(k_loop,l_loop,j0,phi,U,thesign);         
                         elseif API == 2
-                            apiName = 'SetGriddedWavesWithWavemodes';
-                            wavemodel.SetGriddedWavesWithWavemodes(k_loop,l_loop,j0,phi,U,thesign);
-                            [omega_p, alpha_p, k_p, l_p, j_p, phi_p, A_p,norm] = wavemodel.WaveCoefficientsFromGriddedWaves();
+                            apiName = 'setWaveModes';
+                            wavemodel.setWaveModes(k_loop,l_loop,j0,phi,U,thesign);
+                            [omega_p, alpha_p, k_p, l_p, j_p, phi_p, A_p,norm] = wavemodel.waveModesFromWaveCoefficients();
                         elseif API == 3
                             apiName = 'SetExternalWavesWithWavenumbers';
                             if omega_p == 0

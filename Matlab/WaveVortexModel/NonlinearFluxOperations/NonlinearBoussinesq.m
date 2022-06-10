@@ -23,10 +23,10 @@ classdef NonlinearBoussinesq < NonlinearFluxOperation
 
             % Finishing applying S, but also compute derivatives at the
             % same time
-            [U,Ux,Uy,Uz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = wvt.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = wvt.TransformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
+            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
+            W = wvt.transformToSpatialDomainWithG(Wbar);
+            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
             % Compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
@@ -35,9 +35,9 @@ classdef NonlinearBoussinesq < NonlinearFluxOperation
             nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
 
             % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = wvt.TransformFromSpatialDomainWithF(uNL);
-            vNLbar = wvt.TransformFromSpatialDomainWithF(vNL);
-            nNLbar = wvt.TransformFromSpatialDomainWithG(nNL);
+            uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
+            vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
+            nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
             Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
             Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;

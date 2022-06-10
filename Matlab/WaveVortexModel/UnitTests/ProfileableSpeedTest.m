@@ -56,10 +56,10 @@ Ubar = wvm.UAp.*Ap + wvm.UAm.*Am + wvm.UA0.*A0;
 % 
 % profile on
 % for i=1:100
-%     u = boussinesq.TransformToSpatialDomainWithF(Ubar);
-%     ubar = boussinesq.TransformFromSpatialDomainWithF(u);
-%     eta = boussinesq.TransformToSpatialDomainWithG(Nbar);
-%     nbar = boussinesq.TransformFromSpatialDomainWithG(eta);
+%     u = boussinesq.transformToSpatialDomainWithF(Ubar);
+%     ubar = boussinesq.transformFromSpatialDomainWithF(u);
+%     eta = boussinesq.transformToSpatialDomainWithG(Nbar);
+%     nbar = boussinesq.transformFromSpatialDomainWithG(eta);
 % end
 % profile viewer
 

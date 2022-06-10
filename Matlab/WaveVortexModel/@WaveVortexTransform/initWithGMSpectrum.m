@@ -3,7 +3,7 @@
 % Create a full Garrett-Munk spectrum (public)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function InitializeWithGMSpectrum(self, GMAmplitude, varargin)
+function initWithGMSpectrum(self, GMAmplitude, varargin)
     if mod(length(varargin),2) ~= 0
         error('Arguments must be given as name/value pairs.');
     end
@@ -54,7 +54,7 @@ function InitializeWithGMSpectrum(self, GMAmplitude, varargin)
     end
     fprintf('You will miss %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
 
-    [GM3Dint,GM3Dext] = self.InitializeWithSpectralFunction(GM2D_int,varargin{:});
+    [GM3Dint,GM3Dext] = self.initWithSpectralFunction(GM2D_int,varargin{:});
 
     fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
     fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );

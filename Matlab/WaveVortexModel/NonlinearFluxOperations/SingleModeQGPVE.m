@@ -56,7 +56,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             PVy = ifft( sqrt(-1)*shiftdim(wvt.l,-1).*ifft(PVbar,wvt.Nx,1), wvt.Ny, 2,'symmetric');
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
-            F0 = -self.A0PV .* wvt.TransformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
+            F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
             varargout = {F0,u_g,v_g};
         end
 
