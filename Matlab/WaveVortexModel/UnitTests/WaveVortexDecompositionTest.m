@@ -215,8 +215,8 @@ for i=1:8
     spectralEnergyBoussinesq = sum(sum(sum( boussinesq.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + boussinesq.A0_TE_factor.*( A00.*conj(A00) ) )));
     fprintf('total integrated energy (BM): %f m^3/s\n', integratedEnergyBoussinesq);
     fprintf('total spectral energy (BM): %f m^3/s\n', spectralEnergyBoussinesq);
-    fprintf('total integrated energy (BM-internal): %f m^3/s\n', boussinesq.totalEnergy);
-    fprintf('total spectral energy (BM-internal): %f m^3/s\n', boussinesq.totalSpectralEnergy);
+    fprintf('total integrated energy (BM-internal): %f m^3/s\n', boussinesq.totalEnergySpatiallyIntegrated);
+    fprintf('total spectral energy (BM-internal): %f m^3/s\n', boussinesq.totalEnergy);
     
     fprintf('\n');
 end

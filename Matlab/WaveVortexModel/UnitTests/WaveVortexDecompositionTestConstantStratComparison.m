@@ -168,8 +168,8 @@ for i=1:11
         
     fprintf('\nmask %d\n',i);
 
-    fprintf('total integrated energy: %f m^3/s\n', wvm.totalEnergy);
-    fprintf('total spectral energy: %f m^3/s\n', wvm.totalSpectralEnergy);
+    fprintf('total integrated energy: %f m^3/s\n', wvm.totalEnergySpatiallyIntegrated);
+    fprintf('total spectral energy: %f m^3/s\n', wvm.totalEnergy);
     
     [u,v,w,eta] = wvm.transformWaveVortexToUVWEta(wvm.Ap,wvm.Am,wvm.A0,t);
     oldwavemodel.InitializeWithHorizontalVelocityAndIsopycnalDisplacementFields(t,u,v,eta);

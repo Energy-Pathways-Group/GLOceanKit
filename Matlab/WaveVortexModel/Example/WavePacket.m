@@ -99,10 +99,10 @@ period = 2*pi/omega;
 dt = period/50;
 nT=5*50;
 nTrajectories = 101;
+totalEnergySpatiallyIntegrated = zeros(nT,1);
 totalEnergy = zeros(nT,1);
-totalSpectralEnergy = zeros(nT,1);
+totalEnergySpatiallyIntegrated(1) = wvm.totalEnergySpatiallyIntegrated;
 totalEnergy(1) = wvm.totalEnergy;
-totalSpectralEnergy(1) = wvm.totalSpectralEnergy;
 x = zeros(nT,nTrajectories); y = zeros(nT,nTrajectories); z = zeros(nT,nTrajectories);
 x(1,:) = Lx/2*ones(1,nTrajectories); y(1,:) = Ly/2*ones(1,nTrajectories); z(1,:) = linspace(-Lz,0,nTrajectories);
 
@@ -115,8 +115,8 @@ for i=2:nT
    wvm.Ap = integrator.currentY{1};
    wvm.Am = integrator.currentY{2};
    wvm.A0 = integrator.currentY{3};
+   totalEnergySpatiallyIntegrated(i) = wvm.totalEnergySpatiallyIntegrated;
    totalEnergy(i) = wvm.totalEnergy;
-   totalSpectralEnergy(i) = wvm.totalSpectralEnergy;
    x(i,:) = integrator.currentY{4};
    y(i,:) = integrator.currentY{5};
    z(i,:) = integrator.currentY{6};

@@ -34,7 +34,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
 
         function setSSH(self,ssh)
             psi = @(X,Y,Z) (self.g/self.f0)*ssh(X,Y);
-            self.SetGeostrophicStreamfunction(psi);
+            self.setGeostrophicStreamfunction(psi);
         end
 
         function self = buildTransformationMatrices(self,PP,QQ)

@@ -75,21 +75,21 @@ dt = 2*pi/boussinesq.f0/50;
 integrator = ArrayIntegrator(@(t,y0) boussinesq.NonlinearFluxAtTimeArray(t,y0),boussinesq.Y,dt);
 
 nT=20*50;
+totalEnergySpatiallyIntegrated = zeros(nT,1);
 totalEnergy = zeros(nT,1);
-totalSpectralEnergy = zeros(nT,1);
 % profile on
 for i=1:nT
    integrator.currentY = boussinesq.Y;
    boussinesq.Y = integrator.IncrementForward();
+   totalEnergySpatiallyIntegrated(i) = boussinesq.totalEnergySpatiallyIntegrated;
    totalEnergy(i) = boussinesq.totalEnergy;
-   totalSpectralEnergy(i) = boussinesq.totalSpectralEnergy;
    if mod(i,10)==0
        boussinesq.summarizeEnergyContent();
    end
 end
 % profile viewer
 
-figure, plot(totalEnergy), hold on, plot(totalSpectralEnergy)
+figure, plot(totalEnergySpatiallyIntegrated), hold on, plot(totalEnergy)
 
 % Need to convert this to energy...
 [k,j,ApKJ,AmKJ] = boussinesq.ConvertToWavenumberAndMode(abs(boussinesq.Ap).^2,abs(boussinesq.Am).^2);

@@ -1,4 +1,4 @@
-function wvt = InitFromFile(path,iTime)
+function wvt = waveVortexTransformFromFile(path,iTime)
     arguments
         path char {mustBeFile}
         iTime (1,1) double {mustBePositive} = 1

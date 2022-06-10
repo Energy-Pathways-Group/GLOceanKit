@@ -36,6 +36,6 @@ end
 U = .2;
 period = wvt.initWithWaveModes(10,0,1,0,U,1);  
 
-wvt.WriteToFile('test.nc','Ap','Am','A0',shouldOverwriteExisting=1);
+wvt.writeToFile('test.nc','Ap','Am','A0',shouldOverwriteExisting=1);
 
 wvt2 = WaveVortexTransform.InitFromNetCDFFile('test.nc',243);

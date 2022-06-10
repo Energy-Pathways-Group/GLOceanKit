@@ -34,7 +34,7 @@ beta = 8.2e-6; % m^{-2}
 gamma = 0.01; % m^{-1}
 psi = @(x,y,z) -(A/(2*alpha))*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
 
-wvm.SetGeostrophicStreamfunction(psi);
+wvm.setGeostrophicStreamfunction(psi);
 [u,v,eta] = wvm.VariableFieldsAtTime(0, 'u','v','eta');
 
 x = wvm.x;

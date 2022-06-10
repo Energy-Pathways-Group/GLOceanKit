@@ -516,7 +516,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
         end
 
         function names = energeticsVariableNames(self)
-            names = {'internalWaveEnergyPlus','internalWaveEnergyMinus','baroclinicInertialEnergy','barotropicInertialEnergy','baroclinicGeostrophicEnergy','barotropicGeostrophicEnergy'};
+            names = {'internalWaveEnergyPlus','internalWaveEnergyMinus','inertialEnergyBaroclinic','inertialEnergyBarotropic','geostrophicEnergyBaroclinic','geostrophicEnergyBarotropic'};
         end
 
         function self = InitializeEnergeticsStorageForTimeSeries(self)
@@ -528,19 +528,19 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
         function self = WriteEnergeticsAtTimeIndex(self,iTime)
             self.concatenateVariableAlongDimension('internalWaveEnergyPlus',self.wvt.internalWaveEnergyPlus,'t',iTime);
             self.concatenateVariableAlongDimension('internalWaveEnergyMinus',self.wvt.internalWaveEnergyMinus,'t',iTime);
-            self.concatenateVariableAlongDimension('baroclinicInertialEnergy',self.wvt.baroclinicInertialEnergy,'t',iTime);
-            self.concatenateVariableAlongDimension('barotropicInertialEnergy',self.wvt.barotropicInertialEnergy,'t',iTime);
-            self.concatenateVariableAlongDimension('baroclinicGeostrophicEnergy',self.wvt.baroclinicGeostrophicEnergy,'t',iTime);
-            self.concatenateVariableAlongDimension('barotropicGeostrophicEnergy',self.wvt.barotropicGeostrophicEnergy,'t',iTime);
+            self.concatenateVariableAlongDimension('inertialEnergyBaroclinic',self.wvt.inertialEnergyBaroclinic,'t',iTime);
+            self.concatenateVariableAlongDimension('inertialEnergyBarotropic',self.wvt.inertialEnergyBarotropic,'t',iTime);
+            self.concatenateVariableAlongDimension('geostrophicEnergyBaroclinic',self.wvt.geostrophicEnergyBaroclinic,'t',iTime);
+            self.concatenateVariableAlongDimension('geostrophicEnergyBarotropic',self.wvt.geostrophicEnergyBarotropic,'t',iTime);
         end
 
         function self = WriteInitialEnergetics(self)
             self.addVariable('internalWaveEnergyPlus',self.wvt.internalWaveEnergyPlus);
             self.addVariable('internalWaveEnergyMinus',self.wvt.internalWaveEnergyMinus);
-            self.addVariable('baroclinicInertialEnergy',self.wvt.baroclinicInertialEnergy);
-            self.addVariable('barotropicInertialEnergy',self.wvt.barotropicInertialEnergy);
-            self.addVariable('baroclinicGeostrophicEnergy',self.wvt.baroclinicGeostrophicEnergy);
-            self.addVariable('barotropicGeostrophicEnergy',self.wvt.barotropicGeostrophicEnergy);
+            self.addVariable('inertialEnergyBaroclinic',self.wvt.inertialEnergyBaroclinic);
+            self.addVariable('inertialEnergyBarotropic',self.wvt.inertialEnergyBarotropic);
+            self.addVariable('geostrophicEnergyBaroclinic',self.wvt.geostrophicEnergyBaroclinic);
+            self.addVariable('geostrophicEnergyBarotropic',self.wvt.geostrophicEnergyBarotropic);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

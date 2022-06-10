@@ -22,7 +22,7 @@ wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
 % inertialFlux = sum(Ep(1,1,:)) + sum(Em(1,1,:));
 % Ep(1,1,:) = 0; Em(1,1,:) = 0;
 % waveFlux = sum(Ep(:)) + sum(Em(:));
-% fprintf('total spectral: %g, total depth integrated: %g\n',wvm.totalSpectralEnergy,wvm.totalHydrostaticEnergy);
+% fprintf('total spectral: %g, total depth integrated: %g\n',wvm.totalEnergy,wvm.totalHydrostaticEnergy);
 % fprintf('io flux: %g, wave flux: %g, geostrophic flux: %g. Net: %g\n',inertialFlux,waveFlux,sum(E0(:)),inertialFlux+waveFlux+sum(E0(:)))
 
 figure

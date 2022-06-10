@@ -1,4 +1,4 @@
-function ncfile = WriteToFile(wvt,netcdfFile,variables,options)
+function ncfile = writeToFile(wvt,netcdfFile,variables,options)
     % Will not add 't' by default to allow for alternative definitions. Do
     % include 't' in the option input arguments if you want it written.
     arguments

@@ -30,7 +30,7 @@ classdef WaveVortexModel < handle
     % AAGH. Getting myself twisted in knots over the right API.
     % while ( tool.integrateToTime(finalTime) )
     %   tool.incrementForward()
-    %   tool.WriteToFile()
+    %   tool.writeToFile()
     %
     %
     % Conflicts: once you've chosen an outputInterval, etc., you can't be
@@ -604,7 +604,7 @@ classdef WaveVortexModel < handle
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
             end
 
-            ncfile = self.wvt.WriteToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
 
             % Now add a time dimension
             transformVar = self.wvt.transformVariableWithName('t');

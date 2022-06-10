@@ -83,8 +83,8 @@ wvm.A0 = Q.*A0;
 
 % Alternative methods for setting initial conditions that I may use in the
 % future.
-% wvm.SetGeostrophicStreamfunction(psi);
-% wvm.SetInertialMotions(u_IO,v_IO);
+% wvm.setGeostrophicStreamfunction(psi);
+% wvm.setInertialMotions(u_IO,v_IO);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -100,7 +100,7 @@ dStrat = log10(max(wvm.N2)/min(wvm.N2));
 if (dStrat > 7)
     warning('Mean stratification (N2) changes by %d orders of magnitude. This may lead to numerical instability.',round(dStrat));
 end
-dEnergy = abs(1- wvm.totalHydrostaticEnergy/wvm.totalSpectralEnergy);
+dEnergy = abs(1- wvm.totalHydrostaticEnergy/wvm.totalEnergy);
 if (dEnergy > 0.05)
     warning('Depth integrated and spectral energy disagree by %.1 percent, suggesting misspecified mean density.',dEnergy*100);
 end

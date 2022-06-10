@@ -258,25 +258,25 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             transformVar.isVariableWithNonlinearTimeStep = 1;
             self.addTransformOperation(TransformOperation('internalWaveEnergyMinus', transformVar,@(wvt) wvt.internalWaveEnergyMinus));
 
-            transformVar = StateVariable('baroclinicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
+            transformVar = StateVariable('inertialEnergyBaroclinic',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
-            self.addTransformOperation(TransformOperation('baroclinicInertialEnergy',transformVar,@(wvt) wvt.baroclinicInertialEnergy));
+            self.addTransformOperation(TransformOperation('inertialEnergyBaroclinic',transformVar,@(wvt) wvt.inertialEnergyBaroclinic));
 
-            transformVar = StateVariable('barotropicInertialEnergy',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
+            transformVar = StateVariable('inertialEnergyBarotropic',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
-            self.addTransformOperation(TransformOperation('barotropicInertialEnergy',transformVar,@(wvt) wvt.barotropicInertialEnergy));
+            self.addTransformOperation(TransformOperation('inertialEnergyBarotropic',transformVar,@(wvt) wvt.inertialEnergyBarotropic));
 
-            transformVar = StateVariable('baroclinicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, baroclinic');
+            transformVar = StateVariable('geostrophicEnergyBaroclinic',{},'m3/s2', 'total energy, geostrophic, baroclinic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
-            self.addTransformOperation(TransformOperation('baroclinicGeostrophicEnergy',transformVar,@(wvt) wvt.baroclinicGeostrophicEnergy));
+            self.addTransformOperation(TransformOperation('geostrophicEnergyBaroclinic',transformVar,@(wvt) wvt.geostrophicEnergyBaroclinic));
 
-            transformVar = StateVariable('barotropicGeostrophicEnergy',{},'m3/s2', 'total energy, geostrophic, barotropic');
+            transformVar = StateVariable('geostrophicEnergyBarotropic',{},'m3/s2', 'total energy, geostrophic, barotropic');
             transformVar.isVariableWithLinearTimeStep = 0;
             transformVar.isVariableWithNonlinearTimeStep = 1;
-            self.addTransformOperation(TransformOperation('barotropicGeostrophicEnergy',transformVar,@(wvt) wvt.barotropicGeostrophicEnergy));
+            self.addTransformOperation(TransformOperation('geostrophicEnergyBarotropic',transformVar,@(wvt) wvt.geostrophicEnergyBarotropic));
 
             outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
             outputVar(1).isComplex = 1;
@@ -740,12 +740,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function energy = totalEnergy(self)
+        function energy = totalEnergySpatiallyIntegrated(self)
             [u,v,w,eta] = self.Variables('u','v','w','eta');
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
         
-        function energy = totalSpectralEnergy(self)
+        function energy = totalEnergy(self)
             %             energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
             App = self.Ap; Amm = self.Am; A00 = self.A0;
             energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
@@ -761,7 +761,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = inertialEnergy(self)
-            energy = self.barotropicInertialEnergy + self.baroclinicInertialEnergy;
+            energy = self.inertialEnergyBarotropic + self.inertialEnergyBaroclinic;
         end
         
         function energy = waveEnergy(self)
@@ -769,20 +769,20 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function energy = geostrophicEnergy(self)
-            energy = self.barotropicGeostrophicEnergy + self.baroclinicGeostrophicEnergy;
+            energy = self.geostrophicEnergyBarotropic + self.geostrophicEnergyBaroclinic;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Geostrophic constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function energy = barotropicGeostrophicEnergy(self)
+        function energy = geostrophicEnergyBarotropic(self)
             C = self.A0_TE_factor;
             B = self.A0;
             energy = sum(sum(sum( C(:,:,1) .* (B(:,:,1).*conj(B(:,:,1))) )));
         end
         
-        function energy = baroclinicGeostrophicEnergy(self)
+        function energy = geostrophicEnergyBaroclinic(self)
             C = self.A0_TE_factor;
             B = self.A0;
             energy = sum(sum(sum( C(:,:,2:end) .* (B(:,:,2:end).*conj(B(:,:,2:end))) )));
@@ -792,14 +792,14 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Inertia-gravity wave constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function energy = barotropicInertialEnergy(self)
+        function energy = inertialEnergyBarotropic(self)
             App = self.Ap;
             Amm = self.Am;
             C = self.Apm_TE_factor;
             energy = C(1,1,1)*( App(1,1,1).*conj(App(1,1,1)) + Amm(1,1,1).*conj(Amm(1,1,1)) );
         end
         
-        function energy = baroclinicInertialEnergy(self)
+        function energy = inertialEnergyBaroclinic(self)
             App = self.Ap;
             Amm = self.Am;
             C = self.Apm_TE_factor;
@@ -821,7 +821,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function summarizeEnergyContent(self)
-            total = self.totalSpectralEnergy;
+            total = self.totalEnergy;
             ioPct = 100*self.inertialEnergy/total;
             wavePct = 100*self.waveEnergy/total;
             gPct = 100*self.geostrophicEnergy/total;
@@ -830,20 +830,22 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             fprintf('%.1f m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
         end
-                
+  
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
+        % Initializing, adding and removing dynamical features
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        %   init — clears ALL variables Ap,Am,A0, then sets/adds
+        %   set  - clears only the component requested, and sets with new value.
+        %   add  - adds to existing component
+        %   removeAll – remove all features of given type       
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
-        %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Terminology:
-        %   init — clear ALL variables Ap,Am,A0, then set
-        %   set - set clears only the component requested, and sets with
-        %         new value.
-        %   add - adds to existing component
-        %   removeAll...
-        
+
         [omega,k,l] = initWithWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
         [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
         [omega,k,l] = addWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)  
@@ -856,14 +858,22 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Add and remove geostrophic features from the model
-        %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        SetGeostrophicStreamfunction(self,psi);
+        initWithGeostrophicStreamfunction(self,psi);
+        setGeostrophicStreamfunction(self,psi);
+        addGeostrophicStreamfunction(self,psi);
+        removeAllGeostrophicMotions(self);
 
-        SetInertialMotions(self,u,v);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Add and remove inertial features from the model
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        initWithInertialMotions(self,u,v);
+        setInertialMotions(self,u,v);
+        addInertialMotions(self,u,v);
+        removeAllInertialMotions(self);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -965,7 +975,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Output the transform to file
-        ncfile = WriteToFile(self,netcdfFile,variables,options);
+        ncfile = writeToFile(self,netcdfFile,variables,options);
 
     end
 
@@ -980,7 +990,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initialize the a transform from file
-        wvt = InitFromFile(path,iTime)
+        wvt = waveVortexTransformFromFile(path,iTime)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

@@ -168,9 +168,9 @@ xlabel('time (inertial periods)')
 ylabel('energy flux into the geostrophic field')
 print('EnergyFluxIntoPV.eps','-depsc2')
 
-baroclinicGeostrophicEnergy = ncread(outputfile,'EnergyGeostrophicBaroclinic');
-barotropicGeostrophicEnergy = ncread(outputfile,'EnergyGeostrophicBarotropic');
-GeostrophicTotal = baroclinicGeostrophicEnergy + barotropicGeostrophicEnergy;
+geostrophicEnergyBaroclinic = ncread(outputfile,'EnergyGeostrophicBaroclinic');
+geostrophicEnergyBarotropic = ncread(outputfile,'EnergyGeostrophicBarotropic');
+GeostrophicTotal = geostrophicEnergyBaroclinic + geostrophicEnergyBarotropic;
 figure
 plot(t(2:end)/inertialPeriod,diff(GeostrophicTotal)./diff(t))
 xlabel('time (inertial periods)')

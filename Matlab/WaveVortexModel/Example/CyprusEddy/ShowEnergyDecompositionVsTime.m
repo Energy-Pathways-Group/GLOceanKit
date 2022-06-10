@@ -2,19 +2,19 @@ file = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-2.nc';
 
 t = ncread(file,'t');
 % 
-% totalEnergy = ncread(file,'EnergyDepthIntegrated');
+% totalEnergySpatiallyIntegrated = ncread(file,'EnergyDepthIntegrated');
 % residualEnergy = ncread(file,'EnergyResidual');
 
 internalWaveEnergyPlus = ncread(file,'EnergyIGWPlus');
 internalWaveEnergyMinus = ncread(file,'EnergyIGWMinus');
-baroclinicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBaroclinic');
-barotropicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBarotropic');
-baroclinicInertialEnergy = ncread(file,'EnergyIOBaroclinic');
-barotropicInertialEnergy = ncread(file,'EnergyIOBarotropic');
+geostrophicEnergyBaroclinic = ncread(file,'EnergyGeostrophicBaroclinic');
+geostrophicEnergyBarotropic = ncread(file,'EnergyGeostrophicBarotropic');
+inertialEnergyBaroclinic = ncread(file,'EnergyIOBaroclinic');
+inertialEnergyBarotropic = ncread(file,'EnergyIOBarotropic');
 
 WaveEnergyTotal = internalWaveEnergyPlus + internalWaveEnergyMinus;
-GeostrophicTotal = baroclinicGeostrophicEnergy + barotropicGeostrophicEnergy;
-InertialTotal = baroclinicInertialEnergy + barotropicInertialEnergy;
+GeostrophicTotal = geostrophicEnergyBaroclinic + geostrophicEnergyBarotropic;
+InertialTotal = inertialEnergyBaroclinic + inertialEnergyBarotropic;
 
 SpectralTotal = WaveEnergyTotal+GeostrophicTotal+InertialTotal;
 

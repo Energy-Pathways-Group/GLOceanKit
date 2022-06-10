@@ -18,9 +18,9 @@ for iTime = 1:netcdfTools.Nt
 end
 
 t = ncread(file,'t');
-baroclinicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBaroclinic');
-barotropicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBarotropic');
-GeostrophicTotal = baroclinicGeostrophicEnergy + barotropicGeostrophicEnergy;
+geostrophicEnergyBaroclinic = ncread(file,'EnergyGeostrophicBaroclinic');
+geostrophicEnergyBarotropic = ncread(file,'EnergyGeostrophicBarotropic');
+GeostrophicTotal = geostrophicEnergyBaroclinic + geostrophicEnergyBarotropic;
 
 figure
 plot(t,E0_igw_igw_t,'LineWidth', 2), hold on
