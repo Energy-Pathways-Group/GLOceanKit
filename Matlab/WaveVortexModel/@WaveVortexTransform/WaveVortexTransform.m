@@ -197,6 +197,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.transformDimensionWithName('j') = TransformDimension('j',length(self.j), 'mode number', 'vertical mode number');
             self.transformDimensionWithName('kRadial') = TransformDimension('kRadial',length(self.kRadial), 'radians/m', 'isotropic wavenumber dimension');
 
+            self.addTransformAttribute(TransformAttribute('Lx',{},'m', 'domain size in the x-direction'));
+            self.addTransformAttribute(TransformAttribute('Ly',{},'m', 'domain size in the y-direction'));
+            self.addTransformAttribute(TransformAttribute('Lz',{},'m', 'domain size in the z-direction'));
             self.addTransformAttribute(TransformAttribute('t0',{},'s', 'reference time of Ap, Am, A0'));
             self.addTransformAttribute(TransformAttribute('latitude',{},'degrees_north', 'latitude of the simulation'));
             self.addTransformAttribute(TransformAttribute('rho0',{},'kg/m3', 'mean density at the surface (z=0)'));

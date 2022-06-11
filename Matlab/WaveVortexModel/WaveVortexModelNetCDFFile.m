@@ -259,7 +259,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
 
         function addStateVariables(self,varargin)
             for iVar=1:length(varargin)
-                 transformVar = self.wvt.transformVariableWithName(varargin{iVar});
+                 transformVar = self.wvt.stateVariableWithName(varargin{iVar});
                  if transformVar.isComplex == 1
                      self.initComplexVariable(transformVar.name,transformVar.dimensions,containers.Map({'units','description'},{transformVar.units,transformVar.description}));
                      self.setVariable(transformVar.name,self.wvt.(transformVar.name));

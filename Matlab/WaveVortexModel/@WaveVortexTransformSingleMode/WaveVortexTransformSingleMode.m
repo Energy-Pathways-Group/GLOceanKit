@@ -39,15 +39,15 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             wvtX2 = self.transformWithResolution(2*[self.Nx self.Ny]);
         end
 
-        function wvmX2 = transformWithResolution(self,m)
-            wvmX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
-            wvmX2.t0 = self.t0;
-            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
-                kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
-                lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
-                wvmX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
-                wvmX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
-                wvmX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
+        function wvtX2 = transformWithResolution(self,m)
+            wvtX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
+            wvtX2.t0 = self.t0;
+            if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
+                kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
+                lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
+                wvtX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
+                wvtX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
+                wvtX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
             else
                 error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
             end

@@ -47,10 +47,12 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
     ncfile.addAttribute('CreationDate',CreationDate);
     ncfile.addAttribute('WaveVortexTransform',class(wvt));
 
-    attributesToWrite = {'latitude','t0','rho0'};
+    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
 
     if isa(wvt,'WaveVortexTransformConstantStratification')
         attributesToWrite = union({'N0'},attributesToWrite);
+    elseif isa(wvt,'WaveVortexTransformSingleMode')
+        attributesToWrite = union({'h'},attributesToWrite);
     elseif isa(wvt,'WaveVortexTransformHydrostatic')
         %                 attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
         attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG'},attributesToWrite);
@@ -78,7 +80,7 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
     end
 
     for iVar=1:length(variables)
-        transformVar = wvt.transformVariableWithName(variables{iVar});
+        transformVar = wvt.stateVariableWithName(variables{iVar});
         attributes = containers.Map();
         attributes('units') = transformVar.units;
         attributes('description') = transformVar.description;

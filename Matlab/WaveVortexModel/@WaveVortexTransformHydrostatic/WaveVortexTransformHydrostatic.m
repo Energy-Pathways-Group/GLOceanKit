@@ -86,6 +86,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
 
             self.rhoFunction = rhoFunc;
             self.N2Function = N2func;
+            warning('dLnN2func is left initialized.')
 %             self.dLnN2Function = dLnN2func;
             self.internalModes = im;
 
