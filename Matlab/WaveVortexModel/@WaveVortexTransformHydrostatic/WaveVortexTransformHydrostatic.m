@@ -113,6 +113,25 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.addTransformOperation(TransformOperation('rho_total',outputVar,f));
         end
 
+        function wvtX2 = transformWithResolution(self,m)
+            if ~isempty(self.dLnN2Function)
+                wvtX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
+            else
+                wvtX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function);
+            end
+
+            wvtX2.t0 = self.t0;
+            if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
+                kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
+                lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
+                wvtX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
+                wvtX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
+                wvtX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
+            else
+                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
+            end
+        end
+
         function self = BuildProjectionOperators(self)
             % Now go compute the appropriate number of modes at the
             % quadrature points.

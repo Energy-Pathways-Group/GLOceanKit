@@ -100,8 +100,8 @@ classdef WaveVortexModel < handle
     end
 
     properties (SetAccess = private)
-        particle = {}
-        particleIndexWithName % cell array containing particle names, can't use a Map() because order matters
+        particle = {}  % cell array containing particle structs
+        particleIndexWithName % map from particle name to cell array index
 
         tracerIndexWithName
         tracer = {}
@@ -142,67 +142,16 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WaveVortexModel(varargin)
-            if isa(varargin{1},'WaveVortexTransform')
-                WaveVortexTransform = varargin{1};
-                if nargin > 1 && isa(varargin{2},"double")
-                    self.t = varargin{2};
-                else
-                    self.t = 0;
-                end
-            elseif isa(varargin{1},'char' )
-                existingModelOutput = varargin{1};
-
-                restartIndex = Inf;
-                shouldDoubleResolution = 0;
-                if nargin > 1
-                    restartIndex = varargin{2};
-                end
-                if nargin > 2
-                    restartIndex = varargin{3};
-                end
-
-                nctool = WaveVortexModelNetCDFFile(existingModelOutput,'timeIndex',restartIndex);
-
-                self.t = nctool.t;
-                
-                if (shouldDoubleResolution == 0)
-                    WaveVortexTransform = nctool.wvm;
-                else
-                    WaveVortexTransform = nctool.wvm.WaveVortexTransformWithResolution(2*[nctool.wvm.Nk,nctool.wvm.Nl,nctool.wvm.Nj]);
-%                     if self.IsAntiAliased == 1
-%                         fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
-%                         AntiAliasMask = self.MaskForAliasedModes();
-%                         wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
-%                         wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
-%                         wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
-%                         wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0 | AntiAliasMask;
-%                         wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp | AntiAliasMask;
-%                         wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm | AntiAliasMask;
-% 
-%                         wvmX2.disallowNonlinearInteractionsWithAliasedModes();
-%                         wvmX2.freezeEnergyOfAliasedModes();
-%                     else
-%                         fprintf('You do NOT appear to be anti-aliased. Thus the interaction masks will be copied as-is.\n');
-%                         wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0;
-%                         wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp;
-%                         wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm;
-%                         wvmX2.EMA0(kIndices,lIndices,1:self.nModes) = self.EMA0;
-%                         wvmX2.EMAp(kIndices,lIndices,1:self.nModes) = self.EMAp;
-%                         wvmX2.EMAm(kIndices,lIndices,1:self.nModes) = self.EMAm;
-%                     end
-                end
-
-                % if there's existing model output, use that output interval
-                time = ncread(existingModelOutput,'t');
-                if length(time)>1
-                    self.outputInterval = time(2)-time(1);
-                end
+        function self = WaveVortexModel(wvt)
+            arguments
+                wvt WaveVortexTransform {mustBeNonempty}
             end
 
+            self.wvt = wvt; 
+            self.t = wvt.t;
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
-            self.wvt = WaveVortexTransform;  
+             
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
             self.nonlinearFlux = SingleModeQGPVE(self.wvt);
@@ -233,12 +182,32 @@ classdef WaveVortexModel < handle
             arguments
                 options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
             end
+
+            % Confirm that we really can track these variables.
+            for iVar=1:length(trackedFieldNames)
+                if ~isKey(self.wvt.stateVariableWithName,trackedFieldNames{iVar})
+                    error('Unable to find a StateVariable named %s.', trackedFieldNames{iVar});
+                end
+                transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
+                if self.wvt.isBarotropic == 1
+                    if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
+                        error('The StateVariable %s does not have dimensions x,y and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                    end
+                else
+                    if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
+                        error('The StateVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                    end
+                end
+            end
+
             n = length(self.particle) + 1;
 
             self.particleIndexWithName(name) = n;
             self.particle{n}.name = name;
             self.particle{n}.fluxOp = fluxOp;
-            self.particle{n}.xyz = cat(1,x,y,z);
+            self.particle{n}.x = x;
+            self.particle{n}.y = y;
+            self.particle{n}.z = z;
             self.particle{n}.trackedFieldNames = trackedFieldNames;
             trackedFields = struct;
             for i=1:length(trackedFieldNames)
@@ -251,11 +220,10 @@ classdef WaveVortexModel < handle
         end
 
         function [x,y,z,trackedFields] = ParticlePositions(self,name)
-            p = self.particle{self.particleIndexWithName(name)}.xyz;
-            x = p(1,:);
-            y = p(2,:);
-            z = p(3,:);
-
+            p = self.particle{self.particleIndexWithName(name)};
+            x = p.x;
+            y = p.y;
+            z = p.z;
             trackedFields = self.particle{self.particleIndexWithName(name)}.trackedFields;
         end
 
@@ -267,8 +235,8 @@ classdef WaveVortexModel < handle
                 trackedFieldNames = self.particle{iParticle}.trackedFieldNames;
                 if ~isempty(trackedFieldNames)
                     varLagrangianValues = cell(1,length(trackedFieldNames));
-                    p = self.particle{iParticle}.xyz;
-                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p(1,:),p(2,:),p(3,:),trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
+                    p = self.particle{iParticle};
+                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p.x,p.y,p.z,trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
                     self.particle{iParticle}.trackedFields = vertcat(varLagrangianValues{:});
                 end
             end
@@ -285,14 +253,14 @@ classdef WaveVortexModel < handle
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
-                z (1,:) double = zeros(1,length(x))
+                z (1,:) double = []
             end
             arguments (Repeating)
                 trackedFields char
             end
             arguments
-                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
-                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "linear"
+                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
             floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.AdvectionInterpolation));
             self.AddParticles('float',floatFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
@@ -307,14 +275,14 @@ classdef WaveVortexModel < handle
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
-                z (1,:) double = zeros(1,length(x))
+                z (1,:) double = []
             end
             arguments (Repeating)
                 trackedFields char
             end
             arguments
-                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
-                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "linear"
+                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
             drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),isXYOnly=1);
             self.AddParticles('drifter',drifterFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
@@ -440,14 +408,11 @@ classdef WaveVortexModel < handle
             end
 
             for iParticles=1:length(self.particle)
-                p = self.particle{iParticles}.xyz;
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1;Y0{n} = p(1,:);
-                    n=n+1;Y0{n} = p(2,:);
-                else
-                    n=n+1;Y0{n} = p(1,:);
-                    n=n+1;Y0{n} = p(2,:);
-                    n=n+1;Y0{n} = p(3,:);
+                p = self.particle{iParticles};
+                n=n+1;Y0{n} = p.x;
+                n=n+1;Y0{n} = p.y;
+                if ~self.particle{iParticles}.fluxOp.isXYOnly
+                    n=n+1;Y0{n} = p.z;
                 end
             end
 
@@ -475,12 +440,10 @@ classdef WaveVortexModel < handle
             end
 
             for iParticles=1:length(self.particle)
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    self.particle{iParticles}.xyz = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2});
-                    n = n+2;
-                else
-                    self.particle{iParticles}.xyz = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2},self.integrator.currentY{n+3});
-                    n = n+3;
+                n=n+1; self.particle{iParticles}.x = self.integrator.currentY{n};
+                n=n+1; self.particle{iParticles}.y = self.integrator.currentY{n};
+                if ~self.particle{iParticles}.fluxOp.isXYOnly
+                    n=n+1; self.particle{iParticles}.z = self.integrator.currentY{n};
                 end
             end
 
@@ -536,12 +499,12 @@ classdef WaveVortexModel < handle
             end
 
             for iParticles=1:length(self.particle)
-                p = self.particle{iParticles}.xyz;
+                p = self.particle{iParticles};
                 if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
                     n=n+2;
                 else
-                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
+                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
                     n=n+3;
                 end
             end
@@ -676,11 +639,15 @@ classdef WaveVortexModel < handle
                 end
 
                 for iTracer = 1:length(self.tracer)
-                    self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
+                    if self.wvt.isBarotropic
+                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
+                    else
+                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
+                    end
                 end
 
                 for iParticle = 1:length(self.particle)
-                    self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.xyz,2),self.particle{iParticle}.trackedFieldNames{:});
+                    self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
                 end
 
 %             else
@@ -749,7 +716,11 @@ classdef WaveVortexModel < handle
             variables('id') = var;
             
             % careful to create a new object each time we init
-            dimVars = {'x','y','z'};
+            if self.wvt.isBarotropic == 1
+                dimVars = {'x','y'};
+            else
+                dimVars = {'x','y','z'};
+            end
             for iVar=1:length(dimVars)
                 attributes = containers.Map(commonKeys,commonVals);
                 attributes('units') = self.wvt.transformDimensionWithName(dimVars{iVar}).units;
@@ -758,14 +729,7 @@ classdef WaveVortexModel < handle
             end
 
             for iVar=1:length(trackedFieldNames)
-                if ~isKey(self.wvt.stateVariableWithName,trackedFieldNames{iVar})
-                    error('Unable to find a StateVariable named %s.', trackedFieldNames{iVar});
-                end
                 transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
-                if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                    error('The StateVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
-                end
-
                 attributes = containers.Map(commonKeys,commonVals);
                 attributes('units') = transformVar.units;
                 attributes('particleVariableName') = trackedFieldNames{iVar};
@@ -778,7 +742,9 @@ classdef WaveVortexModel < handle
         function WriteParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
             self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-x'),x,'t',iTime);
             self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
-            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
+            if ~self.wvt.isBarotropic
+                self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
+            end
 
             if ~isempty(trackedFields)
                 trackedFieldNames = fieldnames(trackedFields);

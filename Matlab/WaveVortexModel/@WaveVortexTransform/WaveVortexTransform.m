@@ -16,6 +16,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         Lx, Ly, Lz
         f0, Nmax, rho0, latitude
         iOmega
+        isBarotropic = 0
 
         
         ApU, ApV, ApN
@@ -27,8 +28,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         WAp, WAm
         NAp, NAm, NA0
         
-
-
         PP, QQ
 
         kRadial
@@ -294,6 +293,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
 
+            outputVar = StateVariable('qgpv',{'x','y','z'},'1/s', 'isopycnal deviation');
+            f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.PP .* wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0)) .*wvt.A0t);
+            self.addTransformOperation(TransformOperation('qgpv',outputVar,f));
+
             fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
@@ -401,6 +404,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                     varargout{iVar} = [];
                 end
             end
+        end
+
+        function wvtX2 = transformWithDoubleResolution(self)
+            wvtX2 = self.transformWithResolution(2*[self.Nx self.Ny self.Nz]);
         end
 
         function wvmX2 = transformWithResolution(self,m)

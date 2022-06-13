@@ -24,7 +24,8 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self@WaveVortexTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)], 0,latitude=options.latitude,Nj=1);
             
             self.h = options.h;
-
+            self.isBarotropic = 1;
+            
             % Includes the extra factors from the FFTs.
             PP = self.Nx*self.Ny*ones(self.Nk,self.Nl);
             QQ = self.Nx*self.Ny*ones(self.Nk,self.Nl);

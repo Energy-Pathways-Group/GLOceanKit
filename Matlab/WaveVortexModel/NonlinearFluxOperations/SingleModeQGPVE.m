@@ -13,8 +13,9 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
             end
             fluxVar(1) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
-            fluxVar(2) = StateVariable('u_g',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
-            fluxVar(3) = StateVariable('v_g',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+            fluxVar(2) = StateVariable('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(3) = StateVariable('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+            fluxVar(4) = StateVariable('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
 
             self@NonlinearFluxOperation('SingleModeQGPVE',fluxVar);
             self.doesFluxAp = 0;
@@ -51,13 +52,13 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 
             u_g = ifft(ifft(Ubar,wvt.Nx,1),wvt.Ny,2,'symmetric');
             v_g = ifft(ifft(Vbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
-%             PV = ifft(ifft(PVbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
+            QGPV = ifft(ifft(PVbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
             PVx = ifft( sqrt(-1)*wvt.k.*ifft(PVbar,wvt.Ny,2), wvt.Nx, 1,'symmetric');
             PVy = ifft( sqrt(-1)*shiftdim(wvt.l,-1).*ifft(PVbar,wvt.Nx,1), wvt.Ny, 2,'symmetric');
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
-            varargout = {F0,u_g,v_g};
+            varargout = {F0,u_g,v_g,QGPV};
         end
 
         function writeToFile(self,ncfile,wvt)
