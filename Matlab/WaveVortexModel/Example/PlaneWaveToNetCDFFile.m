@@ -41,20 +41,20 @@ nTrajectories = 101;
 xFloat = Lx/2*ones(1,nTrajectories);
 yFloat = Ly/2*ones(1,nTrajectories);
 zFloat = linspace(-Lz,0,nTrajectories);
-model.SetFloatPositions(xFloat,yFloat,zFloat);
+model.setFloatPositions(xFloat,yFloat,zFloat);
 
 % Set up the integrator
 outputInterval = period/10;
-deltaT = model.TimeStepForCFL(0.5,outputInterval);
+deltaT = model.timeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
-nT = model.SetupIntegrator(deltaT, outputInterval,finalTime);
+nT = model.setupIntegrator(deltaT, outputInterval,finalTime);
 
-model.CreateNetCDFFileForModelOutput('PlaneWaveWithFloats.nc',shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput('PlaneWaveWithFloats.nc',shouldOverwriteExisting=1);
 
-model.IntegrateToTime(finalTime);
+model.integrateToTime(finalTime);
 
 ncfile = model.ncfile;
-% [x,y,z] = ncfile.FloatPositions();
+% [x,y,z] = ncfile.floatPositions();
 [x,z] = ncfile.readVariables('float-x','float-z');
 
 figure, plot(x.',z.')

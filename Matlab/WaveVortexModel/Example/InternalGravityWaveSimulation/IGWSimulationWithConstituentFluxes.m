@@ -53,7 +53,7 @@ wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude
 wvm.initWithGMSpectrum(1.0)
 wvm.summarizeEnergyContent;
 
-deltaT = wvm.TimeStepForCFL(cfl,outputInterval);
+deltaT = wvm.timeStepForCFL(cfl,outputInterval);
 % stepsPerOutput = round(outputInterval/deltaT);
 stepsPerOutput = 1;
 maxTime = 100*deltaT;

@@ -467,7 +467,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             self.particlesWithName(particleName) = variables;
         end
 
-        function WriteParticleDataAtTimeIndex(self,particleName,iTime,x,y,z)
+        function writeParticleDataAtTimeIndex(self,particleName,iTime,x,y,z)
             self.concatenateVariableAlongDimension(strcat(particleName,'-x'),x,'t',iTime);
             self.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
             self.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
@@ -483,7 +483,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             end
         end
 
-        function [x,y,z] = ParticlePositions(self,particleName)
+        function [x,y,z] = particlePositions(self,particleName)
             if nargin < 2
                 if self.particlesWithName.length == 0
                     error('There are no particles in this file!');
@@ -499,12 +499,12 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             [x,y,z] = self.readVariables(strcat(particleName,'-x'),strcat(particleName,'-y'),strcat(particleName,'-z'));
         end
 
-        function [x,y,z] = FloatPositions(self)
-            [x,y,z] = self.ParticlePositions('float');
+        function [x,y,z] = floatPositions(self)
+            [x,y,z] = self.particlePositions('float');
         end
 
-        function [x,y,z] = DrifterPositions(self)
-            [x,y,z] = self.ParticlePositions('drifter');
+        function [x,y,z] = drifterPositions(self)
+            [x,y,z] = self.particlePositions('drifter');
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

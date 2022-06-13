@@ -42,13 +42,13 @@ xFloat = Lx/2*ones(1,nTrajectories);
 yFloat = Ly/2*ones(1,nTrajectories);
 zFloat = linspace(-Lz,0,nTrajectories);
 
-model.SetFloatPositions(xFloat,yFloat,zFloat,'rho_total');
+model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
 
 % Set up the integrator
 outputInterval = period/10;
-deltaT = model.TimeStepForCFL(0.5,outputInterval);
+deltaT = model.timeStepForCFL(0.5,outputInterval);
 finalTime = 3*period;
-nT = model.SetupIntegrator(deltaT, outputInterval,finalTime);
+nT = model.setupIntegrator(deltaT, outputInterval,finalTime);
 
 % write the float trajectories to memory
 xFloatT = zeros(nT,nTrajectories);
@@ -57,11 +57,11 @@ zFloatT = zeros(nT,nTrajectories);
 rhoFloatT = zeros(nT,nTrajectories);
 t = zeros(nT,1);
 
-[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),rhoFloatT(1,:)] = model.FloatPositions;
+[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),rhoFloatT(1,:)] = model.floatPositions;
 
 while(model.t < finalTime)
     t(model.outputIndex) = model.integrateToNextOutputTime();
-    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:),rhoFloatT(model.outputIndex,:)] = model.FloatPositions;
+    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:),rhoFloatT(model.outputIndex,:)] = model.floatPositions;
 end
 
 figure, plot(xFloatT,zFloatT)

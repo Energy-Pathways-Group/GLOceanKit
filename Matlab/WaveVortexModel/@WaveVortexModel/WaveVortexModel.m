@@ -25,7 +25,7 @@ classdef WaveVortexModel < handle
     % - want to write float and drifter paths to memory
     % - Maybe a list of variables (as enums) that we want to write
     % - Definitely want to output physical variables some time
-    % - OpenNetCDFFileForTimeStepping should report expected file size
+    % - openNetCDFFileForTimeStepping should report expected file size
 
     % AAGH. Getting myself twisted in knots over the right API.
     % while ( tool.integrateToTime(finalTime) )
@@ -53,9 +53,9 @@ classdef WaveVortexModel < handle
     % 
     % Setup the integrator (allowed once):
     % Option 1: <nothing>
-    % Option 2: SetupIntegrator(deltaT)
-    % Option 3: SetupIntegrator(deltaT,outputInterval)
-    % Option 4: SetupIntegrator(deltaT,outputInterval,finalTime) -- alt: SetupIntegratorForFixedIntegrationTime
+    % Option 2: setupIntegrator(deltaT)
+    % Option 3: setupIntegrator(deltaT,outputInterval)
+    % Option 4: setupIntegrator(deltaT,outputInterval,finalTime) -- alt: SetupIntegratorForFixedIntegrationTime
     % return estimated time steps?
     %
     % Integrate (called repeatedly):
@@ -67,7 +67,7 @@ classdef WaveVortexModel < handle
     %
     %
     % Setup NetCDF
-    % CreateNetCDFFileForModelOutput
+    % createNetCDFFileForModelOutput
     % AppendToExisting
 
     properties
@@ -104,7 +104,7 @@ classdef WaveVortexModel < handle
         particleIndexWithName % map from particle name to cell array index
 
         tracerIndexWithName
-        tracer = {}
+        tracerArray = {}
 
         didSetupIntegrator=0
         variablesToWriteToFile = {}
@@ -167,7 +167,7 @@ classdef WaveVortexModel < handle
             value = isempty(self.nonlinearFlux);
         end
         
-        function AddParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
+        function addParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
@@ -180,7 +180,7 @@ classdef WaveVortexModel < handle
                 trackedFieldNames char
             end
             arguments
-                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "spline"
             end
 
             % Confirm that we really can track these variables.
@@ -214,12 +214,12 @@ classdef WaveVortexModel < handle
                 trackedFields.(trackedFieldNames{i}) = zeros(1,length(x));
             end
             self.particle{n}.trackedFields = trackedFields;
-            self.particle{n}.trackedFieldInterpMethod = options.TrackedVarInterpolation;
+            self.particle{n}.trackedFieldInterpMethod = options.trackedVarInterpolation;
 
-            self.UpdateParticleTrackedFields();
+            self.updateParticleTrackedFields();
         end
 
-        function [x,y,z,trackedFields] = ParticlePositions(self,name)
+        function [x,y,z,trackedFields] = particlePositions(self,name)
             p = self.particle{self.particleIndexWithName(name)};
             x = p.x;
             y = p.y;
@@ -228,7 +228,7 @@ classdef WaveVortexModel < handle
         end
 
 
-        function UpdateParticleTrackedFields(self)
+        function updateParticleTrackedFields(self)
             % One special thing we have to do is log the particle
             % tracked fields
             for iParticle=1:length(self.particle)
@@ -248,7 +248,7 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function SetFloatPositions(self,x,y,z,trackedFields,options)
+        function setFloatPositions(self,x,y,z,trackedFields,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
@@ -259,18 +259,18 @@ classdef WaveVortexModel < handle
                 trackedFields char
             end
             arguments
-                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "linear"
-                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "linear"
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
-            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.AdvectionInterpolation));
-            self.AddParticles('float',floatFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
+            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.advectionInterpolation));
+            self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
-        function [x,y,z,tracked] = FloatPositions(self)
-            [x,y,z,tracked] = self.ParticlePositions('float');
+        function [x,y,z,tracked] = floatPositions(self)
+            [x,y,z,tracked] = self.particlePositions('float');
         end
 
-        function SetDrifterPositions(self,x,y,z,trackedFields,options)
+        function setDrifterPositions(self,x,y,z,trackedFields,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
@@ -281,25 +281,25 @@ classdef WaveVortexModel < handle
                 trackedFields char
             end
             arguments
-                options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "linear"
-                options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "linear"
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
-            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),isXYOnly=1);
-            self.AddParticles('drifter',drifterFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
+            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.advectionInterpolation),isXYOnly=1);
+            self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
-        function [x,y,z,tracked] = DrifterPositions(self)
-            [x,y,z,tracked] = self.ParticlePositions('drifter');
+        function [x,y,z,tracked] = drifterPositions(self)
+            [x,y,z,tracked] = self.particlePositions('drifter');
         end
 
-        function AddTracer(self,phi,name)
+        function addTracer(self,phi,name)
             n = length(self.tracerIndexWithName) + 1;
             self.tracerIndexWithName(name) = n;
-            self.tracer{n} = phi;
+            self.tracerArray{n} = phi;
         end
 
-        function phi = Tracer(self,name)
-            phi = self.tracer{self.tracerIndexWithName(name)};
+        function phi = tracer(self,name)
+            phi = self.tracerArray{self.tracerIndexWithName(name)};
         end
 
 
@@ -314,28 +314,28 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = IntegrateToTime(self,finalTime,cfl)
+        function self = integrateToTime(self,finalTime,cfl)
             if self.didSetupIntegrator ~= 1
                 if nargin < 3 || isempty(cfl)
                     cfl=0.5;
                 end
-                deltaT = self.wvt.TimeStepForCFL(cfl,self.outputInterval);
-                self.SetupIntegrator(deltaT,self.outputInterval,finalTime);
+                deltaT = self.wvt.timeStepForCFL(cfl,self.outputInterval);
+                self.setupIntegrator(deltaT,self.outputInterval,finalTime);
             end
    
-            self.OpenNetCDFFileForTimeStepping();
+            self.openNetCDFFileForTimeStepping();
             
             while(self.t < finalTime)
                 
                 self.integrateToNextOutputTime();
 
-                self.WriteTimeStepToNetCDFFile();
+                self.writeTimeStepToNetCDFFile();
             end
 
-%             self.CloseNetCDFFile();
+%             self.closeNetCDFFile();
         end
 
-        function varargout = SetupIntegrator(self,deltaT,outputInterval,finalTime)
+        function varargout = setupIntegrator(self,deltaT,outputInterval,finalTime)
             varargout = cell(1,0);
             if self.didSetupIntegrator == 1
                 warning('You cannot setup the same integrator more than once.')
@@ -359,9 +359,9 @@ classdef WaveVortexModel < handle
             end
 
             if didSetDeltaT == 0 && didSetOutputInterval == 0
-                deltaT = self.wvt.TimeStepForCFL(0.5);
+                deltaT = self.wvt.timeStepForCFL(0.5);
             elseif didSetDeltaT == 0 && didSetOutputInterval == 1
-                deltaT = self.wvt.TimeStepForCFL(0.5,outputInterval);
+                deltaT = self.wvt.timeStepForCFL(0.5,outputInterval);
             end
             
             if ~isempty(self.nonlinearFlux)
@@ -370,11 +370,11 @@ classdef WaveVortexModel < handle
 
             % Now set the initial conditions and point the integrator to
             % the correct flux function
-            Y0 = self.InitialConditionsArray();
+            Y0 = self.initialConditionsArray();
             if isempty(Y0{1})
                 error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
             end
-            self.integrator = ArrayIntegrator(@(t,y0) self.FluxAtTime(t,y0),Y0,deltaT);
+            self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT);
             self.integrator.currentTime = self.t;
 
             if didSetOutputInterval == 1
@@ -392,7 +392,7 @@ classdef WaveVortexModel < handle
             self.didSetupIntegrator = 1;
         end
         
-        function Y0 = InitialConditionsArray(self)
+        function Y0 = initialConditionsArray(self)
             Y0 = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
@@ -416,8 +416,8 @@ classdef WaveVortexModel < handle
                 end
             end
 
-            for i=1:length(self.tracer)
-                n=n+1;Y0{n} = self.tracer{i};
+            for i=1:length(self.tracerArray)
+                n=n+1;Y0{n} = self.tracerArray{i};
             end
         end
 
@@ -447,8 +447,8 @@ classdef WaveVortexModel < handle
                 end
             end
 
-            for iTracer=1:length(self.tracer)
-                n=n+1; self.tracer{iTracer} = self.integrator.currentY{n};
+            for iTracer=1:length(self.tracerArray)
+                n=n+1; self.tracerArray{iTracer} = self.integrator.currentY{n};
             end
             
 
@@ -461,7 +461,7 @@ classdef WaveVortexModel < handle
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 self.outputIndex = self.outputIndex + 1;
 
-                self.UpdateParticleTrackedFields();
+                self.updateParticleTrackedFields();
             end
         end
 
@@ -478,7 +478,7 @@ classdef WaveVortexModel < handle
             end
         end
 
-        function F = FluxAtTime(self,t,y0)
+        function F = fluxAtTime(self,t,y0)
             F = cell(1,1);
             n = 0;
             self.wvt.t = t;
@@ -509,8 +509,8 @@ classdef WaveVortexModel < handle
                 end
             end
 
-            if ~isempty(self.tracer)
-                for i=1:length(self.tracer)
+            if ~isempty(self.tracerArray)
+                for i=1:length(self.tracerArray)
                     phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
                     [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
                     n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
@@ -539,7 +539,7 @@ classdef WaveVortexModel < handle
             end
         end
 
-        function [deltaT,advectiveDT,oscillatoryDT] = TimeStepForCFL(self, cfl, outputInterval)
+        function [deltaT,advectiveDT,oscillatoryDT] = timeStepForCFL(self, cfl, outputInterval)
             % Return the time step (in seconds) to maintain the given cfl condition.
             % If the cfl condition is not given, 0.25 will be assumed.
             % If outputInterval is given, the time step will be rounded to evenly
@@ -580,7 +580,7 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function ncfile = CreateNetCDFFileForModelOutput(self,netcdfFile,options)
+        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 netcdfFile char {mustBeNonempty}
@@ -604,7 +604,7 @@ classdef WaveVortexModel < handle
             self.ncfile = ncfile;
         end
 
-        function OpenNetCDFFileForTimeStepping(self)
+        function openNetCDFFileForTimeStepping(self)
             arguments
                 self WaveVortexModel {mustBeNonempty}
             end
@@ -638,7 +638,7 @@ classdef WaveVortexModel < handle
                     end   
                 end
 
-                for iTracer = 1:length(self.tracer)
+                for iTracer = 1:length(self.tracerArray)
                     if self.wvt.isBarotropic
                         self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
                     else
@@ -647,7 +647,7 @@ classdef WaveVortexModel < handle
                 end
 
                 for iParticle = 1:length(self.particle)
-                    self.InitializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
+                    self.initializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
                 end
 
 %             else
@@ -659,10 +659,10 @@ classdef WaveVortexModel < handle
             self.incrementsWrittenToFile = 0;
 
             % Save the initial conditions
-            self.WriteTimeStepToNetCDFFile();         
+            self.writeTimeStepToNetCDFFile();         
         end
 
-        function WriteTimeStepToNetCDFFile(self)
+        function writeTimeStepToNetCDFFile(self)
             if ( ~isempty(self.ncfile) && mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0 )
                 self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
 
@@ -671,19 +671,19 @@ classdef WaveVortexModel < handle
                 end
 
                 for iParticle = 1:length(self.particle)
-                    [x,y,z,trackedFields] = self.ParticlePositions(self.particle{iParticle}.name);
-                    self.WriteParticleDataAtTimeIndex(self.particle{iParticle}.name,self.outputIndex,x,y,z,trackedFields);
+                    [x,y,z,trackedFields] = self.particlePositions(self.particle{iParticle}.name);
+                    self.writeParticleDataAtTimeIndex(self.particle{iParticle}.name,self.outputIndex,x,y,z,trackedFields);
                 end
 
-                for iTracer = 1:length(self.tracer)
-                    self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracer{iTracer});
+                for iTracer = 1:length(self.tracerArray)
+                    self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracerArray{iTracer});
                 end
 
                 self.incrementsWrittenToFile = self.incrementsWrittenToFile + 1;
             end
         end
 
-        function CloseNetCDFFile(self)
+        function closeNetCDFFile(self)
             if ~isempty(self.ncfile)
                 fprintf('Ending simulation. Wrote %d time points to file\n',self.incrementsWrittenToFile);
                 self.ncfile.close();
@@ -695,7 +695,7 @@ classdef WaveVortexModel < handle
         % Particles
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function InitializeParticleStorage(self,particleName, nParticles, trackedFieldNames)
+        function initializeParticleStorage(self,particleName, nParticles, trackedFieldNames)
             arguments
                 self WaveVortexModel
                 particleName char
@@ -739,7 +739,7 @@ classdef WaveVortexModel < handle
             self.netcdfVariableMapForParticleWithName(particleName) = variables;
         end
 
-        function WriteParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
+        function writeParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
             self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-x'),x,'t',iTime);
             self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
             if ~self.wvt.isBarotropic

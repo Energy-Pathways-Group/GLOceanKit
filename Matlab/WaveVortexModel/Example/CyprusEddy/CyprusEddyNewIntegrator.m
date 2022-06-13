@@ -145,13 +145,13 @@ return
 % Initialize new integrator, overwrite existing file, integrate
 %
 integrationTool = WaveVortexModelIntegrationTools(wvm, outputfile, outputInterval,'shouldOverwriteExisting',1);
-integrationTool.IntegrateToTime(2*outputInterval);
+integrationTool.integrateToTime(2*outputInterval);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Append/continue integration to the same file
 %
-integrationTool.IntegrateToTime(4*outputInterval);
+integrationTool.integrateToTime(4*outputInterval);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -160,7 +160,7 @@ integrationTool.IntegrateToTime(4*outputInterval);
 existingModelOutput = outputfile;
 restartModelOutput = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2-restart.nc';
 integrationTool = WaveVortexModelIntegrationTools(existingModelOutput, restartModelOutput);
-integrationTool.IntegrateToTime(6*outputInterval);
+integrationTool.integrateToTime(6*outputInterval);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -168,14 +168,14 @@ integrationTool.IntegrateToTime(6*outputInterval);
 %
 restartX2ModelOutput = '/Volumes/MoreStorage/Data/cyprus_eddy_wvm/cyprus_eddy-more-stratification-strong-2-restart-x2.nc';
 integrationTool = WaveVortexModelIntegrationTools(existingModelOutput, restartX2ModelOutput,[],'shouldDoubleResolution',1);
-integrationTool.IntegrateToTime(6*outputInterval);
+integrationTool.integrateToTime(6*outputInterval);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Restart from existing output, append to existing output
 %
 % integrationTool = WaveVortexModelIntegrationTools(newModelOutput, newModelOutput);
-% integrationTool.IntegrateToTime(4*maxTime/8);
+% integrationTool.integrateToTime(4*maxTime/8);
 
 netcdfTool = WaveVortexModelNetCDFTools(restartModelOutput,'timeIndex',Inf);
 wvm = netcdfTool.wvm;
