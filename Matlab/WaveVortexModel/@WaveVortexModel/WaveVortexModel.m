@@ -63,7 +63,7 @@ classdef WaveVortexModel < handle
     % Option 2: modelTime = integrateToNextOutputTime()
     % Option 3: modelTime = integrateToTime(futureTime)
     %
-    % ShowIntegrationTimeDiagnostics( ???? )
+    % showIntegrationTimeDiagnostics( ???? )
     %
     %
     % Setup NetCDF
@@ -314,25 +314,31 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = integrateToTime(self,finalTime,cfl)
+        function integrateToTime(self,finalTime,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                finalTime (1,:) double
+                options.cfl (1,:) double = 0.5
+                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
+            end
+
             if self.didSetupIntegrator ~= 1
-                if nargin < 3 || isempty(cfl)
-                    cfl=0.5;
+                [deltaT,advectiveDT,oscillatoryDT] = self.wvt.timeStepForCFL(options.cfl,self.outputInterval);
+                if strcmp(options.timeStepConstraint,"advective")
+                    deltaT = advectiveDT;
+                elseif strcmp(options.timeStepConstraint,"oscillatory")
+                    deltaT = oscillatoryDT;
+                elseif strcmp(options.timeStepConstraint,"min")
+                    deltaT = min(oscillatoryDT,advectiveDT);
                 end
-                deltaT = self.wvt.timeStepForCFL(cfl,self.outputInterval);
                 self.setupIntegrator(deltaT,self.outputInterval,finalTime);
             end
    
-            self.openNetCDFFileForTimeStepping();
-            
-            while(self.t < finalTime)
-                
+            self.openNetCDFFileForTimeStepping();  
+            while(self.t < finalTime)              
                 self.integrateToNextOutputTime();
-
                 self.writeTimeStepToNetCDFFile();
             end
-
-%             self.closeNetCDFFile();
         end
 
         function varargout = setupIntegrator(self,deltaT,outputInterval,finalTime)
@@ -424,7 +430,6 @@ classdef WaveVortexModel < handle
         function modelTime = integrateOneTimeStep(self)
             % Ask the integrator to take one step forward, then record the
             % results.
-
             self.integrator.IncrementForward();
             n=0;
             if self.linearDynamics == 0
@@ -518,7 +523,7 @@ classdef WaveVortexModel < handle
             end
         end
 
-        function ShowIntegrationTimeDiagnostics(self,integratorIncrement)
+        function showIntegrationTimeDiagnostics(self,integratorIncrement)
             if integratorIncrement == 0
                 fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
                 fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvt.inertialPeriod,0/self.wvt.inertialPeriod,self.nSteps);
