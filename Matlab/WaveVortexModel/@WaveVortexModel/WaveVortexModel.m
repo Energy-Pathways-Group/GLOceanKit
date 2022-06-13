@@ -285,7 +285,7 @@ classdef WaveVortexModel < handle
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
-                z (1,:) double
+                z (1,:) double = zeros(1,length(x))
             end
             arguments (Repeating)
                 trackedFields char
@@ -307,7 +307,7 @@ classdef WaveVortexModel < handle
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
-                z (1,:) double
+                z (1,:) double = zeros(1,length(x))
             end
             arguments (Repeating)
                 trackedFields char
@@ -316,7 +316,7 @@ classdef WaveVortexModel < handle
                 options.AdvectionInterpolation char {mustBeMember(options.AdvectionInterpolation,["linear","spline","exact"])} = "spline"
                 options.TrackedVarInterpolation char {mustBeMember(options.TrackedVarInterpolation,["linear","spline","exact"])} = "spline"
             end
-            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),xyOnly=1);
+            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.AdvectionInterpolation),isXYOnly=1);
             self.AddParticles('drifter',drifterFlux,x,y,z,trackedFields{:},TrackedVarInterpolation=options.TrackedVarInterpolation);
         end
 
@@ -441,7 +441,7 @@ classdef WaveVortexModel < handle
 
             for iParticles=1:length(self.particle)
                 p = self.particle{iParticles}.xyz;
-                if self.particle{iParticles}.fluxOp.xyOnly
+                if self.particle{iParticles}.fluxOp.isXYOnly
                     n=n+1;Y0{n} = p(1,:);
                     n=n+1;Y0{n} = p(2,:);
                 else
@@ -475,7 +475,7 @@ classdef WaveVortexModel < handle
             end
 
             for iParticles=1:length(self.particle)
-                if self.particle{iParticles}.fluxOp.xyOnly
+                if self.particle{iParticles}.fluxOp.isXYOnly
                     self.particle{iParticles}.xyz = cat(1,self.integrator.currentY{n+1},self.integrator.currentY{n+2});
                     n = n+2;
                 else
@@ -537,7 +537,7 @@ classdef WaveVortexModel < handle
 
             for iParticles=1:length(self.particle)
                 p = self.particle{iParticles}.xyz;
-                if self.particle{iParticles}.fluxOp.xyOnly
+                if self.particle{iParticles}.fluxOp.isXYOnly
                     [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p(1,:),p(2,:),p(3,:));
                     n=n+2;
                 else

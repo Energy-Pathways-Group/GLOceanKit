@@ -30,11 +30,29 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 model = WaveVortexModel(wvt);
 model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
 
+% set initial positions for a bunch of floats
+nTrajectories = 100;
+x = linspace(Lx/8,(7/8)*Lx, round((Lx/Ly)*sqrt(nTrajectories/(Lx/Ly))) );
+y = linspace(Ly/8,(7/8)*Ly, round(sqrt(nTrajectories/(Lx/Ly))));
+[xFloat,yFloat] = ndgrid(x,y);
+xFloat = reshape(xFloat,1,[]);
+yFloat = reshape(yFloat,1,[]);
+nTrajectories = length(xFloat);
+model.SetDrifterPositions(xFloat,yFloat,zeros(size(xFloat)));
+
 [deltaT,advectiveDT,oscillatoryDT] = model.TimeStepForCFL(0.15);
+finalTime = 75*86400;
+nT = model.SetupIntegrator(advectiveDT, 86400, finalTime);
 
-model.SetupIntegrator(advectiveDT, 86400);
+xFloatT = zeros(nT,nTrajectories);
+yFloatT = zeros(nT,nTrajectories);
+t = zeros(nT,1);
+[xFloatT(1,:),yFloatT(1,:)] = model.DrifterPositions;
 
-model.IntegrateToTime(75*86400);
+while(model.t < finalTime)
+    t(model.outputIndex) = model.integrateToNextOutputTime();
+    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:)] = model.DrifterPositions;
+end
 
 figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
@@ -42,10 +60,7 @@ return;
 
 % model.linearDynamics = 1;
 
-% set initial positions for a bunch of floats
-nTrajectories = 101;
-xFloat = Lx/2*ones(1,nTrajectories);
-yFloat = Ly/2*ones(1,nTrajectories);
+
 zFloat = linspace(-Lz,0,nTrajectories);
 
 model.SetFloatPositions(xFloat,yFloat,zFloat,'rho_total');

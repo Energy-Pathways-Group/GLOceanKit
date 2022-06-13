@@ -1,4 +1,4 @@
-function varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin)
+function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     if nargin-5 ~= nargout
         error('You must have the same number of input variables as output variables');
     end

@@ -13,14 +13,14 @@ classdef ParticleFluxOperation < TransformOperation
                 f function_handle
                 options.isXYOnly double {mustBeMember(options.isXYOnly,[0 1])} = 0 
             end
-            self.name = name;
-            self.f = f;
-            self.isXYOnly = options.isXYOnly;
-            if self.isXYOnly == 1
-                self.nVarOut = 2;
-            else
-                self.nVarOut = 3;
+            outputVariables(1) = StateVariable('u_p',{'x','y','z'},'m/s', 'velocity x-direction at particle positions');
+            outputVariables(2) = StateVariable('v_p',{'x','y','z'},'m/s', 'velocity y-direction at particle positions');
+            if ~options.isXYOnly
+                outputVariables(3) = StateVariable('w_p',{'x','y','z'},'m/s', 'velocity z-direction at particle positions');
             end
+
+            self@TransformOperation(name,outputVariables,f);
+            self.isXYOnly = options.isXYOnly;
         end
 
         function varargout = Compute(self,wvt,x,y,z)

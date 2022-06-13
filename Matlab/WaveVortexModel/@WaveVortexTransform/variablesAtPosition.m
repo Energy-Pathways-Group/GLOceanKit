@@ -31,10 +31,10 @@ end
         [varargout{:}] = self.ongridModes.ExternalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
     else
         [varargout{:}] = self.stateVariables(variableNames{:});
-        [varargout{:}] = self.InterpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
+        [varargout{:}] = self.interpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
     end
 
-    if ~isempty(self.offgridModes.k_ext)
+    if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)
         varargoutExt = cell(size(variableNames));
         [varargoutExt{:}] = self.ExternalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
         for iArg=1:length(varargout)

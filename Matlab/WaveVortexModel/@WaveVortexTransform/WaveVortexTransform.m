@@ -923,7 +923,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     methods (Access=protected)
         % protected — Access from methods in class or subclasses
-        varargout = InterpolatedFieldAtPosition(self,x,y,z,method,varargin);
+        varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin);
     end
 
     methods (Static)

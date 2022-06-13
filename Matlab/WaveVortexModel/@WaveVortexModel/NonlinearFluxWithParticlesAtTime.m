@@ -32,5 +32,5 @@ Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
 Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
 F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
 
-[u,v,w] = self.InterpolatedFieldAtPosition(x,y,z,'spline',U,V,W);
+[u,v,w] = self.interpolatedFieldAtPosition(x,y,z,'spline',U,V,W);
 end

@@ -252,7 +252,10 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         
     end
    
-        
+    methods (Access=protected)
+        % protected — Access from methods in class or subclasses
+        varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin);
+    end
         
 end 
 

@@ -476,7 +476,7 @@ classdef WaveVortexModelNetCDFFile < NetCDFFile
             if ~isempty(varNames)
                 varEulerianValues = self.wvt.VariableFieldsAtTime(self.t,varNames);
                 varLagrangianValues = cell(1,length(varNames));
-                [varLagrangianValues{:}] = self.wvt.InterpolatedFieldAtPosition(x,y,z,'spline',varEulerianValues{:});
+                [varLagrangianValues{:}] = self.wvt.interpolatedFieldAtPosition(x,y,z,'spline',varEulerianValues{:});
                 for iVar=1:length(varNames)
                     self.concatenateVariableAlongDimension(strcat(particleName,'-',varNames{iVar}),varLagrangianValues{iVar},'t',iTime);
                 end
