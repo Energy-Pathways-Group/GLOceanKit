@@ -127,7 +127,7 @@ classdef WaveVortexModel < handle
             arguments (Repeating)
                 variables char
             end
-            unknownVars = setdiff(variables,self.wvt.transformVariableWithName.keys);
+            unknownVars = setdiff(variables,self.wvt.stateVariableWithName.keys);
             if ~isempty(unknownVars)
                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
@@ -628,7 +628,7 @@ classdef WaveVortexModel < handle
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
 
             % Now add a time dimension
-            transformVar = self.wvt.transformVariableWithName('t');
+            transformVar = self.wvt.stateVariableWithName('t');
             attributes = containers.Map();
             attributes('units') = transformVar.units;
             attributes('description') = transformVar.description;
@@ -651,7 +651,7 @@ classdef WaveVortexModel < handle
                 self.initialConditionOnlyVariables = {};
                 self.timeSeriesVariables = {};
                 for iVar = 1:length(self.variablesToWriteToFile)
-                    transformVar = self.wvt.transformVariableWithName(self.variablesToWriteToFile{iVar});
+                    transformVar = self.wvt.stateVariableWithName(self.variablesToWriteToFile{iVar});
                     attributes = containers.Map();
                     attributes('units') = transformVar.units;
                     attributes('description') = transformVar.description;
@@ -758,10 +758,10 @@ classdef WaveVortexModel < handle
             end
 
             for iVar=1:length(trackedFieldNames)
-                if ~isKey(self.wvt.transformVariableWithName,trackedFieldNames{iVar})
+                if ~isKey(self.wvt.stateVariableWithName,trackedFieldNames{iVar})
                     error('Unable to find a StateVariable named %s.', trackedFieldNames{iVar});
                 end
-                transformVar = self.wvt.transformVariableWithName(trackedFieldNames{iVar});
+                transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
                 if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
                     error('The StateVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                 end
