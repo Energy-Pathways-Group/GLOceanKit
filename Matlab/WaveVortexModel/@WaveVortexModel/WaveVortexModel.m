@@ -142,19 +142,22 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WaveVortexModel(wvt)
+        function self = WaveVortexModel(wvt,options)
             arguments
                 wvt WaveVortexTransform {mustBeNonempty}
+                options.nonlinearFlux NonlinearFluxOperation
             end
 
             self.wvt = wvt; 
             self.t = wvt.t;
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
-             
+            if isfield(options,"nonlinearFlux")
+                self.nonlinearFlux = options.nonlinearFlux;
+            end
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
-            self.nonlinearFlux = SingleModeQGPVE(self.wvt);
+%             self.nonlinearFlux = SingleModeQGPVE(self.wvt);
 %             self.wvt.addTransformOperation(nlFlux);
 
             self.particleIndexWithName = containers.Map();
@@ -191,7 +194,7 @@ classdef WaveVortexModel < handle
                 transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
                 if self.wvt.isBarotropic == 1
                     if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                        error('The StateVariable %s does not have dimensions x,y and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                        error('The StateVariable %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                     end
                 else
                     if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
@@ -237,7 +240,9 @@ classdef WaveVortexModel < handle
                     varLagrangianValues = cell(1,length(trackedFieldNames));
                     p = self.particle{iParticle};
                     [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p.x,p.y,p.z,trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
-                    self.particle{iParticle}.trackedFields = vertcat(varLagrangianValues{:});
+                    for i=1:length(trackedFieldNames)
+                        self.particle{iParticle}.trackedFields.(trackedFieldNames{i}) = varLagrangianValues{i};
+                    end
                 end
             end
         end
@@ -463,6 +468,7 @@ classdef WaveVortexModel < handle
             self.stepsTaken = self.stepsTaken + 1;
             modelTime = self.initialTime + self.stepsTaken * self.integrator.stepSize;
             self.t = modelTime;
+            self.wvt.t = modelTime;
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 self.outputIndex = self.outputIndex + 1;
 
@@ -754,7 +760,7 @@ classdef WaveVortexModel < handle
             if ~isempty(trackedFields)
                 trackedFieldNames = fieldnames(trackedFields);
                 for iField=1:length(trackedFieldNames)
-                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-',trackedFieldNames{iField}),trackedField.(trackedFieldNames{iField}),'t',iTime);
+                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-',trackedFieldNames{iField}),trackedFields.(trackedFieldNames{iField}),'t',iTime);
                 end
             end
         end

@@ -4,6 +4,8 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         IMA0, IMAp, IMAm    % InteractionMasks
         EMA0, EMAp, EMAm    % EnergyMasks
         shouldAntiAlias = 1;
+        dLnN2
+        wvt
     end
 
     methods
@@ -16,6 +18,13 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
 
             self@NonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
+            
+            self.wvt = wvt;
+            if isa(wvt,'WaveVortexTransformConstantStratification')
+                self.dLnN2 = zeros(size(wvt.z));
+            elseif isa(wvt,'WaveVortexTransformHydrostatic')
+                self.dLnN2 = wvt.dLnN2;
+            end
 
             % Allow all nonlinear interactions
             self.IMA0 = ones(wvt.Nk,wvt.Nl,wvt.Nj);
@@ -34,7 +43,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
         function varargout = Compute(self,wvt,varargin)
-            phase = exp(self.iOmega*(wvt.t-wvt.t0));
+            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
             Apt = wvt.Ap .* phase;
             Amt = wvt.Am .* conj(phase);
             A0t = wvt.A0;
@@ -63,9 +72,9 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
             nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
-            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
+            Fp = (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
+            Fm = (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
+            F0 = (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
 
             varargout = {Fp,Fm,F0};
         end

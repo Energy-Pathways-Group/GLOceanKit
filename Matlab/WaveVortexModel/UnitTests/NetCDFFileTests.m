@@ -28,7 +28,8 @@ for iTransform=2
         wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
 
         U = .2;
-        period = wvt.initWithWaveModes(10,0,1,0,U,1);
+        omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
+		period = 2*pi/omega;
     elseif iTransform==2
         wvt = WaveVortexTransformSingleMode([Lx, Ly], [Nx, Ny], h=1.2,latitude=latitude);
 
@@ -45,7 +46,8 @@ for iTransform=2
         wvt = WaveVortexTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho,latitude=latitude,N2func=N2Function,dLnN2func=dLnN2Function);
 
         U = .2;
-        period = wvt.initWithWaveModes(10,0,1,0,U,1);
+        omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
+		period = 2*pi/omega;
     end
 
 

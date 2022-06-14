@@ -10,7 +10,7 @@ classdef NonlinearBoussinesq < NonlinearFluxOperation
         end
 
         function varargout = Compute(self,wvt,varargin)
-            phase = exp(self.iOmega*(wvt.t-wvt.t0));
+            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
             Apt = wvt.Ap .* phase;
             Amt = wvt.Am .* conj(phase);
             A0t = wvt.A0;
@@ -39,9 +39,9 @@ classdef NonlinearBoussinesq < NonlinearFluxOperation
             vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
             nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
-            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-            F0 = (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
+            Fp = (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
+            Fm = (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
+            F0 = (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
 
             varargout = {Fp,Fm,F0};
         end

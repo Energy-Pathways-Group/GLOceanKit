@@ -26,7 +26,8 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
 
 U = .2; phi=0;
-period = wvt.initWithWaveModes(10,0,1,phi,U,1);  
+omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
+period = 2*pi/omega;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

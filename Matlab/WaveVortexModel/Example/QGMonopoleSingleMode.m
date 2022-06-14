@@ -27,8 +27,8 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WaveVortexModel(wvt);
-model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
+model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1));
+% model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
 
 
 % set initial positions for a bunch of floats
