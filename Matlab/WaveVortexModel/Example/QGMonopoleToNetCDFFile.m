@@ -32,18 +32,13 @@ model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1));
 
 
 % set initial positions for a bunch of floats
-nTrajectories = 15000;
-x = linspace(Lx/8,(7/8)*Lx, round((Lx/Ly)*sqrt(nTrajectories/(Lx/Ly))) );
-y = linspace(Ly/8,(7/8)*Ly, round(sqrt(nTrajectories/(Lx/Ly))));
-[xFloat,yFloat] = ndgrid(x,y);
+[xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
 xFloat = reshape(xFloat,1,[]);
 yFloat = reshape(yFloat,1,[]);
 nTrajectories = length(xFloat);
 model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 
-[deltaT,advectiveDT,oscillatoryDT] = model.timeStepForCFL(0.15);
-finalTime = 75*86400;
-nT = model.setupIntegrator(advectiveDT, 86400, finalTime);
+nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400, finalTime=75*86400);
 
 model.createNetCDFFileForModelOutput('QGMonopole.nc',shouldOverwriteExisting=1);
 model.integrateToTime(finalTime);

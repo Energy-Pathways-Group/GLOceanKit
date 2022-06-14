@@ -154,6 +154,7 @@ classdef WaveVortexModel < handle
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
                 self.nonlinearFlux = options.nonlinearFlux;
+                self.wvt.addTransformOperation(self.nonlinearFlux);
             end
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
@@ -307,12 +308,6 @@ classdef WaveVortexModel < handle
             phi = self.tracerArray{self.tracerIndexWithName(name)};
         end
 
-
-
-        function stirWithConstituents(self,constituents)
-
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Integration loop
@@ -323,7 +318,7 @@ classdef WaveVortexModel < handle
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 finalTime (1,:) double
-                options.cfl (1,:) double = 0.5
+                options.cfl (1,:) double = 0.25
                 options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
             end
 
@@ -346,37 +341,41 @@ classdef WaveVortexModel < handle
             end
         end
 
-        function varargout = setupIntegrator(self,deltaT,outputInterval,finalTime)
-            varargout = cell(1,0);
+        function varargout = setupIntegrator(self,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                options.deltaT (1,1) double {mustBePositive}
+                options.cfl (1,:) double = 0.25
+                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
+                options.outputInterval
+                options.finalTime
+            end
+            
             if self.didSetupIntegrator == 1
                 warning('You cannot setup the same integrator more than once.')
                 return;
             end
 
-            % logic through some default settings
-            if nargin < 2 || isempty(deltaT) || deltaT <= 0
-                didSetDeltaT = 0;
+            if isfield(options,"deltaT")
+                if isfield(options,"cfl")
+                    warning('deltaT was already set, ignoring cfl')
+                end
+                if isfield(options,"timeStepConstraint")
+                    warning('deltaT was already set, ignoring timeStepConstraint')
+                end
             else
-                didSetDeltaT = 1;
-            end
-            
-            if (nargin < 3 || isempty(outputInterval) || deltaT <= 0) && ~isempty(self.outputInterval)
-                outputInterval = self.outputInterval;
-            end
-            if nargin < 3 || isempty(outputInterval)
-                didSetOutputInterval = 0;
-            else
-                didSetOutputInterval = 1;
-            end
-
-            if didSetDeltaT == 0 && didSetOutputInterval == 0
-                deltaT = self.wvt.timeStepForCFL(0.5);
-            elseif didSetDeltaT == 0 && didSetOutputInterval == 1
-                deltaT = self.wvt.timeStepForCFL(0.5,outputInterval);
-            end
-            
-            if ~isempty(self.nonlinearFlux)
-                self.wvt.addTransformOperation(self.nonlinearFlux);
+                if isfield(options,"outputInterval")
+                    [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl,options.outputInterval);
+                else
+                    [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl);
+                end
+                if strcmp(options.timeStepConstraint,"advective")
+                    deltaT = advectiveDT;
+                elseif strcmp(options.timeStepConstraint,"oscillatory")
+                    deltaT = oscillatoryDT;
+                elseif strcmp(options.timeStepConstraint,"min")
+                    deltaT = min(oscillatoryDT,advectiveDT);
+                end
             end
 
             % Now set the initial conditions and point the integrator to
@@ -388,16 +387,18 @@ classdef WaveVortexModel < handle
             self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT);
             self.integrator.currentTime = self.t;
 
-            if didSetOutputInterval == 1
-                self.outputInterval = outputInterval;
-                self.stepsPerOutput = round(outputInterval/self.integrator.stepSize);
+            if isfield(options,"outputInterval")
+                self.outputInterval = options.outputInterval;
+                self.stepsPerOutput = round(self.outputInterval/self.integrator.stepSize);
                 self.firstOutputStep = round((self.initialOutputTime-self.t)/self.integrator.stepSize);
             end
 
-            if ~(nargin < 4 || isempty(finalTime))
+            if isfield(options,"finalTime")
                  % total dT time steps to meet or exceed the requested time.
-                self.nSteps = ceil((finalTime-self.t)/self.integrator.stepSize);
+                self.nSteps = ceil((options.finalTime-self.t)/self.integrator.stepSize);
                 varargout{1} = length(self.firstOutputStep:self.stepsPerOutput:self.nSteps);
+            else
+                varargout = cell(1,0);
             end
 
             self.didSetupIntegrator = 1;

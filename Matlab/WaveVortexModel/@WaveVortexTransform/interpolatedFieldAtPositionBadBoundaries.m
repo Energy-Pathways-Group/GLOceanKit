@@ -11,6 +11,12 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     x_index = floor(x_tilde/dx);
     dy = self.y(2)-self.y(1);
     y_index = floor(y_tilde/dy);
+    dz = self.z(2)-self.z(1);
+    z_index = self.Nz+floor(z/dz)-1;
+
+    if length(unique(diff(self.z)))>1
+       error('This optimized interpolation does not yet work for uneven z') 
+    end
 
     % Identify the particles along the interpolation boundary
     if strcmp(method,'spline')
@@ -18,20 +24,19 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     elseif strcmp(method,'linear')
         S = 1+1;
     end
-    bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
 
-    % then do the same for particles that along the boundary.
-    x_tildeS = mod(x(bp)+S*dx,self.Lx);
-    y_tildeS = mod(y(bp)+S*dy,self.Ly);
-
+%             % can't handle particles at the boundary
+%             xrange = mod(((min(x_index)-S):(max(x_index)+S)),self.Nx)+1;
+%             yrange = mod(((min(y_index)-S):(max(y_index)+S)),self.Ny)+1;
+    xrange = ((min(x_index)-S):(max(x_index)+S))+1;
+    yrange = ((min(y_index)-S):(max(y_index)+S))+1;
+    zrange = (max((min(z_index)-S),0):min((max(z_index)+S),self.Nz-1))+1;
+    
+    [X,Y,Z] = ndgrid(self.x,self.y,self.z);
     varargout = cell(1,nargout);
     for i = 1:nargout
         U = varargin{i}; % gridded field
-        u = zeros(size(x)); % interpolated value
-        u(~bp) = interpn(self.X,self.Y,U,x_tilde(~bp),y_tilde(~bp),method);
-        if any(bp)
-            u(bp) = interpn(self.X,self.Y,circshift(U,[S S 0]),x_tildeS,y_tildeS,method);
-        end
+        u = interpn(X(xrange,yrange,zrange),Y(xrange,yrange,zrange),Z(xrange,yrange,zrange),U(xrange,yrange,zrange),x_tilde,y_tilde,z,method);
         varargout{i} = u;
     end
 end

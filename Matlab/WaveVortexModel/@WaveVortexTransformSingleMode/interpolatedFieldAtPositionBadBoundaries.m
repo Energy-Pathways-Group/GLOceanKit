@@ -18,20 +18,18 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     elseif strcmp(method,'linear')
         S = 1+1;
     end
-    bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
 
-    % then do the same for particles that along the boundary.
-    x_tildeS = mod(x(bp)+S*dx,self.Lx);
-    y_tildeS = mod(y(bp)+S*dy,self.Ly);
-
+%             % can't handle particles at the boundary
+%             xrange = mod(((min(x_index)-S):(max(x_index)+S)),self.Nx)+1;
+%             yrange = mod(((min(y_index)-S):(max(y_index)+S)),self.Ny)+1;
+    xrange = ((min(x_index)-S):(max(x_index)+S))+1;
+    yrange = ((min(y_index)-S):(max(y_index)+S))+1;
+    
+    [X,Y] = self.grid;
     varargout = cell(1,nargout);
     for i = 1:nargout
         U = varargin{i}; % gridded field
-        u = zeros(size(x)); % interpolated value
-        u(~bp) = interpn(self.X,self.Y,U,x_tilde(~bp),y_tilde(~bp),method);
-        if any(bp)
-            u(bp) = interpn(self.X,self.Y,circshift(U,[S S 0]),x_tildeS,y_tildeS,method);
-        end
+        u = interpn(X(xrange,yrange),Y(xrange,yrange),U(xrange,yrange),x_tilde,y_tilde,method);
         varargout{i} = u;
     end
 end
