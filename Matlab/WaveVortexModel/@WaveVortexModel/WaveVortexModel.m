@@ -2,18 +2,9 @@ classdef WaveVortexModel < handle
     %WaveVortexModel Tools for integrating (time-stepping)
     %the WaveVortexModel.
     %
-    %   inttool = WaveVortexModel(wvm,t) creates a new
-    %   integration tool for the model. If a time (t) is given, the model
-    %   coefficients are assumed represent that model time. Otherwise t=0.
-    %
-    %   inttool = WaveVortexModel(existingModelOutput,restartIndex,shouldDoubleResolution)
-    %   opens existing NetCDF output from the WaveVortexModel and uses that
-    %   for a restart. restartIndex is optional, defaults to Inf (last time
-    %   point). shouldDoubleResolution is optional, defaults to 0.
-    %
-    %   'shouldOverwriteExisting', default 0
-    %   'shouldDoubleResolution', 0 or 1
-    %   'restartIndex', index in existingModelOutput to use as restart.
+    %   model = WaveVortexModel(wvt) creates a new model using the wvt
+    %   (WaveVortexTransform)
+
 
     % TODO, May 5th, 2022
     % - add multiple tracers, store ids and names in struct?
@@ -120,7 +111,7 @@ classdef WaveVortexModel < handle
 
     methods
 
-        function WriteVariablesToFile(self,variables)
+        function addVariablesToFile(self,variables)
             arguments
                 self WaveVortexModel
             end
@@ -131,7 +122,7 @@ classdef WaveVortexModel < handle
             if ~isempty(unknownVars)
                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
-            self.variablesToWriteToFile = variables;
+            self.variablesToWriteToFile = union(self.variablesToWriteToFile,variables);
         end
 
 
