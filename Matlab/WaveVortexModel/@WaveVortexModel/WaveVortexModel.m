@@ -74,7 +74,7 @@ classdef WaveVortexModel < handle
         integrator      % Array integrator
         
         % These methods all assume a fixed time-step integrator
-        startTime       % wall clock, to keep track of the expected integration time
+
         stepsTaken=0    % number of RK4 steps/increments that have been made
         nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
 
@@ -103,6 +103,10 @@ classdef WaveVortexModel < handle
         timeSeriesVariables = {}
 
         netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
+
+        integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
+        integrationLastInformModelTime
+        integrationInformTime = 10
     end
 
     properties (Dependent)
@@ -305,33 +309,6 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function integrateToTime(self,finalTime,options)
-            arguments
-                self WaveVortexModel {mustBeNonempty}
-                finalTime (1,:) double
-                options.cfl (1,:) double = 0.25
-                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
-            end
-
-            if self.didSetupIntegrator ~= 1
-                [deltaT,advectiveDT,oscillatoryDT] = self.wvt.timeStepForCFL(options.cfl,self.outputInterval);
-                if strcmp(options.timeStepConstraint,"advective")
-                    deltaT = advectiveDT;
-                elseif strcmp(options.timeStepConstraint,"oscillatory")
-                    deltaT = oscillatoryDT;
-                elseif strcmp(options.timeStepConstraint,"min")
-                    deltaT = min(oscillatoryDT,advectiveDT);
-                end
-                self.setupIntegrator(deltaT,self.outputInterval,finalTime);
-            end
-   
-            self.openNetCDFFileForTimeStepping();  
-            while(self.t < finalTime)              
-                self.integrateToNextOutputTime();
-                self.writeTimeStepToNetCDFFile();
-            end
-        end
-
         function varargout = setupIntegrator(self,options)
             arguments
                 self WaveVortexModel {mustBeNonempty}
@@ -354,6 +331,7 @@ classdef WaveVortexModel < handle
                 if isfield(options,"timeStepConstraint")
                     warning('deltaT was already set, ignoring timeStepConstraint')
                 end
+                deltaT = options.deltaT;
             else
                 if isfield(options,"outputInterval")
                     [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl,options.outputInterval);
@@ -395,6 +373,102 @@ classdef WaveVortexModel < handle
             self.didSetupIntegrator = 1;
         end
         
+
+        function integrateToTime(self,finalTime)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                finalTime (1,:) double
+            end
+
+            if self.didSetupIntegrator ~= 1
+                self.setupIntegrator();
+            end
+            
+            self.showIntegrationStartDiagnostics(finalTime);
+            self.openNetCDFFileForTimeStepping();
+            while(self.t < finalTime)
+                self.integrateOneTimeStep();
+                self.showIntegrationTimeDiagnostics(finalTime);
+            end
+        end
+
+
+        function modelTime = integrateToNextOutputTime(self)
+            if isempty(self.outputInterval)
+                fprintf('You did not set an output interval, so how could I integrateToNextOutputTime?\n');
+                return;
+            end
+            
+            self.openNetCDFFileForTimeStepping();
+            if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
+                modelTime = self.integrateOneTimeStep;
+            end
+
+            while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
+                modelTime = self.integrateOneTimeStep;
+            end
+        end
+
+        function showIntegrationStartDiagnostics(self,finalTime)
+            fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
+            fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods.\n',self.t/self.wvt.inertialPeriod,finalTime/self.wvt.inertialPeriod);
+            self.integrationLastInformWallTime = datetime('now');
+            self.integrationLastInformModelTime = self.wvt.t;
+        end
+
+        function showIntegrationTimeDiagnostics(self,finalTime)
+            deltaWallTime = datetime('now')-self.integrationLastInformWallTime;
+            if ( seconds(deltaWallTime) > self.integrationInformTime)
+                wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
+                wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
+                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, datestr(wallTimeRemaining, 'HH:MM:SS'), datestr(datetime('now')+wallTimeRemaining)) ;
+                self.wvt.summarizeEnergyContent();
+                self.integrationLastInformWallTime = datetime('now');
+                self.integrationLastInformModelTime = self.wvt.t;
+            end
+        end
+
+        function [deltaT,advectiveDT,oscillatoryDT] = timeStepForCFL(self, cfl, outputInterval)
+            % Return the time step (in seconds) to maintain the given cfl condition.
+            % If the cfl condition is not given, 0.25 will be assumed.
+            % If outputInterval is given, the time step will be rounded to evenly
+            % divide the outputInterval.
+            if nargin == 1
+                cfl = 0.25;
+            end
+
+            omega = self.wvt.Omega;
+            period = 2*pi/max(abs(omega(:)));
+            [u,v] = self.wvt.velocityField();
+            U = max(max(max( sqrt(u.*u + v.*v) )));
+            dx = (self.wvt.x(2)-self.wvt.x(1));
+
+            advectiveDT = cfl*dx/U;
+            oscillatoryDT = cfl*period;
+            % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
+
+            fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
+
+            if advectiveDT < oscillatoryDT
+                deltaT = advectiveDT;
+            else
+                deltaT = oscillatoryDT;
+            end
+
+            if nargin == 3 && ~isempty(outputInterval)
+                deltaT = outputInterval/ceil(outputInterval/deltaT);
+                stepsPerOutput_ = round(outputInterval/deltaT);
+                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',deltaT,stepsPerOutput_);
+            end
+
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Integration: initial conditions, flux, and one time step
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function Y0 = initialConditionsArray(self)
             Y0 = cell(1,1);
             n = 0;
@@ -421,6 +495,46 @@ classdef WaveVortexModel < handle
 
             for i=1:length(self.tracerArray)
                 n=n+1;Y0{n} = self.tracerArray{i};
+            end
+        end
+
+        function F = fluxAtTime(self,t,y0)
+            F = cell(1,1);
+            n = 0;
+            self.wvt.t = t;
+            if self.linearDynamics == 0
+                nlF = cell(1,self.nonlinearFlux.nVarOut);
+                [nlF{:}] = self.nonlinearFlux.Compute(self.wvt);
+                if self.nonlinearFlux.doesFluxAp == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+                if self.nonlinearFlux.doesFluxAm == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+                if self.nonlinearFlux.doesFluxA0 == 1
+                    n=n+1; F{n} = nlF{n};
+                end
+            else
+
+            end
+
+            for iParticles=1:length(self.particle)
+                p = self.particle{iParticles};
+                if self.particle{iParticles}.fluxOp.isXYOnly
+                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
+                    n=n+2;
+                else
+                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
+                    n=n+3;
+                end
+            end
+
+            if ~isempty(self.tracerArray)
+                for i=1:length(self.tracerArray)
+                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
+                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
+                end
             end
         end
 
@@ -466,116 +580,11 @@ classdef WaveVortexModel < handle
 
                 self.updateParticleTrackedFields();
             end
+
+            self.writeTimeStepToNetCDFFile(); 
         end
 
 
-        function modelTime = integrateToNextOutputTime(self)
-            if isempty(self.outputInterval)
-                fprintf('You did not set an output interval, so how could I integrateToNextOutputTime?\n');
-                return;
-            end
-            
-            modelTime = self.integrateOneTimeStep;
-            while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
-                modelTime = self.integrateOneTimeStep;
-            end
-        end
-
-        function F = fluxAtTime(self,t,y0)
-            F = cell(1,1);
-            n = 0;
-            self.wvt.t = t;
-            if self.linearDynamics == 0
-                nlF = cell(1,self.nonlinearFlux.nVarOut);
-                [nlF{:}] = self.nonlinearFlux.Compute(self.wvt);
-                if self.nonlinearFlux.doesFluxAp == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.nonlinearFlux.doesFluxAm == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.nonlinearFlux.doesFluxA0 == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-            else
-                
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
-                    n=n+2;
-                else
-                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
-                    n=n+3;
-                end
-            end
-
-            if ~isempty(self.tracerArray)
-                for i=1:length(self.tracerArray)
-                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
-                end
-            end
-        end
-
-        function showIntegrationTimeDiagnostics(self,integratorIncrement)
-            if integratorIncrement == 0
-                fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
-                fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods with %d RK4 time steps.\n',self.t/self.wvt.inertialPeriod,0/self.wvt.inertialPeriod,self.nSteps);
-                if ~isempty(self.ncfile)
-                    %fprintf('\tWriting %d of those time steps to file. Will write to output file starting at index %d.\n',sum(self.outputSteps>=0),self.outputIndex-self.incrementsWrittenToFile);
-                end
-            elseif integratorIncrement == 1
-                self.startTime = datetime('now');
-            else
-                timePerStep = (datetime('now')-self.startTime)/(integratorIncrement-1);
-                % We want to inform the user about every 30 seconds
-                stepsPerInform = ceil(30/seconds(timePerStep));
-                if (integratorIncrement==2 || mod(integratorIncrement,stepsPerInform) == 0)
-                    timeRemaining = (self.nSteps-integratorIncrement+1)*timePerStep;
-                    fprintf('\tmodel time t=%.2f inertial periods, RK4 time step %d of %d. Estimated finish time %s (%s from now)\n', self.t/inertialPeriod, integratorIncrement, self.nSteps, datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
-                    self.wvt.summarizeEnergyContent();
-                end
-            end
-        end
-
-        function [deltaT,advectiveDT,oscillatoryDT] = timeStepForCFL(self, cfl, outputInterval)
-            % Return the time step (in seconds) to maintain the given cfl condition.
-            % If the cfl condition is not given, 0.25 will be assumed.
-            % If outputInterval is given, the time step will be rounded to evenly
-            % divide the outputInterval.
-            if nargin == 1
-                cfl = 0.25;
-            end
-
-            omega = self.wvt.Omega;
-            period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvt.velocityField();
-            U = max(max(max( sqrt(u.*u + v.*v) )));
-            dx = (self.wvt.x(2)-self.wvt.x(1));
-
-            advectiveDT = cfl*dx/U;
-            oscillatoryDT = cfl*period;
-            % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
-
-            fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
-
-            if advectiveDT < oscillatoryDT
-                deltaT = advectiveDT;
-            else
-                deltaT = oscillatoryDT;
-            end
-
-            if nargin == 3 && ~isempty(outputInterval)
-                deltaT = outputInterval/ceil(outputInterval/deltaT);
-                stepsPerOutput_ = round(outputInterval/deltaT);
-                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',deltaT,stepsPerOutput_);
-            end
-
-        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -611,7 +620,7 @@ classdef WaveVortexModel < handle
             arguments
                 self WaveVortexModel {mustBeNonempty}
             end
-%             if ~isempty(self.ncfile)
+             if ~isempty(self.ncfile)
                 % Sort through which variables we will record a time series
                 % for, and which we will only write initial conditions.
                 self.initialConditionOnlyVariables = {};
@@ -652,7 +661,7 @@ classdef WaveVortexModel < handle
                 for iParticle = 1:length(self.particle)
                     self.initializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
                 end
-
+             end
 %             else
 %                 if isempty(self.ncfile.ncid)
 %                     self.ncfile.open();
@@ -757,11 +766,7 @@ classdef WaveVortexModel < handle
             end
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Integration
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
         
 

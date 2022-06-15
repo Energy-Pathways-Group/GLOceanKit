@@ -12,9 +12,9 @@ function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(sel
     % Am = AmIO + AmIGW;
     % A0 = A0G + A0G0 + A0rhobar;
     shouldExcludeNyquist = 1;
-    ApIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
-    AmIGW = WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
-    A0G = 6e-2*WaveVortexModel.GenerateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    ApIGW = WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    AmIGW = WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    A0G = 6e-2*WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
 
     ApIO = zeros(size(self.Ap));
     AmIO = zeros(size(self.Ap));

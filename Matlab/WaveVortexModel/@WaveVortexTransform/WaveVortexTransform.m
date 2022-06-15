@@ -780,7 +780,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             wavePlusPct = 100*self.internalWaveEnergyPlus/self.waveEnergy;
             waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
             
-            fprintf('%.1f m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
+            fprintf('%.1g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
         end
   
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -967,7 +967,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Generate a 3D matrix to be Hermitian, except at k=l=0
-        A = GenerateHermitianRandomMatrix( size, shouldExcludeNyquist )
+        A = generateHermitianRandomMatrix( size, shouldExcludeNyquist )
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

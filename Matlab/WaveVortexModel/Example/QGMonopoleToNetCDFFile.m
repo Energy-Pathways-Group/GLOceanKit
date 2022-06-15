@@ -38,12 +38,13 @@ yFloat = reshape(yFloat,1,[]);
 nTrajectories = length(xFloat);
 model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 
-nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400, finalTime=75*86400);
+model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400);
 
 model.createNetCDFFileForModelOutput('QGMonopole.nc',shouldOverwriteExisting=1);
-model.integrateToTime(finalTime);
+model.integrateToTime(75*86400);
 
 ncfile = model.ncfile;
 [x,y] = ncfile.readVariables('drifter-x','drifter-y');
+qgpv = ncfile.readVariables('drifter-qgpv');
 
 figure, plot(x.',y.')

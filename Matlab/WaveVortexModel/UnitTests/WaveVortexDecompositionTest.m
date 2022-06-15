@@ -52,18 +52,18 @@ shouldExcludeNyquist = 1;
 A0 = randn(1,1)+sqrt(-1)*randn(1,1);
 
 % Generate waves---with one additional condition for the inertial waves.
-Ap = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
-Am = InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+Ap = InternalWaveModel.generateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+Am = InternalWaveModel.generateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
 Am(1,1,:) = conj(Ap(1,1,:)); % Inertial motions go only one direction!
 
 % Generate barotropic geostrophic currents--amplitude prefactor of 1e-3 is
 % set in order to keep the energetics similar magnitude to the waves.
-B0 = 2e-3*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K(:,:,1)), shouldExcludeNyquist);
+B0 = 2e-3*InternalWaveModel.generateHermitianRandomMatrix( size(wavemodel.K(:,:,1)), shouldExcludeNyquist);
 B0(1,1) = 0;
 
 % Generate internal geostrophic currents--amplitude prefactor of 6e-2 is
 % set in order to keep the energetics similar magnitude to the waves.
-B = 6e-2*InternalWaveModel.GenerateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
+B = 6e-2*InternalWaveModel.generateHermitianRandomMatrix( size(wavemodel.K), shouldExcludeNyquist );
 B(1,1,:) = 0;
 
 % Now initial th models with these.
