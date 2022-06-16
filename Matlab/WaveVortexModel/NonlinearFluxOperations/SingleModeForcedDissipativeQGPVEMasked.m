@@ -20,7 +20,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             k_f = options.k_f;
             u_rms = options.u_rms;
 
-            r = 0.04*2*pi*u_rms*k_r; % 1/s
+            r = 0.1*(1/sqrt(5))*u_rms*k_r; % 1/s
             nu = (3/2)*(wvt.x(2)-wvt.x(1))*u_rms; % m^2/s
 
             self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta);
@@ -42,7 +42,10 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             
             kappa_epsilon = 1/100;
             epsilon = u_rms^3 * (2*pi)^3 * k_r;
-            desiredEnergy = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
+            desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
+
+            kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
+            desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
             A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
 
             wvt.A0 = A0;
