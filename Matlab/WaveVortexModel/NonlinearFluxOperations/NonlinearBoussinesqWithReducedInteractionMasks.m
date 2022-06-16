@@ -44,9 +44,9 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
 
         function varargout = Compute(self,wvt,varargin)
             phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
-            Apt = wvt.Ap .* phase;
-            Amt = wvt.Am .* conj(phase);
-            A0t = wvt.A0;
+            Apt = self.IMAp .* wvt.Ap .* phase;
+            Amt = self.IMAm .* wvt.Am .* conj(phase);
+            A0t = self.IMA0 .* wvt.A0;
 
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = wvt.UAp.*Apt + wvt.UAm.*Amt + wvt.UA0.*A0t;
@@ -72,9 +72,9 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
             nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
-            Fp = (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
-            Fm = (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
-            F0 = (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
+            Fp = self.EMAp .* (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
+            Fm = self.EMAm .* (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
+            F0 = self.EMA0 .* (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
 
             varargout = {Fp,Fm,F0};
         end

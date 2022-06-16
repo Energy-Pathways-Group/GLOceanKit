@@ -313,7 +313,7 @@ classdef WaveVortexModel < handle
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 options.deltaT (1,1) double {mustBePositive}
-                options.cfl (1,:) double = 0.25
+                options.cfl (1,1) double
                 options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
                 options.outputInterval
                 options.finalTime
@@ -333,6 +333,9 @@ classdef WaveVortexModel < handle
                 end
                 deltaT = options.deltaT;
             else
+                if ~isfield(options,"cfl")
+                    options.cfl = 0.25;
+                end
                 if isfield(options,"outputInterval")
                     [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl,options.outputInterval);
                 else
