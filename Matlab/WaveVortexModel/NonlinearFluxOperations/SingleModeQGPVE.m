@@ -89,7 +89,6 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
     end
 
     methods (Static)
-
         function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
             arguments
                 ncfile NetCDFFile {mustBeNonempty}
@@ -97,9 +96,6 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             end
             nlFlux = SingleModeQGPVE(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
         end
-
-        
-
     end
 
 end

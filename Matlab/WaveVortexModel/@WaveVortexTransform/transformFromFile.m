@@ -76,7 +76,14 @@ function wvt = transformFromFile(path,options)
         end
         [wvt.Ap,wvt.Am,wvt.A0] = wvt.transformUVEtaToWaveVortex(u,v,eta,self.currentTime);
         fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WaveVortexTransform'));
+    elseif all(isKey(ncfile.complexVariableWithName,{'A0'}))
+        if hasTimeDimension == 1
+            wvt.A0 = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0');
+        else
+            wvt.A0 = ncfile.readVariables('A0');
+        end
+        fprintf('%s initialized from A0.\n',ncfile.attributes('WaveVortexTransform'));
     else
-        fprintf('%s initialized without data.\n',ncfile.attributes('WaveVortexTransform'));
+        warning('%s initialized without data.\n',ncfile.attributes('WaveVortexTransform'));
     end
 end

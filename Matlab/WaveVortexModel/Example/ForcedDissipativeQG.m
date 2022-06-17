@@ -14,34 +14,22 @@ latitude = 25;
 
 wvt = WaveVortexTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
 
+% Forcing parameters
 dk = (wvt.k(2)-wvt.k(1));
 k_f = 30*dk;
 k_r = 4*dk;
-
-% f_zeta = 0.01*(wvt.f0)^2;
-% epsilon = 10*(f_zeta.^(3/2))/(k_f.*k_f); % m^2/s^3
-% r = 0.04*(epsilon*k_r^2)^(1/3); % 1/s
-% u_rms = (epsilon/k_r)^(1/3); % m/s
-% nu = (3/2)*(wvt.x(2)-wvt.x(1))*u_rms; % m^2/s
-% 
-% fdFlux = SingleModeForcedDissipativeQGPVE(wvt,k_f=k_f,f_zeta=f_zeta,r=r,nu=nu);
-
 u_rms = 0.05;
-u_max = pi*u_rms;
+
+
 fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms);
 model = WaveVortexModel(wvt,nonlinearFlux=fdFlux);
 
-
-% [u,v] = wvt.velocityField();
-% U = max(max(max( sqrt(u.*u + v.*v) )))
-
+u_max = pi*u_rms; % not sure how much bigger u_max will be than u_rms
 deltaT = (wvt.x(2)-wvt.x(1))*0.25/u_max;
 model.setupIntegrator(deltaT=deltaT, outputInterval=86400);
 
-% model.integrateOneTimeStep();
-
-% model.integrateToNextOutputTime();
-model.integrateToTime(500*86400);
+model.createNetCDFFileForModelOutput('ForcedDissipativeQG.nc',shouldOverwriteExisting=1);
+model.integrateToTime(250*86400);
 
 % model.integrateToNextOutputTime();
 

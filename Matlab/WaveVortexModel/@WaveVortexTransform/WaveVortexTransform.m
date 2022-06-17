@@ -314,7 +314,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                 end
 
                 if isKey(self.stateVariableWithName,modelOp.outputVariables(iVar).name)
-                    warning('This model operation will replace the existing operation for computing %s',modelOp.outputVariables(iVar).name);
+                    fprintf('\t->This model operation will replace the existing operation for computing %s\n',modelOp.outputVariables(iVar).name);
                 end
                 self.stateVariableWithName(modelOp.outputVariables(iVar).name) = modelOp.outputVariables(iVar);
                 if modelOp.outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(contains(self.timeDependentStateVariables,modelOp.outputVariables(iVar).name))
@@ -324,7 +324,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             if ~isempty(modelOp.name)
                 if isKey(self.transformOperationWithName,modelOp.name)
-                    warning('This model operation will replace the existing operation %s',modelOp.name);
+                    fprintf('\t->This model operation will replace the existing operation %s\n',modelOp.name);
                 end
                 self.transformOperationWithName(modelOp.name) = modelOp;
             end

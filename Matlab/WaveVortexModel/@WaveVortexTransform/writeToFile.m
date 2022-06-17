@@ -9,7 +9,8 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
         variables char
     end
     arguments
-        options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+        options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
+        options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1 
     end
     [filepath,name,~] = fileparts(netcdfFile);
     if isempty(filepath)
@@ -61,7 +62,7 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
         N2Function = wvt.N2Function;
         dLnN2Function = wvt.dLnN2Function;
         save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
-        fprintf('In addition to the NetCDF file, a .mat sidecar file was already created at the same path.\n');
+        fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
     else
         error('Not implemented');
     end
@@ -74,9 +75,12 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
         ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
     end
 
-    % We add t, *if* some variable are being written
-    if ~isempty(variables) && isempty(intersect(variables,{'t'}))
-        variables{end+1} = 't';
+    if options.shouldAddDefaultVariables == 1
+        if isempty(variables)
+            variables = {'A0','Ap','Am','t'};
+        else
+            variables = union(variables,{'A0','Ap','Am','t'});
+        end
     end
 
     for iVar=1:length(variables)

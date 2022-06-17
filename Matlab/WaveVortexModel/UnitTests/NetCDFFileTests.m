@@ -52,7 +52,7 @@ for iTransform=2
 
 
 
-    wvt.writeToFile('test.nc','Ap','Am','A0',shouldOverwriteExisting=1);
+    wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
 
     wvt2 = WaveVortexTransform.transformFromFile('test.nc',iTime=243);
 end

@@ -41,7 +41,7 @@ model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400);
 
 model.createNetCDFFileForModelOutput('QGMonopole.nc',shouldOverwriteExisting=1);
-model.addNetCDFVariables('A0');
+model.setNetCDFOutputVariables('A0');
 model.integrateToTime(75*86400);
 
 ncfile = model.ncfile;

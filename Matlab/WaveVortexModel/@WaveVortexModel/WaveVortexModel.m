@@ -98,7 +98,7 @@ classdef WaveVortexModel < handle
         tracerArray = {}
 
         didSetupIntegrator=0
-        variablesToWriteToFile = {}
+        variablesToWriteToFile = {'Ap','Am','A0'}
         initialConditionOnlyVariables = {}
         timeSeriesVariables = {}
 
@@ -115,7 +115,7 @@ classdef WaveVortexModel < handle
 
     methods
 
-        function addNetCDFVariables(self,variables)
+        function addNetCDFOutputVariables(self,variables)
             arguments
                 self WaveVortexModel
             end
@@ -129,7 +129,7 @@ classdef WaveVortexModel < handle
             self.variablesToWriteToFile = union(self.variablesToWriteToFile,variables);
         end
 
-        function setNetCDFVariables(self,variables)
+        function setNetCDFOutputVariables(self,variables)
             arguments
                 self WaveVortexModel
             end
@@ -143,7 +143,7 @@ classdef WaveVortexModel < handle
             self.variablesToWriteToFile = variables;
         end
 
-        function removeNetCDFVariables(self,variables)
+        function removeNetCDFOutputVariables(self,variables)
             arguments
                 self WaveVortexModel
             end
@@ -346,12 +346,13 @@ classdef WaveVortexModel < handle
                 return;
             end
 
+            if ~isempty(self.ncfile) && ~isfield(options,"outputInterval")
+                error('You set a NetCDF output file, but have not set an outputInterval. Use -setupIntegrator with an outputInterval.');
+            end
+
             if isfield(options,"deltaT")
                 if isfield(options,"cfl")
                     warning('deltaT was already set, ignoring cfl')
-                end
-                if isfield(options,"timeStepConstraint")
-                    warning('deltaT was already set, ignoring timeStepConstraint')
                 end
                 deltaT = options.deltaT;
             else
@@ -631,7 +632,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
             end
 
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting);
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
 
             % Now add a time dimension
             transformVar = self.wvt.stateVariableWithName('t');
@@ -667,9 +668,8 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                         self.timeSeriesVariables{end+1} = self.variablesToWriteToFile{iVar};
                         if transformVar.isComplex == 1
                             self.ncfile.initComplexVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
-                            self.ncfile.setVariable(transformVar.name,self.wvt.(transformVar.name));
                         else
-                            self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),horzcat(transformVar.dimensions,'t'),attributes);
+                            self.ncfile.initVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
                         end
                     else
                         self.initialConditionOnlyVariables{end+1} = self.variablesToWriteToFile{iVar};
@@ -711,7 +711,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
 
                 for iVar=1:length(self.timeSeriesVariables)
-                    selself.ncfilef.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',self.outputIndex);
+                    self.ncfile.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',self.outputIndex);
                 end
 
                 for iParticle = 1:length(self.particle)

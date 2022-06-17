@@ -14,7 +14,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 options.k_r (1,1) double =(wvt.k(2)-wvt.k(1))*2
                 options.k_f (1,1) double =(wvt.k(2)-wvt.k(1))*20
                 options.u_rms (1,1) double = 0.2
-                options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
+                options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
+                options.shouldAddInitialPV  double {mustBeMember(options.shouldAddInitialPV,[0 1])} = 0
             end
             k_r = options.k_r;
             k_f = options.k_f;
@@ -45,18 +46,19 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             self.EMA0 = ones(wvt.Nk,wvt.Nl,wvt.Nj);
             self.EMA0(F>0) = 0;
             
-            kappa_epsilon = 1/100;
-            epsilon = u_rms^3 * (2*pi)^3 * k_r;
-            desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
+            if options.shouldAddInitialPV == 1
+                kappa_epsilon = 1/100;
+                epsilon = u_rms^3 * (2*pi)^3 * k_r;
+                desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
 
-            kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
-            desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
-            A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
+                kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
+                desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
+                A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
 
-            wvt.A0 = A0;
+                wvt.A0 = A0;
 
-            fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
-
+                fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
+            end
 
             self.k_f = options.k_f;
             self.k_r = options.k_r;
@@ -84,17 +86,19 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             ncfile.addAttribute('u_rms',self.u_rms)
         end
 
-%         function initFromFile(self,ncfile,wvt)
-%             arguments
-%                 self NonlinearFluxOperation {mustBeNonempty}
-%                 ncfile NetCDFFile {mustBeNonempty}
-%                 wvt WaveVortexTransform {mustBeNonempty}
-%             end
-%             if isKey(ncfile.variableWithName,'beta')
-%                 self.beta = ncfile.
-%             end
-%         end
+        function nlFlux = nonlinearFluxWithDoubleResolution(self)
+            nlFlux = SingleModeForcedDissipativeQGPVEMasked(self.wvt,k_f=self.k_f,k_r=self.k_r,u_rms=self.u_rms);
+        end
+    end
 
+    methods (Static)
+        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
+            arguments
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
+            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,shouldAddInitialPV=0, k_f=ncfile.attributes('k_f'),k_r=ncfile.attributes('k_r'),u_rms=ncfile.attributes('u_rms') );
+        end
     end
 
 end
