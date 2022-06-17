@@ -14,6 +14,9 @@ function model = modelFromFile(path,options)
     end
     if options.shouldDoubleResolution == 1
         wvt = wvt.transformWithDoubleResolution();
+        if exist('nlFlux','var')
+            nlFlux = nlFlux.nonlinearFluxWithDoubleResolution(wvt);
+        end
     end
 
     if exist('nlFlux','var')

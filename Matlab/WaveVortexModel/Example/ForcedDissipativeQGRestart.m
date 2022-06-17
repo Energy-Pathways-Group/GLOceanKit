@@ -1,9 +1,9 @@
-model = WaveVortexModel.modelFromFile('ForcedDissipativeQG.nc');
+model = WaveVortexModel.modelFromFile('ForcedDissipativeQG.nc',shouldDoubleResolution=1);
 
 deltaT = (wvt.x(2)-wvt.x(1))*0.25/(pi*model.nonlinearFlux.u_rms);
 model.setupIntegrator(deltaT=deltaT, outputInterval=86400);
 model.createNetCDFFileForModelOutput('ForcedDissipativeQG-restart.nc',shouldOverwriteExisting=1);
-model.integrateToTime(450*86400);
+model.integrateToTime(260*86400);
 
 u2 = wvt.u.^2 + wvt.v.^2;
 u_max = max(sqrt(u2(:)))

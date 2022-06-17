@@ -82,8 +82,8 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             ncfile.addAttribute('nu',self.nu)
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self)
-            nlFlux = SingleModeQGPVE(self.wvt,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+            nlFlux = SingleModeQGPVE(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
         end
 
     end

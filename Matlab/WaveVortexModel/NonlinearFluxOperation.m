@@ -41,7 +41,7 @@ classdef NonlinearFluxOperation < TransformOperation
             end
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self)
+        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
             nlFlux = NonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
         end
     end

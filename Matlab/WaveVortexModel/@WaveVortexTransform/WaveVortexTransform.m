@@ -413,6 +413,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function wvmX2 = transformWithResolution(self,m)
             wvmX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
             wvmX2.t0 = self.t0;
+            wvmX2.t = self.t;
             if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
                 kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
                 lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);

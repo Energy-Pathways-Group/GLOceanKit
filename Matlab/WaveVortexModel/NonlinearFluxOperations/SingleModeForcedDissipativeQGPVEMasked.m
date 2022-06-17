@@ -86,8 +86,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             ncfile.addAttribute('u_rms',self.u_rms)
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self)
-            nlFlux = SingleModeForcedDissipativeQGPVEMasked(self.wvt,k_f=self.k_f,k_r=self.k_r,u_rms=self.u_rms);
+        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvtX2,k_f=self.k_f,k_r=self.k_r,u_rms=self.u_rms);
         end
     end
 

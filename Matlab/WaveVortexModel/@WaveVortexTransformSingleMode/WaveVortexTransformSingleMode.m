@@ -43,6 +43,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         function wvtX2 = transformWithResolution(self,m)
             wvtX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
             wvtX2.t0 = self.t0;
+            wvtX2.t = self.t;
             if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
                 kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
                 lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
