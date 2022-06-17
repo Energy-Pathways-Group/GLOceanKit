@@ -115,7 +115,7 @@ classdef WaveVortexModel < handle
 
     methods
 
-        function addVariablesToFile(self,variables)
+        function addNetCDFVariables(self,variables)
             arguments
                 self WaveVortexModel
             end
@@ -129,7 +129,29 @@ classdef WaveVortexModel < handle
             self.variablesToWriteToFile = union(self.variablesToWriteToFile,variables);
         end
 
+        function setNetCDFVariables(self,variables)
+            arguments
+                self WaveVortexModel
+            end
+            arguments (Repeating)
+                variables char
+            end
+            unknownVars = setdiff(variables,self.wvt.stateVariableWithName.keys);
+            if ~isempty(unknownVars)
+                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
+            end
+            self.variablesToWriteToFile = variables;
+        end
 
+        function removeNetCDFVariables(self,variables)
+            arguments
+                self WaveVortexModel
+            end
+            arguments (Repeating)
+                variables char
+            end
+            self.variablesToWriteToFile = setdiff(self.variablesToWriteToFile,variables);
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -775,10 +797,9 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 end
             end
         end
+    end
 
-
-
-        
-
+    methods (Static)
+        model = modelFromFile(path,options)
     end
 end
