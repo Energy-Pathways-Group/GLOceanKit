@@ -6,11 +6,21 @@ function model = modelFromFile(path,options)
     end
 
     wvt = WaveVortexTransform.transformFromFile(path,iTime=options.restartIndex);
+
+    ncfile = NetCDFFile(path);
+    if iskey(ncfile.attributes,'NonlinearFluxOperation')
+        nlFluxClassName = ncfile.attributes('NonlinearFluxOperation');
+        nlFlux = feval(strcat(nlFluxClassName,'.nonlinearFluxFromFile'),{ncfile,wvt});
+    end
     if options.shouldDoubleResolution == 1
         wvt = wvt.transformWithDoubleResolution();
     end
 
-    model = WaveVortexModel(wvt);
+    if exist('nlFlux','var')
+        model = WaveVortexModel(wvt,nonlinearFlux=nlFlux);
+    else
+        model = WaveVortexModel(wvt);
+    end
     
 % if there's existing model output, use that output interval
 %     time = ncread(existingModelOutput,'t');

@@ -41,9 +41,15 @@ classdef NonlinearFluxOperation < TransformOperation
             end
         end
 
-        function initFromFile(self,ncfile,wvt)
+        function nlFlux = nonlinearFluxWithDoubleResolution(self)
+            nlFlux = NonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
+        end
+    end
+
+    methods (Static)
+
+        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end

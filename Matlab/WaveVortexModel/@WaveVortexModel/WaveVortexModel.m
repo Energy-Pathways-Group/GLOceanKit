@@ -426,6 +426,12 @@ classdef WaveVortexModel < handle
                 wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
                 fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, datestr(wallTimeRemaining, 'HH:MM:SS'), datestr(datetime('now')+wallTimeRemaining)) ;
                 self.wvt.summarizeEnergyContent();
+
+A02 = (self.wvt.A0_TE_factor/self.wvt.h) .* (self.wvt.A0.*conj(self.wvt.A0));
+u_rms_alt = sqrt(2*sum(A02(:)));
+
+fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
+
                 self.integrationLastInformWallTime = datetime('now');
                 self.integrationLastInformModelTime = self.wvt.t;
             end
@@ -613,6 +619,7 @@ classdef WaveVortexModel < handle
             ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
 
             if ~self.linearDynamics
+                ncfile.addAttribute('NonlinearFluxOperation',class(self.nonlinearFlux));
                 self.nonlinearFlux.writeToFile(ncfile,self.wvt);
             end
 

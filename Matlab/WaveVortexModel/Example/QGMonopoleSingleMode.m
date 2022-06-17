@@ -38,8 +38,8 @@ yFloat = reshape(yFloat,1,[]);
 nTrajectories = length(xFloat);
 model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 
-finalTime=75*86400;
-nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400,finalTime=75*86400);
+finalTime=150*86400;
+nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400,finalTime=150*86400);
 
 xFloatT = zeros(nT,nTrajectories);
 yFloatT = zeros(nT,nTrajectories);
@@ -54,7 +54,16 @@ while(model.t < finalTime)
     qgpvFloatT(model.outputIndex,:) = tracked.qgpv;
 end
 
-figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
+figure
+subplot(2,1,1)
+pcolor(wvt.x/1000,wvt.y/1000,wvt.ssh.'), shading interp, axis equal
+xlim([min(wvt.x) max(wvt.x)]/1000),ylim([min(wvt.y) max(wvt.y)]/1000)
+colormap(lansey)
+subplot(2,1,2)
+plot(xFloatT/1000,yFloatT/1000), axis equal
+xlim([min(wvt.x) max(wvt.x)]/1000),ylim([min(wvt.y) max(wvt.y)]/1000)
+packfig(2,1,'rows')
+% print('monopolefigure.png','-dpng','-r300')
 
 return;
 

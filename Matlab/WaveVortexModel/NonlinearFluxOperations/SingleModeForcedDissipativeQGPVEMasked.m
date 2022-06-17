@@ -19,8 +19,13 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             k_r = options.k_r;
             k_f = options.k_f;
             u_rms = options.u_rms;
-
-            r = 0.1*(1/sqrt(5))*u_rms*k_r; % 1/s
+            
+            % experimenting with the prefactor c_r in r=c_r*(1/sqrt(5))*u_rms*k_r
+            % I find 0.1 *over* damped, but 0.05 underdamped, at least by a
+            % little.
+            % Switching to 256 changes this... needed to free-up more
+            % inertial range. 0.05 runs great
+            r = 0.04*(1/sqrt(5))*u_rms*k_r; % 1/s
             nu = (3/2)*(wvt.x(2)-wvt.x(1))*u_rms; % m^2/s
 
             self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta);

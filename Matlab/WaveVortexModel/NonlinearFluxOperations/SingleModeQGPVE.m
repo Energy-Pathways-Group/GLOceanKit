@@ -82,16 +82,23 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             ncfile.addAttribute('nu',self.nu)
         end
 
-%         function initFromFile(self,ncfile,wvt)
-%             arguments
-%                 self NonlinearFluxOperation {mustBeNonempty}
-%                 ncfile NetCDFFile {mustBeNonempty}
-%                 wvt WaveVortexTransform {mustBeNonempty}
-%             end
-%             if isKey(ncfile.variableWithName,'beta')
-%                 self.beta = ncfile.
-%             end
-%         end
+        function nlFlux = nonlinearFluxWithDoubleResolution(self)
+            nlFlux = SingleModeQGPVE(self.wvt,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+        end
+
+    end
+
+    methods (Static)
+
+        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
+            arguments
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WaveVortexTransform {mustBeNonempty}
+            end
+            nlFlux = SingleModeQGPVE(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
+        end
+
+        
 
     end
 
