@@ -182,7 +182,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u);
             vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v);
             nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta);
-            [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -15,7 +15,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 options.k_f (1,1) double =(wvt.k(2)-wvt.k(1))*20
                 options.u_rms (1,1) double = 0.2
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
-                options.shouldAddInitialPV  double {mustBeMember(options.shouldAddInitialPV,[0 1])} = 0
+                options.shouldAddInitialPV  double {mustBeMember(options.shouldAddInitialPV,[0 1])} = 1
             end
             k_r = options.k_r;
             k_f = options.k_f;

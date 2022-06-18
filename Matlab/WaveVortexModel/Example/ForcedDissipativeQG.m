@@ -29,7 +29,7 @@ deltaT = (wvt.x(2)-wvt.x(1))*0.25/u_max;
 model.setupIntegrator(deltaT=deltaT, outputInterval=86400);
 
 model.createNetCDFFileForModelOutput('ForcedDissipativeQG.nc',shouldOverwriteExisting=1);
-model.integrateToTime(250*86400);
+model.integrateToTime(150*86400);
 
 % model.integrateToNextOutputTime();
 
@@ -42,13 +42,22 @@ u_rms = sqrt(mean(u2(:)))
 % model.integrateToNextOutputTime();
 A02 = (wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0));
 u_rms_alt = sqrt(2*sum(A02(:)))
-GeostrophicEnergyK = wvt.transformToRadialWavenumber(A02);
+[GeostrophicEnergyK,E0k] = wvt.transformToRadialWavenumber(A02,E0);
 dk = wvt.kRadial(2)-wvt.kRadial(1);
 figure
+subplot(2,1,1)
 plot(wvt.kRadial,GeostrophicEnergyK/dk), xlog, ylog
 ylabel('m^3/s^2')
 xlabel('1/m')
 vlines([k_f,k_r],'g--')
+subplot(2,1,2)
+plot(wvt.kRadial,E0k/wvt.h), xlog
+ylabel('m^3/s^3')
+xlabel('1/m')
+vlines([k_f,k_r],'g--')
+
+
+
 % 
 % figure, pcolor(log10(abs(fftshift(fdFlux.damp)))), shading interp
 % figure, pcolor(log10(abs(fftshift(fdFlux.F)))), shading interp
