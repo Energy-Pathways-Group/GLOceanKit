@@ -33,6 +33,7 @@ model.integrateToTime(150*86400);
 
 % model.integrateToNextOutputTime();
 
+wvt = model.wvt;
 u2 = wvt.u.^2 + wvt.v.^2;
 u_max = max(sqrt(u2(:)))
 u_rms = sqrt(mean(u2(:)))
@@ -56,7 +57,17 @@ ylabel('m^3/s^3')
 xlabel('1/m')
 vlines([k_f,k_r],'g--')
 
-
+[K,L,~] = ndgrid(wvt.k,wvt.l,wvt.j);
+Kh = sqrt(K.*K + L.*L);
+kRadial = wvt.kRadial;
+AA = ~(wvt.MaskForAliasedModes(jFraction=1));
+energyFlux = zeros(length(kRadial),1);
+for iK=1:length(kRadial)
+    A0Mask = AA;
+    A0Mask(Kh > kRadial(iK)-dk/2 & Kh < kRadial(iK)+dk/2) = 0;
+    [Ep,Em,E0] = wvt.energyFluxWithMasks(zeros(size(wvt.A0)),zeros(size(wvt.A0)),A0Mask);
+    energyFlux(iK) = sum(E0(:));
+end
 
 % 
 % figure, pcolor(log10(abs(fftshift(fdFlux.damp)))), shading interp

@@ -185,6 +185,43 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
 
+        function [Fp,Fm,F0] = nonlinearFluxWithMasks(self,ApMask,AmMask,A0Mask)
+            phase = exp(self.iOmega*(self.t-self.t0));
+            Apt = ApMask .* self.Ap .* phase;
+            Amt = AmMask .* self.Am .* conj(phase);
+            A0t = A0Mask .* self.A0;
+
+            Ubar = self.UAp.*Apt + self.UAm.*Amt + self.UA0.*A0t;
+            Vbar = self.VAp.*Apt + self.VAm.*Amt + self.VA0.*A0t;
+            Nbar = self.NAp.*Apt + self.NAm.*Amt + self.NA0.*A0t;
+
+            [U,Ux,Uy] = self.transformToSpatialDomainWithFAllDerivatives(Ubar);
+            [V,Vx,Vy] = self.transformToSpatialDomainWithFAllDerivatives(Vbar);
+            [ETA,ETAx,ETAy] = self.transformToSpatialDomainWithGAllDerivatives(Nbar);
+
+            uNL = -U.*Ux - V.*Uy;
+            vNL = -U.*Vx - V.*Vy;
+            nNL = -U.*ETAx - V.*ETAy;
+
+            uNLbar = self.transformFromSpatialDomainWithF(uNL);
+            vNLbar = self.transformFromSpatialDomainWithF(vNL);
+            nNLbar = self.transformFromSpatialDomainWithG(nNL);
+
+            Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
+            Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
+            F0 = (self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar);
+        end
+
+        function [Ep,Em,E0] = energyFluxWithMasks(self,ApMask,AmMask,A0Mask)
+            [Fp,Fm,F0] = self.nonlinearFluxWithMasks(ApMask,AmMask,A0Mask);
+            % The phase is tricky here. It is wound forward for the flux,
+            % as it should be... but then it is wound back to zero. This is
+            % equivalent ignoring the phase below here.
+            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj((~ApMask) .* self.Ap) );
+            Em = 2*self.Apm_TE_factor.*real( Fm .* conj((~AmMask) .* self.Am) );
+            E0 = 2*self.A0_TE_factor.*real( F0 .* conj((~A0Mask) .* self.A0) );
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics

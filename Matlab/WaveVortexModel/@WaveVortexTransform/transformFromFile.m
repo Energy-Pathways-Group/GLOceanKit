@@ -55,6 +55,8 @@ function wvt = transformFromFile(path,options)
             iTime = length(tDim);
         elseif options.iTime > length(tDim)
             error('Index out of bounds! There are %d time points in this file, you requested %d.',length(tDim),options.iTime);
+        else
+            iTime = options.iTime;
         end
         wvt.t = tDim(iTime);
     else

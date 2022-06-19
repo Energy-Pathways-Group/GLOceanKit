@@ -379,8 +379,7 @@ classdef WaveVortexModel < handle
             if isempty(Y0{1})
                 error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
             end
-            self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT);
-            self.integrator.currentTime = self.t;
+            self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
 
             if isfield(options,"outputInterval")
                 self.outputInterval = options.outputInterval;
@@ -659,6 +658,10 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 self.initialConditionOnlyVariables = {};
                 self.timeSeriesVariables = {};
                 for iVar = 1:length(self.variablesToWriteToFile)
+                    if isKey(self.ncfile.variableWithName,self.variablesToWriteToFile{iVar}) || isKey(self.ncfile.complexVariableWithName,self.variablesToWriteToFile{iVar})
+                        continue;
+                    end
+
                     transformVar = self.wvt.stateVariableWithName(self.variablesToWriteToFile{iVar});
                     attributes = containers.Map();
                     attributes('units') = transformVar.units;
@@ -683,6 +686,9 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 end
 
                 for iTracer = 1:length(self.tracerArray)
+                    if isKey(self.ncfile.variableWithName,self.tracerNames{iTracer})
+                        continue;
+                    end
                     if self.wvt.isBarotropic
                         self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
                     else
@@ -691,6 +697,9 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 end
 
                 for iParticle = 1:length(self.particle)
+                    if isKey(self.ncfile.variableWithName,self.particle{iParticle}.name)
+                        continue;
+                    end
                     self.initializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
                 end
              end
