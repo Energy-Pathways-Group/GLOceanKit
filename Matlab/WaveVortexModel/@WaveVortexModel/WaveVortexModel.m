@@ -413,6 +413,9 @@ classdef WaveVortexModel < handle
             self.openNetCDFFileForTimeStepping();
             while(self.t < finalTime)
                 self.integrateOneTimeStep();
+                if self.didBlowUp == 1
+                    return;
+                end
                 self.showIntegrationTimeDiagnostics(finalTime);
             end
         end
@@ -427,10 +430,25 @@ classdef WaveVortexModel < handle
             self.openNetCDFFileForTimeStepping();
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 modelTime = self.integrateOneTimeStep;
+                if self.didBlowUp == 1
+                    return;
+                end
             end
 
             while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
                 modelTime = self.integrateOneTimeStep;
+                if self.didBlowUp == 1
+                    return;
+                end
+            end
+        end
+
+        function flag = didBlowUp(self)
+            if ( any(isnan(self.wvt.Ap)|isnan(self.wvt.Am)|isnan(self.wvt.A0)) )
+                flag = 1;
+                fprintf('Blowup detected. Aborting.');
+            else
+                flag = 0;
             end
         end
 
@@ -472,7 +490,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
             period = 2*pi/max(abs(omega(:)));
             [u,v] = self.wvt.velocityField();
             U = max(max(max( sqrt(u.*u + v.*v) )));
-            dx = (self.wvt.x(2)-self.wvt.x(1));
+            dx = (3/2)*(self.wvt.x(2)-self.wvt.x(1));
 
             advectiveDT = cfl*dx/U;
             oscillatoryDT = cfl*period;

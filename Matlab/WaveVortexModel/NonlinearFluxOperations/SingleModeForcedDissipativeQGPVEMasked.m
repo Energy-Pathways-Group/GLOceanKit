@@ -4,6 +4,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
         k_f
         u_rms
 
+        model_spectrum
+
         EMA0
     end
 
@@ -27,9 +29,13 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             % Switching to 256 changes this... needed to free-up more
             % inertial range. 0.05 runs great
             r = 0.04*(1/sqrt(5))*u_rms*k_r; % 1/s
+            r = 0.0225*u_rms*k_r; % 1/s bracket [0.02 0.025]
+%             r = 0.04*u_rms*k_r; % 1/s bracket [0.02 0.025]
             nu = (3/2)*(wvt.x(2)-wvt.x(1))*u_rms; % m^2/s
 
             self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta);
+            smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(r),1,'first');
+            fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
 
             [K,L,~] = ndgrid(wvt.k,wvt.l,wvt.j);
             Kh = sqrt(K.*K + L.*L);
@@ -47,17 +53,46 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             self.EMA0(F>0) = 0;
             
             if options.shouldAddInitialPV == 1
-                kappa_epsilon = 1/100;
-                epsilon = u_rms^3 * (2*pi)^3 * k_r;
-                desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
+                if 1== 1
+                    m = 3/2; % We don't really know what this number is.
+                    kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
+                    model_viscous = @(k) kappa_epsilon * k_r^(-5/3 - m) * k.^m;
+                    model_inverse = @(k) kappa_epsilon * k.^(-5/3);
+                    model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
+                    self.model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
+                   
+                    kAxis = wvt.kRadial;
+                    dk = kAxis(2)-kAxis(1);
+                    ARand = WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0));
+                    for iK=1:(length(wvt.kRadial)-1)
+                        indicesForK = find( kAxis(iK)-dk/2 <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK)+dk/2   );
+                        energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
+                        wvt.A0(indicesForK) = energy/length(indicesForK);
+                        ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
+                    end
+                    wvt.A0 = WaveVortexTransform.makeHermitian(wvt.A0);
 
-                kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
-                desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
-                A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
+%                     dk = wvt.k(2)-wvt.k(1);
+                    AA = ~(wvt.MaskForAliasedModes(jFraction=1));
+                    wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
+                    
+                    
+%                     wvt.A0(1,1) = 0;
 
-                wvt.A0 = A0;
+                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/wvt.h);
+                else
+                    kappa_epsilon = 1/100;
+                    epsilon = u_rms^3 * (2*pi)^3 * k_r;
+                    desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
 
-                fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
+                    kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
+                    desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
+                    A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
+
+                    wvt.A0 = A0;
+
+                    fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
+                end
             end
 
             self.k_f = options.k_f;

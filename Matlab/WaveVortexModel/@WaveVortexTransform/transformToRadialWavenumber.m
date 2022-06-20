@@ -2,13 +2,9 @@ function [varargout] = transformToRadialWavenumber(self,varargin)
 
 Kh = self.Kh;
 
-% Create a reasonable wavenumber axis
-allKs = unique(reshape(abs(Kh),[],1),'sorted');
-deltaK = max(diff(allKs));
-kAxis = 0:deltaK:max(allKs);
-
 % Thi is the final output axis for wavenumber
 k = self.kRadial;
+dk = k(2)-k(1);
 
 RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
 OmNyquist = InternalWaveModel.NyquistWavenumbers(self.Omega);
@@ -26,7 +22,7 @@ for iVar=1:length(varargin)
 end
 
 for iK = 1:1:nK
-    indicesForK = find( kAxis(iK) <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK+1)  & ~squeeze(OmNyquist(:,:,1)) & ~squeeze(RedundantCoefficients(:,:,1))  );
+    indicesForK = find( k(iK)-dk/2 <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < k(iK)+dk/2  & ~squeeze(OmNyquist(:,:,1)) & ~squeeze(RedundantCoefficients(:,:,1))  );
     for iIndex = 1:length(indicesForK)
         [i,m] = ind2sub([size(Kh,1) size(Kh,2)],indicesForK(iIndex));
         if i+m==2

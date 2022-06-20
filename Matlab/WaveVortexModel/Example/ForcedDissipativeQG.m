@@ -4,15 +4,12 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 50e3;
-Ly = 50e3;
-
-Nx = 256;
-Ny = 256;
+Lxy = 50e3;
+Nxy = 256;
 
 latitude = 25;
 
-wvt = WaveVortexTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
+wvt = WaveVortexTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
 
 % Forcing parameters
 dk = (wvt.k(2)-wvt.k(1));
@@ -21,55 +18,32 @@ k_r = 4*dk;
 u_rms = 0.05;
 
 
-fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms);
+fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,shouldAddInitialPV=1);
+% Record the initial spectrum that was generated
+Ek0 = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
+
 model = WaveVortexModel(wvt,nonlinearFlux=fdFlux);
+model.setupIntegrator(cfl=0.1,outputInterval=86400);
+model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-%d.nc',Nxy),shouldOverwriteExisting=1);
+model.integrateToTime(25*86400);
 
-u_max = pi*u_rms; % not sure how much bigger u_max will be than u_rms
-deltaT = (wvt.x(2)-wvt.x(1))*0.25/u_max;
-model.setupIntegrator(deltaT=deltaT, outputInterval=86400);
+EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 
-model.createNetCDFFileForModelOutput('ForcedDissipativeQG.nc',shouldOverwriteExisting=1);
-model.integrateToTime(150*86400);
+figure
+plot(wvt.kRadial,Ek0/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1)))
+plot(wvt.kRadial,fdFlux.model_spectrum(wvt.kRadial))
+ylabel('m^3/s^2')
+xlabel('1/m')
+title('initial horizontal velocity spectrum (randomized phases)')
+vlines([k_f,k_r],'g--')
 
-% model.integrateToNextOutputTime();
+return
 
-wvt = model.wvt;
 u2 = wvt.u.^2 + wvt.v.^2;
 u_max = max(sqrt(u2(:)))
 u_rms = sqrt(mean(u2(:)))
 
-% figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
-
-% model.integrateToNextOutputTime();
-A02 = (wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0));
-u_rms_alt = sqrt(2*sum(A02(:)))
-[GeostrophicEnergyK,E0k] = wvt.transformToRadialWavenumber(A02,E0);
-dk = wvt.kRadial(2)-wvt.kRadial(1);
-figure
-subplot(2,1,1)
-plot(wvt.kRadial,GeostrophicEnergyK/dk), xlog, ylog
-ylabel('m^3/s^2')
-xlabel('1/m')
-vlines([k_f,k_r],'g--')
-subplot(2,1,2)
-plot(wvt.kRadial,E0k/wvt.h), xlog
-ylabel('m^3/s^3')
-xlabel('1/m')
-vlines([k_f,k_r],'g--')
-
-[K,L,~] = ndgrid(wvt.k,wvt.l,wvt.j);
-Kh = sqrt(K.*K + L.*L);
-kRadial = wvt.kRadial;
-AA = ~(wvt.MaskForAliasedModes(jFraction=1));
-energyFlux = zeros(length(kRadial),1);
-for iK=1:length(kRadial)
-    A0Mask = AA;
-    A0Mask(Kh > kRadial(iK)-dk/2 & Kh < kRadial(iK)+dk/2) = 0;
-    [Ep,Em,E0] = wvt.energyFluxWithMasks(zeros(size(wvt.A0)),zeros(size(wvt.A0)),A0Mask);
-    energyFlux(iK) = sum(E0(:));
-end
-
-% 
 % figure, pcolor(log10(abs(fftshift(fdFlux.damp)))), shading interp
 % figure, pcolor(log10(abs(fftshift(fdFlux.F)))), shading interp
 % 
