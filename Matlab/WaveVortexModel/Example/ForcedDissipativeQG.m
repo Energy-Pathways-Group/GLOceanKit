@@ -6,7 +6,6 @@
 
 Lxy = 50e3;
 Nxy = 256;
-
 latitude = 25;
 
 wvt = WaveVortexTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
@@ -25,7 +24,8 @@ Ek0 = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(
 model = WaveVortexModel(wvt,nonlinearFlux=fdFlux);
 model.setupIntegrator(cfl=0.1,outputInterval=86400);
 model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-%d.nc',Nxy),shouldOverwriteExisting=1);
-model.integrateToTime(25*86400);
+model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
+model.integrateToTime(50*86400);
 
 EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 

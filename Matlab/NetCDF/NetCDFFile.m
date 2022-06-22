@@ -1,3 +1,4 @@
+%% 
 classdef NetCDFFile < handle
     %NetCDFFile Class for reading and writing to NetCDF files
     %   Simplifies and improves the consistency of reading and writing to

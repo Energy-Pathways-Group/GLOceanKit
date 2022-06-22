@@ -33,7 +33,10 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 %             r = 0.04*u_rms*k_r; % 1/s bracket [0.02 0.025]
             nu = (3/2)*(wvt.x(2)-wvt.x(1))*u_rms; % m^2/s
 
-            self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta);
+            fluxVar(1) = StateVariable('F0_psi',{'k','l','j'},'m/s', 'forcing function applied to the vortex coefficients',isComplex=1);
+            fluxVar(2) = StateVariable('F_psi',{'x','y','z'},'1/s^2', 'forcing function applied to the QGPVE written in terms of psi');
+
+            self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta,stateVariables=fluxVar);
             smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(r),1,'first');
             fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
 
@@ -76,6 +79,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                     AA = ~(wvt.MaskForAliasedModes(jFraction=1));
                     wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
                     
+                    % Let's double the energy in the forcing region
+%                     wvt.A0(F>0) = sqrt(2)*wvt.A0(F>0);
                     
 %                     wvt.A0(1,1) = 0;
 
@@ -101,11 +106,15 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
         end
 
         function varargout = Compute(self,wvt,varargin)
-            varargout = cell(1,self.nVarOut);
+            varargout = cell(1,self.nVarOut-2);
             [varargout{:}] = Compute@SingleModeQGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
+            F0_psi = (~self.EMA0) .* F0;
+            forcing = ifft(ifft( self.PVA0 .* F0_psi,wvt.Nx,1),wvt.Ny,2,'symmetric');
             F0 = self.EMA0 .* F0;
             varargout{1} = F0;
+            varargout{end+1} = F0_psi;
+            varargout{end+1} = forcing;
         end
 
         function writeToFile(self,ncfile,wvt)

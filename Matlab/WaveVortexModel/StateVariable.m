@@ -14,7 +14,14 @@ classdef StateVariable < handle
     end
 
     methods
-        function self = StateVariable(name,dimensions,units,description)
+        function self = StateVariable(name,dimensions,units,description,options)
+            arguments
+                name char {mustBeNonempty}
+                dimensions
+                units char {mustBeNonempty}
+                description char {mustBeNonempty}
+                options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
+            end
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             if ~iscell(dimensions)
@@ -28,6 +35,7 @@ classdef StateVariable < handle
             self.dimensions = dimensions;
             self.units = units;
             self.description = description;
+            self.isComplex = options.isComplex;
         end
 
 %         function set.isVariableWithLinearTimeStep(self,value)

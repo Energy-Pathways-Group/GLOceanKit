@@ -98,6 +98,7 @@ classdef WaveVortexModel < handle
         tracerArray = {}
 
         didSetupIntegrator=0
+        didInitializeNetCDFFile=0
         variablesToWriteToFile = {'Ap','Am','A0'}
         initialConditionOnlyVariables = {}
         timeSeriesVariables = {}
@@ -670,7 +671,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
             arguments
                 self WaveVortexModel {mustBeNonempty}
             end
-             if ~isempty(self.ncfile)
+            if ~isempty(self.ncfile) && self.didInitializeNetCDFFile == 0
                 % Sort through which variables we will record a time series
                 % for, and which we will only write initial conditions.
                 self.initialConditionOnlyVariables = {};
@@ -700,7 +701,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                         else
                             self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),transformVar.dimensions,attributes);
                         end
-                    end   
+                    end
                 end
 
                 for iTracer = 1:length(self.tracerArray)
@@ -720,17 +721,14 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                     end
                     self.initializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
                 end
-             end
-%             else
-%                 if isempty(self.ncfile.ncid)
-%                     self.ncfile.open();
-%                 end
-%             end
 
-            self.incrementsWrittenToFile = 0;
+                self.didInitializeNetCDFFile = 1;
+                self.incrementsWrittenToFile = 0;
 
-            % Save the initial conditions
-            self.writeTimeStepToNetCDFFile();         
+                % Save the initial conditions
+                self.writeTimeStepToNetCDFFile();
+            end
+        
         end
 
         function writeTimeStepToNetCDFFile(self)

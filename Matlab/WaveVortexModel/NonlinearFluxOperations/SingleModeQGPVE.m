@@ -17,11 +17,13 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
                 options.r (1,1) double = 0
                 options.fluxName char = 'SingleModeQGPVE'
                 options.nu (1,1) double
+                options.stateVariables StateVariable = StateVariable.empty()
             end
             fluxVar(1) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = StateVariable('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
             fluxVar(3) = StateVariable('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
             fluxVar(4) = StateVariable('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
+            fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@NonlinearFluxOperation(options.fluxName,fluxVar);
             self.doesFluxAp = 0;
@@ -80,6 +82,12 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             ncfile.addAttribute('beta',self.beta)
             ncfile.addAttribute('r',self.r)
             ncfile.addAttribute('nu',self.nu)
+
+            attributes = containers.Map();
+            attributes('units') = '1/s';
+            attributes('description') = 'Linear damping operator applied to A0 to produce damping flux.';
+            ncfile.initComplexVariable('L_damp',{'k','l','j'},attributes,'NC_DOUBLE');
+            ncfile.setVariable('L_damp',self.damp);
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
