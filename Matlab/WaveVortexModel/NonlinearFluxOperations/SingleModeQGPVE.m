@@ -22,7 +22,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             fluxVar(1) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = StateVariable('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
             fluxVar(3) = StateVariable('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
-            fluxVar(4) = StateVariable('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
+%             fluxVar(4) = StateVariable('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@NonlinearFluxOperation(options.fluxName,fluxVar);
@@ -56,6 +56,10 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             end
         end
 
+        function dampingTimeScale = dampingTimeScale(self)
+            dampingTimeScale = 1/max(max(abs(self.damp)));
+        end
+
         function varargout = Compute(self,wvt,varargin)
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = wvt.UA0 .* wvt.A0;
@@ -64,13 +68,13 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 
             u_g = ifft(ifft(Ubar,wvt.Nx,1),wvt.Ny,2,'symmetric');
             v_g = ifft(ifft(Vbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
-            QGPV = ifft(ifft(PVbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
+%             QGPV = ifft(ifft(PVbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
             PVx = ifft( sqrt(-1)*wvt.k.*ifft(PVbar,wvt.Ny,2), wvt.Nx, 1,'symmetric');
             PVy = ifft( sqrt(-1)*shiftdim(wvt.l,-1).*ifft(PVbar,wvt.Nx,1), wvt.Ny, 2,'symmetric');
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
-            varargout = {F0,u_g,v_g,QGPV};
+            varargout = {F0,u_g,v_g};
         end
 
         function writeToFile(self,ncfile,wvt)
@@ -92,6 +96,19 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
             nlFlux = SingleModeQGPVE(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+        end
+
+        function flag = isequal(self,other)
+            arguments
+                self NonlinearFluxOperation
+                other NonlinearFluxOperation
+            end
+            flag = isequal@NonlinearFluxOperation(self,other);
+            flag = flag & isequal(self.PVA0, other.PVA0);
+            flag = flag & isequal(self.beta, other.beta);
+            flag = flag & isequal(self.damp, other.damp);
+            flag = flag & isequal(self.nu,other.nu);
+            flag = flag & isequal(self.r, other.r);
         end
 
     end

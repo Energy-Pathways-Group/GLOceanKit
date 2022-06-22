@@ -44,6 +44,14 @@ classdef NonlinearFluxOperation < TransformOperation
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
             nlFlux = NonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
         end
+
+        function flag = isequal(self,other)
+            arguments
+                self NonlinearFluxOperation
+                other NonlinearFluxOperation
+            end
+            flag = (self.doesFluxAp == other.doesFluxAp) && (self.doesFluxAm == other.doesFluxAm) && (self.doesFluxA0 == other.doesFluxA0) && strcmp(self.name,other.name);
+        end
     end
 
     methods (Static)

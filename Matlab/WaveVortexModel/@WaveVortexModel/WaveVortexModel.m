@@ -5,62 +5,6 @@ classdef WaveVortexModel < handle
     %   model = WaveVortexModel(wvt) creates a new model using the wvt
     %   (WaveVortexTransform)
 
-
-    % TODO, May 5th, 2022
-    % - add multiple tracers, store ids and names in struct?
-    % - remove tracer variance at aliased wavenumbers?
-    % - add scalar option for floats and drifters, e.g., save density or pv
-    % - linear dynamics should only save the coefficients once (actually
-    %   option should be to only write initial conditions)
-    % - need method of doing fancy stuff during the integration loop
-    % - want to write float and drifter paths to memory
-    % - Maybe a list of variables (as enums) that we want to write
-    % - Definitely want to output physical variables some time
-    % - openNetCDFFileForTimeStepping should report expected file size
-
-    % AAGH. Getting myself twisted in knots over the right API.
-    % while ( tool.integrateToTime(finalTime) )
-    %   tool.incrementForward()
-    %   tool.writeToFile()
-    %
-    %
-    % Conflicts: once you've chosen an outputInterval, etc., you can't be
-    % allowed to reset it. Same with output file.
-    % Deal is though, writing to file or writing to memory should have the
-    % same loop.
-    %
-    % Usages:
-    % 1) init, 2) integrate to some final value, 3) integrate to another
-    % 1) init, 2) set output interval, 3) int to final value, with stops
-    % along the way at the output intervals.
-    % init, set output interval to netcdf file, 
-    %
-    % To set the deltaT you *need* an outputInterval.
-    % - Do you need the netcdf output file first? I don't think so
-    % So,
-    % Initialization (allowed once):
-    % Option 1: WaveVortexModel(wvm,t)
-    % Option 2: WaveVortexModel(existingModelOutput)
-    % 
-    % Setup the integrator (allowed once):
-    % Option 1: <nothing>
-    % Option 2: setupIntegrator(deltaT)
-    % Option 3: setupIntegrator(deltaT,outputInterval)
-    % Option 4: setupIntegrator(deltaT,outputInterval,finalTime) -- alt: SetupIntegratorForFixedIntegrationTime
-    % return estimated time steps?
-    %
-    % Integrate (called repeatedly):
-    % Option 1: modelTime = integrateOneTimeStep()
-    % Option 2: modelTime = integrateToNextOutputTime()
-    % Option 3: modelTime = integrateToTime(futureTime)
-    %
-    % showIntegrationTimeDiagnostics( ???? )
-    %
-    %
-    % Setup NetCDF
-    % createNetCDFFileForModelOutput
-    % AppendToExisting
-
     properties
         wvt             % WaveVortexTransform
         t=0             % current model time (in seconds)
@@ -203,6 +147,10 @@ classdef WaveVortexModel < handle
             end
             arguments
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "spline"
+            end
+
+            if self.didSetupIntegrator == 1
+                error('Integrator was already setup, you cannot add particles.')
             end
 
             % Confirm that we really can track these variables.
@@ -356,6 +304,13 @@ classdef WaveVortexModel < handle
                     warning('deltaT was already set, ignoring cfl')
                 end
                 deltaT = options.deltaT;
+
+                if isfield(options,"outputInterval")
+                    deltaT = options.outputInterval/ceil(options.outputInterval/deltaT);
+                    if options.deltaT ~= deltaT
+                        warning('deltaT changed from %f to %f to match the outputInterval.',options.deltaT,deltaT);
+                    end
+                end
             else
                 if ~isfield(options,"cfl")
                     options.cfl = 0.25;

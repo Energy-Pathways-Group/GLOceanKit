@@ -784,6 +784,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             fprintf('%.1g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
         end
   
+        function u_max = u_max(self)
+            [u,v] = self.velocityField;
+            u_max = max(max(max(sqrt(u.^2 + v.^2))));
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initializing, adding and removing dynamical features
