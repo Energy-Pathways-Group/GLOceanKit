@@ -1,10 +1,10 @@
-file = 'ForcedDissipativeQG-256-save.nc';
+file = 'ForcedDissipativeQG-256-restart.nc';
 iTime = 10;
 wvt = WaveVortexTransform.transformFromFile(file,iTime=Inf);
 TotalEnergy = (wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0));
 E_damp_radial = wvt.transformToRadialWavenumber(TotalEnergy);
 
-timeIndices = 40:50;
+timeIndices = 1:10;
 
 TE = zeros(length(timeIndices),length(E_damp_radial));
 EF_inertial = zeros(size(TE));

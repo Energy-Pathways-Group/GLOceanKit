@@ -17,7 +17,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 options.k_f (1,1) double =(wvt.k(2)-wvt.k(1))*20
                 options.u_rms (1,1) double = 0.2
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
-                options.shouldAddInitialPV  double {mustBeMember(options.shouldAddInitialPV,[0 1])} = 1
+                options.initialPV {mustBeMember(options.initialPV,{'none','narrow-band','full-spectrum'})} = 'narrow-band'
             end
             k_r = options.k_r;
             k_f = options.k_f;
@@ -55,49 +55,48 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             self.EMA0 = ones(wvt.Nk,wvt.Nl,wvt.Nj);
             self.EMA0(F>0) = 0;
             
-            if options.shouldAddInitialPV == 1
-                if 1== 1
-                    m = 3/2; % We don't really know what this number is.
-                    kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
-                    model_viscous = @(k) kappa_epsilon * k_r^(-5/3 - m) * k.^m;
-                    model_inverse = @(k) kappa_epsilon * k.^(-5/3);
-                    model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
-                    self.model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
-                   
-                    kAxis = wvt.kRadial;
-                    dk = kAxis(2)-kAxis(1);
-                    ARand = WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0));
-                    for iK=1:(length(wvt.kRadial)-1)
-                        indicesForK = find( kAxis(iK)-dk/2 <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK)+dk/2   );
-                        energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                        wvt.A0(indicesForK) = energy/length(indicesForK);
-                        ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
-                    end
-                    wvt.A0 = WaveVortexTransform.makeHermitian(wvt.A0);
+            if strcmp(options.initialPV,'narrow-band') || strcmp(options.initialPV,'full-spectrum')
+                m = 3/2; % We don't really know what this number is.
+                kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
+                model_viscous = @(k) kappa_epsilon * k_r^(-5/3 - m) * k.^m;
+                model_inverse = @(k) kappa_epsilon * k.^(-5/3);
+                model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
+                self.model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
 
-%                     dk = wvt.k(2)-wvt.k(1);
-                    AA = ~(wvt.MaskForAliasedModes(jFraction=1));
-                    wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
-                    
-                    % Let's double the energy in the forcing region
-%                     wvt.A0(F>0) = sqrt(2)*wvt.A0(F>0);
-                    
-%                     wvt.A0(1,1) = 0;
-
-                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/wvt.h);
-                else
-                    kappa_epsilon = 1/100;
-                    epsilon = u_rms^3 * (2*pi)^3 * k_r;
-                    desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
-
-                    kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
-                    desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
-                    A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
-
-                    wvt.A0 = A0;
-
-                    fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
+                kAxis = wvt.kRadial;
+                dk = kAxis(2)-kAxis(1);
+                ARand = WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0));
+                for iK=1:(length(wvt.kRadial)-1)
+                    indicesForK = find( kAxis(iK)-dk/2 <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < kAxis(iK)+dk/2   );
+                    energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
+                    wvt.A0(indicesForK) = energy/length(indicesForK);
+                    ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
                 end
+                wvt.A0 = WaveVortexTransform.makeHermitian(wvt.A0);
+
+                %                     dk = wvt.k(2)-wvt.k(1);
+                AA = ~(wvt.MaskForAliasedModes(jFraction=1));
+                wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
+
+                if strcmp(options.initialPV,'narrow-band')
+                    wvt.A0(~(F>0)) = 0;
+                else
+                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/wvt.h);
+                end
+        
+%                 else
+%                     kappa_epsilon = 1/100;
+%                     epsilon = u_rms^3 * (2*pi)^3 * k_r;
+%                     desiredEnergyOld = kappa_epsilon * epsilon^(2/3) * k_f^(-5/3) * deltaK;
+% 
+%                     kappa_epsilon = u_rms^2 / (5*k_r^(-2/3) - 2*k_f^(-2/3));
+%                     desiredEnergy = kappa_epsilon * k_f^(-5/3) * deltaK;
+%                     A0 = sqrt(wvt.h*desiredEnergy) * WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0)) .* (F./sqrt(wvt.A0_TE_factor));
+% 
+%                     wvt.A0 = A0;
+% 
+%                     fprintf('desired energy: %g, actual energy %g. energy density: %g\n',desiredEnergy,wvt.geostrophicEnergy/wvt.h,desiredEnergy/deltaK);
+%                 end
             end
 
             self.k_f = options.k_f;
@@ -131,7 +130,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvtX2,shouldAddInitialPV=0, k_f=self.k_f,k_r=self.k_r,u_rms=self.u_rms);
+            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvtX2,initialPV='none', k_f=self.k_f,k_r=self.k_r,u_rms=self.u_rms);
         end
     end
 
@@ -141,7 +140,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
-            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,shouldAddInitialPV=0, k_f=ncfile.attributes('k_f'),k_r=ncfile.attributes('k_r'),u_rms=ncfile.attributes('u_rms') );
+            nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,initialPV='none', k_f=ncfile.attributes('k_f'),k_r=ncfile.attributes('k_r'),u_rms=ncfile.attributes('u_rms') );
         end
     end
 

@@ -17,15 +17,15 @@ k_r = 4*dk;
 u_rms = 0.05;
 
 
-fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,shouldAddInitialPV=1);
+fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narrow-band');
 % Record the initial spectrum that was generated
 Ek0 = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 
 model = WaveVortexModel(wvt,nonlinearFlux=fdFlux);
-model.setupIntegrator(cfl=0.1,outputInterval=86400);
+model.setupIntegrator(deltaT=0.1*(wvt.x(2)-wvt.x(1))/u_rms,outputInterval=86400);
 model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-%d.nc',Nxy),shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(50*86400);
+model.integrateToTime(60*86400);
 
 EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 

@@ -1,10 +1,22 @@
-model = WaveVortexModel.modelFromFile('ForcedDissipativeQG.nc',shouldDoubleResolution=1,restartIndex=150);
+model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-256.nc',shouldDoubleResolution=1,restartIndex=150);
 wvt = model.wvt;
 
 deltaT = (wvt.x(2)-wvt.x(1))*0.25/(pi*model.nonlinearFlux.u_rms);
 model.setupIntegrator(deltaT=deltaT, outputInterval=86400);
-model.createNetCDFFileForModelOutput('ForcedDissipativeQG-restart.nc',shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-%d-restart.nc',Nxy),shouldOverwriteExisting=1);
+model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
 model.integrateToTime(wvt.t + 10*86400);
+
+EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
+
+figure
+plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+ylabel('m^3/s^2')
+xlabel('1/m')
+title('initial horizontal velocity spectrum (randomized phases)')
+vlines([k_f,k_r],'g--')
+
+return;
 
 model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-restart.nc',shouldDoubleResolution=1);
 wvt = model.wvt;
