@@ -3,8 +3,8 @@ ncfile = NetCDFFile('ForcedDissipativeQG-particles-512.nc');
 x = x.';
 y = y.';
 
-rms_eta = sqrt(mean(eta.^2,2,'omitnan'));
-etaAvg = mean(eta,1,'omitnan').';
+rms_eta = sqrt(mean(eta.^2,2));
+etaAvg = mean(eta,1).';
 figure
 subplot(1,2,1)
 histogram((rms_eta.^(-1/3))/86400)
@@ -31,8 +31,13 @@ params = maternfit(dt,cv,1/enstrophyTimeScale);
 % The integral time scale of the Matern is found with equation 43 in the
 % Lilly, et al. NPG paper. Take S(0)/sigma^2 to get, 1/(\lambda * c_alpha)
 % where c_alpha = beta(1/2, alpha-1/2)/(2*pi)
+%
+% I am confused about the definitions and their relation to the
+% implementatin in code. Need to check this carefuly.
 T_decorrelation = 1./(params.lambda .* beta(1/2,params.alpha-1/2));
 
+% Here's one way to start checking---confirm the factors of pi in the
+% computation of the variance.
 i = 20;
 [f,s] = maternspec(dt,1000,params.sigma(i),params.alpha(i),params.lambda(i));
 std(cv(:,i))^2
@@ -42,6 +47,11 @@ sum(s)*(f(2)-f(1))
 % matern = @(omega,A,lambda,alpha) A^2./(omega.^2 + lambda^2).^alpha;
 % i = 1;
 % f = @(omega) matern(omega,params.)
+
+mean_eta = mean(abs(eta).^(-1/3),2);
+mean2_eta = sqrt(mean(abs(eta).^(-2/3),2));
+figure, scatter(T_decorrelation,mean_eta(1:100:end))
+figure, scatter(T_decorrelation,mean2_eta(1:100:end))
 
 figure, scatter(T_decorrelation,(rms_eta(1:100:end)).^(-1/3))
 

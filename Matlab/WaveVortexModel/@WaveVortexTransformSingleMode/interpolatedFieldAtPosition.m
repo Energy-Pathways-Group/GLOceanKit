@@ -18,20 +18,33 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     elseif strcmp(method,'linear')
         S = 1+1;
     end
-    bp = x_index < S-1 | x_index > self.Nx-S | y_index < S-1 | y_index > self.Ny-S;
-
-    % then do the same for particles that along the boundary.
-    x_tildeS = mod(x(bp)+S*dx,self.Lx);
-    y_tildeS = mod(y(bp)+S*dy,self.Ly);
+    bpx = x_index < S-1 | x_index > self.Nx-S;
+    bpy = y_index < S-1 | y_index > self.Ny-S;
 
     varargout = cell(1,nargout);
     for i = 1:nargout
         U = varargin{i}; % gridded field
         u = zeros(size(x)); % interpolated value
-        u(~bp) = interpn(self.X,self.Y,U,x_tilde(~bp),y_tilde(~bp),method);
-        if any(bp)
-            u(bp) = interpn(self.X,self.Y,circshift(U,[S S 0]),x_tildeS,y_tildeS,method);
+        u(~bpx & ~bpy) = interpn(self.X,self.Y,U,x_tilde(~bpx & ~bpy),y_tilde(~bpx & ~bpy),method);
+        if any(bpx & bpy)
+            % then do the same for particles that along the boundary.
+            x_tildeS = mod(x(bpx & bpy)+S*dx,self.Lx);
+            y_tildeS = mod(y(bpx & bpy)+S*dy,self.Ly);
+            u(bpx & bpy) = interpn(self.X,self.Y,circshift(U,[S S 0]),x_tildeS,y_tildeS,method);
+        end
+        
+        if any(bpx & ~bpy)
+            x_tildeS = mod(x(bpx & ~bpy)+S*dx,self.Lx);
+            u(bpx & ~bpy) = interpn(self.X,self.Y,circshift(U,[S 0 0]),x_tildeS,y_tilde(bpx & ~bpy),method);
+        end
+
+        if any(~bpx & bpy)
+            y_tildeS = mod(y(~bpx & bpy)+S*dy,self.Ly);
+            u(~bpx & bpy) = interpn(self.X,self.Y,circshift(U,[0 S 0]),x_tilde(~bpx & bpy),y_tildeS,method);
         end
         varargout{i} = u;
+        if any(isnan(u(:)))
+            fprintf('bad apple.\n')
+        end
     end
 end
