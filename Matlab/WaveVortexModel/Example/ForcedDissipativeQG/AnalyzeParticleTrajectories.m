@@ -1,4 +1,4 @@
-ncfile = NetCDFFile('ForcedDissipativeQG-particles-512.nc');
+ncfile = NetCDFFile('ForcedDissipativeQG-particles-512-blah.nc');
 [x,y,eta,t] = ncfile.readVariables('drifter-x','drifter-y','drifter-eta','t');
 x = x.';
 y = y.';
@@ -29,12 +29,9 @@ cv = cv(:,1:100:end);
 params = maternfit(dt,cv,1/enstrophyTimeScale);
 
 % The integral time scale of the Matern is found with equation 43 in the
-% Lilly, et al. NPG paper. Take S(0)/sigma^2 to get, 1/(\lambda * c_alpha)
-% where c_alpha = beta(1/2, alpha-1/2)/(2*pi)
-%
-% I am confused about the definitions and their relation to the
-% implementatin in code. Need to check this carefuly.
-T_decorrelation = 1./(params.lambda .* beta(1/2,params.alpha-1/2));
+% Lilly, et al. NPG paper and the proposal. Take 2*kappa/sigma^2 to get,
+% 1/(2* \lambda * c_alpha) where c_alpha = beta(1/2, alpha-1/2)/(2*pi)
+T_decorrelation = pi./(params.lambda .* beta(1/2,params.alpha-1/2));
 
 % Here's one way to start checking---confirm the factors of pi in the
 % computation of the variance.
@@ -49,10 +46,14 @@ sum(s)*(f(2)-f(1))
 % f = @(omega) matern(omega,params.)
 
 mean_eta = mean(abs(eta).^(-1/3),2);
-mean2_eta = sqrt(mean(abs(eta).^(-2/3),2));
 figure, scatter(T_decorrelation,mean_eta(1:100:end))
-figure, scatter(T_decorrelation,mean2_eta(1:100:end))
+xlabel('integral time scale')
+ylabel('enstrophy cascade rate time scale')
 
-figure, scatter(T_decorrelation,(rms_eta(1:100:end)).^(-1/3))
+% mean2_eta = sqrt(mean(abs(eta).^(-2/3),2));
+% figure, scatter(T_decorrelation,mean2_eta(1:100:end))
+% 
+% rms_eta = sqrt(mean(eta.^2,2));
+% figure, scatter(T_decorrelation,(rms_eta(1:100:end)).^(-1/3))
 
 
