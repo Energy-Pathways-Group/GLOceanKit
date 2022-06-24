@@ -194,6 +194,11 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
 
+        function Fqgpv = qgpvFlux(self)
+            qgpvNL = self.u .* self.diffX(self.qgpv)   + self.v .* self.diffY(self.qgpv);
+            Fqgpv = self.transformFromSpatialDomainWithF(qgpvNL);
+        end
+
         function [Fp,Fm,F0] = nonlinearFluxWithMasks(self,ApMask,AmMask,A0Mask)
             phase = exp(self.iOmega*(self.t-self.t0));
             Apt = ApMask .* self.Ap .* phase;

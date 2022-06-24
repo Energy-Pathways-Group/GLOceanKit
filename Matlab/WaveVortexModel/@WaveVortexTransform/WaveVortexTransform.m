@@ -293,7 +293,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
 
-            outputVar = StateVariable('qgpv',{'x','y','z'},'1/s', 'isopycnal deviation');
+            outputVar = StateVariable('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
             f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.PP .* wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0)) .*wvt.A0t);
             self.addTransformOperation(TransformOperation('qgpv',outputVar,f));
 
