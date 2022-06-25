@@ -196,7 +196,13 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
 
         function Fqgpv = qgpvFlux(self)
             qgpvNL = self.u .* self.diffX(self.qgpv)   + self.v .* self.diffY(self.qgpv);
-            Fqgpv = self.transformFromSpatialDomainWithF(qgpvNL);
+            Fqgpv = (1./self.PP) .* self.transformFromSpatialDomainWithF(qgpvNL); % 1/s^2
+        end
+
+        function Z0 = enstrophyFlux(self)
+            Fqgpv = self.qgpvFlux;
+            PVFactor = -self.Omega .* self.Omega / (self.h * self.f0);
+            Z0 = 2*PVFactor.*real( Fqgpv .* conj(self.A0) ); % 1/s^3
         end
 
         function [Fp,Fm,F0] = nonlinearFluxWithMasks(self,ApMask,AmMask,A0Mask)

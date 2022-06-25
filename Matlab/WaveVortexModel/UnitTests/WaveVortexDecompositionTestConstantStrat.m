@@ -37,7 +37,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0 );
+wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -45,7 +45,7 @@ wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
+[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvt.generateRandomFlowState();
 
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;
@@ -63,8 +63,8 @@ error = @(u,u_unit) max( [max(max(max(abs(u-u_unit)/max( [max(max(max( abs(u) ))
 error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 
 t = 651;
-[u,v,w,eta] = wvm.transformWaveVortexToUVWEta(Ap,Am,A0,t);
-[App,Amm,A00] = wvm.transformUVEtaToWaveVortex(u,v,eta,t);
+[u,v,w,eta] = wvt.transformWaveVortexToUVWEta(Ap,Am,A0,t);
+[App,Amm,A00] = wvt.transformUVEtaToWaveVortex(u,v,eta,t);
 
 Ap_error = error2(Ap,App);
 Am_error = error2(Am,Amm);
@@ -85,14 +85,14 @@ fprintf('\n********** Transform tests F/G **********\n');
 % coefficients, these are no longer direct inverses. They should differ by
 % a factor of 2*(Nz-1).
 % First check the G transform
-w_bar = wvm.transformFromSpatialDomainWithG( w );
-w_back = wvm.transformToSpatialDomainWithG(w_bar);
+w_bar = wvt.transformFromSpatialDomainWithG( w );
+w_back = wvt.transformToSpatialDomainWithG(w_bar);
 w_error = error2(w,w_back);
 fprintf('\tG-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
 % First check the F transform
-u_bar = wvm.transformFromSpatialDomainWithF( u );
-u_back = wvm.transformToSpatialDomainWithF(u_bar);
+u_bar = wvt.transformFromSpatialDomainWithF( u );
+u_back = wvt.transformToSpatialDomainWithF(u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
@@ -103,15 +103,15 @@ fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('\n********** Derivative tests **********\n');
 
-[App,Amm,A00] = wvm.transformUVEtaToWaveVortex(u,v,eta);
-Ubar = wvm.UAp.*App + wvm.UAm.*Amm + wvm.UA0.*A00;
+[App,Amm,A00] = wvt.transformUVEtaToWaveVortex(u,v,eta);
+Ubar = wvt.UAp.*App + wvt.UAm.*Amm + wvt.UA0.*A00;
 
-u_unit = wvm.transformWaveVortexToUVWEta(App,Amm,A00);
-ux_unit = DiffFourier(wvm.x,u_unit,1,1);
-uy_unit = DiffFourier(wvm.y,u_unit,1,2);
-uz_unit = DiffCosine(wvm.z,u_unit,1,3);
+u_unit = wvt.transformWaveVortexToUVWEta(App,Amm,A00);
+ux_unit = DiffFourier(wvt.x,u_unit,1,1);
+uy_unit = DiffFourier(wvt.y,u_unit,1,2);
+uz_unit = DiffCosine(wvt.z,u_unit,1,3);
 
-[u,ux,uy,uz] = wvm.transformToSpatialDomainWithFAllDerivatives( Ubar );
+[u,ux,uy,uz] = wvt.transformToSpatialDomainWithFAllDerivatives( Ubar );
 
 u_error = error2(u,u_unit);
 fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
@@ -122,14 +122,14 @@ fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log1
 u_error = error2(uz,uz_unit);
 fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
-Nbar = wvm.NAp.*App + wvm.NAm.*Amm + wvm.NA0.*A00;
+Nbar = wvt.NAp.*App + wvt.NAm.*Amm + wvt.NA0.*A00;
 
-[~,~,~,eta_unit] = wvm.transformWaveVortexToUVWEta(App,Amm,A00);
-etax_unit = DiffFourier(wvm.x,eta_unit,1,1);
-etay_unit = DiffFourier(wvm.y,eta_unit,1,2);
-etaz_unit = DiffSine(wvm.z,eta_unit,1,3);
+[~,~,~,eta_unit] = wvt.transformWaveVortexToUVWEta(App,Amm,A00);
+etax_unit = DiffFourier(wvt.x,eta_unit,1,1);
+etay_unit = DiffFourier(wvt.y,eta_unit,1,2);
+etaz_unit = DiffSine(wvt.z,eta_unit,1,3);
 
-[eta,etax,etay,etaz] = wvm.transformToSpatialDomainWithGAllDerivatives( Nbar );
+[eta,etax,etay,etaz] = wvt.transformToSpatialDomainWithGAllDerivatives( Nbar );
 
 u_error = error2(eta,eta_unit);
 fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
@@ -161,14 +161,14 @@ for i=1:11
         mask = ones(5,1);
     end
     
-    wvm.Ap = mask(1)*ApIO + mask(2)*ApIGW;
-    wvm.Am = mask(1)*AmIO + mask(2)*AmIGW;
-    wvm.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
+    wvt.Ap = mask(1)*ApIO + mask(2)*ApIGW;
+    wvt.Am = mask(1)*AmIO + mask(2)*AmIGW;
+    wvt.A0 = mask(3)*A0G + mask(4)*A0G0 + mask(5)*A0rhobar;
         
     fprintf('\nmask %d\n',i);
 
-    fprintf('total integrated energy: %f m^3/s\n', wvm.totalEnergySpatiallyIntegrated);
-    fprintf('total spectral energy: %f m^3/s\n', wvm.totalEnergy);
+    fprintf('total integrated energy: %f m^3/s\n', wvt.totalEnergySpatiallyIntegrated);
+    fprintf('total spectral energy: %f m^3/s\n', wvt.totalEnergy);
     
     
     fprintf('\n');

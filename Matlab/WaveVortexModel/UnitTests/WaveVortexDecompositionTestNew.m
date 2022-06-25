@@ -58,7 +58,7 @@ wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rhoFunc
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
+[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.generateRandomFlowState();
 
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;

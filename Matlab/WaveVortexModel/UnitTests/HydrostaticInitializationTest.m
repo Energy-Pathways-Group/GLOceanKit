@@ -49,7 +49,7 @@ return;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
+[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.generateRandomFlowState();
 
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;

@@ -5,16 +5,15 @@
 %
 % This is useful for testing that the transformation matrices are really
 % complete and that the energy is diagonalizable.
-function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)
+function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)
     % Random flow state, separated out by solution type.
     % Adding the solution types together, gives a complete state.
     % Ap = ApIO + ApIGW;
     % Am = AmIO + AmIGW;
     % A0 = A0G + A0G0 + A0rhobar;
-    shouldExcludeNyquist = 1;
-    ApIGW = WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
-    AmIGW = WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
-    A0G = 6e-2*WaveVortexModel.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist );
+    ApIGW = WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
+    AmIGW = WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
+    A0G = 6e-2*WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1 );
 
     ApIO = zeros(size(self.Ap));
     AmIO = zeros(size(self.Ap));

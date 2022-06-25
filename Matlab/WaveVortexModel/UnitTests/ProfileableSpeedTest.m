@@ -46,7 +46,7 @@ else
     dLnN2Function = @(z) zeros(size(z));
     wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho,'N2func', N2Function, 'dLnN2func',dLnN2Function);
 end
-[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
+[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.generateRandomFlowState();
 Ap = ApIO + ApIGW;
 Am = AmIO + AmIGW;
 A0 = A0G + A0G0 + A0rhobar;

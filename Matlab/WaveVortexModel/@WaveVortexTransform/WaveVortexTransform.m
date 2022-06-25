@@ -919,7 +919,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         % Generate a complete set of wave-vortex coefficients with variance at all
         % physically realizable solution states.
-        [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = GenerateRandomFlowState(self)  
+        [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)  
 
         
         [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);

@@ -1,4 +1,4 @@
-ncfile = NetCDFFile('ForcedDissipativeQG-particles-512-blah.nc');
+ncfile = NetCDFFile('run-1/ForcedDissipativeQG-particles-512.nc');
 [x,y,eta,t] = ncfile.readVariables('drifter-x','drifter-y','drifter-eta','t');
 x = x.';
 y = y.';
