@@ -1,10 +1,37 @@
 file = 'run-1/ForcedDissipativeQG-particles-512.nc';
 
+ncfile = NetCDFFile(file);
+tDim = ncfile.readVariables('t');
+k_f = ncfile.attributes('k_f');
+k_r = ncfile.attributes('k_r');
+L_damp = ncfile.readVariables('L_damp');
 
-iTime = 400;
+iTime = 350;
+[F0_psi,F_psi,zeta_z] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi','F_psi','zeta_z');
+eta = mean(mean(zeta_z .* F_psi)); % 1/s * 1/s^2 = 1/s^3
+fprintf('Enstrophy forcing, computed spatially: %g 1/s^3\n',eta);
+
 wvt = WaveVortexTransform.transformFromFile(file,iTime=iTime);
-F_Z0 = wvt.transformToRadialWavenumber(wvt.enstrophyFlux());
-figure, plot(wvt.kRadial,cumsum(F_Z0)), xlog
+
+% Muliply A0 by this factor and you get QGPV
+PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0); % real, units of 1/(m s)
+FZ_forcing = PVFactor.*F0_psi;
+FZ_damping = PVFactor.*(L_damp.*wvt.A0);
+
+enstrophyInertial = -wvt.enstrophyFlux();
+enstrophyForcing = -PVFactor .* real( FZ_forcing .* conj(wvt.A0) );
+enstrophyDamping = PVFactor .* real( FZ_damping .* conj(wvt.A0) );
+
+
+[FZ_inertial,FZ_forcing,FZ_damping] = wvt.transformToRadialWavenumber(enstrophyInertial,enstrophyForcing,enstrophyDamping);
+
+figure
+plot(wvt.kRadial,cumsum(FZ_inertial),LineWidth=2), xlog, hold on
+plot(wvt.kRadial,cumsum(FZ_forcing),LineWidth=2)
+plot(wvt.kRadial,cumsum(FZ_damping),LineWidth=2)
+plot(wvt.kRadial,cumsum(FZ_forcing+FZ_damping),LineWidth=2)
+legend('inertial','forcing','damping','forcing+damping')
+% vlines([k_f k_r],'g--')
 
 return;
 

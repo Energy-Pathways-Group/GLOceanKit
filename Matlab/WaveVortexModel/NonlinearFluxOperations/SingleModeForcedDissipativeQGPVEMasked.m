@@ -108,7 +108,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 
             writeToFile@SingleModeQGPVE(self,ncfile,wvt);
             ncfile.addAttribute('k_f',self.k_f)
-            ncfile.addAttribute('k_r',self.k_f)
+            ncfile.addAttribute('k_r',self.k_r)
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
