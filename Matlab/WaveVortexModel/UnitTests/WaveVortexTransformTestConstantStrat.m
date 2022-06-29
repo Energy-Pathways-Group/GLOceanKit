@@ -1,14 +1,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% WaveVortexDecompositionTest
+% WaveVortexTransformTestConstantStrat
 %
-% This script tests the API decompose an existing (u,v,w,rho_prime) into
-% wave-vortex components
+% This script tests two components of the WaveVortexTransform:
+%   1. Transform to and from wave-vortex space and,
+%   2. The energy orthogonality of all wave-vortex solutions.
 %
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
 %
 % April 12th, 2018      Version 1.0
+% June 29th, 2022       Version 2.0
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

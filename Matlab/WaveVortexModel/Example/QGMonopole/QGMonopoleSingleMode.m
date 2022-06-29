@@ -27,9 +27,7 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1));
-% model.nonlinearFlux = SingleModeQGPVE(model.wvt,shouldUseBeta=1);
-
+model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_rms=wvt.u_max));
 
 % set initial positions for a bunch of floats
 [xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
@@ -39,7 +37,9 @@ nTrajectories = length(xFloat);
 model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 
 finalTime=150*86400;
-nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400,finalTime=150*86400);
+nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400,finalTime=finalTime);
+
+model.nonlinearFlux.dampingTimeScale
 
 xFloatT = zeros(nT,nTrajectories);
 yFloatT = zeros(nT,nTrajectories);
@@ -65,33 +65,4 @@ xlim([min(wvt.x) max(wvt.x)]/1000),ylim([min(wvt.y) max(wvt.y)]/1000)
 packfig(2,1,'rows')
 % print('monopolefigure.png','-dpng','-r300')
 
-return;
 
-% model.linearDynamics = 1;
-
-
-zFloat = linspace(-Lz,0,nTrajectories);
-
-model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
-
-% Set up the integrator
-outputInterval = period/10;
-deltaT = model.timeStepForCFL(0.5,outputInterval);
-finalTime = 3*period;
-nT = model.setupIntegrator(deltaT, outputInterval,finalTime);
-
-% write the float trajectories to memory
-xFloatT = zeros(nT,nTrajectories);
-yFloatT = zeros(nT,nTrajectories);
-zFloatT = zeros(nT,nTrajectories);
-rhoFloatT = zeros(nT,nTrajectories);
-t = zeros(nT,1);
-
-[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),rhoFloatT(1,:)] = model.floatPositions;
-
-while(model.t < finalTime)
-    t(model.outputIndex) = model.integrateToNextOutputTime();
-    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:),rhoFloatT(model.outputIndex,:)] = model.floatPositions;
-end
-
-figure, plot(xFloatT,zFloatT)

@@ -92,7 +92,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             [varargout{:}] = Compute@SingleModeQGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
             F0_psi = (~self.EMA0) .* F0;
-            forcing = ifft(ifft( self.PVA0 .* F0_psi,wvt.Nx,1),wvt.Ny,2,'symmetric');
+            forcing = wvt.transformToSpatialDomainWithF(self.PVA0 .* F0_psi);
             F0 = self.EMA0 .* F0;
             varargout{1} = F0;
             varargout{end+1} = F0_psi;

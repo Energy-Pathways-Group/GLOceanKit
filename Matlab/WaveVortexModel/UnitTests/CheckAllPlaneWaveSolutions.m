@@ -43,11 +43,12 @@ totalTests = 0;
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
     rho0 = 1025;
-    if 1 == 1
+    if 1 == 0
         wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude(iLat), isHydrostatic=isHydrostatic,rho0=rho0);
         rho0 = wavemodel.rho0;
         g = 9.81;
     else
+        fprintf('WARNING: computing the off-grid (external) modes is slow because it has to solve the EVP each time, but do not worry, the internal transforms remain fast.\n')
         isHydrostatic = 1;
         g = 9.81;
         rho = @(z) -(N0*N0*rho0/g)*z + rho0;

@@ -27,21 +27,19 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.isBarotropic = 1;
             
             % Includes the extra factors from the FFTs.
-            PP = self.Nx*self.Ny*ones(self.Nk,self.Nl);
-            QQ = self.Nx*self.Ny*ones(self.Nk,self.Nl);
-            self.buildTransformationMatrices(PP,QQ);
+            self.buildTransformationMatrices();
 
             outputVar = StateVariable('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addTransformOperation(TransformOperation('ssh',outputVar,f));
 
             outputVar = StateVariable('psi',{'x','y','z'},'m^2/s', 'sea-surface anomaly');
-            f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f0) * wvt.PP .*  wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f0) * wvt.A0t);
             self.addTransformOperation(TransformOperation('psi',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
             outputVar = StateVariable('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
-            f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f0) * wvt.PP .* (K.^2 +L.^2) .* wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f0) * (K.^2 +L.^2) .* wvt.A0t);
             self.addTransformOperation(TransformOperation('zeta_z',outputVar,f));
         end
 
@@ -69,7 +67,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.setGeostrophicStreamfunction(psi);
         end
 
-        function self = buildTransformationMatrices(self,PP,QQ)
+        function self = buildTransformationMatrices(self)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
@@ -85,8 +83,9 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             end
             fOmega = f./omega;
             
-            self.PP = PP;
-            self.QQ = QQ;
+            self.PP = ones(size(K));
+            self.QQ = ones(size(K));
+
             makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
             
             self.iOmega = makeHermitian(sqrt(-1)*omega);
@@ -126,17 +125,17 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.A0N(1,1,:) = 1;
             
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* makeHermitian(self.ApU);
-            self.ApV = (1./PP) .* makeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* makeHermitian(self.ApN);
-           
-            self.AmU = (1./PP) .* makeHermitian(self.AmU);
-            self.AmV = (1./PP) .* makeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* makeHermitian(self.AmN);
-           
-            self.A0U = (1./PP) .* makeHermitian(self.A0U);
-            self.A0V = (1./PP) .* makeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* makeHermitian(self.A0N);
+            self.ApU = makeHermitian(self.ApU);
+            self.ApV = makeHermitian(self.ApV);
+            self.ApN = makeHermitian(self.ApN);
+          
+            self.AmU = makeHermitian(self.AmU);
+            self.AmV = makeHermitian(self.AmV);
+            self.AmN = makeHermitian(self.AmN);
+          
+            self.A0U = makeHermitian(self.A0U);
+            self.A0V = makeHermitian(self.A0V);
+            self.A0N = makeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -165,20 +164,20 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
   
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = PP .* makeHermitian(self.UAp);
-            self.UAm = PP .* makeHermitian(self.UAm);
-            self.UA0 = PP .* makeHermitian(self.UA0);
-            
-            self.VAp = PP .* makeHermitian(self.VAp);
-            self.VAm = PP .* makeHermitian(self.VAm);
-            self.VA0 = PP .* makeHermitian(self.VA0);
-            
-            self.WAp = QQ .* makeHermitian(self.WAp);
-            self.WAm = QQ .* makeHermitian(self.WAm);
-            
-            self.NAp = QQ .* makeHermitian(self.NAp);
-            self.NAm = QQ .* makeHermitian(self.NAm);
-            self.NA0 = QQ .* makeHermitian(self.NA0);
+            self.UAp = makeHermitian(self.UAp);
+            self.UAm = makeHermitian(self.UAm);
+            self.UA0 = makeHermitian(self.UA0);
+           
+            self.VAp = makeHermitian(self.VAp);
+            self.VAm = makeHermitian(self.VAm);
+            self.VA0 = makeHermitian(self.VA0);
+           
+            self.WAp = makeHermitian(self.WAp);
+            self.WAm = makeHermitian(self.WAm);
+           
+            self.NAp = makeHermitian(self.NAp);
+            self.NAm = makeHermitian(self.NAm);
+            self.NA0 = makeHermitian(self.NA0);
         end
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,7 +195,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
 
         function Fqgpv = qgpvFlux(self)
             qgpvNL = self.u .* self.diffX(self.qgpv)   + self.v .* self.diffY(self.qgpv);
-            Fqgpv = (1./self.PP) .* self.transformFromSpatialDomainWithF(qgpvNL); % 1/s^2
+            Fqgpv = self.transformFromSpatialDomainWithF(qgpvNL); % 1/s^2
         end
 
         function Z0 = enstrophyFlux(self)
@@ -272,28 +271,32 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         function u_bar = transformFromSpatialDomainWithF(self, u)
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2);
+            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
         
         function w_bar = transformFromSpatialDomainWithG(self, w)
-            w_bar = fft(fft(w,self.Nx,1),self.Ny,2);            
+            w_bar = fft(fft(w,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);            
         end
         
         function u = transformToSpatialDomainWithF(self, u_bar)
+            u_bar = u_bar*(self.Nx*self.Ny);
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
                 
         function w = transformToSpatialDomainWithG(self, w_bar )
+            w_bar = w_bar*(self.Nx*self.Ny);
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
         
         function [u,ux,uy] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            u_bar = u_bar*(self.Nx*self.Ny);
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
             uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
         end  
         
         function [w,wx,wy] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            w_bar = w_bar*(self.Nx*self.Ny);
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
             wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');

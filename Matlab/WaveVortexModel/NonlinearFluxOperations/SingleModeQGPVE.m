@@ -31,7 +31,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             self.doesFluxA0 = 1;
             
             AA = ~(wvt.MaskForAliasedModes(jFraction=1));
-            self.PVA0 = - wvt.PP .* wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0);
+            self.PVA0 = - wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0);
             self.A0PV = AA./self.PVA0;
             
             % Components to the damping operator (which will multiply A0):
@@ -43,7 +43,8 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             if isfield(options,"nu")
                 self.nu = options.nu;
             else
-                self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_rms;
+                cfl=1;
+                self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_rms/(cfl*pi^2);
             end
             self.r = options.r;
             [K,L] = ndgrid(wvt.k,wvt.l,wvt.j);
@@ -66,11 +67,11 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             Vbar = wvt.VA0 .* wvt.A0;
             PVbar = self.PVA0 .* wvt.A0;
 
-            u_g = ifft(ifft(Ubar,wvt.Nx,1),wvt.Ny,2,'symmetric');
-            v_g = ifft(ifft(Vbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
-%             QGPV = ifft(ifft(PVbar,wvt.Nx,1),wvt.Ny,2,'symmetric');
-            PVx = ifft( sqrt(-1)*wvt.k.*ifft(PVbar,wvt.Ny,2), wvt.Nx, 1,'symmetric');
-            PVy = ifft( sqrt(-1)*shiftdim(wvt.l,-1).*ifft(PVbar,wvt.Nx,1), wvt.Ny, 2,'symmetric');
+            u_g = wvt.transformToSpatialDomainWithF(Ubar);
+            v_g = wvt.transformToSpatialDomainWithF(Vbar);
+%             QGPV = wvt.transformToSpatialDomainWithF(PVbar);
+            PVx = wvt.transformToSpatialDomainWithF(sqrt(-1)*wvt.k.*PVbar);
+            PVy = wvt.transformToSpatialDomainWithF(sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;

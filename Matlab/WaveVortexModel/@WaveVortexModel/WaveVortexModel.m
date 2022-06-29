@@ -454,16 +454,19 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
 
             fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
 
+            if nargin == 3 && ~isempty(outputInterval)
+                advectiveDT = outputInterval/ceil(outputInterval/advectiveDT);
+                stepsPerOutput_ = round(outputInterval/advectiveDT);
+                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',advectiveDT,stepsPerOutput_);
+                oscillatoryDT = outputInterval/ceil(outputInterval/oscillatoryDT);
+                stepsPerOutput_ = round(outputInterval/oscillatoryDT);
+                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',oscillatoryDT,stepsPerOutput_);
+            end
+
             if advectiveDT < oscillatoryDT
                 deltaT = advectiveDT;
             else
                 deltaT = oscillatoryDT;
-            end
-
-            if nargin == 3 && ~isempty(outputInterval)
-                deltaT = outputInterval/ceil(outputInterval/deltaT);
-                stepsPerOutput_ = round(outputInterval/deltaT);
-                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',deltaT,stepsPerOutput_);
             end
 
         end

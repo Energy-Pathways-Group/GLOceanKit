@@ -465,18 +465,20 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             fOmega = f./omega;
             
-            self.PP = PP;
-            self.QQ = QQ;
-            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
-            
-            self.iOmega = makeHermitian(sqrt(-1)*omega);
-
             if ~exist("PP","var") || isempty(PP)
                 PP = ones(size(K));
             end
             if ~exist("QQ","var") || isempty(QQ)
                 QQ = ones(size(K));
             end
+
+            self.PP = PP;
+            self.QQ = QQ;
+            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
+            
+            self.iOmega = makeHermitian(sqrt(-1)*omega);
+
+
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (U,V,N) -> (Ap,Am,A0)

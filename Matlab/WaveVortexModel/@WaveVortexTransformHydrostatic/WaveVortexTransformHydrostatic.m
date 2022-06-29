@@ -22,8 +22,8 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
         PF, QG % size(PF,PG)=[Nj x Nz]
         h % [1 x Nj]
         
-        P % Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
-        Q % Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
+        P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
+        Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
 
         Apm_TE_factor
         A0_HKE_factor
@@ -183,7 +183,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             PP = self.Nx*self.Ny*self.P;
             QQ = self.Nx*self.Ny*self.Q;
 
-            self.buildTransformationMatrices(PP,QQ);
+            self.buildTransformationMatrices();
         end
 
         function self = SetProjectionOperators(self, PFinv, QGinv, PF, QG, P, Q, h)
@@ -199,7 +199,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             PP = self.Nx*self.Ny*self.P;
             QQ = self.Nx*self.Ny*self.Q;
 
-            self.buildTransformationMatrices(PP,QQ);
+            self.buildTransformationMatrices();
         end
                                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -252,6 +252,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
             u_bar = permute(u_bar,[2 3 1]);
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
+            u_bar = (u_bar./self.P)/(self.Nx*self.Ny);
         end
         
         function w_bar = transformFromSpatialDomainWithG(self, w)
@@ -261,10 +262,12 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             w_bar = self.QG*w;
             w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);            
+            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);         
+            w_bar = (w_bar./self.Q)/(self.Nx*self.Ny);
         end
         
         function u = transformToSpatialDomainWithF(self, u_bar)
+            u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
             % hydrostatic modes commute with the DFT
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -275,6 +278,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
         end
                 
         function w = transformToSpatialDomainWithG(self, w_bar )
+            w_bar = (self.Q .* w_bar)*(self.Nx*self.Ny);
             % hydrostatic modes commute with the DFT
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
             
@@ -286,6 +290,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
+            u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
 
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -304,6 +309,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
         end  
         
         function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+            w_bar = (self.Q .* w_bar)*(self.Nx*self.Ny);
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
 
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
