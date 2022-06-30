@@ -13,7 +13,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             arguments
                 wvt WaveVortexTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_rms (1,1) double = 0.25 % characteristic speed used to set the damping
+                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using u_max.
                 options.r (1,1) double = 0
                 options.fluxName char = 'SingleModeQGPVE'
                 options.nu (1,1) double
@@ -43,8 +43,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             if isfield(options,"nu")
                 self.nu = options.nu;
             else
-                cfl=1;
-                self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_rms/(cfl*pi^2);
+                self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_damp/(pi^2);
             end
             self.r = options.r;
             [K,L] = ndgrid(wvt.k,wvt.l,wvt.j);

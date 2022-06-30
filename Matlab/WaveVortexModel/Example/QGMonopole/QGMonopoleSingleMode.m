@@ -27,7 +27,7 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_rms=wvt.u_max));
+model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_damp=wvt.u_max));
 
 % set initial positions for a bunch of floats
 [xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
@@ -38,8 +38,6 @@ model.setDrifterPositions(xFloat,yFloat,[],'qgpv');
 
 finalTime=150*86400;
 nT = model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400,finalTime=finalTime);
-
-model.nonlinearFlux.dampingTimeScale
 
 xFloatT = zeros(nT,nTrajectories);
 yFloatT = zeros(nT,nTrajectories);

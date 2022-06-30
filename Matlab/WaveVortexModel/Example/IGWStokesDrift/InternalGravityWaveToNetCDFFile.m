@@ -44,15 +44,9 @@ yFloat = Ly/2*ones(1,nTrajectories);
 zFloat = linspace(-Lz,0,nTrajectories);
 model.setFloatPositions(xFloat,yFloat,zFloat);
 
-% Set up the integrator
-outputInterval = period/10;
-deltaT = model.timeStepForCFL(0.5,outputInterval);
-finalTime = 3*period;
-nT = model.setupIntegrator(deltaT, outputInterval,finalTime);
-
+model.setupIntegrator(timeStepConstraint="oscillatory", outputInterval=period/10);
 model.createNetCDFFileForModelOutput('PlaneWaveWithFloats.nc',shouldOverwriteExisting=1);
-
-model.integrateToTime(finalTime);
+model.integrateToTime(3*period);
 
 ncfile = model.ncfile;
 % [x,y,z] = ncfile.floatPositions();

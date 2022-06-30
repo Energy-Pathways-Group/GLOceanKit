@@ -322,10 +322,19 @@ classdef WaveVortexModel < handle
                 end
                 if strcmp(options.timeStepConstraint,"advective")
                     deltaT = advectiveDT;
+                    fprintf('Using the advective dt')
+                
                 elseif strcmp(options.timeStepConstraint,"oscillatory")
                     deltaT = oscillatoryDT;
+                    fprintf('Using the oscillatory dt')
                 elseif strcmp(options.timeStepConstraint,"min")
                     deltaT = min(oscillatoryDT,advectiveDT);
+                    fprintf('Using the min dt')
+                end
+                if isfield(options,"outputInterval")
+                    fprintf(': %.2f s (%d steps per output)\n',deltaT,round(options.outputInterval/deltaT));
+                else
+                    fprintf(': %.2f s\n',deltaT);
                 end
             end
 
@@ -456,11 +465,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
 
             if nargin == 3 && ~isempty(outputInterval)
                 advectiveDT = outputInterval/ceil(outputInterval/advectiveDT);
-                stepsPerOutput_ = round(outputInterval/advectiveDT);
-                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',advectiveDT,stepsPerOutput_);
                 oscillatoryDT = outputInterval/ceil(outputInterval/oscillatoryDT);
-                stepsPerOutput_ = round(outputInterval/oscillatoryDT);
-                fprintf('Rounding to match the output interval dt: %.2f s (%d steps per output)\n',oscillatoryDT,stepsPerOutput_);
             end
 
             if advectiveDT < oscillatoryDT

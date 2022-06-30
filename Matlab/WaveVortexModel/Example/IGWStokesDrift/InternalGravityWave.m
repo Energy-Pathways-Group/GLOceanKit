@@ -46,10 +46,7 @@ zFloat = linspace(-Lz,0,nTrajectories);
 model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
 
 % Set up the integrator
-outputInterval = period/10;
-deltaT = model.timeStepForCFL(0.5,outputInterval);
-finalTime = 3*period;
-nT = model.setupIntegrator(deltaT, outputInterval,finalTime);
+nT = model.setupIntegrator(timeStepConstraint="oscillatory", outputInterval=period/10,finalTime=3*period);
 
 % write the float trajectories to memory
 xFloatT = zeros(nT,nTrajectories);
@@ -58,11 +55,13 @@ zFloatT = zeros(nT,nTrajectories);
 rhoFloatT = zeros(nT,nTrajectories);
 t = zeros(nT,1);
 
-[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),rhoFloatT(1,:)] = model.floatPositions;
+[xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),tracked] = model.floatPositions;
+rhoFloatT(1,:) = tracked.rho_total;
 
-while(model.t < finalTime)
+while(model.outputIndex < nT)
     t(model.outputIndex) = model.integrateToNextOutputTime();
-    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:),rhoFloatT(model.outputIndex,:)] = model.floatPositions;
+    [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),zFloatT(model.outputIndex,:),tracked] = model.floatPositions;
+    rhoFloatT(model.outputIndex,:) = tracked.rho_total;
 end
 
 figure, plot(xFloatT,zFloatT)

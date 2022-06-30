@@ -23,6 +23,9 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             if isfield(options,"nu")
                 nu = options.nu;
             else
+                % The correct setting for nu would be the following,
+                % nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_max/(pi^2);
+                % but we don't know what u_max is, do we?
                 nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_rms;
             end
 
