@@ -131,9 +131,6 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
 
-            PP = self.F;
-            QQ = self.G;
-
             buildTransformationMatrices@WaveVortexTransform(self);
         end
 

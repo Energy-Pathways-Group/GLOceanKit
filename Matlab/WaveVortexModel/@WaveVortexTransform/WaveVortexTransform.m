@@ -27,8 +27,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
-        
-        PP, QQ
 
         kRadial
         
@@ -294,7 +292,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addTransformOperation(TransformOperation('eta',outputVar,f));
 
             outputVar = StateVariable('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
-            f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.PP .* wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0)) .*wvt.A0t);
+            f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0)) .*wvt.A0t);
             self.addTransformOperation(TransformOperation('qgpv',outputVar,f));
 
             fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
@@ -446,10 +444,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function rebuildTransformationMatrices(self)
-            self.buildTransformationMatrices(self.PP,self.QQ);
+            self.buildTransformationMatrices();
         end
 
-        function self = buildTransformationMatrices(self,PP,QQ)
+        function self = buildTransformationMatrices(self)
             % Build wavenumbers
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
@@ -465,15 +463,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             fOmega = f./omega;
             
-            if ~exist("PP","var") || isempty(PP)
-                PP = ones(size(K));
-            end
-            if ~exist("QQ","var") || isempty(QQ)
-                QQ = ones(size(K));
-            end
-
-            self.PP = PP;
-            self.QQ = QQ;
             makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
             
             self.iOmega = makeHermitian(sqrt(-1)*omega);
@@ -525,17 +514,17 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.A0N(1,1,1) = 0;
             
             % Now make the Hermitian conjugate match.
-            self.ApU = (1./PP) .* makeHermitian(self.ApU);
-            self.ApV = (1./PP) .* makeHermitian(self.ApV);
-            self.ApN = (1./QQ) .* makeHermitian(self.ApN);
-           
-            self.AmU = (1./PP) .* makeHermitian(self.AmU);
-            self.AmV = (1./PP) .* makeHermitian(self.AmV);
-            self.AmN = (1./QQ) .* makeHermitian(self.AmN);
-           
-            self.A0U = (1./PP) .* makeHermitian(self.A0U);
-            self.A0V = (1./PP) .* makeHermitian(self.A0V);
-            self.A0N = (1./QQ) .* makeHermitian(self.A0N);
+            self.ApU = makeHermitian(self.ApU);
+            self.ApV = makeHermitian(self.ApV);
+            self.ApN = makeHermitian(self.ApN);
+          
+            self.AmU = makeHermitian(self.AmU);
+            self.AmV = makeHermitian(self.AmV);
+            self.AmN = makeHermitian(self.AmN);
+          
+            self.A0U = makeHermitian(self.A0U);
+            self.A0V = makeHermitian(self.A0V);
+            self.A0N = makeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -582,20 +571,20 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = PP .* makeHermitian(self.UAp);
-            self.UAm = PP .* makeHermitian(self.UAm);
-            self.UA0 = PP .* makeHermitian(self.UA0);
-            
-            self.VAp = PP .* makeHermitian(self.VAp);
-            self.VAm = PP .* makeHermitian(self.VAm);
-            self.VA0 = PP .* makeHermitian(self.VA0);
-            
-            self.WAp = QQ .* makeHermitian(self.WAp);
-            self.WAm = QQ .* makeHermitian(self.WAm);
-            
-            self.NAp = QQ .* makeHermitian(self.NAp);
-            self.NAm = QQ .* makeHermitian(self.NAm);
-            self.NA0 = QQ .* makeHermitian(self.NA0);
+            self.UAp = makeHermitian(self.UAp);
+            self.UAm = makeHermitian(self.UAm);
+            self.UA0 = makeHermitian(self.UA0);
+           
+            self.VAp = makeHermitian(self.VAp);
+            self.VAm = makeHermitian(self.VAm);
+            self.VA0 = makeHermitian(self.VA0);
+           
+            self.WAp = makeHermitian(self.WAp);
+            self.WAm = makeHermitian(self.WAm);
+           
+            self.NAp = makeHermitian(self.NAp);
+            self.NAm = makeHermitian(self.NAm);
+            self.NA0 = makeHermitian(self.NA0);
         end
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)

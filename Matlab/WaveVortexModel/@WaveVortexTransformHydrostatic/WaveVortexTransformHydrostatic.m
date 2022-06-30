@@ -179,10 +179,6 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.P = shiftdim(self.P(1:end-1),-1);
             self.Q = shiftdim(cat(2,1,self.Q),-1);
 
-            % Includes the extra factors from the FFTs.
-            PP = self.Nx*self.Ny*self.P;
-            QQ = self.Nx*self.Ny*self.Q;
-
             self.buildTransformationMatrices();
         end
 
@@ -194,10 +190,6 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
              self.P = P;
              self.Q = Q;
              self.h = h;
-
-             % Includes the extra factors from the FFTs.
-            PP = self.Nx*self.Ny*self.P;
-            QQ = self.Nx*self.Ny*self.Q;
 
             self.buildTransformationMatrices();
         end

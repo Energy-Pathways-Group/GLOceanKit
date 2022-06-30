@@ -83,9 +83,6 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             end
             fOmega = f./omega;
             
-            self.PP = ones(size(K));
-            self.QQ = ones(size(K));
-
             makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
             
             self.iOmega = makeHermitian(sqrt(-1)*omega);
