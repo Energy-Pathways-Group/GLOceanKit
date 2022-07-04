@@ -43,7 +43,7 @@ classdef WaveVortexModel < handle
 
         didSetupIntegrator=0
         didInitializeNetCDFFile=0
-        variablesToWriteToFile = {'Ap','Am','A0'}
+        netCDFOutputVariables = {'Ap','Am','A0'}
         initialConditionOnlyVariables = {}
         timeSeriesVariables = {}
 
@@ -61,6 +61,17 @@ classdef WaveVortexModel < handle
     methods
 
         function addNetCDFOutputVariables(self,variables)
+            % Add variables to list of variables to be written to the NetCDF variable during the model run.
+            %
+            % Pass strings of WaveVortexTransform state variables of the
+            % same name. This must be called before using any of the
+            % integrate methods.
+            %
+            % ```matlab
+            % model.addNetCDFOutputVariables('A0','u','v');
+            % ```
+            %
+            % - Parameter variables: strings of variable names.
             arguments
                 self WaveVortexModel
             end
@@ -71,10 +82,21 @@ classdef WaveVortexModel < handle
             if ~isempty(unknownVars)
                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
-            self.variablesToWriteToFile = union(self.variablesToWriteToFile,variables);
+            self.netCDFOutputVariables = union(self.netCDFOutputVariables,variables);
         end
 
         function setNetCDFOutputVariables(self,variables)
+            % Set list of variables to be written to the NetCDF variable during the model run.
+            %
+            % Pass strings of WaveVortexTransform state variables of the
+            % same name. This must be called before using any of the
+            % integrate methods.
+            %
+            % ```matlab
+            % model.setNetCDFOutputVariables('A0','u','v');
+            % ```
+            %
+            % - Parameter variables: strings of variable names.
             arguments
                 self WaveVortexModel
             end
@@ -85,17 +107,28 @@ classdef WaveVortexModel < handle
             if ~isempty(unknownVars)
                 error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
-            self.variablesToWriteToFile = variables;
+            self.netCDFOutputVariables = variables;
         end
 
         function removeNetCDFOutputVariables(self,variables)
+            % Remove variables from the list of variables to be written to the NetCDF variable during the model run.
+            %
+            % Pass strings of WaveVortexTransform state variables of the
+            % same name. This must be called before using any of the
+            % integrate methods.
+            %
+            % ```matlab
+            % model.removeNetCDFOutputVariables('A0','u','v');
+            % ```
+            %
+            % - Parameter variables: strings of variable names.
             arguments
                 self WaveVortexModel
             end
             arguments (Repeating)
                 variables char
             end
-            self.variablesToWriteToFile = setdiff(self.variablesToWriteToFile,variables);
+            self.netCDFOutputVariables = setdiff(self.netCDFOutputVariables,variables);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,6 +167,7 @@ classdef WaveVortexModel < handle
         end
         
         function addParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
+            % Add particles to be advected by the flow.
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
@@ -198,21 +232,7 @@ classdef WaveVortexModel < handle
         end
 
 
-        function updateParticleTrackedFields(self)
-            % One special thing we have to do is log the particle
-            % tracked fields
-            for iParticle=1:length(self.particle)
-                trackedFieldNames = self.particle{iParticle}.trackedFieldNames;
-                if ~isempty(trackedFieldNames)
-                    varLagrangianValues = cell(1,length(trackedFieldNames));
-                    p = self.particle{iParticle};
-                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p.x,p.y,p.z,trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
-                    for i=1:length(trackedFieldNames)
-                        self.particle{iParticle}.trackedFields.(trackedFieldNames{i}) = varLagrangianValues{i};
-                    end
-                end
-            end
-        end
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -221,6 +241,47 @@ classdef WaveVortexModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function setFloatPositions(self,x,y,z,trackedFields,options)
+            % Set positions of float-like particles to be advected by the
+            % model.
+            %
+            % Pass the initial positions of particles to be advected by all
+            % three components of the velocity field, (u,v,w).
+            %
+            % Particles move between grid (collocation) points and thus
+            % their location must be interpolated. By default the
+            % advectionInterpolation is set to "linear" interpolation. For
+            % many flows this will have sufficient accuracy and allow you
+            % to place float at nearly every grid point without slowing
+            % down the model integration. However, if high accuracy is
+            % required, you may want to use cubic "spline" interpolation or
+            % even "exact" at the expense of computational speed.
+            %
+            % You can track the value of any known StateVariable along the
+            % particle's flow path, e.g., relative vorticity. These values
+            % must also be interpolated using one of the known
+            % interpolation methods.
+            %
+            % ```matlab
+            % nTrajectories = 101;
+            % xFloat = Lx/2*ones(1,nTrajectories);
+            % yFloat = Ly/2*ones(1,nTrajectories);
+            % zFloat = linspace(-Lz,0,nTrajectories);
+            %
+            % model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
+            % ```
+            %
+            % If a NetCDF file is set for output, the particle positions
+            % and tracked fields will automatically be written to file
+            % during integration. If you are not writing to file you can
+            % retrieve the current positions and values of the tracked
+            % fields by calling -floatPositions.
+            %
+            % - Parameter x: x-coordinate location of the particles
+            % - Parameter y: y-coordinate location of the particles
+            % - Parameter z: z-coordinate location of the particles
+            % - Parameter trackedFields: strings of variable names
+            % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default),"spline","exact"
+            % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default),"spline","exact"
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
@@ -239,6 +300,30 @@ classdef WaveVortexModel < handle
         end
 
         function [x,y,z,tracked] = floatPositions(self)
+            % Returns the positions of the floats at the current time as well as the value of the fields being tracked.
+            %
+            % The tracked variable is a structure, with fields named for
+            % each of the requested fields being tracked.
+            %
+            % In the following example, float positions are set along with
+            % one tracked field 
+            % ```matlab
+            % model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
+            %
+            % % Set up the integrator
+            % nT = model.setupIntegrator(timeStepConstraint="oscillatory", outputInterval=period/10,finalTime=3*period);
+            %
+            % % write the float trajectories to memory
+            % xFloatT = zeros(nT,nTrajectories);
+            % yFloatT = zeros(nT,nTrajectories);
+            % zFloatT = zeros(nT,nTrajectories);
+            % rhoFloatT = zeros(nT,nTrajectories);
+            % t = zeros(nT,1);
+            %
+            % [xFloatT(1,:),yFloatT(1,:),zFloatT(1,:),tracked] = model.floatPositions;
+            % rhoFloatT(1,:) = tracked.rho_total;
+            % ```
+            %
             [x,y,z,tracked] = self.particlePositions('float');
         end
 
@@ -407,6 +492,41 @@ classdef WaveVortexModel < handle
                 end
             end
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % NetCDF Output
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
+            arguments
+                self WaveVortexModel {mustBeNonempty}
+                netcdfFile char {mustBeNonempty}
+                options.Nt (1,1) double {mustBePositive} = Inf
+                options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+            end
+
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
+
+            % Now add a time dimension
+            transformVar = self.wvt.stateVariableWithName('t');
+            attributes = containers.Map();
+            attributes('units') = transformVar.units;
+            attributes('description') = transformVar.description;
+            ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
+
+            if ~self.linearDynamics
+                ncfile.addAttribute('NonlinearFluxOperation',class(self.nonlinearFlux));
+                self.nonlinearFlux.writeToFile(ncfile,self.wvt);
+            end
+
+            self.ncfile = ncfile;
+        end
+
+    end
+
+    methods (Access=protected)
 
         function flag = didBlowUp(self)
             if ( any(isnan(self.wvt.Ap)|isnan(self.wvt.Am)|isnan(self.wvt.A0)) )
@@ -598,37 +718,23 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
         end
 
 
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % NetCDF Output
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
-            arguments
-                self WaveVortexModel {mustBeNonempty}
-                netcdfFile char {mustBeNonempty}
-                options.Nt (1,1) double {mustBePositive} = Inf
-                options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+        function updateParticleTrackedFields(self)
+            % One special thing we have to do is log the particle
+            % tracked fields
+            for iParticle=1:length(self.particle)
+                trackedFieldNames = self.particle{iParticle}.trackedFieldNames;
+                if ~isempty(trackedFieldNames)
+                    varLagrangianValues = cell(1,length(trackedFieldNames));
+                    p = self.particle{iParticle};
+                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p.x,p.y,p.z,trackedFieldNames{:},InterpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
+                    for i=1:length(trackedFieldNames)
+                        self.particle{iParticle}.trackedFields.(trackedFieldNames{i}) = varLagrangianValues{i};
+                    end
+                end
             end
-
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
-
-            % Now add a time dimension
-            transformVar = self.wvt.stateVariableWithName('t');
-            attributes = containers.Map();
-            attributes('units') = transformVar.units;
-            attributes('description') = transformVar.description;
-            ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
-
-            if ~self.linearDynamics
-                ncfile.addAttribute('NonlinearFluxOperation',class(self.nonlinearFlux));
-                self.nonlinearFlux.writeToFile(ncfile,self.wvt);
-            end
-
-            self.ncfile = ncfile;
         end
+
+
 
         function openNetCDFFileForTimeStepping(self)
             arguments
@@ -639,25 +745,25 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                 % for, and which we will only write initial conditions.
                 self.initialConditionOnlyVariables = {};
                 self.timeSeriesVariables = {};
-                for iVar = 1:length(self.variablesToWriteToFile)
-                    if isKey(self.ncfile.variableWithName,self.variablesToWriteToFile{iVar}) || isKey(self.ncfile.complexVariableWithName,self.variablesToWriteToFile{iVar})
+                for iVar = 1:length(self.netCDFOutputVariables)
+                    if isKey(self.ncfile.variableWithName,self.netCDFOutputVariables{iVar}) || isKey(self.ncfile.complexVariableWithName,self.netCDFOutputVariables{iVar})
                         continue;
                     end
 
-                    transformVar = self.wvt.stateVariableWithName(self.variablesToWriteToFile{iVar});
+                    transformVar = self.wvt.stateVariableWithName(self.netCDFOutputVariables{iVar});
                     attributes = containers.Map();
                     attributes('units') = transformVar.units;
                     attributes('description') = transformVar.description;
 
                     if (self.linearDynamics == 1 && transformVar.isVariableWithLinearTimeStep == 1) || (self.linearDynamics == 0 && transformVar.isVariableWithNonlinearTimeStep == 1)
-                        self.timeSeriesVariables{end+1} = self.variablesToWriteToFile{iVar};
+                        self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
                         if transformVar.isComplex == 1
                             self.ncfile.initComplexVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
                         else
                             self.ncfile.initVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
                         end
                     else
-                        self.initialConditionOnlyVariables{end+1} = self.variablesToWriteToFile{iVar};
+                        self.initialConditionOnlyVariables{end+1} = self.netCDFOutputVariables{iVar};
                         if transformVar.isComplex == 1
                             self.ncfile.initComplexVariable(transformVar.name,transformVar.dimensions,attributes,'NC_DOUBLE');
                             self.ncfile.setVariable(transformVar.name,self.wvt.(transformVar.name));

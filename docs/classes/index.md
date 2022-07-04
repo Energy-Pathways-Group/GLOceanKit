@@ -10,9 +10,9 @@ permalink: docs/classes
 
 The `WaveVortexModel` consists of several classes and subclasses.
 
-- [WaveVortexTransform]()
-- [WaveVortexModel]()
-- [WaveVortexModelNetCDFFile]()
+- [WaveVortexTransform](/classes/wavevortextransform.html)
+- [WaveVortexModel](/classes/wavevortexmodel.html)
+- [NetCDFFile](/classes/netcdffile.html)
 
 ## WaveVortexTransform
 
@@ -25,8 +25,8 @@ The WaveVortexTransform subclasses encapsulate data representing the *state* of 
 
 The WaveVortexModel uses the WaveVortexTransform to integrate (time-step) the non-linear equations of motion forward in time. The model adds robust support for particle advection, tracer advection, as well as reduced interaction models.
 
-## WaveVortexModelNetCDFFile
+## NetCDFFile
 
 Tools for reading and writing the model to file, including support for tracers, floats and model restarts.
 
-- [NetCDFFile](./netcdffile.html)
+- [NetCDFFile](/classes/netcdffile.html)
