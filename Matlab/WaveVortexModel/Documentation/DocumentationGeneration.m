@@ -110,7 +110,7 @@ end
 % Make the index/table of contents
 %
 fileID = fopen(sprintf('%s/index.md',lower(className)),'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\n---\n',className);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
@@ -138,7 +138,7 @@ for iKey=1:length(mpkeys)
     for i=1:length(methods)
         fileID = fopen(sprintf('%s/%s.md',lower(className),lower(methods(i).name)),'w');
         
-        fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\n---\n',methods(i).name,className);
+        fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\n---\n\n',methods(i).name,className);
 
         fprintf(fileID,'#  %s\n',methods(i).name);
         fprintf(fileID,'\n%s\n',methods(i).shortDescription);

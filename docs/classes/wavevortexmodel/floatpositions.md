@@ -2,7 +2,9 @@
 layout: default
 title: floatPositions
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  floatPositions
 
 Returns the positions of the floats at the current time as well as the value of the fields being tracked.

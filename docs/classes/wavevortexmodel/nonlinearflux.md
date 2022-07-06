@@ -2,7 +2,9 @@
 layout: default
 title: nonlinearFlux
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  nonlinearFlux
 
 The operation responsible for computing the nonlinear flux of the model

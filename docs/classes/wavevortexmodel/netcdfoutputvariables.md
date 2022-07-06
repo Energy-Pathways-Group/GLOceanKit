@@ -2,7 +2,9 @@
 layout: default
 title: netCDFOutputVariables
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  netCDFOutputVariables
 
 List of all StateVariables being written to NetCDF file

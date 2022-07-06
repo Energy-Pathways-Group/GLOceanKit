@@ -2,7 +2,9 @@
 layout: default
 title: initialTime
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  initialTime
 
 Initial model time (seconds)

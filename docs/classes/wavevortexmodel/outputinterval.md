@@ -2,7 +2,9 @@
 layout: default
 title: outputInterval
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  outputInterval
 
 Model output interval (seconds)

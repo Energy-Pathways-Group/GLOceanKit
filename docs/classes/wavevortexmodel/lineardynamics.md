@@ -2,7 +2,9 @@
 layout: default
 title: linearDynamics
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  linearDynamics
 
 Indicates whether or not the model is using linear or nonlinear dynamics.

@@ -4,6 +4,7 @@ title: WaveVortexModel
 parent: Classes
 has_children: true
 ---
+
 #  WaveVortexModel
 
 The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time using a WaveVortexTransform.

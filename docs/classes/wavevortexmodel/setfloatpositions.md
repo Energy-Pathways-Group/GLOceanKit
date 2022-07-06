@@ -2,7 +2,9 @@
 layout: default
 title: setFloatPositions
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  setFloatPositions
 
 Set positions of float-like particles to be advected by the

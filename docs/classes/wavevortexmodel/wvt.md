@@ -2,7 +2,9 @@
 layout: default
 title: wvt
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  wvt
 
 The WaveVortexTransform instance the represents the ocean state.

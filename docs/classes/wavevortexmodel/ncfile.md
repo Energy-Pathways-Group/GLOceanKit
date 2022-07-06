@@ -2,7 +2,9 @@
 layout: default
 title: ncfile
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  ncfile
 
 Reference to the NetCDFFile being used for model output

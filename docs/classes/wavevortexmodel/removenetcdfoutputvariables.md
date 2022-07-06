@@ -2,7 +2,9 @@
 layout: default
 title: removeNetCDFOutputVariables
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  removeNetCDFOutputVariables
 
 Remove variables from the list of variables to be written to the NetCDF variable during the model run.

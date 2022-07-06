@@ -2,7 +2,9 @@
 layout: default
 title: t
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  t
 
 Current model time (seconds)

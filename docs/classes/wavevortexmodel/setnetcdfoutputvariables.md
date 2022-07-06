@@ -2,7 +2,9 @@
 layout: default
 title: setNetCDFOutputVariables
 parent: WaveVortexModel
+grand_parent: Classes
 ---
+
 #  setNetCDFOutputVariables
 
 Set list of variables to be written to the NetCDF variable during the model run.
