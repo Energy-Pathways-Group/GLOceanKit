@@ -1,4 +1,7 @@
 function model = modelFromFile(path,options)
+% Initialize a model from an existing file
+%
+% - Topic: Initialization
     arguments
         path char {mustBeFile}
         options.restartIndex (1,1) double {mustBePositive} = Inf
