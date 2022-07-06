@@ -5,58 +5,56 @@ classdef WaveVortexModel < handle
     %   model = WaveVortexModel(wvt) creates a new model using the wvt
     %   (WaveVortexTransform)
 
-    properties
-        wvt             % WaveVortexTransform
-        t=0             % current model time (in seconds)
-        initialTime=0
+    properties (GetAccess=public,SetAccess=protected)
+        % The WaveVortexTransform instance the represents the ocean state.
+        % Set on initialization only, the WaveVortexTransform in the model
+        % performs all computations necessary to return information about
+        % the ocean state at a given time.
+        wvt WaveVortexTransform {mustBeNonempty}
+
+        % Initial model time (seconds)
+        % The time of the WaveVortexTransform when the model was
+        % initialized. This also corresponds to the first time in the
+        % NetCDF output file.
+        initialTime (1,1) double = 0 
     
-        nonlinearFlux      % TransformOperation (for now anyway).
-
-        outputInterval      % model output interval (seconds)
-        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
-
-        integrator      % Array integrator
+        % The operation responsible for computing the nonlinear flux of the model
+        % If the nonlinearFlux is nil, then the model will advance using
+        % linear dynamics (i.e., the wave-vortex coefficients will not
+        % change).
+        nonlinearFlux NonlinearFluxOperation
         
-        % These methods all assume a fixed time-step integrator
-
-        stepsTaken=0    % number of RK4 steps/increments that have been made
-        nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
-
-        stepsPerOutput      % number of RK4 steps between each output
-        firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
-        outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+        % Reference to the NetCDFFile being used for model output
+        % Empty indicates no file output.
+        ncfile NetCDFFile
         
-        
-        % *if* outputting to NetCDF file, these will be populated
-        ncfile      % WaveVortexModelNetCDFFile instance---empty indicates no file output
-        
-
-        incrementsWrittenToFile
-    end
-
-    properties (SetAccess = private)
-        particle = {}  % cell array containing particle structs
-        particleIndexWithName % map from particle name to cell array index
-
-        tracerIndexWithName
-        tracerArray = {}
-
-        didSetupIntegrator=0
-        didInitializeNetCDFFile=0
+        % List of all StateVariables being written to NetCDF file
+        % The default list includes 'Ap', 'Am', and 'A0' which is the
+        % minimum set of variables required for a restart.
         netCDFOutputVariables = {'Ap','Am','A0'}
-        initialConditionOnlyVariables = {}
-        timeSeriesVariables = {}
 
-        netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
-
-        integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
-        integrationLastInformModelTime
-        integrationInformTime = 10
+        % Model output interval (seconds)
+        % This property is optionally set when calling setupIntegrator. If
+        % set, it will allow you to call -integrateToNextOutputTime and, if
+        % a NetCDF file is set for output, it will set the interval at
+        % which time steps are written to file.
+        outputInterval (1,1) double
     end
 
     properties (Dependent)
+        % Indicates whether or not the model is using linear or nonlinear dynamics.
+        % In practice, this is simply checking whether the nonlinearFlux
+        % property is nil.
         linearDynamics
+
+        % Current model time (seconds)
+        % Current time of the ocean state, particle positions, and tracer.
+        t (1,1) double
     end
+
+
+
+
 
     methods
 
@@ -144,7 +142,6 @@ classdef WaveVortexModel < handle
             end
 
             self.wvt = wvt; 
-            self.t = wvt.t;
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
@@ -164,6 +161,10 @@ classdef WaveVortexModel < handle
 
         function value = get.linearDynamics(self)
             value = isempty(self.nonlinearFlux);
+        end
+
+        function value = get.t(self)
+            value = self.wvt.t;
         end
         
         function addParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
@@ -526,6 +527,43 @@ classdef WaveVortexModel < handle
 
     end
 
+
+    properties (Access = protected)
+        particle = {}  % cell array containing particle structs
+        particleIndexWithName % map from particle name to cell array index
+
+        tracerIndexWithName
+        tracerArray = {}
+
+        didSetupIntegrator=0
+        didInitializeNetCDFFile=0
+        
+        initialConditionOnlyVariables = {}
+        timeSeriesVariables = {}
+
+        netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
+
+        integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
+        integrationLastInformModelTime
+        integrationInformTime = 10
+
+        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
+
+        integrator      % Array integrator
+
+        % These methods all assume a fixed time-step integrator
+
+        stepsTaken=0    % number of RK4 steps/increments that have been made
+        nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
+
+        stepsPerOutput      % number of RK4 steps between each output
+        firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
+        outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+
+        incrementsWrittenToFile
+    end
+    
+
     methods (Access=protected)
 
         function flag = didBlowUp(self)
@@ -706,7 +744,6 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
             % step size. This reduces rounding errors.
             self.stepsTaken = self.stepsTaken + 1;
             modelTime = self.initialTime + self.stepsTaken * self.integrator.stepSize;
-            self.t = modelTime;
             self.wvt.t = modelTime;
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 self.outputIndex = self.outputIndex + 1;
