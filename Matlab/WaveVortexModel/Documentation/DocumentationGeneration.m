@@ -100,11 +100,16 @@ for i=1:length(mc.PropertyList)
     methodAndPropertiesByTopic(topicName) = methods;
 end
 
+% Make a folder for all the class contents
+if ~exist(sprintf('%s',lower(className)),'dir')
+    mkdir(sprintf('%s',lower(className)))
+end
+
 %%%%%%%%%%%%%%%%%%%%%
 %
-% Make the table of contents
+% Make the index/table of contents
 %
-fileID = fopen(sprintf('%s.md',lower(className)),'w');
+fileID = fopen(sprintf('%s/index.md',lower(className)),'w');
 fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\n---\n',className);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
@@ -126,9 +131,6 @@ fprintf(fileID,'\n\n---');
 
 fclose(fileID);
 
-if ~exist(sprintf('%s',lower(className)),'dir')
-    mkdir(sprintf('%s',lower(className)))
-end
 
 for iKey=1:length(mpkeys)
     topicName = mpkeys{iKey};
