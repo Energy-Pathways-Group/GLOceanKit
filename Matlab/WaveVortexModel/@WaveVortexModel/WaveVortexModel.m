@@ -25,6 +25,7 @@ classdef WaveVortexModel < handle
         nonlinearFlux NonlinearFluxOperation
         
         % Reference to the NetCDFFile being used for model output
+        % @Topic: Writing to NetCDF files
         % Empty indicates no file output.
         ncfile NetCDFFile
         
@@ -61,6 +62,7 @@ classdef WaveVortexModel < handle
         function addNetCDFOutputVariables(self,variables)
             % Add variables to list of variables to be written to the NetCDF variable during the model run.
             %
+            % @Topic: Writing to NetCDF files
             % Pass strings of WaveVortexTransform state variables of the
             % same name. This must be called before using any of the
             % integrate methods.
@@ -85,6 +87,7 @@ classdef WaveVortexModel < handle
 
         function setNetCDFOutputVariables(self,variables)
             % Set list of variables to be written to the NetCDF variable during the model run.
+            % @Topic: Writing to NetCDF files
             %
             % Pass strings of WaveVortexTransform state variables of the
             % same name. This must be called before using any of the
@@ -110,6 +113,7 @@ classdef WaveVortexModel < handle
 
         function removeNetCDFOutputVariables(self,variables)
             % Remove variables from the list of variables to be written to the NetCDF variable during the model run.
+            % @Topic: Writing to NetCDF files
             %
             % Pass strings of WaveVortexTransform state variables of the
             % same name. This must be called before using any of the
