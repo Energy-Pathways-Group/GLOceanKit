@@ -105,7 +105,7 @@ end
 % Make the table of contents
 %
 fileID = fopen(sprintf('%s.md',lower(className)),'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\n---\n',className);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\n---\n',className);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
@@ -151,6 +151,7 @@ for iKey=1:length(mpkeys)
             for iParameter=1:length(methods(i).parameters)
                 fprintf(fileID,'+ `%s` %s\n',methods(i).parameters(iParameter).name,methods(i).parameters(iParameter).description);
             end
+            fprintf(fileID,'\n');
         end
 
         if isfield(methods(i),'detailedDescription') && ~isempty(methods(i).detailedDescription)
