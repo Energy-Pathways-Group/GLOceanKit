@@ -1,9 +1,27 @@
 classdef WaveVortexModel < handle
-    % The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time using a WaveVortexTransform.
+    % The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WaveVortexTransform.
     %
-    % model = WaveVortexModel(wvt) creates a new model using the wvt
-    % (WaveVortexTransform)
+    % Assuming you have already initialized a WaveVortexTransform, e.g.,
+    % ```matlab
+    % wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
+    % ```
+    % and maybe set some initial conditions, you can then initialize the
+    % model,
+    % ```matlab
+    % model = WaveVortexModel(wvt)
+    % ```
+    % 
+    % By default the model only takes a linear time-step. To specify a
+    % nonlinear flux on initialization, for example,
+    %```matlab
+    % model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.u_max));
+    %```
     %
+    % You can also initialize a model from existing output,
+    % ```matlab
+    % model = WaveVortexModel.modelFromFile('SomeFile.nc');
+    %```
+    % 
     % - Topic: Initialization
     % - Topic: Model Properties
     % - Topic: Integration
@@ -17,7 +35,7 @@ classdef WaveVortexModel < handle
         % Set on initialization only, the WaveVortexTransform in the model
         % performs all computations necessary to return information about
         % the ocean state at a given time.
-        wvt WaveVortexTransform {mustBeNonempty}
+        wvt
     
         % The operation responsible for computing the nonlinear flux of the model
         % - Topic: Model Properties
@@ -44,6 +62,11 @@ classdef WaveVortexModel < handle
         % a NetCDF file is set for output, it will set the interval at
         % which time steps are written to file.
         outputInterval (1,1) double
+
+        % output index of the current/most recent step.
+        % - Topic: Integration
+        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+        outputIndex (1,1) uint64 = 1
     end
 
     properties (Dependent)
@@ -621,7 +644,6 @@ classdef WaveVortexModel < handle
 
         stepsPerOutput      % number of RK4 steps between each output
         firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
-        outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
 
         incrementsWrittenToFile
 

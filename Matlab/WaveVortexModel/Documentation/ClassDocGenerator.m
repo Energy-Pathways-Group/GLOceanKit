@@ -64,7 +64,8 @@ allKeys = union(commonKeys,extraKeys,'stable');
 for iKey=1:length(allKeys)
     topicName = allKeys{iKey};
     mdArray = methodAndPropertiesByTopic(topicName);
-    fprintf(fileID,'+ [%s](#%s)\n',topicName,replace(lower(topicName),' ','-'));
+    %     fprintf(fileID,'+ [%s](#%s)\n',topicName,replace(lower(topicName),' ','-'));
+    fprintf(fileID,'+ %s\n',topicName);
     for i=1:length(mdArray)
         fprintf(fileID,'  + [`%s`](/classes/%s/%s.html) ',mdArray(i).name,lower(className),lower(mdArray(i).name));
         fprintf(fileID,'%s\n',mdArray(i).shortDescription);
