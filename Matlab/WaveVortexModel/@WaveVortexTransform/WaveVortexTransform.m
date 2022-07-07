@@ -1,24 +1,93 @@
 classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
-    %3D Boussinesq model with constant stratification solved in wave-vortex
-    %space
-    
-    properties
-        t = 0 % time that these observations are from
-        t0 = 0 % reference time---all wave phases are wound to this time
+    % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
+    %
+    %
+    % The WaveVortexTransform subclasses encapsulate data representing the
+    % state of the ocean at a given instant in time (e.g., u, v, w, and
+    % rho). What makes the WaveVortexTransform subclasses special is that
+    % the state of the ocean is represented as energetically independent
+    % waves and geostrophic motions (vortices). These classes can be
+    % queried for other information, e.g., Ertel PV, relative vorticity,
+    % etc.
+    %
+    % - Topic: Initialization
+    % - Topic: Domain attributes
+    % - Topic: Wave-vortex coefficients
 
-        x, y, z
-        k, l, j
+    % Public read and write properties
+    properties (GetAccess=public, SetAccess=public)
+        % time of observations (s)
+        % - Topic: Domain attributes
+        t = 0
 
-        X,Y,Z
+        % reference time of Ap, Am, A0---all phases are wound to this time (s)
+        % - Topic: Domain attributes
+        t0 = 0
 
-        Nx, Ny, Nz
-        Nk, Nl, Nj % actual sizes in the spectral domain
-        Lx, Ly, Lz
-        f0, Nmax, rho0, latitude
-        iOmega
+        % positive wave coefficients at reference time t0 (m/s)
+        % Topic: Wave-vortex coefficients
+        Ap
+        % negative wave coefficients at reference time t0 (m/s)
+        % Topic: Wave-vortex coefficients
+        Am
+        % geostrophic coefficients at reference time t0 (m)
+        % Topic: Wave-vortex coefficients
+        A0
+    end
+
+    % Public read-only properties
+    properties (GetAccess=public, SetAccess=protected)
+        % domain size in the x-direction (m)
+        % - Topic: Domain attributes
+        % The x coordinate is periodic, which means that
+        % ```matlab
+        % dx = Lx/Nx;
+        % x = dx*(0:Nx-1)';
+        % ```
+        Lx
+        
+        % domain size in the y-direction (m)
+        % - Topic: Domain attributes
+        % The y coordinate is periodic, which means that
+        % ```matlab
+        % dy = Ly/Ny;
+        % self.y = dy*(0:Ny-1)';
+        % ```
+        Ly 
+
+        % domain size in the z-direction (m)
+        % - Topic: Domain attributes
+        Lz
+
+        % z-coordinate dimension (m)
+        % - Topic: Domain attributes
+        z
+
+        Nx
+        Ny
+        Nj
+
+        % latitude of the simulation (degrees north)
+        % - Topic: Domain attributes
+        latitude
+
+        % Boolean indicating whether there is a single (equivalent barotropic) mode
+        % - Topic: Domain attributes
+        % This indicates that the simulation is 2D.
         isBarotropic = 0
 
+        % maximum buoyancy frequency (radians/s)
+        Nmax
         
+        % mean density at the surface, z=0. (kg/m3)
+        rho0
+        
+        offgridModes % subclass should initialize
+        ongridModes % This is a cached copy 
+        version = 2.1;
+
+        iOmega
+
         ApU, ApV, ApN
         AmU, AmV, AmN
         A0U, A0V, A0N
@@ -28,31 +97,54 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         WAp, WAm
         NAp, NAm, NA0
 
-        kRadial
-        
-        Ap, Am, A0
-        
-        halfK = 0;
-        
-        offgridModes % subclass should initialize
-        ongridModes % This is a cached copy 
-        advectionSanityCheck = 0;
-        version = 2.1;
+        stateVariableWithName
+    end
 
+    properties (Dependent, SetAccess=private)
+        % x-coordinate dimension (m)
+        % - Topic: Domain attributes
+        x
+
+        % y-coordinate dimension (m)
+        % - Topic: Domain attributes
+        y
+
+        % wavenumber-coordinate dimension in the x-direction (radians/m)
+        % - Topic: Domain attributes
+        k
+        
+        % wavenumber-coordinate dimension in the y-direction (radians/m)
+        % - Topic: Domain attributes
+        l
+        
+        % vertical mode number (mode number)
+        % - Topic: Domain attributes
+        j
+
+        % isotropic wavenumber dimension (radians/m)
+        % - Topic: Domain attributes
+        kRadial
+
+        f0
+        inertialPeriod
+        X
+        Y
+        Z
+
+        Nk
+        Nl
+        Nz
+    end
+
+    properties (Access=protected)
+        halfK = 0;
         transformDimensionWithName
         transformAttributeWithName
-        stateVariableWithName
         transformOperationWithName
-
         timeDependentStateVariables
-
         variableCache
     end
 
-    properties (Dependent)
-        inertialPeriod
-    end
-    
     properties (Abstract)
         h % all subclasses need to have a function that returns the eigendepths
         
@@ -135,7 +227,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Lx = Lxyz(1);
             self.Ly = Lxyz(2);
             self.Lz = Lxyz(3);
-            
+
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
             self.z = z;
@@ -145,33 +237,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nj = options.Nj;
             self.Nmax = options.Nmax;
 
-            % These remaining properties are all derived
-            self.Nz = length(z);
-
-            dx = self.Lx/self.Nx;
-            dy = self.Ly/self.Ny;            
-            self.x = dx*(0:self.Nx-1)'; % periodic basis
-            self.y = dy*(0:self.Ny-1)'; % periodic basis
-            
-            dk = 1/self.Lx;          % fourier frequency
-            self.k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-            dl = 1/self.Ly;          % fourier frequency
-            self.l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-            self.j = (0:(self.Nj-1))';
-
             if self.halfK == 1
                 self.k( (self.Nx/2+2):end ) = [];
             end
-
-            self.Nk = length(self.k);
-            self.Nl = length(self.l);
-            self.kRadial = self.radialWavenumberAxis;
-
-            self.f0 = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );            
-
-            [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-            self.X = X; self.Y = Y; self.Z = Z;
-            
+        
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.Nj);
             self.Am = zeros(self.Nk,self.Nl,self.Nj);
@@ -442,7 +511,61 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function value = get.inertialPeriod(self)
             value = (2*pi/(2 * 7.2921E-5 * sin( self.latitude*pi/180 )));
         end
-        
+
+        function value = get.f0(self)
+            value = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
+        end
+
+        function value = get.X(self)
+            [value,~,~] = ndgrid(self.x,self.y,self.z);
+        end
+
+        function value = get.Y(self)
+            [~,value,~] = ndgrid(self.x,self.y,self.z);
+        end
+
+        function value = get.Z(self)
+            [~,~,value] = ndgrid(self.x,self.y,self.z);
+        end
+
+        function x = get.x(self)
+            dx = self.Lx/self.Nx;
+            x = dx*(0:self.Nx-1)';
+        end
+
+        function y = get.y(self)
+            dy = self.Ly/self.Ny;   
+            y = dy*(0:self.Ny-1)';
+        end
+
+        function k = get.k(self)
+            dk = 1/self.Lx; 
+            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+        end
+
+        function l = get.l(self)
+            dl = 1/self.Ly;  
+            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+        end
+
+        function j = get.j(self)
+            j = (0:(self.Nj-1))';
+        end
+
+        function kRadial = get.kRadial(self)
+            kRadial = self.radialWavenumberAxis;
+        end
+
+        function value = get.Nz(self)
+            value=length(self.z);
+        end
+        function value = get.Nk(self)
+            value=self.Nx;
+        end
+        function value = get.Nl(self)
+            value=self.Ny;
+        end
+
         function rebuildTransformationMatrices(self)
             self.buildTransformationMatrices();
         end
