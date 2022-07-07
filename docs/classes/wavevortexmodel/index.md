@@ -12,25 +12,26 @@ The WaveVortexModel is responsible for time-stepping (integrating) the ocean sta
 
 ## Discussion
  
-    model = WaveVortexModel(wvt) creates a new model using the wvt
-    (WaveVortexTransform)
+  model = WaveVortexModel(wvt) creates a new model using the wvt
+  (WaveVortexTransform)
+ 
+            
 
 
 ## Topics
 + [Initialization](#initialization)
   + [`modelFromFile`](/classes/wavevortexmodel/modelfromfile.html) Initialize a model from an existing file
   + [`WaveVortexModel`](/classes/wavevortexmodel/wavevortexmodel.html) Initialize a model from a WaveVortexTransform instance
++ [Model Properties](#model-properties)
+  + [`wvt`](/classes/wavevortexmodel/wvt.html) The WaveVortexTransform instance the represents the ocean state.
+  + [`nonlinearFlux`](/classes/wavevortexmodel/nonlinearflux.html) The operation responsible for computing the nonlinear flux of the model
+  + [`linearDynamics`](/classes/wavevortexmodel/lineardynamics.html) Indicates whether or not the model is using linear or nonlinear dynamics.
+  + [`t`](/classes/wavevortexmodel/t.html) Current model time (seconds)
 + [Integration](#integration)
   + [`integrateToNextOutputTime`](/classes/wavevortexmodel/integratetonextoutputtime.html) Time step the model forward to the next output time
   + [`integrateToTime`](/classes/wavevortexmodel/integratetotime.html) Time step the model forward to the requested time.
   + [`setupIntegrator`](/classes/wavevortexmodel/setupintegrator.html) Customize the time-stepping
   + [`outputInterval`](/classes/wavevortexmodel/outputinterval.html) Model output interval (seconds)
-+ [Other](#other)
-  + [`wvt`](/classes/wavevortexmodel/wvt.html) The WaveVortexTransform instance the represents the ocean state.
-  + [`initialTime`](/classes/wavevortexmodel/initialtime.html) Initial model time (seconds)
-  + [`nonlinearFlux`](/classes/wavevortexmodel/nonlinearflux.html) The operation responsible for computing the nonlinear flux of the model
-  + [`linearDynamics`](/classes/wavevortexmodel/lineardynamics.html) Indicates whether or not the model is using linear or nonlinear dynamics.
-  + [`t`](/classes/wavevortexmodel/t.html) Current model time (seconds)
 + [Particles](#particles)
   + [`drifterPositions`](/classes/wavevortexmodel/drifterpositions.html) Current positions of the drifter particles
   + [`setDrifterPositions`](/classes/wavevortexmodel/setdrifterpositions.html) Set positions of drifter-like particles to be advected.

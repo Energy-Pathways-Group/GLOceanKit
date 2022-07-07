@@ -3,6 +3,7 @@ layout: default
 title: nonlinearFlux
 parent: WaveVortexModel
 grand_parent: Classes
+nav_order: 4
 ---
 
 #  nonlinearFlux

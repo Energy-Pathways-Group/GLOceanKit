@@ -1,27 +1,16 @@
-function metadata = mpMetadata(mp)
-metadata = [];
-
-% First check if we even want to create documentation for this particular
-% property or method.
-if isa(mp,'meta.method')
-    if strcmp(mp.DefiningClass.Name,'handle') || ~strcmp(mp.Access,'public') || (mp.Hidden == true)
-        return;
-    end
-elseif isa(mp,'meta.property')
-    if strcmp(mp.DefiningClass.Name,'handle') || ~strcmp(mp.GetAccess,'public')
-        return;
-    end
-end
+function topics = classMetadata(mc)
 
 % Check out https://regexr.com for testing these regex.
-topicExpression = '- topic:([ \t]*)(?<topic>[^\r\n]+)(?:$|\n)';
-declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
-parameterExpression = '- parameter (?<name>[^:]+):(?<description>[^\r\n]+)(?:$|\n)';
-leadingWhitespaceExpression = '^[ \t]+';
+topicExpression = '- topic:(?<topic>[^\r\n]+)(?:$|\n)';
+topics = regexpi(mc.DetailedDescription,topicExpression,'names');
+
+methodAndPropertiesByTopic = containers.Map;
+
+
 
 % Capture the topic annotation, then remove it
 detailedDescription = mp.DetailedDescription;
-matchStr = regexpi(detailedDescription,topicExpression,'names');
+
 detailedDescription = regexprep(detailedDescription,topicExpression,'','ignorecase');
 
 if ~isempty(matchStr)

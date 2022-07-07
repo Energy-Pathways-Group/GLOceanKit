@@ -3,6 +3,7 @@ layout: default
 title: t
 parent: WaveVortexModel
 grand_parent: Classes
+nav_order: 6
 ---
 
 #  t

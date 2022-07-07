@@ -3,6 +3,7 @@ layout: default
 title: addParticles
 parent: WaveVortexModel
 grand_parent: Classes
+nav_order: 16
 ---
 
 #  addParticles

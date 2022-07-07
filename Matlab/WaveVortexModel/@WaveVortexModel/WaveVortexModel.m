@@ -1,23 +1,26 @@
 classdef WaveVortexModel < handle
     % The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time using a WaveVortexTransform.
     %
-    %   model = WaveVortexModel(wvt) creates a new model using the wvt
-    %   (WaveVortexTransform)
+    % model = WaveVortexModel(wvt) creates a new model using the wvt
+    % (WaveVortexTransform)
+    %
+    % - Topic: Initialization
+    % - Topic: Model Properties
+    % - Topic: Integration
+    % - Topic: Particles
+    % - Topic: Tracer
+    % - Topic: Writing to NetCDF files
 
     properties (GetAccess=public,SetAccess=protected)
         % The WaveVortexTransform instance the represents the ocean state.
+        % - Topic: Model Properties
         % Set on initialization only, the WaveVortexTransform in the model
         % performs all computations necessary to return information about
         % the ocean state at a given time.
         wvt WaveVortexTransform {mustBeNonempty}
-
-        % Initial model time (seconds)
-        % The time of the WaveVortexTransform when the model was
-        % initialized. This also corresponds to the first time in the
-        % NetCDF output file.
-        initialTime (1,1) double = 0 
     
         % The operation responsible for computing the nonlinear flux of the model
+        % - Topic: Model Properties
         % If the nonlinearFlux is nil, then the model will advance using
         % linear dynamics (i.e., the wave-vortex coefficients will not
         % change).
@@ -45,11 +48,13 @@ classdef WaveVortexModel < handle
 
     properties (Dependent)
         % Indicates whether or not the model is using linear or nonlinear dynamics.
+        % - Topic: Model Properties
         % In practice, this is simply checking whether the nonlinearFlux
         % property is nil.
         linearDynamics
 
         % Current model time (seconds)
+        % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
         t (1,1) double
     end
@@ -619,6 +624,14 @@ classdef WaveVortexModel < handle
         outputIndex=1       % output index of the current/most recent step. If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
 
         incrementsWrittenToFile
+
+
+        % Initial model time (seconds)
+        % - Topic: Model Properties
+        % The time of the WaveVortexTransform when the model was
+        % initialized. This also corresponds to the first time in the
+        % NetCDF output file.
+        initialTime (1,1) double = 0 
     end
     
 

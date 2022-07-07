@@ -2,6 +2,10 @@ function ClassDocGenerator(className,classDocumentationFolder)
 targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
 mc = meta.class.fromName(className);
 
+topicExpression = '- topic:([ \t]*)(?<name>[^\r\n]+)(?:$|\n)';
+topics = regexpi(mc.DetailedDescription,topicExpression,'names');
+classDetailedDescription = regexprep(mc.DetailedDescription,topicExpression,'','ignorecase');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Capture metadata from all the public methods and properties
@@ -49,12 +53,16 @@ fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: 
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
-    fprintf(fileID,'## Discussion\n%s\n',mc.DetailedDescription);
+    fprintf(fileID,'## Discussion\n%s\n',classDetailedDescription);
 end
 fprintf(fileID,'\n\n## Topics\n');
 mpkeys = methodAndPropertiesByTopic.keys;
-for iKey=1:length(mpkeys)
-    topicName = mpkeys{iKey};
+
+commonKeys = intersect({topics(:).name},mpkeys,'stable');
+extraKeys = setdiff(mpkeys,{topics(:).name});
+allKeys = union(commonKeys,extraKeys,'stable');
+for iKey=1:length(allKeys)
+    topicName = allKeys{iKey};
     mdArray = methodAndPropertiesByTopic(topicName);
     fprintf(fileID,'+ [%s](#%s)\n',topicName,replace(lower(topicName),' ','-'));
     for i=1:length(mdArray)
@@ -66,14 +74,15 @@ fprintf(fileID,'\n\n---');
 
 fclose(fileID);
 
-
-for iKey=1:length(mpkeys)
-    topicName = mpkeys{iKey};
+iPageNumber = 0;
+for iKey=1:length(allKeys)
+    topicName = allKeys{iKey};
     mdArray = methodAndPropertiesByTopic(topicName);
     for i=1:length(mdArray)
+        iPageNumber = iPageNumber+1;
         fileID = fopen(sprintf('%s/%s.md',targetFolder,lower(mdArray(i).name)),'w');
 
-        fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\n---\n\n',mdArray(i).name,className);
+        fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\n---\n\n',mdArray(i).name,className,iPageNumber);
 
         fprintf(fileID,'#  %s\n',mdArray(i).name);
         fprintf(fileID,'\n%s\n',mdArray(i).shortDescription);
