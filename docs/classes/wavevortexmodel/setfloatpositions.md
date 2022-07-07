@@ -3,7 +3,7 @@ layout: default
 title: setFloatPositions
 parent: WaveVortexModel
 grand_parent: Classes
-nav_order: 14
+nav_order: 15
 ---
 
 #  setFloatPositions

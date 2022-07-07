@@ -3,7 +3,7 @@ layout: default
 title: addNetCDFOutputVariables
 parent: WaveVortexModel
 grand_parent: Classes
-nav_order: 22
+nav_order: 23
 ---
 
 #  addNetCDFOutputVariables

@@ -50,6 +50,7 @@ The WaveVortexModel is responsible for time-stepping (integrating) the ocean sta
   + [`integrateToTime`](/classes/wavevortexmodel/integratetotime.html) Time step the model forward to the requested time.
   + [`setupIntegrator`](/classes/wavevortexmodel/setupintegrator.html) Customize the time-stepping
   + [`outputInterval`](/classes/wavevortexmodel/outputinterval.html) Model output interval (seconds)
+  + [`outputIndex`](/classes/wavevortexmodel/outputindex.html) output index of the current/most recent step.
 + Particles
   + [`drifterPositions`](/classes/wavevortexmodel/drifterpositions.html) Current positions of the drifter particles
   + [`setDrifterPositions`](/classes/wavevortexmodel/setdrifterpositions.html) Set positions of drifter-like particles to be advected.
