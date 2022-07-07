@@ -146,8 +146,14 @@ classdef WaveVortexModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function self = WaveVortexModel(wvt,options)
-            % Initialize a model
+            % Initialize a model from a WaveVortexTransform instance
+            %
             % - Topic: Initialization
+            % - Declaration: WaveVortexModel(wvt,options)
+            % - Parameter wvt: a WaveVortexTranform instance
+            % - Parameter nonlinearFlux: (optional) a NonlinearFluxOperation used to time-step the WaveVortexTransform forward in time.
+            %
+            % 
             arguments
                 wvt WaveVortexTransform {mustBeNonempty}
                 options.nonlinearFlux NonlinearFluxOperation
@@ -181,7 +187,17 @@ classdef WaveVortexModel < handle
         
         function addParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
             % Add particles to be advected by the flow.
+            %
             % - Topic: Particles
+            % - Declaration: addParticles(name,fluxOp,x,y,z,trackedFieldNames,options)
+            % - Parameter name: a unique name to call the particles
+            % - Parameter fluxOp: a ParticleFluxOperation, used to determine how the flow advects the particles
+            % - Parameter x: x-coordinate location of the particles
+            % - Parameter y: y-coordinate location of the particles
+            % - Parameter z: z-coordinate location of the particles
+            % - Parameter trackedFields: strings of variable names
+            % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
+            % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
@@ -239,16 +255,16 @@ classdef WaveVortexModel < handle
 
         function [x,y,z,trackedFields] = particlePositions(self,name)
             % Positions and values of tracked fields of particles at the current model time.
+            %
             % - Topic: Particles
+            % - Declaration: [x,y,z,trackedFields] = particlePositions(name)
+            % - Parameter name: name of the particles
             p = self.particle{self.particleIndexWithName(name)};
             x = p.x;
             y = p.y;
             z = p.z;
             trackedFields = self.particle{self.particleIndexWithName(name)}.trackedFields;
         end
-
-
-
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -257,10 +273,17 @@ classdef WaveVortexModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function setFloatPositions(self,x,y,z,trackedFields,options)
-            % Set positions of float-like particles to be advected by the
-            % model.
+            % Set positions of float-like particles to be advected by the model.
             %
             % - Topic: Particles
+            % - Declaration: setFloatPositions(self,x,y,z,trackedFields,options)
+            % - Parameter x: x-coordinate location of the particles
+            % - Parameter y: y-coordinate location of the particles
+            % - Parameter z: z-coordinate location of the particles
+            % - Parameter trackedFields: strings of variable names
+            % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
+            % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
+            %
             % Pass the initial positions of particles to be advected by all
             % three components of the velocity field, (u,v,w).
             %
@@ -292,13 +315,6 @@ classdef WaveVortexModel < handle
             % during integration. If you are not writing to file you can
             % retrieve the current positions and values of the tracked
             % fields by calling -floatPositions.
-            %
-            % - Parameter x: x-coordinate location of the particles
-            % - Parameter y: y-coordinate location of the particles
-            % - Parameter z: z-coordinate location of the particles
-            % - Parameter trackedFields: strings of variable names
-            % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default),"spline","exact"
-            % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default),"spline","exact"
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 x (1,:) double
@@ -320,6 +336,8 @@ classdef WaveVortexModel < handle
             % Returns the positions of the floats at the current time as well as the value of the fields being tracked.
             %
             % - Topic: Particles
+            % - Declaration: [x,y,z,tracked] = floatPositions()
+            %
             % The tracked variable is a structure, with fields named for
             % each of the requested fields being tracked.
             %
@@ -393,7 +411,14 @@ classdef WaveVortexModel < handle
 
         function varargout = setupIntegrator(self,options)
             % Customize the time-stepping
+            %
             % - Topic: Integration
+            % - Declaration: setupIntegrator(self,options)
+            % - Parameter deltaT: (optional) set the integrator time step
+            % - Parameter cfl: (optional) set the cfl condition used to set integrator time step
+            % - Parameter timeStepConstraint: (optional) set the method used to determine the integrator time step. "advective","oscillatory","min"
+            % - Parameter outputInterval: (optional) If set, it will allow you to call -integrateToNextOutputTime and, if a NetCDF file is set for output, it will set the interval at which time steps are written to file.
+            % - Parameter finalTime: (optional) if set, the NetCDF file may set a fixed time dimension length.
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 options.deltaT (1,1) double {mustBePositive}

@@ -3,6 +3,7 @@ layout: default
 title: WaveVortexModel
 parent: Classes
 has_children: true
+has_toc: false
 ---
 
 #  WaveVortexModel
@@ -18,7 +19,7 @@ The WaveVortexModel is responsible for time-stepping (integrating) the ocean sta
 ## Topics
 + [Initialization](#initialization)
   + [`modelFromFile`](/classes/wavevortexmodel/modelfromfile.html) Initialize a model from an existing file
-  + [`WaveVortexModel`](/classes/wavevortexmodel/wavevortexmodel.html) Initialize a model
+  + [`WaveVortexModel`](/classes/wavevortexmodel/wavevortexmodel.html) Initialize a model from a WaveVortexTransform instance
 + [Integration](#integration)
   + [`integrateToNextOutputTime`](/classes/wavevortexmodel/integratetonextoutputtime.html) Time step the model forward to the next output time
   + [`integrateToTime`](/classes/wavevortexmodel/integratetotime.html) Time step the model forward to the requested time.
@@ -34,7 +35,7 @@ The WaveVortexModel is responsible for time-stepping (integrating) the ocean sta
   + [`drifterPositions`](/classes/wavevortexmodel/drifterpositions.html) Current positions of the drifter particles
   + [`setDrifterPositions`](/classes/wavevortexmodel/setdrifterpositions.html) Set positions of drifter-like particles to be advected.
   + [`floatPositions`](/classes/wavevortexmodel/floatpositions.html) Returns the positions of the floats at the current time as well as the value of the fields being tracked.
-  + [`setFloatPositions`](/classes/wavevortexmodel/setfloatpositions.html) Set positions of float-like particles to be advected by the
+  + [`setFloatPositions`](/classes/wavevortexmodel/setfloatpositions.html) Set positions of float-like particles to be advected by the model.
   + [`particlePositions`](/classes/wavevortexmodel/particlepositions.html) Positions and values of tracked fields of particles at the current model time.
   + [`addParticles`](/classes/wavevortexmodel/addparticles.html) Add particles to be advected by the flow.
 + [Tracer](#tracer)

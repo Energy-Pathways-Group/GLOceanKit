@@ -12,9 +12,14 @@ Returns the positions of the floats at the current time as well as the value of 
 
 ---
 
+## Declaration
+```matlab
+ [x,y,z,tracked] = floatPositions()
+```
 ## Discussion
 
-    The tracked variable is a structure, with fields named for
+     
+  The tracked variable is a structure, with fields named for
   each of the requested fields being tracked.
  
   In the following example, float positions are set along with

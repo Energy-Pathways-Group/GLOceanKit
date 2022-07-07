@@ -7,23 +7,27 @@ grand_parent: Classes
 
 #  setFloatPositions
 
-Set positions of float-like particles to be advected by the
+Set positions of float-like particles to be advected by the model.
 
 
 ---
 
+## Declaration
+```matlab
+ setFloatPositions(self,x,y,z,trackedFields,options)
+```
 ## Parameters
 + `x`  x-coordinate location of the particles
 + `y`  y-coordinate location of the particles
 + `z`  z-coordinate location of the particles
 + `trackedFields`  strings of variable names
-+ `advectionInterpolation`  (optional) interpolation method used for particle advection. "linear" (default),"spline","exact"
-+ `trackedVarInterpolation`  (optional) interpolation method used for tracked field. "linear" (default),"spline","exact"
++ `advectionInterpolation`  (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
++ `trackedVarInterpolation`  (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
 
 ## Discussion
-model.
- 
-    Pass the initial positions of particles to be advected by all
+
+                 
+  Pass the initial positions of particles to be advected by all
   three components of the velocity field, (u,v,w).
  
   Particles move between grid (collocation) points and thus
@@ -54,5 +58,3 @@ model.
   during integration. If you are not writing to file you can
   retrieve the current positions and values of the tracked
   fields by calling -floatPositions.
- 
-            
