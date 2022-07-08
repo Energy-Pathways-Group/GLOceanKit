@@ -98,6 +98,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         NAp, NAm, NA0
 
         stateVariableWithName
+        transformDimensionWithName
+        transformPropertyWithName
+        transformOperationWithName
+        timeDependentStateVariables
     end
 
     properties (Dependent, SetAccess=private)
@@ -125,8 +129,19 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % - Topic: Domain attributes
         kRadial
 
+        % Coriolis parameter (radians/s)
+        % - Topic: Domain attributes
+        % The Coriolis parameter is determined from latitude, which can
+        % only be set during initialization.
         f0
+
+        % Inertial period (s)
+        % - Topic: Domain attributes
+        % The inertial period is determined from latitude, which can only
+        % be set during initialization.
         inertialPeriod
+
+
         X
         Y
         Z
@@ -138,10 +153,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     properties (Access=protected)
         halfK = 0;
-        transformDimensionWithName
-        transformAttributeWithName
-        transformOperationWithName
-        timeDependentStateVariables
+
         variableCache
     end
 
@@ -236,10 +248,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.rho0 = options.rho0;
             self.Nj = options.Nj;
             self.Nmax = options.Nmax;
-
-            if self.halfK == 1
-                self.k( (self.Nx/2+2):end ) = [];
-            end
         
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.Nj);
@@ -249,7 +257,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.clearVariableCache();
 
             self.transformDimensionWithName = containers.Map();
-            self.transformAttributeWithName = containers.Map();
+            self.transformPropertyWithName = containers.Map();
             self.stateVariableWithName = containers.Map();
             self.transformOperationWithName = containers.Map();
             self.timeDependentStateVariables = {};
@@ -263,18 +271,18 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.transformDimensionWithName('j') = TransformDimension('j',length(self.j), 'mode number', 'vertical mode number');
             self.transformDimensionWithName('kRadial') = TransformDimension('kRadial',length(self.kRadial), 'radians/m', 'isotropic wavenumber dimension');
 
-            self.addTransformAttribute(TransformAttribute('Lx',{},'m', 'domain size in the x-direction'));
-            self.addTransformAttribute(TransformAttribute('Ly',{},'m', 'domain size in the y-direction'));
-            self.addTransformAttribute(TransformAttribute('Lz',{},'m', 'domain size in the z-direction'));
-            self.addTransformAttribute(TransformAttribute('t0',{},'s', 'reference time of Ap, Am, A0'));
-            self.addTransformAttribute(TransformAttribute('latitude',{},'degrees_north', 'latitude of the simulation'));
-            self.addTransformAttribute(TransformAttribute('rho0',{},'kg/m3', 'mean density at the surface (z=0)'));
-            self.addTransformAttribute(TransformAttribute('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)'));
-            self.addTransformAttribute(TransformAttribute('Nmax',{},'radians/s', 'maximum buoyancy frequency'));
-            self.addTransformAttribute(TransformAttribute('rhobar',{'z'},'kg/m3', 'mean density'));
-            self.addTransformAttribute(TransformAttribute('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density'));
-            self.addTransformAttribute(TransformAttribute('dLnN2',{'z'},'unitless', 'd/dz ln N2'));
-            self.addTransformAttribute(TransformAttribute('h',{'j'},'m', 'equivalent depth of each mode'));
+            self.addTransformProperty(TransformProperty('Lx',{},'m', 'domain size in the x-direction'));
+            self.addTransformProperty(TransformProperty('Ly',{},'m', 'domain size in the y-direction'));
+            self.addTransformProperty(TransformProperty('Lz',{},'m', 'domain size in the z-direction'));
+            self.addTransformProperty(TransformProperty('t0',{},'s', 'reference time of Ap, Am, A0'));
+            self.addTransformProperty(TransformProperty('latitude',{},'degrees_north', 'latitude of the simulation'));
+            self.addTransformProperty(TransformProperty('rho0',{},'kg/m3', 'mean density at the surface (z=0)'));
+            self.addTransformProperty(TransformProperty('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)'));
+            self.addTransformProperty(TransformProperty('Nmax',{},'radians/s', 'maximum buoyancy frequency'));
+            self.addTransformProperty(TransformProperty('rhobar',{'z'},'kg/m3', 'mean density'));
+            self.addTransformProperty(TransformProperty('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density'));
+            self.addTransformProperty(TransformProperty('dLnN2',{'z'},'unitless', 'd/dz ln N2'));
+            self.addTransformProperty(TransformProperty('h',{'j'},'m', 'equivalent depth of each mode'));
 
 
             self.addTransformOperation(TransformOperation('t',StateVariable('t',{}, 's', 'time of observations'),@(wvt) wvt.t));
@@ -370,11 +378,19 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addTransformOperation(TransformOperation('nonlinearFlux',fluxVar,@(wvt) wvt.nonlinearFlux));
         end
 
-        function addTransformAttribute(self,transformAtt)
-            self.transformAttributeWithName(transformAtt.name) = transformAtt;
+        function addTransformProperty(self,transformAtt)
+            arguments
+                self WaveVortexTransform {mustBeNonempty}
+                transformAtt TransformProperty {mustBeNonempty}
+            end
+            self.transformPropertyWithName(transformAtt.name) = transformAtt;
         end
 
         function addTransformOperation(self,modelOp)
+            arguments
+                self WaveVortexTransform {mustBeNonempty}
+                modelOp TransformOperation {mustBeNonempty}
+            end
             for iVar=1:length(modelOp.outputVariables)
                 if any(~isKey(self.transformDimensionWithName,modelOp.outputVariables(iVar).dimensions))
                     error("Unable to find at least one of the dimensions for variable %s",modelOp.outputVariables(iVar).name);
@@ -541,6 +557,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function k = get.k(self)
             dk = 1/self.Lx; 
             k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+%             if self.halfK == 1
+%                 k( (self.Nx/2+2):end ) = [];
+%             end
         end
 
         function l = get.l(self)

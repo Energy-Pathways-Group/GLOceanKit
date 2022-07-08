@@ -1,4 +1,4 @@
-classdef TransformAttribute < handle
+classdef TransformProperty < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -11,7 +11,7 @@ classdef TransformAttribute < handle
     end
 
     methods
-        function self = TransformAttribute(name,dimensions,units,description)
+        function self = TransformProperty(name,dimensions,units,description)
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             if ~iscell(dimensions)

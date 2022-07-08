@@ -68,7 +68,7 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
     end
 
     for iVar=1:length(attributesToWrite)
-        transformVar = wvt.transformAttributeWithName(attributesToWrite{iVar});
+        transformVar = wvt.transformPropertyWithName(attributesToWrite{iVar});
         attributes = containers.Map();
         attributes('units') = transformVar.units;
         attributes('description') = transformVar.description;
