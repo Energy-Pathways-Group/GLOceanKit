@@ -1,19 +1,33 @@
-classdef TransformProperty < handle
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
-
+classdef TransformProperty < TransformAnnotation
+    %Describes a property of the WaveVortexTransform
+    %
+    % In addition to adding a name, description and detailed description of
+    % a given property, you can also specify the properties dimensions,
+    % its units, and whether it is a complex number or not. These
+    % annotations are used for both online documentation and for writing to
+    % NetCDF files.
+    %
+    % Note that as a subclass of TransformAnnotation, this class looks for
+    % a file (name).md in the directory where it is defined another other
+    % subdirectories. This file is then read-in to the detailed description
+    % that is used on the website.
     properties
-        name
         dimensions
         units
-        description
         isComplex = 0 % does it have a non-zero imaginary part?
     end
 
     methods
-        function self = TransformProperty(name,dimensions,units,description)
-            %UNTITLED2 Construct an instance of this class
-            %   Detailed explanation goes here
+        function self = TransformProperty(name,dimensions,units,description,options)
+            arguments
+                name char {mustBeNonempty}
+                dimensions
+                units char {mustBeNonempty}
+                description char {mustBeNonempty}
+                options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
+            end
+
+            self@TransformAnnotation(name,description);
             if ~iscell(dimensions)
                 if isempty(dimensions)
                     dimensions = {};
@@ -21,17 +35,9 @@ classdef TransformProperty < handle
                     dimensions = {dimensions};
                 end
             end
-            self.name = name;
             self.dimensions = dimensions;
             self.units = units;
-            self.description = description;
+            self.isComplex = options.isComplex;
         end
-
-%         function set.isVariableWithLinearTimeStep(self,value)
-%             self.isVariableWithLinearTimeStep = value;
-%             if value == 1
-%                 self.isVariableWithNonlinearTimeStep = 1;
-%             end
-%         end
     end
 end

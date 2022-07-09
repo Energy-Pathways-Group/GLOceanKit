@@ -1,4 +1,5 @@
 function topics = classMetadata(mc)
+% Not used!!!
 
 % Check out https://regexr.com for testing these regex.
 topicExpression = '- topic:(?<topic>[^\r\n]+)(?:$|\n)';

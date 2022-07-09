@@ -2,52 +2,30 @@ function ClassDocGenerator(className,classDocumentationFolder)
 targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
 mc = meta.class.fromName(className);
 
+% extract topics and the detailed description (minus those topics)
 topicExpression = '- topic:([ \t]*)(?<name>[^\r\n]+)(?:$|\n)';
 topics = regexpi(mc.DetailedDescription,topicExpression,'names');
 classDetailedDescription = regexprep(mc.DetailedDescription,topicExpression,'','ignorecase');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
 % Capture metadata from all the public methods and properties
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+methodAndPropertiesByTopic = methodAndPropertiesByTopicFromMetaClass(mc);
 
-methodAndPropertiesByTopic = containers.Map;
-for i=1:length(mc.MethodList)
-    metadata = mpMetadata(mc.MethodList(i));
-    if ~isempty(metadata)
-        if isKey(methodAndPropertiesByTopic,metadata.topic)
-            mdArray = methodAndPropertiesByTopic(metadata.topic);
-            mdArray(end+1) = metadata;
-        else
-            mdArray = metadata;
-        end
-        methodAndPropertiesByTopic(metadata.topic) = mdArray;
-    end
-end
-
-for i=1:length(mc.PropertyList)
-    metadata = mpMetadata(mc.PropertyList(i));
-    if ~isempty(metadata)
-        if isKey(methodAndPropertiesByTopic,metadata.topic)
-            mdArray = methodAndPropertiesByTopic(metadata.topic);
-            mdArray(end+1) = metadata;
-        else
-            mdArray = metadata;
-        end
-        methodAndPropertiesByTopic(metadata.topic) = mdArray;
-    end
-end
+% Now create a consolidated list of topics (stored as key names)
+mpkeys = methodAndPropertiesByTopic.keys;
+commonKeys = intersect({topics(:).name},mpkeys,'stable');
+extraKeys = setdiff(mpkeys,{topics(:).name});
+allKeys = union(commonKeys,extraKeys,'stable');
 
 % Make a folder for all the class contents
 if ~exist(targetFolder,'dir')
     mkdir(targetFolder);
 end
 
-%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Make the index/table of contents
 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fileID = fopen(sprintf('%s/index.md',targetFolder),'w');
 fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\nhas_toc: false\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
@@ -56,11 +34,7 @@ if ~isempty(mc.DetailedDescription)
     fprintf(fileID,'## Discussion\n%s\n',classDetailedDescription);
 end
 fprintf(fileID,'\n\n## Topics\n');
-mpkeys = methodAndPropertiesByTopic.keys;
 
-commonKeys = intersect({topics(:).name},mpkeys,'stable');
-extraKeys = setdiff(mpkeys,{topics(:).name});
-allKeys = union(commonKeys,extraKeys,'stable');
 for iKey=1:length(allKeys)
     topicName = allKeys{iKey};
     mdArray = methodAndPropertiesByTopic(topicName);

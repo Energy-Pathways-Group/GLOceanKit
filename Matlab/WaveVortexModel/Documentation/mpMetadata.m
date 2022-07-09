@@ -1,4 +1,5 @@
 function metadata = mpMetadata(mp)
+% Extract documentation from method or property (mp) metadata.
 metadata = [];
 
 % First check if we even want to create documentation for this particular

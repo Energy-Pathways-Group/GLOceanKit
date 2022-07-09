@@ -6,6 +6,7 @@ classdef TransformOperation < handle
         name % ?
         outputVariables % Make private?
         nVarOut
+        detailedDescription
         f = []
     end
 
