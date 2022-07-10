@@ -2,7 +2,7 @@
 layout: default
 title: WaveVortexModel
 parent: Classes
-has_children: true
+has_children: false
 has_toc: false
 ---
 

@@ -27,7 +27,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fileID = fopen(sprintf('%s/index.md',targetFolder),'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: true\nhas_toc: false\n---\n\n',className);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
