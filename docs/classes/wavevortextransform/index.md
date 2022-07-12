@@ -4,6 +4,7 @@ title: WaveVortexTransform
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WaveVortexTransform
@@ -19,13 +20,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   the state of the ocean is represented as energetically independent
   waves and geostrophic motions (vortices). These classes can be
   queried for other information, e.g., Ertel PV, relative vorticity,
-  etc.
+  etc. Then we have $$\exp(i\omega t)$$
  
                       
 
 
 ## Topics
-+ Initialization
 + Domain attributes
   + Other
     + [`f0`](/classes/wavevortextransform/f0.html) geostrophic coefficients at reference time t0
@@ -36,9 +36,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`l`](/classes/wavevortextransform/l.html) 
     + [`x`](/classes/wavevortextransform/x.html) 
     + [`y`](/classes/wavevortextransform/y.html) geostrophic coefficients at time (t-t0)
-+ Wave-vortex coefficients
-+ Initial Conditions
-+ Energetics
 + Other
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0

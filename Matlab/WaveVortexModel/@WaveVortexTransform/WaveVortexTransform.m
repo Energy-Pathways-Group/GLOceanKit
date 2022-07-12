@@ -8,7 +8,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     % the state of the ocean is represented as energetically independent
     % waves and geostrophic motions (vortices). These classes can be
     % queried for other information, e.g., Ertel PV, relative vorticity,
-    % etc.
+    % etc. Then we have $$\exp(i\omega t)$$
     %
     % - Topic: Initialization
     % - Topic: Domain attributes

@@ -1,3 +1,11 @@
+---
+layout: default
+title: Orthogonality
+has_children: false
+has_toc: false
+mathjax: true
+---
+
 #  Orthogonality in the Wave-Vortex model
 
 The wave-vortex model is a spectral model, but unlike typical spectral models where physical variables (u,v,rho) are projected onto sines or cosines, physical variables are projected onto the linear solutions of the system, namely, the geostrophic and inertia-gravity wave solutions. A key feature that makes this model useful, is that the geostrophic and inertia-gravity wave solutions are *orthogonal* in horizontally-averaged depth-integrated total energy. As a consequence, the spectrum of this model physically meaningful.

@@ -135,7 +135,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fileID = fopen(sprintf('%s/index.md',targetFolder),'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\n---\n\n',className);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
@@ -144,13 +144,13 @@ end
 fprintf(fileID,'\n\n## Topics\n');
 
 for topicIndex = 1:length(classDefinedTopics)
-    fprintf(fileID,'+ %s\n',classDefinedTopics(topicIndex).topicName);
-
     % If the 'Other' subtopic isn't there, it means no methods actually
     % used this topic.
     if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,'Other')
         continue;
     end
+
+    fprintf(fileID,'+ %s\n',classDefinedTopics(topicIndex).topicName);
 
     otherSubtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex('Other');
     for subtopicIndex = 1:length(classDefinedTopics(topicIndex).subtopics)
