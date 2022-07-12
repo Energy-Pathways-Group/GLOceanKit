@@ -28,14 +28,14 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 ## Topics
 + Domain attributes
   + Other
-    + [`f0`](/classes/wavevortextransform/f0.html) geostrophic coefficients at reference time t0
-    + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) 
-    + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) 
-    + [`j`](/classes/wavevortextransform/j.html) 
-    + [`k`](/classes/wavevortextransform/k.html) 
-    + [`l`](/classes/wavevortextransform/l.html) 
-    + [`x`](/classes/wavevortextransform/x.html) 
-    + [`y`](/classes/wavevortextransform/y.html) geostrophic coefficients at time (t-t0)
+    + [`f0`](/classes/wavevortextransform/f0.html) Coriolis parameter (radians/s)
+    + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) Inertial period (s)
+    + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
+    + [`j`](/classes/wavevortextransform/j.html) vertical mode number
+    + [`k`](/classes/wavevortextransform/k.html) wavenumber-coordinate dimension in the x-direction
+    + [`l`](/classes/wavevortextransform/l.html) wavenumber-coordinate dimension in the y-direction
+    + [`x`](/classes/wavevortextransform/x.html) x-coordinate dimension
+    + [`y`](/classes/wavevortextransform/y.html) y-coordinate dimension
 + Other
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
@@ -133,60 +133,60 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`diffZG`](/classes/wavevortextransform/diffzg.html) 
     + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
     + [`eta`](/classes/wavevortextransform/eta.html) isopycnal deviation
-    + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) Coriolis parameter (radians/s)
+    + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) 
     + [`g`](/classes/wavevortextransform/g.html) 
-    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) 
+    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) 
-    + [`geostrophicEnergyBarotropic`](/classes/wavevortextransform/geostrophicenergybarotropic.html) total energy, geostrophic, baroclinic
-    + [`grid`](/classes/wavevortextransform/grid.html) total energy, geostrophic, barotropic
-    + [`h`](/classes/wavevortextransform/h.html) 
-    + [`iOmega`](/classes/wavevortextransform/iomega.html) equivalent depth of each mode
+    + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) 
+    + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) total energy, geostrophic, baroclinic
+    + [`geostrophicEnergyBarotropic`](/classes/wavevortextransform/geostrophicenergybarotropic.html) total energy, geostrophic, barotropic
+    + [`grid`](/classes/wavevortextransform/grid.html) 
+    + [`h`](/classes/wavevortextransform/h.html) equivalent depth of each mode
+    + [`iOmega`](/classes/wavevortextransform/iomega.html) 
     + [`inertialEnergy`](/classes/wavevortextransform/inertialenergy.html) 
-    + [`inertialEnergyBaroclinic`](/classes/wavevortextransform/inertialenergybaroclinic.html) 
-    + [`inertialEnergyBarotropic`](/classes/wavevortextransform/inertialenergybarotropic.html) total energy, inertial oscillations, baroclinic
-    + [`initWithGMSpectrum`](/classes/wavevortextransform/initwithgmspectrum.html) total energy, inertial oscillations, barotropic
-    + [`initWithGeostrophicStreamfunction`](/classes/wavevortextransform/initwithgeostrophicstreamfunction.html) Inertial period (s)
-    + [`initWithInertialMotions`](/classes/wavevortextransform/initwithinertialmotions.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`initWithSpectralFunction`](/classes/wavevortextransform/initwithspectralfunction.html) 
+    + [`inertialEnergyBaroclinic`](/classes/wavevortextransform/inertialenergybaroclinic.html) total energy, inertial oscillations, baroclinic
+    + [`inertialEnergyBarotropic`](/classes/wavevortextransform/inertialenergybarotropic.html) total energy, inertial oscillations, barotropic
+    + [`initWithGMSpectrum`](/classes/wavevortextransform/initwithgmspectrum.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    + [`initWithGeostrophicStreamfunction`](/classes/wavevortextransform/initwithgeostrophicstreamfunction.html) 
+    + [`initWithInertialMotions`](/classes/wavevortextransform/initwithinertialmotions.html) 
+    + [`initWithSpectralFunction`](/classes/wavevortextransform/initwithspectralfunction.html) The GM2D_int function is used to assign variance to a given
     + [`initWithWaveModes`](/classes/wavevortextransform/initwithwavemodes.html) 
-    + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) The GM2D_int function is used to assign variance to a given
-    + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) 
-    + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) total energy, internal waves, minus
-    + [`kRadial`](/classes/wavevortextransform/kradial.html) total energy, internal waves, positive
-    + [`latitude`](/classes/wavevortextransform/latitude.html) 
-    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) Boolean indicating whether there is a single (equivalent barotropic) mode
-    + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) vertical mode number
-    + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) wavenumber-coordinate dimension in the x-direction
-    + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) isotropic wavenumber dimension
-    + [`p`](/classes/wavevortextransform/p.html) wavenumber-coordinate dimension in the y-direction
-    + [`performTransformOperation`](/classes/wavevortextransform/performtransformoperation.html) latitude of the simulation
-    + [`qgpv`](/classes/wavevortextransform/qgpv.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`radialWavenumberAxis`](/classes/wavevortextransform/radialwavenumberaxis.html) 
-    + [`rebuildTransformationMatrices`](/classes/wavevortextransform/rebuildtransformationmatrices.html) offgridModes -  subclass should initialize
-    + [`removeAllGeostrophicMotions`](/classes/wavevortextransform/removeallgeostrophicmotions.html) ongridModes -  This is a cached copy
-    + [`removeAllInertialMotions`](/classes/wavevortextransform/removeallinertialmotions.html) pressure anomaly
+    + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) total energy, internal waves, minus
+    + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
+    + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
+    + [`kRadial`](/classes/wavevortextransform/kradial.html) isotropic wavenumber dimension
+    + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
+    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
+    + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
+    + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
+    + [`p`](/classes/wavevortextransform/p.html) pressure anomaly
+    + [`performTransformOperation`](/classes/wavevortextransform/performtransformoperation.html) 
+    + [`qgpv`](/classes/wavevortextransform/qgpv.html) quasigeostrophic potential vorticity
+    + [`radialWavenumberAxis`](/classes/wavevortextransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
+    + [`rebuildTransformationMatrices`](/classes/wavevortextransform/rebuildtransformationmatrices.html) 
+    + [`removeAllGeostrophicMotions`](/classes/wavevortextransform/removeallgeostrophicmotions.html) 
+    + [`removeAllInertialMotions`](/classes/wavevortextransform/removeallinertialmotions.html) 
     + [`removeAllWaves`](/classes/wavevortextransform/removeallwaves.html) 
-    + [`rho0`](/classes/wavevortextransform/rho0.html) quasigeostrophic potential vorticity
-    + [`rhobar`](/classes/wavevortextransform/rhobar.html) Create a reasonable wavenumber axis
+    + [`rho0`](/classes/wavevortextransform/rho0.html) mean density at the surface (z=0)
+    + [`rhobar`](/classes/wavevortextransform/rhobar.html) mean density
     + [`setGeostrophicStreamfunction`](/classes/wavevortextransform/setgeostrophicstreamfunction.html) 
     + [`setInertialMotions`](/classes/wavevortextransform/setinertialmotions.html) 
     + [`setWaveModes`](/classes/wavevortextransform/setwavemodes.html) 
-    + [`spectralVanishingViscosityFilter`](/classes/wavevortextransform/spectralvanishingviscosityfilter.html) 
-    + [`stateVariableWithName`](/classes/wavevortextransform/statevariablewithname.html) mean density at the surface (z=0)
-    + [`stateVariables`](/classes/wavevortextransform/statevariables.html) mean density
+    + [`spectralVanishingViscosityFilter`](/classes/wavevortextransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
+    + [`stateVariableWithName`](/classes/wavevortextransform/statevariablewithname.html) 
+    + [`stateVariables`](/classes/wavevortextransform/statevariables.html) 
     + [`summarizeEnergyContent`](/classes/wavevortextransform/summarizeenergycontent.html) 
-    + [`t`](/classes/wavevortextransform/t.html) 
-    + [`t0`](/classes/wavevortextransform/t0.html) 
-    + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) Builds the spectral vanishing viscosity operator
-    + [`totalEnergy`](/classes/wavevortextransform/totalenergy.html) 
+    + [`t`](/classes/wavevortextransform/t.html) time of observations
+    + [`t0`](/classes/wavevortextransform/t0.html) reference time of Ap, Am, A0
+    + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
+    + [`totalEnergy`](/classes/wavevortextransform/totalenergy.html) energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
     + [`totalEnergySpatiallyIntegrated`](/classes/wavevortextransform/totalenergyspatiallyintegrated.html) 
     + [`totalHydrostaticEnergy`](/classes/wavevortextransform/totalhydrostaticenergy.html) 
-    + [`transformDimensionWithName`](/classes/wavevortextransform/transformdimensionwithname.html) time of observations
-    + [`transformFromFile`](/classes/wavevortextransform/transformfromfile.html) reference time of Ap, Am, A0
+    + [`transformDimensionWithName`](/classes/wavevortextransform/transformdimensionwithname.html) 
+    + [`transformFromFile`](/classes/wavevortextransform/transformfromfile.html) 
     + [`transformFromSpatialDomainWithF`](/classes/wavevortextransform/transformfromspatialdomainwithf.html) 
-    + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
+    + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) 
     + [`transformOperationWithName`](/classes/wavevortextransform/transformoperationwithname.html) 
     + [`transformPropertyWithName`](/classes/wavevortextransform/transformpropertywithname.html) 
     + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) 
@@ -194,25 +194,25 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wavevortextransform/transformtospatialdomainwithfallderivatives.html) 
     + [`transformToSpatialDomainWithG`](/classes/wavevortextransform/transformtospatialdomainwithg.html) 
     + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wavevortextransform/transformtospatialdomainwithgallderivatives.html) 
-    + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) 
+    + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) This is the 'S^{-1}' operator (C5) in the manuscript
     + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) 
     + [`transformWithDoubleResolution`](/classes/wavevortextransform/transformwithdoubleresolution.html) 
     + [`transformWithResolution`](/classes/wavevortextransform/transformwithresolution.html) 
-    + [`u`](/classes/wavevortextransform/u.html) 
-    + [`uMaxGNormRatioForWave`](/classes/wavevortextransform/umaxgnormratioforwave.html) 
-    + [`u_max`](/classes/wavevortextransform/u_max.html) This is the 'S^{-1}' operator (C5) in the manuscript
-    + [`v`](/classes/wavevortextransform/v.html) 
-    + [`variables`](/classes/wavevortextransform/variables.html) 
-    + [`variablesAtPosition`](/classes/wavevortextransform/variablesatposition.html) 
-    + [`velocityField`](/classes/wavevortextransform/velocityfield.html) x-component of the fluid velocity
-    + [`version`](/classes/wavevortextransform/version.html) Needed to add and remove internal waves from the model
-    + [`w`](/classes/wavevortextransform/w.html) 
-    + [`waveCoefficientsFromWaveModes`](/classes/wavevortextransform/wavecoefficientsfromwavemodes.html) y-component of the fluid velocity
-    + [`waveEnergy`](/classes/wavevortextransform/waveenergy.html) Primary method for accessing the dynamical variables on the
-    + [`waveModesFromWaveCoefficients`](/classes/wavevortextransform/wavemodesfromwavecoefficients.html) Primary method for accessing the dynamical variables on the
-    + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) Return the velocity field, which is the sum of the gridded
-    + [`writeToFile`](/classes/wavevortextransform/writetofile.html) 
-    + [`z`](/classes/wavevortextransform/z.html) z-component of the fluid velocity
+    + [`u`](/classes/wavevortextransform/u.html) x-component of the fluid velocity
+    + [`uMaxGNormRatioForWave`](/classes/wavevortextransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
+    + [`u_max`](/classes/wavevortextransform/u_max.html) 
+    + [`v`](/classes/wavevortextransform/v.html) y-component of the fluid velocity
+    + [`variables`](/classes/wavevortextransform/variables.html) Primary method for accessing the dynamical variables on the
+    + [`variablesAtPosition`](/classes/wavevortextransform/variablesatposition.html) Primary method for accessing the dynamical variables on the
+    + [`velocityField`](/classes/wavevortextransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
+    + [`version`](/classes/wavevortextransform/version.html) 
+    + [`w`](/classes/wavevortextransform/w.html) z-component of the fluid velocity
+    + [`waveCoefficientsFromWaveModes`](/classes/wavevortextransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode
+    + [`waveEnergy`](/classes/wavevortextransform/waveenergy.html) 
+    + [`waveModesFromWaveCoefficients`](/classes/wavevortextransform/wavemodesfromwavecoefficients.html) This returns the properties of the waves being used in the
+    + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
+    + [`writeToFile`](/classes/wavevortextransform/writetofile.html) Will not add 't' by default to allow for alternative definitions. Do
+    + [`z`](/classes/wavevortextransform/z.html) z-coordinate dimension
 
 
 ---

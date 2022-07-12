@@ -20,7 +20,7 @@ $$
 f(x) = a_0 + a_1 \cos(\pi x/L) + a_2 \cos(2 \pi x/L)
 $$
 
-which has been chosen to be easily projected onto a cosine series with wavenumbers $$m_n = n \pi/L$$ where $$n=0..infty$$. The cosine series has *orthogonality* condition,
+which has been chosen to be easily projected onto a cosine series with wavenumbers $$m_n = n \pi/L$$ where $$n=0..\infty$$. The cosine series has *orthogonality* condition,
 
 $$
 \frac{1}{L} \int_0^L \cos( n \pi x/L) \cos( m\pi x/L ) \, dx= \delta_{mn}
@@ -50,7 +50,7 @@ $$
 f^2(x) = a_0^2 + a_1^2 \cos(\pi x/L) + a_2^2 \cos(2 \pi x/L) + 2 a_0 a_1 \cos(\pi x/L) + a_0 a_2 \cos(2 \pi x/L) + 2 \cos(\pi x/L)  \cos(2 \pi x/L).
 $$
 
-However, if we integrated over $x$, the cross-terms vanish thanks to the orthogonality relationship. 
+However, if we integrated over $$x$$, the cross-terms vanish thanks to the orthogonality relationship. 
 
 If we call the quantity
 
@@ -80,7 +80,7 @@ $$
 \textrm{KE} \equiv \frac{1}{2L} \int u^2 dx
 $$
 
-is conserved in time. Assuming that $u$ is a velocity, we would typically identify this as the horizontally-averaged kinetic energy. Note that this is essentially the same quantity that we called variance above.
+is conserved in time. Assuming that $$u$$ is a velocity, we would typically identify this as the horizontally-averaged kinetic energy. Note that this is essentially the same quantity that we called variance above.
 
 Actual solutions to this wave equation are
 
@@ -88,7 +88,7 @@ $$
 u(x,t) = u_n \cos( (n \pi/L) (x+ct) + \phi )
 $$
 
-for any $n=0,1,2,..$ where $\phi$ is the phase of the wave solution at time $t=0$. If you take the velocity field $u(x,t)$ and project it onto the Fourier modes at time $t=0$ (or any time really)
+for any $$n=0,1,2,..$$ where $$\phi$$ is the phase of the wave solution at time $$t=0$$. If you take the velocity field $$u(x,t)$$ and project it onto the Fourier modes at time $$t=0$$ (or any time really)
 
 Project onto the Fourier modes, and then you can interpret each mode as representing part of the kinetic energy of the fluid. Our previous interpretation of Plancherel's theorem has even more meaning now because each mode represents a *unique* contribution to the total kinetic energy of the fluid. This uniqueness means that it is okay to ascribe physical meaning to each mode, because each mode can exist in isolation.
 

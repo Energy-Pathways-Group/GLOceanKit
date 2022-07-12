@@ -158,7 +158,7 @@ for topicIndex = 1:length(classDefinedTopics)
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
         for methodIndex = 1:length(subtopic.methodNames)
             fprintf(fileID,'    + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
-            fprintf(fileID,'%s\n',methodsMap(methodNames{methodIndex}).shortDescription);
+            fprintf(fileID,'%s\n',methodsMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     end
 end
