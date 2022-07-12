@@ -1,6 +1,7 @@
 function dimensions = defaultTransformDimensions()
 dimensions = TransformDimension.empty(0,0);
 
+dimensions(end+1) = TransformDimension('t', 's', 'time dimension');
 dimensions(end+1) = TransformDimension('x', 'm', 'x-coordinate dimension');
 dimensions(end+1) = TransformDimension('y', 'm', 'y-coordinate dimension');
 dimensions(end+1) = TransformDimension('z', 'm', 'z-coordinate dimension');

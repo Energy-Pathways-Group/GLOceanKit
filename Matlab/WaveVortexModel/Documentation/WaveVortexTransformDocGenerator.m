@@ -167,6 +167,20 @@ fprintf(fileID,'\n\n---');
 
 fclose(fileID);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Make the individual pages
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+iPageNumber = 0;
+methodNames = keys(methodsMap);
+for i=1:length(methodNames)
+    iPageNumber = iPageNumber+1;
+    metadata = methodsMap(methodNames{i});
+    path = sprintf('%s/%s.md',targetFolder,lower(metadata.name));
+    MakeMarkdownFileFromMethodMetadata(path,metadata,iPageNumber);
+end
 
 
 end

@@ -1,0 +1,28 @@
+---
+layout: default
+title: makeHermitian
+parent: WaveVortexTransform
+grand_parent: Classes
+nav_order: 125
+---
+
+#  makeHermitian
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+---
+
+## Discussion
+
+  Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
+ 
+  The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
+  numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
+  conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
+  numbers are set to zero to avoid complications.
+ 
+  This function is NOT a true "Make Hermitian" function because it
+  doesn't force the k=l=0 to be real.
+ 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

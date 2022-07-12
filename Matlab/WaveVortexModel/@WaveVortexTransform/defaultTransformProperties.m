@@ -1,8 +1,6 @@
 function transformProperties = defaultTransformProperties()
 transformProperties = TransformProperty.empty(0,0);
 
-rootPath = strcat(fileparts(mfilename('fullpath')),'/detailedDescriptions/');
-
 transformProperties(end+1) = TransformProperty('Lx',{},'m', 'domain size in the x-direction');
 transformProperties(end+1) = TransformProperty('Ly',{},'m', 'domain size in the y-direction');
 transformProperties(end+1) = TransformProperty('Lz',{},'m', 'domain size in the z-direction');

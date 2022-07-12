@@ -45,9 +45,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`kRadial`](/classes/wavevortextransform/kradial.html) isotropic wavenumber dimension
     + [`t`](/classes/wavevortextransform/t.html) time of observations
     + [`t0`](/classes/wavevortextransform/t0.html) reference time of Ap, Am, A0
-+ Other
++ Wave-vortex coefficients
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
++ Other
+  + Other
     + [`A0N`](/classes/wavevortextransform/a0n.html) 
     + [`A0U`](/classes/wavevortextransform/a0u.html) 
     + [`A0V`](/classes/wavevortextransform/a0v.html) 
