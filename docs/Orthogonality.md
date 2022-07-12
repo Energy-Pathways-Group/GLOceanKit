@@ -20,7 +20,7 @@ $$
 f(x) = a_0 + a_1 \cos(\pi x/L) + a_2 \cos(2 \pi x/L)
 $$
 
-which has been chosen to be easily projected onto a cosine series with wavenumbers $m_n = n \pi/L$ where $n=0..infty$. The cosine series has *orthogonality* condition,
+which has been chosen to be easily projected onto a cosine series with wavenumbers $$m_n = n \pi/L$$ where $$n=0..infty$$. The cosine series has *orthogonality* condition,
 
 $$
 \frac{1}{L} \int_0^L \cos( n \pi x/L) \cos( m\pi x/L ) \, dx= \delta_{mn}
