@@ -15,17 +15,21 @@ The purpose of this document is to clarify 1) *why* orthogonality is important, 
 ## Sine and cosine series
 
 Let's first review orthogonality of sine and cosine series for both continuous and discrete system. As a simple example, let's assume we have some function in the spatial domain,
+
 \[
 f(x) = a_0 + a_1 \cos(\pi x/L) + a_2 \cos(2 \pi x/L)
 \]
+
 which has been chosen to be easily projected onto a cosine series with wavenumbers $m_n = n \pi/L$ where $n=0..infty$. The cosine series has *orthogonality* condition,
-\[
+$$
 \frac{1}{L} \int_0^L \cos( n \pi x/L) \cos( m\pi x/L ) \, dx= \delta_{mn}
-\]
+$$
 which immediately leads to a projection operation,
-\[
+
+$$
 a_n = \frac{1}{L} \int_0^L f(x) \cos( n \pi/L) \, dx.
-\]
+$$
+
 Using the projection operation, the function $f(x)$ in the spatial domain can therefore also be represented as a cosine series, with coefficients $(a_0,a_1,a_2,0,..)$.
 
 ### Plancherel's theorem
