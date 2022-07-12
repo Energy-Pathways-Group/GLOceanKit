@@ -4,6 +4,7 @@ title: makeHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 125
+mathjax: true
 ---
 
 #  makeHermitian

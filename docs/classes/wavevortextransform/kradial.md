@@ -4,6 +4,7 @@ title: kRadial
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 122
+mathjax: true
 ---
 
 #  kRadial

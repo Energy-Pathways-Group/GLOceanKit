@@ -4,6 +4,7 @@ title: Apm_TE_factor
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 20
+mathjax: true
 ---
 
 #  Apm_TE_factor

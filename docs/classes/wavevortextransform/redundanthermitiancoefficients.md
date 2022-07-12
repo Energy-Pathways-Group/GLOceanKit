@@ -4,6 +4,7 @@ title: RedundantHermitianCoefficients
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 58
+mathjax: true
 ---
 
 #  RedundantHermitianCoefficients

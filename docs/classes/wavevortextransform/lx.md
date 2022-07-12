@@ -4,6 +4,7 @@ title: Lx
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 36
+mathjax: true
 ---
 
 #  Lx

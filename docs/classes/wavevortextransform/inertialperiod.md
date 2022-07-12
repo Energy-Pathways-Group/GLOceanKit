@@ -4,6 +4,7 @@ title: inertialPeriod
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 110
+mathjax: true
 ---
 
 #  inertialPeriod

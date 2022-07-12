@@ -4,6 +4,7 @@ title: isBarotropic
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 119
+mathjax: true
 ---
 
 #  isBarotropic

@@ -4,6 +4,7 @@ title: checkHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 83
+mathjax: true
 ---
 
 #  checkHermitian

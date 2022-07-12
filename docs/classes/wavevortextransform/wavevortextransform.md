@@ -4,6 +4,7 @@ title: WaveVortexTransform
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 71
+mathjax: true
 ---
 
 #  WaveVortexTransform

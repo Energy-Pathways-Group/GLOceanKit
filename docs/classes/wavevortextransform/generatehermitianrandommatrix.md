@@ -4,6 +4,7 @@ title: generateHermitianRandomMatrix
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 99
+mathjax: true
 ---
 
 #  generateHermitianRandomMatrix

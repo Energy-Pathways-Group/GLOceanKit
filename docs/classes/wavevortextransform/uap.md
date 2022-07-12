@@ -4,6 +4,7 @@ title: UAp
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 64
+mathjax: true
 ---
 
 #  UAp

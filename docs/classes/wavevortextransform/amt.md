@@ -4,6 +4,7 @@ title: Amt
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 15
+mathjax: true
 ---
 
 #  Amt

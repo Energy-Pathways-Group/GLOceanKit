@@ -1,7 +1,7 @@
 function MakeMarkdownFileFromMethodMetadata(path,metadata,pageNumber)
 fileID = fopen(path,'w');
 
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\n---\n\n',metadata.name,metadata.className,pageNumber);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',metadata.name,metadata.className,pageNumber);
 
 fprintf(fileID,'#  %s\n',metadata.name);
 fprintf(fileID,'\n%s\n',metadata.shortDescription);

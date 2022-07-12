@@ -4,6 +4,7 @@ title: Ly
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 37
+mathjax: true
 ---
 
 #  Ly
