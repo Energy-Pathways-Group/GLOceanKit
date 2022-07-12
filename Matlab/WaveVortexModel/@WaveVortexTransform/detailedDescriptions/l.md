@@ -1,4 +1,4 @@
-- Topic: Domain attributes
+- Topic: Domain attributes — Grid
 
 This is the usual definition of wavenumbers (or frequencies) for the Fourier transform,
 ```matlab

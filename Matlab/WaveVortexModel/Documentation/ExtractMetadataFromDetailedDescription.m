@@ -24,7 +24,7 @@ matchStr = regexpi(detailedDescription,subtopicExpression,'names');
 detailedDescription = regexprep(detailedDescription,subtopicExpression,'','ignorecase');
 if ~isempty(matchStr)
     metadata.subtopic = strtrim(matchStr.subtopic);
-    matchStr.topic = strtrim(matchStr.topic);
+    metadata.topic = strtrim(matchStr.topic);
 end
 
 % Capture the topic annotation, then remove it
@@ -35,7 +35,9 @@ if ~isempty(matchStr)
 else
     topicName = 'Other';
 end
-metadata.topic = topicName;
+if ~isfield(metadata,'topic') || isempty(metadata.topic)
+    metadata.topic = topicName;
+end
 
 % Capture all parameters, then remove the annotations
 metadata.parameters = regexpi(detailedDescription,parameterExpression,'names');

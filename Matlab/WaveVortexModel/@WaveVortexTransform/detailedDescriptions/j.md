@@ -1,4 +1,4 @@
-- Topic: Domain attributes
+- Topic: Domain attributes — Grid
 
 This is simply an ordered enumeration of modes, starting with the zero-th (barotropic) mode.
 ```matlab

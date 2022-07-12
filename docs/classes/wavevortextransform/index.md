@@ -22,20 +22,29 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   queried for other information, e.g., Ertel PV, relative vorticity,
   etc. Then we have $$\exp(i\omega t)$$
  
-                      
+                        
 
 
 ## Topics
 + Domain attributes
-  + Other
-    + [`f0`](/classes/wavevortextransform/f0.html) Coriolis parameter (radians/s)
-    + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) Inertial period (s)
-    + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
+  + Grid
+    + [`Lx`](/classes/wavevortextransform/lx.html) domain size in the x-direction
+    + [`Ly`](/classes/wavevortextransform/ly.html) domain size in the y-direction
+    + [`Lz`](/classes/wavevortextransform/lz.html) domain size in the z-direction
     + [`j`](/classes/wavevortextransform/j.html) vertical mode number
     + [`k`](/classes/wavevortextransform/k.html) wavenumber-coordinate dimension in the x-direction
     + [`l`](/classes/wavevortextransform/l.html) wavenumber-coordinate dimension in the y-direction
     + [`x`](/classes/wavevortextransform/x.html) x-coordinate dimension
     + [`y`](/classes/wavevortextransform/y.html) y-coordinate dimension
+    + [`z`](/classes/wavevortextransform/z.html) z-coordinate dimension
+  + Other
+    + [`F0`](/classes/wavevortextransform/f0.html) non-linear flux into A0
+    + [`f0`](/classes/wavevortextransform/f0.html) Coriolis parameter
+    + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) inertial period
+    + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
+    + [`kRadial`](/classes/wavevortextransform/kradial.html) isotropic wavenumber dimension
+    + [`t`](/classes/wavevortextransform/t.html) time of observations
+    + [`t0`](/classes/wavevortextransform/t0.html) reference time of Ap, Am, A0
 + Other
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
@@ -67,15 +76,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`ExternalVariableFieldsAtTime`](/classes/wavevortextransform/externalvariablefieldsattime.html) Returns the external wave modes at the grid points.
     + [`ExternalVariablesAtTimePosition`](/classes/wavevortextransform/externalvariablesattimeposition.html) 
     + [`ExtractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`F0`](/classes/wavevortextransform/f0.html) non-linear flux into A0
     + [`FillOutWaveSpectrum`](/classes/wavevortextransform/filloutwavespectrum.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am
     + [`Fp`](/classes/wavevortextransform/fp.html) non-linear flux into Ap
     + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
     + [`Kh`](/classes/wavevortextransform/kh.html) 
-    + [`Lx`](/classes/wavevortextransform/lx.html) domain size in the x-direction
-    + [`Ly`](/classes/wavevortextransform/ly.html) domain size in the y-direction
-    + [`Lz`](/classes/wavevortextransform/lz.html) domain size in the z-direction
     + [`MaskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`MasksForAllFlowConstituents`](/classes/wavevortextransform/masksforallflowconstituents.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`MasksForFlowConstituents`](/classes/wavevortextransform/masksforflowconstituents.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,7 +159,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) total energy, internal waves, minus
     + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
-    + [`kRadial`](/classes/wavevortextransform/kradial.html) isotropic wavenumber dimension
     + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
     + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
@@ -177,8 +181,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`stateVariableWithName`](/classes/wavevortextransform/statevariablewithname.html) 
     + [`stateVariables`](/classes/wavevortextransform/statevariables.html) 
     + [`summarizeEnergyContent`](/classes/wavevortextransform/summarizeenergycontent.html) 
-    + [`t`](/classes/wavevortextransform/t.html) time of observations
-    + [`t0`](/classes/wavevortextransform/t0.html) reference time of Ap, Am, A0
     + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
     + [`totalEnergy`](/classes/wavevortextransform/totalenergy.html) energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
     + [`totalEnergySpatiallyIntegrated`](/classes/wavevortextransform/totalenergyspatiallyintegrated.html) 
@@ -212,7 +214,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`waveModesFromWaveCoefficients`](/classes/wavevortextransform/wavemodesfromwavecoefficients.html) This returns the properties of the waves being used in the
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
     + [`writeToFile`](/classes/wavevortextransform/writetofile.html) Will not add 't' by default to allow for alternative definitions. Do
-    + [`z`](/classes/wavevortextransform/z.html) z-coordinate dimension
 
 
 ---

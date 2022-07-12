@@ -12,6 +12,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     %
     % - Topic: Initialization
     % - Topic: Domain attributes
+    % - Topic: Domain attributes — Grid
     % - Topic: Wave-vortex coefficients
     % - Topic: Initial Conditions
     % - Topic: Initial Conditions — Waves
@@ -24,12 +25,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     % Public read and write properties
     properties (GetAccess=public, SetAccess=public)
-        % time of observations (s)
-        % - Topic: Domain attributes
         t = 0
-
-        % reference time of Ap, Am, A0---all phases are wound to this time (s)
-        % - Topic: Domain attributes
         t0 = 0
 
         % positive wave coefficients at reference time t0 (m/s)
@@ -45,38 +41,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
-        % domain size in the x-direction (m)
-        % - Topic: Domain attributes
-        % The x coordinate is periodic, which means that
-        % ```matlab
-        % dx = Lx/Nx;
-        % x = dx*(0:Nx-1)';
-        % ```
-        Lx
-        
-        % domain size in the y-direction (m)
-        % - Topic: Domain attributes
-        % The y coordinate is periodic, which means that
-        % ```matlab
-        % dy = Ly/Ny;
-        % self.y = dy*(0:Ny-1)';
-        % ```
-        Ly 
-
-        % domain size in the z-direction (m)
-        % - Topic: Domain attributes
-        Lz
-
-        % z-coordinate dimension (m)
-        % - Topic: Domain attributes
+        Lx, Ly, Lz
+        Nx, Ny, Nj
         z
-
-        Nx
-        Ny
-        Nj
-
-        % latitude of the simulation (degrees north)
-        % - Topic: Domain attributes
         latitude
 
         % Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -113,42 +80,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     properties (Dependent, SetAccess=private)
-        % x-coordinate dimension (m)
-        % - Topic: Domain attributes
-        x
-
-        % y-coordinate dimension (m)
-        % - Topic: Domain attributes
-        y
-
-        % wavenumber-coordinate dimension in the x-direction (radians/m)
-        % - Topic: Domain attributes
-        k
-        
-        % wavenumber-coordinate dimension in the y-direction (radians/m)
-        % - Topic: Domain attributes
-        l
-        
-        % vertical mode number (mode number)
-        % - Topic: Domain attributes
-        j
-
-        % isotropic wavenumber dimension (radians/m)
-        % - Topic: Domain attributes
+        x, y
+        k, l, j
         kRadial
 
-        % Coriolis parameter (radians/s)
-        % - Topic: Domain attributes
-        % The Coriolis parameter is determined from latitude, which can
-        % only be set during initialization.
-        f0
-
-        % Inertial period (s)
-        % - Topic: Domain attributes
-        % The inertial period is determined from latitude, which can only
-        % be set during initialization.
-        inertialPeriod
-
+        f0, inertialPeriod
 
         X
         Y
