@@ -6,7 +6,7 @@ classdef TransformAnnotation < handle
     end
 
     methods
-        function self = TransformDimension(name,description)
+        function self = TransformAnnotation(name,description)
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             self.name = name;

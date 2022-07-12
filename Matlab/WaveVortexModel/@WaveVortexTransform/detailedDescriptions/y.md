@@ -1,3 +1,7 @@
+- Topic: Domain attributes
+
+The values `Ly` and `Ny` are set during initialization from which the `y` coordinate is derived.
+
 The y coordinate is periodic, which means that
 ```matlab
 dy = Ly/Ny;

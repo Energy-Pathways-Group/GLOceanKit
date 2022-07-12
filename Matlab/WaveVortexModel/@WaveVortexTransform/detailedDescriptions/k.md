@@ -1,3 +1,5 @@
+- Topic: Domain attributes
+
 This is the usual definition of wavenumbers (or frequencies) for the Fourier transform,
 ```matlab
 dk = 1/self.Lx; 

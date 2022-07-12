@@ -1,3 +1,7 @@
+- Topic: Domain attributes
+
+The values `Lx` and `Nx` are set during initialization from which the `x` coordinate is derived.
+
 The x coordinate is periodic, which means that
 ```matlab
 dx = Lx/Nx;

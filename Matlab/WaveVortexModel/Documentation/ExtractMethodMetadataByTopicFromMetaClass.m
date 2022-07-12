@@ -1,4 +1,4 @@
-function mpMap = methodAndPropertiesByTopicFromMetaClass(mc)
+function mpMap = ExtractMethodMetadataByTopicFromMetaClass(mc)
 % Capture metadata from all the public methods and properties
 arguments
     mc meta.class
@@ -6,7 +6,7 @@ end
 
 mpMap = containers.Map;
 for i=1:length(mc.MethodList)
-    metadata = mpMetadata(mc.MethodList(i));
+    metadata = ExtractMethodMetadata(mc.MethodList(i));
     if ~isempty(metadata)
         if isKey(mpMap,metadata.topic)
             mdArray = mpMap(metadata.topic);
@@ -19,7 +19,7 @@ for i=1:length(mc.MethodList)
 end
 
 for i=1:length(mc.PropertyList)
-    metadata = mpMetadata(mc.PropertyList(i));
+    metadata = ExtractMethodMetadata(mc.PropertyList(i));
     if ~isempty(metadata)
         if isKey(mpMap,metadata.topic)
             mdArray = mpMap(metadata.topic);

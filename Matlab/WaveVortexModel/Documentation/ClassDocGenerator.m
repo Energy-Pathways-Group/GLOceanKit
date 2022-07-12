@@ -1,4 +1,15 @@
 function ClassDocGenerator(className,classDocumentationFolder)
+% Generates documentation for a class from the class metadata
+%
+% Specifically, this script takes the class metadata and creates a markdown
+% page for that class using the class's detailed description as the primary
+% text, followed by an index, sorted by topic, to all the properties and
+% methods of the class.
+%
+% The metadata for the property and methods is extracted from the property
+% and method metadata (from Matlab's metaclass) as well. Each property and
+% method gets its own page.
+
 targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
 mc = meta.class.fromName(className);
 
@@ -8,7 +19,7 @@ topics = regexpi(mc.DetailedDescription,topicExpression,'names');
 classDetailedDescription = regexprep(mc.DetailedDescription,topicExpression,'','ignorecase');
 
 % Capture metadata from all the public methods and properties
-methodAndPropertiesByTopic = methodAndPropertiesByTopicFromMetaClass(mc);
+methodAndPropertiesByTopic = ExtractMethodMetadataByTopicFromMetaClass(mc);
 
 % Now create a consolidated list of topics (stored as key names)
 mpkeys = methodAndPropertiesByTopic.keys;
@@ -55,31 +66,8 @@ for iKey=1:length(allKeys)
     mdArray = methodAndPropertiesByTopic(topicName);
     for i=1:length(mdArray)
         iPageNumber = iPageNumber+1;
-        fileID = fopen(sprintf('%s/%s.md',targetFolder,lower(mdArray(i).name)),'w');
-
-        fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\n---\n\n',mdArray(i).name,className,iPageNumber);
-
-        fprintf(fileID,'#  %s\n',mdArray(i).name);
-        fprintf(fileID,'\n%s\n',mdArray(i).shortDescription);
-        fprintf(fileID,'\n\n---\n\n');
-        if isfield(mdArray(i),'declaration') && ~isempty(mdArray(i).declaration)
-            fprintf(fileID,'## Declaration\n');
-            fprintf(fileID,'```matlab\n%s\n```\n',mdArray(i).declaration);
-        end
-
-        if isfield(mdArray(i),'parameters') && ~isempty(mdArray(i).parameters)
-            fprintf(fileID,'## Parameters\n');
-            for iParameter=1:length(mdArray(i).parameters)
-                fprintf(fileID,'+ `%s` %s\n',mdArray(i).parameters(iParameter).name,mdArray(i).parameters(iParameter).description);
-            end
-            fprintf(fileID,'\n');
-        end
-
-        if isfield(mdArray(i),'detailedDescription') && ~isempty(mdArray(i).detailedDescription)
-            fprintf(fileID,'## Discussion\n%s\n',mdArray(i).detailedDescription);
-        end
-
-        fclose(fileID);
+        path = sprintf('%s/%s.md',targetFolder,lower(mdArray(i).name));
+        MakeMarkdownFileFromMethodMetadata(path,mdArray(i),iPageNumber);
     end
 end
 end

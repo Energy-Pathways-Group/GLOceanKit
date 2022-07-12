@@ -13,6 +13,14 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     % - Topic: Initialization
     % - Topic: Domain attributes
     % - Topic: Wave-vortex coefficients
+    % - Topic: Initial Conditions
+    % - Topic: Initial Conditions — Waves
+    % - Topic: Initial Conditions — Inertial Oscillations
+    % - Topic: Initial Conditions — Geostrophic Motions
+    % - Topic: Energetics
+    % - Topic: Energetics — Major Constituents
+    % - Topic: Energetics — Geostrophic Constituents
+    % - Topic: Energetics — Inertia-Gravity Wave Constituents
 
     % Public read and write properties
     properties (GetAccess=public, SetAccess=public)
