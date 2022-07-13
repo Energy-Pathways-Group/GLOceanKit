@@ -1,9 +1,15 @@
-function ncfile = writeToFile(wvt,netcdfFile,variables,options)
-    % Will not add 't' by default to allow for alternative definitions. Do
-    % include 't' in the option input arguments if you want it written.
+function ncfile = writeToFile(wvt,path,variables,options)
+    % Output the `WaveVortexTransform` to file.
+    %
+    % - Topic: Write to file
+    % - Declaration: ncfile = writeToFile(netcdfFile,variables,options)
+    % - Parameter path: path to write file
+    % - Parameter variables: strings of variable names.
+    % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0. 
+    % - Parameter shouldAddDefaultVariables: (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
     arguments
         wvt WaveVortexTransform {mustBeNonempty}
-        netcdfFile char {mustBeNonempty}
+        path char {mustBeNonempty}
     end
     arguments (Repeating)
         variables char
@@ -12,7 +18,9 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
         options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
         options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1 
     end
-    [filepath,name,~] = fileparts(netcdfFile);
+    % Will not add 't' by default to allow for alternative definitions. Do
+    % include 't' in the option input arguments if you want it written.
+    [filepath,name,~] = fileparts(path);
     if isempty(filepath)
         matFilePath = sprintf('%s.mat',name);
     else
@@ -20,18 +28,18 @@ function ncfile = writeToFile(wvt,netcdfFile,variables,options)
     end
 
     if options.shouldOverwriteExisting == 1
-        if isfile(netcdfFile)
-            delete(netcdfFile);
+        if isfile(path)
+            delete(path);
         end
         if isfile(matFilePath)
             delete(matFilePath);
         end
     else
-        if isfile(netcdfFile) || isfile(matFilePath)
+        if isfile(path) || isfile(matFilePath)
             error('A file already exists with that name.')
         end
     end
-    ncfile = NetCDFFile(netcdfFile);
+    ncfile = NetCDFFile(path);
 
     dims = {'x','y','z','k','l','j'};
     for iDim=1:length(dims)

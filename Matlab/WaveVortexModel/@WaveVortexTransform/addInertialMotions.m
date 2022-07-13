@@ -1,4 +1,11 @@
 function addInertialMotions(self,u,v)
+% add inertial motions to existing inertial motions
+%
+% The new inertial motions are added to the existing inertial motions
+% - Topic: Initial conditions — Inertial Oscillations
+% - Declaration: addInertialMotions(psi)
+% - Parameter u: function handle that takes a single argument, u(Z)
+% - Parameter v: function handle that takes a single argument, v(Z)
 [~,~,Z] = ndgrid(self.x,self.y,self.z);
 
 Ubar = self.transformFromSpatialDomainWithF( u(Z) );

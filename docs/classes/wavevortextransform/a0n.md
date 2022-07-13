@@ -9,11 +9,11 @@ mathjax: true
 
 #  A0N
 
-matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_0$$.
+matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 

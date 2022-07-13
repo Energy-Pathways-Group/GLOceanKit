@@ -3,7 +3,7 @@ layout: default
 title: diffY
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 92
+nav_order: 91
 mathjax: true
 ---
 

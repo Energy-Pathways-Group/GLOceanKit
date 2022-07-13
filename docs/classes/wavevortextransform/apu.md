@@ -9,13 +9,13 @@ mathjax: true
 
 #  ApU
 
-matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_p$$.
+matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 
 ## Discussion
 

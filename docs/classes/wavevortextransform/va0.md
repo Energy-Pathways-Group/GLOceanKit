@@ -9,11 +9,11 @@ mathjax: true
 
 #  VA0
 
-matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{v}$$.
+matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{v}$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and units of $$s^{-1}$$.
+Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s^{-1}$$.
 

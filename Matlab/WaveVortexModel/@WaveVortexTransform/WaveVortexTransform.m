@@ -578,13 +578,13 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
             % This is the 'S^{-1}' operator (C5) in the manuscript
-            Ubar = self.transformFromSpatialDomainWithF(U);
-            Vbar = self.transformFromSpatialDomainWithF(V);
-            Nbar = self.transformFromSpatialDomainWithG(N);
+            u_hat = self.transformFromSpatialDomainWithF(U);
+            v_hat = self.transformFromSpatialDomainWithF(V);
+            n_hat = self.transformFromSpatialDomainWithG(N);
             
-            Ap = self.ApU.*Ubar + self.ApV.*Vbar + self.ApN.*Nbar;
-            Am = self.AmU.*Ubar + self.AmV.*Vbar + self.AmN.*Nbar;
-            A0 = self.A0U.*Ubar + self.A0V.*Vbar + self.A0N.*Nbar;
+            Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
+            Am = self.AmU.*u_hat + self.AmV.*v_hat + self.AmN.*n_hat;
+            A0 = self.A0U.*u_hat + self.A0V.*v_hat + self.A0N.*n_hat;
 
             if nargin == 5
                 phase = exp(-self.iOmega*(t-self.t0));
@@ -601,15 +601,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
 
             % This is the 'S' operator (C4) in the manuscript
-            Ubar = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
-            Vbar = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
-            Wbar = self.WAp.*Ap + self.WAm.*Am;
-            Nbar = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
+            Uhat = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
+            Vhat = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
+            What = self.WAp.*Ap + self.WAm.*Am;
+            Nhat = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
             
-            U = self.transformToSpatialDomainWithF(Ubar);
-            V = self.transformToSpatialDomainWithF(Vbar);
-            W = self.transformToSpatialDomainWithG(Wbar);
-            N = self.transformToSpatialDomainWithG(Nbar);
+            U = self.transformToSpatialDomainWithF(Uhat);
+            V = self.transformToSpatialDomainWithF(Vhat);
+            W = self.transformToSpatialDomainWithG(What);
+            N = self.transformToSpatialDomainWithG(Nhat);
         end
 
         function [Apt,Amt,A0t] = waveVortexCoefficientsAtTimeT(self)
@@ -812,24 +812,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         setInertialMotions(self,u,v);
         addInertialMotions(self,u,v);
         removeAllInertialMotions(self);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Eulerian---the dynamical fields on the grid at a given time
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         % Primary method for accessing the dynamical variables
         [varargout] = variables(self, varargin);
                         
         % Same as calling variables('u','v','w')
         [u,v,w] = velocityField(self);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Lagrangian---return the dynamical fields at a given location and time
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         % Primary method for accessing the dynamical variables on the at
         % any position or time.
@@ -837,6 +825,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % The method argument specifies how off-grid values should be
         % interpolated: linear, spline or exact. Use 'exact' for the slow,
         % but accurate, spectral interpolation.
+        % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
   
         
@@ -882,21 +871,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,x,y,z, varargin{:});
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Validation and internal unit testing
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % This is S*S^{-1} and therefore returns the values in
         % wave-vortex space. So, C11 represents Ap and should be 1s
         % where we expected Ap solutions to exist.
+        %
+        % - Topic: Validation and internal unit testing
         [C11,C21,C31,C12,C22,C32,C13,C23,C33] = ValidateTransformationMatrices(self)
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
+
         % Generate a complete set of wave-vortex coefficients with variance at all
         % physically realizable solution states.
         [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)  
@@ -910,9 +893,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Output the transform to file
         ncfile = writeToFile(self,netcdfFile,variables,options);
 
     end
@@ -927,40 +907,26 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         transformProperties = defaultTransformProperties()
         transformOperations = defaultTransformOperations()
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Initialize the a transform from file
         wvt = transformFromFile(path,iTime)
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Check if the matrix is Hermitian. Report errors.
-        A = checkHermitian(A)
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
+        A = checkHermitian(A)        
+
         % Forces a 3D matrix to be Hermitian, except at k=l=0
         A = makeHermitian(A)
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Returns a matrix the same size as A with 1s at the 'redundant'
         % hermiation indices.
         A = RedundantHermitianCoefficients(A)
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Returns a matrix the same size as A with 1s at the Nyquist
         % frequencies.
         A = NyquistWavenumbers(A)
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Generate a 3D matrix to be Hermitian, except at k=l=0
         A = generateHermitianRandomMatrix( size, shouldExcludeNyquist )
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Takes a Hermitian matrix and resets it back to the real amplitude.
         [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
     end

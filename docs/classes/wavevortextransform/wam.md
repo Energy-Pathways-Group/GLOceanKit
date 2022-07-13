@@ -9,8 +9,11 @@ mathjax: true
 
 #  WAm
 
-
+matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{w}$$.
 
 
 ---
+
+## Description
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 

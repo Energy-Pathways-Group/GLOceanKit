@@ -1,4 +1,6 @@
 function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
+% Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
+%
 % Returns the indices (and re-normalized values) of the wave mode
 % appropriate for the Ap, Am matrices. This works in conjunction with the
 % makeHermitian function, which then sets the appropriate conjugate. At the
@@ -16,7 +18,15 @@ function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self
 % phi is in radians, from 0-2pi
 % Amp is the fluid velocity U
 % sign is +/-1, indicating the sign of the frequency.
-
+%
+% - Topic: Initial conditions — Waves
+% - Declaration: [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs)
+% - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
+% - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
+% - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
+% - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
+% - Parameter Amp: fluid velocity u (m/s)
+% - Parameter sign: sign of the frequency, +1 or -1
 if ~isequal(size(kMode), size(lMode), size(jMode), size(phi), size(u), size(signs))
     error('All input array must be of equal size');
 end

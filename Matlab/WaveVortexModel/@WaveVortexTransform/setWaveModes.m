@@ -1,4 +1,18 @@
 function [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, u, signs)
+% set amplitudes of the given wave modes
+%
+% Overwrite any existing wave modes with the given new values
+% - Topic: Initial conditions — Waves
+% - Declaration: [omega,k,l] = setWaveModes(kMode, lMode, jMode, phi, u, signs)
+% - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
+% - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
+% - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
+% - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
+% - Parameter Amp: fluid velocity u (m/s)
+% - Parameter sign: sign of the frequency, +1 or -1
+% - Returns omega: frequencies of the waves (radians/s)
+% - Returns k: wavenumber k of the waves (radians/m)
+% - Returns l: wavenumber l of the waves (radians/m)
 [kIndex,lIndex,jIndex,ApAmp,AmAmp] = self.waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs);
 self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = ApAmp(abs(ApAmp)>0);
 self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = AmAmp(abs(AmAmp)>0);

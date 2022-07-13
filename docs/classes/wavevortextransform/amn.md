@@ -9,11 +9,11 @@ mathjax: true
 
 #  AmN
 
-matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_m$$.
+matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and units of $$s^{-1}$$.
+Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s^{-1}$$.
 

@@ -1,4 +1,11 @@
 function setInertialMotions(self,u,v)
+% set inertial motions
+%
+% Overwrites existing inertial motions with the new values
+% - Topic: Initial conditions — Inertial Oscillations
+% - Declaration: setInertialMotions(psi)
+% - Parameter u: function handle that takes a single argument, u(Z)
+% - Parameter v: function handle that takes a single argument, v(Z)
 [~,~,Z] = ndgrid(self.x,self.y,self.z);
 
 Ubar = self.transformFromSpatialDomainWithF( u(Z) );

@@ -16,26 +16,26 @@ transformProperties(end+1) = TransformProperty('N2',{'z'},'radians2/s2', 'buoyan
 transformProperties(end+1) = TransformProperty('dLnN2',{'z'},'unitless', 'd/dz ln N2');
 transformProperties(end+1) = TransformProperty('h',{'j'},'m', 'equivalent depth of each mode');
 
-transformProperties(end+1) = TransformProperty('ApU',{'j','k','l'},'', 'matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_p$$.');
-transformProperties(end+1) = TransformProperty('ApV',{'j','k','l'},'', 'matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_p$$.');
-transformProperties(end+1) = TransformProperty('ApN',{'j','k','l'},'s^{-1}', 'matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_p$$.');
-transformProperties(end+1) = TransformProperty('AmU',{'j','k','l'},'', 'matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_m$$.');
-transformProperties(end+1) = TransformProperty('AmV',{'j','k','l'},'', 'matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_m$$.');
-transformProperties(end+1) = TransformProperty('AmN',{'j','k','l'},'s^{-1}', 'matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_m$$.');
-transformProperties(end+1) = TransformProperty('A0U',{'j','k','l'},'s', 'matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_0$$.');
-transformProperties(end+1) = TransformProperty('A0V',{'j','k','l'},'s', 'matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_0$$.');
-transformProperties(end+1) = TransformProperty('A0N',{'j','k','l'},'', 'matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_0$$.');
+transformProperties(end+1) = TransformProperty('ApU',{'k','l','j'},'', 'matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.');
+transformProperties(end+1) = TransformProperty('ApV',{'k','l','j'},'', 'matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.');
+transformProperties(end+1) = TransformProperty('ApN',{'k','l','j'},'s^{-1}', 'matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.');
+transformProperties(end+1) = TransformProperty('AmU',{'k','l','j'},'', 'matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.');
+transformProperties(end+1) = TransformProperty('AmV',{'k','l','j'},'', 'matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_m$$.');
+transformProperties(end+1) = TransformProperty('AmN',{'k','l','j'},'s^{-1}', 'matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.');
+transformProperties(end+1) = TransformProperty('A0U',{'k','l','j'},'s', 'matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_0$$.');
+transformProperties(end+1) = TransformProperty('A0V',{'k','l','j'},'s', 'matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_0$$.');
+transformProperties(end+1) = TransformProperty('A0N',{'k','l','j'},'', 'matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.');
 
-transformProperties(end+1) = TransformProperty('UAp',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{u}$$.');
-transformProperties(end+1) = TransformProperty('UAm',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{u}$$.');
-transformProperties(end+1) = TransformProperty('UA0',{'j','k','l'},'s^{-1}', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{u}$$.');
-transformProperties(end+1) = TransformProperty('VAp',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{v}$$.');
-transformProperties(end+1) = TransformProperty('VAm',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{v}$$.');
-transformProperties(end+1) = TransformProperty('VA0',{'j','k','l'},'s^{-1}', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{v}$$.');
-transformProperties(end+1) = TransformProperty('WAp',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{w}$$.');
-transformProperties(end+1) = TransformProperty('Wm',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{w}$$.');
-transformProperties(end+1) = TransformProperty('NAp',{'j','k','l'},'s', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{\eta}$$.');
-transformProperties(end+1) = TransformProperty('NAm',{'j','k','l'},'s', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{\eta}$$.');
-transformProperties(end+1) = TransformProperty('NA0',{'j','k','l'},'', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{\eta}$$.');
+transformProperties(end+1) = TransformProperty('UAp',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{u}$$.');
+transformProperties(end+1) = TransformProperty('UAm',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{u}$$.');
+transformProperties(end+1) = TransformProperty('UA0',{'k','l','j'},'s^{-1}', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{u}$$.');
+transformProperties(end+1) = TransformProperty('VAp',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{v}$$.');
+transformProperties(end+1) = TransformProperty('VAm',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{v}$$.');
+transformProperties(end+1) = TransformProperty('VA0',{'k','l','j'},'s^{-1}', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{v}$$.');
+transformProperties(end+1) = TransformProperty('WAp',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{w}$$.');
+transformProperties(end+1) = TransformProperty('WAm',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{w}$$.');
+transformProperties(end+1) = TransformProperty('NAp',{'k','l','j'},'s', 'matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{\eta}$$.');
+transformProperties(end+1) = TransformProperty('NAm',{'k','l','j'},'s', 'matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{\eta}$$.');
+transformProperties(end+1) = TransformProperty('NA0',{'k','l','j'},'', 'matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{\eta}$$.');
 
 end

@@ -9,11 +9,11 @@ mathjax: true
 
 #  AmU
 
-matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_m$$.
+matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 

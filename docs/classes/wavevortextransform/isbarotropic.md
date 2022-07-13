@@ -3,7 +3,7 @@ layout: default
 title: isBarotropic
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 120
+nav_order: 119
 mathjax: true
 ---
 

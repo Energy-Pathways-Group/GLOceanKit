@@ -9,11 +9,11 @@ mathjax: true
 
 #  VAm
 
-matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{v}$$.
+matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{v}$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 

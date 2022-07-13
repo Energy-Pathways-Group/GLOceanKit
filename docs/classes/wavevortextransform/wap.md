@@ -9,11 +9,11 @@ mathjax: true
 
 #  WAp
 
-matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{w}$$.
+matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{w}$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
+Real valued transform property with dimensions $$(k,l,j)$$ and no units.
 

@@ -3,16 +3,27 @@ layout: default
 title: writeToFile
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 181
+nav_order: 180
 mathjax: true
 ---
 
 #  writeToFile
 
-Will not add 't' by default to allow for alternative definitions. Do
+Output the `WaveVortexTransform` to file.
 
 
 ---
 
+## Declaration
+```matlab
+ ncfile = writeToFile(netcdfFile,variables,options)
+```
+## Parameters
++ `path`  path to write file
++ `variables`  strings of variable names.
++ `shouldOverwriteExisting`  (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0. 
++ `shouldAddDefaultVariables`  (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
+
 ## Discussion
-include 't' in the option input arguments if you want it written.
+
+            

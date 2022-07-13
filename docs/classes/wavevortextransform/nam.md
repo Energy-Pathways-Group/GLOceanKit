@@ -9,11 +9,11 @@ mathjax: true
 
 #  NAm
 
-matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{\eta}$$.
+matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{\eta}$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and units of $$s$$.
+Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s$$.
 
