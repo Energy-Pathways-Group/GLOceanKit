@@ -14,3 +14,6 @@ total energy, geostrophic, barotropic
 
 ---
 
+## Description
+Real valued state variable with no dimensions and units of $$m3/s2$$.
+

@@ -14,3 +14,6 @@ x-component of the fluid velocity
 
 ---
 
+## Description
+Real valued state variable with dimensions $$(x,y,z)$$ and units of $$m/s$$.
+

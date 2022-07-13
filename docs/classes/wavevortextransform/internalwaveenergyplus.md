@@ -14,3 +14,6 @@ total energy, internal waves, positive
 
 ---
 
+## Description
+Real valued state variable with no dimensions and units of $$m3/s2$$.
+

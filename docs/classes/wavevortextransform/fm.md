@@ -14,3 +14,6 @@ non-linear flux into Am
 
 ---
 
+## Description
+Real valued state variable with dimensions $$(k,l,j)$$ and units of $$m/s2$$.
+

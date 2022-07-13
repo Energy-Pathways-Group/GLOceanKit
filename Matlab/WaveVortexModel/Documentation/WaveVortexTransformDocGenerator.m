@@ -40,12 +40,20 @@ methodsMap = containers.Map;
 for i=1:length(mc.MethodList)
     metadata = ExtractMethodMetadata(mc.MethodList(i));
     if ~isempty(metadata)
+        if mc.MethodList(i).Static == 1
+            metadata.functionType = FunctionType.staticMethod;
+        elseif mc.MethodList(i).Abstract == 1
+            metadata.functionType = FunctionType.abstractMethod;
+        else
+            metadata.functionType = FunctionType.instanceMethod;
+        end
         methodsMap(metadata.name) = metadata;
     end
 end
 for i=1:length(mc.PropertyList)
     metadata = ExtractMethodMetadata(mc.PropertyList(i));
     if ~isempty(metadata)
+        metadata.functionType = FunctionType.instanceProperty;
         methodsMap(metadata.name) = metadata;
     end
 end
@@ -58,6 +66,8 @@ for iDim=1:length(dims)
     metadata.className = className;
     metadata.shortDescription = dims(iDim).description;
     metadata.units = dims(iDim).units;
+    metadata.isComplex = 0;
+    metadata.functionType = FunctionType.transformDimension;
     methodsMap(metadata.name) = metadata;
 end
 
@@ -71,6 +81,7 @@ for iDim=1:length(props)
     metadata.units = props(iDim).units;
     metadata.dimensions = props(iDim).dimensions;
     metadata.isComplex = props(iDim).isComplex;
+    metadata.functionType = FunctionType.transformProperty;
     methodsMap(metadata.name) = metadata;
 end
 
@@ -86,6 +97,7 @@ for iOp=1:length(ops)
         metadata.units = stateVar.units;
         metadata.dimensions = stateVar.dimensions;
         metadata.isComplex = stateVar.isComplex;
+        metadata.functionType = FunctionType.stateVariable;
         methodsMap(metadata.name) = metadata;
     end
 end

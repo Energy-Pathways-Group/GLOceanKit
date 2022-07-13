@@ -14,6 +14,9 @@ time of observations
 
 ---
 
+## Description
+Real valued state variable with no dimensions and units of $$s$$.
+
 ## Discussion
 
 The time `t` is the time of observation. A `WaveVortexTransform` instance represents the state of the ocean at time `t`. 

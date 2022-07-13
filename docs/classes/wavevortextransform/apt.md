@@ -14,3 +14,6 @@ positive wave coefficients at time (t-t0)
 
 ---
 
+## Description
+Complex valued state variable with dimensions $$(k,l,j)$$ and units of $$m/s$$.
+

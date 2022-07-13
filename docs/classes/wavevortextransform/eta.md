@@ -14,3 +14,6 @@ isopycnal deviation
 
 ---
 
+## Description
+Real valued state variable with dimensions $$(x,y,z)$$ and units of $$m$$.
+
