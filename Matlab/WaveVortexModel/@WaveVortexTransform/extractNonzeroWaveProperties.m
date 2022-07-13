@@ -1,7 +1,13 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
+% Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
 %
-% Takes a Hermitian matrix and resets it back to the real amplitude.
-function [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
+% This function makes assumptions about the structure of the matrix.
+% - Topic: Utility function
+% - Declaration: [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
+% - Parameter Matrix: Hermitian conjugate matrix
+% - Returns A: amplitude
+% - Returns phi: phase
+% - Returns linearIndex: linear index of matrix component
 M = size(Matrix,1);
 N = size(Matrix,2);
 K = size(Matrix,3);

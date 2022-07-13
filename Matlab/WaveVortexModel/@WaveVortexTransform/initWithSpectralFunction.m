@@ -1,22 +1,27 @@
 function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)   
-    % The GM2D_int function is used to assign variance to a given
-    % wave mode. It has three arguments, omega0, omega1, and j and
-    % should return the amount of variance you want assigned to a
-    % wave mode between omega0 and omega1 at vertical mode j.
-    %
-    % The returned values GM3Dint are the results of distributing
-    % this variance. size(GM3Dint) = size(Kh), so you can see
-    % how much energy was assigned to each internal mode and
-    % similarly size(GM3Dext) = size(self.k_ext).
-    %
-    % The function takes the (optional) name/value pairs:
-    %
-    % shouldRandomizeAmplitude = 1 or 0 will randomize the
-    % energy in each mode such that the expected value matches that
-    % assigned. Default 0 (amplitudes will not be randomized)
-    %
-    % maxDeltaOmega is the maximum width in frequency that will be
-    % integrated over for assigned energy. By default it is self.Nmax-self.f0
+% initialize the wave spectrum with a given function
+%
+% - Topic: Initial conditions — Waves
+% - Declaration: [GM3Dint,GM3Dext] = initWithSpectralFunction(GM2D_int, varargin) 
+%
+% The GM2D_int function is used to assign variance to a given
+% wave mode. It has three arguments, omega0, omega1, and j and
+% should return the amount of variance you want assigned to a
+% wave mode between omega0 and omega1 at vertical mode j.
+%
+% The returned values GM3Dint are the results of distributing
+% this variance. size(GM3Dint) = size(Kh), so you can see
+% how much energy was assigned to each internal mode and
+% similarly size(GM3Dext) = size(self.k_ext).
+%
+% The function takes the (optional) name/value pairs:
+%
+% shouldRandomizeAmplitude = 1 or 0 will randomize the
+% energy in each mode such that the expected value matches that
+% assigned. Default 0 (amplitudes will not be randomized)
+%
+% maxDeltaOmega is the maximum width in frequency that will be
+% integrated over for assigned energy. By default it is self.Nmax-self.f0
     if nargin(GM2D_int) ~= 3
         error('The spectral function must take three inputs: omega0, omega1, and j.\n');
     end

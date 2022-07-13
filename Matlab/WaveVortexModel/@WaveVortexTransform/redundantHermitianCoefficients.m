@@ -1,8 +1,14 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function A = redundantHermitianCoefficients(A)
+% Returns a matrix with 1s at the 'redundant' hermiation indices.
+%
+% This function makes assumptions about the structure of the matrix.
 %
 % Returns a matrix the same size as A with 1s at the 'redundant'
 % hermiation indices.
-function A = RedundantHermitianCoefficients(A)
+%
+% - Topic: Utility function
+% - Declaration: A = redundantHermitianCoefficients( A )
+% - Returns A: matrix the same size as the input matrix
     A = zeros(size(A));
 
     M = size(A,1);

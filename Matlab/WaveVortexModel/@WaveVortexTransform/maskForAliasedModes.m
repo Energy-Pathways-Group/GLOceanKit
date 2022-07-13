@@ -6,10 +6,10 @@
 % rule.
 %
 % Basic usage,
-% AntiAliasMask = wvm.MaskForAliasedModes();
+% AntiAliasMask = wvm.maskForAliasedModes();
 % will return a mask that contains 1 at the locations of modes that will
 % alias with a quadratic multiplication.
-function AntiAliasFilter = MaskForAliasedModes(self,options)
+function AntiAliasFilter = maskForAliasedModes(self,options)
 arguments
     self WaveVortexTransform {mustBeNonempty}
     options.jFraction double {mustBePositive(options.jFraction),mustBeLessThanOrEqual(options.jFraction,1)} = 2/3

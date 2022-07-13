@@ -6,8 +6,8 @@ Kh = self.Kh;
 k = self.kRadial;
 dk = k(2)-k(1);
 
-RedundantCoefficients = InternalWaveModel.RedundantHermitianCoefficients(Kh);
-OmNyquist = InternalWaveModel.NyquistWavenumbers(self.Omega);
+RedundantCoefficients = InternalWaveModel.redundantHermitianCoefficients(Kh);
+OmNyquist = InternalWaveModel.nyquistWavenumbers(self.Omega);
 nK = length(k);
 
 varargout = cell(size(varargin));

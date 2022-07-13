@@ -136,7 +136,7 @@ vlines([k_f,k_r],'g--')
 [K,L,~] = ndgrid(wvt.k,wvt.l,wvt.j);
 Kh = sqrt(K.*K + L.*L);
 kRadial = wvt.kRadial;
-AA = ~(wvt.MaskForAliasedModes(jFraction=1));
+AA = ~(wvt.maskForAliasedModes(jFraction=1));
 energyFlux = zeros(length(kRadial),1);
 for iK=1:length(kRadial)
     A0Mask = AA;

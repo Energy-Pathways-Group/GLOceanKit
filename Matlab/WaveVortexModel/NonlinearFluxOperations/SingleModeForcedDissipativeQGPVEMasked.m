@@ -75,7 +75,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 end
                 wvt.A0 = WaveVortexTransform.makeHermitian(wvt.A0);
 
-                AA = ~(wvt.MaskForAliasedModes(jFraction=1));
+                AA = ~(wvt.maskForAliasedModes(jFraction=1));
                 wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
                 WaveVortexTransform.checkHermitian(wvt.A0);
 

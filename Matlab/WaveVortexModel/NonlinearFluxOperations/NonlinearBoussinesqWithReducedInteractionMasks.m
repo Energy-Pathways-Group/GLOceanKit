@@ -81,7 +81,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
 
 %                     if self.IsAntiAliased == 1
 %                         fprintf('You appear to be anti-aliased. When increasing the resolution we will shift the anti-alias filter.\n');
-%                         AntiAliasMask = self.MaskForAliasedModes();
+%                         AntiAliasMask = self.maskForAliasedModes();
 %                         wvmX2.IMA0(kIndices,lIndices,1:self.nModes) = self.IMA0 | AntiAliasMask;
 %                         wvmX2.IMAp(kIndices,lIndices,1:self.nModes) = self.IMAp | AntiAliasMask;
 %                         wvmX2.IMAm(kIndices,lIndices,1:self.nModes) = self.IMAm | AntiAliasMask;
@@ -114,14 +114,14 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
         function allowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
             self.IMA0 = self.IMA0 | A0Mask;
             self.IMAm = self.IMAm | ApmMask;
             self.IMAp = self.IMAp | ApmMask;
         end
 
         function disallowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
             self.IMA0 = self.IMA0 & ~A0Mask;
             self.IMAm = self.IMAm & ~ApmMask;
             self.IMAp = self.IMAp & ~ApmMask;
@@ -133,21 +133,21 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             % http://helper.ipam.ucla.edu/publications/mtws1/mtws1_12187.pdf
             self.shouldAntiAlias = 1;
 
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            AntiAliasMask = self.wvt.maskForAliasedModes();
             self.IMA0 = self.IMA0 & ~AntiAliasMask;
             self.IMAm = self.IMAm & ~AntiAliasMask;
             self.IMAp = self.IMAp & ~AntiAliasMask;
         end
 
         function unfreezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
             self.EMA0 = self.EMA0 | A0Mask;
             self.EMAm = self.EMAm | ApmMask;
             self.EMAp = self.EMAp | ApmMask;
         end
 
         function freezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.MasksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
             self.EMA0 = self.EMA0 & ~A0Mask;
             self.EMAm = self.EMAm & ~ApmMask;
             self.EMAp = self.EMAp & ~ApmMask;
@@ -157,7 +157,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             % In addition to disallowing interaction to occur between modes
             % that are aliased, you may actually want to disallow energy to
             % even enter the aliased modes.
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            AntiAliasMask = self.wvt.maskForAliasedModes();
             self.EMA0 = self.EMA0 & ~AntiAliasMask;
             self.EMAm = self.EMAm & ~AntiAliasMask;
             self.EMAp = self.EMAp & ~AntiAliasMask;
@@ -167,14 +167,14 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             % In addition to disallowing interaction to occur between modes
             % that are aliased, you may actually want to disallow energy to
             % even enter the aliased modes.
-            AntiAliasMask = self.wvt.MaskForAliasedModes();
+            AntiAliasMask = self.wvt.maskForAliasedModes();
             self.wvt.A0 = self.wvt.A0 .* ~AntiAliasMask;
             self.wvt.Am = self.wvt.Am .* ~AntiAliasMask;
             self.wvt.Ap = self.wvt.Ap .* ~AntiAliasMask;
         end
 
         function flag = IsAntiAliased(self)
-            AntiAliasMask = self.MaskForAliasedModes();
+            AntiAliasMask = self.maskForAliasedModes();
 
             % check if there are zeros at all the anti-alias indices
             flag = all((~self.IMA0 & AntiAliasMask) == AntiAliasMask,'all');

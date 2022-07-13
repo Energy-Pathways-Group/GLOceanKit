@@ -1,6 +1,7 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function A = makeHermitian(A)
+% Forces a 3D matrix to be Hermitian
 %
-% Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
+% This function makes assumptions about the structure of the matrix.
 %
 % The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
 % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
@@ -10,8 +11,9 @@
 % This function is NOT a true "Make Hermitian" function because it
 % doesn't force the k=l=0 to be real.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function A = makeHermitian(A)
+% - Topic: Utility function
+% - Declaration: A = makeHermitian( A )
+% - Returns A: matrix the same size as the input matrix
     M = size(A,1);
     N = size(A,2);
     K = size(A,3);

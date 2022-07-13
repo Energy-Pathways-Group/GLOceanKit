@@ -877,7 +877,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % where we expected Ap solutions to exist.
         %
         % - Topic: Validation and internal unit testing
-        [C11,C21,C31,C12,C22,C32,C13,C23,C33] = ValidateTransformationMatrices(self)
+        [C11,C21,C31,C12,C22,C32,C13,C23,C33] = validateTransformationMatrices(self)
         
 
         % Generate a complete set of wave-vortex coefficients with variance at all
@@ -885,9 +885,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)  
 
         
-        [ApmMask,A0Mask] = MasksForFlowContinuents(self,flowConstituents);
-        [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self);
-        AntiAliasMask= MaskForAliasedModes(self,options);
+        [ApmMask,A0Mask] = masksForFlowContinuents(self,flowConstituents);
+        [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self);
+        AntiAliasMask= maskForAliasedModes(self,options);
 
         [Qkl,Qj] = spectralVanishingViscosityFilter(self,options);
 
@@ -918,17 +918,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % Returns a matrix the same size as A with 1s at the 'redundant'
         % hermiation indices.
-        A = RedundantHermitianCoefficients(A)
+        A = redundantHermitianCoefficients(A)
 
         % Returns a matrix the same size as A with 1s at the Nyquist
         % frequencies.
-        A = NyquistWavenumbers(A)
+        A = nyquistWavenumbers(A)
 
         % Generate a 3D matrix to be Hermitian, except at k=l=0
         A = generateHermitianRandomMatrix( size, shouldExcludeNyquist )
-
-        % Takes a Hermitian matrix and resets it back to the real amplitude.
-        [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
+        
+        [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
     end
         
         

@@ -1,5 +1,4 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+function [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self)
 % Returns six 'masks' (matrices with 1s or 0s) indicating where the six
 % different solution types live in the Ap, Am, A0 matrices.
 %
@@ -13,7 +12,8 @@
 % 
 % For example, if you define A = IGW .* Ap; then A will contain only the
 % positive frequency internal gravity solutions.
-function [IO,SGW,IGW,MDA,SG,IG] = MasksForAllFlowConstituents(self)
+%
+% - Topic: Masks
     IO = zeros(size(self.Ap));
     IO(1,1,:) = 1;
 

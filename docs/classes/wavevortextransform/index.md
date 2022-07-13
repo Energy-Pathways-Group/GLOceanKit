@@ -26,6 +26,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 
 
 ## Topics
++ Initialization
 + Domain attributes
   + Grid
     + [`Lx`](/classes/wavevortextransform/lx.html) domain size in the x-direction
@@ -48,6 +49,28 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Wave-vortex coefficients
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
++ Initial Conditions
+  + Waves
+    + [`addWaveModes`](/classes/wavevortextransform/addwavemodes.html) add amplitudes of the given wave modes
+    + [`initWithWaveModes`](/classes/wavevortextransform/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAllWaves`](/classes/wavevortextransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
+    + [`setWaveModes`](/classes/wavevortextransform/setwavemodes.html) set amplitudes of the given wave modes
+    + [`waveCoefficientsFromWaveModes`](/classes/wavevortextransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
+    + [`waveModesFromWaveCoefficients`](/classes/wavevortextransform/wavemodesfromwavecoefficients.html) Returns normalized amplitudes and phases of all waves
+  + Inertial Oscillations
+    + [`addInertialMotions`](/classes/wavevortextransform/addinertialmotions.html) add inertial motions to existing inertial motions
+    + [`initWithInertialMotions`](/classes/wavevortextransform/initwithinertialmotions.html) initialize with inertial motions
+    + [`removeAllInertialMotions`](/classes/wavevortextransform/removeallinertialmotions.html) remove all inertial motions
+    + [`setInertialMotions`](/classes/wavevortextransform/setinertialmotions.html) set inertial motions
+  + Geostrophic Motions
+    + [`addGeostrophicStreamfunction`](/classes/wavevortextransform/addgeostrophicstreamfunction.html) add a geostrophic streamfunction to existing geostrophic motions
+    + [`initWithGeostrophicStreamfunction`](/classes/wavevortextransform/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
+    + [`removeAllGeostrophicMotions`](/classes/wavevortextransform/removeallgeostrophicmotions.html) remove all geostrophic motions
+    + [`setGeostrophicStreamfunction`](/classes/wavevortextransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
++ Energetics
+  + Major Constituents
+  + Geostrophic Constituents
+  + Inertia-Gravity Wave Constituents
 + Other
   + Other
     + [`A0N`](/classes/wavevortextransform/a0n.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.

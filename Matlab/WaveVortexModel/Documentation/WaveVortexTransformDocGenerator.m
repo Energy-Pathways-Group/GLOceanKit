@@ -22,7 +22,7 @@ classDetailedDescription = regexprep(detailedDescription,topicExpression,'','ign
 classDefinedTopicsIndex = containers.Map;
 for iTopic=1:length(classDefinedTopics)
     classDefinedTopics(iTopic).topicName = strtrim(classDefinedTopics(iTopic).topicName);
-    classDefinedTopicsIndex(classDefinedTopics(iTopic).topicName) = iTopic;
+    classDefinedTopicsIndex(lower(classDefinedTopics(iTopic).topicName)) = iTopic;
     classDefinedTopics(iTopic).subtopics = struct('subtopicName',[],'methodNames',{});
     classDefinedTopics(iTopic).subtopicsIndex = containers.Map;
 end
@@ -30,9 +30,9 @@ end
 for iSubtopic=1:length(classDefinedSubTopics)
     classDefinedSubTopics(iSubtopic).topicName = strtrim(classDefinedSubTopics(iSubtopic).topicName);
     classDefinedSubTopics(iSubtopic).subtopicName = strtrim(classDefinedSubTopics(iSubtopic).subtopicName);
-    topicIndex = classDefinedTopicsIndex(classDefinedSubTopics(iSubtopic).topicName);
+    topicIndex = classDefinedTopicsIndex(lower(classDefinedSubTopics(iSubtopic).topicName));
     classDefinedTopics(topicIndex).subtopics(end+1).subtopicName = classDefinedSubTopics(iSubtopic).subtopicName;
-    classDefinedTopics(topicIndex).subtopicsIndex(classDefinedSubTopics(iSubtopic).subtopicName) = length(classDefinedTopics(topicIndex).subtopics);
+    classDefinedTopics(topicIndex).subtopicsIndex(lower(classDefinedSubTopics(iSubtopic).subtopicName)) = length(classDefinedTopics(topicIndex).subtopics);
 end
 
 
@@ -116,21 +116,21 @@ for i=1:length(methodNames)
     end
 
     % If this topic isn't created, create it!
-    if ~isKey(classDefinedTopicsIndex,metadata.topic)
+    if ~isKey(classDefinedTopicsIndex,lower(metadata.topic))
         classDefinedTopics(end+1).topicName = metadata.topic;
         topicIndex = length(classDefinedTopics);
-        classDefinedTopicsIndex(metadata.topic) = topicIndex;
+        classDefinedTopicsIndex(lower(metadata.topic)) = topicIndex;
         classDefinedTopics(topicIndex).subtopics = struct('subtopicName',[],'methodNames',{});
         classDefinedTopics(topicIndex).subtopicsIndex = containers.Map;
     end
-    topicIndex = classDefinedTopicsIndex(metadata.topic);
+    topicIndex = classDefinedTopicsIndex(lower(metadata.topic));
 
     % If the subtopic isn't created, create it!
-    if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,metadata.subtopic)
+    if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower(metadata.subtopic))
         classDefinedTopics(topicIndex).subtopics(end+1).subtopicName = metadata.subtopic;
-        classDefinedTopics(topicIndex).subtopicsIndex(metadata.subtopic) = length(classDefinedTopics(topicIndex).subtopics);
+        classDefinedTopics(topicIndex).subtopicsIndex(lower(metadata.subtopic)) = length(classDefinedTopics(topicIndex).subtopics);
     end
-    subtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex(metadata.subtopic);
+    subtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex(lower(metadata.subtopic));
     
     % And finally, add this method name to the appropriate subtopic index
     classDefinedTopics(topicIndex).subtopics(subtopicIndex).methodNames{end+1} = metadata.name;
@@ -158,13 +158,15 @@ fprintf(fileID,'\n\n## Topics\n');
 for topicIndex = 1:length(classDefinedTopics)
     % If the 'Other' subtopic isn't there, it means no methods actually
     % used this topic.
-    if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,'Other')
-        continue;
-    end
+%     if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower('Other'))
+%         continue;
+%     end
 
     fprintf(fileID,'+ %s\n',classDefinedTopics(topicIndex).topicName);
 
-    otherSubtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex('Other');
+    if isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower('Other'))
+        otherSubtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex(lower('Other'));
+    end
     for subtopicIndex = 1:length(classDefinedTopics(topicIndex).subtopics)
         subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
