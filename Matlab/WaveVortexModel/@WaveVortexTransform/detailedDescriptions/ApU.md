@@ -1,23 +1,4 @@
----
-layout: default
-title: ApU
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 18
-mathjax: true
----
-
-#  ApU
-
-matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_p$$.
-
-
----
-
-## Description
-Real valued transform property with dimensions $$(j,k,l)$$ and no units.
-
-## Discussion
+- Topic: Transformation matrix coefficients
 
 These are the coefficients of row 1, column 1 of the $$S^{-1}$$ matrix in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995).
 
@@ -46,4 +27,3 @@ inertial solutions,
 ```matlab
 ApU(1,1,:) = 1/2;
 ```
-

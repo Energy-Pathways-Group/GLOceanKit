@@ -50,9 +50,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
 + Other
   + Other
-    + [`A0N`](/classes/wavevortextransform/a0n.html) 
-    + [`A0U`](/classes/wavevortextransform/a0u.html) 
-    + [`A0V`](/classes/wavevortextransform/a0v.html) 
+    + [`A0N`](/classes/wavevortextransform/a0n.html) matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_0$$.
+    + [`A0U`](/classes/wavevortextransform/a0u.html) matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_0$$.
+    + [`A0V`](/classes/wavevortextransform/a0v.html) matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_0$$.
     + [`A0_HKE_factor`](/classes/wavevortextransform/a0_hke_factor.html) 
     + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) 
     + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) 
@@ -60,14 +60,13 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`AddExternalWavesWithFrequencies`](/classes/wavevortextransform/addexternalwaveswithfrequencies.html) 
     + [`AddExternalWavesWithWavenumbers`](/classes/wavevortextransform/addexternalwaveswithwavenumbers.html) 
     + [`Am`](/classes/wavevortextransform/am.html) negative wave coefficients at reference time t0
-    + [`AmN`](/classes/wavevortextransform/amn.html) 
-    + [`AmU`](/classes/wavevortextransform/amu.html) 
-    + [`AmV`](/classes/wavevortextransform/amv.html) 
+    + [`AmN`](/classes/wavevortextransform/amn.html) matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_m$$.
+    + [`AmU`](/classes/wavevortextransform/amu.html) matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_m$$.
+    + [`AmV`](/classes/wavevortextransform/amv.html) matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_m$$.
     + [`Amt`](/classes/wavevortextransform/amt.html) negative wave coefficients at time (t-t0)
     + [`Ap`](/classes/wavevortextransform/ap.html) positive wave coefficients at reference time t0
-    + [`ApN`](/classes/wavevortextransform/apn.html) 
-    + [`ApU`](/classes/wavevortextransform/apu.html) 
-    + [`ApV`](/classes/wavevortextransform/apv.html) 
+    + [`ApN`](/classes/wavevortextransform/apn.html) matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_p$$.
+    + [`ApV`](/classes/wavevortextransform/apv.html) matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_p$$.
     + [`Apm_TE_factor`](/classes/wavevortextransform/apm_te_factor.html) These convert the coefficients to their depth integrated energies
     + [`Apt`](/classes/wavevortextransform/apt.html) positive wave coefficients at time (t-t0)
     + [`EnergeticsByWavenumberAndMode`](/classes/wavevortextransform/energeticsbywavenumberandmode.html) 
@@ -89,9 +88,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`MasksForFlowContinuents`](/classes/wavevortextransform/masksforflowcontinuents.html) 
     + [`N0`](/classes/wavevortextransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wavevortextransform/n2.html) buoyancy frequency of the mean density
-    + [`NA0`](/classes/wavevortextransform/na0.html) 
-    + [`NAm`](/classes/wavevortextransform/nam.html) 
-    + [`NAp`](/classes/wavevortextransform/nap.html) 
+    + [`NA0`](/classes/wavevortextransform/na0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{\eta}$$.
+    + [`NAm`](/classes/wavevortextransform/nam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{\eta}$$.
+    + [`NAp`](/classes/wavevortextransform/nap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{\eta}$$.
     + [`Nj`](/classes/wavevortextransform/nj.html) 
     + [`Nk`](/classes/wavevortextransform/nk.html) 
     + [`Nl`](/classes/wavevortextransform/nl.html) 
@@ -106,16 +105,17 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`RemoveAllExternalWaves`](/classes/wavevortextransform/removeallexternalwaves.html) 
     + [`SetExternalWavesWithFrequencies`](/classes/wavevortextransform/setexternalwaveswithfrequencies.html) 
     + [`SetExternalWavesWithWavenumbers`](/classes/wavevortextransform/setexternalwaveswithwavenumbers.html) 
-    + [`UA0`](/classes/wavevortextransform/ua0.html) 
-    + [`UAm`](/classes/wavevortextransform/uam.html) 
-    + [`UAp`](/classes/wavevortextransform/uap.html) 
-    + [`VA0`](/classes/wavevortextransform/va0.html) 
-    + [`VAm`](/classes/wavevortextransform/vam.html) 
-    + [`VAp`](/classes/wavevortextransform/vap.html) 
+    + [`UA0`](/classes/wavevortextransform/ua0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{u}$$.
+    + [`UAm`](/classes/wavevortextransform/uam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{u}$$.
+    + [`UAp`](/classes/wavevortextransform/uap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{u}$$.
+    + [`VA0`](/classes/wavevortextransform/va0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\bar{v}$$.
+    + [`VAm`](/classes/wavevortextransform/vam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{v}$$.
+    + [`VAp`](/classes/wavevortextransform/vap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{v}$$.
     + [`ValidateTransformationMatrices`](/classes/wavevortextransform/validatetransformationmatrices.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`WAm`](/classes/wavevortextransform/wam.html) 
-    + [`WAp`](/classes/wavevortextransform/wap.html) 
+    + [`WAp`](/classes/wavevortextransform/wap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\bar{w}$$.
     + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
+    + [`Wm`](/classes/wavevortextransform/wm.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{w}$$.
     + [`X`](/classes/wavevortextransform/x.html) 
     + [`Y`](/classes/wavevortextransform/y.html) 
     + [`Z`](/classes/wavevortextransform/z.html) 
@@ -216,6 +216,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`waveModesFromWaveCoefficients`](/classes/wavevortextransform/wavemodesfromwavecoefficients.html) This returns the properties of the waves being used in the
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
     + [`writeToFile`](/classes/wavevortextransform/writetofile.html) Will not add 't' by default to allow for alternative definitions. Do
++ Transformation matrix coefficients
+  + Other
+    + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\bar{u}$$ to compute $$\A_p$$.
 
 
 ---

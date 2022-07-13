@@ -9,8 +9,11 @@ mathjax: true
 
 #  AmV
 
-
+matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_m$$.
 
 
 ---
+
+## Description
+Real valued transform property with dimensions $$(j,k,l)$$ and no units.
 

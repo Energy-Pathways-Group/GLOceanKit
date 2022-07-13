@@ -22,7 +22,7 @@ classdef TransformProperty < TransformAnnotation
             arguments
                 name char {mustBeNonempty}
                 dimensions
-                units char {mustBeNonempty}
+                units char
                 description char {mustBeNonempty}
                 options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
             end

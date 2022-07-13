@@ -9,8 +9,11 @@ mathjax: true
 
 #  ApV
 
-
+matrix coefficient that multiplies $$\bar{v}$$ to compute $$\A_p$$.
 
 
 ---
+
+## Description
+Real valued transform property with dimensions $$(j,k,l)$$ and no units.
 

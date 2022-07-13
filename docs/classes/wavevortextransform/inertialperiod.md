@@ -3,7 +3,7 @@ layout: default
 title: inertialPeriod
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 110
+nav_order: 111
 mathjax: true
 ---
 

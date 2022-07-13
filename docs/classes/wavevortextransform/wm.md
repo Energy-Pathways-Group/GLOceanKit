@@ -1,15 +1,15 @@
 ---
 layout: default
-title: A0N
+title: Wm
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 2
+nav_order: 72
 mathjax: true
 ---
 
-#  A0N
+#  Wm
 
-matrix coefficient that multiplies $$\bar{\eta}$$ to compute $$\A_0$$.
+matrix coefficient that multiplies $$\A_m$$ to compute $$\bar{w}$$.
 
 
 ---
