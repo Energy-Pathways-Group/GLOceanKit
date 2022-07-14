@@ -2,6 +2,7 @@
 layout: default
 title: Introduction
 parent: Transformations
+mathjax: true
 ---
 
 #  Introduction

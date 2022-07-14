@@ -2,6 +2,7 @@
 layout: default
 title: The wave-vortex transformation
 parent: Transformations
+mathjax: true
 ---
 
 #  The wave-vortex transformation
