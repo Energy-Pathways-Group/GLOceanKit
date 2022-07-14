@@ -1,4 +1,11 @@
 function dimensions = defaultTransformDimensions()
+% return array of TransformDimensions initialized by default
+%
+% This function lets us efficiently annotate all the coordinate dimensions.
+%
+% - Topic: Internal
+% - Declaration: dimensions = defaultTransformDimensions()
+% - Returns dimensions: array of TransformDimension instances
 dimensions = TransformDimension.empty(0,0);
 
 dimensions(end+1) = TransformDimension('t', 's', 'time dimension');

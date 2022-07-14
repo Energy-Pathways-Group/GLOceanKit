@@ -1,4 +1,12 @@
 function transformOperations = defaultTransformOperations()
+% return array of TransformOperation instances initialized by default
+%
+% This function creates a number of standard StateVariables with associated
+% TransformOperations.
+%
+% - Topic: Internal
+% - Declaration: transformOperations = defaultTransformOperations()
+% - Returns transformOperations: array of TransformOperation instances
 transformOperations = TransformOperation.empty(0,0);
 
 transformOperations(end+1) = TransformOperation('t',StateVariable('t',{}, 's', 'time of observations'),@(wvt) wvt.t);

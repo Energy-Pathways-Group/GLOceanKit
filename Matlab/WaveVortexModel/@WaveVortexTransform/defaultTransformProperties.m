@@ -1,4 +1,12 @@
 function transformProperties = defaultTransformProperties()
+% return array of TransformProperty initialized by default
+%
+% This function lets us efficiently annotate all the wave vortex transform
+% properties
+%
+% - Topic: Internal
+% - Declaration: transformProperties = defaultTransformProperties()
+% - Returns transformProperties: array of TransformProperty instances
 transformProperties = TransformProperty.empty(0,0);
 
 transformProperties(end+1) = TransformProperty('Lx',{},'m', 'domain size in the x-direction');

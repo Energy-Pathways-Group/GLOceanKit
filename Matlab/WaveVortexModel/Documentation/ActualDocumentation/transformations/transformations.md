@@ -90,7 +90,7 @@ and implemented in code with
 
 ## Wave-vortex sorting
 
-The second part of the transformation is the wave-vortex (S)orting which takes $$(\hat{u},\hat{v},\hat{\eta})$$ and solves for the amplitudes of the wave and vortex solutions $$(A_+,A_-,A_0)$$ This $$3 \times 3$$ matrix operation is uniquely defined for \emph{each} $$k,l,j$$. The $$S$$ and $$S^{-1}$$ transformations are defined abstractly as
+The second part of the transformation is the wave-vortex (S)orting which takes $$(\hat{u},\hat{v},\hat{\eta})$$ and solves for the amplitudes of the wave and vortex solutions $$(A_+,A_-,A_0)$$. This $$3 \times 3$$ matrix operation is uniquely defined for \emph{each} $$k,l,j$$. The $$S$$ and $$S^{-1}$$ transformations are defined abstractly as
 
 $$
     \begin{bmatrix}
@@ -113,7 +113,6 @@ $$
 with inverse,
 
 $$
-\begin{equation}
     \begin{bmatrix}
     \hat{u}^{klj} \\
     \hat{v}^{klj} \\
