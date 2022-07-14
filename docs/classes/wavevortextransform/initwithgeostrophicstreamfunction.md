@@ -3,7 +3,7 @@ layout: default
 title: initWithGeostrophicStreamfunction
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 112
+nav_order: 105
 mathjax: true
 ---
 

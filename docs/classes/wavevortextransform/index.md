@@ -27,6 +27,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 
 ## Topics
 + Initialization
+  + Other
+    + [`transformFromFile`](/classes/wavevortextransform/transformfromfile.html) Initialize a WaveVortexTransform instance from an existing file
 + Domain attributes
   + Grid
     + [`Lx`](/classes/wavevortextransform/lx.html) domain size in the x-direction
@@ -52,6 +54,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Initial Conditions
   + Waves
     + [`addWaveModes`](/classes/wavevortextransform/addwavemodes.html) add amplitudes of the given wave modes
+    + [`initWithGMSpectrum`](/classes/wavevortextransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
+    + [`initWithSpectralFunction`](/classes/wavevortextransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
     + [`initWithWaveModes`](/classes/wavevortextransform/initwithwavemodes.html) initialize with the given wave modes
     + [`removeAllWaves`](/classes/wavevortextransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
     + [`setWaveModes`](/classes/wavevortextransform/setwavemodes.html) set amplitudes of the given wave modes
@@ -99,21 +103,16 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`ExponentialFilter`](/classes/wavevortextransform/exponentialfilter.html) 
     + [`ExternalVariableFieldsAtTime`](/classes/wavevortextransform/externalvariablefieldsattime.html) Returns the external wave modes at the grid points.
     + [`ExternalVariablesAtTimePosition`](/classes/wavevortextransform/externalvariablesattimeposition.html) 
-    + [`ExtractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`FillOutWaveSpectrum`](/classes/wavevortextransform/filloutwavespectrum.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am
     + [`Fp`](/classes/wavevortextransform/fp.html) non-linear flux into Ap
     + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
     + [`Kh`](/classes/wavevortextransform/kh.html) 
-    + [`MaskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`MasksForAllFlowConstituents`](/classes/wavevortextransform/masksforallflowconstituents.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`MasksForFlowConstituents`](/classes/wavevortextransform/masksforflowconstituents.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`MasksForFlowContinuents`](/classes/wavevortextransform/masksforflowcontinuents.html) 
     + [`N0`](/classes/wavevortextransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wavevortextransform/n2.html) buoyancy frequency of the mean density
-    + [`NA0`](/classes/wavevortextransform/na0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{\eta}$$.
-    + [`NAm`](/classes/wavevortextransform/nam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{\eta}$$.
-    + [`NAp`](/classes/wavevortextransform/nap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{\eta}$$.
+    + [`NA0`](/classes/wavevortextransform/na0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
+    + [`NAm`](/classes/wavevortextransform/nam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
+    + [`NAp`](/classes/wavevortextransform/nap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
     + [`Nj`](/classes/wavevortextransform/nj.html) 
     + [`Nk`](/classes/wavevortextransform/nk.html) 
     + [`Nl`](/classes/wavevortextransform/nl.html) 
@@ -121,22 +120,19 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
     + [`Nx`](/classes/wavevortextransform/nx.html) 
     + [`Ny`](/classes/wavevortextransform/ny.html) 
-    + [`NyquistWavenumbers`](/classes/wavevortextransform/nyquistwavenumbers.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`Nz`](/classes/wavevortextransform/nz.html) 
     + [`Omega`](/classes/wavevortextransform/omega.html) 
-    + [`RedundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`RemoveAllExternalWaves`](/classes/wavevortextransform/removeallexternalwaves.html) 
     + [`SetExternalWavesWithFrequencies`](/classes/wavevortextransform/setexternalwaveswithfrequencies.html) 
     + [`SetExternalWavesWithWavenumbers`](/classes/wavevortextransform/setexternalwaveswithwavenumbers.html) 
-    + [`UA0`](/classes/wavevortextransform/ua0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{u}$$.
-    + [`UAm`](/classes/wavevortextransform/uam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{u}$$.
-    + [`UAp`](/classes/wavevortextransform/uap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{u}$$.
-    + [`VA0`](/classes/wavevortextransform/va0.html) matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{v}$$.
-    + [`VAm`](/classes/wavevortextransform/vam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{v}$$.
-    + [`VAp`](/classes/wavevortextransform/vap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{v}$$.
-    + [`ValidateTransformationMatrices`](/classes/wavevortextransform/validatetransformationmatrices.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`WAm`](/classes/wavevortextransform/wam.html) matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{w}$$.
-    + [`WAp`](/classes/wavevortextransform/wap.html) matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{w}$$.
+    + [`UA0`](/classes/wavevortextransform/ua0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{u}$$.
+    + [`UAm`](/classes/wavevortextransform/uam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{u}$$.
+    + [`UAp`](/classes/wavevortextransform/uap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{u}$$.
+    + [`VA0`](/classes/wavevortextransform/va0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{v}$$.
+    + [`VAm`](/classes/wavevortextransform/vam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{v}$$.
+    + [`VAp`](/classes/wavevortextransform/vap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{v}$$.
+    + [`WAm`](/classes/wavevortextransform/wam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{w}$$.
+    + [`WAp`](/classes/wavevortextransform/wap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{w}$$.
     + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
     + [`X`](/classes/wavevortextransform/x.html) 
     + [`Y`](/classes/wavevortextransform/y.html) 
@@ -146,7 +142,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`addTransformOperation`](/classes/wavevortextransform/addtransformoperation.html) 
     + [`addTransformProperty`](/classes/wavevortextransform/addtransformproperty.html) 
     + [`buildTransformationMatrices`](/classes/wavevortextransform/buildtransformationmatrices.html) Build wavenumbers
-    + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`clearVariableCache`](/classes/wavevortextransform/clearvariablecache.html) 
     + [`clearVariableCacheOfTimeDependentVariables`](/classes/wavevortextransform/clearvariablecacheoftimedependentvariables.html) 
     + [`dLnN2`](/classes/wavevortextransform/dlnn2.html) d/dz ln N2
@@ -161,7 +156,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`eta`](/classes/wavevortextransform/eta.html) isopycnal deviation
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) 
     + [`g`](/classes/wavevortextransform/g.html) 
-    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) 
     + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) total energy, geostrophic, baroclinic
@@ -172,13 +166,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`inertialEnergy`](/classes/wavevortextransform/inertialenergy.html) 
     + [`inertialEnergyBaroclinic`](/classes/wavevortextransform/inertialenergybaroclinic.html) total energy, inertial oscillations, baroclinic
     + [`inertialEnergyBarotropic`](/classes/wavevortextransform/inertialenergybarotropic.html) total energy, inertial oscillations, barotropic
-    + [`initWithGMSpectrum`](/classes/wavevortextransform/initwithgmspectrum.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`initWithSpectralFunction`](/classes/wavevortextransform/initwithspectralfunction.html) The GM2D_int function is used to assign variance to a given
     + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) total energy, internal waves, minus
     + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
     + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
-    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    + [`maskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    + [`masksForFlowContinuents`](/classes/wavevortextransform/masksforflowcontinuents.html) 
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
     + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
     + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
@@ -198,7 +191,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`totalEnergySpatiallyIntegrated`](/classes/wavevortextransform/totalenergyspatiallyintegrated.html) 
     + [`totalHydrostaticEnergy`](/classes/wavevortextransform/totalhydrostaticenergy.html) 
     + [`transformDimensionWithName`](/classes/wavevortextransform/transformdimensionwithname.html) 
-    + [`transformFromFile`](/classes/wavevortextransform/transformfromfile.html) 
     + [`transformFromSpatialDomainWithF`](/classes/wavevortextransform/transformfromspatialdomainwithf.html) 
     + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) 
     + [`transformOperationWithName`](/classes/wavevortextransform/transformoperationwithname.html) 
@@ -226,6 +218,20 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Transformation matrix coefficients
   + Other
     + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
++ Utility function
+  + Other
+    + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
+    + [`extractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
+    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
+    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) Forces a 3D matrix to be Hermitian
+    + [`nyquistWavenumbers`](/classes/wavevortextransform/nyquistwavenumbers.html) Returns a matrix with 1s at the Nyquist frequencies.
+    + [`redundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
++ Masks
+  + Other
+    + [`masksForAllFlowConstituents`](/classes/wavevortextransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six
++ Validation and internal unit testing
+  + Other
+    + [`validateTransformationMatrices`](/classes/wavevortextransform/validatetransformationmatrices.html) used to confirm if $$S$$ and $$S^{-1}$$ are inverses
 + Write to file
   + Other
     + [`writeToFile`](/classes/wavevortextransform/writetofile.html) Output the `WaveVortexTransform` to file.

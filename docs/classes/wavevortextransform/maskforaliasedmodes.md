@@ -1,13 +1,13 @@
 ---
 layout: default
-title: MaskForAliasedModes
+title: maskForAliasedModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 39
+nav_order: 119
 mathjax: true
 ---
 
-#  MaskForAliasedModes
+#  maskForAliasedModes
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -22,6 +22,6 @@ mathjax: true
   rule.
  
   Basic usage,
-  AntiAliasMask = wvm.MaskForAliasedModes();
+  AntiAliasMask = wvm.maskForAliasedModes();
   will return a mask that contains 1 at the locations of modes that will
   alias with a quadratic multiplication.

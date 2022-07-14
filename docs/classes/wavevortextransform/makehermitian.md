@@ -3,20 +3,24 @@ layout: default
 title: makeHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 125
+nav_order: 118
 mathjax: true
 ---
 
 #  makeHermitian
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Forces a 3D matrix to be Hermitian
 
 
 ---
 
+## Declaration
+```matlab
+ A = makeHermitian( A )
+```
 ## Discussion
 
-  Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
+  This function makes assumptions about the structure of the matrix.
  
   The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
   numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
@@ -26,4 +30,4 @@ mathjax: true
   This function is NOT a true "Make Hermitian" function because it
   doesn't force the k=l=0 to be real.
  
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      - Returns A: matrix the same size as the input matrix

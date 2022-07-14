@@ -3,7 +3,7 @@ layout: default
 title: transformFromSpatialDomainWithG
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 155
+nav_order: 153
 mathjax: true
 ---
 

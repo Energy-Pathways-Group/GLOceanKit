@@ -3,7 +3,7 @@ layout: default
 title: RemoveAllExternalWaves
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 59
+nav_order: 52
 mathjax: true
 ---
 

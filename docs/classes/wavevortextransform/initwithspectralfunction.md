@@ -3,19 +3,26 @@ layout: default
 title: initWithSpectralFunction
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 114
+nav_order: 107
 mathjax: true
 ---
 
 #  initWithSpectralFunction
 
-The GM2D_int function is used to assign variance to a given
+initialize the wave spectrum with a given function
 
 
 ---
 
+## Declaration
+```matlab
+ [GM3Dint,GM3Dext] = initWithSpectralFunction(GM2D_int, varargin) 
+```
 ## Discussion
-wave mode. It has three arguments, omega0, omega1, and j and
+
+     
+  The GM2D_int function is used to assign variance to a given
+  wave mode. It has three arguments, omega0, omega1, and j and
   should return the amount of variance you want assigned to a
   wave mode between omega0 and omega1 at vertical mode j.
  

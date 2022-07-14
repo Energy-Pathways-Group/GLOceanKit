@@ -3,13 +3,13 @@ layout: default
 title: UAm
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 63
+nav_order: 56
 mathjax: true
 ---
 
 #  UAm
 
-matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{u}$$.
+matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{u}$$.
 
 
 ---

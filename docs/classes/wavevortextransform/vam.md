@@ -3,13 +3,13 @@ layout: default
 title: VAm
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 66
+nav_order: 59
 mathjax: true
 ---
 
 #  VAm
 
-matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{v}$$.
+matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{v}$$.
 
 
 ---

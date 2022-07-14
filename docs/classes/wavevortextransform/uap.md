@@ -3,13 +3,13 @@ layout: default
 title: UAp
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 64
+nav_order: 57
 mathjax: true
 ---
 
 #  UAp
 
-matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{u}$$.
+matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{u}$$.
 
 
 ---

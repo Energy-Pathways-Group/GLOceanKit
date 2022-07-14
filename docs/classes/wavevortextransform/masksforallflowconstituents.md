@@ -1,23 +1,21 @@
 ---
 layout: default
-title: MasksForAllFlowConstituents
+title: masksForAllFlowConstituents
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 40
+nav_order: 120
 mathjax: true
 ---
 
-#  MasksForAllFlowConstituents
+#  masksForAllFlowConstituents
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Returns six 'masks' (matrices with 1s or 0s) indicating where the six
 
 
 ---
 
 ## Discussion
-
-  Returns six 'masks' (matrices with 1s or 0s) indicating where the six
-  different solution types live in the Ap, Am, A0 matrices.
+different solution types live in the Ap, Am, A0 matrices.
  
   IO, SGW, and IGW indicate where the inertial oscillation (IO), surface
   gravity waves (SGW), and internal gravity wave (IGW) solutions live in
@@ -29,3 +27,5 @@ mathjax: true
   
   For example, if you define A = IGW .* Ap; then A will contain only the
   positive frequency internal gravity solutions.
+ 
+  

@@ -3,13 +3,13 @@ layout: default
 title: WAp
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 70
+nav_order: 62
 mathjax: true
 ---
 
 #  WAp
 
-matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{w}$$.
+matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 
 
 ---

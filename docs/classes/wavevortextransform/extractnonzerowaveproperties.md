@@ -1,19 +1,29 @@
 ---
 layout: default
-title: ExtractNonzeroWaveProperties
+title: extractNonzeroWaveProperties
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 29
+nav_order: 88
 mathjax: true
 ---
 
-#  ExtractNonzeroWaveProperties
+#  extractNonzeroWaveProperties
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
 
 
 ---
 
+## Declaration
+```matlab
+ [A,phi,linearIndex] = ExtractNonzeroWaveProperties(Matrix)
+```
+## Parameters
++ `Matrix`  Hermitian conjugate matrix
+
 ## Discussion
 
-  Takes a Hermitian matrix and resets it back to the real amplitude.
+  This function makes assumptions about the structure of the matrix.
+        - Returns A: amplitude
+  - Returns phi: phase
+  - Returns linearIndex: linear index of matrix component

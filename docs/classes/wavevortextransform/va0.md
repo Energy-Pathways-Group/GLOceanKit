@@ -3,13 +3,13 @@ layout: default
 title: VA0
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 65
+nav_order: 58
 mathjax: true
 ---
 
 #  VA0
 
-matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{v}$$.
+matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{v}$$.
 
 
 ---

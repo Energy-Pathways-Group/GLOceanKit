@@ -3,13 +3,13 @@ layout: default
 title: NAp
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 47
+nav_order: 42
 mathjax: true
 ---
 
 #  NAp
 
-matrix coefficient that multiplies $$\A_p$$ to compute $$\tilde{\eta}$$.
+matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
 
 
 ---

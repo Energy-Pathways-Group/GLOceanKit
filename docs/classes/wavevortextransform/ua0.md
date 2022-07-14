@@ -3,13 +3,13 @@ layout: default
 title: UA0
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 62
+nav_order: 55
 mathjax: true
 ---
 
 #  UA0
 
-matrix coefficient that multiplies $$\A_0$$ to compute $$\tilde{u}$$.
+matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{u}$$.
 
 
 ---

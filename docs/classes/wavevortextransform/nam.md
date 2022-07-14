@@ -3,13 +3,13 @@ layout: default
 title: NAm
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 46
+nav_order: 41
 mathjax: true
 ---
 
 #  NAm
 
-matrix coefficient that multiplies $$\A_m$$ to compute $$\tilde{\eta}$$.
+matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
 
 
 ---
