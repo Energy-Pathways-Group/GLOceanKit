@@ -3,7 +3,7 @@ layout: default
 title: ApU
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 18
+nav_order: 16
 mathjax: true
 ---
 

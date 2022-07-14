@@ -3,16 +3,23 @@ layout: default
 title: maskForAliasedModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 119
+nav_order: 116
 mathjax: true
 ---
 
 #  maskForAliasedModes
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+returns a mask with locations of modes that will alias with a quadratic multiplication.
 
 
 ---
+
+## Declaration
+```matlab
+ AntiAliasFilter = maskForAliasedModes(self,options)
+```
+## Parameters
++ `jFraction`  (optional) fraction of vertical mode to assume are not aliased (default 2/3)
 
 ## Discussion
 
@@ -25,3 +32,5 @@ mathjax: true
   AntiAliasMask = wvm.maskForAliasedModes();
   will return a mask that contains 1 at the locations of modes that will
   alias with a quadratic multiplication.
+ 
+        - Returns AntiAliasFilter: mask aliased mode

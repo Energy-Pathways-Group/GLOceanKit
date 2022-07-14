@@ -1,16 +1,19 @@
 ---
 layout: default
-title: ExternalVariableFieldsAtTime
+title: externalVariableFieldsAtTime
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 27
+nav_order: 82
 mathjax: true
 ---
 
-#  ExternalVariableFieldsAtTime
+#  externalVariableFieldsAtTime
 
 Returns the external wave modes at the grid points.
 
 
 ---
 
+## Discussion
+
+  

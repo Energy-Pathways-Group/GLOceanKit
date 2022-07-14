@@ -84,8 +84,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) 
     + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) 
     + [`A0t`](/classes/wavevortextransform/a0t.html) geostrophic coefficients at time (t-t0)
-    + [`AddExternalWavesWithFrequencies`](/classes/wavevortextransform/addexternalwaveswithfrequencies.html) 
-    + [`AddExternalWavesWithWavenumbers`](/classes/wavevortextransform/addexternalwaveswithwavenumbers.html) 
     + [`Am`](/classes/wavevortextransform/am.html) negative wave coefficients at reference time t0
     + [`AmN`](/classes/wavevortextransform/amn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
     + [`AmU`](/classes/wavevortextransform/amu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
@@ -101,9 +99,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`EnergyFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/energyfluxforflowconstituentsattime.html) 
     + [`EnergyFluxForFlowConstituentsAtTimeInitial`](/classes/wavevortextransform/energyfluxforflowconstituentsattimeinitial.html) 
     + [`ExponentialFilter`](/classes/wavevortextransform/exponentialfilter.html) 
-    + [`ExternalVariableFieldsAtTime`](/classes/wavevortextransform/externalvariablefieldsattime.html) Returns the external wave modes at the grid points.
-    + [`ExternalVariablesAtTimePosition`](/classes/wavevortextransform/externalvariablesattimeposition.html) 
-    + [`FillOutWaveSpectrum`](/classes/wavevortextransform/filloutwavespectrum.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am
     + [`Fp`](/classes/wavevortextransform/fp.html) non-linear flux into Ap
     + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
@@ -122,9 +117,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Ny`](/classes/wavevortextransform/ny.html) 
     + [`Nz`](/classes/wavevortextransform/nz.html) 
     + [`Omega`](/classes/wavevortextransform/omega.html) 
-    + [`RemoveAllExternalWaves`](/classes/wavevortextransform/removeallexternalwaves.html) 
-    + [`SetExternalWavesWithFrequencies`](/classes/wavevortextransform/setexternalwaveswithfrequencies.html) 
-    + [`SetExternalWavesWithWavenumbers`](/classes/wavevortextransform/setexternalwaveswithwavenumbers.html) 
     + [`UA0`](/classes/wavevortextransform/ua0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{u}$$.
     + [`UAm`](/classes/wavevortextransform/uam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{u}$$.
     + [`UAp`](/classes/wavevortextransform/uap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{u}$$.
@@ -156,7 +148,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`eta`](/classes/wavevortextransform/eta.html) isopycnal deviation
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) 
     + [`g`](/classes/wavevortextransform/g.html) 
-    + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
     + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) 
     + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) total energy, geostrophic, baroclinic
     + [`geostrophicEnergyBarotropic`](/classes/wavevortextransform/geostrophicenergybarotropic.html) total energy, geostrophic, barotropic
@@ -170,8 +162,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
     + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
-    + [`maskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    + [`masksForFlowContinuents`](/classes/wavevortextransform/masksforflowcontinuents.html) 
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
     + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
     + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
@@ -218,6 +208,16 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Transformation matrix coefficients
   + Other
     + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
++ External (non-gridded) modes
+  + Other
+    + [`addExternalWavesWithFrequencies`](/classes/wavevortextransform/addexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given wavenumber
+    + [`addExternalWavesWithWavenumbers`](/classes/wavevortextransform/addexternalwaveswithwavenumbers.html) add external (non-gridded) waves with a given wavenumber
+    + [`externalVariableFieldsAtTime`](/classes/wavevortextransform/externalvariablefieldsattime.html) Returns the external wave modes at the grid points.
+    + [`externalVariablesAtTimePosition`](/classes/wavevortextransform/externalvariablesattimeposition.html) Returns the external wave modes at the grid points.
+    + [`fillOutWaveSpectrum`](/classes/wavevortextransform/filloutwavespectrum.html) Add external waves to the model to fill out the spectrum
+    + [`removeAllExternalWaves`](/classes/wavevortextransform/removeallexternalwaves.html) remove all external (non-gridded) waves
+    + [`setExternalWavesWithFrequencies`](/classes/wavevortextransform/setexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given frequency
+    + [`setExternalWavesWithWavenumbers`](/classes/wavevortextransform/setexternalwaveswithwavenumbers.html) set external (non-gridded) waves with a given wavenumber
 + Utility function
   + Other
     + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
@@ -228,7 +228,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`redundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
 + Masks
   + Other
+    + [`maskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
     + [`masksForAllFlowConstituents`](/classes/wavevortextransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six
+    + [`masksForFlowConstituents`](/classes/wavevortextransform/masksforflowconstituents.html) Returns a sets of 'masks' indicating where different solution types live in the Ap, Am, A0 matrices.
 + Validation and internal unit testing
   + Other
     + [`validateTransformationMatrices`](/classes/wavevortextransform/validatetransformationmatrices.html) used to confirm if $$S$$ and $$S^{-1}$$ are inverses

@@ -3,7 +3,7 @@ layout: default
 title: ApV
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 19
+nav_order: 17
 mathjax: true
 ---
 

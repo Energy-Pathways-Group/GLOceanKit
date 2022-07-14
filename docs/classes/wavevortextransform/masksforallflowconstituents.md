@@ -3,7 +3,7 @@ layout: default
 title: masksForAllFlowConstituents
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 120
+nav_order: 117
 mathjax: true
 ---
 
@@ -14,6 +14,10 @@ Returns six 'masks' (matrices with 1s or 0s) indicating where the six
 
 ---
 
+## Declaration
+```matlab
+ [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents()
+```
 ## Discussion
 different solution types live in the Ap, Am, A0 matrices.
  
@@ -24,8 +28,13 @@ different solution types live in the Ap, Am, A0 matrices.
   MDA, SG, and IG indicate where the mean density anomaly (MDA), surface
   geostrophic (SG), and interior geostrophic (IG) solutions live in the A0
   matrix.
-  
+ 
   For example, if you define A = IGW .* Ap; then A will contain only the
   positive frequency internal gravity solutions.
  
-  
+      - Returns IO: mask for inertial oscillation solutions
+  - Returns SGW: mask for surface gravity wave solutions
+  - Returns IGW: mask for internal gravity wave solutions
+  - Returns MDA: mask for mean density anomaly solutions
+  - Returns SG: mask for surface geostrophic solutions
+  - Returns IG: mask for internal geostrophic solutions

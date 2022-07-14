@@ -3,7 +3,7 @@ layout: default
 title: AmN
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 12
+nav_order: 10
 mathjax: true
 ---
 

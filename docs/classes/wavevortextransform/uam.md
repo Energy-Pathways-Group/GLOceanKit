@@ -3,7 +3,7 @@ layout: default
 title: UAm
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 56
+nav_order: 48
 mathjax: true
 ---
 

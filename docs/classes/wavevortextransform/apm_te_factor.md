@@ -3,7 +3,7 @@ layout: default
 title: Apm_TE_factor
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 20
+nav_order: 18
 mathjax: true
 ---
 

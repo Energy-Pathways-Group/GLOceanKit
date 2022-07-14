@@ -3,7 +3,7 @@ layout: default
 title: dLnN2
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 78
+nav_order: 72
 mathjax: true
 ---
 

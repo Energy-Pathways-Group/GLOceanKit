@@ -3,7 +3,7 @@ layout: default
 title: Nmax
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 46
+nav_order: 41
 mathjax: true
 ---
 

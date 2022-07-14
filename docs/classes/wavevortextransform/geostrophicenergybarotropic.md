@@ -3,7 +3,7 @@ layout: default
 title: geostrophicEnergyBarotropic
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 96
+nav_order: 93
 mathjax: true
 ---
 

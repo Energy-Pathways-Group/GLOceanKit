@@ -1,16 +1,19 @@
 ---
 layout: default
-title: ExternalVariablesAtTimePosition
+title: externalVariablesAtTimePosition
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 28
+nav_order: 83
 mathjax: true
 ---
 
-#  ExternalVariablesAtTimePosition
+#  externalVariablesAtTimePosition
 
-
+Returns the external wave modes at the grid points.
 
 
 ---
 
+## Discussion
+
+  

@@ -1,16 +1,19 @@
 ---
 layout: default
-title: AddExternalWavesWithFrequencies
+title: addExternalWavesWithFrequencies
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 9
+nav_order: 59
 mathjax: true
 ---
 
-#  AddExternalWavesWithFrequencies
+#  addExternalWavesWithFrequencies
 
-
+set external (non-gridded) waves with a given wavenumber
 
 
 ---
 
+## Discussion
+
+  

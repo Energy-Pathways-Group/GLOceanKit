@@ -3,7 +3,7 @@ layout: default
 title: latitude
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 117
+nav_order: 114
 mathjax: true
 ---
 

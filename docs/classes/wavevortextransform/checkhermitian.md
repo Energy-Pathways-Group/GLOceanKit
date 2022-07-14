@@ -3,7 +3,7 @@ layout: default
 title: checkHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 75
+nav_order: 69
 mathjax: true
 ---
 

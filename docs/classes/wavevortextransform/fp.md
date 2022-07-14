@@ -3,7 +3,7 @@ layout: default
 title: Fp
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 32
+nav_order: 27
 mathjax: true
 ---
 

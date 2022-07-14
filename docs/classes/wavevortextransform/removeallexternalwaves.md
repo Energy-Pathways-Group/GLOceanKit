@@ -1,16 +1,19 @@
 ---
 layout: default
-title: RemoveAllExternalWaves
+title: removeAllExternalWaves
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 52
+nav_order: 129
 mathjax: true
 ---
 
-#  RemoveAllExternalWaves
+#  removeAllExternalWaves
 
-
+remove all external (non-gridded) waves
 
 
 ---
 
+## Discussion
+
+  
