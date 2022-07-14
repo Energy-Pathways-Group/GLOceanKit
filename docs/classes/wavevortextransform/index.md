@@ -75,23 +75,26 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Major Constituents
   + Geostrophic Constituents
   + Inertia-Gravity Wave Constituents
-+ Other
++ Transformation matrix coefficients
   + Other
     + [`A0N`](/classes/wavevortextransform/a0n.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
     + [`A0U`](/classes/wavevortextransform/a0u.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_0$$.
     + [`A0V`](/classes/wavevortextransform/a0v.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_0$$.
+    + [`AmN`](/classes/wavevortextransform/amn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
+    + [`AmU`](/classes/wavevortextransform/amu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
+    + [`AmV`](/classes/wavevortextransform/amv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_m$$.
+    + [`ApN`](/classes/wavevortextransform/apn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
+    + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
+    + [`ApV`](/classes/wavevortextransform/apv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.
++ Other
+  + Other
     + [`A0_HKE_factor`](/classes/wavevortextransform/a0_hke_factor.html) 
     + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) 
     + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) 
     + [`A0t`](/classes/wavevortextransform/a0t.html) geostrophic coefficients at time (t-t0)
     + [`Am`](/classes/wavevortextransform/am.html) negative wave coefficients at reference time t0
-    + [`AmN`](/classes/wavevortextransform/amn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
-    + [`AmU`](/classes/wavevortextransform/amu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
-    + [`AmV`](/classes/wavevortextransform/amv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_m$$.
     + [`Amt`](/classes/wavevortextransform/amt.html) negative wave coefficients at time (t-t0)
     + [`Ap`](/classes/wavevortextransform/ap.html) positive wave coefficients at reference time t0
-    + [`ApN`](/classes/wavevortextransform/apn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
-    + [`ApV`](/classes/wavevortextransform/apv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.
     + [`Apm_TE_factor`](/classes/wavevortextransform/apm_te_factor.html) These convert the coefficients to their depth integrated energies
     + [`Apt`](/classes/wavevortextransform/apt.html) positive wave coefficients at time (t-t0)
     + [`EnergeticsByWavenumberAndMode`](/classes/wavevortextransform/energeticsbywavenumberandmode.html) 
@@ -205,9 +208,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`w`](/classes/wavevortextransform/w.html) z-component of the fluid velocity
     + [`waveEnergy`](/classes/wavevortextransform/waveenergy.html) 
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
-+ Transformation matrix coefficients
-  + Other
-    + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
 + External (non-gridded) modes
   + Other
     + [`addExternalWavesWithFrequencies`](/classes/wavevortextransform/addexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given wavenumber

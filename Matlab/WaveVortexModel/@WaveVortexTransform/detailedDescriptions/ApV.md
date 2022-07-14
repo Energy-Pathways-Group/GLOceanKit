@@ -1,23 +1,4 @@
----
-layout: default
-title: ApV
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 17
-mathjax: true
----
-
-#  ApV
-
-matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.
-
-
----
-
-## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and no units.
-
-## Discussion
+- Topic: Transformation matrix coefficients
 
 These are the row 1, column 2 components of the [inverse wave-vortex (S)orting matrix](/transformations/transformations.html), referred to as $$S^{-1}$$ matrix in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995). The primary internal gravity wave and geostrophic solutions that exist for $$k^2+l^2>0, j>0$$ are summarized in equation C5.
 
@@ -46,4 +27,3 @@ The inertial solutions occupy the $$k^2+l^2=0$$ portion of the matrix,
 ```matlab
 ApV(1,1,:) = -sqrt(-1)/2;
 ```
-
