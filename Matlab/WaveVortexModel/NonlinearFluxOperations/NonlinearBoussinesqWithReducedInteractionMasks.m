@@ -114,14 +114,14 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
         function allowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowConstituents(constituents);
             self.IMA0 = self.IMA0 | A0Mask;
             self.IMAm = self.IMAm | ApmMask;
             self.IMAp = self.IMAp | ApmMask;
         end
 
         function disallowNonlinearInteractionsWithConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowConstituents(constituents);
             self.IMA0 = self.IMA0 & ~A0Mask;
             self.IMAm = self.IMAm & ~ApmMask;
             self.IMAp = self.IMAp & ~ApmMask;
@@ -140,14 +140,14 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
         end
 
         function unfreezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowConstituents(constituents);
             self.EMA0 = self.EMA0 | A0Mask;
             self.EMAm = self.EMAm | ApmMask;
             self.EMAp = self.EMAp | ApmMask;
         end
 
         function freezeEnergyOfConstituents(self,constituents)
-            [ApmMask,A0Mask] = self.wvt.masksForFlowContinuents(constituents);
+            [ApmMask,A0Mask] = self.wvt.masksForFlowConstituents(constituents);
             self.EMA0 = self.EMA0 & ~A0Mask;
             self.EMAm = self.EMAm & ~ApmMask;
             self.EMAp = self.EMAp & ~ApmMask;

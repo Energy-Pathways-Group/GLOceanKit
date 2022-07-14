@@ -143,7 +143,7 @@ for iLat = 1:length(latitude)
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
                     for API = 1:4
-                        wavemodel.RemoveAllExternalWaves();
+                        wavemodel.removeAllExternalWaves();
                         wavemodel.removeAllWaves();
                         
                         if API == 1
@@ -154,19 +154,19 @@ for iLat = 1:length(latitude)
                             wavemodel.setWaveModes(k_loop,l_loop,j0,phi,U,thesign);
                             [omega_p, alpha_p, k_p, l_p, j_p, phi_p, A_p,norm] = wavemodel.waveModesFromWaveCoefficients();
                         elseif API == 3
-                            apiName = 'SetExternalWavesWithWavenumbers';
+                            apiName = 'setExternalWavesWithWavenumbers';
                             if omega_p == 0
                                 signchange = 1;
                             else
                                 signchange = sign(omega_p);
                             end
                             if ~isempty(k_p)
-                                wavemodel.SetExternalWavesWithWavenumbers(signchange*k_p, signchange*l_p, j_p, signchange*phi_p,signchange*A_p,norm);
+                                wavemodel.setExternalWavesWithWavenumbers(signchange*k_p, signchange*l_p, j_p, signchange*phi_p,signchange*A_p,norm);
                             end
                         elseif API == 4
-                            apiName = 'SetExternalWavesWithFrequencies';
+                            apiName = 'setExternalWavesWithFrequencies';
                             if ~isempty(k_p)
-                                wavemodel.SetExternalWavesWithFrequencies(omega_p, alpha_p, j_p, phi_p,A_p,norm);
+                                wavemodel.setExternalWavesWithFrequencies(omega_p, alpha_p, j_p, phi_p,A_p,norm);
                             end
                         end
                         

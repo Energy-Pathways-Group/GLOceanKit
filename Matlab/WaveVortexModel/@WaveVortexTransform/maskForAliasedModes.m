@@ -1,4 +1,5 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function AntiAliasFilter = maskForAliasedModes(self,options)
+% returns a mask with locations of modes that will alias with a quadratic multiplication.
 %
 % Returns a 'mask' (matrices with 1s or 0s) indicating where aliased wave
 % modes are, assuming the 2/3 anti-aliasing rule for quadratic
@@ -9,7 +10,12 @@
 % AntiAliasMask = wvm.maskForAliasedModes();
 % will return a mask that contains 1 at the locations of modes that will
 % alias with a quadratic multiplication.
-function AntiAliasFilter = maskForAliasedModes(self,options)
+%
+% - Topic: Masks
+% - Declaration: AntiAliasFilter = maskForAliasedModes(self,options)
+% - Parameter jFraction: (optional) fraction of vertical mode to assume are not aliased (default 2/3)
+% - Returns AntiAliasFilter: mask aliased mode
+
 arguments
     self WaveVortexTransform {mustBeNonempty}
     options.jFraction double {mustBePositive(options.jFraction),mustBeLessThanOrEqual(options.jFraction,1)} = 2/3

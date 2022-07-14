@@ -8,7 +8,7 @@ varargout = cell(size(varargin));
 % External variables may not all be supported.
 if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)
     varargoutExt = cell(size(varargin));
-    [varargoutExt{:}] = self.ExternalVariableFieldsAtTime(self.t, varargin{:});
+    [varargoutExt{:}] = self.externalVariableFieldsAtTime(self.t, varargin{:});
     for iArg=1:length(varargout)
         varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
     end

@@ -26,9 +26,9 @@ end
         if isempty(self.ongridModes)
             self.ongridModes = WaveVortexModelOffGrid(self.offgridModes.internalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
             [omega, alpha, ~, ~, mode, phi, A, norm] = self.waveModesFromWaveCoefficients();
-            self.ongridModes.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
+            self.ongridModes.setExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
         end
-        [varargout{:}] = self.ongridModes.ExternalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
+        [varargout{:}] = self.ongridModes.externalVariablesAtTimePosition(t,x,y,z, variableNames{:}); 
     else
         [varargout{:}] = self.stateVariables(variableNames{:});
         [varargout{:}] = self.interpolatedFieldAtPosition(x,y,z,options.InterpolationMethod,varargout{:});
@@ -36,7 +36,7 @@ end
 
     if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)
         varargoutExt = cell(size(variableNames));
-        [varargoutExt{:}] = self.ExternalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
+        [varargoutExt{:}] = self.externalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
         for iArg=1:length(varargout)
             varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
         end

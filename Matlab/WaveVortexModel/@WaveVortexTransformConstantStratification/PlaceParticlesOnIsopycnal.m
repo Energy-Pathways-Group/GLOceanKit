@@ -103,9 +103,9 @@ function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,varar
                 if strcmp(useModes,'internalOnly')==1
                   rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
                   elseif strcmp(useModes,'externalOnly')==1
-                  rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                  rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 elseif strcmp(useModes,'all')==1
-                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 end
                 
                 dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
@@ -122,9 +122,9 @@ function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,varar
                     if strcmp(useModes,'internalOnly')==1
                         rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
                     elseif strcmp(useModes,'externalOnly')==1
-                        rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                        rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                     elseif strcmp(useModes,'all')==1
-                        rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                        rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                     end
 
                     dRho = rho(zLevelIndices) - mean(rho(zLevelIndices));
@@ -158,9 +158,9 @@ function [zIsopycnal, rhoIsopycnal] = PlaceParticlesOnIsopycnal(self,x,y,z,varar
                 if strcmp(useModes,'internalOnly')==1
                     rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices));
                 elseif strcmp(useModes,'externalOnly')==1
-                    rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                    rho(zLevelIndices) = self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 elseif strcmp(useModes,'all')==1
-                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.ExternalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
+                  rho(zLevelIndices) = rho(zLevelIndices) + self.RhoBarAtDepth(zIsopycnal(zLevelIndices)) + self.externalVariablesAtTimePosition(t,x(zLevelIndices),y(zLevelIndices),zIsopycnal(zLevelIndices),'rho_prime');
                 end
 
                 if shouldShowDiagnostics == 1

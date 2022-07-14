@@ -4,7 +4,7 @@ phase = exp(self.iOmega*(t-self.t0));
 Ap = Ap .* phase;
 Am = Am .* conj(phase);
 
-[ApmUMask,A0UMask] = self.masksForFlowContinuents(Uconstituent);
+[ApmUMask,A0UMask] = self.masksForFlowConstituents(Uconstituent);
 
 % Apply operator S---defined in (C4) in the manuscript
 Ubar = ApmUMask.*(self.UAp.*Ap + self.UAm.*Am) + A0UMask.*self.UA0.*A0;
@@ -21,7 +21,7 @@ ETA = self.transformToSpatialDomainWithG(Nbar);
 
 % Finishing applying S, but also compute derivatives at the
 % same time
-[ApmUxMask,A0UxMask] = self.masksForFlowContinuents(gradUconstituent);
+[ApmUxMask,A0UxMask] = self.masksForFlowConstituents(gradUconstituent);
 Uxbar = ApmUxMask.*(self.UAp.*Ap + self.UAm.*Am) + A0UxMask.*self.UA0.*A0;
 Vxbar = ApmUxMask.*(self.VAp.*Ap + self.VAm.*Am) + A0UxMask.*self.VA0.*A0;
 Nxbar = ApmUxMask.*(self.NAp.*Ap + self.NAm.*Am) + A0UxMask.*self.NA0.*A0;

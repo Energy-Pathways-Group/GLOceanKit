@@ -835,57 +835,69 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        FillOutWaveSpectrum(self,maxTimeGap)
+        fillOutWaveSpectrum(self,maxTimeGap)
         
-        function RemoveAllExternalWaves(self)
-            self.offgridModes.RemoveAllExternalWaves();
+        function removeAllExternalWaves(self)
+            % remove all external (non-gridded) waves
+            %
+            % - Topic: External (non-gridded) modes
+            self.offgridModes.removeAllExternalWaves();
         end
         
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.offgridModes.SetExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        function omega = setExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            % set external (non-gridded) waves with a given wavenumber
+            %
+            % - Topic: External (non-gridded) modes
+            omega = self.offgridModes.setExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        end
+
+        function omega = addExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+            % add external (non-gridded) waves with a given wavenumber
+            %
+            % - Topic: External (non-gridded) modes
+            omega = self.offgridModes.addExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
         end
         
-        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
-            omega = self.offgridModes.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+        function k = setExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            % set external (non-gridded) waves with a given frequency
+            %
+            % - Topic: External (non-gridded) modes
+            k = self.offgridModes.setExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.offgridModes.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+        function k = addExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+            % set external (non-gridded) waves with a given wavenumber
+            %
+            % - Topic: External (non-gridded) modes
+            k = self.offgridModes.addExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
-        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
-            k = self.offgridModes.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
-        end
-        
-        function [varargout] = ExternalVariableFieldsAtTime(self,t,varargin)
+        function [varargout] = externalVariableFieldsAtTime(self,t,varargin)
             % Returns the external wave modes at the grid points.
+            %
+            % - Topic: External (non-gridded) modes
             varargout = cell(size(varargin));
-            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin{:});
+            [varargout{:}] = self.offgridModes.externalVariablesAtTimePosition(t,reshape(self.X,[],1),reshape(self.Y,[],1), reshape(self.Z,[],1), varargin{:});
             for iArg=1:length(varargout)
                 varargout{iArg} = reshape(varargout{iArg},self.Nx,self.Ny,self.Nz);
             end
         end
         
-        function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
+        function [varargout] = externalVariablesAtTimePosition(self,t,x,y,z,varargin)
+            % Returns the external wave modes at the grid points.
+            %
+            % - Topic: External (non-gridded) modes
             varargout = cell(size(varargin));
-            [varargout{:}] = self.offgridModes.ExternalVariablesAtTimePosition(t,x,y,z, varargin{:});
+            [varargout{:}] = self.offgridModes.externalVariablesAtTimePosition(t,x,y,z, varargin{:});
         end
 
         
-        % This is S*S^{-1} and therefore returns the values in
-        % wave-vortex space. So, C11 represents Ap and should be 1s
-        % where we expected Ap solutions to exist.
-        %
-        % - Topic: Validation and internal unit testing
         [C11,C21,C31,C12,C22,C32,C13,C23,C33] = validateTransformationMatrices(self)
         
-
-        % Generate a complete set of wave-vortex coefficients with variance at all
-        % physically realizable solution states.
         [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)  
 
         
-        [ApmMask,A0Mask] = masksForFlowContinuents(self,flowConstituents);
+        [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents);
         [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self);
         AntiAliasMask= maskForAliasedModes(self,options);
 

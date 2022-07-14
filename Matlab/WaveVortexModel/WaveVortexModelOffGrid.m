@@ -48,7 +48,7 @@ classdef WaveVortexModelOffGrid < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function RemoveAllExternalWaves(self)
+        function removeAllExternalWaves(self)
             % Remove all external waves.
             self.U_ext = [];
             self.k_ext = [];
@@ -63,7 +63,7 @@ classdef WaveVortexModelOffGrid < handle
             self.PrecomputeExternalWaveCoefficients(); 
         end
         
-        function omega = SetExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+        function omega = setExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
             % Replaces the existing set of external modes with new ones
             % given with horizontal wavenumbers (k,l), in radians per
             % meter.
@@ -72,11 +72,11 @@ classdef WaveVortexModelOffGrid < handle
             % phase of the wave, in radians A indicates the amplitude of
             % the wave, with respect to the given norm, which should be
             % either Normalization.uMax or Normalization.kConstant.
-            self.RemoveAllExternalWaves();
-            omega = self.AddExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
+            self.removeAllExternalWaves();
+            omega = self.addExternalWavesWithWavenumbers(k, l, j, phi, A, norm);
         end
         
-        function omega = AddExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
+        function omega = addExternalWavesWithWavenumbers(self, k, l, j, phi, A, norm)
             % Adds external modes with horizontal wavenumbers (k,l), in
             % radians per meter.
             %
@@ -105,7 +105,7 @@ classdef WaveVortexModelOffGrid < handle
             end
         end
         
-        function k = SetExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+        function k = setExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
             % Replaces the existing set of external modes with new ones
             % given with frequency omega (radians/second) and phase angle
             % alpha (radians).
@@ -115,11 +115,11 @@ classdef WaveVortexModelOffGrid < handle
             % A indicates the amplitude of the wave, with respect to the
             % given norm, which should be either Normalization.uMax or
             % Normalization.kConstant.
-            self.RemoveAllExternalWaves();
-            k = self.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+            self.removeAllExternalWaves();
+            k = self.addExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
         end
         
-        function k = AddExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
+        function k = addExternalWavesWithFrequencies(self, omega, alpha, j, phi, A, norm)
             % Adds external modes with frequency omega (radians/second) and
             % phase angle alpha (radians).
             %
@@ -153,8 +153,8 @@ classdef WaveVortexModelOffGrid < handle
         
         
         function [h, validIndices] = AddExternalWavesWithMethod( self, j, phi, A, norm, kOrOmega, methodName )
-            % This function is called by AddExternalWavesWithFrequencies
-            % and AddExternalWavesWithWavenumbers and should not be used
+            % This function is called by addExternalWavesWithFrequencies
+            % and addExternalWavesWithWavenumbers and should not be used
             % directly.
             %
             % The function returns a culled list of h thats contain only
@@ -254,7 +254,7 @@ classdef WaveVortexModelOffGrid < handle
             G = interp1(self.z,self.G_ext(:,iWave),z,'linear');
         end
         
-        % ExternalVariablesAtTimePosition
+        % externalVariablesAtTimePosition
         %
         % A few notes on speed. It's absolutely remarkable to me, but for
         % some reason, the following code is much slower than the
@@ -294,7 +294,7 @@ classdef WaveVortexModelOffGrid < handle
         %             c = c + A(i)*cos(k(i)*x);
         %         end
         %         toc
-        function [varargout] = ExternalVariablesAtTimePosition(self,t,x,y,z,varargin)
+        function [varargout] = externalVariablesAtTimePosition(self,t,x,y,z,varargin)
             % This is the primary function for computing the external
             % dynamical variables. It tries to be somewhat
             % optimized, by only computing the phase once, and only

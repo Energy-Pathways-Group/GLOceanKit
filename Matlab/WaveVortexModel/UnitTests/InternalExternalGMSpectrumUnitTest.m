@@ -57,8 +57,8 @@ fprintf('The wave components sum to %.2f%% GM\n', 100*(wvm.waveEnergy + wvm.iner
 % Now reset the gridded field to zero.
 wvm.removeAllWaves();
 
-% wavemodel.SetExternalWavesWithFrequencies(omega,alpha,J,phi_plus,A_plus,Normalization.kConstant);
-wvm.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);
+% wavemodel.setExternalWavesWithFrequencies(omega,alpha,J,phi_plus,A_plus,Normalization.kConstant);
+wvm.setExternalWavesWithFrequencies(omega, alpha, mode, phi, A,Normalization.kConstant);
 
 [u_ext,v_ext,w_ext,rho_prime_ext] = wvm.VariableFieldsAtTime(t,'u','v','w','rho_prime');
 

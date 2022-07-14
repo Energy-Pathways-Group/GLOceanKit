@@ -6,7 +6,7 @@ function [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents)
 %
 % Basic usage,
 % ```matlab
-% [ApmMask,A0Mask] = wvm.masksForFlowContinuents(FlowConstituents('internalGravityWave','inertialOscillation');
+% [ApmMask,A0Mask] = wvm.masksForFlowConstituents(FlowConstituents('internalGravityWave','inertialOscillation');
 % ```
 % will return a mask that contains 1 at the locations of the internal
 % gravity waves and inertial oscillations in the Ap/Am matrices. All other
@@ -18,6 +18,8 @@ function [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents)
 % - Topic: Masks
 % - Declaration: [ApmMask,A0Mask] = masksForFlowConstituents(flowConstituents)
 % - Parameter flowConstituents: `FlowConstituents` type
+% - Returns ApmMask: mask for the Ap and Am matrices
+% - Returns A0Mask: mask for the A0 matrix
 ApmMask = zeros(size(self.Ap));
 A0Mask = zeros(size(self.A0));
 

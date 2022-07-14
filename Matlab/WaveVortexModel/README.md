@@ -116,17 +116,17 @@ External wave modes
 
 The external wave modes can be added or set either by specifying the wavelength of the modes,
 ```matlab
-omega = wavemodel.AddExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
-omega = wavemodel.SetExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+omega = wavemodel.addExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+omega = wavemodel.setExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
 ```
 or by specifying the frequency of the modes,
 ```matlab
-k = wavemodel.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
-k = wavemodel.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+k = wavemodel.addExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+k = wavemodel.setExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
 ```
 The `Set` methods will remove all external modes and then add the list you give it, and the `Add` methods will append these modes to the existing list. You can call,
 ```matlab
-wavemodel.RemoveAllExternalWaves();
+wavemodel.removeAllExternalWaves();
 ```
 to remove all external modes.
 
@@ -135,7 +135,7 @@ The amplitude of the waves is set with respect to a given norm of the internal m
 You can extract the nonzero *gridded* wave components, and feed those directly into the external wave modes. The amplitude in this case uses `Normalization.kConstant`. This can be done with two lines of code,
 ```matlab
 [omega, alpha, mode, phi, A, norm] = wavemodel.waveModesFromWaveCoefficients();
-wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
+wavemodel.setExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
 ```
 but of course now have you external waves with the exact same values as the gridded waves, which isn't likely very helpful.
 
@@ -212,8 +212,8 @@ In practice, the Eulerian function `InternalVariableFieldsAtTime` is doing all t
 
 The external dynamical variables can be access with,
 ```matlab
-[u,v,w,rho_prime,zeta] = wavemodel.ExternalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
-[u,v,w,rho_prime,zeta] = wavemodel.ExternalVariablesAtTimePosition(t,x,y,z,'u','v','w','rho_prime','zeta');
+[u,v,w,rho_prime,zeta] = wavemodel.externalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
+[u,v,w,rho_prime,zeta] = wavemodel.externalVariablesAtTimePosition(t,x,y,z,'u','v','w','rho_prime','zeta');
 ```
 Notice that interpolation is not an option, because these values are always exact.
 
