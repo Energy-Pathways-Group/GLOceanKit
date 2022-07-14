@@ -46,4 +46,9 @@ transformProperties(end+1) = TransformProperty('NAp',{'k','l','j'},'s', 'matrix 
 transformProperties(end+1) = TransformProperty('NAm',{'k','l','j'},'s', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 transformProperties(end+1) = TransformProperty('NA0',{'k','l','j'},'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 
+transformProperties(end+1) = TransformProperty('Apm_TE_factor',{'k','l','j'},'m', 'multiplicative factor that multiplies $$A_\pm$$ to compute total energy.',isComplex=0);
+transformProperties(end+1) = TransformProperty('A0_TE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute total energy.',isComplex=0);
+transformProperties(end+1) = TransformProperty('A0_HKE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute horizontal kinetic energy.',isComplex=0);
+transformProperties(end+1) = TransformProperty('A0_PE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute potential energy.',isComplex=0);
+
 end

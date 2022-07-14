@@ -39,6 +39,11 @@ transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 transformOperations(end+1) = TransformOperation('internalWaveEnergyMinus', transformVar,@(wvt) wvt.internalWaveEnergyMinus);
 
+transformVar = StateVariable('waveEnergy',{},'m3/s2', 'total energy, waves');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('waveEnergy', transformVar,@(wvt) wvt.waveEnergy);
+
 transformVar = StateVariable('inertialEnergyBaroclinic',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
 transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
@@ -49,6 +54,11 @@ transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 transformOperations(end+1) = TransformOperation('inertialEnergyBarotropic',transformVar,@(wvt) wvt.inertialEnergyBarotropic);
 
+transformVar = StateVariable('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('inertialEnergy', transformVar,@(wvt) wvt.inertialEnergy);
+
 transformVar = StateVariable('geostrophicEnergyBaroclinic',{},'m3/s2', 'total energy, geostrophic, baroclinic');
 transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
@@ -58,6 +68,11 @@ transformVar = StateVariable('geostrophicEnergyBarotropic',{},'m3/s2', 'total en
 transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 transformOperations(end+1) = TransformOperation('geostrophicEnergyBarotropic',transformVar,@(wvt) wvt.geostrophicEnergyBarotropic);
+
+transformVar = StateVariable('geostrophicEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('geostrophicEnergy', transformVar,@(wvt) wvt.geostrophicEnergy);
 
 outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
 outputVar(1).isComplex = 1;

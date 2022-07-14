@@ -73,8 +73,22 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`setGeostrophicStreamfunction`](/classes/wavevortextransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
 + Energetics
   + Major Constituents
+    + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) total energy, inertial oscillations
   + Geostrophic Constituents
+    + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) total energy, geostrophic, baroclinic
+    + [`geostrophicEnergyBarotropic`](/classes/wavevortextransform/geostrophicenergybarotropic.html) total energy, geostrophic, barotropic
   + Inertia-Gravity Wave Constituents
+    + [`inertialEnergy`](/classes/wavevortextransform/inertialenergy.html) total energy, inertial oscillations
+    + [`inertialEnergyBaroclinic`](/classes/wavevortextransform/inertialenergybaroclinic.html) total energy, inertial oscillations, baroclinic
+    + [`inertialEnergyBarotropic`](/classes/wavevortextransform/inertialenergybarotropic.html) total energy, inertial oscillations, barotropic
+    + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) total energy, internal waves, minus
+    + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
+    + [`waveEnergy`](/classes/wavevortextransform/waveenergy.html) total energy, waves
+  + Multiplicative factors
+    + [`A0_HKE_factor`](/classes/wavevortextransform/a0_hke_factor.html) multiplicative factor that multiplies $$A_0$$ to compute horizontal kinetic energy.
+    + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) multiplicative factor that multiplies $$A_0$$ to compute potential energy.
+    + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0$$ to compute total energy.
+    + [`Apm_TE_factor`](/classes/wavevortextransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm$$ to compute total energy.
 + Wave-vortex sorting matrix
   + inverse components ($$S^{-1}$$)
     + [`A0N`](/classes/wavevortextransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
@@ -100,14 +114,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`WAp`](/classes/wavevortextransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 + Other
   + Other
-    + [`A0_HKE_factor`](/classes/wavevortextransform/a0_hke_factor.html) 
-    + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) 
-    + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) 
     + [`A0t`](/classes/wavevortextransform/a0t.html) geostrophic coefficients at time (t-t0)
     + [`Am`](/classes/wavevortextransform/am.html) negative wave coefficients at reference time t0
     + [`Amt`](/classes/wavevortextransform/amt.html) negative wave coefficients at time (t-t0)
     + [`Ap`](/classes/wavevortextransform/ap.html) positive wave coefficients at reference time t0
-    + [`Apm_TE_factor`](/classes/wavevortextransform/apm_te_factor.html) These convert the coefficients to their depth integrated energies
     + [`Apt`](/classes/wavevortextransform/apt.html) positive wave coefficients at time (t-t0)
     + [`EnergeticsByWavenumberAndMode`](/classes/wavevortextransform/energeticsbywavenumberandmode.html) 
     + [`EnergyFluxAtTimeInitial`](/classes/wavevortextransform/energyfluxattimeinitial.html) 
@@ -153,17 +163,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) 
     + [`g`](/classes/wavevortextransform/g.html) 
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
-    + [`geostrophicEnergy`](/classes/wavevortextransform/geostrophicenergy.html) 
-    + [`geostrophicEnergyBaroclinic`](/classes/wavevortextransform/geostrophicenergybaroclinic.html) total energy, geostrophic, baroclinic
-    + [`geostrophicEnergyBarotropic`](/classes/wavevortextransform/geostrophicenergybarotropic.html) total energy, geostrophic, barotropic
     + [`grid`](/classes/wavevortextransform/grid.html) 
     + [`h`](/classes/wavevortextransform/h.html) equivalent depth of each mode
     + [`iOmega`](/classes/wavevortextransform/iomega.html) 
-    + [`inertialEnergy`](/classes/wavevortextransform/inertialenergy.html) 
-    + [`inertialEnergyBaroclinic`](/classes/wavevortextransform/inertialenergybaroclinic.html) total energy, inertial oscillations, baroclinic
-    + [`inertialEnergyBarotropic`](/classes/wavevortextransform/inertialenergybarotropic.html) total energy, inertial oscillations, barotropic
-    + [`internalWaveEnergyMinus`](/classes/wavevortextransform/internalwaveenergyminus.html) total energy, internal waves, minus
-    + [`internalWaveEnergyPlus`](/classes/wavevortextransform/internalwaveenergyplus.html) total energy, internal waves, positive
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
     + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
@@ -207,7 +209,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`velocityField`](/classes/wavevortextransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
     + [`version`](/classes/wavevortextransform/version.html) 
     + [`w`](/classes/wavevortextransform/w.html) z-component of the fluid velocity
-    + [`waveEnergy`](/classes/wavevortextransform/waveenergy.html) 
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
 + External (non-gridded) modes
   + Other
