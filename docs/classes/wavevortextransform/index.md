@@ -75,17 +75,29 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Major Constituents
   + Geostrophic Constituents
   + Inertia-Gravity Wave Constituents
-+ Transformation matrix coefficients
-  + Other
-    + [`A0N`](/classes/wavevortextransform/a0n.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
-    + [`A0U`](/classes/wavevortextransform/a0u.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_0$$.
-    + [`A0V`](/classes/wavevortextransform/a0v.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_0$$.
-    + [`AmN`](/classes/wavevortextransform/amn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
-    + [`AmU`](/classes/wavevortextransform/amu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
-    + [`AmV`](/classes/wavevortextransform/amv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_m$$.
-    + [`ApN`](/classes/wavevortextransform/apn.html) matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
-    + [`ApU`](/classes/wavevortextransform/apu.html) matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_p$$.
-    + [`ApV`](/classes/wavevortextransform/apv.html) matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.
++ Wave-vortex sorting matrix
+  + inverse components ($$S^{-1}$$)
+    + [`A0N`](/classes/wavevortextransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
+    + [`A0U`](/classes/wavevortextransform/a0u.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.
+    + [`A0V`](/classes/wavevortextransform/a0v.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.
+    + [`AmN`](/classes/wavevortextransform/amn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
+    + [`AmU`](/classes/wavevortextransform/amu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.
+    + [`AmV`](/classes/wavevortextransform/amv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_m$$.
+    + [`ApN`](/classes/wavevortextransform/apn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
+    + [`ApU`](/classes/wavevortextransform/apu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.
+    + [`ApV`](/classes/wavevortextransform/apv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.
+  + components of $$S$$
+    + [`NA0`](/classes/wavevortextransform/na0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
+    + [`NAm`](/classes/wavevortextransform/nam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
+    + [`NAp`](/classes/wavevortextransform/nap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
+    + [`UA0`](/classes/wavevortextransform/ua0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.
+    + [`UAm`](/classes/wavevortextransform/uam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{u}$$.
+    + [`UAp`](/classes/wavevortextransform/uap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{u}$$.
+    + [`VA0`](/classes/wavevortextransform/va0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.
+    + [`VAm`](/classes/wavevortextransform/vam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{v}$$.
+    + [`VAp`](/classes/wavevortextransform/vap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
+    + [`WAm`](/classes/wavevortextransform/wam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
+    + [`WAp`](/classes/wavevortextransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 + Other
   + Other
     + [`A0_HKE_factor`](/classes/wavevortextransform/a0_hke_factor.html) 
@@ -108,9 +120,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Kh`](/classes/wavevortextransform/kh.html) 
     + [`N0`](/classes/wavevortextransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wavevortextransform/n2.html) buoyancy frequency of the mean density
-    + [`NA0`](/classes/wavevortextransform/na0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
-    + [`NAm`](/classes/wavevortextransform/nam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
-    + [`NAp`](/classes/wavevortextransform/nap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
     + [`Nj`](/classes/wavevortextransform/nj.html) 
     + [`Nk`](/classes/wavevortextransform/nk.html) 
     + [`Nl`](/classes/wavevortextransform/nl.html) 
@@ -120,14 +129,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Ny`](/classes/wavevortextransform/ny.html) 
     + [`Nz`](/classes/wavevortextransform/nz.html) 
     + [`Omega`](/classes/wavevortextransform/omega.html) 
-    + [`UA0`](/classes/wavevortextransform/ua0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{u}$$.
-    + [`UAm`](/classes/wavevortextransform/uam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{u}$$.
-    + [`UAp`](/classes/wavevortextransform/uap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{u}$$.
-    + [`VA0`](/classes/wavevortextransform/va0.html) matrix coefficient that multiplies $$A_0$$ to compute $$\tilde{v}$$.
-    + [`VAm`](/classes/wavevortextransform/vam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{v}$$.
-    + [`VAp`](/classes/wavevortextransform/vap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{v}$$.
-    + [`WAm`](/classes/wavevortextransform/wam.html) matrix coefficient that multiplies $$A_m$$ to compute $$\tilde{w}$$.
-    + [`WAp`](/classes/wavevortextransform/wap.html) matrix coefficient that multiplies $$A_p$$ to compute $$\tilde{w}$$.
     + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
     + [`X`](/classes/wavevortextransform/x.html) 
     + [`Y`](/classes/wavevortextransform/y.html) 

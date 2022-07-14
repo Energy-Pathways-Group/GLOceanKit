@@ -9,7 +9,7 @@ mathjax: true
 
 #  AmN
 
-matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
+matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
 
 
 ---

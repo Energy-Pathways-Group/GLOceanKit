@@ -9,13 +9,13 @@ mathjax: true
 
 #  ApV
 
-matrix coefficient that multiplies $$\tilde{v}$$ to compute $$A_p$$.
+matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and no units.
+Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
 
 ## Discussion
 

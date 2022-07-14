@@ -9,13 +9,13 @@ mathjax: true
 
 #  A0U
 
-matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_0$$.
+matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s$$.
+Complex valued transform property with dimensions $$(k,l,j)$$ and units of $$s$$.
 
 ## Discussion
 

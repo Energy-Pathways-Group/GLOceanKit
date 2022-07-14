@@ -9,13 +9,13 @@ mathjax: true
 
 #  AmU
 
-matrix coefficient that multiplies $$\tilde{u}$$ to compute $$A_m$$.
+matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.
 
 
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and no units.
+Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
 
 ## Discussion
 

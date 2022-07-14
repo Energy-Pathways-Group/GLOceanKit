@@ -1,23 +1,4 @@
----
-layout: default
-title: VAp
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 52
-mathjax: true
----
-
-#  VAp
-
-matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
-
-
----
-
-## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
-
-## Discussion
+- Topic: Wave-vortex sorting matrix — components of $$S$$
 
 These are the row 2, column 1 components of the [wave-vortex (S)orting matrix](/transformations/transformations.html), referred to as the $$S$$ matrix in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995). The primary internal gravity wave and geostrophic solutions that exist for $$k^2+l^2>0, j>0$$ are summarized in equation C4.
 
@@ -46,4 +27,3 @@ The inertial solutions occupy the $$k^2+l^2=0$$ portion of the matrix,
 ```matlab
 VAp(1,1,:) = sqrt(-1);
 ```
-

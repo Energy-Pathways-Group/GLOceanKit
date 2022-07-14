@@ -9,7 +9,7 @@ mathjax: true
 
 #  A0N
 
-matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
+matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
 
 
 ---

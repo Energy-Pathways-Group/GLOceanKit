@@ -1,23 +1,4 @@
----
-layout: default
-title: UA0
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 47
-mathjax: true
----
-
-#  UA0
-
-matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.
-
-
----
-
-## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and units of $$s^{-1}$$.
-
-## Discussion
+- Topic: Wave-vortex sorting matrix — components of $$S$$
 
 These are the row 1, column 3 components of the [wave-vortex (S)orting matrix](/transformations/transformations.html), referred to as the $$S$$ matrix in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995). The primary internal gravity wave and geostrophic solutions that exist for $$k^2+l^2>0, j>0$$ are summarized in equation C4.
 
@@ -44,4 +25,3 @@ The inertial solutions occupy the $$k^2+l^2=0$$ portion of the matrix,
 ```matlab
 UA0(1,1,:) = 0;
 ```
-

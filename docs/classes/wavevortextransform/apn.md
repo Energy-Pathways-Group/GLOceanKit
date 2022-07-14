@@ -9,7 +9,7 @@ mathjax: true
 
 #  ApN
 
-matrix coefficient that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
+matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
 
 
 ---
