@@ -9,8 +9,17 @@ mathjax: true
 
 #  defaultTransformDimensions
 
-
+return array of TransformDimensions initialized by default
 
 
 ---
 
+## Declaration
+```matlab
+ dimensions = defaultTransformDimensions()
+```
+## Discussion
+
+  This function lets us efficiently annotate all the coordinate dimensions.
+ 
+      - Returns dimensions: array of TransformDimension instances

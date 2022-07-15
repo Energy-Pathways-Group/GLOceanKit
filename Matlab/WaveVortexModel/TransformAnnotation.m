@@ -6,12 +6,23 @@ classdef TransformAnnotation < handle
     end
 
     methods
-        function self = TransformAnnotation(name,description)
+        function self = TransformAnnotation(name,description,options)
+            arguments
+                name char {mustBeNonempty}
+                description char {mustBeNonempty}
+                options.detailedDescription char = ''
+            end
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
             self.name = name;
             self.description = description;
             self.loadDetailedDescriptionIfAvailable;
+            if ~isempty(options.detailedDescription)
+                if ~isempty(self.detailedDescription)
+                    warning('Founded a detailedDescription md file for %s, but one was also set in code!',self.name);
+                end
+                self.detailedDescription = options.detailedDescription;
+            end
         end
 
         function loadDetailedDescriptionIfAvailable(self)

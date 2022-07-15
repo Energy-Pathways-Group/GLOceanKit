@@ -13,16 +13,27 @@ transformProperties(end+1) = TransformProperty('Lx',{},'m', 'domain size in the 
 transformProperties(end+1) = TransformProperty('Ly',{},'m', 'domain size in the y-direction');
 transformProperties(end+1) = TransformProperty('Lz',{},'m', 'domain size in the z-direction');
 transformProperties(end+1) = TransformProperty('t0',{},'s', 'reference time of Ap, Am, A0');
-transformProperties(end+1) = TransformProperty('latitude',{},'degrees_north', 'latitude of the simulation');
-transformProperties(end+1) = TransformProperty('f0',{},'radians/s', 'Coriolis parameter');
+transformProperties(end+1) = TransformProperty('latitude',{},'degrees_north', 'latitude of the simulation', detailedDescription='- topic: Domain Attributes');
+transformProperties(end+1) = TransformProperty('f0',{},'rad/s', 'Coriolis parameter');
 transformProperties(end+1) = TransformProperty('inertialPeriod',{},'s', 'inertial period');
-transformProperties(end+1) = TransformProperty('rho0',{},'kg/m3', 'mean density at the surface (z=0)');
-transformProperties(end+1) = TransformProperty('N0',{},'radians/s', 'interior buoyancy frequency at the surface (z=0)');
-transformProperties(end+1) = TransformProperty('Nmax',{},'radians/s', 'maximum buoyancy frequency');
-transformProperties(end+1) = TransformProperty('rhobar',{'z'},'kg/m3', 'mean density');
-transformProperties(end+1) = TransformProperty('N2',{'z'},'radians2/s2', 'buoyancy frequency of the mean density');
-transformProperties(end+1) = TransformProperty('dLnN2',{'z'},'unitless', 'd/dz ln N2');
-transformProperties(end+1) = TransformProperty('h',{'j'},'m', 'equivalent depth of each mode');
+transformProperties(end+1) = TransformProperty('rho0',{},'kg m^{-3}', 'mean density at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('N0',{},'rad/s', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('Nmax',{},'rad/s', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('rhobar',{'z'},'kg m^{-3}', 'mean density', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification');
+
+transformProperties(end+1) = TransformProperty('Kh',{'k','l','j'},'rad/m', 'horizontal wavenumber, $$Kh=sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Nx',{},'', 'points in the x-coordinate, `length(x)`', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Ny',{},'', 'points in the y-coordinate, `length(y)`', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Nk',{},'', 'points in the k-coordinate, `length(k)`', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Nl',{},'', 'points in the l-coordinate, `length(l)`', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Nj',{},'', 'points in the j-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid');
 
 transformProperties(end+1) = TransformProperty('ApU',{'k','l','j'},'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.',isComplex=1);
 transformProperties(end+1) = TransformProperty('ApV',{'k','l','j'},'', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.',isComplex=1);

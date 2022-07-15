@@ -1,23 +1,4 @@
----
-layout: default
-title: Ap
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 14
-mathjax: true
----
-
-#  Ap
-
-positive wave coefficients at reference time t0
-
-
----
-
-## Description
-Complex valued state variable with dimensions $$(k,l,j)$$ and units of $$m/s$$.
-
-## Discussion
+- Topic: Wave-vortex coefficients
 
 These are the coefficients of the internal gravity wave and inertial oscillation portion of the flow, denoted  $$A_+$$ in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995). The internal gravity solutions are showin in equation (3.18) and the inertial oscillations solutions are equation (3.15).
 
@@ -31,4 +12,3 @@ These solutions have their phases wound to time $$t_0$$ (`t0`), and thus do not 
 | **3** |IO| IGW | IGW | IGW |
 
 These are the positive ($$+$$) frequency solutions of equation (3.18), the negative solutions are in the `Am` matrix.
-

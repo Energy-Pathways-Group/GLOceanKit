@@ -9,8 +9,11 @@ mathjax: true
 
 #  Nj
 
-
+points in the j-coordinate, `length(z)`
 
 
 ---
+
+## Description
+Real valued transform property with no dimensions and no units.
 

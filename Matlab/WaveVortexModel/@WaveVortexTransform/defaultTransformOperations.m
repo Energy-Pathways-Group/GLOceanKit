@@ -74,13 +74,13 @@ transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 transformOperations(end+1) = TransformOperation('geostrophicEnergy', transformVar,@(wvt) wvt.geostrophicEnergy);
 
-outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time (t-t0)');
+outputVar(1) = StateVariable('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time t');
 outputVar(1).isComplex = 1;
 
-outputVar(2) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time (t-t0)');
+outputVar(2) = StateVariable('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time t');
 outputVar(2).isComplex = 1;
 
-outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time (t-t0)');
+outputVar(3) = StateVariable('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time t');
 outputVar(3).isComplex = 1;
 
 f = @(wvt) wvt.waveVortexCoefficientsAtTimeT();

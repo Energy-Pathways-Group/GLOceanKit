@@ -9,8 +9,11 @@ mathjax: true
 
 #  Nl
 
-
+points in the l-coordinate, `length(l)`
 
 
 ---
+
+## Description
+Real valued transform property with no dimensions and no units.
 
