@@ -16,6 +16,7 @@ transformProperties(end+1) = TransformProperty('t0',{},'s', 'reference time of A
 transformProperties(end+1) = TransformProperty('latitude',{},'degrees_north', 'latitude of the simulation', detailedDescription='- topic: Domain Attributes');
 transformProperties(end+1) = TransformProperty('f0',{},'rad/s', 'Coriolis parameter');
 transformProperties(end+1) = TransformProperty('inertialPeriod',{},'s', 'inertial period');
+transformProperties(end+1) = TransformProperty('g',{},'m s^{-2}', 'gravity of Earth');
 transformProperties(end+1) = TransformProperty('rho0',{},'kg m^{-3}', 'mean density at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
 transformProperties(end+1) = TransformProperty('N0',{},'rad/s', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
 transformProperties(end+1) = TransformProperty('Nmax',{},'rad/s', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');

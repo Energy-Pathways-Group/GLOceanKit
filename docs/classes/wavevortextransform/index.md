@@ -114,6 +114,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`A0_PE_factor`](/classes/wavevortextransform/a0_pe_factor.html) multiplicative factor that multiplies $$A_0$$ to compute potential energy.
     + [`A0_TE_factor`](/classes/wavevortextransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0$$ to compute total energy.
     + [`Apm_TE_factor`](/classes/wavevortextransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm$$ to compute total energy.
+  + Other
+    + [`totalEnergy`](/classes/wavevortextransform/totalenergy.html) horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients
+    + [`totalEnergySpatiallyIntegrated`](/classes/wavevortextransform/totalenergyspatiallyintegrated.html) horizontally-averaged depth-integrated energy computed in the spatial domain
+    + [`totalHydrostaticEnergy`](/classes/wavevortextransform/totalhydrostaticenergy.html) horizontally-averaged depth-integrated energy *without w* computed in the spatial domain
 + Wave-vortex sorting matrix
   + inverse components ($$S^{-1}$$)
     + [`A0N`](/classes/wavevortextransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
@@ -162,7 +166,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
     + [`eta`](/classes/wavevortextransform/eta.html) isopycnal deviation
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) 
-    + [`g`](/classes/wavevortextransform/g.html) 
+    + [`g`](/classes/wavevortextransform/g.html) gravity of Earth
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
     + [`grid`](/classes/wavevortextransform/grid.html) 
     + [`iOmega`](/classes/wavevortextransform/iomega.html) 
@@ -180,9 +184,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`stateVariables`](/classes/wavevortextransform/statevariables.html) 
     + [`summarizeEnergyContent`](/classes/wavevortextransform/summarizeenergycontent.html) 
     + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
-    + [`totalEnergy`](/classes/wavevortextransform/totalenergy.html) energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
-    + [`totalEnergySpatiallyIntegrated`](/classes/wavevortextransform/totalenergyspatiallyintegrated.html) 
-    + [`totalHydrostaticEnergy`](/classes/wavevortextransform/totalhydrostaticenergy.html) 
     + [`transformDimensionWithName`](/classes/wavevortextransform/transformdimensionwithname.html) 
     + [`transformFromSpatialDomainWithF`](/classes/wavevortextransform/transformfromspatialdomainwithf.html) 
     + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) 

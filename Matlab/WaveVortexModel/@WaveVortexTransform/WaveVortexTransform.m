@@ -679,7 +679,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function energy = totalEnergy(self)
-            %             energy = self.inertialEnergy + self.waveEnergy + self.geostrophicEnergy;
             App = self.Ap; Amm = self.Am; A00 = self.A0;
             energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
         end

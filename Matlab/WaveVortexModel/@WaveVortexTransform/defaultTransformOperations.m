@@ -29,6 +29,21 @@ transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 transformOperations(end+1) = TransformOperation('Am', transformVar,@(wvt) wvt.Am);
 
+transformVar = StateVariable('totalEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('totalEnergy', transformVar,@(wvt) wvt.totalEnergy);
+
+transformVar = StateVariable('totalEnergySpatiallyIntegrated',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed in the spatial domain');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('totalEnergySpatiallyIntegrated', transformVar,@(wvt) wvt.totalEnergySpatiallyIntegrated);
+
+transformVar = StateVariable('totalHydrostaticEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy *without w* computed in the spatial domain');
+transformVar.isVariableWithLinearTimeStep = 0;
+transformVar.isVariableWithNonlinearTimeStep = 1;
+transformOperations(end+1) = TransformOperation('totalHydrostaticEnergy', transformVar,@(wvt) wvt.totalHydrostaticEnergy);
+
 transformVar = StateVariable('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
 transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
