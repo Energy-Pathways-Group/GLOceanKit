@@ -102,6 +102,17 @@ for iOp=1:length(ops)
     end
 end
 
+methods = WaveVortexTransform.defaultTransformMethods;
+for iMethod=1:length(methods)
+    metadata = ExtractMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
+    metadata.name = methods(iMethod).name;
+    metadata.shortDescription = methods(iMethod).description;
+    additionalMetadata = methodsMap(methods(iMethod).name);
+    metadata.className = additionalMetadata.className;
+    metadata.functionType = FunctionType.instanceMethod;
+    methodsMap(metadata.name) = metadata;
+end
+
 methodNames = keys(methodsMap);
 for i=1:length(methodNames)
     metadata = methodsMap(methodNames{i});

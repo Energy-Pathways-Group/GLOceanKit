@@ -1,27 +1,6 @@
----
-layout: default
-title: transformFromSpatialDomainWithG
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 154
-mathjax: true
----
-
-#  transformFromSpatialDomainWithG
-
-transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the G-modes
-
-
----
-
-## Declaration
-```matlab
- w_bar = transformFromSpatialDomainWithG(w)
-```
-## Parameters
-+ `w`  variable with dimensions $$(x,y,z)$$
-
-## Discussion
+- Topic: Operations — Transformations
+- Declaration: w_bar = transformFromSpatialDomainWithG(w)
+- Parameter w: variable with dimensions $$(x,y,z)$$
 
 This is the component of the [discrete transformation](/transformations/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the G-modes. Mathematically we write,
 
@@ -44,4 +23,3 @@ $$
 $$
 
 Assuming that $$N_x = N_y$$, the total computational cost of the horizontal and vertical transforms are approximately equal when $$10 log_2 N_x = N_z$$ , or $$13 log_2 N_x = N_z$$ for the hydrostatic case. This means that for a horizontal resolution of $$256^2$$ the horizontal transformations dominate the computation time until approximately $$80-100$$ vertical modes are used.
-

@@ -3,7 +3,7 @@ layout: default
 title: inertialEnergy
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 97
+nav_order: 98
 mathjax: true
 ---
 

@@ -1,32 +1,11 @@
----
-layout: default
-title: transformToSpatialDomainWithF
-parent: WaveVortexTransform
-grand_parent: Classes
-nav_order: 158
-mathjax: true
----
+- Topic: Operations — Transformations
+- Declaration: u_bar = transformFromSpatialDomainWithF(u)
+- Parameter u: variable with dimensions $$(x,y,z)$$
 
-#  transformToSpatialDomainWithF
-
-transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
-
-
----
-
-## Declaration
-```matlab
- u = transformToSpatialDomainWithF(u_bar)
-```
-## Parameters
-+ `u_bar`  variable with dimensions $$(k,l,j)$$
-
-## Discussion
-
-This is the component of the [inverse discrete transformation](/transformations/transformations.html) $$D^{-1}$$ that projects from the vertical modes $F$, followed by a transformation $$ (k,l) \mapsto (x,y)$$ with a discrete Fourier transform. Mathematically we write,
+This is the component of the [discrete transformation](/transformations/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the F-modes. Mathematically we write,
 
 $$
-f(x,y,z) =&  \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{F}^{-1} \left[ \tilde{f}^{klj} \right] \right] \right] 
+\tilde{f}_{klj} =  \mathcal{F} \cdot \mathcal{DFT}_y \cdot \mathcal{DFT}_x \left[ f(x,y,z) \right]
 $$
 
 The $$F$$ mode projection is applicable to dynamical variables $$u$$, $$v$$, $$p$$.
@@ -44,4 +23,3 @@ $$
 $$
 
 Assuming that $$N_x = N_y$$, the total computational cost of the horizontal and vertical transforms are approximately equal when $$10 log_2 N_x = N_z$$ , or $$13 log_2 N_x = N_z$$ for the hydrostatic case. This means that for a horizontal resolution of $$256^2$$ the horizontal transformations dominate the computation time until approximately $$80-100$$ vertical modes are used.
-

@@ -3,7 +3,7 @@ layout: default
 title: initWithSpectralFunction
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 104
+nav_order: 105
 mathjax: true
 ---
 

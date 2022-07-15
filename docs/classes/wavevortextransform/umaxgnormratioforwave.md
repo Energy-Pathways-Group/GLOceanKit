@@ -3,7 +3,7 @@ layout: default
 title: uMaxGNormRatioForWave
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 166
+nav_order: 167
 mathjax: true
 ---
 

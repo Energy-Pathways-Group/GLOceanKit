@@ -9,8 +9,11 @@ mathjax: true
 
 #  clearVariableCacheOfTimeDependentVariables
 
-
+clear the internal cache of variables that claim to be time dependent
 
 
 ---
 
+## Discussion
+
+  

@@ -3,12 +3,18 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     %
     %
     % The WaveVortexTransform subclasses encapsulate data representing the
-    % state of the ocean at a given instant in time (e.g., u, v, w, and
-    % rho). What makes the WaveVortexTransform subclasses special is that
-    % the state of the ocean is represented as energetically independent
-    % waves and geostrophic motions (vortices). These classes can be
-    % queried for other information, e.g., Ertel PV, relative vorticity,
-    % etc. Then we have $$\exp(i\omega t)$$
+    % state of the ocean at a given instant in time. What makes the
+    % WaveVortexTransform subclasses special is that the state of the ocean
+    % is represented as energetically independent waves and geostrophic
+    % motions (vortices). These classes can be queried for any ocean state
+    % variable including $$u$$, $$v$$, $$w$$, $$\rho$$, $$p$$, but also
+    % Ertel PV, relative vorticity, or custom defined state variables.
+    %
+    % The WaveVortexTransform is an abstract class and as such you must
+    % instatiate one of the concrete subclasses,
+    %
+    %   + `WaveVortexTransformConstantStratification`
+    %   + `WaveVortexTransformHydrostatic`
     %
     % - Topic: Initialization
     % - Topic: Domain attributes
@@ -73,6 +79,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         NAp, NAm, NA0
 
         stateVariableWithName
+        
         transformDimensionWithName
         transformPropertyWithName
         transformOperationWithName
@@ -115,16 +122,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
     
     methods (Abstract)
-       u_bar = transformFromSpatialDomainWithF(self, u)
-       w_bar = transformFromSpatialDomainWithG(self, w)
-       u = transformToSpatialDomainWithF(self, u_bar)
-       w = transformToSpatialDomainWithG(self, w_bar )
-       [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
-       [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
-       [Fp,Fm,F0] = nonlinearFlux(self);
-       
-       % Needed to add and remove internal waves from the model
-       ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
+        u_bar = transformFromSpatialDomainWithF(self, u)
+        w_bar = transformFromSpatialDomainWithG(self, w)
+        u = transformToSpatialDomainWithF(self, u_bar)
+        w = transformToSpatialDomainWithG(self, w_bar )
+        [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
+        [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+        [Fp,Fm,F0] = nonlinearFlux(self);
+
+        % Needed to add and remove internal waves from the model
+        ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
     end
     
     properties (Constant)
@@ -212,6 +219,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addTransformDimension(self,transformDimension)
+            % add a TransformDimension
+            %
+            % - Topic: TransformDimensions
             arguments
                 self WaveVortexTransform {mustBeNonempty}
                 transformDimension (1,:) TransformDimension {mustBeNonempty}
@@ -261,6 +271,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function [varargout] = stateVariables(self, varargin)
+            % retrieve variables either from cache or by computation
+            %
+            % - Topic: Internal
             varargout = cell(size(varargin));
 
             didFetchAll = 0;
@@ -279,6 +292,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function varargout = performTransformOperation(self,opName,varargin)
+            % computes (runs) the operation
+            %
+            % - Topic: Internal
             modelOp = self.transformOperationWithName(opName);
             varNames = cell(1,modelOp.nVarOut);
             varargout = cell(1,modelOp.nVarOut);
@@ -317,15 +333,27 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addToVariableCache(self,name,var)
+            % add variable to internal cache, in case it is needed again
+            %
+            % - Topic: Internal
             self.variableCache(name) = var;
         end
         function clearVariableCache(self)
+            % clear the internal cache
+            %
+            % - Topic: Internal
             self.variableCache = containers.Map();
         end
         function clearVariableCacheOfTimeDependentVariables(self)
+            % clear the internal cache of variables that claim to be time dependent
+            %
+            % - Topic: Internal
             remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentStateVariables));
         end
         function varargout = fetchFromVariableCache(self,varargin)
+            % retrieve a set of variables from the internal cache
+            %
+            % - Topic: Internal
             varargout = cell(size(varargin));
             for iVar=1:length(varargin)
                 if isKey(self.variableCache,varargin{iVar})
@@ -917,6 +945,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         dimensions = defaultTransformDimensions()
         transformProperties = defaultTransformProperties()
         transformOperations = defaultTransformOperations()
+        transformMethods = defaultTransformMethods()
 
         % Initialize the a transform from file
         wvt = transformFromFile(path,iTime)

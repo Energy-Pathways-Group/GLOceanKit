@@ -3,7 +3,7 @@ layout: default
 title: energyFlux
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 80
+nav_order: 81
 mathjax: true
 ---
 

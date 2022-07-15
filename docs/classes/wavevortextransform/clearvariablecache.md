@@ -9,8 +9,11 @@ mathjax: true
 
 #  clearVariableCache
 
-
+clear the internal cache
 
 
 ---
 
+## Discussion
+
+  

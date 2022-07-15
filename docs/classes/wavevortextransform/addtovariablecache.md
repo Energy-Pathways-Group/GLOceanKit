@@ -9,8 +9,11 @@ mathjax: true
 
 #  addToVariableCache
 
-
+add variable to internal cache, in case it is needed again
 
 
 ---
 
+## Discussion
+
+  
