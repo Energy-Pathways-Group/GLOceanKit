@@ -23,7 +23,7 @@ nu = 2*pi/Lx;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % nth-derivative, cosine, 1st-dimension
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[X,Y,Z] = wvt.grid;
+[X,Y,Z] = wvt.xyzGrid;
 f = @(omega) cos(omega*X) .* cos(nu*Y);
 
 % range of frequencies to test
@@ -48,7 +48,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % nth-derivative, cosine, 2nd-dimension
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[X,Y,Z] = wvt.grid;
+[X,Y,Z] = wvt.xyzGrid;
 f = @(omega) cos(nu*X) .* cos(omega*Y);
 
 % range of frequencies to test
@@ -73,7 +73,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % nth cosine derivative, 3rd-dimension
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[X,Y,Z] = wvt.grid;
+[X,Y,Z] = wvt.xyzGrid;
 f = @(omega) cos(nu*X).*cos(omega*Z);
 
 % range of frequencies to test
@@ -99,7 +99,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % nth sine derivative, 3rd-dimension
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[X,Y,Z] = wvt.grid;
+[X,Y,Z] = wvt.xyzGrid;
 f = @(omega) cos(nu*X).*sin(omega*Z);
 
 % range of frequencies to test

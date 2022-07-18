@@ -93,12 +93,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         f0, inertialPeriod
 
-        X
-        Y
-        Z
+        X, Y, Z
+        K, L, J
 
-        Nk
-        Nl
+        Nk, Nl
         Nz
     end
 
@@ -391,18 +389,32 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
         
-        function [X,Y,Z] = grid(self)
+        function [X,Y,Z] = xyzGrid(self)
             X = self.X; Y = self.Y; Z = self.Z;
         end
 
+        function [K,L,J] = kljGrid(self)
+            [K,L,J] = ndgrid(self.k,self.l,self.j);
+        end
+
+        function value = get.K(self)
+            [value,~,~] = ndgrid(self.k,self.l,self.j);
+        end
+
+        function value = get.L(self)
+            [~,value,~] = ndgrid(self.k,self.l,self.j);
+        end
+
+        function value = get.J(self)
+            [~,~,value] = ndgrid(self.k,self.l,self.j);
+        end
+
         function Kh = Kh(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            Kh = sqrt(K.*K + L.*L);
+            Kh = sqrt(self.K .* self.K + self.L .* self.L);
         end 
         
         function Omega = Omega(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            Omega = sqrt(self.g*self.h.*(K.*K + L.*L) + self.f0*self.f0);
+            Omega = sqrt(self.g*self.h.*(self.K .* self.K + self.L .* self.L) + self.f0*self.f0);
         end
 
         function value = get.inertialPeriod(self)
@@ -471,7 +483,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function self = buildTransformationMatrices(self)
-            % Build wavenumbers
+            % Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
+            %
+            % - Topic: Internal
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             alpha = atan2(L,K);
             K2 = K.*K + L.*L;
@@ -787,6 +801,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function summarizeEnergyContent(self)
+            % displays a summary of the energy content of the fluid
+            %
+            % - Topic: Energetics
             total = self.totalEnergy;
             ioPct = 100*self.inertialEnergy/total;
             wavePct = 100*self.waveEnergy/total;
@@ -795,11 +812,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
             
             fprintf('%.1g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
-        end
-  
-        function u_max = u_max(self)
-            [u,v] = self.velocityField;
-            u_max = max(max(max(sqrt(u.^2 + v.^2))));
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

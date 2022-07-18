@@ -101,6 +101,10 @@ outputVar(3).isComplex = 1;
 f = @(wvt) wvt.waveVortexCoefficientsAtTimeT();
 transformOperations(end+1) = TransformOperation('ApAmA0',outputVar,f);
 
+outputVar = StateVariable('uMax',{},'m s^{-1}', 'max horizontal fluid speed');
+f = @(wvt) max(max(max( sqrt( (wvt.u).^2 + (wvt.v).^2 ) )));
+transformOperations(end+1) = TransformOperation('uMax',outputVar,f);
+
 outputVar = StateVariable('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
 f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
 transformOperations(end+1) = TransformOperation('u',outputVar,f);

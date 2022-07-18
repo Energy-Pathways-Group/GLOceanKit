@@ -15,5 +15,6 @@ transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithF', '
 transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithG', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes');
 transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithFAllDerivatives', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.');
 transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithGAllDerivatives', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.');
-
+transformMethods(end+1) = TransformAnnotation('diffZF', 'differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)');
+transformMethods(end+1) = TransformAnnotation('diffZG', 'differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)');
 end

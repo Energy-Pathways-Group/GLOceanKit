@@ -25,7 +25,7 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     xrange = ((min(x_index)-S):(max(x_index)+S))+1;
     yrange = ((min(y_index)-S):(max(y_index)+S))+1;
     
-    [X,Y] = self.grid;
+    [X,Y] = self.xyzGrid;
     varargout = cell(1,nargout);
     for i = 1:nargout
         U = varargin{i}; % gridded field
