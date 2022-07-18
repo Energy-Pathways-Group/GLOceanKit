@@ -221,7 +221,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function addTransformDimension(self,transformDimension)
             % add a TransformDimension
             %
-            % - Topic: TransformDimensions
+            % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
                 transformDimension (1,:) TransformDimension {mustBeNonempty}
@@ -232,6 +232,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addTransformProperty(self,transformProperty)
+            % add a addTransformProperty
+            %
+            % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
                 transformProperty (1,:) TransformProperty {mustBeNonempty}
@@ -242,6 +245,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addTransformOperation(self,transformOperation)
+            % add a addTransformProperty
+            %
+            % - Topic: Operations — Create new operations and variables
             arguments
                 self WaveVortexTransform {mustBeNonempty}
                 transformOperation (1,:) TransformOperation {mustBeNonempty}

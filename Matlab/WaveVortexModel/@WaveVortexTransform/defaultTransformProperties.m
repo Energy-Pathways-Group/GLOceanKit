@@ -24,8 +24,9 @@ transformProperties(end+1) = TransformProperty('rhobar',{'z'},'kg m^{-3}', 'mean
 transformProperties(end+1) = TransformProperty('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
 transformProperties(end+1) = TransformProperty('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');
 transformProperties(end+1) = TransformProperty('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification');
+transformProperties(end+1) = TransformProperty('Omega',{'k','l','j'},'rad s^{-1}', 'frequency of oscillation of the linear waves', detailedDescription='- topic: Domain Attributes');
 
-transformProperties(end+1) = TransformProperty('Kh',{'k','l','j'},'rad/m', 'horizontal wavenumber, $$Kh=sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('Kh',{'k','l','j'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');

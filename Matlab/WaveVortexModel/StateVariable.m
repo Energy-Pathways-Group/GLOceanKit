@@ -37,6 +37,9 @@ classdef StateVariable < TransformAnnotation
             self.dimensions = dimensions;
             self.units = units;
             self.isComplex = options.isComplex;
+            if isempty(self.detailedDescription)
+                self.detailedDescription = "- Topic: State Variables";
+            end
         end
 
     end

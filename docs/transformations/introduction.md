@@ -9,7 +9,7 @@ mathjax: true
 
 The wave-vortex model is a spectral model that uses the basis of wave and vortex solutions of the rotating Boussinesq equations in arbitrary stratification to rewrite the physical variables of a fluid.
 
-The fundamental \emph{computation} performed is a linear transformation $$\mathcal{L}$$ (with inverse $$\mathcal{L}^{-1}$$) that takes physical variables $$(u,v,w,\eta,p)$$ that are functions of $$(x,y,z,t)$$ and projects them onto wave-vortex coefficients $$(A_+,A_-,A_0)$$ indexed with $$jkl$$. Specifically,
+The fundamental *computation* performed is a linear transformation $$\mathcal{L}$$ (with inverse $$\mathcal{L}^{-1}$$) that takes physical variables $$(u,v,w,\eta,p)$$ that are functions of $$(x,y,z,t)$$ and projects them onto wave-vortex coefficients $$(A_+,A_-,A_0)$$ indexed with $$jkl$$. Specifically,
 
 $$
 \label{linear-transformations-abstract}
@@ -58,7 +58,7 @@ $$
    \frac{1}{2 L_x L_y}  \int_{-D}^0 \int_0^{L_y} \int_0^{L_x} (u^2+v^2 + w^2 + N^2 \eta^2)\, dx \, dy \, dz = \sum_{jkl} \alpha_{jkl}A_+^2 + \alpha_{jkl} A_-^2 + \beta_{jkl} A_0^2
 $$
 
-where the coefficients $$\alpha_{jkl}$$ and $$\beta_{jkl}$$ are simply precomputed constant coefficients. In code, $$\alpha_{jkl}$$ is denoted the `total energy factor' and is accessed with `wvt.Apm\_TE\_factor` and similarly $$\beta_{jkl}$$ with `wvt.A0\_TE\_factor`. To check this version of Plancherel's theorem in code, you can compute the depth integrated energy with,
+where the coefficients $$\alpha_{jkl}$$ and $$\beta_{jkl}$$ are simply precomputed constant coefficients. In code, $$\alpha_{jkl}$$ is denoted the `total energy factor` and is accessed with `wvt.Apm\_TE\_factor` and similarly $$\beta_{jkl}$$ with `wvt.A0\_TE\_factor`. To check this version of Plancherel's theorem in code, you can compute the depth integrated energy with,
 
 ```matlab
 [u,v,w,eta] = wvt.variables('u','v','w','eta');
