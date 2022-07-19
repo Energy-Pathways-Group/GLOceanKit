@@ -12,7 +12,7 @@ function model = modelFromFile(path,options)
         options.shouldDoubleResolution double {mustBeMember(options.shouldDoubleResolution,[0 1])} = 0 
     end
 
-    wvt = WaveVortexTransform.transformFromFile(path,iTime=options.restartIndex);
+    wvt = WaveVortexTransform.waveVortexTransformFromFile(path,iTime=options.restartIndex);
 
     ncfile = NetCDFFile(path);
     if isKey(ncfile.attributes,'NonlinearFluxOperation')
@@ -20,7 +20,7 @@ function model = modelFromFile(path,options)
         nlFlux = feval(strcat(nlFluxClassName,'.nonlinearFluxFromFile'),ncfile,wvt);
     end
     if options.shouldDoubleResolution == 1
-        wvt = wvt.transformWithDoubleResolution();
+        wvt = wvt.waveVortexTransformWithDoubleResolution();
         if exist('nlFlux','var')
             nlFlux = nlFlux.nonlinearFluxWithDoubleResolution(wvt);
         end

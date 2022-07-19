@@ -80,7 +80,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
 
         end
                 
-        function wvtX2 = transformWithResolution(self,m)
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
             wvtX2 = WaveVortexTransformConstantStratification([self.Lx self.Ly self.Lz],m, self.N0,latitude=self.latitude,rho0=self.rho0);
             wvtX2.t0 = self.t0;
             if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj

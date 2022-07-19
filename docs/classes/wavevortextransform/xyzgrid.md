@@ -9,7 +9,7 @@ mathjax: true
 
 #  xyzGrid
 
-
+returns the X, Y, Z coordinate matrices
 
 
 ---

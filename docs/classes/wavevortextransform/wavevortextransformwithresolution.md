@@ -1,13 +1,13 @@
 ---
 layout: default
-title: transformOperationWithName
+title: waveVortexTransformWithResolution
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 157
+nav_order: 182
 mathjax: true
 ---
 
-#  transformOperationWithName
+#  waveVortexTransformWithResolution
 
 
 

@@ -43,11 +43,11 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             self.addTransformOperation(TransformOperation('zeta_z',outputVar,f));
         end
 
-        function wvtX2 = transformWithDoubleResolution(self)
-            wvtX2 = self.transformWithResolution(2*[self.Nx self.Ny]);
+        function wvtX2 = waveVortexTransformWithDoubleResolution(self)
+            wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny]);
         end
 
-        function wvtX2 = transformWithResolution(self,m)
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
             wvtX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;

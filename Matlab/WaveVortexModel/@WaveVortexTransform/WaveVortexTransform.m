@@ -368,11 +368,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function wvtX2 = transformWithDoubleResolution(self)
-            wvtX2 = self.transformWithResolution(2*[self.Nx self.Ny self.Nz]);
+        function wvtX2 = waveVortexTransformWithDoubleResolution(self)
+            wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny self.Nz]);
         end
 
-        function wvmX2 = transformWithResolution(self,m)
+        function wvmX2 = waveVortexTransformWithResolution(self,m)
             wvmX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
             wvmX2.t0 = self.t0;
             wvmX2.t = self.t;
@@ -966,7 +966,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         transformMethods = defaultTransformMethods()
 
         % Initialize the a transform from file
-        wvt = transformFromFile(path,iTime)
+        wvt = waveVortexTransformFromFile(path,iTime)
 
         % Check if the matrix is Hermitian. Report errors.
         A = checkHermitian(A)        

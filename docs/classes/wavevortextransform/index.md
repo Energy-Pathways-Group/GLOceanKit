@@ -34,10 +34,13 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 ## Topics
 + Initialization
   + Other
-    + [`transformFromFile`](/classes/wavevortextransform/transformfromfile.html) Initialize a WaveVortexTransform instance from an existing file
+    + [`waveVortexTransformFromFile`](/classes/wavevortextransform/wavevortextransformfromfile.html) Initialize a WaveVortexTransform instance from an existing file
 + Domain attributes
   + Grid
+    + [`J`](/classes/wavevortextransform/j.html) j-coordinate matrix
+    + [`K`](/classes/wavevortextransform/k.html) k-coordinate matrix
     + [`Kh`](/classes/wavevortextransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
+    + [`L`](/classes/wavevortextransform/l.html) l-coordinate matrix
     + [`Lx`](/classes/wavevortextransform/lx.html) domain size in the x-direction
     + [`Ly`](/classes/wavevortextransform/ly.html) domain size in the y-direction
     + [`Lz`](/classes/wavevortextransform/lz.html) domain size in the z-direction
@@ -52,8 +55,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Z`](/classes/wavevortextransform/z.html) z-coordinate matrix
     + [`j`](/classes/wavevortextransform/j.html) vertical mode number
     + [`k`](/classes/wavevortextransform/k.html) wavenumber-coordinate dimension in the x-direction
+    + [`kljGrid`](/classes/wavevortextransform/kljgrid.html) returns the K, L, J coordinate matrices
     + [`l`](/classes/wavevortextransform/l.html) wavenumber-coordinate dimension in the y-direction
     + [`x`](/classes/wavevortextransform/x.html) x-coordinate dimension
+    + [`xyzGrid`](/classes/wavevortextransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
     + [`y`](/classes/wavevortextransform/y.html) y-coordinate dimension
     + [`z`](/classes/wavevortextransform/z.html) z-coordinate dimension
   + Other
@@ -158,16 +163,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`EnergyFluxForFlowConstituentsAtTimeInitial`](/classes/wavevortextransform/energyfluxforflowconstituentsattimeinitial.html) 
     + [`ExponentialFilter`](/classes/wavevortextransform/exponentialfilter.html) 
     + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
-    + [`J`](/classes/wavevortextransform/j.html) 
-    + [`K`](/classes/wavevortextransform/k.html) 
-    + [`L`](/classes/wavevortextransform/l.html) 
     + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
     + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
     + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
     + [`iOmega`](/classes/wavevortextransform/iomega.html) 
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
-    + [`kljGrid`](/classes/wavevortextransform/kljgrid.html) 
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
     + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
     + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
@@ -182,15 +183,14 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) 
     + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) This is the 'S^{-1}' operator (C5) in the manuscript
     + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) 
-    + [`transformWithDoubleResolution`](/classes/wavevortextransform/transformwithdoubleresolution.html) 
-    + [`transformWithResolution`](/classes/wavevortextransform/transformwithresolution.html) 
     + [`uMaxGNormRatioForWave`](/classes/wavevortextransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
     + [`variables`](/classes/wavevortextransform/variables.html) Primary method for accessing the dynamical variables on the
     + [`variablesAtPosition`](/classes/wavevortextransform/variablesatposition.html) Primary method for accessing the dynamical variables on the
     + [`velocityField`](/classes/wavevortextransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
     + [`version`](/classes/wavevortextransform/version.html) 
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
-    + [`xyzGrid`](/classes/wavevortextransform/xyzgrid.html) 
+    + [`waveVortexTransformWithDoubleResolution`](/classes/wavevortextransform/wavevortextransformwithdoubleresolution.html) 
+    + [`waveVortexTransformWithResolution`](/classes/wavevortextransform/wavevortextransformwithresolution.html) 
 + State Variables
   + Other
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am

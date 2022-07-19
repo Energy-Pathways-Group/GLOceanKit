@@ -30,6 +30,9 @@ transformProperties(end+1) = TransformProperty('Kh',{'k','l','j'},'rad/m', 'hori
 transformProperties(end+1) = TransformProperty('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('K',{'k','l','j'},'m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('L',{'k','l','j'},'m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
+transformProperties(end+1) = TransformProperty('J',{'k','l','j'},'m', 'j-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Nx',{},'', 'points in the x-coordinate, `length(x)`', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Ny',{},'', 'points in the y-coordinate, `length(y)`', detailedDescription='- topic: Domain Attributes — Grid');
 transformProperties(end+1) = TransformProperty('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid');

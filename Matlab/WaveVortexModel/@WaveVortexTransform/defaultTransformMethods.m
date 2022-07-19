@@ -17,4 +17,6 @@ transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithFAllD
 transformMethods(end+1) = TransformAnnotation('transformToSpatialDomainWithGAllDerivatives', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.');
 transformMethods(end+1) = TransformAnnotation('diffZF', 'differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)');
 transformMethods(end+1) = TransformAnnotation('diffZG', 'differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)');
+transformMethods(end+1) = TransformAnnotation('xyzGrid', 'returns the X, Y, Z coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid');
+transformMethods(end+1) = TransformAnnotation('kljGrid', 'returns the K, L, J coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid');
 end

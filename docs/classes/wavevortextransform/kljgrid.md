@@ -9,7 +9,7 @@ mathjax: true
 
 #  kljGrid
 
-
+returns the K, L, J coordinate matrices
 
 
 ---

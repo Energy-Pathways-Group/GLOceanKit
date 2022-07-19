@@ -1,8 +1,8 @@
-function wvt = transformFromFile(path,options)
+function wvt = waveVortexTransformFromFile(path,options)
 % Initialize a WaveVortexTransform instance from an existing file
 %
 % - Topic: Initialization
-% - Declaration: wvt = transformFromFile(path,options)
+% - Declaration: wvt = waveVortexTransformFromFile(path,options)
 % - Parameter path: path to a NetCDF file
 % - Parameter iTime: (optional) time index to initialize from (default 1)
 arguments
