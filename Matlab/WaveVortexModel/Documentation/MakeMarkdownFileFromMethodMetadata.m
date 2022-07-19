@@ -61,6 +61,14 @@ if isfield(metadata,'parameters') && ~isempty(metadata.parameters)
     fprintf(fileID,'\n');
 end
 
+if isfield(metadata,'returns') && ~isempty(metadata.returns)
+    fprintf(fileID,'## Returns\n');
+    for iReturn=1:length(metadata.returns)
+        fprintf(fileID,'+ `%s` %s\n',metadata.returns(iReturn).name,metadata.returns(iReturn).description);
+    end
+    fprintf(fileID,'\n');
+end
+
 if isfield(metadata,'detailedDescription') && ~isempty(metadata.detailedDescription)
     fprintf(fileID,'## Discussion\n%s\n',metadata.detailedDescription);
 end

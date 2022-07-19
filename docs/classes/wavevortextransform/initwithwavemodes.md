@@ -3,7 +3,7 @@ layout: default
 title: initWithWaveModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 106
+nav_order: 108
 mathjax: true
 ---
 
@@ -26,9 +26,12 @@ initialize with the given wave modes
 + `Amp`  fluid velocity u (m/s)
 + `sign`  sign of the frequency, +1 or -1
 
+## Returns
++ `omega`  frequencies of the waves (radians/s)
++ `k`  wavenumber k of the waves (radians/m)
++ `l`  wavenumber l of the waves (radians/m)
+
 ## Discussion
 
   Clears variables Ap,Am,A0 and then sets the given wave modes.
-                  - Returns omega: frequencies of the waves (radians/s)
-  - Returns k: wavenumber k of the waves (radians/m)
-  - Returns l: wavenumber l of the waves (radians/m)
+                      

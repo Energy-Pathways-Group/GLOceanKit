@@ -3,7 +3,7 @@ layout: default
 title: fillOutWaveSpectrum
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 88
+nav_order: 91
 mathjax: true
 ---
 

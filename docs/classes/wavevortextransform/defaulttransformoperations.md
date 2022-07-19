@@ -3,7 +3,7 @@ layout: default
 title: defaultTransformOperations
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 75
+nav_order: 78
 mathjax: true
 ---
 
@@ -18,9 +18,12 @@ return array of TransformOperation instances initialized by default
 ```matlab
  transformOperations = defaultTransformOperations()
 ```
+## Returns
++ `transformOperations`  array of TransformOperation instances
+
 ## Discussion
 
   This function creates a number of standard StateVariables with associated
   TransformOperations.
  
-      - Returns transformOperations: array of TransformOperation instances
+      

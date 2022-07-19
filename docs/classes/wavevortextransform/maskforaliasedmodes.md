@@ -3,7 +3,7 @@ layout: default
 title: maskForAliasedModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 117
+nav_order: 120
 mathjax: true
 ---
 
@@ -21,6 +21,9 @@ returns a mask with locations of modes that will alias with a quadratic multipli
 ## Parameters
 + `jFraction`  (optional) fraction of vertical mode to assume are not aliased (default 2/3)
 
+## Returns
++ `AntiAliasFilter`  mask aliased mode
+
 ## Discussion
 
   Returns a 'mask' (matrices with 1s or 0s) indicating where aliased wave
@@ -33,4 +36,4 @@ returns a mask with locations of modes that will alias with a quadratic multipli
   will return a mask that contains 1 at the locations of modes that will
   alias with a quadratic multiplication.
  
-        - Returns AntiAliasFilter: mask aliased mode
+        

@@ -3,14 +3,17 @@ layout: default
 title: buildTransformationMatrices
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 68
+nav_order: 71
 mathjax: true
 ---
 
 #  buildTransformationMatrices
 
-Build wavenumbers
+Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
 
 
 ---
 
+## Discussion
+
+  

@@ -3,7 +3,7 @@ layout: default
 title: nyquistWavenumbers
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 121
+nav_order: 124
 mathjax: true
 ---
 
@@ -18,6 +18,9 @@ Returns a matrix with 1s at the Nyquist frequencies.
 ```matlab
  A = nyquistWavenumbers( A )
 ```
+## Returns
++ `A`  matrix the same size as the input matrix
+
 ## Discussion
 
   This function makes assumptions about the structure of the matrix.
@@ -25,4 +28,4 @@ Returns a matrix with 1s at the Nyquist frequencies.
   Returns a matrix of the same size as A with 1s at the Nyquist
   frequencies.
  
-      - Returns A: matrix the same size as the input matrix
+      

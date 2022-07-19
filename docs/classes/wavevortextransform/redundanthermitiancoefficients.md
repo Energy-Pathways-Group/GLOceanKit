@@ -3,7 +3,7 @@ layout: default
 title: redundantHermitianCoefficients
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 129
+nav_order: 132
 mathjax: true
 ---
 
@@ -18,6 +18,9 @@ Returns a matrix with 1s at the 'redundant' hermiation indices.
 ```matlab
  A = redundantHermitianCoefficients( A )
 ```
+## Returns
++ `A`  matrix the same size as the input matrix
+
 ## Discussion
 
   This function makes assumptions about the structure of the matrix.
@@ -25,4 +28,4 @@ Returns a matrix with 1s at the 'redundant' hermiation indices.
   Returns a matrix the same size as A with 1s at the 'redundant'
   hermiation indices.
  
-      - Returns A: matrix the same size as the input matrix
+      

@@ -3,7 +3,7 @@ layout: default
 title: makeHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 116
+nav_order: 119
 mathjax: true
 ---
 
@@ -18,6 +18,9 @@ Forces a 3D matrix to be Hermitian
 ```matlab
  A = makeHermitian( A )
 ```
+## Returns
++ `A`  matrix the same size as the input matrix
+
 ## Discussion
 
   This function makes assumptions about the structure of the matrix.
@@ -30,4 +33,4 @@ Forces a 3D matrix to be Hermitian
   This function is NOT a true "Make Hermitian" function because it
   doesn't force the k=l=0 to be real.
  
-      - Returns A: matrix the same size as the input matrix
+      

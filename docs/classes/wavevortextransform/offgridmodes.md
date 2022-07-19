@@ -3,7 +3,7 @@ layout: default
 title: offgridModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 122
+nav_order: 125
 mathjax: true
 ---
 

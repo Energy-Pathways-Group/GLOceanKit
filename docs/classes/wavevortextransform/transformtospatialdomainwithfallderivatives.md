@@ -3,7 +3,7 @@ layout: default
 title: transformToSpatialDomainWithFAllDerivatives
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 159
+nav_order: 162
 mathjax: true
 ---
 
@@ -21,11 +21,13 @@ transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using 
 ## Parameters
 + `u_bar`  variable with dimensions $$(k,l,j)$$
 
+## Returns
++ `u`  variable u with dimensions $$(x,y,z)$$
++ `ux`  variable du/dx with dimensions $$(x,y,z)$$
++ `uy`  variable du/dy with dimensions $$(x,y,z)$$
++ `uz`  variable du/dz with dimensions $$(x,y,z)$$
+
 ## Discussion
-- Returns u: variable u with dimensions $$(x,y,z)$$
-- Returns ux: variable du/dx with dimensions $$(x,y,z)$$
-- Returns uy: variable du/dy with dimensions $$(x,y,z)$$
-- Returns uz: variable du/dz with dimensions $$(x,y,z)$$
 
 This performs the same operation as `transformToSpatialDomainWithF`, but also returns the first-derivative in all three spatial directions.
 

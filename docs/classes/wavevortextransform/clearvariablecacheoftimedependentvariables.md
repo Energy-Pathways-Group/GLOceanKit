@@ -3,7 +3,7 @@ layout: default
 title: clearVariableCacheOfTimeDependentVariables
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 71
+nav_order: 74
 mathjax: true
 ---
 

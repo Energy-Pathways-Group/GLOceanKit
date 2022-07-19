@@ -3,7 +3,7 @@ layout: default
 title: defaultTransformProperties
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 76
+nav_order: 79
 mathjax: true
 ---
 
@@ -18,9 +18,12 @@ return array of TransformProperty initialized by default
 ```matlab
  transformProperties = defaultTransformProperties()
 ```
+## Returns
++ `transformProperties`  array of TransformProperty instances
+
 ## Discussion
 
   This function lets us efficiently annotate all the wave vortex transform
   properties
  
-      - Returns transformProperties: array of TransformProperty instances
+      

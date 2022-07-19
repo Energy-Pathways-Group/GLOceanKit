@@ -1,13 +1,13 @@
 ---
 layout: default
-title: transformOperationWithName
+title: xyzGrid
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 158
+nav_order: 185
 mathjax: true
 ---
 
-#  transformOperationWithName
+#  xyzGrid
 
 
 

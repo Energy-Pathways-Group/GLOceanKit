@@ -3,7 +3,7 @@ layout: default
 title: extractNonzeroWaveProperties
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 85
+nav_order: 88
 mathjax: true
 ---
 
@@ -21,9 +21,12 @@ Takes a Hermitian matrix and returns the amplitude and phase of nonzero componen
 ## Parameters
 + `Matrix`  Hermitian conjugate matrix
 
+## Returns
++ `A`  amplitude
++ `phi`  phase
++ `linearIndex`  linear index of matrix component
+
 ## Discussion
 
   This function makes assumptions about the structure of the matrix.
-        - Returns A: amplitude
-  - Returns phi: phase
-  - Returns linearIndex: linear index of matrix component
+            

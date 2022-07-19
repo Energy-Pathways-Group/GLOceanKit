@@ -3,7 +3,7 @@ layout: default
 title: checkHermitian
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 69
+nav_order: 72
 mathjax: true
 ---
 
@@ -18,6 +18,9 @@ Check if the matrix is Hermitian. Report errors.
 ```matlab
  A = checkHermitian( A )
 ```
+## Returns
++ `A`  matrix the same size as the input matrix
+
 ## Discussion
 
   This function makes assumptions about the structure of the matrix.
@@ -26,4 +29,4 @@ Check if the matrix is Hermitian. Report errors.
   numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
   conjugates. Also, the negative k wavenumbers for l=0.
  
-      - Returns A: matrix the same size as the input matrix
+      

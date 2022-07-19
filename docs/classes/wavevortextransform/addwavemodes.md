@@ -3,7 +3,7 @@ layout: default
 title: addWaveModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 67
+nav_order: 70
 mathjax: true
 ---
 
@@ -26,9 +26,12 @@ add amplitudes of the given wave modes
 + `Amp`  fluid velocity u (m/s)
 + `sign`  sign of the frequency, +1 or -1
 
+## Returns
++ `omega`  frequencies of the waves (radians/s)
++ `k`  wavenumber k of the waves (radians/m)
++ `l`  wavenumber l of the waves (radians/m)
+
 ## Discussion
 
   Add new amplitudes to any existing amplitudes
-                  - Returns omega: frequencies of the waves (radians/s)
-  - Returns k: wavenumber k of the waves (radians/m)
-  - Returns l: wavenumber l of the waves (radians/m)
+                      

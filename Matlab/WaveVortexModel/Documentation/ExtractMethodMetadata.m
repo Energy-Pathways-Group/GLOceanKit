@@ -8,6 +8,7 @@ function metadata = ExtractMethodMetadata(mp)
 % - shortDescription
 % - detailedDescription
 % - parameters
+% - returns
 % - className
 % - name
 

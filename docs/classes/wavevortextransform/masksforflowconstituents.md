@@ -3,7 +3,7 @@ layout: default
 title: masksForFlowConstituents
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 119
+nav_order: 122
 mathjax: true
 ---
 
@@ -21,6 +21,10 @@ Returns a sets of 'masks' indicating where different solution types live in the 
 ## Parameters
 + `flowConstituents`  `FlowConstituents` type
 
+## Returns
++ `ApmMask`  mask for the Ap and Am matrices
++ `A0Mask`  mask for the A0 matrix
+
 ## Discussion
 
   Returns a sets of 'masks' (matrices with 1s or 0s) indicating where
@@ -37,5 +41,4 @@ Returns a sets of 'masks' indicating where different solution types live in the 
   For example, if you define ``A = ApmMask .* Ap;`` then A will contain only the
   positive frequency internal gravity solutions and half the inertial solutions.
  
-        - Returns ApmMask: mask for the Ap and Am matrices
-  - Returns A0Mask: mask for the A0 matrix
+          

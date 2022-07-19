@@ -3,7 +3,7 @@ layout: default
 title: addInertialMotions
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 62
+nav_order: 65
 mathjax: true
 ---
 
