@@ -162,7 +162,7 @@ fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: 
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n\n',mc.Description);
 if ~isempty(mc.DetailedDescription)
-    fprintf(fileID,'## Discussion\n%s\n',classDetailedDescription);
+    fprintf(fileID,'## Overview\n%s\n',classDetailedDescription);
 end
 fprintf(fileID,'\n\n## Topics\n');
 

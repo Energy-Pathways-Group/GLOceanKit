@@ -129,9 +129,9 @@ outputVar = StateVariable('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potentia
 f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0)) .*wvt.A0t);
 transformOperations(end+1) = TransformOperation('qgpv',outputVar,f);
 
-fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
-fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
-fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+fluxVar(1) = StateVariable('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap',detailedDescription='- topic: State Variables');
+fluxVar(2) = StateVariable('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am',detailedDescription='- topic: State Variables');
+fluxVar(3) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0',detailedDescription='- topic: State Variables');
 transformOperations(end+1) = TransformOperation('nonlinearFlux',fluxVar,@(wvt) wvt.nonlinearFlux);
 
 end

@@ -1,4 +1,15 @@
 classdef TransformAnnotation < handle
+    % annotates methods, properties, operations, and variables
+    %
+    % The purpose of this class is twofold. First, it lets us add
+    % descriptions and detailedDescriptions for any method or property both
+    % inline in code, and externally in a markdown file. Second, its
+    % subclasses support annotating units and dimensions, which is not only
+    % useful for help documentation, but is also necessary for adding those
+    % variables to NetCDF files.
+    %
+    % This class looks for a detailedDescription in a .md file with the
+    % same name.
     properties
         name
         description

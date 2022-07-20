@@ -11,7 +11,7 @@ mathjax: true
 
 Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
 
-## Discussion
+## Overview
  
  
   The WaveVortexTransform subclasses encapsulate data representing the
@@ -64,8 +64,15 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`xyzGrid`](/classes/wavevortextransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
     + [`y`](/classes/wavevortextransform/y.html) y-coordinate dimension
     + [`z`](/classes/wavevortextransform/z.html) z-coordinate dimension
+  + Stratification
+    + [`N0`](/classes/wavevortextransform/n0.html) interior buoyancy frequency at the surface (z=0)
+    + [`N2`](/classes/wavevortextransform/n2.html) buoyancy frequency of the mean density
+    + [`Nmax`](/classes/wavevortextransform/nmax.html) maximum buoyancy frequency
+    + [`dLnN2`](/classes/wavevortextransform/dlnn2.html) d/dz ln N2
+    + [`h`](/classes/wavevortextransform/h.html) equivalent depth of each mode
+    + [`rho0`](/classes/wavevortextransform/rho0.html) mean density at the surface (z=0)
+    + [`rhobar`](/classes/wavevortextransform/rhobar.html) mean density
   + Other
-    + [`F0`](/classes/wavevortextransform/f0.html) non-linear flux into A0
     + [`Omega`](/classes/wavevortextransform/omega.html) frequency of oscillation of the linear waves
     + [`f0`](/classes/wavevortextransform/f0.html) Coriolis parameter
     + [`g`](/classes/wavevortextransform/g.html) gravity of Earth
@@ -75,14 +82,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`latitude`](/classes/wavevortextransform/latitude.html) latitude of the simulation
     + [`t`](/classes/wavevortextransform/t.html) time of observations
     + [`t0`](/classes/wavevortextransform/t0.html) reference time of Ap, Am, A0
-  + Stratification
-    + [`N0`](/classes/wavevortextransform/n0.html) interior buoyancy frequency at the surface (z=0)
-    + [`N2`](/classes/wavevortextransform/n2.html) buoyancy frequency of the mean density
-    + [`Nmax`](/classes/wavevortextransform/nmax.html) maximum buoyancy frequency
-    + [`dLnN2`](/classes/wavevortextransform/dlnn2.html) d/dz ln N2
-    + [`h`](/classes/wavevortextransform/h.html) equivalent depth of each mode
-    + [`rho0`](/classes/wavevortextransform/rho0.html) mean density at the surface (z=0)
-    + [`rhobar`](/classes/wavevortextransform/rhobar.html) mean density
 + Wave-vortex coefficients
   + Other
     + [`A0`](/classes/wavevortextransform/a0.html) geostrophic coefficients at reference time t0
@@ -194,6 +193,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
 + State Variables
   + Other
+    + [`F0`](/classes/wavevortextransform/f0.html) non-linear flux into A0
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am
     + [`Fp`](/classes/wavevortextransform/fp.html) non-linear flux into Ap
     + [`eta`](/classes/wavevortextransform/eta.html) isopycnal deviation

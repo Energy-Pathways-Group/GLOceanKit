@@ -10,7 +10,7 @@ has_toc: false
 
 The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WaveVortexTransform.
 
-## Discussion
+## Overview
  
   Assuming you have already initialized a WaveVortexTransform, e.g.,
   ```matlab

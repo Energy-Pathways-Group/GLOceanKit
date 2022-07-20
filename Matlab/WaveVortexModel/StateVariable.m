@@ -25,8 +25,9 @@ classdef StateVariable < TransformAnnotation
                 units char {mustBeNonempty}
                 description char {mustBeNonempty}
                 options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
+                options.detailedDescription char = ''
             end
-            self@TransformAnnotation(name,description);
+            self@TransformAnnotation(name,description,detailedDescription=options.detailedDescription);
             if ~iscell(dimensions)
                 if isempty(dimensions)
                     dimensions = {};
