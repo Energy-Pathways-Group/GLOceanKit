@@ -20,7 +20,7 @@ differentiate a spatial variable in the x-direction
 ```
 ## Parameters
 + `u`  variable with dimensions $$(x,y,z)$$
-+ `n`  (optional) order of differentiation d^n/dx^n (default 1)
++ `n`  (optional) order of differentiation $$\frac{d^n}{dx^n}$$ (default 1)
 
 ## Returns
 + `du`  differentiated variable in the spatial domain

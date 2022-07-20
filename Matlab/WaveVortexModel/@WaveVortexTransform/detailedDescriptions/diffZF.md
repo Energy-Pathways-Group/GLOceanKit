@@ -1,4 +1,4 @@
-- Topic: Operations — Transformations
+- Topic: Operations — Differentiation
 - Declaration: uz = diffZF(u)
 - Parameter u: variable with dimensions $$(x,y,z)$$
 - Returns uz: differentiated variable with dimensions $$(x,y,z)$$

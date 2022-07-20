@@ -9,8 +9,11 @@ mathjax: true
 
 #  waveVortexTransformWithDoubleResolution
 
-
+create a new WaveVortexTransform with double resolution
 
 
 ---
 
+## Discussion
+
+  

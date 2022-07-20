@@ -27,6 +27,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
  
     + `WaveVortexTransformConstantStratification`
     + `WaveVortexTransformHydrostatic`
+    + `WaveVortexTransformSingleMode`
  
                         
 
@@ -35,6 +36,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Initialization
   + Other
     + [`waveVortexTransformFromFile`](/classes/wavevortextransform/wavevortextransformfromfile.html) Initialize a WaveVortexTransform instance from an existing file
+    + [`waveVortexTransformWithDoubleResolution`](/classes/wavevortextransform/wavevortextransformwithdoubleresolution.html) create a new WaveVortexTransform with double resolution
+    + [`waveVortexTransformWithResolution`](/classes/wavevortextransform/wavevortextransformwithresolution.html) create a new WaveVortexTransform with increased resolution
 + Domain attributes
   + Grid
     + [`J`](/classes/wavevortextransform/j.html) j-coordinate matrix
@@ -189,8 +192,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`velocityField`](/classes/wavevortextransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
     + [`version`](/classes/wavevortextransform/version.html) 
     + [`waveVortexCoefficientsAtTimeT`](/classes/wavevortextransform/wavevortexcoefficientsattimet.html) 
-    + [`waveVortexTransformWithDoubleResolution`](/classes/wavevortextransform/wavevortextransformwithdoubleresolution.html) 
-    + [`waveVortexTransformWithResolution`](/classes/wavevortextransform/wavevortextransformwithresolution.html) 
 + State Variables
   + Other
     + [`Fm`](/classes/wavevortextransform/fm.html) non-linear flux into Am
@@ -239,12 +240,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Operations
   + Create new operations and variables
     + [`addTransformOperation`](/classes/wavevortextransform/addtransformoperation.html) add a addTransformProperty
-  + differentiation
+  + Differentiation
     + [`diffX`](/classes/wavevortextransform/diffx.html) differentiate a spatial variable in the x-direction
     + [`diffY`](/classes/wavevortextransform/diffy.html) differentiate a spatial variable in the y-direction
-  + Transformations
     + [`diffZF`](/classes/wavevortextransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
     + [`diffZG`](/classes/wavevortextransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
+  + Transformations
     + [`transformFromSpatialDomainWithF`](/classes/wavevortextransform/transformfromspatialdomainwithf.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the F-modes
     + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the G-modes
     + [`transformToSpatialDomainWithF`](/classes/wavevortextransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes

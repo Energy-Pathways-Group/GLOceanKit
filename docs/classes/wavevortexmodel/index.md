@@ -25,7 +25,7 @@ The WaveVortexModel is responsible for time-stepping (integrating) the ocean sta
   By default the model only takes a linear time-step. To specify a
   nonlinear flux on initialization, for example,
  ```matlab
-  model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.u_max));
+  model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.uMax));
  ```
  
   You can also initialize a model from existing output,

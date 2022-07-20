@@ -4,6 +4,7 @@ title: setNetCDFOutputVariables
 parent: WaveVortexModel
 grand_parent: Classes
 nav_order: 22
+mathjax: true
 ---
 
 #  setNetCDFOutputVariables

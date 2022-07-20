@@ -1,4 +1,4 @@
-- Topic: Operations — Transformations
+- Topic: Operations — Differentiation
 - Declaration: wz = diffZG(w)
 - Parameter w: variable with dimensions $$(x,y,z)$$
 - Returns wz: differentiated variable with dimensions $$(x,y,z)$$

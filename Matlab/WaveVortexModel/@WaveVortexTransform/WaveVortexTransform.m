@@ -15,6 +15,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     %
     %   + `WaveVortexTransformConstantStratification`
     %   + `WaveVortexTransformHydrostatic`
+    %   + `WaveVortexTransformSingleMode`
     %
     % - Topic: Initialization
     % - Topic: Domain attributes
@@ -369,10 +370,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)
+            % create a new WaveVortexTransform with double resolution
+            %
+            % - Topic: Initialization
             wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny self.Nz]);
         end
 
         function wvmX2 = waveVortexTransformWithResolution(self,m)
+            % create a new WaveVortexTransform with increased resolution
+            %
+            % - Topic: Initialization
             wvmX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
             wvmX2.t0 = self.t0;
             wvmX2.t = self.t;

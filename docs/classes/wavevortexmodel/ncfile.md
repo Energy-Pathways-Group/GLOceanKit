@@ -4,6 +4,7 @@ title: ncfile
 parent: WaveVortexModel
 grand_parent: Classes
 nav_order: 24
+mathjax: true
 ---
 
 #  ncfile

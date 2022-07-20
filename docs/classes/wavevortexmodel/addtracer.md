@@ -4,6 +4,7 @@ title: addTracer
 parent: WaveVortexModel
 grand_parent: Classes
 nav_order: 19
+mathjax: true
 ---
 
 #  addTracer

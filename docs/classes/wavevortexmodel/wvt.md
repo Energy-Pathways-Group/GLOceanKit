@@ -4,6 +4,7 @@ title: wvt
 parent: WaveVortexModel
 grand_parent: Classes
 nav_order: 3
+mathjax: true
 ---
 
 #  wvt

@@ -4,6 +4,7 @@ title: addParticles
 parent: WaveVortexModel
 grand_parent: Classes
 nav_order: 17
+mathjax: true
 ---
 
 #  addParticles

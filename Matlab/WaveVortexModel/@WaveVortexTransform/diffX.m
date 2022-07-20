@@ -3,10 +3,10 @@ function du = diffX(wvt,u,n)
 %
 % Performs spectral differentiation on variable u.
 %
-% - Topic: Operations — differentiation
+% - Topic: Operations — Differentiation
 % - Declaration: du = diffX(u,n)
 % - Parameter u: variable with dimensions $$(x,y,z)$$
-% - Parameter n: (optional) order of differentiation d^n/dx^n (default 1)
+% - Parameter n: (optional) order of differentiation $$\frac{d^n}{dx^n}$$ (default 1)
 % - Returns du: differentiated variable in the spatial domain
 arguments
     wvt         WaveVortexTransform
