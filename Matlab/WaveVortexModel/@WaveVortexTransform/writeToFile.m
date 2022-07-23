@@ -43,7 +43,7 @@ function ncfile = writeToFile(wvt,path,variables,options)
 
     dims = {'x','y','z','k','l','j'};
     for iDim=1:length(dims)
-        transformDim = wvt.transformDimensionWithName(dims{iDim});
+        transformDim = wvt.dimensionWithName(dims{iDim});
         attributes = containers.Map();
         attributes('units') = transformDim.units;
         attributes('description') = transformDim.description;

@@ -1,15 +1,15 @@
 ---
 layout: default
-title: performTransformOperation
+title: operationWithName
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 130
+nav_order: 128
 mathjax: true
 ---
 
-#  performTransformOperation
+#  operationWithName
 
-computes (runs) the operation
+retrieve a WVOperation by name
 
 
 ---

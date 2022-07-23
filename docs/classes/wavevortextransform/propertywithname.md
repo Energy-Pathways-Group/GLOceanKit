@@ -1,15 +1,15 @@
 ---
 layout: default
-title: performTransformOperation
+title: propertyWithName
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 130
+nav_order: 131
 mathjax: true
 ---
 
-#  performTransformOperation
+#  propertyWithName
 
-computes (runs) the operation
+retrieve a WVProperty by name
 
 
 ---

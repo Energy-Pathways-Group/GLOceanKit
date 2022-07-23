@@ -1,10 +1,10 @@
-function dimensions = defaultTransformDimensions()
+function dimensions = defaultDimensions()
 % return array of TransformDimensions initialized by default
 %
 % This function lets us efficiently annotate all the coordinate dimensions.
 %
 % - Topic: Internal
-% - Declaration: dimensions = defaultTransformDimensions()
+% - Declaration: dimensions = defaultDimensions()
 % - Returns dimensions: array of TransformDimension instances
 dimensions = TransformDimension.empty(0,0);
 

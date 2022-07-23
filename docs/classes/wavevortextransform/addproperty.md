@@ -1,16 +1,19 @@
 ---
 layout: default
-title: stateVariableWithName
+title: addProperty
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 148
+nav_order: 67
 mathjax: true
 ---
 
-#  stateVariableWithName
+#  addProperty
 
-
+add a addProperty
 
 
 ---
 
+## Discussion
+
+  

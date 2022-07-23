@@ -991,7 +991,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
             end
             for iVar=1:length(dimVars)
                 attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = self.wvt.transformDimensionWithName(dimVars{iVar}).units;
+                attributes('units') = self.wvt.dimensionWithName(dimVars{iVar}).units;
                 attributes('particleVariableName') = dimVars{iVar};
                 variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
             end

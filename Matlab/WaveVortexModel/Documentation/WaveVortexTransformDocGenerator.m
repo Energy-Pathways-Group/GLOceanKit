@@ -59,7 +59,7 @@ for i=1:length(mc.PropertyList)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-dims = WaveVortexTransform.defaultTransformDimensions();
+dims = WaveVortexTransform.defaultDimensions();
 for iDim=1:length(dims)
     metadata = ExtractMetadataFromDetailedDescription(dims(iDim).detailedDescription);
     metadata.name = dims(iDim).name;

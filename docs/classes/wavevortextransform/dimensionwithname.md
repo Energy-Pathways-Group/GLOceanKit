@@ -1,15 +1,15 @@
 ---
 layout: default
-title: performTransformOperation
+title: dimensionWithName
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 130
+nav_order: 84
 mathjax: true
 ---
 
-#  performTransformOperation
+#  dimensionWithName
 
-computes (runs) the operation
+retrieve a WVDimension by name
 
 
 ---

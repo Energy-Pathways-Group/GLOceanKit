@@ -97,12 +97,12 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.BuildProjectionOperators();
             self.offgridModes = WaveVortexModelOffGrid(im,self.latitude, self.N2Function,1);
 
-            self.addTransformProperty(TransformProperty('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
-            self.addTransformProperty(TransformProperty('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
-            self.addTransformProperty(TransformProperty('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
-            self.addTransformProperty(TransformProperty('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
-            self.addTransformProperty(TransformProperty('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
-            self.addTransformProperty(TransformProperty('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addProperty(TransformProperty('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
+            self.addProperty(TransformProperty('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
+            self.addProperty(TransformProperty('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
+            self.addProperty(TransformProperty('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
+            self.addProperty(TransformProperty('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addProperty(TransformProperty('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
             outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);

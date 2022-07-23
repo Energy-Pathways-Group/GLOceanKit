@@ -179,9 +179,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`spectralVanishingViscosityFilter`](/classes/wavevortextransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
     + [`stateVariableWithName`](/classes/wavevortextransform/statevariablewithname.html) 
     + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
-    + [`transformDimensionWithName`](/classes/wavevortextransform/transformdimensionwithname.html) 
-    + [`transformOperationWithName`](/classes/wavevortextransform/transformoperationwithname.html) 
-    + [`transformPropertyWithName`](/classes/wavevortextransform/transformpropertywithname.html) 
     + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) 
     + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) This is the 'S^{-1}' operator (C5) in the manuscript
     + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) 
@@ -203,6 +200,20 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`uMax`](/classes/wavevortextransform/umax.html) max horizontal fluid speed
     + [`v`](/classes/wavevortextransform/v.html) y-component of the fluid velocity
     + [`w`](/classes/wavevortextransform/w.html) z-component of the fluid velocity
++ Utility function
+  + Metadata
+    + [`addDimension`](/classes/wavevortextransform/adddimension.html) add one or more WVDimensions
+    + [`addProperty`](/classes/wavevortextransform/addproperty.html) add a addProperty
+    + [`dimensionWithName`](/classes/wavevortextransform/dimensionwithname.html) retrieve a WVDimension by name
+    + [`operationWithName`](/classes/wavevortextransform/operationwithname.html) retrieve a WVOperation by name
+    + [`propertyWithName`](/classes/wavevortextransform/propertywithname.html) retrieve a WVProperty by name
+  + Other
+    + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
+    + [`extractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
+    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
+    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) Forces a 3D matrix to be Hermitian
+    + [`nyquistWavenumbers`](/classes/wavevortextransform/nyquistwavenumbers.html) Returns a matrix with 1s at the Nyquist frequencies.
+    + [`redundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
 + External (non-gridded) modes
   + Other
     + [`addExternalWavesWithFrequencies`](/classes/wavevortextransform/addexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given wavenumber
@@ -219,27 +230,16 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`buildTransformationMatrices`](/classes/wavevortextransform/buildtransformationmatrices.html) Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
     + [`clearVariableCache`](/classes/wavevortextransform/clearvariablecache.html) clear the internal cache
     + [`clearVariableCacheOfTimeDependentVariables`](/classes/wavevortextransform/clearvariablecacheoftimedependentvariables.html) clear the internal cache of variables that claim to be time dependent
-    + [`defaultTransformDimensions`](/classes/wavevortextransform/defaulttransformdimensions.html) return array of TransformDimensions initialized by default
+    + [`defaultDimensions`](/classes/wavevortextransform/defaultdimensions.html) return array of TransformDimensions initialized by default
     + [`defaultTransformMethods`](/classes/wavevortextransform/defaulttransformmethods.html) return array of TransformAnnotations to annotate the methods
     + [`defaultTransformOperations`](/classes/wavevortextransform/defaulttransformoperations.html) return array of TransformOperation instances initialized by default
     + [`defaultTransformProperties`](/classes/wavevortextransform/defaulttransformproperties.html) return array of TransformProperty initialized by default
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) retrieve a set of variables from the internal cache
     + [`performTransformOperation`](/classes/wavevortextransform/performtransformoperation.html) computes (runs) the operation
     + [`stateVariables`](/classes/wavevortextransform/statevariables.html) retrieve variables either from cache or by computation
-+ Utility function
-  + Metadata
-    + [`addTransformDimension`](/classes/wavevortextransform/addtransformdimension.html) add a TransformDimension
-    + [`addTransformProperty`](/classes/wavevortextransform/addtransformproperty.html) add a addTransformProperty
-  + Other
-    + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
-    + [`extractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
-    + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
-    + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) Forces a 3D matrix to be Hermitian
-    + [`nyquistWavenumbers`](/classes/wavevortextransform/nyquistwavenumbers.html) Returns a matrix with 1s at the Nyquist frequencies.
-    + [`redundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
 + Operations
   + Create new operations and variables
-    + [`addTransformOperation`](/classes/wavevortextransform/addtransformoperation.html) add a addTransformProperty
+    + [`addTransformOperation`](/classes/wavevortextransform/addtransformoperation.html) add a addProperty
   + Differentiation
     + [`diffX`](/classes/wavevortextransform/diffx.html) differentiate a spatial variable in the x-direction
     + [`diffY`](/classes/wavevortextransform/diffy.html) differentiate a spatial variable in the y-direction

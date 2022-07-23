@@ -1,16 +1,19 @@
 ---
 layout: default
-title: stateVariableWithName
+title: addDimension
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 148
+nav_order: 62
 mathjax: true
 ---
 
-#  stateVariableWithName
+#  addDimension
 
-
+add one or more WVDimensions
 
 
 ---
 
+## Discussion
+
+  
