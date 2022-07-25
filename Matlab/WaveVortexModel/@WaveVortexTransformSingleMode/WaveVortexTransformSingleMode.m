@@ -31,16 +31,16 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
 
             outputVar = StateVariable('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
-            self.addTransformOperation(TransformOperation('ssh',outputVar,f));
+            self.addOperation(TransformOperation('ssh',outputVar,f));
 
             outputVar = StateVariable('psi',{'x','y','z'},'m^2/s', 'sea-surface anomaly');
             f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f0) * wvt.A0t);
-            self.addTransformOperation(TransformOperation('psi',outputVar,f));
+            self.addOperation(TransformOperation('psi',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
             outputVar = StateVariable('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
             f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f0) * (K.^2 +L.^2) .* wvt.A0t);
-            self.addTransformOperation(TransformOperation('zeta_z',outputVar,f));
+            self.addOperation(TransformOperation('zeta_z',outputVar,f));
         end
 
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)

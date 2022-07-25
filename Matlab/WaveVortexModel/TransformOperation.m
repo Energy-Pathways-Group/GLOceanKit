@@ -30,7 +30,7 @@ classdef TransformOperation < handle
             self.name = name;
             if self.nVarOut == 1
                 if ~strcmp(self.name, self.outputVariables(1).name)
-                    error('An operation with only one output variable must have the same name as the output variable.')
+                    error('An operation with only one output variable must have the same name as the first output variable.')
                 end
             end
             

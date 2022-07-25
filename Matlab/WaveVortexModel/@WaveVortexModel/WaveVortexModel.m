@@ -192,12 +192,12 @@ classdef WaveVortexModel < handle
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
                 self.nonlinearFlux = options.nonlinearFlux;
-                self.wvt.addTransformOperation(self.nonlinearFlux);
+                self.wvt.addOperation(self.nonlinearFlux);
             end
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
 %             self.nonlinearFlux = SingleModeQGPVE(self.wvt);
-%             self.wvt.addTransformOperation(nlFlux);
+%             self.wvt.addOperation(nlFlux);
 
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();

@@ -11,7 +11,7 @@ model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-spinup-512.nc',restar
 wvt = model.wvt;
 outputVar = StateVariable('eta',{'x','y','z'},'1/s^3', 'enstrophy forcing');
 f = @(wvt) wvt.zeta_z .* wvt.F_psi;
-wvt.addTransformOperation(TransformOperation('eta',outputVar,f));
+wvt.addOperation(TransformOperation('eta',outputVar,f));
 
 [xFloat,yFloat] = ndgrid(wvt.x(1:4:end),wvt.y(1:4:end));
 xFloat = reshape(xFloat,1,[]);
