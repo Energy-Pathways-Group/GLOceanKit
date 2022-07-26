@@ -1,4 +1,4 @@
-classdef ParticleFluxOperation < TransformOperation
+classdef ParticleFluxOperation < WVOperation
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -19,7 +19,7 @@ classdef ParticleFluxOperation < TransformOperation
                 outputVariables(3) = WVVariableAnnotation('w_p',{'x','y','z'},'m/s', 'velocity z-direction at particle positions');
             end
 
-            self@TransformOperation(name,outputVariables,f);
+            self@WVOperation(name,outputVariables,f);
             self.isXYOnly = options.isXYOnly;
         end
 

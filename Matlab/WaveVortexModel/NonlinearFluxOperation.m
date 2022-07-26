@@ -1,4 +1,4 @@
-classdef NonlinearFluxOperation < TransformOperation
+classdef NonlinearFluxOperation < WVOperation
     %TransformOption specifically for nonlinear flux.
     %
     % The output variables *must* be at least one of {Fp,Fm,F0}, in that
@@ -24,7 +24,7 @@ classdef NonlinearFluxOperation < TransformOperation
                 options.f function_handle = @disp
             end
 
-            self@TransformOperation(name,outputVariables,options.f);
+            self@WVOperation(name,outputVariables,options.f);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

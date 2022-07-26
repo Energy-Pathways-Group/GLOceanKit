@@ -1,25 +1,25 @@
 ---
 layout: default
-title: defaultTransformOperations
+title: defaultOperations
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 79
+nav_order: 78
 mathjax: true
 ---
 
-#  defaultTransformOperations
+#  defaultOperations
 
-return array of TransformOperation instances initialized by default
+return array of WVOperation instances initialized by default
 
 
 ---
 
 ## Declaration
 ```matlab
- transformOperations = defaultTransformOperations()
+ operations = defaultOperations()
 ```
 ## Returns
-+ `transformOperations`  array of TransformOperation instances
++ `operations`  array of WVOperation instances
 
 ## Discussion
 

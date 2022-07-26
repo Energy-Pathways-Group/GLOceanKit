@@ -3,7 +3,7 @@ layout: default
 title: totalEnergySpatiallyIntegrated
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 158
+nav_order: 154
 mathjax: true
 ---
 

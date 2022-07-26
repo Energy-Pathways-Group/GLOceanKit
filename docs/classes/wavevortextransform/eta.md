@@ -3,7 +3,7 @@ layout: default
 title: eta
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 87
+nav_order: 86
 mathjax: true
 ---
 

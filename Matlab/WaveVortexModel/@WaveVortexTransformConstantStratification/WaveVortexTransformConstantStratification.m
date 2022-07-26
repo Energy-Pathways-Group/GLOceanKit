@@ -72,11 +72,11 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
 
             outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addOperation(TransformOperation('rho_prime',outputVar,f));
+            self.addOperation(WVOperation('rho_prime',outputVar,f));
 
             outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
-            self.addOperation(TransformOperation('rho_total',outputVar,f));
+            self.addOperation(WVOperation('rho_total',outputVar,f));
 
         end
                 

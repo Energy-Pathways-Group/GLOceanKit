@@ -3,7 +3,7 @@ layout: default
 title: masksForAllFlowConstituents
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 124
+nav_order: 122
 mathjax: true
 ---
 

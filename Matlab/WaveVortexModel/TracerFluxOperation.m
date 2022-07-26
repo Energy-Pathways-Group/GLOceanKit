@@ -1,4 +1,4 @@
-classdef TracerFluxOperation < TransformOperation
+classdef TracerFluxOperation < WVOperation
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 

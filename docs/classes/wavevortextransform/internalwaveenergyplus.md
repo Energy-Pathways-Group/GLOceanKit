@@ -3,7 +3,7 @@ layout: default
 title: internalWaveEnergyPlus
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 113
+nav_order: 111
 mathjax: true
 ---
 

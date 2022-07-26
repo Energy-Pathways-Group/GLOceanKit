@@ -13,9 +13,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     % The WaveVortexTransform is an abstract class and as such you must
     % instatiate one of the concrete subclasses,
     %
-    %   + `WaveVortexTransformConstantStratification`
-    %   + `WaveVortexTransformHydrostatic`
-    %   + `WaveVortexTransformSingleMode`
+    % + `WaveVortexTransformConstantStratification`
+    % + `WaveVortexTransformHydrostatic`
+    % + `WaveVortexTransformSingleMode`
     %
     % - Topic: Initialization
     % - Topic: Domain attributes
@@ -97,7 +97,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         Nz
     end
 
-    properties (Access=public)
+    properties (Access=private)
         halfK = 0;
 
         operationNameMap
@@ -139,7 +139,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     
     methods (Access=protected)
         function varargout = dotReference(self,indexOp)
-            % Typically the request will be directly for a TransformOperation,
+            % Typically the request will be directly for a WVOperation,
             % but sometimes it will be for a variable that can only be
             % produced as a bi-product of some operation.
             if isKey(self.operationNameMap,indexOp(1).Name)
@@ -214,7 +214,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.addDimensionAnnotations(WaveVortexTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WaveVortexTransform.defaultPropertyAnnotations);
-            self.addOperation(WaveVortexTransform.defaultTransformOperations);
+            self.addOperation(WaveVortexTransform.defaultOperations);
         end
 
         function addDimensionAnnotations(self,transformDimension)
@@ -292,7 +292,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
-                transformOperation (1,:) TransformOperation {mustBeNonempty}
+                transformOperation (1,:) WVOperation {mustBeNonempty}
             end
             for iOp=1:length(transformOperation)
                 for iVar=1:length(transformOperation(iOp).outputVariables)
@@ -1027,7 +1027,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods (Static)
         dimensions = defaultDimensionAnnotations()
         transformProperties = defaultPropertyAnnotations()
-        transformOperations = defaultTransformOperations()
+        transformOperations = defaultOperations()
         transformMethods = defaultMethodAnnotations()
 
         % Initialize the a transform from file

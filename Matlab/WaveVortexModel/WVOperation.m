@@ -1,4 +1,4 @@
-classdef TransformOperation < handle
+classdef WVOperation < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -11,7 +11,7 @@ classdef TransformOperation < handle
     end
 
     methods
-        function self = TransformOperation(name,outputVariables,f)
+        function self = WVOperation(name,outputVariables,f)
             arguments
                 name char {mustBeNonempty}
                 outputVariables WVVariableAnnotation {mustBeNonempty}

@@ -86,7 +86,7 @@ for iDim=1:length(props)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-ops = WaveVortexTransform.defaultTransformOperations();
+ops = WaveVortexTransform.defaultOperations();
 for iOp=1:length(ops)
     for iVar=1:length(ops(iOp).outputVariables)
         stateVar = ops(iOp).outputVariables(iVar);
@@ -175,10 +175,22 @@ for topicIndex = 1:length(classDefinedTopics)
 
     fprintf(fileID,'+ %s\n',classDefinedTopics(topicIndex).topicName);
 
+    % First do the 'other' subtopics immediately below
     if isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower('Other'))
         otherSubtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex(lower('Other'));
+
+        subtopic = classDefinedTopics(topicIndex).subtopics(otherSubtopicIndex);
+        for methodIndex = 1:length(subtopic.methodNames)
+            fprintf(fileID,'  + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'%s\n',methodsMap(subtopic.methodNames{methodIndex}).shortDescription);
+        end
+    else
+        otherSubtopicIndex = 0;
     end
     for subtopicIndex = 1:length(classDefinedTopics(topicIndex).subtopics)
+        if subtopicIndex == otherSubtopicIndex
+            continue;
+        end
         subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
         for methodIndex = 1:length(subtopic.methodNames)

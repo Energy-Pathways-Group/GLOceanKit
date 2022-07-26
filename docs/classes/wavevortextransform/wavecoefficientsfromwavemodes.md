@@ -3,7 +3,7 @@ layout: default
 title: waveCoefficientsFromWaveModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 183
+nav_order: 177
 mathjax: true
 ---
 
