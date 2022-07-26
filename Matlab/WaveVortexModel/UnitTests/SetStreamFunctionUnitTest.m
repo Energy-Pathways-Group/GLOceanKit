@@ -40,7 +40,7 @@ wvm.setGeostrophicStreamfunction(psi);
 x = wvm.x;
 y = wvm.y;
 z = wvm.z;
-f0 = wvm.f0;
+f = wvm.f;
 
 [X,Y,Z] = ndgrid(wvm.x,wvm.y,wvm.z);
 psiG = psi(X,Y,Z);
@@ -54,7 +54,7 @@ max(abs(u(:)))
 figure, pcolor(x/1e3,z/1e3,squeeze(u(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
 figure, pcolor(x/1e3,y/1e3,squeeze(u(:,:,35)).'), shading interp; colorbar('eastoutside')
 
-zeta_z = (DiffFourier(x,v,1,1) - DiffFourier(y,u,1,2))/f0;
+zeta_z = (DiffFourier(x,v,1,1) - DiffFourier(y,u,1,2))/f;
 
 figure, pcolor(x/1e3,z/1e3,squeeze(zeta_z(:,Ny/2,:)).'), shading interp; colorbar('eastoutside')
 figure, pcolor(x/1e3,y/1e3,squeeze(zeta_z(:,:,35)).'), shading interp; colorbar('eastoutside')

@@ -74,7 +74,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`rhobar`](/classes/wavevortextransform/rhobar.html) mean density
   + Other
     + [`Omega`](/classes/wavevortextransform/omega.html) frequency of oscillation of the linear waves
-    + [`f0`](/classes/wavevortextransform/f0.html) Coriolis parameter
     + [`g`](/classes/wavevortextransform/g.html) gravity of Earth
     + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) inertial period
     + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -167,22 +166,28 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
     + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
     + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
+    + [`dimensionAnnotationNameMap`](/classes/wavevortextransform/dimensionannotationnamemap.html) 
     + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
+    + [`f`](/classes/wavevortextransform/f.html) Coriolis parameter
     + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
+    + [`halfK`](/classes/wavevortextransform/halfk.html) 
     + [`iOmega`](/classes/wavevortextransform/iomega.html) 
     + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
     + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
     + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
     + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
+    + [`operationNameMap`](/classes/wavevortextransform/operationnamemap.html) 
+    + [`propertyAnnotationNameMap`](/classes/wavevortextransform/propertyannotationnamemap.html) 
     + [`radialWavenumberAxis`](/classes/wavevortextransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
     + [`rebuildTransformationMatrices`](/classes/wavevortextransform/rebuildtransformationmatrices.html) 
     + [`spectralVanishingViscosityFilter`](/classes/wavevortextransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
-    + [`stateVariableWithName`](/classes/wavevortextransform/statevariablewithname.html) 
     + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
     + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) 
     + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) This is the 'S^{-1}' operator (C5) in the manuscript
     + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) 
     + [`uMaxGNormRatioForWave`](/classes/wavevortextransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
+    + [`variableAnnotationNameMap`](/classes/wavevortextransform/variableannotationnamemap.html) 
+    + [`variableCache`](/classes/wavevortextransform/variablecache.html) 
     + [`variables`](/classes/wavevortextransform/variables.html) Primary method for accessing the dynamical variables on the
     + [`variablesAtPosition`](/classes/wavevortextransform/variablesatposition.html) Primary method for accessing the dynamical variables on the
     + [`velocityField`](/classes/wavevortextransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
@@ -202,11 +207,14 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`w`](/classes/wavevortextransform/w.html) z-component of the fluid velocity
 + Utility function
   + Metadata
-    + [`addDimension`](/classes/wavevortextransform/adddimension.html) add one or more WVDimensions
-    + [`addProperty`](/classes/wavevortextransform/addproperty.html) add a addProperty
-    + [`dimensionWithName`](/classes/wavevortextransform/dimensionwithname.html) retrieve a WVDimension by name
+    + [`addDimensionAnnotations`](/classes/wavevortextransform/adddimensionannotations.html) add one or more WVDimensions
+    + [`addOperation`](/classes/wavevortextransform/addoperation.html) add a WVOperation
+    + [`addPropertyAnnotations`](/classes/wavevortextransform/addpropertyannotations.html) add a addProperty
+    + [`dimensionAnnotationWithName`](/classes/wavevortextransform/dimensionannotationwithname.html) retrieve a WVDimension by name
     + [`operationWithName`](/classes/wavevortextransform/operationwithname.html) retrieve a WVOperation by name
-    + [`propertyWithName`](/classes/wavevortextransform/propertywithname.html) retrieve a WVProperty by name
+    + [`propertyAnnotationWithName`](/classes/wavevortextransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
+    + [`variableAnnotationWithName`](/classes/wavevortextransform/variableannotationwithname.html) retrieve a WVVariableAnnotation by name
+    + [`variableNames`](/classes/wavevortextransform/variablenames.html) retrieve the names of all available variables
   + Other
     + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
     + [`extractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
@@ -230,16 +238,14 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`buildTransformationMatrices`](/classes/wavevortextransform/buildtransformationmatrices.html) Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
     + [`clearVariableCache`](/classes/wavevortextransform/clearvariablecache.html) clear the internal cache
     + [`clearVariableCacheOfTimeDependentVariables`](/classes/wavevortextransform/clearvariablecacheoftimedependentvariables.html) clear the internal cache of variables that claim to be time dependent
-    + [`defaultDimensions`](/classes/wavevortextransform/defaultdimensions.html) return array of TransformDimensions initialized by default
-    + [`defaultTransformMethods`](/classes/wavevortextransform/defaulttransformmethods.html) return array of TransformAnnotations to annotate the methods
+    + [`defaultDimensionAnnotations`](/classes/wavevortextransform/defaultdimensionannotations.html) return array of TransformDimensions initialized by default
+    + [`defaultMethodAnnotations`](/classes/wavevortextransform/defaultmethodannotations.html) return array of WVAnnotations to annotate the methods
+    + [`defaultPropertyAnnotations`](/classes/wavevortextransform/defaultpropertyannotations.html) return array of WVPropertyAnnotation initialized by default
     + [`defaultTransformOperations`](/classes/wavevortextransform/defaulttransformoperations.html) return array of TransformOperation instances initialized by default
-    + [`defaultTransformProperties`](/classes/wavevortextransform/defaulttransformproperties.html) return array of TransformProperty initialized by default
     + [`fetchFromVariableCache`](/classes/wavevortextransform/fetchfromvariablecache.html) retrieve a set of variables from the internal cache
     + [`performTransformOperation`](/classes/wavevortextransform/performtransformoperation.html) computes (runs) the operation
     + [`stateVariables`](/classes/wavevortextransform/statevariables.html) retrieve variables either from cache or by computation
 + Operations
-  + Create new operations and variables
-    + [`addTransformOperation`](/classes/wavevortextransform/addtransformoperation.html) add a addProperty
   + Differentiation
     + [`diffX`](/classes/wavevortextransform/diffx.html) differentiate a spatial variable in the x-direction
     + [`diffY`](/classes/wavevortextransform/diffy.html) differentiate a spatial variable in the y-direction

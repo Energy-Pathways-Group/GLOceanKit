@@ -3,7 +3,7 @@ layout: default
 title: initWithSpectralFunction
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 108
+nav_order: 110
 mathjax: true
 ---
 
@@ -38,4 +38,4 @@ initialize the wave spectrum with a given function
   assigned. Default 0 (amplitudes will not be randomized)
  
   maxDeltaOmega is the maximum width in frequency that will be
-  integrated over for assigned energy. By default it is self.Nmax-self.f0
+  integrated over for assigned energy. By default it is self.Nmax-self.f

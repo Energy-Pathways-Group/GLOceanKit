@@ -1,34 +1,33 @@
-classdef TransformProperty < TransformAnnotation
-    %Describes a property of the WaveVortexTransform
+classdef WVVariableAnnotation < WVAnnotation
+    % A variable describing the state of ocean in the WaveVortexTransform
     %
-    % In addition to adding a name, description and detailed description of
-    % a given property, you can also specify the properties dimensions,
-    % its units, and whether it is a complex number or not. These
-    % annotations are used for both online documentation and for writing to
-    % NetCDF files.
+    % 
     %
-    % Note that as a subclass of TransformAnnotation, this class looks for
+    % Note that as a subclass of WVAnnotation, this class looks for
     % a file (name).md in the directory where it is defined another other
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
+
     properties
         dimensions
         units
+        modelOp
         isComplex = 0 % does it have a non-zero imaginary part?
+        isVariableWithLinearTimeStep = 1
+        isVariableWithNonlinearTimeStep = 1
     end
 
     methods
-        function self = TransformProperty(name,dimensions,units,description,options)
+        function self = WVVariableAnnotation(name,dimensions,units,description,options)
             arguments
                 name char {mustBeNonempty}
                 dimensions
-                units char
+                units char {mustBeNonempty}
                 description char {mustBeNonempty}
                 options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
                 options.detailedDescription char = ''
             end
-
-            self@TransformAnnotation(name,description,detailedDescription=options.detailedDescription);
+            self@WVAnnotation(name,description,detailedDescription=options.detailedDescription);
             if ~iscell(dimensions)
                 if isempty(dimensions)
                     dimensions = {};
@@ -39,6 +38,10 @@ classdef TransformProperty < TransformAnnotation
             self.dimensions = dimensions;
             self.units = units;
             self.isComplex = options.isComplex;
+            if isempty(self.detailedDescription)
+                self.detailedDescription = "- Topic: State Variables";
+            end
         end
+
     end
 end

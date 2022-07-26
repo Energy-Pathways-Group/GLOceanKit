@@ -1,13 +1,13 @@
 ---
 layout: default
-title: u_max
+title: operationNameMap
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 168
+nav_order: 130
 mathjax: true
 ---
 
-#  u_max
+#  operationNameMap
 
 
 

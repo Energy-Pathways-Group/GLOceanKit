@@ -43,7 +43,7 @@ function ncfile = writeToFile(wvt,path,variables,options)
 
     dims = {'x','y','z','k','l','j'};
     for iDim=1:length(dims)
-        transformDim = wvt.dimensionWithName(dims{iDim});
+        transformDim = wvt.dimensionAnnotationWithName(dims{iDim});
         attributes = containers.Map();
         attributes('units') = transformDim.units;
         attributes('description') = transformDim.description;
@@ -76,7 +76,7 @@ function ncfile = writeToFile(wvt,path,variables,options)
     end
 
     for iVar=1:length(attributesToWrite)
-        transformVar = wvt.transformPropertyWithName(attributesToWrite{iVar});
+        transformVar = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
         attributes = containers.Map();
         attributes('units') = transformVar.units;
         attributes('description') = transformVar.description;
@@ -92,7 +92,7 @@ function ncfile = writeToFile(wvt,path,variables,options)
     end
 
     for iVar=1:length(variables)
-        transformVar = wvt.stateVariableWithName(variables{iVar});
+        transformVar = wvt.variableAnnotationWithName(variables{iVar});
         attributes = containers.Map();
         attributes('units') = transformVar.units;
         attributes('description') = transformVar.description;

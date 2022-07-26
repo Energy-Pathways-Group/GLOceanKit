@@ -38,8 +38,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
                 k_r = options.k_r;
             end
 
-            fluxVar(1) = StateVariable('F0_psi',{'k','l','j'},'m/s', 'forcing function applied to the vortex coefficients',isComplex=1);
-            fluxVar(2) = StateVariable('F_psi',{'x','y','z'},'1/s^2', 'forcing function applied to the QGPVE written in terms of psi');
+            fluxVar(1) = WVVariableAnnotation('F0_psi',{'k','l','j'},'m/s', 'forcing function applied to the vortex coefficients',isComplex=1);
+            fluxVar(2) = WVVariableAnnotation('F_psi',{'x','y','z'},'1/s^2', 'forcing function applied to the QGPVE written in terms of psi');
             self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=r,nu=nu,shouldUseBeta=options.shouldUseBeta,stateVariables=fluxVar);
             self.k_f = options.k_f;
             self.k_r = k_r;

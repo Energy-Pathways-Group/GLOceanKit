@@ -97,18 +97,18 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.BuildProjectionOperators();
             self.offgridModes = WaveVortexModelOffGrid(im,self.latitude, self.N2Function,1);
 
-            self.addProperty(TransformProperty('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
-            self.addProperty(TransformProperty('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
-            self.addProperty(TransformProperty('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
-            self.addProperty(TransformProperty('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
-            self.addProperty(TransformProperty('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
-            self.addProperty(TransformProperty('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
-            outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addOperation(TransformOperation('rho_prime',outputVar,f));
 
-            outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addOperation(TransformOperation('rho_total',outputVar,f));
         end
@@ -222,7 +222,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             [K,L,~] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
 
-            value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
+            value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
         end
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;

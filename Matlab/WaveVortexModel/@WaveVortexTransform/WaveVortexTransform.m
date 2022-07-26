@@ -79,7 +79,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         WAp, WAm
         NAp, NAm, NA0
 
-        stateVariableWithName
           
         timeDependentStateVariables
     end
@@ -89,7 +88,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         k, l, j
         kRadial
 
-        f0, inertialPeriod
+        f, inertialPeriod
 
         X, Y, Z
         K, L, J
@@ -98,12 +97,13 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         Nz
     end
 
-    properties (Access=protected)
+    properties (Access=public)
         halfK = 0;
 
         operationNameMap
-        propertyNameMap
-        dimensionNameMap
+        variableAnnotationNameMap
+        propertyAnnotationNameMap
+        dimensionAnnotationNameMap
         variableCache
     end
 
@@ -160,7 +160,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function self = dotAssign(self,indexOp,varargin)
-            error("The StateVariable %s is read-only.",indexOp(1).Name)
+            error("The WVVariableAnnotation %s is read-only.",indexOp(1).Name)
         end
         
         function n = dotListLength(self,indexOp,indexContext)
@@ -206,31 +206,31 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             self.clearVariableCache();
 
-            self.dimensionNameMap = containers.Map();
-            self.propertyNameMap = containers.Map();
-            self.stateVariableWithName = containers.Map();
+            self.dimensionAnnotationNameMap = containers.Map();
+            self.propertyAnnotationNameMap = containers.Map();
+            self.variableAnnotationNameMap = containers.Map();
             self.operationNameMap = containers.Map();
             self.timeDependentStateVariables = {};
 
-            self.addDimension(WaveVortexTransform.defaultDimensions);
-            self.addProperty(WaveVortexTransform.defaultTransformProperties);
+            self.addDimensionAnnotations(WaveVortexTransform.defaultDimensionAnnotations);
+            self.addPropertyAnnotations(WaveVortexTransform.defaultPropertyAnnotations);
             self.addOperation(WaveVortexTransform.defaultTransformOperations);
         end
 
-        function addDimension(self,transformDimension)
+        function addDimensionAnnotations(self,transformDimension)
             % add one or more WVDimensions
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
-                transformDimension (1,:) TransformDimension {mustBeNonempty}
+                transformDimension (1,:) WVDimensionAnnotation {mustBeNonempty}
             end
             for i=1:length(transformDimension)
-                self.dimensionNameMap(transformDimension(i).name) = transformDimension(i);
+                self.dimensionAnnotationNameMap(transformDimension(i).name) = transformDimension(i);
             end
         end
 
-        function val = dimensionWithName(self,name)
+        function val = dimensionAnnotationWithName(self,name)
             % retrieve a WVDimension by name
             %
             % - Topic: Utility function — Metadata
@@ -238,31 +238,52 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                 self WaveVortexTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
-            val = self.dimensionNameMap(name);
+            val = self.dimensionAnnotationNameMap(name);
         end
 
-        function addProperty(self,transformProperty)
+        function addPropertyAnnotations(self,transformProperty)
             % add a addProperty
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
-                transformProperty (1,:) TransformProperty {mustBeNonempty}
+                transformProperty (1,:) WVPropertyAnnotation {mustBeNonempty}
             end
             for i=1:length(transformProperty)
-                self.propertyNameMap(transformProperty(i).name) = transformProperty(i);
+                self.propertyAnnotationNameMap(transformProperty(i).name) = transformProperty(i);
             end
         end
 
-        function val = propertyWithName(self,name)
-            % retrieve a WVProperty by name
+        function val = propertyAnnotationWithName(self,name)
+            % retrieve a WVPropertyAnnotation by name
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WaveVortexTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
-            val = self.propertyNameMap(name);
+            val = self.propertyAnnotationNameMap(name);
+        end
+
+        function val = variableAnnotationWithName(self,name)
+            % retrieve a WVVariableAnnotation by name
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WaveVortexTransform {mustBeNonempty}
+                name char {mustBeNonempty}
+            end
+            val = self.variableAnnotationNameMap(name);
+        end
+
+        function names = variableNames(self)
+            % retrieve the names of all available variables
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WaveVortexTransform {mustBeNonempty}
+            end
+            names = self.variableAnnotationNameMap.keys;
         end
 
         function addOperation(self,transformOperation)
@@ -275,15 +296,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             for iOp=1:length(transformOperation)
                 for iVar=1:length(transformOperation(iOp).outputVariables)
-                    if any(~isKey(self.dimensionNameMap,transformOperation(iOp).outputVariables(iVar).dimensions))
+                    if any(~isKey(self.dimensionAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).dimensions))
                         error("Unable to find at least one of the dimensions for variable %s",transformOperation(iOp).outputVariables(iVar).name);
                     end
 
-                    if isKey(self.stateVariableWithName,transformOperation(iOp).outputVariables(iVar).name)
+                    if isKey(self.variableAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).name)
                         fprintf('\t->This model operation will replace the existing operation for computing %s\n',transformOperation(iOp).outputVariables(iVar).name);
                     end
-                    self.stateVariableWithName(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
-                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(contains(self.timeDependentStateVariables,transformOperation(iOp).outputVariables(iVar).name))
+                    self.variableAnnotationNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
+                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentStateVariables,transformOperation(iOp).outputVariables(iVar).name))
                         self.timeDependentStateVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
                     end
                 end
@@ -320,11 +341,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
                 for iVar=1:length(varargout)
                     if isempty(varargout{iVar})
-                        modelVar = self.stateVariableWithName(varargin{iVar});
+                        % now go compute it, and then try fetching from
+                        % cach
+                        modelVar = self.variableAnnotationNameMap(varargin{iVar});
                         self.performTransformOperation(modelVar.modelOp.name);
-                        continue;
+                        didFetchAll = 0;
+                        break;
+                    else
+                        didFetchAll = 1;
                     end
-                    didFetchAll = 1;
                 end
             end
         end
@@ -454,14 +479,14 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end 
         
         function Omega = Omega(self)
-            Omega = sqrt(self.g*self.h.*(self.K .* self.K + self.L .* self.L) + self.f0*self.f0);
+            Omega = sqrt(self.g*self.h.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
         end
 
         function value = get.inertialPeriod(self)
             value = (2*pi/(2 * 7.2921E-5 * sin( self.latitude*pi/180 )));
         end
 
-        function value = get.f0(self)
+        function value = get.f(self)
             value = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
         end
 
@@ -531,11 +556,11 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             K2 = K.*K + L.*L;
             Kh = sqrt(K2);      % Total horizontal wavenumber
             
-            f = self.f0;
+            f = self.f;
             g_ = 9.81;
             
             omega = self.Omega;
-            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+            if abs(self.f) < 1e-14 % This handles the f=0 case.
                 omega(omega == 0) = 1;
             end
             fOmega = f./omega;
@@ -640,7 +665,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.UAm(1,1,:) = 1;
             self.VAm(1,1,:) = -sqrt(-1);
             
-            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+            if abs(self.f) < 1e-14 % This handles the f=0 case.
                 self.UA0 = zeros(size(Kh));
                 self.VA0 = zeros(size(Kh));
                 self.NA0 = zeros(size(Kh));
@@ -1000,10 +1025,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods (Static)
-        dimensions = defaultDimensions()
-        transformProperties = defaultTransformProperties()
+        dimensions = defaultDimensionAnnotations()
+        transformProperties = defaultPropertyAnnotations()
         transformOperations = defaultTransformOperations()
-        transformMethods = defaultTransformMethods()
+        transformMethods = defaultMethodAnnotations()
 
         % Initialize the a transform from file
         wvt = waveVortexTransformFromFile(path,iTime)

@@ -41,7 +41,7 @@ Set positions of float-like particles to be advected by the model.
   required, you may want to use cubic "spline" interpolation or
   even "exact" at the expense of computational speed.
  
-  You can track the value of any known StateVariable along the
+  You can track the value of any known WVVariableAnnotation along the
   particle's flow path, e.g., relative vorticity. These values
   must also be interpolated using one of the known
   interpolation methods.

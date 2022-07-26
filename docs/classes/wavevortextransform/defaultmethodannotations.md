@@ -1,25 +1,25 @@
 ---
 layout: default
-title: defaultTransformMethods
+title: defaultMethodAnnotations
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 77
 mathjax: true
 ---
 
-#  defaultTransformMethods
+#  defaultMethodAnnotations
 
-return array of TransformAnnotations to annotate the methods
+return array of WVAnnotations to annotate the methods
 
 
 ---
 
 ## Declaration
 ```matlab
- transformMethods = defaultTransformMethods()
+ methodAnnotations = defaultMethodAnnotations()
 ```
 ## Returns
-+ `transformProperties`  array of TransformAnnotations instances
++ `methodAnnotations`  array of WVAnnotations instances
 
 ## Discussion
 

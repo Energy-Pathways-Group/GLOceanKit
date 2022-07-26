@@ -110,7 +110,7 @@ classdef WaveVortexModel < handle
             arguments (Repeating)
                 variables char
             end
-            unknownVars = setdiff(variables,self.wvt.stateVariableWithName.keys);
+            unknownVars = setdiff(variables,self.wvt.variableNames);
             if ~isempty(unknownVars)
                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
@@ -137,7 +137,7 @@ classdef WaveVortexModel < handle
             arguments (Repeating)
                 variables char
             end
-            unknownVars = setdiff(variables,self.wvt.stateVariableWithName.keys);
+            unknownVars = setdiff(variables,self.wvt.variableNames);
             if ~isempty(unknownVars)
                 error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
             end
@@ -247,17 +247,17 @@ classdef WaveVortexModel < handle
 
             % Confirm that we really can track these variables.
             for iVar=1:length(trackedFieldNames)
-                if ~isKey(self.wvt.stateVariableWithName,trackedFieldNames{iVar})
-                    error('Unable to find a StateVariable named %s.', trackedFieldNames{iVar});
+                if ~any(ismember(self.wvt.variableNames,trackedFieldNames{iVar}))
+                    error('Unable to find a WVVariableAnnotation named %s.', trackedFieldNames{iVar});
                 end
-                transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
+                transformVar = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
                 if self.wvt.isBarotropic == 1
                     if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                        error('The StateVariable %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                        error('The WVVariableAnnotation %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                     end
                 else
                     if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                        error('The StateVariable %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
+                        error('The WVVariableAnnotation %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                     end
                 end
             end
@@ -324,7 +324,7 @@ classdef WaveVortexModel < handle
             % required, you may want to use cubic "spline" interpolation or
             % even "exact" at the expense of computational speed.
             %
-            % You can track the value of any known StateVariable along the
+            % You can track the value of any known WVVariableAnnotation along the
             % particle's flow path, e.g., relative vorticity. These values
             % must also be interpolated using one of the known
             % interpolation methods.
@@ -597,7 +597,7 @@ classdef WaveVortexModel < handle
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
 
             % Now add a time dimension
-            transformVar = self.wvt.stateVariableWithName('t');
+            transformVar = self.wvt.variableAnnotationWithName('t');
             attributes = containers.Map();
             attributes('units') = transformVar.units;
             attributes('description') = transformVar.description;
@@ -683,10 +683,10 @@ classdef WaveVortexModel < handle
                 fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, datestr(wallTimeRemaining, 'HH:MM:SS'), datestr(datetime('now')+wallTimeRemaining)) ;
                 self.wvt.summarizeEnergyContent();
 
-A02 = (self.wvt.A0_TE_factor/self.wvt.h) .* (self.wvt.A0.*conj(self.wvt.A0));
-u_rms_alt = sqrt(2*sum(A02(:)));
-
-fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
+% A02 = (self.wvt.A0_TE_factor/self.wvt.h) .* (self.wvt.A0.*conj(self.wvt.A0));
+% u_rms_alt = sqrt(2*sum(A02(:)));
+% 
+% fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
 
                 self.integrationLastInformWallTime = datetime('now');
                 self.integrationLastInformModelTime = self.wvt.t;
@@ -880,7 +880,7 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
                         continue;
                     end
 
-                    transformVar = self.wvt.stateVariableWithName(self.netCDFOutputVariables{iVar});
+                    transformVar = self.wvt.variableAnnotationWithName(self.netCDFOutputVariables{iVar});
                     attributes = containers.Map();
                     attributes('units') = transformVar.units;
                     attributes('description') = transformVar.description;
@@ -991,13 +991,13 @@ fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
             end
             for iVar=1:length(dimVars)
                 attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = self.wvt.dimensionWithName(dimVars{iVar}).units;
+                attributes('units') = self.wvt.dimensionAnnotationWithName(dimVars{iVar}).units;
                 attributes('particleVariableName') = dimVars{iVar};
                 variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
             end
 
             for iVar=1:length(trackedFieldNames)
-                transformVar = self.wvt.stateVariableWithName(trackedFieldNames{iVar});
+                transformVar = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
                 attributes = containers.Map(commonKeys,commonVals);
                 attributes('units') = transformVar.units;
                 attributes('particleVariableName') = trackedFieldNames{iVar};

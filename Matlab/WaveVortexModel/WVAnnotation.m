@@ -1,4 +1,4 @@
-classdef TransformAnnotation < handle
+classdef WVAnnotation < handle
     % annotates methods, properties, operations, and variables
     %
     % The purpose of this class is twofold. First, it lets us add
@@ -17,7 +17,7 @@ classdef TransformAnnotation < handle
     end
 
     methods
-        function self = TransformAnnotation(name,description,options)
+        function self = WVAnnotation(name,description,options)
             arguments
                 name char {mustBeNonempty}
                 description char {mustBeNonempty}
@@ -38,7 +38,7 @@ classdef TransformAnnotation < handle
 
         function loadDetailedDescriptionIfAvailable(self)
             % dir(strcat(fileparts(mfilename('fullpath')),'/**/x.md'))
-            % But this won't work from within the TransformDimension definition. Need
+            % But this won't work from within the WVDimensionAnnotation definition. Need
             % to use dbstack to get the caller name.
             st = dbstack;
             if length(st) > 2

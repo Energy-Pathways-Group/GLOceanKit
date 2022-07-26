@@ -14,7 +14,7 @@ classdef TransformOperation < handle
         function self = TransformOperation(name,outputVariables,f)
             arguments
                 name char {mustBeNonempty}
-                outputVariables StateVariable {mustBeNonempty}
+                outputVariables WVVariableAnnotation {mustBeNonempty}
                 f function_handle
             end
 
@@ -39,7 +39,7 @@ classdef TransformOperation < handle
 
         function varargout = Compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
-            if nargin > 0
+            if ~isempty(varargin)
                 [varargout{:}] = self.f(wvt,varargin{:});
             else
                 [varargout{:}] = self.f(wvt);

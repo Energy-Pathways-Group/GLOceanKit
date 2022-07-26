@@ -27,7 +27,7 @@ Nx = N;
 Ny = N;
 
 latitude = 31;
-f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+f = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 
 % Cyprus Eddy example stratification profile
 N0 = 12*2*pi/3600; % reference buoyancy frequency, radians/seconds
@@ -45,8 +45,8 @@ zIn = [-2000 0];
 A = -1.32e-5; % s^{-1}
 alpha = 8e-10; % m^{-2}
 beta = 8.2e-6; % m^{-2}
-% etaFunction = @(z) -A*f0*(beta/alpha)*(z./N2Function(z)).*exp(-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*beta*z.*z);
-eta = @(x,y,z) -A*f0*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x).*(x)+(y).*(y))-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*alpha*((x).*(x)+(y).*(y))-2*beta*z.*z);
+% etaFunction = @(z) -A*f*(beta/alpha)*(z./N2Function(z)).*exp(-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*beta*z.*z);
+eta = @(x,y,z) -A*f*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x).*(x)+(y).*(y))-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*alpha*((x).*(x)+(y).*(y))-2*beta*z.*z);
 etaFunction= @(z) eta(-3e3,-3e3,z);
 
 % Start by plotting the *density* profile (not eta)

@@ -29,17 +29,17 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             % Includes the extra factors from the FFTs.
             self.buildTransformationMatrices();
 
-            outputVar = StateVariable('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
+            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addOperation(TransformOperation('ssh',outputVar,f));
 
-            outputVar = StateVariable('psi',{'x','y','z'},'m^2/s', 'sea-surface anomaly');
-            f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f0) * wvt.A0t);
+            outputVar = WVVariableAnnotation('psi',{'x','y','z'},'m^2/s', 'sea-surface anomaly');
+            f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f) * wvt.A0t);
             self.addOperation(TransformOperation('psi',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
-            outputVar = StateVariable('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
-            f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f0) * (K.^2 +L.^2) .* wvt.A0t);
+            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
             self.addOperation(TransformOperation('zeta_z',outputVar,f));
         end
 
@@ -63,7 +63,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         end
 
         function setSSH(self,ssh)
-            psi = @(X,Y,Z) (self.g/self.f0)*ssh(X,Y);
+            psi = @(X,Y,Z) (self.g/self.f)*ssh(X,Y);
             self.setGeostrophicStreamfunction(psi);
         end
 
@@ -74,11 +74,11 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             K2 = K.*K + L.*L;
             Kh = sqrt(K2);      % Total horizontal wavenumber
             
-            f = self.f0;
+            f = self.f;
             g_ = 9.81;
             
             omega = self.Omega;
-            if abs(self.f0) < 1e-14 % This handles the f=0 case.
+            if abs(self.f) < 1e-14 % This handles the f=0 case.
                 omega(omega == 0) = 1;
             end
             fOmega = f./omega;
@@ -197,7 +197,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
 
         function Z0 = enstrophyFlux(self)
             Fqgpv = self.qgpvFlux;
-            PVFactor = -self.Omega .* self.Omega / (self.h * self.f0);
+            PVFactor = -self.Omega .* self.Omega / (self.h * self.f);
             Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) ); % 1/s^3
         end
 
@@ -253,7 +253,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             [K,L,~] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
 
-            value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
+            value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
         end
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;

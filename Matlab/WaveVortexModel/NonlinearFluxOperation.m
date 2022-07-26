@@ -20,7 +20,7 @@ classdef NonlinearFluxOperation < TransformOperation
         function self = NonlinearFluxOperation(name,outputVariables,options)
             arguments
                 name char {mustBeNonempty}
-                outputVariables StateVariable {mustBeNonempty}
+                outputVariables WVVariableAnnotation {mustBeNonempty}
                 options.f function_handle = @disp
             end
 

@@ -21,7 +21,7 @@ wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude
 
 if shouldUseGMSpectrum == 1
     wvm.initWithGMSpectrum(1.0);
-    maxTime = 60*60; %2*pi/wavemodel.f0;
+    maxTime = 60*60; %2*pi/wavemodel.f;
     period = 2*pi/wvm.N0;
     [u,v] = wvm.VelocityFieldAtTime(0.0);
     U = max(max(max( sqrt(u.*u + v.*v) )));

@@ -34,8 +34,8 @@ period = 2*pi/omega;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WaveVortexModel(wvt,nonlinearFlux=NonlinearBoussinesqWithReducedInteractionMasks(wvt));
-% model = WaveVortexModel(wvt);
+%model = WaveVortexModel(wvt,nonlinearFlux=NonlinearBoussinesqWithReducedInteractionMasks(wvt));
+model = WaveVortexModel(wvt);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;

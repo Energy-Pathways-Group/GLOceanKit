@@ -21,7 +21,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
 % assigned. Default 0 (amplitudes will not be randomized)
 %
 % maxDeltaOmega is the maximum width in frequency that will be
-% integrated over for assigned energy. By default it is self.Nmax-self.f0
+% integrated over for assigned energy. By default it is self.Nmax-self.f
     if nargin(GM2D_int) ~= 3
         error('The spectral function must take three inputs: omega0, omega1, and j.\n');
     end
@@ -36,7 +36,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
 
     % Set defaults
     shouldRandomizeAmplitude = 0;
-    maxDeltaOmega = self.Nmax-self.f0;
+    maxDeltaOmega = self.Nmax-self.f;
     initializeModes = 0;
     energyWarningThreshold = 0.5;
     excludeNyquist = 1;
@@ -143,7 +143,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
 
         % Let's do a sanity check for users to make sure they don't
         % put too much energy in a single mode
-        totalEnergyInThisMode = GM2D_int(self.f0,self.Nmax,iMode);
+        totalEnergyInThisMode = GM2D_int(self.f,self.Nmax,iMode);
 
         lastIdx = 1;
         omega0 = sortedOmegas(lastIdx);
@@ -181,7 +181,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
         % Still have to deal with the last point.
         if lastIdx == 1
             % There is only one point for this entire iMode!
-           leftDeltaOmega = omega0 - self.f0;
+           leftDeltaOmega = omega0 - self.f;
            if leftDeltaOmega > maxDeltaOmega/2
                 leftDeltaOmega = maxDeltaOmega/2;
            end

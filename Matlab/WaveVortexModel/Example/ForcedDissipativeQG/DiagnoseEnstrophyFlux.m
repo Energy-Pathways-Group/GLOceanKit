@@ -14,7 +14,7 @@ fprintf('Enstrophy forcing, computed spatially: %g 1/s^3\n',eta);
 wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
 
 % Muliply A0 by this factor and you get QGPV
-PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0); % real, units of 1/(m s)
+PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f); % real, units of 1/(m s)
 FZ_forcing = PVFactor.*F0_psi;
 FZ_damping = PVFactor.*(L_damp.*wvt.A0);
 
@@ -42,7 +42,7 @@ k_r = ncfile.attributes('k_r');
 L_damp = ncfile.readVariables('L_damp');
 
 % Muliply A0 by this factor and you get QGPV
-PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0); % real, units of 1/(m s)
+PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f); % real, units of 1/(m s)
 TotalEnstrophy = (PVFactor .* wvt.A0) .* conj(PVFactor.*wvt.A0);
 Z0_radial = wvt.transformToRadialWavenumber(TotalEnstrophy);
 

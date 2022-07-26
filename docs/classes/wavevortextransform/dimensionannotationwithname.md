@@ -1,15 +1,15 @@
 ---
 layout: default
-title: addProperty
+title: dimensionAnnotationWithName
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 67
+nav_order: 85
 mathjax: true
 ---
 
-#  addProperty
+#  dimensionAnnotationWithName
 
-add a addProperty
+retrieve a WVDimension by name
 
 
 ---

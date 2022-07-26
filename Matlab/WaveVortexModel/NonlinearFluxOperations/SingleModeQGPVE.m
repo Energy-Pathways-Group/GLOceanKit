@@ -17,12 +17,12 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
                 options.r (1,1) double = 0
                 options.fluxName char = 'SingleModeQGPVE'
                 options.nu (1,1) double
-                options.stateVariables StateVariable = StateVariable.empty()
+                options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
             end
-            fluxVar(1) = StateVariable('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
-            fluxVar(2) = StateVariable('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
-            fluxVar(3) = StateVariable('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
-%             fluxVar(4) = StateVariable('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
+            fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+            fluxVar(2) = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+%             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@NonlinearFluxOperation(options.fluxName,fluxVar);
@@ -31,11 +31,11 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             self.doesFluxA0 = 1;
             
             AA = ~(wvt.maskForAliasedModes(jFraction=1));
-            self.PVA0 = - wvt.Omega .* wvt.Omega / (wvt.h * wvt.f0);
+            self.PVA0 = - wvt.Omega .* wvt.Omega / (wvt.h * wvt.f);
             self.A0PV = AA./self.PVA0;
             
             % Components to the damping operator (which will multiply A0):
-            % 1. Convert A0 to a velocity streamfunction (g/f0)
+            % 1. Convert A0 to a velocity streamfunction (g/f)
             % 2. bi-harmonic operator
             % 3. spectral vanish viscosity
             % 4. nu is set to create approximately Reynolds number=1.
@@ -48,7 +48,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
             self.r = options.r;
             [K,L] = ndgrid(wvt.k,wvt.l,wvt.j);
             self.damp = -self.r*(K.^2 +L.^2) - self.nu*Qkl.*(-(K.^2 +L.^2)).^2; 
-            self.damp = (wvt.g*wvt.h ./(wvt.Omega .* wvt.Omega)) .* AA.* self.damp; % (g/f0) converts A0 into a velocity
+            self.damp = (wvt.g*wvt.h ./(wvt.Omega .* wvt.Omega)) .* AA.* self.damp; % (g/f) converts A0 into a velocity
             if options.shouldUseBeta == 1
                 self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
             else

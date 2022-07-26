@@ -43,7 +43,7 @@ totalTests = 0;
 for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
     rho0 = 1025;
-    if 1 == 0
+    if 1 == 1
         wavemodel = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude(iLat), isHydrostatic=isHydrostatic,rho0=rho0);
         rho0 = wavemodel.rho0;
         g = 9.81;
@@ -56,7 +56,7 @@ for iLat = 1:length(latitude)
     end
     
     % pull out some model constants for easy reference
-    f0 = wavemodel.f0;
+    f = wavemodel.f;
     k = wavemodel.k;
     l = wavemodel.l;
     h = wavemodel.h;
@@ -98,12 +98,12 @@ for iLat = 1:length(latitude)
                     alpha=atan2(ll,kk);
                     K = sqrt( kk^2 + ll^2);
                     if j0 == 0
-                        omega = f0;
+                        omega = f;
                     else
                         if isHydrostatic ==1
-                            omega = thesign*sqrt( (K*K*N0*N0 + m*m*f0*f0)/(m*m) );
+                            omega = thesign*sqrt( (K*K*N0*N0 + m*m*f*f)/(m*m) );
                         else
-                            omega = thesign*sqrt( (K*K*N0*N0 + m*m*f0*f0)/(K*K+m*m) );
+                            omega = thesign*sqrt( (K*K*N0*N0 + m*m*f*f)/(K*K+m*m) );
                         end
                     end
                     
@@ -115,7 +115,7 @@ for iLat = 1:length(latitude)
                             kOverOmega = K/omega;
                         end
                     else
-                        f0OverOmega = f0/omega;
+                        f0OverOmega = f/omega;
                         kOverOmega = K/omega;
                     end
                     

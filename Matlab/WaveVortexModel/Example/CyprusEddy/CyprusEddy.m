@@ -49,8 +49,8 @@ psi = @(x,y,z) -(A/(2*alpha))*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.
 
 u_eddy = @(x,y,z) -A*(y-y0).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
 v_eddy = @(x,y,z) A*(x-x0).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z);
-% rho_eddy = @(x,y,z) -(rho0/g)*A*wvm.f0*(beta/alpha)*z.*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - (rho0/g)*A*A*(beta/alpha)*z.*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
-eta_eddy = @(x,y,z) -A*wvm.f0*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
+% rho_eddy = @(x,y,z) -(rho0/g)*A*wvm.f*(beta/alpha)*z.*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - (rho0/g)*A*A*(beta/alpha)*z.*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
+eta_eddy = @(x,y,z) -A*wvm.f*(beta/alpha)*(z./N2Function(z)).*exp(-alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-beta*z.*z) - A*A*(beta/alpha)*(z./N2Function(z)).*exp(-2*alpha*((x-x0).*(x-x0)+(y-y0).*(y-y0))-2*beta*z.*z);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define the inertial flow
@@ -122,7 +122,7 @@ plot(squeeze(rho_prime(Nx/2,Ny/2,:)),wvm.z)
 xlabel('density anomaly')
 
 % Create a figure looking at the vertical vorticity
-zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f0;
+zeta_z = (DiffFourier(wvm.x,v,1,1) - DiffFourier(wvm.y,u,1,2))/wvm.f;
 figure('Position',[100 100 400 800])
 
 subplot(2,1,1)

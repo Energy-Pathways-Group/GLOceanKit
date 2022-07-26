@@ -3,7 +3,7 @@ layout: default
 title: setWaveModes
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 146
+nav_order: 150
 mathjax: true
 ---
 

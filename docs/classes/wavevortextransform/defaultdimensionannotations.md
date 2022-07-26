@@ -1,13 +1,13 @@
 ---
 layout: default
-title: defaultDimensions
+title: defaultDimensionAnnotations
 parent: WaveVortexTransform
 grand_parent: Classes
 nav_order: 76
 mathjax: true
 ---
 
-#  defaultDimensions
+#  defaultDimensionAnnotations
 
 return array of TransformDimensions initialized by default
 
@@ -16,10 +16,10 @@ return array of TransformDimensions initialized by default
 
 ## Declaration
 ```matlab
- dimensions = defaultDimensions()
+ dimensions = defaultDimensionAnnotations()
 ```
 ## Returns
-+ `dimensions`  array of TransformDimension instances
++ `dimensions`  array of WVDimensionAnnotation instances
 
 ## Discussion
 

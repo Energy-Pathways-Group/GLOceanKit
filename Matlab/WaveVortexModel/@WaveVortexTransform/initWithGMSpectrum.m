@@ -34,11 +34,11 @@ H = (j_star+(1:1024)).^(-5/2);
 H_norm = 1/sum(H);
 
 % Do the same for the frequency function.
-B_norm = 1/atan(sqrt(self.Nmax*self.Nmax/(self.f0*self.f0)-1));
+B_norm = 1/atan(sqrt(self.Nmax*self.Nmax/(self.f*self.f)-1));
 
 % This function tells you how much energy you need between two
 % frequencies for a given vertical mode.
-GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f0/sqrt(omega0*omega0-self.f0*self.f0)) - atan(self.f0/sqrt(omega1*omega1-self.f0*self.f0)));
+GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f/sqrt(omega0*omega0-self.f*self.f)) - atan(self.f/sqrt(omega1*omega1-self.f*self.f)));
 
 % Do a quick check to see how much energy is lost due to
 % limited vertical resolution.
@@ -51,7 +51,7 @@ end
 
 totalEnergy = 0;
 for mode=1:maxMode
-    totalEnergy = totalEnergy + GM2D_int(self.f0,self.Nmax,mode);
+    totalEnergy = totalEnergy + GM2D_int(self.f,self.Nmax,mode);
 end
 fprintf('You will miss %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
 

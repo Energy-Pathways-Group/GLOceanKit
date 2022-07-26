@@ -3,7 +3,7 @@ classdef WaveVortexModelOffGrid < handle
     %   Detailed explanation goes here
     
     properties
-        f0, rho0, latitude
+        f, rho0, latitude
         internalModes
         Lz
         z
@@ -28,7 +28,7 @@ classdef WaveVortexModelOffGrid < handle
         function self = WaveVortexModelOffGrid(internalModes, latitude,N2Function,hydrostatic)
             self.internalModes = internalModes;
             self.latitude = latitude;
-            self.f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+            self.f = 2 * 7.2921E-5 * sin( latitude*pi/180 );
             self.Lz = self.internalModes.Lz;
             self.z = self.internalModes.z;
             self.rho0 = self.internalModes.rho0;
@@ -95,7 +95,7 @@ classdef WaveVortexModelOffGrid < handle
             l = l(validIndices);
             
             if ~isempty(k)
-                omega = sqrt(self.g*h_ .* K2h + self.f0*self.f0);
+                omega = sqrt(self.g*h_ .* K2h + self.f*self.f);
                 
                 self.k_ext = cat(2,self.k_ext,reshape(k,1,[]));
                 self.l_ext = cat(2,self.l_ext,reshape(l,1,[]));
@@ -138,7 +138,7 @@ classdef WaveVortexModelOffGrid < handle
             alpha = alpha(validIndices);
             
             if ~isempty(omega)
-                k = sqrt((omega.*omega - self.f0*self.f0)./(self.g*h_));
+                k = sqrt((omega.*omega - self.f*self.f)./(self.g*h_));
                 alpha0 = reshape(alpha,1,[]);
                 
                 self.k_ext = cat(2,self.k_ext,reshape(k .* cos(alpha0),1,[]));
@@ -231,11 +231,11 @@ classdef WaveVortexModelOffGrid < handle
             Kh_ = sqrt( self.k_ext.*self.k_ext + self.l_ext.*self.l_ext);
             
             kOverOmega = Kh_ ./ self.omega_ext;
-            if self.f0 == 0
+            if self.f == 0
                 f0OverOmega = 0;
                 kOverOmega( Kh_ == 0 ) = 0;
             else
-                f0OverOmega = (self.f0 ./ self.omega_ext);  
+                f0OverOmega = (self.f ./ self.omega_ext);  
             end
             
             self.U_cos_ext = self.U_ext .* cos(alpha0);

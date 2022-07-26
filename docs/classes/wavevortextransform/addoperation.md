@@ -1,16 +1,19 @@
 ---
 layout: default
-title: transformOperationWithName
+title: addOperation
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 157
+nav_order: 67
 mathjax: true
 ---
 
-#  transformOperationWithName
+#  addOperation
 
-
+add a WVOperation
 
 
 ---
 
+## Discussion
+
+  

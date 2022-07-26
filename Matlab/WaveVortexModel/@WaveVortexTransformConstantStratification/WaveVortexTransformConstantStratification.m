@@ -70,11 +70,11 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             end
 
 
-            outputVar = StateVariable('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
             f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
             self.addOperation(TransformOperation('rho_prime',outputVar,f));
 
-            outputVar = StateVariable('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addOperation(TransformOperation('rho_total',outputVar,f));
 
@@ -102,7 +102,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
                 h(:,:,1) = 1; % prevent divide by zero
             else
                 K2 = K.*K + L.*L;
-                h = (1/self.g)*(self.N0*self.N0 - self.f0*self.f0)./(M.*M+K2);
+                h = (1/self.g)*(self.N0*self.N0 - self.f*self.f)./(M.*M+K2);
                 h(:,:,1) = 1; % prevent divide by zero
             end
         end
@@ -114,7 +114,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             [~,~,J] = ndgrid(self.k,self.l,self.j);
             M = J*pi/self.Lz;
             N = self.N0;
-            f = self.f0; 
+            f = self.f; 
             g_ = 9.81;
        
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,23 +163,23 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             K2 = K.*K + L.*L;
 
             if self.isHydrostatic == 1
-                value = (self.g^2/(self.f0*self.f0)) * K2 .* self.Apm_TE_factor/2;
+                value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
             else
                 M = J*pi/self.Lz;
 
                 % This comes from equation (3.10) in the manuscript, but using
                 % the relation from equation A2b
-                % omega = sqrt(self.g*h.*K2 + self.f0*self.f0);
-                % value = (self.g/(self.f0*self.f0)) * (omega.*omega - self.f0*self.f0) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f0*self.f0) );
-                value = (self.g^3/(self.f0*self.f0)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f0*self.f0) ); % factor of 2 larger than in the manuscript
-                value(:,:,1) = (self.g^2/(self.f0*self.f0)) * K2(:,:,1) * self.Lz/2;
+                % omega = sqrt(self.g*h.*K2 + self.f*self.f);
+                % value = (self.g/(self.f*self.f)) * (omega.*omega - self.f*self.f) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f*self.f) );
+                value = (self.g^3/(self.f*self.f)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f*self.f) ); % factor of 2 larger than in the manuscript
+                value(:,:,1) = (self.g^2/(self.f*self.f)) * K2(:,:,1) * self.Lz/2;
             end
         end
         function value = get.A0_PE_factor(self)
             if self.isHydrostatic == 1
                 value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
             else
-                value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f0*self.f0)/2; % factor of 2 larger than in the manuscript
+                value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f*self.f)/2; % factor of 2 larger than in the manuscript
             end
         end
         function value = get.A0_TE_factor(self)
@@ -196,8 +196,8 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
             M = J*pi/self.Lz;
-            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-            cg_x = (K./Omega) .*M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f*self.f*M.*M)./(K2+M.*M) );
+            cg_x = (K./Omega) .*M.*M .* (self.N0*self.N0-self.f*self.f)./(M.*M+K2).^2;
             cg_x(isnan(cg_x)) = 0;
         end
         
@@ -205,8 +205,8 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
             M = J*pi/self.Lz;
-            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-            cg_y = (L./Omega) .* M.*M .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f*self.f*M.*M)./(K2+M.*M) );
+            cg_y = (L./Omega) .* M.*M .* (self.N0*self.N0-self.f*self.f)./(M.*M+K2).^2;
             cg_y(isnan(cg_y)) = 0;
         end
         
@@ -214,8 +214,8 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             K2 = K.*K + L.*L;
             M = J*pi/self.Lz;
-            Omega = sqrt( (self.N0*self.N0*K2+self.f0*self.f0*M.*M)./(K2+M.*M) );
-            cg_z = -(M./Omega) .* K2 .* (self.N0*self.N0-self.f0*self.f0)./(M.*M+K2).^2;
+            Omega = sqrt( (self.N0*self.N0*K2+self.f*self.f*M.*M)./(K2+M.*M) );
+            cg_z = -(M./Omega) .* K2 .* (self.N0*self.N0-self.f*self.f)./(M.*M+K2).^2;
             cg_z(isnan(cg_z)) = 0;
         end
         

@@ -1,15 +1,15 @@
 ---
 layout: default
-title: addTransformProperty
+title: addDimensionAnnotations
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 69
+nav_order: 62
 mathjax: true
 ---
 
-#  addTransformProperty
+#  addDimensionAnnotations
 
-add a addTransformProperty
+add one or more WVDimensions
 
 
 ---

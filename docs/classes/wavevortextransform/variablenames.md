@@ -1,15 +1,15 @@
 ---
 layout: default
-title: addTransformDimension
+title: variableNames
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 67
+nav_order: 177
 mathjax: true
 ---
 
-#  addTransformDimension
+#  variableNames
 
-add a TransformDimension
+retrieve the names of all available variables
 
 
 ---

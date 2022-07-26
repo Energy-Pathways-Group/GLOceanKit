@@ -10,9 +10,9 @@ Lx = dx*Nx;
 dy = (max(y)-min(y))/(Ny-1);
 Ly = dy*Ny;
 Lz = max(z)-min(z);
-f0 = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'f0');
+f = WM.VariableFieldsFrom3DOutputFileAtIndex(1,'f');
 N0 = InternalModesConstantStratification.BuoyancyFrequencyFromConstantStratification(rho_bar,z);
-latitude = double(asind(f0/(2 * 7.2921E-5)));
+latitude = double(asind(f/(2 * 7.2921E-5)));
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, min(rho_bar));
 wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0, min(rho_bar));

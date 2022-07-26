@@ -59,7 +59,7 @@ for i=1:length(mc.PropertyList)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-dims = WaveVortexTransform.defaultDimensions();
+dims = WaveVortexTransform.defaultDimensionAnnotations();
 for iDim=1:length(dims)
     metadata = ExtractMetadataFromDetailedDescription(dims(iDim).detailedDescription);
     metadata.name = dims(iDim).name;
@@ -72,7 +72,7 @@ for iDim=1:length(dims)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-props = WaveVortexTransform.defaultTransformProperties();
+props = WaveVortexTransform.defaultPropertyAnnotations();
 for iDim=1:length(props)
     metadata = ExtractMetadataFromDetailedDescription(props(iDim).detailedDescription);
     metadata.name = props(iDim).name;
@@ -102,7 +102,7 @@ for iOp=1:length(ops)
     end
 end
 
-methods = WaveVortexTransform.defaultTransformMethods;
+methods = WaveVortexTransform.defaultMethodAnnotations;
 for iMethod=1:length(methods)
     metadata = ExtractMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
     metadata.name = methods(iMethod).name;

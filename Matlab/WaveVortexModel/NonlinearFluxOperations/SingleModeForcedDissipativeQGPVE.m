@@ -30,7 +30,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
 
             self.k_f = options.k_f;
             self.f_zeta = options.f_zeta;
-            self.F = self.f_zeta*(wvt.f0*wvt.h ./(wvt.Omega .* wvt.Omega)).*Fzeta;
+            self.F = self.f_zeta*(wvt.f*wvt.h ./(wvt.Omega .* wvt.Omega)).*Fzeta;
         end
 
         function varargout = Compute(self,wvt,varargin)

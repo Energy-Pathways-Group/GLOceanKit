@@ -13,10 +13,10 @@ classdef ParticleFluxOperation < TransformOperation
                 f function_handle
                 options.isXYOnly double {mustBeMember(options.isXYOnly,[0 1])} = 0 
             end
-            outputVariables(1) = StateVariable('u_p',{'x','y','z'},'m/s', 'velocity x-direction at particle positions');
-            outputVariables(2) = StateVariable('v_p',{'x','y','z'},'m/s', 'velocity y-direction at particle positions');
+            outputVariables(1) = WVVariableAnnotation('u_p',{'x','y','z'},'m/s', 'velocity x-direction at particle positions');
+            outputVariables(2) = WVVariableAnnotation('v_p',{'x','y','z'},'m/s', 'velocity y-direction at particle positions');
             if ~options.isXYOnly
-                outputVariables(3) = StateVariable('w_p',{'x','y','z'},'m/s', 'velocity z-direction at particle positions');
+                outputVariables(3) = WVVariableAnnotation('w_p',{'x','y','z'},'m/s', 'velocity z-direction at particle positions');
             end
 
             self@TransformOperation(name,outputVariables,f);

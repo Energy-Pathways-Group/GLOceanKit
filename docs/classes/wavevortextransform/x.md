@@ -3,7 +3,7 @@ layout: default
 title: x
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 184
+nav_order: 191
 mathjax: true
 ---
 

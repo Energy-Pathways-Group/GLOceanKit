@@ -71,7 +71,7 @@ end
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dt = 2*pi/boussinesq.f0/50;
+dt = 2*pi/boussinesq.f/50;
 integrator = ArrayIntegrator(@(t,y0) boussinesq.NonlinearFluxAtTimeArray(t,y0),boussinesq.Y,dt);
 
 nT=20*50;

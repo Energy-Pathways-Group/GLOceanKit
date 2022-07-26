@@ -1,13 +1,13 @@
 ---
 layout: default
-title: transformPropertyWithName
+title: propertyAnnotationNameMap
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 158
+nav_order: 134
 mathjax: true
 ---
 
-#  transformPropertyWithName
+#  propertyAnnotationNameMap
 
 
 

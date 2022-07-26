@@ -3,7 +3,7 @@ layout: default
 title: fillOutWaveSpectrum
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 92
+nav_order: 93
 mathjax: true
 ---
 
@@ -18,6 +18,6 @@ Add external waves to the model to fill out the spectrum
 
   Add free/external waves to fill in the gaps of the gridded
   solution. No gaps will be larger than 2*pi/maxTimeGap, and
-  the gaps will be smaller near f0.
+  the gaps will be smaller near f.
  
   

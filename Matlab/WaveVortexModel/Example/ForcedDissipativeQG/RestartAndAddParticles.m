@@ -9,7 +9,7 @@
 model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-spinup-512.nc',restartIndex=Inf);
 
 wvt = model.wvt;
-outputVar = StateVariable('eta',{'x','y','z'},'1/s^3', 'enstrophy forcing');
+outputVar = WVVariableAnnotation('eta',{'x','y','z'},'1/s^3', 'enstrophy forcing');
 f = @(wvt) wvt.zeta_z .* wvt.F_psi;
 wvt.addOperation(TransformOperation('eta',outputVar,f));
 
