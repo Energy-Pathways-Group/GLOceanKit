@@ -3,7 +3,7 @@ function initWithInertialMotions(self,u,v)
 %
 % Clears variables Ap,Am,A0 and then sets inertial motions
 % - Topic: Initial conditions — Inertial Oscillations
-% - Declaration: initWithInertialMotions(psi)
+% - Declaration: initWithInertialMotions(u,v)
 % - Parameter u: function handle that takes a single argument, u(Z)
 % - Parameter v: function handle that takes a single argument, v(Z)
 self.Ap = zeros(size(self.Ap));

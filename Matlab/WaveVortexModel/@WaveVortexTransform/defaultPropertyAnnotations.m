@@ -14,12 +14,12 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('Ly',{},'m', 'domain size in t
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lz',{},'m', 'domain size in the z-direction');
 propertyAnnotations(end+1) = WVPropertyAnnotation('t0',{},'s', 'reference time of Ap, Am, A0');
 propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'latitude of the simulation', detailedDescription='- topic: Domain Attributes');
-propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis parameter');
+propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis parameter', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('inertialPeriod',{},'s', 'inertial period');
 propertyAnnotations(end+1) = WVPropertyAnnotation('g',{},'m s^{-2}', 'gravity of Earth', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('rho0',{},'kg m^{-3}', 'mean density at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
-propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad/s', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Nmax',{},'rad/s', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
+propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad s^{-1}', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
+propertyAnnotations(end+1) = WVPropertyAnnotation('Nmax',{},'rad s^{-1}', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
 propertyAnnotations(end+1) = WVPropertyAnnotation('rhobar',{'z'},'kg m^{-3}', 'mean density', detailedDescription='- topic: Domain Attributes — Stratification');
 propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
 propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');

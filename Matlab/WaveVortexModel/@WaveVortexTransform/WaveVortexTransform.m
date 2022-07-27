@@ -78,9 +78,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
-
-          
-        timeDependentStateVariables
     end
 
     properties (Dependent, SetAccess=private)
@@ -104,6 +101,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         variableAnnotationNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
+        timeDependentVariables
         variableCache
     end
 
@@ -210,7 +208,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.propertyAnnotationNameMap = containers.Map();
             self.variableAnnotationNameMap = containers.Map();
             self.operationNameMap = containers.Map();
-            self.timeDependentStateVariables = {};
+            self.timeDependentVariables = {};
 
             self.addDimensionAnnotations(WaveVortexTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WaveVortexTransform.defaultPropertyAnnotations);
@@ -304,8 +302,8 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                         fprintf('\t->This model operation will replace the existing operation for computing %s\n',transformOperation(iOp).outputVariables(iVar).name);
                     end
                     self.variableAnnotationNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
-                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentStateVariables,transformOperation(iOp).outputVariables(iVar).name))
-                        self.timeDependentStateVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
+                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentVariables,transformOperation(iOp).outputVariables(iVar).name))
+                        self.timeDependentVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
                     end
                 end
 
@@ -411,7 +409,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             % clear the internal cache of variables that claim to be time dependent
             %
             % - Topic: Internal
-            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentStateVariables));
+            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariables));
         end
         function varargout = fetchFromVariableCache(self,varargin)
             % retrieve a set of variables from the internal cache
@@ -541,10 +539,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         function value = get.Nl(self)
             value=self.Ny;
-        end
-
-        function rebuildTransformationMatrices(self)
-            self.buildTransformationMatrices();
         end
 
         function self = buildTransformationMatrices(self)
@@ -690,7 +684,27 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
-            % This is the 'S^{-1}' operator (C5) in the manuscript
+            % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
+            %
+            % This function **is** the WaveVortexTransform. It is a [linear
+            % transformation](/transformations/transformations.html)
+            % denoted $$\mathcal{L}$$.
+            %
+            % This function is not intended to be used directly (although
+            % you can), and is kept here to demonstrate a simple
+            % implementation of the transformation. Instead, you should
+            % initialize the WaveVortexTransform using one of the
+            % initialization functions.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
+            % - Parameter u: x-component of the fluid velocity
+            % - Parameter v: y-component of the fluid velocity
+            % - Parameter n: scaled density anomaly
+            % - Parameter t: (optional) time of observations
+            % - Returns Ap: positive wave coefficients at reference time t0
+            % - Returns Am: negative wave coefficients at reference time t0
+            % - Returns A0: geostrophic coefficients at reference time t0
             u_hat = self.transformFromSpatialDomainWithF(U);
             v_hat = self.transformFromSpatialDomainWithF(V);
             n_hat = self.transformFromSpatialDomainWithG(N);
@@ -707,6 +721,30 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
+            % transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
+            %
+            % This function is the inverse WaveVortexTransform. It is a
+            % [linear
+            % transformation](/transformations/transformations.html)
+            % denoted $$\mathcal{L}$$.
+            %
+            % This function is not intended to be used directly (although
+            % you can), and is kept here to demonstrate a simple
+            % implementation of the transformation. Instead, you should
+            % initialize the WaveVortexTransform using one of the
+            % initialization functions.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: [u,v,w,n] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
+            % - Parameter Ap: positive wave coefficients at reference time t0
+            % - Parameter Am: negative wave coefficients at reference time t0
+            % - Parameter A0: geostrophic coefficients at reference time t0
+            % - Parameter t: (optional) time of observations
+            % - Returns u: x-component of the fluid velocity
+            % - Returns v: y-component of the fluid velocity
+            % - Returns w: z-component of the fluid velocity
+            % - Returns n: scaled density anomaly
+
             if nargin == 5
                 phase = exp(self.iOmega*(t-self.t0));
                 Ap = Ap .* phase;

@@ -39,6 +39,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`waveVortexTransformWithResolution`](/classes/wavevortextransform/wavevortextransformwithresolution.html) create a new WaveVortexTransform with increased resolution
 + Domain attributes
   + [`Omega`](/classes/wavevortextransform/omega.html) frequency of oscillation of the linear waves
+  + [`f`](/classes/wavevortextransform/f.html) Coriolis parameter
   + [`g`](/classes/wavevortextransform/g.html) gravity of Earth
   + [`inertialPeriod`](/classes/wavevortextransform/inertialperiod.html) inertial period
   + [`isBarotropic`](/classes/wavevortextransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -162,7 +163,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
   + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
   + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
-  + [`f`](/classes/wavevortextransform/f.html) Coriolis parameter
   + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
   + [`iOmega`](/classes/wavevortextransform/iomega.html) 
   + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
@@ -170,12 +170,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`offgridModes`](/classes/wavevortextransform/offgridmodes.html) offgridModes -  subclass should initialize
   + [`ongridModes`](/classes/wavevortextransform/ongridmodes.html) ongridModes -  This is a cached copy
   + [`radialWavenumberAxis`](/classes/wavevortextransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
-  + [`rebuildTransformationMatrices`](/classes/wavevortextransform/rebuildtransformationmatrices.html) 
   + [`spectralVanishingViscosityFilter`](/classes/wavevortextransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
-  + [`timeDependentStateVariables`](/classes/wavevortextransform/timedependentstatevariables.html) 
-  + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) 
-  + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) This is the 'S^{-1}' operator (C5) in the manuscript
-  + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) 
   + [`uMaxGNormRatioForWave`](/classes/wavevortextransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`variables`](/classes/wavevortextransform/variables.html) Primary method for accessing the dynamical variables on the
   + [`variablesAtPosition`](/classes/wavevortextransform/variablesatposition.html) Primary method for accessing the dynamical variables on the
@@ -239,10 +234,13 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Transformations
     + [`transformFromSpatialDomainWithF`](/classes/wavevortextransform/transformfromspatialdomainwithf.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the F-modes
     + [`transformFromSpatialDomainWithG`](/classes/wavevortextransform/transformfromspatialdomainwithg.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the G-modes
+    + [`transformToRadialWavenumber`](/classes/wavevortextransform/transformtoradialwavenumber.html) transforms in the spectral domain from (k,l,j) to (kRadial,j)
     + [`transformToSpatialDomainWithF`](/classes/wavevortextransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
     + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wavevortextransform/transformtospatialdomainwithfallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.
     + [`transformToSpatialDomainWithG`](/classes/wavevortextransform/transformtospatialdomainwithg.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes
     + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wavevortextransform/transformtospatialdomainwithgallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.
+    + [`transformUVEtaToWaveVortex`](/classes/wavevortextransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
+    + [`transformWaveVortexToUVWEta`](/classes/wavevortextransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
 + Masks
   + [`maskForAliasedModes`](/classes/wavevortextransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
   + [`masksForAllFlowConstituents`](/classes/wavevortextransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six

@@ -3,14 +3,42 @@ layout: default
 title: transformUVEtaToWaveVortex
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 163
+nav_order: 161
 mathjax: true
 ---
 
 #  transformUVEtaToWaveVortex
 
-This is the 'S^{-1}' operator (C5) in the manuscript
+transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
 
 
 ---
 
+## Declaration
+```matlab
+ [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
+```
+## Parameters
++ `u`  x-component of the fluid velocity
++ `v`  y-component of the fluid velocity
++ `n`  scaled density anomaly
++ `t`  (optional) time of observations
+
+## Returns
++ `Ap`  positive wave coefficients at reference time t0
++ `Am`  negative wave coefficients at reference time t0
++ `A0`  geostrophic coefficients at reference time t0
+
+## Discussion
+
+  This function **is** the WaveVortexTransform. It is a [linear
+  transformation](/transformations/transformations.html)
+  denoted $$\mathcal{L}$$.
+ 
+  This function is not intended to be used directly (although
+  you can), and is kept here to demonstrate a simple
+  implementation of the transformation. Instead, you should
+  initialize the WaveVortexTransform using one of the
+  initialization functions.
+ 
+                  

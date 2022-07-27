@@ -15,5 +15,5 @@ maximum buoyancy frequency
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$rad/s$$.
+Real valued transform property with no dimensions and units of $$rad s^{-1}$$.
 

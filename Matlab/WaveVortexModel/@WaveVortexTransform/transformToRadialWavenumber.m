@@ -1,5 +1,12 @@
 function [varargout] = transformToRadialWavenumber(self,varargin)     
-
+% transforms in the spectral domain from (k,l,j) to (kRadial,j)
+%
+% Sums all the variance/energy in radial bins `kRadial`.
+%
+% - Topic: Operations — Transformations
+% - Declaration: [varargout] = transformToRadialWavenumber(varargin) 
+% - Parameter varargin: variables with dimensions $$(k,l)$$ or $$(k,l,j)$$
+% - Returns varargout: variables with dimensions $$(kRadial)$$ or $$(kRadial,j)$$
 Kh = self.Kh;
 
 % Thi is the final output axis for wavenumber

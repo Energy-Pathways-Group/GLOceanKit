@@ -16,7 +16,7 @@ initialize with inertial motions
 
 ## Declaration
 ```matlab
- initWithInertialMotions(psi)
+ initWithInertialMotions(u,v)
 ```
 ## Parameters
 + `u`  function handle that takes a single argument, u(Z)
