@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Initialize a new WaveVortexModel (which includes a WaveVortexTransform
-% and a NonlinearFluxOperation) from existing output. We will start from
+% and a WVNonlinearFluxOperation) from existing output. We will start from
 % the final time-point, and double the resolution.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

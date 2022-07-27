@@ -1,4 +1,4 @@
-classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
+classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperation
 
     properties
         IMA0, IMAp, IMAm    % InteractionMasks
@@ -17,7 +17,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0 with interaction and energy flux masks applied');
 
-            self@NonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
+            self@WVNonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
             
             self.wvt = wvt;
             if isa(wvt,'WaveVortexTransformConstantStratification')
@@ -205,7 +205,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
 
         function writeToFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
@@ -219,7 +219,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < NonlinearFluxOperation
 
         function initFromFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end

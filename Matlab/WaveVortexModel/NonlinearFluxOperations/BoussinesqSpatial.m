@@ -1,4 +1,4 @@
-classdef BoussinesqSpatial < NonlinearFluxOperation
+classdef BoussinesqSpatial < WVNonlinearFluxOperation
 
     methods
         function self = BoussinesqSpatial()
@@ -6,7 +6,7 @@ classdef BoussinesqSpatial < NonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@NonlinearFluxOperation('BoussinesqSpatial',fluxVar);
+            self@WVNonlinearFluxOperation('BoussinesqSpatial',fluxVar);
         end
 
         function varargout = Compute(self,wvt,varargin)

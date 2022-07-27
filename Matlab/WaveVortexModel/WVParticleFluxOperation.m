@@ -1,4 +1,4 @@
-classdef ParticleFluxOperation < WVOperation
+classdef WVParticleFluxOperation < WVOperation
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -7,7 +7,7 @@ classdef ParticleFluxOperation < WVOperation
     end
 
     methods
-        function self = ParticleFluxOperation(name,f,options)
+        function self = WVParticleFluxOperation(name,f,options)
             arguments
                 name char {mustBeNonempty}
                 f function_handle

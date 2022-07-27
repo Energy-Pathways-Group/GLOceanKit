@@ -24,7 +24,7 @@ end
     varargout = cell(size(variableNames));
     if strcmp(options.InterpolationMethod,"exact")
         if isempty(self.ongridModes)
-            self.ongridModes = WaveVortexModelOffGrid(self.offgridModes.internalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
+            self.ongridModes = WVOffGridTransform(self.offgridModes.internalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
             [omega, alpha, ~, ~, mode, phi, A, norm] = self.waveModesFromWaveCoefficients();
             self.ongridModes.setExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
         end

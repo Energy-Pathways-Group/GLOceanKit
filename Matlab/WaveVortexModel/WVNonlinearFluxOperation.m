@@ -1,4 +1,4 @@
-classdef NonlinearFluxOperation < WVOperation
+classdef WVNonlinearFluxOperation < WVOperation
     %TransformOption specifically for nonlinear flux.
     %
     % The output variables *must* be at least one of {Fp,Fm,F0}, in that
@@ -17,7 +17,7 @@ classdef NonlinearFluxOperation < WVOperation
 
     methods
 
-        function self = NonlinearFluxOperation(name,outputVariables,options)
+        function self = WVNonlinearFluxOperation(name,outputVariables,options)
             arguments
                 name char {mustBeNonempty}
                 outputVariables WVVariableAnnotation {mustBeNonempty}
@@ -35,20 +35,20 @@ classdef NonlinearFluxOperation < WVOperation
 
         function writeToFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = NonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
+            nlFlux = WVNonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
         end
 
         function flag = isequal(self,other)
             arguments
-                self NonlinearFluxOperation
-                other NonlinearFluxOperation
+                self WVNonlinearFluxOperation
+                other WVNonlinearFluxOperation
             end
             flag = (self.doesFluxAp == other.doesFluxAp) && (self.doesFluxAm == other.doesFluxAm) && (self.doesFluxA0 == other.doesFluxA0) && strcmp(self.name,other.name);
         end

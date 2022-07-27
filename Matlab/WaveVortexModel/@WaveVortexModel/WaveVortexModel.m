@@ -42,7 +42,7 @@ classdef WaveVortexModel < handle
         % If the nonlinearFlux is nil, then the model will advance using
         % linear dynamics (i.e., the wave-vortex coefficients will not
         % change).
-        nonlinearFlux NonlinearFluxOperation
+        nonlinearFlux WVNonlinearFluxOperation
         
         % Reference to the NetCDFFile being used for model output
         % - Topic: Writing to NetCDF files
@@ -179,12 +179,12 @@ classdef WaveVortexModel < handle
             % - Topic: Initialization
             % - Declaration: WaveVortexModel(wvt,options)
             % - Parameter wvt: a WaveVortexTranform instance
-            % - Parameter nonlinearFlux: (optional) a NonlinearFluxOperation used to time-step the WaveVortexTransform forward in time.
+            % - Parameter nonlinearFlux: (optional) a WVNonlinearFluxOperation used to time-step the WaveVortexTransform forward in time.
             %
             % 
             arguments
                 wvt WaveVortexTransform {mustBeNonempty}
-                options.nonlinearFlux NonlinearFluxOperation
+                options.nonlinearFlux WVNonlinearFluxOperation
             end
 
             self.wvt = wvt; 
@@ -219,7 +219,7 @@ classdef WaveVortexModel < handle
             % - Topic: Particles
             % - Declaration: addParticles(name,fluxOp,x,y,z,trackedFieldNames,options)
             % - Parameter name: a unique name to call the particles
-            % - Parameter fluxOp: a ParticleFluxOperation, used to determine how the flow advects the particles
+            % - Parameter fluxOp: a WVParticleFluxOperation, used to determine how the flow advects the particles
             % - Parameter x: x-coordinate location of the particles
             % - Parameter y: y-coordinate location of the particles
             % - Parameter z: z-coordinate location of the particles
@@ -229,7 +229,7 @@ classdef WaveVortexModel < handle
             arguments
                 self WaveVortexModel {mustBeNonempty}
                 name char {mustBeNonempty}
-                fluxOp ParticleFluxOperation {mustBeNonempty}
+                fluxOp WVParticleFluxOperation {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
                 z (1,:) double
@@ -356,7 +356,7 @@ classdef WaveVortexModel < handle
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
-            floatFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.advectionInterpolation));
+            floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',InterpolationMethod=options.advectionInterpolation));
             self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
@@ -407,7 +407,7 @@ classdef WaveVortexModel < handle
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
             end
-            drifterFlux = ParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.advectionInterpolation),isXYOnly=1);
+            drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',InterpolationMethod=options.advectionInterpolation),isXYOnly=1);
             self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
@@ -604,7 +604,7 @@ classdef WaveVortexModel < handle
             ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
 
             if ~self.linearDynamics
-                ncfile.addAttribute('NonlinearFluxOperation',class(self.nonlinearFlux));
+                ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFlux));
                 self.nonlinearFlux.writeToFile(ncfile,self.wvt);
             end
 

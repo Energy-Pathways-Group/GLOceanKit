@@ -51,7 +51,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
 
             self.buildTransformationMatrices();
             internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
-            self.offgridModes = WaveVortexModelOffGrid(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
+            self.offgridModes = WVOffGridTransform(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));

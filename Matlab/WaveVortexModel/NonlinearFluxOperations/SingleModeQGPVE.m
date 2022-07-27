@@ -1,4 +1,4 @@
-classdef SingleModeQGPVE < NonlinearFluxOperation
+classdef SingleModeQGPVE < WVNonlinearFluxOperation
     properties
         PVA0 % conversion from A0 to PV
         A0PV % conversion from PV to A0
@@ -25,7 +25,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 %             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
-            self@NonlinearFluxOperation(options.fluxName,fluxVar);
+            self@WVNonlinearFluxOperation(options.fluxName,fluxVar);
             self.doesFluxAp = 0;
             self.doesFluxAm = 0;
             self.doesFluxA0 = 1;
@@ -79,7 +79,7 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 
         function writeToFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
@@ -100,10 +100,10 @@ classdef SingleModeQGPVE < NonlinearFluxOperation
 
         function flag = isequal(self,other)
             arguments
-                self NonlinearFluxOperation
-                other NonlinearFluxOperation
+                self WVNonlinearFluxOperation
+                other WVNonlinearFluxOperation
             end
-            flag = isequal@NonlinearFluxOperation(self,other);
+            flag = isequal@WVNonlinearFluxOperation(self,other);
             flag = flag & isequal(self.PVA0, other.PVA0);
             flag = flag & isequal(self.beta, other.beta);
             flag = flag & isequal(self.damp, other.damp);

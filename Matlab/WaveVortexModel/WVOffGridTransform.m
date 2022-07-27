@@ -1,4 +1,4 @@
-classdef WaveVortexModelOffGrid < handle
+classdef WVOffGridTransform < handle
     %UNTITLED9 Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -25,7 +25,7 @@ classdef WaveVortexModelOffGrid < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = WaveVortexModelOffGrid(internalModes, latitude,N2Function,hydrostatic)
+        function self = WVOffGridTransform(internalModes, latitude,N2Function,hydrostatic)
             self.internalModes = internalModes;
             self.latitude = latitude;
             self.f = 2 * 7.2921E-5 * sin( latitude*pi/180 );

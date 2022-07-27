@@ -1,4 +1,4 @@
-classdef Boussinesq < NonlinearFluxOperation
+classdef Boussinesq < WVNonlinearFluxOperation
 
     methods
         function self = Boussinesq()
@@ -6,7 +6,7 @@ classdef Boussinesq < NonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@NonlinearFluxOperation('Boussinesq',fluxVar);
+            self@WVNonlinearFluxOperation('Boussinesq',fluxVar);
         end
 
         function varargout = Compute(self,wvt,varargin)

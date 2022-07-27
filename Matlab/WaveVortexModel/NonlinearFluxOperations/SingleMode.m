@@ -1,4 +1,4 @@
-classdef SingleMode < NonlinearFluxOperation
+classdef SingleMode < WVNonlinearFluxOperation
 
     methods
         function self = SingleMode()
@@ -6,7 +6,7 @@ classdef SingleMode < NonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@NonlinearFluxOperation('SingleMode',fluxVar);
+            self@WVNonlinearFluxOperation('SingleMode',fluxVar);
         end
 
         function varargout = Compute(self,wvt,varargin)

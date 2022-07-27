@@ -43,7 +43,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
 
         function writeToFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
@@ -55,7 +55,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
 
 %         function initFromFile(self,ncfile,wvt)
 %             arguments
-%                 self NonlinearFluxOperation {mustBeNonempty}
+%                 self WVNonlinearFluxOperation {mustBeNonempty}
 %                 ncfile NetCDFFile {mustBeNonempty}
 %                 wvt WaveVortexTransform {mustBeNonempty}
 %             end

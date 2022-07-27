@@ -1,4 +1,4 @@
-classdef TracerFluxOperation < WVOperation
+classdef WVTracerFluxOperation < WVOperation
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -8,7 +8,7 @@ classdef TracerFluxOperation < WVOperation
     end
 
     methods
-        function self = TracerFluxOperation(name,options)
+        function self = WVTracerFluxOperation(name,options)
             arguments
                 name char {mustBeNonempty} = 'TracerFluxNoDamping'
                 options.isXYOnly double {mustBeMember(options.isXYOnly,[0 1])} = 0 

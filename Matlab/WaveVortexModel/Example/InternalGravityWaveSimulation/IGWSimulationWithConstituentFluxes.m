@@ -97,17 +97,17 @@ E0_g_igw_t = zeros(length(t),1);
 iTime = 1;
 [Ep,Em,E0] = wvm.energyFlux;
 E0_all_all_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('wave'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('wave'));
 E0_igw_igw_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('inertial'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('inertial'));
 E0_igw_io_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('geostrophic'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('geostrophic'));
 E0_igw_g_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('inertial'),FlowConstituents('wave'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('inertial'),WVFlowConstituents('wave'));
 E0_io_igw_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('inertial'),FlowConstituents('geostrophic'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('inertial'),WVFlowConstituents('geostrophic'));
 E0_io_g_t(iTime) = sum(E0(:));
-[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('geostrophic'),FlowConstituents('wave'));
+[Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('geostrophic'),WVFlowConstituents('wave'));
 E0_g_igw_t(iTime) = sum(E0(:));
 
 % profile on
@@ -131,17 +131,17 @@ for iTime=2:length(t)
 
     [Ep,Em,E0] = wvm.energyFlux;
     E0_all_all_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('wave'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('wave'));
     E0_igw_igw_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('inertial'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('inertial'));
     E0_igw_io_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('wave'),FlowConstituents('geostrophic'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('wave'),WVFlowConstituents('geostrophic'));
     E0_igw_g_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('inertial'),FlowConstituents('wave'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('inertial'),WVFlowConstituents('wave'));
     E0_io_igw_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('inertial'),FlowConstituents('geostrophic'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('inertial'),WVFlowConstituents('geostrophic'));
     E0_io_g_t(iTime) = sum(E0(:));
-    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,FlowConstituents('geostrophic'),FlowConstituents('wave'));
+    [Ep,Em,E0] = wvm.EnergyFluxForFlowConstituentsAtTime(t(iTime),wvm.Ap,wvm.Am,wvm.A0,WVFlowConstituents('geostrophic'),WVFlowConstituents('wave'));
     E0_g_igw_t(iTime) = sum(E0(:));
 
     if mod(iTime,10)==0

@@ -95,7 +95,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             self.dLnN2 = dLnN2;
 
             self.BuildProjectionOperators();
-            self.offgridModes = WaveVortexModelOffGrid(im,self.latitude, self.N2Function,1);
+            self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
             self.addPropertyAnnotations(WVPropertyAnnotation('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
             self.addPropertyAnnotations(WVPropertyAnnotation('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));

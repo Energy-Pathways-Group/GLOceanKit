@@ -104,7 +104,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 
         function writeToFile(self,ncfile,wvt)
             arguments
-                self NonlinearFluxOperation {mustBeNonempty}
+                self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WaveVortexTransform {mustBeNonempty}
             end
@@ -120,8 +120,8 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 
         function flag = isequal(self,other)
             arguments
-                self NonlinearFluxOperation
-                other NonlinearFluxOperation
+                self WVNonlinearFluxOperation
+                other WVNonlinearFluxOperation
             end
             flag = isequal@SingleModeQGPVE(self,other);
             flag = flag & isequal(self.k_f,other.k_f);
