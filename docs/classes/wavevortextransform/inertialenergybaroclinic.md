@@ -3,7 +3,7 @@ layout: default
 title: inertialEnergyBaroclinic
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 102
+nav_order: 101
 mathjax: true
 ---
 

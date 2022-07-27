@@ -3,7 +3,7 @@ layout: default
 title: generateRandomFlowState
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 95
+nav_order: 94
 mathjax: true
 ---
 
@@ -31,4 +31,4 @@ Random flow state, separated out by solution type.
   Am = AmIO + AmIGW;
   A0 = A0G + A0G0 + A0rhobar;
  
-  
+    

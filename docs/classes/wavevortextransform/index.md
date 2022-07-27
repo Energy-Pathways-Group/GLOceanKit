@@ -89,6 +89,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Amt`](/classes/wavevortextransform/amt.html) negative wave coefficients at time t
     + [`Apt`](/classes/wavevortextransform/apt.html) positive wave coefficients at time t
 + Initial Conditions
+  + [`initWithRandomFlow`](/classes/wavevortextransform/initwithrandomflow.html) initialize with a randomized flow
+  + [`initWithUVEta`](/classes/wavevortextransform/initwithuveta.html) initialize with fluid variables $$(u,v,\eta)$$
+  + [`initWithUVRho`](/classes/wavevortextransform/initwithuvrho.html) initialize with fluid variables $$(u,v,\rho)$$
   + Waves
     + [`addWaveModes`](/classes/wavevortextransform/addwavemodes.html) add amplitudes of the given wave modes
     + [`initWithGMSpectrum`](/classes/wavevortextransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
@@ -159,11 +162,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`EnergyFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/energyfluxforflowconstituentsattime.html) 
   + [`EnergyFluxForFlowConstituentsAtTimeInitial`](/classes/wavevortextransform/energyfluxforflowconstituentsattimeinitial.html) 
   + [`ExponentialFilter`](/classes/wavevortextransform/exponentialfilter.html) 
-  + [`InitializeWithRandomFlowState`](/classes/wavevortextransform/initializewithrandomflowstate.html) 
   + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wavevortextransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
   + [`WaveVortexTransform`](/classes/wavevortextransform/wavevortextransform.html) These first properties are directly set on initialization
   + [`energyFlux`](/classes/wavevortextransform/energyflux.html) 
-  + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
   + [`iOmega`](/classes/wavevortextransform/iomega.html) 
   + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wavevortextransform/interpolatedfieldatpositionbadboundaries.html) 
   + [`nonlinearFlux`](/classes/wavevortextransform/nonlinearflux.html) 
@@ -192,6 +193,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`checkHermitian`](/classes/wavevortextransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
   + [`extractNonzeroWaveProperties`](/classes/wavevortextransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
   + [`generateHermitianRandomMatrix`](/classes/wavevortextransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
+  + [`generateRandomFlowState`](/classes/wavevortextransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
   + [`makeHermitian`](/classes/wavevortextransform/makehermitian.html) Forces a 3D matrix to be Hermitian
   + [`nyquistWavenumbers`](/classes/wavevortextransform/nyquistwavenumbers.html) Returns a matrix with 1s at the Nyquist frequencies.
   + [`redundantHermitianCoefficients`](/classes/wavevortextransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.

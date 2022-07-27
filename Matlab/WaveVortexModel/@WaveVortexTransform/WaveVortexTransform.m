@@ -928,6 +928,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         %   add  - adds to existing component
         %   removeAll – remove all features of given type       
 
+        initWithUVRho(self,u,v,rho,t)
+        initWithUVEta(self,U,V,N,t)
+        initWithRandomFlow(self)
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -3,7 +3,7 @@ layout: default
 title: diffZF
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 82
+nav_order: 81
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: setExternalWavesWithWavenumbers
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 142
+nav_order: 144
 mathjax: true
 ---
 

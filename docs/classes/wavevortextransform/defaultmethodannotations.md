@@ -3,7 +3,7 @@ layout: default
 title: defaultMethodAnnotations
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 77
+nav_order: 76
 mathjax: true
 ---
 

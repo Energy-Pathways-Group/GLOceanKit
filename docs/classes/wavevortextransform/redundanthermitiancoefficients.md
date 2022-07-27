@@ -3,7 +3,7 @@ layout: default
 title: redundantHermitianCoefficients
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 134
+nav_order: 136
 mathjax: true
 ---
 

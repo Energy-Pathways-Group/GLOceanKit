@@ -13,7 +13,7 @@ function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(sel
 % A0 = A0G + A0G0 + A0rhobar;
 %
 % - Declaration: [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState()
-%
+% - Topic: Utility function
 ApIGW = WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
 AmIGW = WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
 A0G = 6e-2*WaveVortexTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1 );

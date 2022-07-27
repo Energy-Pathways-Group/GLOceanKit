@@ -3,7 +3,7 @@ layout: default
 title: nyquistWavenumbers
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 125
+nav_order: 127
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: totalHydrostaticEnergy
 parent: WaveVortexTransform
 grand_parent: Classes
-nav_order: 153
+nav_order: 155
 mathjax: true
 ---
 
