@@ -41,6 +41,8 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
             f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
             self.addOperation(WVOperation('zeta_z',outputVar,f));
+
+            self.nonlinearFluxOperation = SingleMode();
         end
 
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)
@@ -182,13 +184,6 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         % Nonlinear Flux
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function [Fp,Fm,F0] = nonlinearFlux(self)
-            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u);
-            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v);
-            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta);
-            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
-        end
 
         function Fqgpv = qgpvFlux(self)
             qgpvNL = self.u .* self.diffX(self.qgpv)   + self.v .* self.diffY(self.qgpv);

@@ -192,7 +192,7 @@ classdef WaveVortexModel < handle
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
                 self.nonlinearFlux = options.nonlinearFlux;
-                self.wvt.addOperation(self.nonlinearFlux);
+                self.wvt.nonlinearFluxOperation = options.nonlinearFlux;
             end
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);

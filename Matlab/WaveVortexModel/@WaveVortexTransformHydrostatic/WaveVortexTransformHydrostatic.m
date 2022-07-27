@@ -111,6 +111,8 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addOperation(WVOperation('rho_total',outputVar,f));
+
+            self.nonlinearFluxOperation = Boussinesq();
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)

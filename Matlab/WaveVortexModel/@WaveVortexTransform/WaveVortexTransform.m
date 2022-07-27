@@ -44,6 +44,12 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         % geostrophic coefficients at reference time t0 (m)
         % Topic: Wave-vortex coefficients
         A0
+
+        % The operation responsible for computing the nonlinear flux
+        % - Topic: Nonlinear flux and energy transfers
+        % This operation is performed when -nonlinearFlux is called. It is
+        % used to compute the energyFlux as well.
+        nonlinearFluxOperation NonlinearFluxOperation
     end
 
     % Public read-only properties
@@ -125,7 +131,6 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         w = transformToSpatialDomainWithG(self, w_bar )
         [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
         [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
-        [Fp,Fm,F0] = nonlinearFlux(self);
 
         % Needed to add and remove internal waves from the model
         ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
@@ -145,10 +150,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
                 varargout=cell(1,modelOp.nVarOut);
                 if length(indexOp) == 1
-                    [varargout{:}] = self.performTransformOperation(indexOp(1).Name);
+                    [varargout{:}] = self.performOperationWithName(indexOp(1).Name);
                 else
                     error('No indices allowed!!!')
-%                     [varargout{:}] = self.performTransformOperation(indexOp(1).Name,indexOp(2).Indices{:});
+%                     [varargout{:}] = self.performOperation(indexOp(1).Name,indexOp(2).Indices{:});
                 end
             else
                 % User requested a variable that we only have an indirect
@@ -342,7 +347,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                         % now go compute it, and then try fetching from
                         % cach
                         modelVar = self.variableAnnotationNameMap(varargin{iVar});
-                        self.performTransformOperation(modelVar.modelOp.name);
+                        self.performOperationWithName(modelVar.modelOp.name);
                         didFetchAll = 0;
                         break;
                     else
@@ -352,11 +357,10 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function varargout = performTransformOperation(self,opName,varargin)
+        function varargout = performOperation(self,modelOp,varargin)
             % computes (runs) the operation
             %
             % - Topic: Internal
-            modelOp = self.operationNameMap(opName);
             varNames = cell(1,modelOp.nVarOut);
             varargout = cell(1,modelOp.nVarOut);
             for iVar=1:length(modelOp.outputVariables)
@@ -371,6 +375,15 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
                     self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
                 end
             end
+        end
+
+        function varargout = performOperationWithName(self,opName,varargin)
+            % computes (runs) the operation
+            %
+            % - Topic: Internal
+            modelOp = self.operationNameMap(opName);
+            varargout = cell(1,modelOp.nVarOut);
+            [varargout{:}] = self.performOperation(modelOp,varargin{:});
         end
 
         function set.t(self,value)
@@ -775,6 +788,16 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         u_z = diffZF(self,u,n);
         u_z = diffZG(self,u,n);
         
+
+        function set.nonlinearFluxOperation(self,value)
+            self.nonlinearFluxOperation = value;
+            self.addOperation(value);
+        end
+        
+        function [Fp,Fm,F0] = nonlinearFlux(self)
+            [Fp,Fm,F0] = performOperation(self.nonlinearFluxOperation);
+        end
+
         function [Ep,Em,E0] = energyFlux(self)
             [Fp,Fm,F0] = self.nonlinearFlux;
             % The phase is tricky here. It is wound forward for the flux,

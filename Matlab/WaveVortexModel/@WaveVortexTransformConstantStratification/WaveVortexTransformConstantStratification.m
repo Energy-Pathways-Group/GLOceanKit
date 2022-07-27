@@ -78,6 +78,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addOperation(WVOperation('rho_total',outputVar,f));
 
+            self.nonlinearFluxOperation = BoussinesqConstantN();
         end
                 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -132,19 +133,6 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
 
             buildTransformationMatrices@WaveVortexTransform(self);
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Nonlinear Flux
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function [Fp,Fm,F0] = nonlinearFlux(self)
-            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u)   + self.w .* self.diffZF(self.u);
-            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v)   + self.w .* self.diffZF(self.v);
-            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta) + self.w .* self.diffZG(self.eta);
-            [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

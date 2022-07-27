@@ -1,12 +1,12 @@
-classdef NonlinearBoussinesq < NonlinearFluxOperation
+classdef BoussinesqConstantN < NonlinearFluxOperation
 
     methods
-        function self = NonlinearBoussinesq()
+        function self = BoussinesqConstantN()
             fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@NonlinearFluxOperation('NonlinearFluxDefault',fluxVar);
+            self@NonlinearFluxOperation('BoussinesqConstantN',fluxVar);
         end
 
         function varargout = Compute(self,wvt,varargin)
@@ -26,13 +26,13 @@ classdef NonlinearBoussinesq < NonlinearFluxOperation
             [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
             [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
             W = wvt.transformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
+            [~,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
             % Compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
             uNL = -U.*Ux - V.*Uy - W.*Uz;
             vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
+            nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
 
             % Now apply the operator S^{-1} and then T_\omega^{-1}
             uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
