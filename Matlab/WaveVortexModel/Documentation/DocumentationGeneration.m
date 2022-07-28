@@ -1,8 +1,12 @@
 cd(fileparts(which(mfilename)))
-
-className = 'WVModel';
 classDocumentationFolder = '../../../docs/classes';
 
-ClassDocGenerator(className,classDocumentationFolder);
+ClassDocGenerator('WVAnnotation',classDocumentationFolder);
+ClassDocGenerator('WVDimensionAnnotation',classDocumentationFolder);
+ClassDocGenerator('WVPropertyAnnotation',classDocumentationFolder);
+
+% ClassDocGenerator('WVFlowConstituents',classDocumentationFolder);
+
+ClassDocGenerator('WVModel',classDocumentationFolder);
 
 WaveVortexTransformDocGenerator(classDocumentationFolder);

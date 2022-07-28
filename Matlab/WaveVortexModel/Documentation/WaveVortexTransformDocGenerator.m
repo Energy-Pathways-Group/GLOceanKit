@@ -14,6 +14,15 @@ topicExpression = '- topic:([ \t]*)(?<topicName>[^\r\n]+)(?:$|\n)';
 classDefinedTopics = regexpi(detailedDescription,topicExpression,'names');
 classDetailedDescription = regexprep(detailedDescription,topicExpression,'','ignorecase');
 
+declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
+matchStr = regexpi(classDetailedDescription,declarationExpression,'names');
+classDetailedDescription = regexprep(classDetailedDescription,declarationExpression,'','ignorecase');
+if ~isempty(matchStr)
+    declaration = matchStr.declaration;
+else
+    declaration = [];
+end
+
 % classDefinedTopics is a structure array with field "topicName" and
 % "subtopics".
 % subtopics is itself a structure array with field "subtopicName" and
@@ -160,7 +169,15 @@ end
 fileID = fopen(sprintf('%s/index.md',targetFolder),'w');
 fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
-fprintf(fileID,'\n%s\n\n',mc.Description);
+fprintf(fileID,'\n%s\n',mc.Description);
+
+fprintf(fileID,'\n\n---\n\n');
+
+if ~isempty(declaration)
+    fprintf(fileID,'## Declaration\n');
+    fprintf(fileID,'```matlab\n%s\n```\n\n',declaration);
+end
+
 if ~isempty(mc.DetailedDescription)
     fprintf(fileID,'## Overview\n%s\n',classDetailedDescription);
 end

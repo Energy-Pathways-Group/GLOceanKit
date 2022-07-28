@@ -29,7 +29,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % - Topic: Energetics — Major Constituents
     % - Topic: Energetics — Geostrophic Constituents
     % - Topic: Energetics — Inertia-Gravity Wave Constituents
-
+    %
+    % - Declaration: classdef WVTransform < handle
+    
     % Public read and write properties
     properties (GetAccess=public, SetAccess=public)
         t = 0

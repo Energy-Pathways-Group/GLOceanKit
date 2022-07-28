@@ -9,22 +9,63 @@ classdef WVAnnotation < handle
     % variables to NetCDF files.
     %
     % This class looks for a detailedDescription in a .md file with the
-    % same name.
-    properties
+    % same name. It will look up to one folder deep from the call site.
+    %
+    % - Declaration: classdef WVAnnotation < handle
+    properties (GetAccess=public, SetAccess=private)
+        % name of the method, property, or variable
+        % 
+        % The name should be an exact match to the method, property, or
+        % variable that it is describing.
+        % - Topic: Properties
         name
+
+        % short description of the method, property, or variable
+        % 
+        % The short description is used in the table-of-contents of
+        % documentation and in NetCDF files.
+        % - Topic: Properties
         description
+    end
+
+    properties (GetAccess=public, SetAccess=public)
+        % a detailed description of the method, property, or variable
+        % 
+        % The detailed description may be written in markdown and may also
+        % use MathJax latex notation. The detailed description will be used
+        % for the help documentation.
+        %
+        % The detailed description can be populated using a markdown
+        % sidecar file. Specifically, when the WVAnnotation (or subclass)
+        % is initialized, it will look in the directory and one directory
+        % deep for a markdown file with the name of the annotation and the
+        % file extension .md.
+        % - Topic: Properties
         detailedDescription
     end
 
     methods
         function self = WVAnnotation(name,description,options)
+            % create a new instance of WVAnnotation
+            %
+            % Creates a new instance of WVAnnotation with a name,
+            % description and optional detailed description.
+            %
+            % If a markdown file of the same name is in the same directory
+            % or child directory, it will be loaded as the detailed
+            % description upon initialization.
+            %
+            % - Topic: Initialization
+            % - Declaration: wvAnnotation = WVAnnotation(name,description,options)
+            % - Parameter name: name of the method, property, or variable
+            % - Parameter description: short description of the method, property, or variable
+            % - Parameter detailedDescription: (optional) a detailed description of the method, property, or variable
+            % - Returns wvAnnotation: a new instance of WVAnnotation
             arguments
                 name char {mustBeNonempty}
                 description char {mustBeNonempty}
                 options.detailedDescription char = ''
             end
-            %UNTITLED2 Construct an instance of this class
-            %   Detailed explanation goes here
             self.name = name;
             self.description = description;
             self.loadDetailedDescriptionIfAvailable;
@@ -35,7 +76,9 @@ classdef WVAnnotation < handle
                 self.detailedDescription = options.detailedDescription;
             end
         end
+    end
 
+    methods (Access=protected)
         function loadDetailedDescriptionIfAvailable(self)
             % dir(strcat(fileparts(mfilename('fullpath')),'/**/x.md'))
             % But this won't work from within the WVDimensionAnnotation definition. Need

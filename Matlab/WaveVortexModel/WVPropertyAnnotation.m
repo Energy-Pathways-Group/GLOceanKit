@@ -11,14 +11,46 @@ classdef WVPropertyAnnotation < WVAnnotation
     % a file (name).md in the directory where it is defined another other
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
-    properties
+    %
+    % - Declaration: classdef WVPropertyAnnotation < WVAnnotation
+    properties (GetAccess=public, SetAccess=private)
+        % ordered cell array with the names of the dimensions
+        % 
+        % If the property has no dimensions, and empty cell array should be
+        % passed. The dimension names must correspond to existing
+        % dimensions.
+        % - Topic: Properties
         dimensions
+
+        % units of the dimension
+        %
+        % All units should be abbreviated SI units, e.g., 'm', or 'rad'.
+        % - Topic: Properties
         units
-        isComplex = 0 % does it have a non-zero imaginary part?
+
+        % boolean indicating whether or not the property may have an imaginary part
+        %
+        % This information is used when allocating space in a NetCDF file.
+        % - Topic: Properties
+        isComplex = 0
     end
 
     methods
         function self = WVPropertyAnnotation(name,dimensions,units,description,options)
+            % create a new instance of WVPropertyAnnotation
+            %
+            % If a markdown file of the same name is in the same directory
+            % or child directory, it will be loaded as the detailed
+            % description upon initialization.
+            %
+            % - Topic: Initialization
+            % - Declaration: propAnnotation = WVPropertyAnnotation(name,dimensions,units,description,options)
+            % - Parameter name: name of the property
+            % - Parameter dimensions: ordered list of the dimensions, or empty cell array
+            % - Parameter units: abbreviated SI units of the property
+            % - Parameter description: short description of the property
+            % - Parameter detailedDescription: (optional) detailed description of the property
+            % - Returns propAnnotation: a new instance of WVPropertyAnnotation
             arguments
                 name char {mustBeNonempty}
                 dimensions

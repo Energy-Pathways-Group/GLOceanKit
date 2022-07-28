@@ -18,6 +18,15 @@ topicExpression = '- topic:([ \t]*)(?<name>[^\r\n]+)(?:$|\n)';
 topics = regexpi(mc.DetailedDescription,topicExpression,'names');
 classDetailedDescription = regexprep(mc.DetailedDescription,topicExpression,'','ignorecase');
 
+declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
+matchStr = regexpi(classDetailedDescription,declarationExpression,'names');
+classDetailedDescription = regexprep(classDetailedDescription,declarationExpression,'','ignorecase');
+if ~isempty(matchStr)
+    declaration = matchStr.declaration;
+else
+    declaration = [];
+end
+
 % Capture metadata from all the public methods and properties
 methodAndPropertiesByTopic = ExtractMethodMetadataByTopicFromMetaClass(mc);
 
@@ -40,7 +49,16 @@ end
 fileID = fopen(sprintf('%s/index.md',targetFolder),'w');
 fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\n---\n\n',className);
 fprintf(fileID,'#  %s\n',className);
-fprintf(fileID,'\n%s\n\n',mc.Description);
+fprintf(fileID,'\n%s\n',mc.Description);
+
+fprintf(fileID,'\n\n---\n\n');
+
+if ~isempty(declaration)
+    fprintf(fileID,'## Declaration\n');
+    fprintf(fileID,'```matlab\n%s\n```\n\n',declaration);
+end
+
+
 if ~isempty(mc.DetailedDescription)
     fprintf(fileID,'## Overview\n%s\n',classDetailedDescription);
 end
