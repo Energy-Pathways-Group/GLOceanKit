@@ -1,5 +1,5 @@
 classdef WVPropertyAnnotation < WVAnnotation
-    %Describes a property of the WaveVortexTransform
+    %Describes a property of the WVTransform
     %
     % In addition to adding a name, description and detailed description of
     % a given property, you can also specify the properties dimensions,

@@ -37,7 +37,7 @@ classdef WVNonlinearFluxOperation < WVOperation
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
         end
 
@@ -59,7 +59,7 @@ classdef WVNonlinearFluxOperation < WVOperation
         function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
             arguments
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
         end
     end

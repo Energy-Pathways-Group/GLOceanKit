@@ -1,5 +1,5 @@
 classdef WVDimensionAnnotation < WVAnnotation
-    %Describes a coordinate dimension of the WaveVortexTransform
+    %Describes a coordinate dimension of the WVTransform
     %
     % In addition to adding a name, description and detailed description of
     % a given dimension, you also specify tits  units. These annotations

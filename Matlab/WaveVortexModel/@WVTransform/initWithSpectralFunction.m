@@ -229,15 +229,15 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
     % is already accounted for as having the same frequency. So
     % sum(a^2/2) really is the total energy.
     if shouldRandomizeAmplitude == 1
-        A_plus = A.*WaveVortexTransform.generateHermitianRandomMatrix( size(K) );
-        A_minus = A.*WaveVortexTransform.generateHermitianRandomMatrix( size(K) );
+        A_plus = A.*WVTransform.generateHermitianRandomMatrix( size(K) );
+        A_minus = A.*WVTransform.generateHermitianRandomMatrix( size(K) );
 
         self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext).*randn( size(self.offgridModes.h_ext) );
         self.offgridModes.PrecomputeExternalWaveCoefficients();                
     else
         % Randomize phases, but keep unit length
-        A_plus = WaveVortexTransform.generateHermitianRandomMatrix( size(K), excludeNyquist );
-        A_minus = WaveVortexTransform.generateHermitianRandomMatrix( size(K), excludeNyquist );
+        A_plus = WVTransform.generateHermitianRandomMatrix( size(K), excludeNyquist );
+        A_minus = WVTransform.generateHermitianRandomMatrix( size(K), excludeNyquist );
 
         goodIndices = abs(A_plus) > 0;
         A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));

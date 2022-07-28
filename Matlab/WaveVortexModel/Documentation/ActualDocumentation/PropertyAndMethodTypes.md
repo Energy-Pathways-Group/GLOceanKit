@@ -1,4 +1,4 @@
-#  Property and method types of the WaveVortexTransform
+#  Property and method types of the WVTransform
 
 - `WVDimensionAnnotation` instances describe a coordinate dimension.
 - `WVPropertyAnnotation` instances describe a fixed attribute of the flow that is never time-dependent.

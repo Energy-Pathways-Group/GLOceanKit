@@ -1,6 +1,6 @@
 function [Qkl,Qj] = spectralVanishingViscosityFilter(self,options)
 arguments
-    self WaveVortexTransform {mustBeNonempty}
+    self WVTransform {mustBeNonempty}
     options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
 end
 % Builds the spectral vanishing viscosity operator

@@ -1,5 +1,5 @@
 function wvt = waveVortexTransformFromFile(path,options)
-% Initialize a WaveVortexTransform instance from an existing file
+% Initialize a WVTransform instance from an existing file
 %
 % - Topic: Initialization
 % - Declaration: wvt = waveVortexTransformFromFile(path,options)
@@ -12,7 +12,7 @@ end
 ncfile = NetCDFFile(path);
 
 requiredVariables = {'x','y','z','Lx','Ly','Lz','j','latitude','t0','t','rho0'};
-requiredAttributes = {'WaveVortexTransform'};
+requiredAttributes = {'WVTransform'};
 if ~all(isKey(ncfile.variableWithName,requiredVariables)) || ~all(isKey(ncfile.attributes,requiredAttributes))
     error('This files is missing required variables or attributes to initialize a WVTransform.')
 end
@@ -22,15 +22,15 @@ Nx = length(x);
 Ny = length(y);
 Nz = length(z);
 
-if strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformConstantStratification')
+if strcmp(ncfile.attributes('WVTransform'),'WVTransformConstantStratification')
     if ~all(isKey(ncfile.variableWithName,{'N0'}))
         error('The file is missing N0.');
     end
     N0 = ncfile.readVariables('N0');
-    wvt = WaveVortexTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],N0,latitude=latitude,rho0=rho0);
-elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformSingleMode')
-    wvt = WaveVortexTransformSingleMode([Lx Ly],[Nx Ny],h=Lz,latitude=latitude);
-elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformHydrostatic')
+    wvt = WVTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],N0,latitude=latitude,rho0=rho0);
+elseif strcmp(ncfile.attributes('WVTransform'),'WVTransformSingleMode')
+    wvt = WVTransformSingleMode([Lx Ly],[Nx Ny],h=Lz,latitude=latitude);
+elseif strcmp(ncfile.attributes('WVTransform'),'WVTransformHydrostatic')
     [filepath,name,~] = fileparts(path);
     if isempty(filepath)
         matFilePath = sprintf('%s.mat',name);
@@ -42,9 +42,9 @@ elseif strcmp(ncfile.attributes('WaveVortexTransform'),'WaveVortexTransformHydro
     end
     matFile = load(matFilePath);
     if exist(matFile.dLnN2Function,'var') && ~isempty(matFile.dLnN2Function)
-        wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function, dLnN2func=matFile.dLnN2Function);
+        wvt = WVTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function, dLnN2func=matFile.dLnN2Function);
     else
-        wvt = WaveVortexTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function);
+        wvt = WVTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function);
     end
 else
     error("stratification not supported.");
@@ -75,7 +75,7 @@ if all(isKey(ncfile.complexVariableWithName,{'Ap','Am','A0'}))
     else
         [wvt.A0,wvt.Ap,wvt.Am] = ncfile.readVariables('A0','Ap','Am');
     end
-    fprintf('%s initialized from Ap, Am, A0.\n',ncfile.attributes('WaveVortexTransform'));
+    fprintf('%s initialized from Ap, Am, A0.\n',ncfile.attributes('WVTransform'));
 elseif all(isKey(ncfile.variableWithName,{'u','v','eta'}))
     if hasTimeDimension == 1
         [u,v,eta] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'u','v','eta');
@@ -83,15 +83,15 @@ elseif all(isKey(ncfile.variableWithName,{'u','v','eta'}))
         [u,v,eta] = ncfile.readVariables('u','v','eta');
     end
     [wvt.Ap,wvt.Am,wvt.A0] = wvt.transformUVEtaToWaveVortex(u,v,eta,self.currentTime);
-    fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WaveVortexTransform'));
+    fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WVTransform'));
 elseif all(isKey(ncfile.complexVariableWithName,{'A0'}))
     if hasTimeDimension == 1
         wvt.A0 = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0');
     else
         wvt.A0 = ncfile.readVariables('A0');
     end
-    fprintf('%s initialized from A0.\n',ncfile.attributes('WaveVortexTransform'));
+    fprintf('%s initialized from A0.\n',ncfile.attributes('WVTransform'));
 else
-    warning('%s initialized without data.\n',ncfile.attributes('WaveVortexTransform'));
+    warning('%s initialized without data.\n',ncfile.attributes('WVTransform'));
 end
 end

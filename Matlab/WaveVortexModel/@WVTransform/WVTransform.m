@@ -1,21 +1,21 @@
-classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
+classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
     %
     %
-    % The WaveVortexTransform subclasses encapsulate data representing the
+    % The WVTransform subclasses encapsulate data representing the
     % state of the ocean at a given instant in time. What makes the
-    % WaveVortexTransform subclasses special is that the state of the ocean
+    % WVTransform subclasses special is that the state of the ocean
     % is represented as energetically independent waves and geostrophic
     % motions (vortices). These classes can be queried for any ocean state
     % variable including $$u$$, $$v$$, $$w$$, $$\rho$$, $$p$$, but also
     % Ertel PV, relative vorticity, or custom defined state variables.
     %
-    % The WaveVortexTransform is an abstract class and as such you must
+    % The WVTransform is an abstract class and as such you must
     % instatiate one of the concrete subclasses,
     %
-    % + `WaveVortexTransformConstantStratification`
-    % + `WaveVortexTransformHydrostatic`
-    % + `WaveVortexTransformSingleMode`
+    % + `WVTransformConstantStratification`
+    % + `WVTransformHydrostatic`
+    % + `WVTransformSingleMode`
     %
     % - Topic: Initialization
     % - Topic: Domain attributes
@@ -177,7 +177,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods
-        function self = WaveVortexTransform(Lxyz, Nxy, z, options)
+        function self = WVTransform(Lxyz, Nxy, z, options)
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
@@ -215,9 +215,9 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.operationNameMap = containers.Map();
             self.timeDependentVariables = {};
 
-            self.addDimensionAnnotations(WaveVortexTransform.defaultDimensionAnnotations);
-            self.addPropertyAnnotations(WaveVortexTransform.defaultPropertyAnnotations);
-            self.addOperation(WaveVortexTransform.defaultOperations);
+            self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
+            self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
+            self.addOperation(WVTransform.defaultOperations);
         end
 
         function addDimensionAnnotations(self,transformDimension)
@@ -225,7 +225,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 transformDimension (1,:) WVDimensionAnnotation {mustBeNonempty}
             end
             for i=1:length(transformDimension)
@@ -238,7 +238,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
             val = self.dimensionAnnotationNameMap(name);
@@ -249,7 +249,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 transformProperty (1,:) WVPropertyAnnotation {mustBeNonempty}
             end
             for i=1:length(transformProperty)
@@ -262,7 +262,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
             val = self.propertyAnnotationNameMap(name);
@@ -273,7 +273,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
             val = self.variableAnnotationNameMap(name);
@@ -284,7 +284,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
             end
             names = self.variableAnnotationNameMap.keys;
         end
@@ -294,7 +294,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 transformOperation (1,:) WVOperation {mustBeNonempty}
             end
             for iOp=1:length(transformOperation)
@@ -326,7 +326,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Utility function — Metadata
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 name char {mustBeNonempty}
             end
             val = self.operationNameMap(name);
@@ -439,17 +439,17 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)
-            % create a new WaveVortexTransform with double resolution
+            % create a new WVTransform with double resolution
             %
             % - Topic: Initialization
             wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny self.Nz]);
         end
 
         function wvmX2 = waveVortexTransformWithResolution(self,m)
-            % create a new WaveVortexTransform with increased resolution
+            % create a new WVTransform with increased resolution
             %
             % - Topic: Initialization
-            wvmX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
+            wvmX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
             wvmX2.t0 = self.t0;
             wvmX2.t = self.t;
             if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
@@ -572,7 +572,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             fOmega = f./omega;
             
-            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
+            makeHermitian = @(f) WVTransform.makeHermitian(f);
             
             self.iOmega = makeHermitian(sqrt(-1)*omega);
 
@@ -699,14 +699,14 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
             % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
             %
-            % This function **is** the WaveVortexTransform. It is a [linear
+            % This function **is** the WVTransform. It is a [linear
             % transformation](/transformations/transformations.html)
             % denoted $$\mathcal{L}$$.
             %
             % This function is not intended to be used directly (although
             % you can), and is kept here to demonstrate a simple
             % implementation of the transformation. Instead, you should
-            % initialize the WaveVortexTransform using one of the
+            % initialize the WVTransform using one of the
             % initialization functions.
             %
             % - Topic: Operations — Transformations
@@ -736,7 +736,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
         function [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
             % transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
             %
-            % This function is the inverse WaveVortexTransform. It is a
+            % This function is the inverse WVTransform. It is a
             % [linear
             % transformation](/transformations/transformations.html)
             % denoted $$\mathcal{L}$$.
@@ -744,7 +744,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
             % This function is not intended to be used directly (although
             % you can), and is kept here to demonstrate a simple
             % implementation of the transformation. Instead, you should
-            % initialize the WaveVortexTransform using one of the
+            % initialize the WVTransform using one of the
             % initialization functions.
             %
             % - Topic: Operations — Transformations
@@ -800,7 +800,7 @@ classdef WaveVortexTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function [Ep,Em,E0] = energyFlux(self,options)
             arguments
-                self WaveVortexTransform {mustBeNonempty}
+                self WVTransform {mustBeNonempty}
                 options.deltaT (1,1) double = 0
             end
             [Fp,Fm,F0] = self.nonlinearFlux;

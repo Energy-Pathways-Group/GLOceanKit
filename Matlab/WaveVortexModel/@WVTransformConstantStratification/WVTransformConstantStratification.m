@@ -1,4 +1,4 @@
-classdef WaveVortexTransformConstantStratification < WaveVortexTransform
+classdef WVTransformConstantStratification < WVTransform
     %3D Boussinesq model with constant stratification solved in wave-vortex
     %space
     
@@ -20,7 +20,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
     end
         
     methods
-        function self = WaveVortexTransformConstantStratification(Lxyz, Nxyz, N0, options)
+        function self = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
@@ -41,7 +41,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             z = dz*(0:(Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
             nModes = Nz-1;
             
-            self@WaveVortexTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=N0);
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=N0);
             
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
@@ -82,7 +82,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
         end
                 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            wvtX2 = WaveVortexTransformConstantStratification([self.Lx self.Ly self.Lz],m, self.N0,latitude=self.latitude,rho0=self.rho0);
+            wvtX2 = WVTransformConstantStratification([self.Lx self.Ly self.Lz],m, self.N0,latitude=self.latitude,rho0=self.rho0);
             wvtX2.t0 = self.t0;
             if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
                 kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
@@ -132,7 +132,7 @@ classdef WaveVortexTransformConstantStratification < WaveVortexTransform
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
 
-            buildTransformationMatrices@WaveVortexTransform(self);
+            buildTransformationMatrices@WVTransform(self);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

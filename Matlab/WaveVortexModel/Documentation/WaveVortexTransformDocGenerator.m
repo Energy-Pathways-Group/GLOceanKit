@@ -1,5 +1,5 @@
 function WaveVortexTransformDocGenerator(classDocumentationFolder)
-className = 'WaveVortexTransform';
+className = 'WVTransform';
 
 targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
 mc = meta.class.fromName(className);
@@ -59,7 +59,7 @@ for i=1:length(mc.PropertyList)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-dims = WaveVortexTransform.defaultDimensionAnnotations();
+dims = WVTransform.defaultDimensionAnnotations();
 for iDim=1:length(dims)
     metadata = ExtractMetadataFromDetailedDescription(dims(iDim).detailedDescription);
     metadata.name = dims(iDim).name;
@@ -72,7 +72,7 @@ for iDim=1:length(dims)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-props = WaveVortexTransform.defaultPropertyAnnotations();
+props = WVTransform.defaultPropertyAnnotations();
 for iDim=1:length(props)
     metadata = ExtractMetadataFromDetailedDescription(props(iDim).detailedDescription);
     metadata.name = props(iDim).name;
@@ -86,7 +86,7 @@ for iDim=1:length(props)
 end
 
 % Overwrite the automatically extracted metadata, with our version
-ops = WaveVortexTransform.defaultOperations();
+ops = WVTransform.defaultOperations();
 for iOp=1:length(ops)
     for iVar=1:length(ops(iOp).outputVariables)
         stateVar = ops(iOp).outputVariables(iVar);
@@ -102,7 +102,7 @@ for iOp=1:length(ops)
     end
 end
 
-methods = WaveVortexTransform.defaultMethodAnnotations;
+methods = WVTransform.defaultMethodAnnotations;
 for iMethod=1:length(methods)
     metadata = ExtractMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
     metadata.name = methods(iMethod).name;

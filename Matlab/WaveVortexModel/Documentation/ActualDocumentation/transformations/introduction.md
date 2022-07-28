@@ -27,7 +27,7 @@ p
 \left[\begin{array}{c} \hat{A}_+  \\  \hat{A}_-  \\\hat{A}_0 \end{array}\right].
 $$
 
-In the `WaveVortexTransform` the linear transformation and its inverse are implemented as,
+In the `WVTransform` the linear transformation and its inverse are implemented as,
 
 ```matlab
 [Ap,Am,A0] = wvt.transformUVEtaToWaveVortex(U,V,N,t);

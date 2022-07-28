@@ -1,5 +1,5 @@
 function ncfile = writeToFile(wvt,path,variables,options)
-    % Output the `WaveVortexTransform` to file.
+    % Output the `WVTransform` to file.
     %
     % - Topic: Write to file
     % - Declaration: ncfile = writeToFile(netcdfFile,variables,options)
@@ -8,7 +8,7 @@ function ncfile = writeToFile(wvt,path,variables,options)
     % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0. 
     % - Parameter shouldAddDefaultVariables: (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
     arguments
-        wvt WaveVortexTransform {mustBeNonempty}
+        wvt WVTransform {mustBeNonempty}
         path char {mustBeNonempty}
     end
     arguments (Repeating)
@@ -54,15 +54,15 @@ function ncfile = writeToFile(wvt,path,variables,options)
     ncfile.addAttribute('Model','Created with the WaveVortexModel, written by Jeffrey J. Early and collaborators.');
     ncfile.addAttribute('ModelVersion',wvt.version);
     ncfile.addAttribute('CreationDate',CreationDate);
-    ncfile.addAttribute('WaveVortexTransform',class(wvt));
+    ncfile.addAttribute('WVTransform',class(wvt));
 
     attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
 
-    if isa(wvt,'WaveVortexTransformConstantStratification')
+    if isa(wvt,'WVTransformConstantStratification')
         attributesToWrite = union({'N0'},attributesToWrite);
-    elseif isa(wvt,'WaveVortexTransformSingleMode')
+    elseif isa(wvt,'WVTransformSingleMode')
         attributesToWrite = union({'h'},attributesToWrite);
-    elseif isa(wvt,'WaveVortexTransformHydrostatic')
+    elseif isa(wvt,'WVTransformHydrostatic')
         %                 attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
         attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG'},attributesToWrite);
 

@@ -1,9 +1,9 @@
 classdef WVModel < handle
-    % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WaveVortexTransform.
+    % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WVTransform.
     %
-    % Assuming you have already initialized a WaveVortexTransform, e.g.,
+    % Assuming you have already initialized a WVTransform, e.g.,
     % ```matlab
-    % wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
+    % wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
     % ```
     % and maybe set some initial conditions, you can then initialize the
     % model,
@@ -30,9 +30,9 @@ classdef WVModel < handle
     % - Topic: Writing to NetCDF files
 
     properties (GetAccess=public,SetAccess=protected)
-        % The WaveVortexTransform instance the represents the ocean state.
+        % The WVTransform instance the represents the ocean state.
         % - Topic: Model Properties
-        % Set on initialization only, the WaveVortexTransform in the model
+        % Set on initialization only, the WVTransform in the model
         % performs all computations necessary to return information about
         % the ocean state at a given time.
         wvt
@@ -96,7 +96,7 @@ classdef WVModel < handle
             % - Declaration: addNetCDFOutputVariables(variables)
             % - Parameter variables: strings of variable names.
             %
-            % Pass strings of WaveVortexTransform state variables of the
+            % Pass strings of WVTransform state variables of the
             % same name. This must be called before using any of the
             % integrate methods.
             %
@@ -112,7 +112,7 @@ classdef WVModel < handle
             end
             unknownVars = setdiff(variables,self.wvt.variableNames);
             if ~isempty(unknownVars)
-               error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
+               error('The WVTransform does not have a variable named %s',unknownVars{1}) ;
             end
             self.netCDFOutputVariables = union(self.netCDFOutputVariables,variables);
         end
@@ -124,7 +124,7 @@ classdef WVModel < handle
             % - Declaration: setNetCDFOutputVariables(variables)
             % - Parameter variables: strings of variable names.
             %
-            % Pass strings of WaveVortexTransform state variables of the
+            % Pass strings of WVTransform state variables of the
             % same name. This must be called before using any of the
             % integrate methods.
             %
@@ -139,7 +139,7 @@ classdef WVModel < handle
             end
             unknownVars = setdiff(variables,self.wvt.variableNames);
             if ~isempty(unknownVars)
-                error('The WaveVortexTransform does not have a variable named %s',unknownVars{1}) ;
+                error('The WVTransform does not have a variable named %s',unknownVars{1}) ;
             end
             self.netCDFOutputVariables = variables;
         end
@@ -151,7 +151,7 @@ classdef WVModel < handle
             % - Declaration: removeNetCDFOutputVariables(variables)
             % - Parameter variables: strings of variable names.
             %
-            % Pass strings of WaveVortexTransform state variables of the
+            % Pass strings of WVTransform state variables of the
             % same name. This must be called before using any of the
             % integrate methods.
             %
@@ -174,16 +174,16 @@ classdef WVModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function self = WVModel(wvt,options)
-            % Initialize a model from a WaveVortexTransform instance
+            % Initialize a model from a WVTransform instance
             %
             % - Topic: Initialization
             % - Declaration: WVModel(wvt,options)
             % - Parameter wvt: a WaveVortexTranform instance
-            % - Parameter nonlinearFlux: (optional) a WVNonlinearFluxOperation used to time-step the WaveVortexTransform forward in time.
+            % - Parameter nonlinearFlux: (optional) a WVNonlinearFluxOperation used to time-step the WVTransform forward in time.
             %
             % 
             arguments
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
                 options.nonlinearFlux WVNonlinearFluxOperation
             end
 
@@ -650,7 +650,7 @@ classdef WVModel < handle
 
         % Initial model time (seconds)
         % - Topic: Model Properties
-        % The time of the WaveVortexTransform when the model was
+        % The time of the WVTransform when the model was
         % initialized. This also corresponds to the first time in the
         % NetCDF output file.
         initialTime (1,1) double = 0 

@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Initialize a new WVModel (which includes a WaveVortexTransform
+% Initialize a new WVModel (which includes a WVTransform
 % and a WVNonlinearFluxOperation) from existing output. We will start from
 % the final time-point.
 %

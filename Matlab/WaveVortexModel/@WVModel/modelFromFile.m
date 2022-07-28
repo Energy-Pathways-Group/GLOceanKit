@@ -12,7 +12,7 @@ function model = modelFromFile(path,options)
         options.shouldDoubleResolution double {mustBeMember(options.shouldDoubleResolution,[0 1])} = 0 
     end
 
-    wvt = WaveVortexTransform.waveVortexTransformFromFile(path,iTime=options.restartIndex);
+    wvt = WVTransform.waveVortexTransformFromFile(path,iTime=options.restartIndex);
 
     ncfile = NetCDFFile(path);
     if isKey(ncfile.attributes,'WVNonlinearFluxOperation')

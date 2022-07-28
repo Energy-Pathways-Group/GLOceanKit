@@ -1,4 +1,4 @@
-classdef WaveVortexTransformSingleMode < WaveVortexTransform
+classdef WVTransformSingleMode < WVTransform
     % Single mode wave-vortex solutions, values at the surface.
 
     properties        
@@ -12,7 +12,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         
     methods
          
-        function self = WaveVortexTransformSingleMode(Lxy, Nxy, options)
+        function self = WVTransformSingleMode(Lxy, Nxy, options)
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
@@ -21,7 +21,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             end
 
             % This is enough information to initialize
-            self@WaveVortexTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)], 0,latitude=options.latitude,Nj=1);
+            self@WVTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)], 0,latitude=options.latitude,Nj=1);
             
             self.h = options.h;
             self.isBarotropic = 1;
@@ -50,7 +50,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            wvtX2 = WaveVortexTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
+            wvtX2 = WVTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
             if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
@@ -85,7 +85,7 @@ classdef WaveVortexTransformSingleMode < WaveVortexTransform
             end
             fOmega = f./omega;
             
-            makeHermitian = @(f) WaveVortexTransform.makeHermitian(f);
+            makeHermitian = @(f) WVTransform.makeHermitian(f);
             
             self.iOmega = makeHermitian(sqrt(-1)*omega);
 

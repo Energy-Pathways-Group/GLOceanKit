@@ -1,5 +1,5 @@
 classdef WVVariableAnnotation < WVAnnotation
-    % A variable describing the state of ocean in the WaveVortexTransform
+    % A variable describing the state of ocean in the WVTransform
     %
     % 
     %

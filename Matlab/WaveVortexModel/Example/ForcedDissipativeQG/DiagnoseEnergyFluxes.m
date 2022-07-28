@@ -1,6 +1,6 @@
 file = 'ForcedDissipativeQG-256-restart.nc';
 iTime = 10;
-wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=Inf);
+wvt = WVTransform.waveVortexTransformFromFile(file,iTime=Inf);
 TotalEnergy = (wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0));
 E_damp_radial = wvt.transformToRadialWavenumber(TotalEnergy);
 
@@ -19,7 +19,7 @@ k_r = ncfile.attributes('k_r');
 
 for iT = 1:length(timeIndices)
     iTime = timeIndices(iT);
-    wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
+    wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
 
     F0_psi = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi');
 
@@ -61,7 +61,7 @@ timeIndices = 1:length(tDim);
 EF_forcingT = zeros(length(timeIndices),1);
 for iT = 1:length(timeIndices)
     iTime = timeIndices(iT);
-    wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
+    wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
     F0_psi = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi');
     EnergyFluxForcing = 2*wvt.A0_TE_factor.*real( F0_psi .* conj(wvt.A0) ); % m/s^2 * m/s * m = m^3/s^3
     EF_forcingT(iT) = -sum(EnergyFluxForcing(:));

@@ -1,4 +1,4 @@
-classdef WaveVortexTransformHydrostatic < WaveVortexTransform
+classdef WVTransformHydrostatic < WVTransform
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %
@@ -33,7 +33,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
         
     methods
          
-        function self = WaveVortexTransformHydrostatic(Lxyz, Nxyz, rhoFunc, options)
+        function self = WVTransformHydrostatic(Lxyz, Nxyz, rhoFunc, options)
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
@@ -76,7 +76,7 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
             end
 
             % This is enough information to initialize
-            self@WaveVortexTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
 
             if isequal(options.dLnN2func,@disp)
                 dLnN2 = im.rho_zz./im.rho_z;
@@ -117,9 +117,9 @@ classdef WaveVortexTransformHydrostatic < WaveVortexTransform
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
             if ~isempty(self.dLnN2Function)
-                wvtX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
+                wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
             else
-                wvtX2 = WaveVortexTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function);
+                wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function);
             end
 
             wvtX2.t0 = self.t0;

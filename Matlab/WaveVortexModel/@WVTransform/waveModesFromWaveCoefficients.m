@@ -19,14 +19,14 @@ A_m(1,1,:) = 0*A_m(1,1,:);
 [K,L,J] = ndgrid(self.k,self.l,self.j);
 Omega = self.Omega;
 
-[A_plus,phi_plus,linearIndex] = WaveVortexTransform.extractNonzeroWaveProperties(A_p);
+[A_plus,phi_plus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_p);
 omega_plus = Omega(linearIndex);
 mode_plus = J(linearIndex);
 alpha_plus = atan2(L(linearIndex),K(linearIndex));
 k_plus = K(linearIndex);
 l_plus = L(linearIndex);
 
-[A_minus,phi_minus,linearIndex] = WaveVortexTransform.extractNonzeroWaveProperties(A_m);
+[A_minus,phi_minus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_m);
 omega_minus = -Omega(linearIndex);
 mode_minus = J(linearIndex);
 alpha_minus = atan2(L(linearIndex),K(linearIndex));

@@ -2,7 +2,7 @@
 %
 % WaveVortexTransformTestConstantStrat
 %
-% This script tests two components of the WaveVortexTransform:
+% This script tests two components of the WVTransform:
 %   1. Transform to and from wave-vortex space and,
 %   2. The energy orthogonality of all wave-vortex solutions.
 %
@@ -39,7 +39,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvt = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude );
+wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

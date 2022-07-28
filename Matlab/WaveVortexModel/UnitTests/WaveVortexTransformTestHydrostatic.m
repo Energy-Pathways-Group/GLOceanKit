@@ -2,12 +2,12 @@
 %
 % WaveVortexTransformTestHydrostatic
 %
-% This script tests two components of the WaveVortexTransform:
+% This script tests two components of the WVTransform:
 %   1. Transform to and from wave-vortex space and,
 %   2. The energy orthogonality of all wave-vortex solutions.
 %
 % The script uses constant stratification, and thus does a comparison to
-% the WaveVortexTransformConstantStratification with the same parameters.
+% the WVTransformConstantStratification with the same parameters.
 %
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
@@ -42,11 +42,11 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvtConst = WaveVortexTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude,isHydrostatic=1 );
+wvtConst = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude,isHydrostatic=1 );
 
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-wvt = WaveVortexTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho, latitude=latitude);
+wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho, latitude=latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

@@ -1,6 +1,6 @@
 function [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
 arguments
-    self WaveVortexTransform {mustBeNonempty}
+    self WVTransform {mustBeNonempty}
     x (1,:) double
     y (1,:) double
     z (1,:) double

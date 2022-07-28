@@ -10,7 +10,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
     methods
         function self = SingleModeForcedDissipativeQGPVEMasked(wvt,options)
             arguments
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
                 options.r (1,1) double
                 options.nu (1,1) double
                 options.k_r (1,1) double =(wvt.k(2)-wvt.k(1))*2
@@ -66,18 +66,18 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 
                 kAxis = wvt.kRadial;
                 dk = kAxis(2)-kAxis(1);
-                ARand = WaveVortexTransform.generateHermitianRandomMatrix(size(wvt.A0));
+                ARand = WVTransform.generateHermitianRandomMatrix(size(wvt.A0));
                 for iK=1:(length(wvt.kRadial)-1)
                     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2   );
                     energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
                     wvt.A0(indicesForK) = energy/length(indicesForK);
                     ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
                 end
-                wvt.A0 = WaveVortexTransform.makeHermitian(wvt.A0);
+                wvt.A0 = WVTransform.makeHermitian(wvt.A0);
 
                 AA = ~(wvt.maskForAliasedModes(jFraction=1));
                 wvt.A0 = AA .* (sqrt(wvt.h * wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
-                WaveVortexTransform.checkHermitian(wvt.A0);
+                WVTransform.checkHermitian(wvt.A0);
 
                 if strcmp(options.initialPV,'narrow-band')
                     wvt.A0 = (~self.EMA0) .* wvt.A0;
@@ -106,7 +106,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
 
             writeToFile@SingleModeQGPVE(self,ncfile,wvt);
@@ -133,7 +133,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
         function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
             arguments
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             nlFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,initialPV='none', k_f=ncfile.attributes('k_f'),r=ncfile.attributes('r'),nu=ncfile.attributes('nu') );
         end

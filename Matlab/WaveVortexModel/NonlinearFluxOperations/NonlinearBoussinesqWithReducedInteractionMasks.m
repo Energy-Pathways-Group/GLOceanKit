@@ -11,7 +11,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
     methods
         function self = NonlinearBoussinesqWithReducedInteractionMasks(wvt)
             arguments
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
@@ -20,9 +20,9 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             self@WVNonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
             
             self.wvt = wvt;
-            if isa(wvt,'WaveVortexTransformConstantStratification')
+            if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = zeros(size(wvt.z));
-            elseif isa(wvt,'WaveVortexTransformHydrostatic')
+            elseif isa(wvt,'WVTransformHydrostatic')
                 self.dLnN2 = wvt.dLnN2;
             end
 
@@ -191,8 +191,8 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
         	self.EMAp(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = 0;
 			self.EMAm(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = 0;
 
-			self.EMAp = WaveVortexTransform.makeHermitian(self.EMAp);
-			self.EMAm = WaveVortexTransform.makeHermitian(self.EMAm);
+			self.EMAp = WVTransform.makeHermitian(self.EMAp);
+			self.EMAm = WVTransform.makeHermitian(self.EMAm);
 
 			[omega,k,l] = self.setWaveModes(kMode, lMode, jMode, phi, u, signs);
         end
@@ -207,7 +207,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             ncfile.addVariable('IMA0',int8(self.IMA0),{'k','l','j'});
             ncfile.addVariable('IMAp',int8(self.IMAp),{'k','l','j'});
@@ -221,7 +221,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             optionalVariables = {'IMA0','IMAm','IMAp','EMA0','EMAm','EMAp'};
             if all(isKey(ncfile.variableWithName,optionalVariables))

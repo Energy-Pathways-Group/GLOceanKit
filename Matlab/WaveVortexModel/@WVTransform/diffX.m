@@ -9,7 +9,7 @@ function du = diffX(wvt,u,n)
 % - Parameter n: (optional) order of differentiation $$\frac{d^n}{dx^n}$$ (default 1)
 % - Returns du: differentiated variable in the spatial domain
 arguments
-    wvt         WaveVortexTransform
+    wvt         WVTransform
     u (:,:,:)   double
     n (1,1)     double = 1
 end

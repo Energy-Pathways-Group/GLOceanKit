@@ -11,7 +11,7 @@ iTime = 350;
 eta = mean(mean(zeta_z .* F_psi)); % 1/s * 1/s^2 = 1/s^3
 fprintf('Enstrophy forcing, computed spatially: %g 1/s^3\n',eta);
 
-wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
+wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
 
 % Muliply A0 by this factor and you get QGPV
 PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f); % real, units of 1/(m s)
@@ -62,7 +62,7 @@ ZF_damping = zeros(size(TE));
 
 for iT = 1:length(timeIndices)
     iTime = timeIndices(iT);
-    wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
+    wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
 
     F0_psi = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi');
 
@@ -104,7 +104,7 @@ timeIndices = 1:length(tDim);
 EF_forcingT = zeros(length(timeIndices),1);
 for iT = 1:length(timeIndices)
     iTime = timeIndices(iT);
-    wvt = WaveVortexTransform.waveVortexTransformFromFile(file,iTime=iTime);
+    wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
     F0_psi = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi');
     EnstrophyFluxForcing = 2*wvt.A0_TE_factor.*real( F0_psi .* conj(wvt.A0) ); % m/s^2 * m/s * m = m^3/s^3
     EF_forcingT(iT) = -sum(EnstrophyFluxForcing(:));

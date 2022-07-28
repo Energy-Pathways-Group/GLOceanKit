@@ -1,4 +1,4 @@
-classdef WaveVortexModelArbitraryStratification < WVModel
+classdef WVTransformFullBoussinesq < WVModel
     %3D Boussinesq model with constant stratification solved in wave-vortex
     %space
     
@@ -45,7 +45,7 @@ classdef WaveVortexModelArbitraryStratification < WVModel
         % 2) You want to run this as a diagnostic model and therefore want
         %    to specify the depths and modes yourself
         %       Init(xyDims, nxy, latitude, rho, z, varargin)
-        function self = WaveVortexModelArbitraryStratification(xyDims, nxy, latitude, rho, zIn, z, varargin)
+        function self = WVTransformFullBoussinesq(xyDims, nxy, latitude, rho, zIn, z, varargin)
             % rho0 is optional.
             if length(xyDims) ~=2 || length(nxy) ~= 2
                 error('The xyDims and nxy variables must be of length 2. You need to specify x,y');

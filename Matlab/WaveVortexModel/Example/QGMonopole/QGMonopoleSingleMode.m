@@ -12,7 +12,7 @@ Ny = 128;
 
 latitude = 25;
 
-wvt = WaveVortexTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
+wvt = WVTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
 
 x0 = 3*Lx/4;
 y0 = Ly/2;

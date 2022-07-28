@@ -11,7 +11,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
     methods
         function self = SingleModeQGPVE(wvt,options)
             arguments
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
                 options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
                 options.r (1,1) double = 0
@@ -81,7 +81,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             ncfile.addAttribute('beta',self.beta)
             ncfile.addAttribute('r',self.r)
@@ -117,7 +117,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
         function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
             arguments
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
             nlFlux = SingleModeQGPVE(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
         end

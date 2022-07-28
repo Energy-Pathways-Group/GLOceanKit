@@ -20,9 +20,9 @@ arguments
 end
 
 nX = size(1); nY = size(2);
-A = WaveVortexTransform.makeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+A = WVTransform.makeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
 if options.shouldExcludeNyquist == 1
-    mask = ~WaveVortexTransform.nyquistWavenumbers(A(:,:,1));
+    mask = ~WVTransform.nyquistWavenumbers(A(:,:,1));
     A = mask.*A;
 else
     A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency

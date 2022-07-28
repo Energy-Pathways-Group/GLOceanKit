@@ -17,7 +17,7 @@ function AntiAliasFilter = maskForAliasedModes(self,options)
 % - Returns AntiAliasFilter: mask aliased mode
 
 arguments
-    self WaveVortexTransform {mustBeNonempty}
+    self WVTransform {mustBeNonempty}
     options.jFraction double {mustBePositive(options.jFraction),mustBeLessThanOrEqual(options.jFraction,1)} = 2/3
 end
 

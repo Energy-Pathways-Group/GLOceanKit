@@ -8,7 +8,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
     methods
         function self = SingleModeForcedDissipativeQGPVE(wvt,options)
             arguments
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
                 options.k_f (1,1) double
                 options.f_zeta (1,1) double
@@ -23,7 +23,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
             % This creates an annulus with unit variance.
             Fzeta = zeros(size(Kh));
             Fzeta(Kh > options.k_f-deltaK & Kh < options.k_f+deltaK) = 1;
-            Fzeta = WaveVortexTransform.makeHermitian(Fzeta);
+            Fzeta = WVTransform.makeHermitian(Fzeta);
             Fzeta = Fzeta/sqrt(sum(sum(Fzeta.*conj(Fzeta))));
 
             self@SingleModeQGPVE(wvt,fluxName='SingleModeForcedDissipativeQGPVE',r=options.r,nu=options.nu,shouldUseBeta=options.shouldUseBeta);
@@ -37,7 +37,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
             varargout = cell(1,self.nVarOut);
             [varargout{:}] = Compute@SingleModeQGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
-            F0 = F0 + WaveVortexTransform.generateHermitianRandomMatrix(size(F0)).*self.F;
+            F0 = F0 + WVTransform.generateHermitianRandomMatrix(size(F0)).*self.F;
             varargout{1} = F0;
         end
 
@@ -45,7 +45,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
-                wvt WaveVortexTransform {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
             end
 
             writeToFile@SingleModeQGPVE(self,ncfile,wvt);
@@ -57,7 +57,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
 %             arguments
 %                 self WVNonlinearFluxOperation {mustBeNonempty}
 %                 ncfile NetCDFFile {mustBeNonempty}
-%                 wvt WaveVortexTransform {mustBeNonempty}
+%                 wvt WVTransform {mustBeNonempty}
 %             end
 %             if isKey(ncfile.variableWithName,'beta')
 %                 self.beta = ncfile.

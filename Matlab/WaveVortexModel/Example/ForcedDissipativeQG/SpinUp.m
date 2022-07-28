@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Specify the problem dimensions and initialize a WaveVortexTransform.
+% Specify the problem dimensions and initialize a WVTransform.
 % The 'h' parameter is the equivalent depth, and 0.80 m is a typical value
 % for the first baroclinic mode.
 %
@@ -10,7 +10,7 @@ Lxy = 50e3;
 Nxy = 256;
 latitude = 25;
 
-wvt = WaveVortexTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
+wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -35,7 +35,7 @@ fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Once a WaveVortexTransform and a NonlinearFlux operator have been
+% Once a WVTransform and a NonlinearFlux operator have been
 % initialized, we can now initialize a model.
 % 
 % Here we choose a relatively small time step, as we expect energy to build
