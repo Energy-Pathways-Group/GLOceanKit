@@ -2,7 +2,7 @@ classdef WVDimensionAnnotation < WVAnnotation
     %Describes a coordinate dimension of the WVTransform
     %
     % In addition to adding a name, description and detailed description of
-    % a given dimension, you also specify tits  units. These annotations
+    % a given dimension, you also specify its units. These annotations
     % are used for both online documentation and for writing to NetCDF
     % files.
     %
