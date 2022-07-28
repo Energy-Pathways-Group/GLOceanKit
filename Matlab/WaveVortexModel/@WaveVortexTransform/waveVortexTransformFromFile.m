@@ -14,7 +14,7 @@ ncfile = NetCDFFile(path);
 requiredVariables = {'x','y','z','Lx','Ly','Lz','j','latitude','t0','t','rho0'};
 requiredAttributes = {'WaveVortexTransform'};
 if ~all(isKey(ncfile.variableWithName,requiredVariables)) || ~all(isKey(ncfile.attributes,requiredAttributes))
-    error('This files is missing required variables or attributes to load directly into the WaveVortexModel.')
+    error('This files is missing required variables or attributes to initialize a WVTransform.')
 end
 
 [x,y,z,Lx,Ly,Lz,rho0,latitude] = ncfile.readVariables('x','y','z','Lx','Ly','Lz','rho0','latitude');

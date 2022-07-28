@@ -1,12 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Initialize a new WaveVortexModel (which includes a WaveVortexTransform
+% Initialize a new WVModel (which includes a WaveVortexTransform
 % and a WVNonlinearFluxOperation) from existing output. We will start from
 % the final time-point, and double the resolution.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-spinup-256.nc',shouldDoubleResolution=1,restartIndex=Inf);
+model = WVModel.modelFromFile('ForcedDissipativeQG-spinup-256.nc',shouldDoubleResolution=1,restartIndex=Inf);
 wvt = model.wvt;
 
 model.setupIntegrator(deltaT=0.5*model.nonlinearFlux.dampingTimeScale,outputInterval=86400);

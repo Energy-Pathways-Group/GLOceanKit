@@ -27,9 +27,9 @@ function model = modelFromFile(path,options)
     end
 
     if exist('nlFlux','var')
-        model = WaveVortexModel(wvt,nonlinearFlux=nlFlux);
+        model = WVModel(wvt,nonlinearFlux=nlFlux);
     else
-        model = WaveVortexModel(wvt);
+        model = WVModel(wvt);
     end
     
 % if there's existing model output, use that output interval

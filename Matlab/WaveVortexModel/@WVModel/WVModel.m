@@ -1,5 +1,5 @@
-classdef WaveVortexModel < handle
-    % The WaveVortexModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WaveVortexTransform.
+classdef WVModel < handle
+    % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WaveVortexTransform.
     %
     % Assuming you have already initialized a WaveVortexTransform, e.g.,
     % ```matlab
@@ -8,18 +8,18 @@ classdef WaveVortexModel < handle
     % and maybe set some initial conditions, you can then initialize the
     % model,
     % ```matlab
-    % model = WaveVortexModel(wvt)
+    % model = WVModel(wvt)
     % ```
     % 
     % By default the model only takes a linear time-step. To specify a
     % nonlinear flux on initialization, for example,
     %```matlab
-    % model = WaveVortexModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.uMax));
     %```
     %
     % You can also initialize a model from existing output,
     % ```matlab
-    % model = WaveVortexModel.modelFromFile('SomeFile.nc');
+    % model = WVModel.modelFromFile('SomeFile.nc');
     %```
     % 
     % - Topic: Initialization
@@ -105,7 +105,7 @@ classdef WaveVortexModel < handle
             % ```
             
             arguments
-                self WaveVortexModel
+                self WVModel
             end
             arguments (Repeating)
                 variables char
@@ -132,7 +132,7 @@ classdef WaveVortexModel < handle
             % model.setNetCDFOutputVariables('A0','u','v');
             % ```
             arguments
-                self WaveVortexModel
+                self WVModel
             end
             arguments (Repeating)
                 variables char
@@ -159,7 +159,7 @@ classdef WaveVortexModel < handle
             % model.removeNetCDFOutputVariables('A0','u','v');
             % ```
             arguments
-                self WaveVortexModel
+                self WVModel
             end
             arguments (Repeating)
                 variables char
@@ -173,11 +173,11 @@ classdef WaveVortexModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WaveVortexModel(wvt,options)
+        function self = WVModel(wvt,options)
             % Initialize a model from a WaveVortexTransform instance
             %
             % - Topic: Initialization
-            % - Declaration: WaveVortexModel(wvt,options)
+            % - Declaration: WVModel(wvt,options)
             % - Parameter wvt: a WaveVortexTranform instance
             % - Parameter nonlinearFlux: (optional) a WVNonlinearFluxOperation used to time-step the WaveVortexTransform forward in time.
             %
@@ -227,7 +227,7 @@ classdef WaveVortexModel < handle
             % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
             % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 name char {mustBeNonempty}
                 fluxOp WVParticleFluxOperation {mustBeNonempty}
                 x (1,:) double
@@ -344,7 +344,7 @@ classdef WaveVortexModel < handle
             % retrieve the current positions and values of the tracked
             % fields by calling -floatPositions.
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
                 z (1,:) double = []
@@ -395,7 +395,7 @@ classdef WaveVortexModel < handle
             % Set positions of drifter-like particles to be advected.
             % - Topic: Particles
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
                 z (1,:) double = []
@@ -448,7 +448,7 @@ classdef WaveVortexModel < handle
             % - Parameter outputInterval: (optional) If set, it will allow you to call -integrateToNextOutputTime and, if a NetCDF file is set for output, it will set the interval at which time steps are written to file.
             % - Parameter finalTime: (optional) if set, the NetCDF file may set a fixed time dimension length.
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 options.deltaT (1,1) double {mustBePositive}
                 options.cfl (1,1) double
                 options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
@@ -534,7 +534,7 @@ classdef WaveVortexModel < handle
             % Time step the model forward to the requested time.
             % - Topic: Integration
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 finalTime (1,:) double
             end
 
@@ -588,7 +588,7 @@ classdef WaveVortexModel < handle
             % Create a NetCDF file for model output
             % - Topic: Writing to NetCDF files
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
                 netcdfFile char {mustBeNonempty}
                 options.Nt (1,1) double {mustBePositive} = Inf
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
@@ -868,7 +868,7 @@ classdef WaveVortexModel < handle
 
         function openNetCDFFileForTimeStepping(self)
             arguments
-                self WaveVortexModel {mustBeNonempty}
+                self WVModel {mustBeNonempty}
             end
             if ~isempty(self.ncfile) && self.didInitializeNetCDFFile == 0
                 % Sort through which variables we will record a time series
@@ -965,7 +965,7 @@ classdef WaveVortexModel < handle
 
         function initializeParticleStorage(self,particleName, nParticles, trackedFieldNames)
             arguments
-                self WaveVortexModel
+                self WVModel
                 particleName char
                 nParticles (1,1) double {mustBePositive}
             end

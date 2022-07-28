@@ -1,6 +1,6 @@
 cd(fileparts(which(mfilename)))
 
-className = 'WaveVortexModel';
+className = 'WVModel';
 classDocumentationFolder = '../../../docs/classes';
 
 ClassDocGenerator(className,classDocumentationFolder);

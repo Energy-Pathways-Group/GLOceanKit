@@ -1,12 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Initialize a new WaveVortexModel (which includes a WaveVortexTransform
+% Initialize a new WVModel (which includes a WaveVortexTransform
 % and a WVNonlinearFluxOperation) from existing output. We will start from
 % the final time-point.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-model = WaveVortexModel.modelFromFile('ForcedDissipativeQG-spinup-512.nc',restartIndex=Inf);
+model = WVModel.modelFromFile('ForcedDissipativeQG-spinup-512.nc',restartIndex=Inf);
 
 wvt = model.wvt;
 outputVar = WVVariableAnnotation('eta',{'x','y','z'},'1/s^3', 'enstrophy forcing');

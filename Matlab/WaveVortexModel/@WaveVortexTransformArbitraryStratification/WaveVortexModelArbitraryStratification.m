@@ -1,4 +1,4 @@
-classdef WaveVortexModelArbitraryStratification < WaveVortexModel
+classdef WaveVortexModelArbitraryStratification < WVModel
     %3D Boussinesq model with constant stratification solved in wave-vortex
     %space
     
@@ -84,7 +84,7 @@ classdef WaveVortexModelArbitraryStratification < WaveVortexModel
             
             dims = [xyDims(1) xyDims(2) max(zIn)-min(zIn)];
             n = [nxy(1) nxy(2) length(z)];
-            self@WaveVortexModel(dims, n, z, rhobar, N2, nModes, latitude, rho0);
+            self@WVModel(dims, n, z, rhobar, N2, nModes, latitude, rho0);
             
             % We should have this so that if unspecified, it does the right
             % number of modes.
