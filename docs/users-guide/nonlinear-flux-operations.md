@@ -11,13 +11,11 @@ A the nonlinear flux defines how energy moves between the wave-vortex coefficien
 
 The unforced, undamped nonlinear terms in the equations of motion are,
 $$
-\begin{subequations}
 \begin{align}
     \textrm{uNL}\equiv& u \partial_x u + v \partial_y u + w \partial_z u \\
     \textrm{vNL}\equiv&u \partial_x v + v \partial_y v + w \partial_z v \\
     \textrm{nNL}\equiv& u \partial_x \eta + v \partial_y \eta + w \left(\partial_z \eta +\eta \partial_z \ln N^2 \right)
 \end{align}
-\end{subequations}
 $$
 
 which, after a [transformation into wave-vortex space](/transformations/transformations.html), define the flux coefficients,
