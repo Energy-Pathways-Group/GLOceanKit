@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Nonlinear flux operations
+parent: Users guide
 mathjax: true
 ---
 

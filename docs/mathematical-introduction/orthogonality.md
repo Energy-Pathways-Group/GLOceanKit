@@ -1,8 +1,7 @@
 ---
 layout: default
 title: Orthogonality
-has_children: false
-has_toc: false
+parent: Mathematical introduction
 mathjax: true
 ---
 

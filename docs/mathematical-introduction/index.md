@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Transformations
+title: Mathematical introduction
 has_children: true
-permalink: /transformations
+permalink: /mathematical-introduction
 ---
 
 This document summarizes the linear transformations that form the foundation of the wave-vortex model.

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Operations
+parent: Users guide
 mathjax: true
 ---
 

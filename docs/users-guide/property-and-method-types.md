@@ -1,4 +1,11 @@
-#  Property and method types of the WVTransform
+---
+layout: default
+title: Annotations
+parent: Users guide
+mathjax: true
+---
+
+#  Annotations
 
 - `WVDimensionAnnotation` instances describe a coordinate dimension.
 - `WVPropertyAnnotation` instances describe a fixed attribute of the flow that is never time-dependent.

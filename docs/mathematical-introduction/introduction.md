@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Introduction
-parent: Transformations
+parent: Mathematical introduction
 mathjax: true
 ---
 
