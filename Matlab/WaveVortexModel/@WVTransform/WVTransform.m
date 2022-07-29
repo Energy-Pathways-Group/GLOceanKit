@@ -702,7 +702,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
             %
             % This function **is** the WVTransform. It is a [linear
-            % transformation](/transformations/transformations.html)
+            % transformation](/mathematical-introduction/transformations.html)
             % denoted $$\mathcal{L}$$.
             %
             % This function is not intended to be used directly (although
@@ -740,7 +740,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % This function is the inverse WVTransform. It is a
             % [linear
-            % transformation](/transformations/transformations.html)
+            % transformation](/mathematical-introduction/transformations.html)
             % denoted $$\mathcal{L}$$.
             %
             % This function is not intended to be used directly (although

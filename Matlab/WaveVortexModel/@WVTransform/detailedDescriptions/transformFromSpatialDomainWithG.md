@@ -2,7 +2,7 @@
 - Declaration: w_bar = transformFromSpatialDomainWithG(w)
 - Parameter w: variable with dimensions $$(x,y,z)$$
 
-This is the component of the [discrete transformation](/transformations/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the G-modes. Mathematically we write,
+This is the component of the [discrete transformation](/mathematical-introduction/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the G-modes. Mathematically we write,
 
 $$
 \tilde{f}_{klj} =  \mathcal{G} \cdot \mathcal{DFT}_y \cdot \mathcal{DFT}_x \left[ f(x,y,z) \right]

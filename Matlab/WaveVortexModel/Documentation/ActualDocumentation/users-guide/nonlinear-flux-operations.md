@@ -18,7 +18,7 @@ $$
 \end{align}
 $$
 
-which, after a [transformation into wave-vortex space](/transformations/transformations.html), define the flux coefficients,
+which, after a [transformation into wave-vortex space](/mathematical-introduction/transformations.html), define the flux coefficients,
 
 $$
 \left[\begin{array}{c}

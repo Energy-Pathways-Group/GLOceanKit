@@ -11,4 +11,4 @@ $$
 \partial_z u = -\frac{1}{g} N^2(z)  \mathcal{G}^{-1} \left[ \mathcal{F} \left[ u \right] \right]
 $$
 
-where we've used the same notation as defined for the [discrete transformations](/transformations/transformations.html).
+where we've used the same notation as defined for the [discrete transformations](/mathematical-introduction/transformations.html).
