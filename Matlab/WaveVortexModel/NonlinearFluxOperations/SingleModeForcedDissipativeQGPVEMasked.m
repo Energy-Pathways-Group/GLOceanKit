@@ -90,9 +90,9 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
         end
         
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut-2);
-            [varargout{:}] = Compute@SingleModeQGPVE(self,wvt,varargin{:});
+            [varargout{:}] = compute@SingleModeQGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
             F0_psi = (~self.EMA0) .* F0;
             forcing = wvt.transformToSpatialDomainWithF(self.PVA0 .* F0_psi);

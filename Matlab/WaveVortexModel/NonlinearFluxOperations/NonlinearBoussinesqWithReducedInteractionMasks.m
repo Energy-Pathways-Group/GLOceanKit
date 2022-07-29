@@ -42,7 +42,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             end
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
             Apt = self.IMAp .* wvt.Ap .* phase;
             Amt = self.IMAm .* wvt.Am .* conj(phase);
@@ -61,7 +61,7 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             W = wvt.transformToSpatialDomainWithG(Wbar);
             [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
-            % Compute the nonlinear terms in the spatial domain
+            % compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
             uNL = -U.*Ux - V.*Uy - W.*Uz;
             vNL = -U.*Vx - V.*Vy - W.*Vz;

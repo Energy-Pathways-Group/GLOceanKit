@@ -9,7 +9,7 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
             self@WVNonlinearFluxOperation('BoussinesqConstantN',fluxVar);
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
             Apt = wvt.Ap .* phase;
             Amt = wvt.Am .* conj(phase);
@@ -28,7 +28,7 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
             W = wvt.transformToSpatialDomainWithG(Wbar);
             [~,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
-            % Compute the nonlinear terms in the spatial domain
+            % compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
             uNL = -U.*Ux - V.*Uy - W.*Uz;
             vNL = -U.*Vx - V.*Vy - W.*Vz;

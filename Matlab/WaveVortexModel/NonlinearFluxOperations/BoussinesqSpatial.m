@@ -9,7 +9,7 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
             self@WVNonlinearFluxOperation('BoussinesqSpatial',fluxVar);
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
             uNL = wvt.u .* wvt.diffX(wvt.u)   + wvt.v .* wvt.diffY(wvt.u)   + wvt.w .*  wvt.diffZF(wvt.u);
             vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);

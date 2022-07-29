@@ -60,7 +60,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             dampingTimeScale = 1/max(max(abs(self.damp)));
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = wvt.UA0 .* wvt.A0;
             Vbar = wvt.VA0 .* wvt.A0;

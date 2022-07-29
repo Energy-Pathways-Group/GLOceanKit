@@ -768,7 +768,7 @@ classdef WVModel < handle
             self.wvt.t = t;
             if self.linearDynamics == 0
                 nlF = cell(1,self.nonlinearFlux.nVarOut);
-                [nlF{:}] = self.nonlinearFlux.Compute(self.wvt);
+                [nlF{:}] = self.nonlinearFlux.compute(self.wvt);
                 if self.nonlinearFlux.doesFluxAp == 1
                     n=n+1; F{n} = nlF{n};
                 end
@@ -785,10 +785,10 @@ classdef WVModel < handle
             for iParticles=1:length(self.particle)
                 p = self.particle{iParticles};
                 if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
+                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
                     n=n+2;
                 else
-                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.Compute(self.wvt,p.x,p.y,p.z);
+                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
                     n=n+3;
                 end
             end

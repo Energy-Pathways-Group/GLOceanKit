@@ -9,7 +9,7 @@ classdef SingleMode < WVNonlinearFluxOperation
             self@WVNonlinearFluxOperation('SingleMode',fluxVar);
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
             uNL = wvt.u .* wvt.diffX(wvt.u)   + wvt.v .* wvt.diffY(wvt.u)  ;
             vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)  ;

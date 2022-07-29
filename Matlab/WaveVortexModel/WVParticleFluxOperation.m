@@ -23,7 +23,7 @@ classdef WVParticleFluxOperation < WVOperation
             self.isXYOnly = options.isXYOnly;
         end
 
-        function varargout = Compute(self,wvt,x,y,z)
+        function varargout = compute(self,wvt,x,y,z)
             varargout = cell(1,self.nVarOut);
             [varargout{:}] = self.f(wvt,x,y,z);
         end

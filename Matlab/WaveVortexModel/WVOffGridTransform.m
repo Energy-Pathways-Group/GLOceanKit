@@ -329,10 +329,10 @@ classdef WVOffGridTransform < handle
             end
             
             for i=1:length(self.k_ext)
-                % Compute the phase
+                % compute the phase
                 theta = x * self.k_ext(i) + y * self.l_ext(i) + (self.omega_ext(i)*t + self.phi_ext(i));
                 
-                % Compute the cosine & sine of the phase, if necessary
+                % compute the cosine & sine of the phase, if necessary
                 if ( isU || isV || isZeta || isRho )
                     cos_theta = cos(theta);
                 end
@@ -340,7 +340,7 @@ classdef WVOffGridTransform < handle
                     sin_theta = sin(theta);
                 end
                 
-                % Compute the necessary vertical structure functions
+                % compute the necessary vertical structure functions
                 if ( isU || isV )
                     F = self.ExternalUVModeAtDepth(z,i);
                 end

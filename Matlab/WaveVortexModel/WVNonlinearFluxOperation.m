@@ -1,5 +1,5 @@
 classdef WVNonlinearFluxOperation < WVOperation
-    %TransformOption specifically for nonlinear flux.
+    %Computes the nonlinear flux for a WVTransform
     %
     % The output variables *must* be at least one of {Fp,Fm,F0}, in that
     % order. The properties `doesFluxAp` etc. should be appropriately set

@@ -37,7 +37,7 @@ classdef WVOperation < handle
             self.f = f;
         end
 
-        function varargout = Compute(self,wvt,varargin)
+        function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
             if ~isempty(varargin)
                 [varargout{:}] = self.f(wvt,varargin{:});

@@ -17,7 +17,7 @@ classdef WVTracerFluxOperation < WVOperation
             self.isXYOnly = options.isXYOnly;
         end
 
-        function varargout = Compute(self,wvt,phi)
+        function varargout = compute(self,wvt,phi)
             varargout = cell(1,1);
             if self.isXYOnly
                 varargout{1} = -wvt.u .* wvt.diffX(phi) - wvt.v .* wvt.diffY(phi);

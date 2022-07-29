@@ -372,7 +372,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             if all(isKey(self.variableCache,varNames))
                 [varargout{:}] = self.fetchFromVariableCache(varNames{:});
             else
-                [varargout{:}] = modelOp.Compute(self,varargin{:});
+                [varargout{:}] = modelOp.compute(self,varargin{:});
                 for iOpOut=1:length(varargout)
                     self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
                 end
