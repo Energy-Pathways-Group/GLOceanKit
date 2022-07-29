@@ -15,13 +15,15 @@ for i=1:length(mc.MethodList)
         else
             metadata.functionType = FunctionType.instanceMethod;
         end
-        if isKey(mpMap,metadata.topic)
-            mdArray = mpMap(metadata.topic);
-            mdArray(end+1) = metadata;
-        else
-            mdArray = metadata;
+        if isfield(metadata,"topic")
+            if isKey(mpMap,metadata.topic)
+                mdArray = mpMap(metadata.topic);
+                mdArray(end+1) = metadata;
+            else
+                mdArray = metadata;
+            end
+            mpMap(metadata.topic) = mdArray;
         end
-        mpMap(metadata.topic) = mdArray;
     end
 end
 
@@ -29,13 +31,15 @@ for i=1:length(mc.PropertyList)
     metadata = ExtractMethodMetadata(mc.PropertyList(i));
     if ~isempty(metadata)
         metadata.functionType = FunctionType.instanceProperty;
-        if isKey(mpMap,metadata.topic)
-            mdArray = mpMap(metadata.topic);
-            mdArray(end+1) = metadata;
-        else
-            mdArray = metadata;
+        if isfield(metadata,"topic")
+            if isKey(mpMap,metadata.topic)
+                mdArray = mpMap(metadata.topic);
+                mdArray(end+1) = metadata;
+            else
+                mdArray = metadata;
+            end
+            mpMap(metadata.topic) = mdArray;
         end
-        mpMap(metadata.topic) = mdArray;
     end
 end
 end

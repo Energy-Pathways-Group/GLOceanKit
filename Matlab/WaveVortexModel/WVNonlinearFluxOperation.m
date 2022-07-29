@@ -8,24 +8,60 @@ classdef WVNonlinearFluxOperation < WVOperation
     % flux. Subclasses of WVNonlinearFluxOperation can implement custom
     % forcing and damping.
     %
-    % The output variables *must* be at least one of {Fp,Fm,F0}, in that
+    % A WVTransform is always initialized with a default nonlinear flux
+    % operation, but it can be override with,
+    % ```matlab
+    % wvt.nonlinearFluxOperation = SomeNewNonlinearFluxOperation();
+    % ```
+    %
+    % It is very likely you will want to use a custom nonlinear flux
+    % operation when integrating a model. In that case you would call,
+    % ```matlab
+    % model = WVModel(wvt,nonlinearFlux=SomeNewNonlinearFluxOperation())
+    % ```
+    %
+    % When creating a subclass of WVNonlinearFluxOperation, there are
+    % several important notes:
+    %
+    % + The output variables *must* be at least one of {Fp,Fm,F0}, in that
     % order. The properties `doesFluxAp` etc. should be appropriately set
     % to match the output.
-    %
-    % You may also optionally output additional variables that are computed
+    % + You may also optionally output additional variables that are computed
     % as a by product of your flux calculation. Those variables will then
-    % be cached, making other function calls much quicker.
+    % be cached, and will not have to be recomputed when needed.
     %
     % - Declaration: classdef WVNonlinearFluxOperation < WVOperation
-    properties
-        doesFluxAp = 1
-        doesFluxAm = 1
-        doesFluxA0 = 1
+    properties (GetAccess=public, SetAccess=protected)
+        % boolean indicating whether or not this operation returns Fp
+        %
+        % - Topic: Properties
+        doesFluxAp double {mustBeMember(doesFluxAp,[0 1])} =  1
+
+        % boolean indicating whether or not this operation returns Fm
+        %
+        % - Topic: Properties
+        doesFluxAm double {mustBeMember(doesFluxAm,[0 1])} =  1
+
+        % boolean indicating whether or not this operation returns F0
+        %
+        % - Topic: Properties
+        doesFluxA0 double {mustBeMember(doesFluxA0,[0 1])} =  1
     end
 
     methods
 
         function self = WVNonlinearFluxOperation(name,outputVariables,options)
+            %create a new nonlinear flux operation
+            %
+            % This class is intended to be subclassed, so it generally
+            % assumed that this initialization will not be called directly.
+            %
+            % - Topic: Initialization
+            % - Declaration: nlFluxOp = WVNonlinearFluxOperation(name,outputVariables,options)
+            % - Parameter name: name of the nonlinear flux operation
+            % - Parameter outputVariables: ordered list WVVariableAnnotation instances describing each variable returned by the compute method
+            % - Parameter f: (optional) directly pass a function handle, rather than override the compute method
+            % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
             arguments
                 name char {mustBeNonempty}
                 outputVariables WVVariableAnnotation {mustBeNonempty}
@@ -42,6 +78,16 @@ classdef WVNonlinearFluxOperation < WVOperation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function writeToFile(self,ncfile,wvt)
+            %write information about the nonlinear flux operation to file
+            %
+            % To enable model restarts, all subclass should override this
+            % method to write variables or parameters to file necessary to
+            % re-initialize directly from file.
+            %
+            % - Topic: Write to file
+            % - Declaration: writeToFile(ncfile,wvt)
+            % - Parameter ncfile: NetCDFFile instance that should be written to
+            % - Parameter wvt: the WVTransform associated with the nonlinear flux
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
@@ -49,11 +95,31 @@ classdef WVNonlinearFluxOperation < WVOperation
             end
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
+        function nlFluxOp = nonlinearFluxWithDoubleResolution(self,wvtX2)
+            %create a new nonlinear flux operation with double the resolution
+            %
+            % Subclasses to should override this method an implement the
+            % correct logic. If the nonlinear flux operation makes no
+            % specific assumptions about the resolution of WVTransform,
+            % then this will work without modification.
+            %
+            % - Topic: Initialization
+            % - Declaration: nlFluxOp = nonlinearFluxWithDoubleResolution(wvtX2)
+            % - Parameter wvtX2: the WVTransform with increased resolution
+            % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
+            nlFluxOp = WVNonlinearFluxOperation(self.name,self.outputVariables,f=self.f);
         end
 
         function flag = isequal(self,other)
+            %check for equality with another nonlinear flux operation
+            %
+            % Subclasses to should override this method to implement
+            % additional logic. 
+            %
+            % - Topic: Equality
+            % - Declaration: flag = isequal(other)
+            % - Parameter other: another WVNonlinearFluxOperation instance
+            % - Returns flag: boolean indicating equality
             arguments
                 self WVNonlinearFluxOperation
                 other WVNonlinearFluxOperation
@@ -64,7 +130,17 @@ classdef WVNonlinearFluxOperation < WVOperation
 
     methods (Static)
 
-        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
+        function nlFluxOp = nonlinearFluxFromFile(ncfile,wvt)
+            %initialize a nonlinear flux operation from NetCDF file
+            %
+            % Subclasses to should override this method to enable model
+            % restarts. This method works in conjunction with -writeToFile
+            % to provide restart capability.
+            %
+            % - Topic: Initialization
+            % - Declaration: nlFluxOp = nonlinearFluxFromFile(ncfile,wvt)
+            % - Parameter wvt: the WVTransform to be used
+            % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
             arguments
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}

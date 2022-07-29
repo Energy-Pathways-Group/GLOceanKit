@@ -5,6 +5,8 @@ ClassDocGenerator('WVAnnotation',classDocumentationFolder);
 ClassDocGenerator('WVDimensionAnnotation',classDocumentationFolder);
 ClassDocGenerator('WVPropertyAnnotation',classDocumentationFolder);
 
+ClassDocGenerator('WVNonlinearFluxOperation',classDocumentationFolder);
+
 % ClassDocGenerator('WVFlowConstituents',classDocumentationFolder);
 
 ClassDocGenerator('WVModel',classDocumentationFolder);

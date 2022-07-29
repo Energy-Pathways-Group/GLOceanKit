@@ -45,7 +45,7 @@ The WVModel is responsible for time-stepping (integrating) the ocean state forwa
   + [`WVModel`](/classes/wvmodel/wvmodel.html) Initialize a model from a WVTransform instance
 + Model Properties
   + [`wvt`](/classes/wvmodel/wvt.html) The WVTransform instance the represents the ocean state.
-  + [`nonlinearFlux`](/classes/wvmodel/nonlinearflux.html) The operation responsible for computing the nonlinear flux of the model
+  + [`nonlinearFluxOperation`](/classes/wvmodel/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux of the model
   + [`linearDynamics`](/classes/wvmodel/lineardynamics.html) Indicates whether or not the model is using linear or nonlinear dynamics.
   + [`t`](/classes/wvmodel/t.html) Current model time (seconds)
 + Integration
