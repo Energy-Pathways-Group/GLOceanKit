@@ -3,13 +3,13 @@ layout: default
 title: doesFluxAm
 parent: WVNonlinearFluxOperation
 grand_parent: Classes
-nav_order: 6
+nav_order: 7
 mathjax: true
 ---
 
 #  doesFluxAm
 
-boolean indicating whether or not this operation return Fm
+boolean indicating whether or not this operation returns Fm
 
 
 ---

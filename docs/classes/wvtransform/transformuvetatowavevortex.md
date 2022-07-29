@@ -32,7 +32,7 @@ transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,
 ## Discussion
 
   This function **is** the WVTransform. It is a [linear
-  transformation](/transformations/transformations.html)
+  transformation](/mathematical-introduction/transformations.html)
   denoted $$\mathcal{L}$$.
  
   This function is not intended to be used directly (although

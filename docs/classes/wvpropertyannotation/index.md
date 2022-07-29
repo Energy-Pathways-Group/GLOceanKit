@@ -15,7 +15,7 @@ Describes a property of the WVTransform
 
 ## Declaration
 ```matlab
- classdef WVPropertyAnnotation < WVAnnotation
+ classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation)
 ```
 
 ## Overview

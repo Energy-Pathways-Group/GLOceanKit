@@ -23,7 +23,7 @@ transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using 
 
 ## Discussion
 
-This is the component of the [inverse discrete transformation](/transformations/transformations.html) $$D^{-1}$$ that projects from the vertical modes $G$, followed by a transformation $$ (k,l) \mapsto (x,y)$$ with a discrete Fourier transform. Mathematically we write,
+This is the component of the [inverse discrete transformation](/mathematical-introduction/transformations.html) $$D^{-1}$$ that projects from the vertical modes $G$, followed by a transformation $$ (k,l) \mapsto (x,y)$$ with a discrete Fourier transform. Mathematically we write,
 
 $$
 g(x,y,z) =&  \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{G}^{-1} \left[ \tilde{f}^{klj} \right] \right] \right] 

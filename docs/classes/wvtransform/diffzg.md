@@ -34,5 +34,5 @@ $$
 \partial_z w = \mathcal{F}^{-1} \left[ \frac{1}{h_j} \mathcal{G}\left[ w \right] \right]
 $$
 
-where we've used the same notation as defined for the [discrete transformations](/transformations/transformations.html).
+where we've used the same notation as defined for the [discrete transformations](/mathematical-introduction/transformations.html).
 

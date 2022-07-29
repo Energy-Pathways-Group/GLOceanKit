@@ -34,7 +34,7 @@ transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\
 
   This function is the inverse WVTransform. It is a
   [linear
-  transformation](/transformations/transformations.html)
+  transformation](/mathematical-introduction/transformations.html)
   denoted $$\mathcal{L}$$.
  
   This function is not intended to be used directly (although

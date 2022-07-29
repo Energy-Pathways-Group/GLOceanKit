@@ -12,7 +12,7 @@ classdef WVPropertyAnnotation < WVAnnotation
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
     %
-    % - Declaration: classdef WVPropertyAnnotation < WVAnnotation
+    % - Declaration: classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation)
     properties (GetAccess=public, SetAccess=private)
         % ordered cell array with the names of the dimensions
         % 
@@ -49,6 +49,7 @@ classdef WVPropertyAnnotation < WVAnnotation
             % - Parameter dimensions: ordered list of the dimensions, or empty cell array
             % - Parameter units: abbreviated SI units of the property
             % - Parameter description: short description of the property
+            % - Parameter isComplex: (optional) indicates whether the property has an imaginary part (default 0)
             % - Parameter detailedDescription: (optional) detailed description of the property
             % - Returns propAnnotation: a new instance of WVPropertyAnnotation
             arguments

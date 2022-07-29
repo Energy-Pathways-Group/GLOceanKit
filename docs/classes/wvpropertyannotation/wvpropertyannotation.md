@@ -23,6 +23,7 @@ create a new instance of WVPropertyAnnotation
 + `dimensions`  ordered list of the dimensions, or empty cell array
 + `units`  abbreviated SI units of the property
 + `description`  short description of the property
++ `isComplex`  (optional) indicates whether the property has an imaginary part (default 0)
 + `detailedDescription`  (optional) detailed description of the property
 
 ## Returns
@@ -34,4 +35,4 @@ create a new instance of WVPropertyAnnotation
   or child directory, it will be loaded as the detailed
   description upon initialization.
  
-                
+                  
