@@ -42,7 +42,7 @@ classdef WVModel < handle
         % If the nonlinearFlux is nil, then the model will advance using
         % linear dynamics (i.e., the wave-vortex coefficients will not
         % change).
-        nonlinearFlux WVNonlinearFluxOperation
+        nonlinearFluxOperation WVNonlinearFluxOperation
         
         % Reference to the NetCDFFile being used for model output
         % - Topic: Writing to NetCDF files
@@ -191,7 +191,7 @@ classdef WVModel < handle
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
-                self.nonlinearFlux = options.nonlinearFlux;
+                self.nonlinearFluxOperation = options.nonlinearFlux;
                 self.wvt.nonlinearFluxOperation = options.nonlinearFlux;
             end
 
@@ -206,7 +206,7 @@ classdef WVModel < handle
         
 
         function value = get.linearDynamics(self)
-            value = isempty(self.nonlinearFlux);
+            value = isempty(self.nonlinearFluxOperation);
         end
 
         function value = get.t(self)
@@ -604,8 +604,8 @@ classdef WVModel < handle
             ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
 
             if ~self.linearDynamics
-                ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFlux));
-                self.nonlinearFlux.writeToFile(ncfile,self.wvt);
+                ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFluxOperation));
+                self.nonlinearFluxOperation.writeToFile(ncfile,self.wvt);
             end
 
             self.ncfile = ncfile;
@@ -737,13 +737,13 @@ classdef WVModel < handle
             Y0 = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                if self.nonlinearFlux.doesFluxAp == 1
+                if self.nonlinearFluxOperation.doesFluxAp == 1
                     n=n+1;Y0{n} = self.wvt.Ap;
                 end
-                if self.nonlinearFlux.doesFluxAm == 1
+                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1;Y0{n} = self.wvt.Am;
                 end
-                if self.nonlinearFlux.doesFluxA0 == 1
+                if self.nonlinearFluxOperation.doesFluxA0 == 1
                     n=n+1;Y0{n} = self.wvt.A0;
                 end
             end
@@ -767,15 +767,15 @@ classdef WVModel < handle
             n = 0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                nlF = cell(1,self.nonlinearFlux.nVarOut);
-                [nlF{:}] = self.nonlinearFlux.compute(self.wvt);
-                if self.nonlinearFlux.doesFluxAp == 1
+                nlF = cell(1,self.nonlinearFluxOperation.nVarOut);
+                [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
+                if self.nonlinearFluxOperation.doesFluxAp == 1
                     n=n+1; F{n} = nlF{n};
                 end
-                if self.nonlinearFlux.doesFluxAm == 1
+                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1; F{n} = nlF{n};
                 end
-                if self.nonlinearFlux.doesFluxA0 == 1
+                if self.nonlinearFluxOperation.doesFluxA0 == 1
                     n=n+1; F{n} = nlF{n};
                 end
             else
@@ -808,13 +808,13 @@ classdef WVModel < handle
             self.integrator.IncrementForward();
             n=0;
             if self.linearDynamics == 0
-                if self.nonlinearFlux.doesFluxAp == 1
+                if self.nonlinearFluxOperation.doesFluxAp == 1
                     n=n+1; self.wvt.Ap = self.integrator.currentY{n};
                 end
-                if self.nonlinearFlux.doesFluxAm == 1
+                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1; self.wvt.Am = self.integrator.currentY{n};
                 end
-                if self.nonlinearFlux.doesFluxA0 == 1
+                if self.nonlinearFluxOperation.doesFluxA0 == 1
                     n=n+1; self.wvt.A0 = self.integrator.currentY{n};
                 end
             end
