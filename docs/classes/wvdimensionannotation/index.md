@@ -14,9 +14,8 @@ Describes a coordinate dimension of the WVTransform
 ---
 
 ## Declaration
-```matlab
- classdef WVDimensionAnnotation < [WVAnnotation](/classes/wvannotation)
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVDimensionAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a></code></pre></div></div>
 
 ## Overview
  

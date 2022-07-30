@@ -14,9 +14,8 @@ Perform an operation and return a variable using a WVTransform
 ---
 
 ## Declaration
-```matlab
- classdef WVOperation < handle
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVOperation < handle</code></pre></div></div>
 
 ## Overview
   

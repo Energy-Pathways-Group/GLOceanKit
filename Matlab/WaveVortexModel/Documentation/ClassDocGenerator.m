@@ -55,7 +55,20 @@ fprintf(fileID,'\n\n---\n\n');
 
 if ~isempty(declaration)
     fprintf(fileID,'## Declaration\n');
-    fprintf(fileID,'```matlab\n%s\n```\n\n',declaration);
+%     fprintf(fileID,'```matlab\n%s\n```\n\n',declaration);
+% unfortunately we cannot directly put links into a markdown code block, so
+% we have to manually extract the url ourselves, and then write our own
+% html. so annoying!!
+% mdurlExpression = '^\[(?<name>[\w\s\d]+)\]\((?<url>(?:\/|https?:\/\/)[\w\d./?=#]+)\)$';
+mdurlExpression = '\[(?<name>[^\[]+)\]\((?<url>.*)\)';
+matchStr = regexpi(declaration,mdurlExpression,'names');
+if ~isempty(matchStr)
+    linkString = strcat('<a href="',matchStr.url,'" title="',matchStr.name,'">',matchStr.name,'</a>');
+    declaration = regexprep(declaration,mdurlExpression,linkString,'ignorecase');
+end
+prestring = '<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>';
+poststring = '</code></pre></div></div>';
+fprintf(fileID,'\n%s\n\n',strcat(prestring,strip(declaration),poststring));
 end
 
 

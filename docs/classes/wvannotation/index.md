@@ -14,9 +14,8 @@ annotates methods, properties, operations, and variables
 ---
 
 ## Declaration
-```matlab
- classdef WVAnnotation < handle
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVAnnotation < handle</code></pre></div></div>
 
 ## Overview
  

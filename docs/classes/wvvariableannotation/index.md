@@ -14,9 +14,8 @@ Describes a variable computed from the WVTransform
 ---
 
 ## Declaration
-```matlab
- classdef WVVariableAnnotation < [WVAnnotation](/classes/wvannotation)
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVVariableAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a></code></pre></div></div>
 
 ## Overview
   

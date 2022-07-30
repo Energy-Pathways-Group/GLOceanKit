@@ -14,9 +14,8 @@ Computes the nonlinear flux for a WVTransform
 ---
 
 ## Declaration
-```matlab
- classdef WVNonlinearFluxOperation < [WVOperation](/classes/wvoperation.html)
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVNonlinearFluxOperation < <a href="/classes/wvoperation.html" title="WVOperation">WVOperation</a></code></pre></div></div>
 
 ## Overview
   
