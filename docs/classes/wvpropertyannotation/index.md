@@ -15,11 +15,13 @@ Describes a property of the WVTransform
 
 ## Declaration
 
+<div class="highlight">
 <pre class="highlight">
 <code>
- classdef WVPropertyAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a>
- </code>
+classdef WVPropertyAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a>
+</code>
 </pre>
+</div>
 
 ## Overview
  
