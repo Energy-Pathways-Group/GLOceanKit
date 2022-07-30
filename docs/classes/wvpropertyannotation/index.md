@@ -15,12 +15,14 @@ Describes a property of the WVTransform
 
 ## Declaration
 
+<div class="language-matlab highlighter-rouge">
 <div class="highlight">
 <pre class="highlight">
 <code>
 classdef WVPropertyAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a>
 </code>
 </pre>
+</div>
 </div>
 
 ## Overview
