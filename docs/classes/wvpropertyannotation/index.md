@@ -14,9 +14,10 @@ Describes a property of the WVTransform
 ---
 
 ## Declaration
-```matlab
- classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation)
-```
+
+<pre>
+ classdef WVPropertyAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a>
+</pre>
 
 ## Overview
  
