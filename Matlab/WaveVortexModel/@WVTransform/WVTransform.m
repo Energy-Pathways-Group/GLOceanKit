@@ -180,6 +180,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     methods
         function self = WVTransform(Lxyz, Nxy, z, options)
+            % initialize a WVTransform instance
+            %
+            % This must be called from a subclass.
+            % - Topic: Internal
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
@@ -797,10 +801,25 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function [Fp,Fm,F0] = nonlinearFlux(self)
+            % returns the flux of each coefficient as determined by the nonlinear flux operation
+            %
+            % - Topic: Nonlinear flux and energy transfers
+            % - Declaration: [Fp,Fm,F0] = nonlinearFlux()
+            % - Returns Fp: flux into the Ap coefficients
+            % - Returns Fm: flux into the Am coefficients
+            % - Returns F0: flux into the A0 coefficients
             [Fp,Fm,F0] = performOperation(self.nonlinearFluxOperation);
         end
 
         function [Ep,Em,E0] = energyFlux(self,options)
+            % returns the energy flux into each coefficient
+            %
+            % - Topic: Nonlinear flux and energy transfers
+            % - Declaration: [Ep,Em,E0] = energyFlux(options)
+            % - Parameter deltaT: (optional) include the deltaT term in the Euler time step
+            % - Returns Ep: energy flux into the Ap coefficients
+            % - Returns Em: energy flux into the Am coefficients
+            % - Returns E0: energy flux into the A0 coefficients
             arguments
                 self WVTransform {mustBeNonempty}
                 options.deltaT (1,1) double = 0

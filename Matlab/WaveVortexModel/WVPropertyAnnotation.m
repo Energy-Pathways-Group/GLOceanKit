@@ -12,7 +12,7 @@ classdef WVPropertyAnnotation < WVAnnotation
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
     %
-    % - Declaration: classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation)
+    % - Declaration: classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation/)
     properties (GetAccess=public, SetAccess=private)
         % ordered cell array with the names of the dimensions
         % 

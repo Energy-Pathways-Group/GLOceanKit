@@ -15,7 +15,7 @@ classdef WVVariableAnnotation < WVAnnotation
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
     %
-    % - Declaration: classdef WVVariableAnnotation < [WVAnnotation](/classes/wvannotation)
+    % - Declaration: classdef WVVariableAnnotation < [WVAnnotation](/classes/wvannotation/)
     properties
         % ordered cell array with the names of the dimensions
         %
@@ -38,7 +38,7 @@ classdef WVVariableAnnotation < WVAnnotation
         % - Topic: Properties
         modelOp
 
-        % boolean indicating whether or not the property may have an imaginary part
+        % boolean indicating whether or not the variable may have an imaginary part
         %
         % This information is used when allocating space in a NetCDF file.
         % - Topic: Properties

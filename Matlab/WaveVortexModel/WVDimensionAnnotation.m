@@ -11,7 +11,7 @@ classdef WVDimensionAnnotation < WVAnnotation
     % subdirectories. This file is then read-in to the detailed description
     % that is used on the website.
     %
-    % - Declaration: classdef WVDimensionAnnotation < [WVAnnotation](/classes/wvannotation)
+    % - Declaration: classdef WVDimensionAnnotation < [WVAnnotation](/classes/wvannotation/)
     properties
         % units of the dimension
         % 

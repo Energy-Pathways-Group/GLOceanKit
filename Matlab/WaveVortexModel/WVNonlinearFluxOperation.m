@@ -32,7 +32,7 @@ classdef WVNonlinearFluxOperation < WVOperation
 % variables will then be cached, and will not have to be recomputed when
 % needed.
 % 
-% - Declaration: classdef WVNonlinearFluxOperation < [WVOperation](/classes/wvoperation.html)
+% - Declaration: classdef WVNonlinearFluxOperation < [WVOperation](/classes/wvoperation/)
 
     properties (GetAccess=public, SetAccess=protected)
         % boolean indicating whether or not this operation returns Fp
