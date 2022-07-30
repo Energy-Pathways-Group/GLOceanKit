@@ -15,8 +15,10 @@ Describes a property of the WVTransform
 
 ## Declaration
 
-<pre>
+<pre class="highlight">
+<code>
  classdef WVPropertyAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a>
+ </code>
 </pre>
 
 ## Overview
