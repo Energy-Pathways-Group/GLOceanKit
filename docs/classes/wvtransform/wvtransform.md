@@ -9,8 +9,12 @@ mathjax: true
 
 #  WVTransform
 
-These first properties are directly set on initialization
+initialize a WVTransform instance
 
 
 ---
 
+## Discussion
+
+  This must be called from a subclass.
+  

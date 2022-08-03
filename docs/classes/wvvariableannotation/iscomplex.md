@@ -9,7 +9,7 @@ mathjax: true
 
 #  isComplex
 
-boolean indicating whether or not the property may have an imaginary part
+boolean indicating whether or not the variable may have an imaginary part
 
 
 ---

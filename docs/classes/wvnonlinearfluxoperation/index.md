@@ -15,7 +15,7 @@ Computes the nonlinear flux for a WVTransform
 
 ## Declaration
 
-<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVNonlinearFluxOperation < <a href="/classes/wvoperation.html" title="WVOperation">WVOperation</a></code></pre></div></div>
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVNonlinearFluxOperation < <a href="/classes/wvoperation/" title="WVOperation">WVOperation</a></code></pre></div></div>
 
 ## Overview
   
@@ -36,8 +36,8 @@ Computes the nonlinear flux for a WVTransform
   It is very likely you will want to use a custom nonlinear flux operation
   when integrating a model. In that case you would call,
   
-  ```matlab model =
-  WVModel(wvt,nonlinearFlux=SomeNewNonlinearFluxOperation())
+  ```matlab
+  model = WVModel(wvt,nonlinearFlux=SomeNewNonlinearFluxOperation())
   ```
   
   When creating a subclass of WVNonlinearFluxOperation, there are several
@@ -45,7 +45,8 @@ Computes the nonlinear flux for a WVTransform
   
   + The output variables *must* be at least one of {Fp,Fm,F0}, in that
   order. The properties `doesFluxAp` etc. should be appropriately set to
-  match the output. + You may also optionally output additional variables
+  match the output.
+  + You may also optionally output additional variables
   that are computed as a by product of your flux calculation. Those
   variables will then be cached, and will not have to be recomputed when
   needed.

@@ -15,7 +15,7 @@ Describes a variable computed from the WVTransform
 
 ## Declaration
 
-<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVVariableAnnotation < <a href="/classes/wvannotation" title="WVAnnotation">WVAnnotation</a></code></pre></div></div>
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVVariableAnnotation < <a href="/classes/wvannotation/" title="WVAnnotation">WVAnnotation</a></code></pre></div></div>
 
 ## Overview
   
@@ -43,7 +43,7 @@ Describes a variable computed from the WVTransform
   + [`dimensions`](/classes/wvvariableannotation/dimensions.html) ordered cell array with the names of the dimensions
   + [`units`](/classes/wvvariableannotation/units.html) units of the variable
   + [`modelOp`](/classes/wvvariableannotation/modelop.html) WVOperation responsible for computing this variable
-  + [`isComplex`](/classes/wvvariableannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
+  + [`isComplex`](/classes/wvvariableannotation/iscomplex.html) boolean indicating whether or not the variable may have an imaginary part
   + [`isVariableWithLinearTimeStep`](/classes/wvvariableannotation/isvariablewithlineartimestep.html) boolean indicating whether the variable changes value with a linear time step
   + [`isVariableWithNonlinearTimeStep`](/classes/wvvariableannotation/isvariablewithnonlineartimestep.html) boolean indicating whether the variable changes value with a non-linear time step
   + [`name`](/classes/wvvariableannotation/name.html) name of the method, property, or variable

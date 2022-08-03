@@ -171,11 +171,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`EnergyFluxForFlowConstituentsAtTimeInitial`](/classes/wvtransform/energyfluxforflowconstituentsattimeinitial.html) 
   + [`ExponentialFilter`](/classes/wvtransform/exponentialfilter.html) 
   + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wvtransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
-  + [`WVTransform`](/classes/wvtransform/wvtransform.html) These first properties are directly set on initialization
-  + [`energyFlux`](/classes/wvtransform/energyflux.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
   + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wvtransform/interpolatedfieldatpositionbadboundaries.html) 
-  + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) 
   + [`offgridModes`](/classes/wvtransform/offgridmodes.html) offgridModes -  subclass should initialize
   + [`ongridModes`](/classes/wvtransform/ongridmodes.html) ongridModes -  This is a cached copy
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
@@ -197,6 +194,20 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`uMax`](/classes/wvtransform/umax.html) max horizontal fluid speed
   + [`v`](/classes/wvtransform/v.html) y-component of the fluid velocity
   + [`w`](/classes/wvtransform/w.html) z-component of the fluid velocity
++ Internal
+  + [`WVTransform`](/classes/wvtransform/wvtransform.html) initialize a WVTransform instance
+  + [`addToVariableCache`](/classes/wvtransform/addtovariablecache.html) add variable to internal cache, in case it is needed again
+  + [`buildTransformationMatrices`](/classes/wvtransform/buildtransformationmatrices.html) Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
+  + [`clearVariableCache`](/classes/wvtransform/clearvariablecache.html) clear the internal cache
+  + [`clearVariableCacheOfTimeDependentVariables`](/classes/wvtransform/clearvariablecacheoftimedependentvariables.html) clear the internal cache of variables that claim to be time dependent
+  + [`defaultDimensionAnnotations`](/classes/wvtransform/defaultdimensionannotations.html) return array of TransformDimensions initialized by default
+  + [`defaultMethodAnnotations`](/classes/wvtransform/defaultmethodannotations.html) return array of WVAnnotations to annotate the methods
+  + [`defaultOperations`](/classes/wvtransform/defaultoperations.html) return array of WVOperation instances initialized by default
+  + [`defaultPropertyAnnotations`](/classes/wvtransform/defaultpropertyannotations.html) return array of WVPropertyAnnotation initialized by default
+  + [`fetchFromVariableCache`](/classes/wvtransform/fetchfromvariablecache.html) retrieve a set of variables from the internal cache
+  + [`performOperation`](/classes/wvtransform/performoperation.html) computes (runs) the operation
+  + [`performOperationWithName`](/classes/wvtransform/performoperationwithname.html) computes (runs) the operation
+  + [`stateVariables`](/classes/wvtransform/statevariables.html) retrieve variables either from cache or by computation
 + Utility function
   + [`checkHermitian`](/classes/wvtransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
   + [`extractNonzeroWaveProperties`](/classes/wvtransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
@@ -223,19 +234,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`removeAllExternalWaves`](/classes/wvtransform/removeallexternalwaves.html) remove all external (non-gridded) waves
   + [`setExternalWavesWithFrequencies`](/classes/wvtransform/setexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given frequency
   + [`setExternalWavesWithWavenumbers`](/classes/wvtransform/setexternalwaveswithwavenumbers.html) set external (non-gridded) waves with a given wavenumber
-+ Internal
-  + [`addToVariableCache`](/classes/wvtransform/addtovariablecache.html) add variable to internal cache, in case it is needed again
-  + [`buildTransformationMatrices`](/classes/wvtransform/buildtransformationmatrices.html) Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
-  + [`clearVariableCache`](/classes/wvtransform/clearvariablecache.html) clear the internal cache
-  + [`clearVariableCacheOfTimeDependentVariables`](/classes/wvtransform/clearvariablecacheoftimedependentvariables.html) clear the internal cache of variables that claim to be time dependent
-  + [`defaultDimensionAnnotations`](/classes/wvtransform/defaultdimensionannotations.html) return array of TransformDimensions initialized by default
-  + [`defaultMethodAnnotations`](/classes/wvtransform/defaultmethodannotations.html) return array of WVAnnotations to annotate the methods
-  + [`defaultOperations`](/classes/wvtransform/defaultoperations.html) return array of WVOperation instances initialized by default
-  + [`defaultPropertyAnnotations`](/classes/wvtransform/defaultpropertyannotations.html) return array of WVPropertyAnnotation initialized by default
-  + [`fetchFromVariableCache`](/classes/wvtransform/fetchfromvariablecache.html) retrieve a set of variables from the internal cache
-  + [`performOperation`](/classes/wvtransform/performoperation.html) computes (runs) the operation
-  + [`performOperationWithName`](/classes/wvtransform/performoperationwithname.html) computes (runs) the operation
-  + [`stateVariables`](/classes/wvtransform/statevariables.html) retrieve variables either from cache or by computation
 + Operations
   + Differentiation
     + [`diffX`](/classes/wvtransform/diffx.html) differentiate a spatial variable in the x-direction
@@ -252,12 +250,14 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithgallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.
     + [`transformUVEtaToWaveVortex`](/classes/wvtransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
     + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
++ Nonlinear flux and energy transfers
+  + [`energyFlux`](/classes/wvtransform/energyflux.html) returns the energy flux into each coefficient
+  + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
+  + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
 + Masks
   + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
   + [`masksForAllFlowConstituents`](/classes/wvtransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six
   + [`masksForFlowConstituents`](/classes/wvtransform/masksforflowconstituents.html) Returns a sets of 'masks' indicating where different solution types live in the Ap, Am, A0 matrices.
-+ Nonlinear flux and energy transfers
-  + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
 + Validation and internal unit testing
   + [`validateTransformationMatrices`](/classes/wvtransform/validatetransformationmatrices.html) used to confirm if $$S$$ and $$S^{-1}$$ are inverses
 + Write to file
