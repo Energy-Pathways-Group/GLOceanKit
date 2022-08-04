@@ -1,4 +1,4 @@
-function WaveVortexTransformDocGenerator(classDocumentationFolder)
+function BuildDocumentationForWVTransformSubclass(classDocumentationFolder)
 className = 'WVTransform';
 
 targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));

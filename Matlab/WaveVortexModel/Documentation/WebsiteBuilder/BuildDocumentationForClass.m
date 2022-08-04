@@ -1,4 +1,4 @@
-function ClassDocGenerator(className,classDocumentationFolder)
+function BuildDocumentationForClass(className,classDocumentationFolder)
 % Generates documentation for a class from the class metadata
 %
 % Specifically, this script takes the class metadata and creates a markdown

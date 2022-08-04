@@ -1,6 +1,21 @@
 function metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc)
 % Capture metadata from all the public methods and properties of a class
 %
+% This function ultimately calls -ExtractMetadataFromDetailedDescription,
+% but first sorts through the available methods and properties to find the
+% right ones.
+%
+% Builds a struct that may have the following keys:
+% - topic
+% - subtopic
+% - declaration
+% - shortDescription
+% - detailedDescription
+% - parameters
+% - returns
+% - className
+% - name
+%
 % - Parameter mc: the detailed description 
 % - Returns metadataNameMap: containers.Map with method names as keys and metadata structures as values.
 arguments
@@ -32,18 +47,6 @@ end
 
 function metadata = ExtractMethodMetadata(mp)
 % Extract documentation from method or property (mp) metadata.
-%
-% Builds a struct that may have the following keys:
-% - topic
-% - subtopic
-% - declaration
-% - shortDescription
-% - detailedDescription
-% - parameters
-% - returns
-% - className
-% - name
-
 metadata = [];
 
 % First check if we even want to create documentation for this particular
