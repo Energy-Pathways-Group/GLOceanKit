@@ -3,7 +3,7 @@ layout: default
 title: nonlinearFluxOperation
 parent: WVModel
 grand_parent: Classes
-nav_order: 4
+nav_order: 14
 mathjax: true
 ---
 

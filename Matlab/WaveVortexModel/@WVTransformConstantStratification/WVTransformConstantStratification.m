@@ -1,10 +1,12 @@
 classdef WVTransformConstantStratification < WVTransform
-    %3D Boussinesq model with constant stratification solved in wave-vortex
-    %space
-    
-    properties
+    % Wave-vortex transformation that assumes constant stratification
+    %
+    %
+    % - Topic: Initialization
+    %
+    % - Declaration: classdef WVTransformConstantStratification < [WVTransform](/classes/wvtransform/)
+    properties (GetAccess=public, SetAccess=protected)
         N0, N2, rhobar
-        realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
         F,G
         h
 
@@ -18,9 +20,24 @@ classdef WVTransformConstantStratification < WVTransform
         A0_PE_factor
         A0_TE_factor
     end
+
+    properties (Access=private)
+        realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
+    end
         
     methods
         function self = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
+            % initialze a wave-vortex transform with constant stratification
+            %
+            % - Topic: Initialization
+            % - Declaration: wvt = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
+            % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
+            % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
+            % - Parameter N0: buoyancy frequency (radians/s)
+            % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
+            % - Parameter rho0: (optional) density at the surface z=0 (default is 1025 kg/m^3)
+            % - Parameter isHydrostatic: (optional) flag indicating whether to use hydrostatic transformations (default 0)
+            % - Returns wvt: a new WVTransformConstantStratification instance
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}

@@ -4,6 +4,7 @@ title: WVOperation
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WVOperation
@@ -47,15 +48,17 @@ Perform an operation and return a variable using a WVTransform
 
 
 ## Topics
-+ Computation
-  + [`compute`](/classes/wvoperation/compute.html) compute the promised variable
 + Initialization
   + [`WVOperation`](/classes/wvoperation/wvoperation.html) create a new WVOperation for computing a new variable
++ Computation
+  + [`compute`](/classes/wvoperation/compute.html) compute the promised variable
++ Other
+  + [`detailedDescription`](/classes/wvoperation/detaileddescription.html) 
 + Properties
+  + [`f`](/classes/wvoperation/f.html) function handle to be called when computing the operation
+  + [`nVarOut`](/classes/wvoperation/nvarout.html) number of variables returned by the computation
   + [`name`](/classes/wvoperation/name.html) name of the operation
   + [`outputVariables`](/classes/wvoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
-  + [`nVarOut`](/classes/wvoperation/nvarout.html) number of variables returned by the computation
-  + [`f`](/classes/wvoperation/f.html) function handle to be called when computing the operation
 
 
 ---

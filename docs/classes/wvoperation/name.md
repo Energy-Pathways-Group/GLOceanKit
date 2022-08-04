@@ -3,7 +3,7 @@ layout: default
 title: name
 parent: WVOperation
 grand_parent: Classes
-nav_order: 3
+nav_order: 6
 mathjax: true
 ---
 

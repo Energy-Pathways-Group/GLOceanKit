@@ -3,7 +3,7 @@ layout: default
 title: outputInterval
 parent: WVModel
 grand_parent: Classes
-nav_order: 10
+nav_order: 16
 mathjax: true
 ---
 

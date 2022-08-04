@@ -4,6 +4,7 @@ title: WVPropertyAnnotation
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WVPropertyAnnotation
@@ -37,12 +38,12 @@ Describes a property of the WVTransform
 + Initialization
   + [`WVPropertyAnnotation`](/classes/wvpropertyannotation/wvpropertyannotation.html) create a new instance of WVPropertyAnnotation
 + Properties
-  + [`dimensions`](/classes/wvpropertyannotation/dimensions.html) ordered cell array with the names of the dimensions
-  + [`units`](/classes/wvpropertyannotation/units.html) units of the dimension
-  + [`isComplex`](/classes/wvpropertyannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
-  + [`name`](/classes/wvpropertyannotation/name.html) name of the method, property, or variable
   + [`description`](/classes/wvpropertyannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/wvpropertyannotation/detaileddescription.html) a detailed description of the method, property, or variable
+  + [`dimensions`](/classes/wvpropertyannotation/dimensions.html) ordered cell array with the names of the dimensions
+  + [`isComplex`](/classes/wvpropertyannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
+  + [`name`](/classes/wvpropertyannotation/name.html) name of the method, property, or variable
+  + [`units`](/classes/wvpropertyannotation/units.html) units of the dimension
 
 
 ---

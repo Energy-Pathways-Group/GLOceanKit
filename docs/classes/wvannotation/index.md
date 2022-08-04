@@ -4,6 +4,7 @@ title: WVAnnotation
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WVAnnotation
@@ -36,9 +37,9 @@ annotates methods, properties, operations, and variables
 + Initialization
   + [`WVAnnotation`](/classes/wvannotation/wvannotation.html) create a new instance of WVAnnotation
 + Properties
-  + [`name`](/classes/wvannotation/name.html) name of the method, property, or variable
   + [`description`](/classes/wvannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/wvannotation/detaileddescription.html) a detailed description of the method, property, or variable
+  + [`name`](/classes/wvannotation/name.html) name of the method, property, or variable
 
 
 ---

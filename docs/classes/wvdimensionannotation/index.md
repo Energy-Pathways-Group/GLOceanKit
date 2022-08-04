@@ -4,6 +4,7 @@ title: WVDimensionAnnotation
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WVDimensionAnnotation
@@ -36,10 +37,10 @@ Describes a coordinate dimension of the WVTransform
 + Initialization
   + [`WVDimensionAnnotation`](/classes/wvdimensionannotation/wvdimensionannotation.html) create a new instance of WVDimensionAnnotation
 + Properties
-  + [`units`](/classes/wvdimensionannotation/units.html) units of the dimension
-  + [`name`](/classes/wvdimensionannotation/name.html) name of the method, property, or variable
   + [`description`](/classes/wvdimensionannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/wvdimensionannotation/detaileddescription.html) a detailed description of the method, property, or variable
+  + [`name`](/classes/wvdimensionannotation/name.html) name of the method, property, or variable
+  + [`units`](/classes/wvdimensionannotation/units.html) units of the dimension
 
 
 ---

@@ -3,7 +3,7 @@ layout: default
 title: units
 parent: WVPropertyAnnotation
 grand_parent: Classes
-nav_order: 3
+nav_order: 7
 mathjax: true
 ---
 

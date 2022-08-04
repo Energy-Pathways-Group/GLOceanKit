@@ -4,6 +4,7 @@ title: WVNonlinearFluxOperation
 parent: Classes
 has_children: false
 has_toc: false
+mathjax: true
 ---
 
 #  WVNonlinearFluxOperation
@@ -55,22 +56,24 @@ Computes the nonlinear flux for a WVTransform
 
 
 ## Topics
-+ Computation
-  + [`compute`](/classes/wvnonlinearfluxoperation/compute.html) compute the promised variable
-+ Equality
-  + [`isequal`](/classes/wvnonlinearfluxoperation/isequal.html) check for equality with another nonlinear flux operation
 + Initialization
-  + [`nonlinearFluxWithDoubleResolution`](/classes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
   + [`WVNonlinearFluxOperation`](/classes/wvnonlinearfluxoperation/wvnonlinearfluxoperation.html) create a new nonlinear flux operation
   + [`nonlinearFluxFromFile`](/classes/wvnonlinearfluxoperation/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithDoubleResolution`](/classes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
++ Computation
+  + [`compute`](/classes/wvnonlinearfluxoperation/compute.html) compute the promised variable
++ Other
+  + [`detailedDescription`](/classes/wvnonlinearfluxoperation/detaileddescription.html) 
 + Properties
-  + [`doesFluxAp`](/classes/wvnonlinearfluxoperation/doesfluxap.html) boolean indicating whether or not this operation returns Fp
-  + [`doesFluxAm`](/classes/wvnonlinearfluxoperation/doesfluxam.html) boolean indicating whether or not this operation returns Fm
   + [`doesFluxA0`](/classes/wvnonlinearfluxoperation/doesfluxa0.html) boolean indicating whether or not this operation returns F0
+  + [`doesFluxAm`](/classes/wvnonlinearfluxoperation/doesfluxam.html) boolean indicating whether or not this operation returns Fm
+  + [`doesFluxAp`](/classes/wvnonlinearfluxoperation/doesfluxap.html) boolean indicating whether or not this operation returns Fp
+  + [`f`](/classes/wvnonlinearfluxoperation/f.html) function handle to be called when computing the operation
+  + [`nVarOut`](/classes/wvnonlinearfluxoperation/nvarout.html) number of variables returned by the computation
   + [`name`](/classes/wvnonlinearfluxoperation/name.html) name of the operation
   + [`outputVariables`](/classes/wvnonlinearfluxoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
-  + [`nVarOut`](/classes/wvnonlinearfluxoperation/nvarout.html) number of variables returned by the computation
-  + [`f`](/classes/wvnonlinearfluxoperation/f.html) function handle to be called when computing the operation
++ Equality
+  + [`isequal`](/classes/wvnonlinearfluxoperation/isequal.html) check for equality with another nonlinear flux operation
 + Write to file
   + [`writeToFile`](/classes/wvnonlinearfluxoperation/writetofile.html) write information about the nonlinear flux operation to file
 

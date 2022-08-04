@@ -3,7 +3,7 @@ layout: default
 title: addParticles
 parent: WVModel
 grand_parent: Classes
-nav_order: 17
+nav_order: 3
 mathjax: true
 ---
 

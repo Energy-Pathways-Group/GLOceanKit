@@ -3,7 +3,7 @@ layout: default
 title: nonlinearFluxWithDoubleResolution
 parent: WVNonlinearFluxOperation
 grand_parent: Classes
-nav_order: 3
+nav_order: 12
 mathjax: true
 ---
 

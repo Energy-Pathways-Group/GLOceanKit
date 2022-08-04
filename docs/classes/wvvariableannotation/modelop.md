@@ -3,7 +3,7 @@ layout: default
 title: modelOp
 parent: WVVariableAnnotation
 grand_parent: Classes
-nav_order: 4
+nav_order: 8
 mathjax: true
 ---
 

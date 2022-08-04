@@ -3,7 +3,7 @@ layout: default
 title: description
 parent: WVAnnotation
 grand_parent: Classes
-nav_order: 3
+nav_order: 2
 mathjax: true
 ---
 

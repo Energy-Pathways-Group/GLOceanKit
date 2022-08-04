@@ -15,9 +15,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 ---
 
 ## Declaration
-```matlab
- classdef WVTransform < handle
-```
+
+<div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVTransform < handle</code></pre></div></div>
 
 ## Overview
  
