@@ -28,6 +28,15 @@ classdef WVModel < handle
     % - Topic: Particles
     % - Topic: Tracer
     % - Topic: Writing to NetCDF files
+    
+    properties (GetAccess=public, SetAccess=public)
+            % The operation responsible for computing the nonlinear flux of the model
+            % - Topic: Model Properties
+            % If the nonlinearFlux is nil, then the model will advance using
+            % linear dynamics (i.e., the wave-vortex coefficients will not
+            % change).
+            nonlinearFluxOperation WVNonlinearFluxOperation
+    end
 
     properties (GetAccess=public,SetAccess=protected)
         % The WVTransform instance the represents the ocean state.
@@ -36,13 +45,6 @@ classdef WVModel < handle
         % performs all computations necessary to return information about
         % the ocean state at a given time.
         wvt
-    
-        % The operation responsible for computing the nonlinear flux of the model
-        % - Topic: Model Properties
-        % If the nonlinearFlux is nil, then the model will advance using
-        % linear dynamics (i.e., the wave-vortex coefficients will not
-        % change).
-        nonlinearFluxOperation WVNonlinearFluxOperation
         
         % Reference to the NetCDFFile being used for model output
         % - Topic: Writing to NetCDF files
@@ -207,6 +209,13 @@ classdef WVModel < handle
 
         function value = get.linearDynamics(self)
             value = isempty(self.nonlinearFluxOperation);
+        end
+
+        function set.nonlinearFluxOperation(self,value)
+            if (self.didInitializeNetCDFFile == 1 || self.didSetupIntegrator == 1)
+                error('You cannot change the nonlinearFlux after the integrator has been setup or the NetCDFFile has been created.');
+            end
+            self.nonlinearFluxOperation = value;
         end
 
         function value = get.t(self)

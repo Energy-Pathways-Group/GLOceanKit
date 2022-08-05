@@ -1,7 +1,7 @@
 classdef WVTransformSingleMode < WVTransform
     % Single mode wave-vortex solutions, values at the surface.
 
-    properties        
+    properties (GetAccess=public, SetAccess=protected)
         h % [1 x 1]
 
         Apm_TE_factor

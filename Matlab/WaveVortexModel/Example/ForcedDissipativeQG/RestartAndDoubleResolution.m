@@ -9,7 +9,7 @@
 model = WVModel.modelFromFile('ForcedDissipativeQG-spinup-256.nc',shouldDoubleResolution=1,restartIndex=Inf);
 wvt = model.wvt;
 
-model.setupIntegrator(deltaT=0.5*model.nonlinearFlux.dampingTimeScale,outputInterval=86400);
+model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
 model.createNetCDFFileForModelOutput('ForcedDissipativeQG-spinup-512.nc',shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
 model.integrateToTime(wvt.t + 10*86400);
