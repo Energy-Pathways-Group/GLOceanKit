@@ -113,7 +113,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         variableCache
     end
 
-    properties (Abstract)
+    properties (Abstract,GetAccess=public, SetAccess=protected)
         h % all subclasses need to have a function that returns the eigendepths
         
         % These convert the coefficients to their depth integrated energies
