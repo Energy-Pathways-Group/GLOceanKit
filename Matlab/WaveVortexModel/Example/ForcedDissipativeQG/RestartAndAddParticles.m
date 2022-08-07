@@ -21,7 +21,7 @@ model.setDrifterPositions(xFloat,yFloat,[],'zeta_z','eta');
 
 
 % Setting the output interval based on the enstrophy time scale
-model.setupIntegrator(deltaT=0.5*model.nonlinearFlux.dampingTimeScale,outputInterval=30*60);
+model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=30*60);
 model.createNetCDFFileForModelOutput('ForcedDissipativeQG-particles-512.nc',shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
 
