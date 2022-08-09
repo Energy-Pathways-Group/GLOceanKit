@@ -11,7 +11,7 @@ classdef WVTransformHydrostatic < WVTransform
     %    to specify the depths and modes yourself
     %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho, 'zgrid', z)
 
-    properties
+    properties (GetAccess=public, SetAccess=protected)
         rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
         rhoFunction, N2Function, dLnN2Function % function handles
 
