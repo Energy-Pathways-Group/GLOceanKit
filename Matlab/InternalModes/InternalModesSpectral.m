@@ -183,6 +183,26 @@ classdef InternalModesSpectral < InternalModesBase
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
         end
+
+        function [A,B] = EigenmatricesForGeostrophicGModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = Tzz;
+            B = -diag((self.N2_xLobatto)/self.g)*T;
+
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+
+            if (self.g/(self.f0*self.f0))*(k*k) < 1
+                A(1,:) = Tz(1,:) + (self.g/(self.f0*self.f0))*(k*k)*T(1,:);
+            else
+                A(1,:) = (self.f0*self.f0)/(self.g *k*k)* Tz(1,:) + T(1,:);
+            end
+            B(1,:) = 0;
+        end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
             T = self.T_xLobatto;
@@ -220,12 +240,23 @@ classdef InternalModesSpectral < InternalModesBase
                 case UpperBoundary.buoyancyAnomaly
                     A(1,:) = T(1,:);
                     B(1,:) = 1;
+                case UpperBoundary.geostrophicFreeSurface
+                    A(1,:) = Tz(1,:) + (self.g/(self.f0*self.f0))*(options.k*options.k)*T(1,:);
+                    B(1,:) = 0;
                 case UpperBoundary.none
                 otherwise
                     error('Unknown boundary condition');
             end
         end
         
+        function [F,G,h] = GeostrophicModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForGeostrophicGModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
         function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
             self.gridFrequency = 0;
             
