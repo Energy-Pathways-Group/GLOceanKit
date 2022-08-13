@@ -16,5 +16,8 @@ function [omega,k,l] = initWithWaveModes(self, kMode, lMode, jMode, phi, Amp, si
 self.Ap = zeros(size(self.Ap));
 self.Am = zeros(size(self.Am));
 self.A0 = zeros(size(self.A0));
-[omega,k,l] = self.setWaveModes(kMode, lMode, jMode, phi, Amp, signs);
+% set wave modes for number of waves being initialized
+for inds = 1:length(kMode)
+  [omega,k,l] = self.setWaveModes(kMode(inds), lMode(inds), jMode(inds), phi(inds), Amp(inds), signs(inds));
+end
 end
