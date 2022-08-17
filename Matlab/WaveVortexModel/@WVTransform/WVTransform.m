@@ -965,6 +965,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             fprintf('%.1g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
         end
 
+        summarizeModeEnergy(self)
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initializing, adding and removing dynamical features

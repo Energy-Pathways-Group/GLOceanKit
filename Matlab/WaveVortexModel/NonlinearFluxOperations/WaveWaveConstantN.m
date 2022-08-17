@@ -63,6 +63,13 @@ classdef WaveWaveConstantN < WVNonlinearFluxOperation
             self.ApV(1,1,:) = -sqrt(-1)/2;
             self.AmU(1,1,:) = 1/2;
             self.AmV(1,1,:) = sqrt(-1)/2;
+
+            makeHermitian = @(f) WVTransform.makeHermitian(f);
+            self.ApU = makeHermitian(self.ApU);
+            self.ApV = makeHermitian(self.ApV);
+          
+            self.AmU = makeHermitian(self.AmU);
+            self.AmV = makeHermitian(self.AmV);
         end
 
         function varargout = compute(self,wvt,varargin)
@@ -89,7 +96,9 @@ classdef WaveWaveConstantN < WVNonlinearFluxOperation
             % Now apply the operator S^{-1} and then T_\omega^{-1}
             uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
             vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
-
+            
+            % !!Notice that we are using our own (self) sorting matrix
+            % components rather than those from the transform.
             Fp = self.EMAp .* (self.ApU.*uNLbar + self.ApV.*vNLbar) .* conj(phase);
             Fm = self.EMAm .* (self.AmU.*uNLbar + self.AmV.*vNLbar) .* phase;
 

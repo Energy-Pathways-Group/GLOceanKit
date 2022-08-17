@@ -34,7 +34,7 @@ period = 2*pi/omega;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-%model = WVModel(wvt,nonlinearFlux=NonlinearBoussinesqWithReducedInteractionMasks(wvt));
+% model = WVModel(wvt,nonlinearFlux=NonlinearBoussinesqWithReducedInteractionMasks(wvt));
 % model = WVModel(wvt);
 model = WVModel(wvt,nonlinearFlux=WaveWaveConstantN(wvt));
 
