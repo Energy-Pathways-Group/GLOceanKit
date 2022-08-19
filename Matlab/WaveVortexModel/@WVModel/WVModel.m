@@ -716,12 +716,26 @@ classdef WVModel < handle
             [u,v] = self.wvt.velocityField();
             U = max(max(max( sqrt(u.*u + v.*v) )));
             dx = (3/2)*(self.wvt.x(2)-self.wvt.x(1));
+            
+            
 
             advectiveDT = cfl*dx/U;
             oscillatoryDT = cfl*period;
             % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
 
-            fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
+            if self.wvt.isBarotropic ~= 1
+                W = self.wvt.w;
+                W = W(:,:,2:end);
+                ratio = abs((W./((3/2)*shiftdim(diff(self.wvt.z),-2))));
+                dZW = 1/max(ratio(:));
+                verticalAdvectiveDT = cfl*dZW;
+                advectiveDT = min(verticalAdvectiveDT,advectiveDT);
+                fprintf('dX/U = %.1f s (%.1f min). dZ/W = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60, dZW,dZW/60,period,period/60);
+            else
+                fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
+            end
+
+            
 
             if nargin == 3 && ~isempty(outputInterval)
                 advectiveDT = outputInterval/ceil(outputInterval/advectiveDT);
