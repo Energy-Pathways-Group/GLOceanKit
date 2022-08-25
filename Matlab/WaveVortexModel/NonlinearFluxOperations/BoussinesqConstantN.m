@@ -4,14 +4,16 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
         shouldAntialias = 0
         AA
         shouldDamp = 0
-        
+        nu_xy
+        nu_z
     end
 
     methods
         function self = BoussinesqConstantN(wvt,options)
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.u_damp (1,1) double % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double % characteristic speed used to set the damping. Try using uMax.
+                options.w_damp (1,1) double % characteristic speed used to set the damping. Try using wMax
                 options.nu (1,1) double
                 options.shouldAntialias double = 0
             end
@@ -25,6 +27,23 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
             if self.shouldAntialias == 1
                 self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
             end
+            
+            if isfield(options,'u_damp')
+                if self.shouldAntialias == 1
+                    self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                else
+                    self.nu_xy = (wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                end
+            end
+
+            if isfield(options,'w_damp')
+                if self.shouldAntialias == 1
+                    self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+                else
+                    self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+                end
+            end
+            
         end
 
         function varargout = compute(self,wvt,varargin)
