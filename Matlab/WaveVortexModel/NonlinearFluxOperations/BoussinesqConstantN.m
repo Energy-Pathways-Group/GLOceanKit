@@ -3,9 +3,9 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
     properties
         shouldAntialias = 0
         AA
-        shouldDamp = 0
         nu_xy
         nu_z
+        damp
     end
 
     methods
@@ -14,8 +14,10 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
                 wvt WVTransform {mustBeNonempty}
                 options.uv_damp (1,1) double % characteristic speed used to set the damping. Try using uMax.
                 options.w_damp (1,1) double % characteristic speed used to set the damping. Try using wMax
-                options.nu (1,1) double
+                options.nu_xy (1,1) double
+                options.nu_z (1,1) double
                 options.shouldAntialias double = 0
+                options.shouldUseSpectralVanishingViscosity = 1
             end
             fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap',detailedDescription='- topic: State Variables');
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am',detailedDescription='- topic: State Variables');
@@ -28,22 +30,44 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
                 self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
             end
             
-            if isfield(options,'u_damp')
-                if self.shouldAntialias == 1
-                    self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+
+            if isfield(options,'nu_xy')
+                self.nu_xy = nu_xy;
+            else
+                if isfield(options,'uv_damp')
+                    if self.shouldAntialias == 1
+                        self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                    else
+                        self.nu_xy = (wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                    end
                 else
-                    self.nu_xy = (wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                    self.nu_xy = 0;
                 end
             end
 
-            if isfield(options,'w_damp')
-                if self.shouldAntialias == 1
-                    self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+            if isfield(options,'nu_z')
+                self.nu_z = nu_z;
+            else
+                if isfield(options,'w_damp')
+                    if self.shouldAntialias == 1
+                        self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+                    else
+                        self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+                    end
                 else
-                    self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
+                    self.nu_z = 0;
                 end
             end
             
+            [K,L,J] = ndgrid(wvt.k,wvt.l,wvt.j);
+            M = J*pi/wvt.Lz;
+            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
+            if options.shouldUseSpectralVanishingViscosity == 1
+                Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
+                self.damp = Qkl.*self.damp;
+            end
+%             nu_small = 1e-4;
+%             self.damp = self.damp - nu_small*(M.^2 + K.^2 +L.^2);
         end
 
         function varargout = compute(self,wvt,varargin)
@@ -76,9 +100,9 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
             vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
             nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
 
-            Fp = (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase);
-            Fm = (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase;
-            F0 = (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
+            Fp = self.AA .* (self.damp .* wvt.Ap + (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase));
+            Fm = self.AA .* (self.damp .* wvt.Am + (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase);
+            F0 = self.AA .* (self.damp .* wvt.A0 + (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar));
 
             varargout = {Fp,Fm,F0};
         end

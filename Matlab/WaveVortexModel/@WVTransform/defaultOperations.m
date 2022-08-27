@@ -105,6 +105,10 @@ outputVar = WVVariableAnnotation('uMax',{},'m s^{-1}', 'max horizontal fluid spe
 f = @(wvt) max(max(max( sqrt( (wvt.u).^2 + (wvt.v).^2 ) )));
 operations(end+1) = WVOperation('uMax',outputVar,f);
 
+outputVar = WVVariableAnnotation('wMax',{},'m s^{-1}', 'max vertical fluid speed');
+f = @(wvt) max(max(max( abs(wvt.w)  )));
+operations(end+1) = WVOperation('wMax',outputVar,f);
+
 outputVar = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
 f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
 operations(end+1) = WVOperation('u',outputVar,f);
