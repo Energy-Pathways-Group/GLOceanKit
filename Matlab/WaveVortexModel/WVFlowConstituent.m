@@ -1,18 +1,18 @@
-classdef WVFlowConstituents
+classdef WVFlowConstituent
     %Describes a set of flow constituents
     %
-    % The WVFlowConstituents class is used to describe sets of flow
+    % The WVFlowConstituent class is used to describe sets of flow
     % constituents. This class is used by methods that extract only part of
     % the flow.
     %
     % As an example, if you initialize a variable called `flowConstituent`
     % with
     % ```matlab
-    % flowConstituent = WVFlowConstituents('geostrophic')
+    % flowConstituent = WVFlowConstituent('geostrophic')
     % ```
     % or equivalently with,
     % ```matlab
-    % flowConstituent = WVFlowConstituents.geostrophic
+    % flowConstituent = WVFlowConstituent.geostrophic
     % ```
     % then you could call
     % ```matlab
@@ -20,7 +20,7 @@ classdef WVFlowConstituents
     % ```
     % and that would return only the geostrophic portion of the flow.
     %
-    % - Declaration: classdef WVFlowConstituents
+    % - Declaration: classdef WVFlowConstituent
     properties (Access=private)
         bitmask = 0
     end
@@ -70,29 +70,29 @@ classdef WVFlowConstituents
         all                 = 0b00111111
     end
     methods
-        function self = WVFlowConstituents(varargin)
+        function self = WVFlowConstituent(varargin)
             self.bitmask = 0;
             for k = 1:length(varargin)
                 if strcmp(varargin{k}, 'inertialOscillation')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.inertialOscillation);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.inertialOscillation);
                 elseif strcmp(varargin{k}, 'surfaceGravityWave')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.surfaceGravityWave);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.surfaceGravityWave);
                 elseif strcmp(varargin{k}, 'internalGravityWave')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.internalGravityWave);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.internalGravityWave);
                 elseif strcmp(varargin{k}, 'surfaceGeostrophic')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.surfaceGeostrophic);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.surfaceGeostrophic);
                 elseif strcmp(varargin{k}, 'internalGeostrophic')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.internalGeostrophic);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.internalGeostrophic);
                 elseif strcmp(varargin{k}, 'meanDensityAnomaly')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.meanDensityAnomaly);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.meanDensityAnomaly);
                 elseif strcmp(varargin{k}, 'inertial')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.inertial);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.inertial);
                 elseif strcmp(varargin{k}, 'wave')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.wave);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.wave);
                 elseif strcmp(varargin{k}, 'geostrophic')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.geostrophic);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.geostrophic);
                 elseif strcmp(varargin{k}, 'all')
-                    self.bitmask = bitor(self.bitmask,WVFlowConstituents.all);
+                    self.bitmask = bitor(self.bitmask,WVFlowConstituent.all);
                 end
             end
         end
@@ -100,7 +100,7 @@ classdef WVFlowConstituents
         function bool = Contains(self,otherFlowConstituent)
             if isa(otherFlowConstituent,"numeric")
                 bool = logical(bitand(self.bitmask,otherFlowConstituent));
-            elseif isa(otherFlowConstituent,"WVFlowConstituents")
+            elseif isa(otherFlowConstituent,"WVFlowConstituent")
                 bool = logical(bitand(self.bitmask,otherFlowConstituent.bitmask));
             end
         end

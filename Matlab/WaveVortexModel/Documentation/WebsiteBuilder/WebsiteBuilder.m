@@ -8,7 +8,7 @@ BuildDocumentationForClass('WVVariableAnnotation',classDocumentationFolder);
 BuildDocumentationForClass('WVOperation',classDocumentationFolder);
 BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
 
-% ClassDocGenerator('WVFlowConstituents',classDocumentationFolder);
+% ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 
 BuildDocumentationForClass('WVModel',classDocumentationFolder);
 

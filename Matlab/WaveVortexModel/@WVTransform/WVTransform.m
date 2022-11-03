@@ -845,24 +845,44 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
         
-        [Fp,Fm,F0] = NonlinearFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent)
-        [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTime(self,t,Ap,Am,A0,Uconstituent,gradUconstituent);
+        [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUconstituent)
 
-    	function [Ep,Em,E0] = EnergyFluxForFlowConstituentsAtTimeInitial(self,t,deltaT,Ap,Am,A0,Uconstituent,gradUconstituent)
-    	    [Fp,Fm,F0] = self.NonlinearFluxForFlowConstituentsAtTime(t,Ap,Am,A0,Uconstituent,gradUconstituent);
-    	    % The phase is tricky here. It is wound forward for the flux,
-    	    % as it should be... but then it is wound back to zero. This is
+    	function [Ep,Em,E0] = energyFluxForFlowConstituents(self,Uconstituent,gradUconstituent,options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                Uconstituent WVFlowConstituent
+                gradUconstituent WVFlowConstituent
+                options.deltaT (1,1) double = 0
+            end
+    	    % returns the energy flux into each coefficient, from specific flow constituents
+            %
+            % - Topic: Nonlinear flux and energy transfers
+            % - Declaration: [Ep,Em,E0] = energyFluxForFlowConstituents(Uconstituent,gradUconstituent,options)
+            % - Parameter Uconstituent: `WVFlowConstituent` type for u*\nabla u
+            % - Parameter gradUconstituent: `WVFlowConstituent` type for u*\nabla u
+            % - Parameter deltaT: (optional) include the deltaT term in the Euler time step
+            % - Returns Ep: energy flux into the Ap coefficients
+            % - Returns Em: energy flux into the Am coefficients
+            % - Returns E0: energy flux into the A0 coefficients
+    	    [Fp,Fm,F0] = self.nonlinearFluxForFlowConstituents(Uconstituent,gradUconstituent);
+            % The phase is tricky here. It is wound forward for the flux,
+            % as it should be... but then it is wound back to zero. This is
             % equivalent ignoring the phase below here.
+            Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
+            Em = 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
+            E0 = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
 
-            % This equation is C17 in the manuscript, but with addition of 1st term
-            % on LHS of C16 converted to energy using Apm_TE_factor or A0_TE_factor
-
-            % This differs from EnergyFluxForFlowConstituentsAtTime due to the importance of the
-            % 2*F*F*deltaT in equation C16 at the initial condition.
-
-            Ep = 2*Fp.*conj(Fp).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
-            Em = 2*Fm.*conj(Fm).*self.Apm_TE_factor*deltaT + 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
-            E0 = 2*F0.*conj(F0).*self.A0_TE_factor*deltaT + 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
+            if options.deltaT > 0
+                % Added by Bailey Avila: This equation is C17 in the
+                % manuscript, but with addition of 1st term
+        	    % on LHS of C16 converted to energy using Apm_TE_factor or
+        	    % A0_TE_factor This differs from energyFlux due to the
+        	    % importance of the 2*F*F*deltaT in equation C16 at the
+        	    % initial condition.
+                Ep = Ep + 2*Fp.*conj(Fp).*self.Apm_TE_factor*options.deltaT;
+                Em = Em + 2*Fm.*conj(Fm).*self.Apm_TE_factor*options.deltaT;
+                E0 = E0 + 2*F0.*conj(F0).*self.A0_TE_factor*options.deltaT;
+            end
     	end
  
 

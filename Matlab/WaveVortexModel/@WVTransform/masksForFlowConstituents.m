@@ -6,7 +6,7 @@ function [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents)
 %
 % Basic usage,
 % ```matlab
-% [ApmMask,A0Mask] = wvm.masksForFlowConstituents(WVFlowConstituents('internalGravityWave','inertialOscillation');
+% [ApmMask,A0Mask] = wvm.masksForFlowConstituents(WVFlowConstituent('internalGravityWave','inertialOscillation');
 % ```
 % will return a mask that contains 1 at the locations of the internal
 % gravity waves and inertial oscillations in the Ap/Am matrices. All other
@@ -17,7 +17,7 @@ function [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents)
 %
 % - Topic: Masks
 % - Declaration: [ApmMask,A0Mask] = masksForFlowConstituents(flowConstituents)
-% - Parameter flowConstituents: `WVFlowConstituents` type
+% - Parameter flowConstituents: `WVFlowConstituent` type
 % - Returns ApmMask: mask for the Ap and Am matrices
 % - Returns A0Mask: mask for the A0 matrix
 ApmMask = zeros(size(self.Ap));
@@ -25,27 +25,27 @@ A0Mask = zeros(size(self.A0));
 
 [IO,SGW,IGW,MDA,SG,IG] = self.masksForAllFlowConstituents();
 
-if flowConstituents.Contains(WVFlowConstituents.inertialOscillation)
+if flowConstituents.Contains(WVFlowConstituent.inertialOscillation)
     ApmMask = ApmMask | IO;
 end
 
-if flowConstituents.Contains(WVFlowConstituents.surfaceGravityWave)
+if flowConstituents.Contains(WVFlowConstituent.surfaceGravityWave)
     ApmMask = ApmMask | SGW;
 end
 
-if flowConstituents.Contains(WVFlowConstituents.internalGravityWave)
+if flowConstituents.Contains(WVFlowConstituent.internalGravityWave)
     ApmMask = ApmMask | IGW;
 end
 
-if flowConstituents.Contains(WVFlowConstituents.meanDensityAnomaly)
+if flowConstituents.Contains(WVFlowConstituent.meanDensityAnomaly)
     A0Mask = A0Mask | MDA;
 end
 
-if flowConstituents.Contains(WVFlowConstituents.surfaceGeostrophic)
+if flowConstituents.Contains(WVFlowConstituent.surfaceGeostrophic)
     A0Mask = A0Mask | SG;
 end
 
-if flowConstituents.Contains(WVFlowConstituents.internalGeostrophic)
+if flowConstituents.Contains(WVFlowConstituent.internalGeostrophic)
     A0Mask = A0Mask | IG;
 end
 
