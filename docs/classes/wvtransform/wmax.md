@@ -1,15 +1,15 @@
 ---
 layout: default
-title: uMax
+title: wMax
 parent: WVTransform
 grand_parent: Classes
-nav_order: 166
+nav_order: 177
 mathjax: true
 ---
 
-#  uMax
+#  wMax
 
-max horizontal fluid speed
+max vertical fluid speed
 
 
 ---

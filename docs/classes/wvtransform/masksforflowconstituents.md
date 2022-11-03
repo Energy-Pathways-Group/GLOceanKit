@@ -3,7 +3,7 @@ layout: default
 title: masksForFlowConstituents
 parent: WVTransform
 grand_parent: Classes
-nav_order: 124
+nav_order: 121
 mathjax: true
 ---
 
@@ -19,7 +19,7 @@ Returns a sets of 'masks' indicating where different solution types live in the 
  [ApmMask,A0Mask] = masksForFlowConstituents(flowConstituents)
 ```
 ## Parameters
-+ `flowConstituents`  `WVFlowConstituents` type
++ `flowConstituents`  `WVFlowConstituent` type
 
 ## Returns
 + `ApmMask`  mask for the Ap and Am matrices
@@ -32,7 +32,7 @@ Returns a sets of 'masks' indicating where different solution types live in the 
  
   Basic usage,
   ```matlab
-  [ApmMask,A0Mask] = wvm.masksForFlowConstituents(WVFlowConstituents('internalGravityWave','inertialOscillation');
+  [ApmMask,A0Mask] = wvm.masksForFlowConstituents(WVFlowConstituent('internalGravityWave','inertialOscillation');
   ```
   will return a mask that contains 1 at the locations of the internal
   gravity waves and inertial oscillations in the Ap/Am matrices. All other

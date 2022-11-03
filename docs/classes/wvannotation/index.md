@@ -39,7 +39,7 @@ annotates methods, properties, operations, and variables
 + Properties
   + [`description`](/classes/wvannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/wvannotation/detaileddescription.html) a detailed description of the method, property, or variable
-  + [`name`](/classes/wvannotation/name.html) name of the method, property, or variable
+  + [`name`](/classes/wvannotation/name.html) of the method, property, or variable
 
 
 ---

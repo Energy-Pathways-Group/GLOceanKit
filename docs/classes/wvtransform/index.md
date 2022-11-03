@@ -121,6 +121,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`setGeostrophicStreamfunction`](/classes/wvtransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
 + Energetics
   + [`summarizeEnergyContent`](/classes/wvtransform/summarizeenergycontent.html) displays a summary of the energy content of the fluid
+  + [`summarizeModeEnergy`](/classes/wvtransform/summarizemodeenergy.html) List the most energetic modes
   + [`totalEnergy`](/classes/wvtransform/totalenergy.html) horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients
   + [`totalEnergySpatiallyIntegrated`](/classes/wvtransform/totalenergyspatiallyintegrated.html) horizontally-averaged depth-integrated energy computed in the spatial domain
   + [`totalHydrostaticEnergy`](/classes/wvtransform/totalhydrostaticenergy.html) horizontally-averaged depth-integrated energy *without w* computed in the spatial domain
@@ -166,14 +167,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`WAp`](/classes/wvtransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 + Other
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
-  + [`EnergyFluxForFlowConstituentsAtTime`](/classes/wvtransform/energyfluxforflowconstituentsattime.html) 
-  + [`EnergyFluxForFlowConstituentsAtTimeInitial`](/classes/wvtransform/energyfluxforflowconstituentsattimeinitial.html) 
   + [`ExponentialFilter`](/classes/wvtransform/exponentialfilter.html) 
-  + [`NonlinearFluxForFlowConstituentsAtTime`](/classes/wvtransform/nonlinearfluxforflowconstituentsattime.html) Apply operator T_\omega---defined in (C2) in the manuscript
   + [`iOmega`](/classes/wvtransform/iomega.html) 
-  + [`interpolatedFieldAtPositionBadBoundaries`](/classes/wvtransform/interpolatedfieldatpositionbadboundaries.html) 
-  + [`offgridModes`](/classes/wvtransform/offgridmodes.html) offgridModes -  subclass should initialize
-  + [`ongridModes`](/classes/wvtransform/ongridmodes.html) ongridModes -  This is a cached copy
+  + [`nonlinearFluxForFlowConstituents`](/classes/wvtransform/nonlinearfluxforflowconstituents.html) Apply operator T_\omega---defined in (C2) in the manuscript
+  + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize
+  + [`ongridModes`](/classes/wvtransform/ongridmodes.html) This is a cached copy
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
   + [`uMaxGNormRatioForWave`](/classes/wvtransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
@@ -193,6 +191,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`uMax`](/classes/wvtransform/umax.html) max horizontal fluid speed
   + [`v`](/classes/wvtransform/v.html) y-component of the fluid velocity
   + [`w`](/classes/wvtransform/w.html) z-component of the fluid velocity
+  + [`wMax`](/classes/wvtransform/wmax.html) max vertical fluid speed
 + Internal
   + [`WVTransform`](/classes/wvtransform/wvtransform.html) initialize a WVTransform instance
   + [`addToVariableCache`](/classes/wvtransform/addtovariablecache.html) add variable to internal cache, in case it is needed again
@@ -251,6 +250,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
 + Nonlinear flux and energy transfers
   + [`energyFlux`](/classes/wvtransform/energyflux.html) returns the energy flux into each coefficient
+  + [`energyFluxForFlowConstituents`](/classes/wvtransform/energyfluxforflowconstituents.html) returns the energy flux into each coefficient, from specific flow constituents
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
 + Masks

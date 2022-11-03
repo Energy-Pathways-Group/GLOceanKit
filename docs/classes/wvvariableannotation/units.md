@@ -9,7 +9,7 @@ mathjax: true
 
 #  units
 
-units of the variable
+of the variable
 
 
 ---

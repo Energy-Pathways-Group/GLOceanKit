@@ -3,7 +3,7 @@ layout: default
 title: totalEnergySpatiallyIntegrated
 parent: WVTransform
 grand_parent: Classes
-nav_order: 155
+nav_order: 154
 mathjax: true
 ---
 

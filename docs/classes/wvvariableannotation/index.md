@@ -48,8 +48,8 @@ Describes a variable computed from the WVTransform
   + [`isVariableWithLinearTimeStep`](/classes/wvvariableannotation/isvariablewithlineartimestep.html) boolean indicating whether the variable changes value with a linear time step
   + [`isVariableWithNonlinearTimeStep`](/classes/wvvariableannotation/isvariablewithnonlineartimestep.html) boolean indicating whether the variable changes value with a non-linear time step
   + [`modelOp`](/classes/wvvariableannotation/modelop.html) WVOperation responsible for computing this variable
-  + [`name`](/classes/wvvariableannotation/name.html) name of the method, property, or variable
-  + [`units`](/classes/wvvariableannotation/units.html) units of the variable
+  + [`name`](/classes/wvvariableannotation/name.html) of the method, property, or variable
+  + [`units`](/classes/wvvariableannotation/units.html) of the variable
 
 
 ---

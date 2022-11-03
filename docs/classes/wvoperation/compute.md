@@ -9,7 +9,7 @@ mathjax: true
 
 #  compute
 
-compute the promised variable
+the promised variable
 
 
 ---

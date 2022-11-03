@@ -9,7 +9,7 @@ mathjax: true
 
 #  units
 
-units of the dimension
+of the dimension
 
 
 ---

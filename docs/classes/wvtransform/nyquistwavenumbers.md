@@ -3,7 +3,7 @@ layout: default
 title: nyquistWavenumbers
 parent: WVTransform
 grand_parent: Classes
-nav_order: 127
+nav_order: 125
 mathjax: true
 ---
 

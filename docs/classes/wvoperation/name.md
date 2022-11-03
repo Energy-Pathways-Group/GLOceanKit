@@ -9,7 +9,7 @@ mathjax: true
 
 #  name
 
-name of the operation
+of the operation
 
 
 ---

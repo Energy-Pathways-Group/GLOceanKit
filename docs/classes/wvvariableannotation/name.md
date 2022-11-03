@@ -9,7 +9,7 @@ mathjax: true
 
 #  name
 
-name of the method, property, or variable
+of the method, property, or variable
 
 
 ---

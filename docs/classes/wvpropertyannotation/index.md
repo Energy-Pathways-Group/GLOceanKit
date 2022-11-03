@@ -42,8 +42,8 @@ Describes a property of the WVTransform
   + [`detailedDescription`](/classes/wvpropertyannotation/detaileddescription.html) a detailed description of the method, property, or variable
   + [`dimensions`](/classes/wvpropertyannotation/dimensions.html) ordered cell array with the names of the dimensions
   + [`isComplex`](/classes/wvpropertyannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
-  + [`name`](/classes/wvpropertyannotation/name.html) name of the method, property, or variable
-  + [`units`](/classes/wvpropertyannotation/units.html) units of the dimension
+  + [`name`](/classes/wvpropertyannotation/name.html) of the method, property, or variable
+  + [`units`](/classes/wvpropertyannotation/units.html) of the dimension
 
 
 ---

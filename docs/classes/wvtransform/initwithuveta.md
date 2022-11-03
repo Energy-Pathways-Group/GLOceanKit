@@ -3,7 +3,7 @@ layout: default
 title: initWithUVEta
 parent: WVTransform
 grand_parent: Classes
-nav_order: 108
+nav_order: 106
 mathjax: true
 ---
 
@@ -26,5 +26,6 @@ initialize with fluid variables $$(u,v,\eta)$$
 
 ## Discussion
 
-  Clears variables Ap,Am,A0 and then randomizes the flow
+  Replaces the variables Ap,Am,A0 with those computed from $$(u,v,\eta)$$.
+  If a time t is specified, the wvt is set to that time.
             

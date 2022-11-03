@@ -39,8 +39,8 @@ Describes a coordinate dimension of the WVTransform
 + Properties
   + [`description`](/classes/wvdimensionannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/wvdimensionannotation/detaileddescription.html) a detailed description of the method, property, or variable
-  + [`name`](/classes/wvdimensionannotation/name.html) name of the method, property, or variable
-  + [`units`](/classes/wvdimensionannotation/units.html) units of the dimension
+  + [`name`](/classes/wvdimensionannotation/name.html) of the method, property, or variable
+  + [`units`](/classes/wvdimensionannotation/units.html) of the dimension
 
 
 ---

@@ -3,7 +3,7 @@ layout: default
 title: dLnN2
 parent: WVTransform
 grand_parent: Classes
-nav_order: 73
+nav_order: 70
 mathjax: true
 ---
 

@@ -61,7 +61,7 @@ Computes the nonlinear flux for a WVTransform
   + [`nonlinearFluxFromFile`](/classes/wvnonlinearfluxoperation/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
   + [`nonlinearFluxWithDoubleResolution`](/classes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
 + Computation
-  + [`compute`](/classes/wvnonlinearfluxoperation/compute.html) compute the promised variable
+  + [`compute`](/classes/wvnonlinearfluxoperation/compute.html) the promised variable
 + Other
   + [`detailedDescription`](/classes/wvnonlinearfluxoperation/detaileddescription.html) 
 + Properties
@@ -70,7 +70,7 @@ Computes the nonlinear flux for a WVTransform
   + [`doesFluxAp`](/classes/wvnonlinearfluxoperation/doesfluxap.html) boolean indicating whether or not this operation returns Fp
   + [`f`](/classes/wvnonlinearfluxoperation/f.html) function handle to be called when computing the operation
   + [`nVarOut`](/classes/wvnonlinearfluxoperation/nvarout.html) number of variables returned by the computation
-  + [`name`](/classes/wvnonlinearfluxoperation/name.html) name of the operation
+  + [`name`](/classes/wvnonlinearfluxoperation/name.html) of the operation
   + [`outputVariables`](/classes/wvnonlinearfluxoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
 + Equality
   + [`isequal`](/classes/wvnonlinearfluxoperation/isequal.html) check for equality with another nonlinear flux operation
