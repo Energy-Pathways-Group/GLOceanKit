@@ -858,8 +858,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             %
             % - Topic: Nonlinear flux and energy transfers
             % - Declaration: [Ep,Em,E0] = energyFluxForFlowConstituents(Uconstituent,gradUconstituent,options)
-            % - Parameter Uconstituent: `WVFlowConstituent` type for u*\nabla u
-            % - Parameter gradUconstituent: `WVFlowConstituent` type for u*\nabla u
+            % - Parameter Uconstituent: `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
+            % - Parameter gradUconstituent: `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
             % - Parameter deltaT: (optional) include the deltaT term in the Euler time step
             % - Returns Ep: energy flux into the Ap coefficients
             % - Returns Em: energy flux into the Am coefficients

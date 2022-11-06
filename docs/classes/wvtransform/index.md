@@ -169,7 +169,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
   + [`ExponentialFilter`](/classes/wvtransform/exponentialfilter.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
-  + [`nonlinearFluxForFlowConstituents`](/classes/wvtransform/nonlinearfluxforflowconstituents.html) Apply operator T_\omega---defined in (C2) in the manuscript
   + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize
   + [`ongridModes`](/classes/wvtransform/ongridmodes.html) This is a cached copy
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
@@ -252,6 +251,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`energyFlux`](/classes/wvtransform/energyflux.html) returns the energy flux into each coefficient
   + [`energyFluxForFlowConstituents`](/classes/wvtransform/energyfluxforflowconstituents.html) returns the energy flux into each coefficient, from specific flow constituents
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
+  + [`nonlinearFluxForFlowConstituents`](/classes/wvtransform/nonlinearfluxforflowconstituents.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
 + Masks
   + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.

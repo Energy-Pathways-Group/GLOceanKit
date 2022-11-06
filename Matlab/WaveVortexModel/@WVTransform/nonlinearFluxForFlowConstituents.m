@@ -1,4 +1,19 @@
 function [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUconstituent)
+% returns the flux of each coefficient as determined by the nonlinear flux operation
+%
+% - Topic: Nonlinear flux and energy transfers
+% - Declaration: [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(Uconstituent,gradUconstituent)
+% - Parameter Uconstituent: `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
+% - Parameter gradUconstituent: `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
+% - Returns Fp: flux into the Ap coefficients
+% - Returns Fm: flux into the Am coefficients
+% - Returns F0: flux into the A0 coefficients
+arguments
+    self WVTransform {mustBeNonempty}
+    Uconstituent WVFlowConstituent
+    gradUconstituent WVFlowConstituent
+end
+
 % Apply operator T_\omega---defined in (C2) in the manuscript
 phase = exp(self.iOmega*(self.t-self.t0));
 Apt = self.Ap .* phase;

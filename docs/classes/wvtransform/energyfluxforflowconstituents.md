@@ -19,8 +19,8 @@ returns the energy flux into each coefficient, from specific flow constituents
  [Ep,Em,E0] = energyFluxForFlowConstituents(Uconstituent,gradUconstituent,options)
 ```
 ## Parameters
-+ `Uconstituent`  `WVFlowConstituent` type for u*\nabla u
-+ `gradUconstituent`  `WVFlowConstituent` type for u*\nabla u
++ `Uconstituent`  `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
++ `gradUconstituent`  `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
 + `deltaT`  (optional) include the deltaT term in the Euler time step
 
 ## Returns
