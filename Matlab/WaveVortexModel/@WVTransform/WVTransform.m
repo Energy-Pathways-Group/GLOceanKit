@@ -361,6 +361,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 remove(self.variableAnnotationNameMap,transformOperation.outputVariables(iVar).name);
             end
             remove(self.operationNameMap,transformOperation.name);
+            self.clearVariableCache();
         end
 
         function val = operationWithName(self,name)
@@ -844,7 +845,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns Fp: flux into the Ap coefficients
             % - Returns Fm: flux into the Am coefficients
             % - Returns F0: flux into the A0 coefficients
-            [Fp,Fm,F0] = performOperation(self.nonlinearFluxOperation);
+            [Fp,Fm,F0] = self.performOperation(self.nonlinearFluxOperation);
         end
 
         function [Ep,Em,E0] = energyFlux(self,options)
