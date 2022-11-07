@@ -399,18 +399,26 @@ classdef InternalModesSpectral < InternalModesBase
                if length(roots) < nPoints
                    error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
                end
-               while (length(roots) > nPoints)
-                   roots = sort(roots);
-                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
-                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                   dr = diff(roots);
-                   [~,minIndex] = min(abs(dr));
-                   if abs(value(minIndex)) < abs(value(minIndex+1))
-                       roots(minIndex) = [];
-                   else
-                       roots(minIndex+1) = [];
-                   end
-               end
+               warning('Two strategies here---need to consolidate.')
+               F = self.Diff1_xCheb(G_cheb(:,rootMode));
+               value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+               [~,indices] = sort(abs(value),'descend');
+               indices = indices(1:nPoints);
+               roots = roots(indices);
+               
+% This strategy was useful for the vertical mode atlas
+%                while (length(roots) > nPoints)
+%                    roots = sort(roots);
+%                    F = self.Diff1_xCheb(G_cheb(:,rootMode));
+%                    value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+%                    dr = diff(roots);
+%                    [~,minIndex] = min(abs(dr));
+%                    if abs(value(minIndex)) < abs(value(minIndex+1))
+%                        roots(minIndex) = [];
+%                    else
+%                        roots(minIndex+1) = [];
+%                    end
+%                end
 
                z_g = reshape(roots,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);

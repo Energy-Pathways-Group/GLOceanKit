@@ -28,6 +28,9 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
             
             if self.shouldAntialias == 1
                 self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
+                wvt.Ap = self.AA .* wvt.Ap;
+                wvt.Am = self.AA .* wvt.Am;
+                wvt.A0 = self.AA .* wvt.A0;
             end
             
 
@@ -72,9 +75,9 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
 
         function varargout = compute(self,wvt,varargin)
             phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
-            Apt = wvt.Ap .* phase;
-            Amt = wvt.Am .* conj(phase);
-            A0t = wvt.A0;
+            Apt = self.AA .* wvt.Ap .* phase;
+            Amt = self.AA .* wvt.Am .* conj(phase);
+            A0t = self.AA .* wvt.A0;
 
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = wvt.UAp.*Apt + wvt.UAm.*Amt + wvt.UA0.*A0t;

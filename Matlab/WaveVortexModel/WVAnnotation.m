@@ -70,9 +70,9 @@ classdef WVAnnotation < handle
             self.description = description;
             self.loadDetailedDescriptionIfAvailable;
             if ~isempty(options.detailedDescription)
-                if ~isempty(self.detailedDescription)
-                    warning('Founded a detailedDescription md file for %s, but one was also set in code!',self.name);
-                end
+%                 if ~isempty(self.detailedDescription)
+%                     warning('Founded a detailedDescription md file for %s, but one was also set in code!',self.name);
+%                 end
                 self.detailedDescription = options.detailedDescription;
             end
         end

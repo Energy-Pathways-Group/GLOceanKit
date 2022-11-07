@@ -14,11 +14,13 @@ arguments
     gradUconstituent WVFlowConstituent
 end
 
+AA = ~(self.maskForAliasedModes(jFraction=2/3));
+
 % Apply operator T_\omega---defined in (C2) in the manuscript
 phase = exp(self.iOmega*(self.t-self.t0));
-Apt = self.Ap .* phase;
-Amt = self.Am .* conj(phase);
-A0t = self.A0;
+Apt = AA .* self.Ap .* phase;
+Amt = AA .* self.Am .* conj(phase);
+A0t = AA .* self.A0;
 
 [ApmUMask,A0UMask] = self.masksForFlowConstituents(Uconstituent);
 

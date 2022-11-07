@@ -982,7 +982,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wavePlusPct = 100*self.internalWaveEnergyPlus/self.waveEnergy;
             waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
             
-            fprintf('%.1g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
+            fprintf('%.2g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
         end
 
         summarizeModeEnergy(self)
@@ -1002,6 +1002,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initWithUVEta(self,U,V,N,t)
         initWithRandomFlow(self)
         
+        removeEnergyFromAliasedModes(self,options)
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
