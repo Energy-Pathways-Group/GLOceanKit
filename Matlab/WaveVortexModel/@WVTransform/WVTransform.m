@@ -295,36 +295,72 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             names = self.variableAnnotationNameMap.keys;
         end
 
-        function addOperation(self,transformOperation)
+        function addOperation(self,transformOperation,options)
             % add a WVOperation
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WVTransform {mustBeNonempty}
                 transformOperation (1,:) WVOperation {mustBeNonempty}
+                options.overwriteExisting double = 0
             end
             for iOp=1:length(transformOperation)
+                isExisting = 0;
                 for iVar=1:length(transformOperation(iOp).outputVariables)
                     if any(~isKey(self.dimensionAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).dimensions))
                         error("Unable to find at least one of the dimensions for variable %s",transformOperation(iOp).outputVariables(iVar).name);
                     end
 
                     if isKey(self.variableAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).name)
-                        fprintf('\t->This model operation will replace the existing operation for computing %s\n',transformOperation(iOp).outputVariables(iVar).name);
+                        isExisting = 1;
+                        existingVar = self.variableAnnotationWithName(transformOperation(iOp).outputVariables(iVar).name);
                     end
+                end
+
+                if isExisting == 1
+                    message1 = strcat(existingVar.modelOp.name,' with variables {');
+                    for jVar=1:existingVar.modelOp.nVarOut
+                        message1 = strcat(message1,existingVar.modelOp.outputVariables(jVar).name,',');
+                    end
+                    message1 = strcat(message1,'}');
+
+                    message2 = strcat(transformOperation(iOp).name,' with variables {');
+                    for jVar=1:transformOperation(iOp).nVarOut
+                        message2 = strcat(message2,transformOperation(iOp).outputVariables(jVar).name,',');
+                    end
+                    message2 = strcat(message2,'}');
+                    if options.overwriteExisting == 0
+                        error('A variable with the same name already exists! You attempted to replace the operation %s with the operation %s. If you are sure you want to do this, call wvt.addOperation(newOp,overwriteExisting=1).', message1,message2);
+                    else
+                        self.removeOperation(existingVar.modelOp);
+                        fprintf('The operation %s has been removed and the operation %s has been added.\n',message1,message2);
+                    end
+                end
+
+                % Now go ahead and actually add the operation and its variables
+                for iVar=1:length(transformOperation(iOp).outputVariables)
                     self.variableAnnotationNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
                     if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentVariables,transformOperation(iOp).outputVariables(iVar).name))
                         self.timeDependentVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
                     end
                 end
+                self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
 
-                if ~isempty(transformOperation(iOp).name)
-                    if isKey(self.operationNameMap,transformOperation(iOp).name)
-                        fprintf('\t->This model operation will replace the existing operation %s\n',transformOperation(iOp).name);
-                    end
-                    self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
-                end
             end
+        end
+
+        function removeOperation(self,transformOperation)
+            % remove an existing WVOperation
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                transformOperation (1,1) WVOperation {mustBeNonempty}
+            end
+            for iVar=1:transformOperation.nVarOut
+                remove(self.variableAnnotationNameMap,transformOperation.outputVariables(iVar).name);
+            end
+            remove(self.operationNameMap,transformOperation.name);
         end
 
         function val = operationWithName(self,name)
@@ -797,7 +833,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function set.nonlinearFluxOperation(self,value)
             self.nonlinearFluxOperation = value;
-            self.addOperation(value);
+            self.addOperation(value,overwriteExisting=1);
         end
         
         function [Fp,Fm,F0] = nonlinearFlux(self)
