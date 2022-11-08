@@ -41,6 +41,7 @@ outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
 
 wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
 wvt.initWithGMSpectrum(1.0)
+wvt.removeEnergyFromAliasedModes();
 wvt.summarizeEnergyContent;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,7 +52,6 @@ wvt.summarizeEnergyContent;
 
 model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
 model.setupIntegrator(timeStepConstraint="min", outputInterval=wvt.inertialPeriod/10);
-return
 model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
 model.integrateToTime(3*wvt.inertialPeriod);
 

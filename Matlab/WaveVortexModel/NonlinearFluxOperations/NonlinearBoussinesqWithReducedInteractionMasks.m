@@ -9,9 +9,10 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
     end
 
     methods
-        function self = NonlinearBoussinesqWithReducedInteractionMasks(wvt)
+        function self = NonlinearBoussinesqWithReducedInteractionMasks(wvt,options)
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.shouldAntialias double = 0
             end
             fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap with interaction and energy flux masks applied');
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am with interaction and energy flux masks applied');
@@ -20,6 +21,8 @@ classdef NonlinearBoussinesqWithReducedInteractionMasks < WVNonlinearFluxOperati
             self@WVNonlinearFluxOperation('NonlinearBoussinesqWithReducedInteractionMasks',fluxVar);
             
             self.wvt = wvt;
+            self.shouldAntiAlias = options.shouldAntialias;
+            
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = zeros(size(wvt.z));
             elseif isa(wvt,'WVTransformHydrostatic')

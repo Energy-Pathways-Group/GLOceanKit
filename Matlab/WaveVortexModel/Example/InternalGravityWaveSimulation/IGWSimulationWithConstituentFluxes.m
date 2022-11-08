@@ -74,7 +74,7 @@ wvt.addOperation(WVOperation('E0_g_igw',outputVar,f));
 model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
 model.setupIntegrator(timeStepConstraint="min", outputInterval=wvt.inertialPeriod/10);
 model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
-model.addNetCDFOutputVariables('E0_all_all','E0_igw_igw','E0_igw_io','E0_igw_g','E0_io_igw','E0_io_g','E0_g_io');
+model.addNetCDFOutputVariables('E0_all_all','E0_igw_igw','E0_igw_io','E0_igw_g','E0_io_igw','E0_io_g','E0_g_igw');
 model.addNetCDFOutputVariables('geostrophicEnergyBaroclinic','geostrophicEnergyBarotropic')
 model.integrateToTime(3*wvt.inertialPeriod);
 
