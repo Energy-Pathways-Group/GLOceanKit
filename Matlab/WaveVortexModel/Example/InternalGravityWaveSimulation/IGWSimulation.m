@@ -44,6 +44,8 @@ wvt.initWithGMSpectrum(1.0)
 wvt.removeEnergyFromAliasedModes();
 wvt.summarizeEnergyContent;
 
+return;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Setup a netcdf file for the output
@@ -51,7 +53,7 @@ wvt.summarizeEnergyContent;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
-model.setupIntegrator(timeStepConstraint="min", outputInterval=wvt.inertialPeriod/10);
+model.setupIntegrator(timeStepConstraint="advective", outputInterval=wvt.inertialPeriod/10);
 model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
 model.integrateToTime(3*wvt.inertialPeriod);
 

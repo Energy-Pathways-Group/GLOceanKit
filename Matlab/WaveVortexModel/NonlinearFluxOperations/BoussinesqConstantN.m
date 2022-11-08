@@ -31,6 +31,8 @@ classdef BoussinesqConstantN < WVNonlinearFluxOperation
                 wvt.Ap = self.AA .* wvt.Ap;
                 wvt.Am = self.AA .* wvt.Am;
                 wvt.A0 = self.AA .* wvt.A0;
+            else
+                self.AA = 1;
             end
             
 

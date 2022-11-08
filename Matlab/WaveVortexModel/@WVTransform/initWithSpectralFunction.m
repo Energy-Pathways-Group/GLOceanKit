@@ -236,8 +236,8 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
         self.offgridModes.PrecomputeExternalWaveCoefficients();                
     else
         % Randomize phases, but keep unit length
-        A_plus = WVTransform.generateHermitianRandomMatrix( size(K), shouldExcludeNyquist=excludeNyquist );
-        A_minus = WVTransform.generateHermitianRandomMatrix( size(K), shouldExcludeNyquist=excludeNyquist );
+        A_plus = WVTransform.generateHermitianRandomMatrix( size(K), shouldExcludeNyquist=excludeNyquist, allowMeanPhase=1 );
+        A_minus = WVTransform.generateHermitianRandomMatrix( size(K), shouldExcludeNyquist=excludeNyquist, allowMeanPhase=1 );
 
         goodIndices = abs(A_plus) > 0;
         A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
