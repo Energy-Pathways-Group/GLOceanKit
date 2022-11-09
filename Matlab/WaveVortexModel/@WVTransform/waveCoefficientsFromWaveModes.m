@@ -9,7 +9,7 @@ function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self
 % the future.
 % 
 % For example, wave mode with l<0, is equivalent to a wave mode with l>0
-% and the signs fliipped on all the other quantities.
+% and the signs flipped on all the other quantities.
 %
 % The values given must meet the following requirements:
 % (k0 > -Nx/2 && k0 < Nx/2)

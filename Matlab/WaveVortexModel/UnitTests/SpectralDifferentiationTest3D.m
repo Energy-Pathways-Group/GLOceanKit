@@ -16,7 +16,7 @@ Lz = 4.0;
 
 latitude = 25;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
-wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude);
 
 nu = 2*pi/Lx;
 

@@ -193,7 +193,7 @@ wavemodel.t = t;
                         max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(zeta_error))) round((log10(rho_error)))],[],'includenan');
                         
                         totalTests = totalTests + 1;
-                        if isnan(max_error) || max_error > -3
+                        if isnan(max_error) || max_error > -10
                             totalErrors = totalErrors + 1;
                             if thesign > 0
                                 fprintf('\nFound at large error at lat=%f with %s at +(k,l,j)=(%d,%d,%d):\n', latitude(iLat),apiName,k_loop,l_loop,j0);
