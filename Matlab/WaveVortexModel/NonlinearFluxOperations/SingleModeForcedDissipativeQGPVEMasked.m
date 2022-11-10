@@ -66,7 +66,7 @@ classdef SingleModeForcedDissipativeQGPVEMasked < SingleModeQGPVE
 
                 kAxis = wvt.kRadial;
                 dk = kAxis(2)-kAxis(1);
-                ARand = WVTransform.generateHermitianRandomMatrix(size(wvt.A0));
+                ARand = wvt.generateHermitianRandomMatrix();
                 for iK=1:(length(wvt.kRadial)-1)
                     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2   );
                     energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);

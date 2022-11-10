@@ -14,9 +14,9 @@ function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(sel
 %
 % - Declaration: [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState()
 % - Topic: Utility function
-ApIGW = WVTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
-AmIGW = WVTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1, allowMeanPhase=1 );
-A0G = 6e-2*WVTransform.generateHermitianRandomMatrix( size(self.Ap), shouldExcludeNyquist=1 );
+ApIGW = self.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=1 );
+AmIGW = self.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=1 );
+A0G = 6e-2*self.generateHermitianRandomMatrix( shouldExcludeNyquist=1 );
 
 ApIO = zeros(size(self.Ap));
 AmIO = zeros(size(self.Ap));

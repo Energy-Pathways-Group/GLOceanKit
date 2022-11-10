@@ -1,4 +1,4 @@
-function A = generateHermitianRandomMatrix( size, options )
+function A = generateHermitianRandomMatrix( self, options )
 % Generate a 3D matrix to be Hermitian, except at k=l=0
 %
 % This function makes assumptions about the structure of the matrix.
@@ -14,15 +14,15 @@ function A = generateHermitianRandomMatrix( size, options )
 % - Parameter allowMeanPhase: optional (default 0) will all a compex component to values at index (1,1,:) if set to true
 % - Returns A: Hermitian conjugate matrix of given size
 arguments
-    size (1,:) double
+    self WVTransform {mustBeNonempty}
     options.shouldExcludeNyquist (1,1) double=1
     options.allowMeanPhase (1,1) double=0
 end
 
-nX = size(1); nY = size(2);
-A = WVTransform.makeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+nX = self.Nk; nY = self.Nl;
+A = WVTransform.makeHermitian(randn(self.Nk,self.Nl,self.Nj) + sqrt(-1)*randn(self.Nk,self.Nl,self.Nj) )/sqrt(2);
 if options.shouldExcludeNyquist == 1
-    mask = ~WVTransform.nyquistWavenumbers(A(:,:,1));
+    mask = ~WVTransform.maskForNyquistModes();
     A = mask.*A;
 else
     A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency

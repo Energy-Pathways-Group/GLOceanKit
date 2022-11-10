@@ -1,3 +1,8 @@
+% This test suite tests the following methods:
+% -diffX
+% -diffY
+% -diffZF
+% -diffZG
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

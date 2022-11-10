@@ -14,7 +14,7 @@ k = self.kRadial;
 dk = k(2)-k(1);
 
 RedundantCoefficients = WVTransform.redundantHermitianCoefficients(Kh);
-OmNyquist = WVTransform.nyquistWavenumbers(self.Omega);
+OmNyquist = self.maskForNyquistModes();
 nK = length(k);
 
 varargout = cell(size(varargin));

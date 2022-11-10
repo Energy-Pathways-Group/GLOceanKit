@@ -37,7 +37,7 @@ classdef SingleModeForcedDissipativeQGPVE < SingleModeQGPVE
             varargout = cell(1,self.nVarOut);
             [varargout{:}] = compute@SingleModeQGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
-            F0 = F0 + WVTransform.generateHermitianRandomMatrix(size(F0)).*self.F;
+            F0 = F0 + wvt.generateHermitianRandomMatrix().*self.F;
             varargout{1} = F0;
         end
 

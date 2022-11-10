@@ -601,19 +601,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
             %
             % - Topic: Internal
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            alpha = atan2(L,K);
-            K2 = K.*K + L.*L;
+            [K_,L_,~] = ndgrid(self.k,self.l,self.j);
+            alpha = atan2(L_,K_);
+            K2 = K_.*K_ + L_.*L_;
             Kh = sqrt(K2);      % Total horizontal wavenumber
             
-            f = self.f;
+            f_ = self.f;
             g_ = 9.81;
             
             omega = self.Omega;
             if abs(self.f) < 1e-14 % This handles the f=0 case.
                 omega(omega == 0) = 1;
             end
-            fOmega = f./omega;
+            fOmega = f_./omega;
             
             makeHermitian = @(f) WVTransform.makeHermitian(f);
             
@@ -650,14 +650,23 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.AmV(1,1,:) = sqrt(-1)/2;
             
             % Equation B14
-            self.A0U = sqrt(-1)*self.h.*(fOmega./omega) .* L;
-            self.A0V = -sqrt(-1)*self.h.*(fOmega./omega) .* K;
+            self.A0U = sqrt(-1)*self.h.*(fOmega./omega) .* L_;
+            self.A0V = -sqrt(-1)*self.h.*(fOmega./omega) .* K_;
             self.A0N = fOmega.^2;
             
             % k > 0, l > 0, j=0; Equation B11 in the manuscript
-            self.A0U(:,:,1) =  sqrt(-1)*(f/g_)*L(:,:,1)./K2(:,:,1); % Note the divide by zero at k=l=0
-            self.A0V(:,:,1) = -sqrt(-1)*(f/g_)*K(:,:,1)./K2(:,:,1);
+            self.A0U(:,:,1) =  sqrt(-1)*(f_/g_)*L_(:,:,1)./K2(:,:,1); % Note the divide by zero at k=l=0
+            self.A0V(:,:,1) = -sqrt(-1)*(f_/g_)*K_(:,:,1)./K2(:,:,1);
             self.A0N(:,:,1) = 0;
+
+            % Alternative to above
+%             Lr2 = g_*self.h/(f_*f_);
+%             invLr2 = 1./Lr2;
+%             invLr2(:,:,1) = 0;
+%             self.A0U = sqrt(-1)*(f_/g_)*L_./(K2 + invLr2);
+%             self.A0V = -sqrt(-1)*(f_/g_)*K_./(K2 + invLr2);
+%             self.A0N = 1./(Lr2.*K2 + 1);
+%             self.A0N(:,:,1) = 0;
             
             % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
             self.A0U(1,1,:) = 0;
@@ -666,28 +675,29 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.A0N(1,1,1) = 0;
             
             % Now make the Hermitian conjugate match.
-            self.ApU = makeHermitian(self.ApU);
-            self.ApV = makeHermitian(self.ApV);
-            self.ApN = makeHermitian(self.ApN);
-          
-            self.AmU = makeHermitian(self.AmU);
-            self.AmV = makeHermitian(self.AmV);
-            self.AmN = makeHermitian(self.AmN);
-          
-            self.A0U = makeHermitian(self.A0U);
-            self.A0V = makeHermitian(self.A0V);
-            self.A0N = makeHermitian(self.A0N);
+            nyquistMask = ~self.maskForNyquistModes();
+            self.ApU = nyquistMask .* makeHermitian(self.ApU);
+            self.ApV = nyquistMask .* makeHermitian(self.ApV);
+            self.ApN = nyquistMask .* makeHermitian(self.ApN);
+            self.AmU = nyquistMask .* makeHermitian(self.AmU);
+            self.AmV = nyquistMask .* makeHermitian(self.AmV);
+            self.AmN = nyquistMask .* makeHermitian(self.AmN);
+            self.A0U = nyquistMask .* makeHermitian(self.A0U);
+            self.A0V = nyquistMask .* makeHermitian(self.A0V);
+            self.A0N = nyquistMask .* makeHermitian(self.A0N);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
             % These can be pulled from equation C4 in the manuscript
             self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
             self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.UA0 = -sqrt(-1)*(g_/f)*L;
-            
+            self.UA0 = -sqrt(-1)*(g_/f_)*Kh.*sin(alpha); % Kh*sin(alpha) is the same as L
+            self.UA0 = -sqrt(-1)*(g_/f_)*L_;
+
             self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
             self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.VA0 = sqrt(-1)*(g_/f)*K;
+            self.VA0 = sqrt(-1)*(g_/f_)*Kh.*cos(alpha); % Kh*cos(alpha) is the same as K
+            self.VA0 = sqrt(-1)*(g_/f_)*K_;
                 
             self.WAp = -sqrt(-1)*Kh.*self.h;
             self.WAm = -sqrt(-1)*Kh.*self.h;
@@ -723,20 +733,17 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             % Now make the Hermitian conjugate match AND pre-multiply the
             % coefficients for the transformations.
-            self.UAp = makeHermitian(self.UAp);
-            self.UAm = makeHermitian(self.UAm);
-            self.UA0 = makeHermitian(self.UA0);
-           
-            self.VAp = makeHermitian(self.VAp);
-            self.VAm = makeHermitian(self.VAm);
-            self.VA0 = makeHermitian(self.VA0);
-           
-            self.WAp = makeHermitian(self.WAp);
-            self.WAm = makeHermitian(self.WAm);
-           
-            self.NAp = makeHermitian(self.NAp);
-            self.NAm = makeHermitian(self.NAm);
-            self.NA0 = makeHermitian(self.NA0);
+            self.UAp = nyquistMask .* makeHermitian(self.UAp);
+            self.UAm = nyquistMask .* makeHermitian(self.UAm);
+            self.UA0 = nyquistMask .* makeHermitian(self.UA0);
+            self.VAp = nyquistMask .* makeHermitian(self.VAp);
+            self.VAm = nyquistMask .* makeHermitian(self.VAm);
+            self.VA0 = nyquistMask .* makeHermitian(self.VA0);
+            self.WAp = nyquistMask .* makeHermitian(self.WAp);
+            self.WAm = nyquistMask .* makeHermitian(self.WAm);   
+            self.NAp = nyquistMask .* makeHermitian(self.NAp);
+            self.NAm = nyquistMask .* makeHermitian(self.NAm);
+            self.NA0 = nyquistMask .* makeHermitian(self.NA0);
         end
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
@@ -1161,8 +1168,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents);
         [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self);
         AntiAliasMask= maskForAliasedModes(self,options);
+        NyquistMask = maskForNyquistModes(self);
 
         [Qkl,Qj] = spectralVanishingViscosityFilter(self,options);
+        
+        A = generateHermitianRandomMatrix( self, options );
 
         [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
@@ -1193,13 +1203,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Returns a matrix the same size as A with 1s at the 'redundant'
         % hermiation indices.
         A = redundantHermitianCoefficients(A)
-
-        % Returns a matrix the same size as A with 1s at the Nyquist
-        % frequencies.
-        A = nyquistWavenumbers(A)
-
-        % Generate a 3D matrix to be Hermitian, except at k=l=0
-        A = generateHermitianRandomMatrix( size, shouldExcludeNyquist )
         
         [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
     end
