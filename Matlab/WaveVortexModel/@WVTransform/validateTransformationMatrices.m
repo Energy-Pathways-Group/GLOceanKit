@@ -8,7 +8,9 @@ function [C11,C21,C31,C12,C22,C32,C13,C23,C33] = validateTransformationMatrices(
 % wave-vortex space. So, C11 represents Ap and should be 1s
 % where we expected Ap solutions to exist.
 %
-% Maybe check that max(abs(C12(:))) is very small.
+% Note that the current version of the code does NOT precondition the
+% transformation matrices. Using the version that did (literally just scale
+% by the F, G coefficients) produces much higher numerical accuracy.
 
 C11 = self.ApU.*self.UAp + self.ApV.*self.VAp + self.ApN.*self.NAp;
 C21 = self.AmU.*self.UAp + self.AmV.*self.VAp + self.AmN.*self.NAp;
