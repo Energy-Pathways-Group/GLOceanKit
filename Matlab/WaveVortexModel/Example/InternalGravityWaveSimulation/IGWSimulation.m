@@ -44,8 +44,6 @@ wvt.initWithGMSpectrum(1.0)
 wvt.removeEnergyFromAliasedModes();
 wvt.summarizeEnergyContent;
 
-return;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Setup a netcdf file for the output
@@ -54,8 +52,31 @@ return;
 
 model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
 model.setupIntegrator(timeStepConstraint="advective", outputInterval=wvt.inertialPeriod/10);
-model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
+% model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
 model.integrateToTime(3*wvt.inertialPeriod);
 
-ncfile = model.ncfile;
-t = ncfile.readVariables('t');
+% ncfile = model.ncfile;
+% t = ncfile.readVariables('t');
+
+% deltaT = 175;
+% totalOuterLoop = round(2*wvt.inertialPeriod/deltaT/5);
+% 
+% integrator2 = ArrayIntegrator(@(t,y0) nonlinearFluxAtTime(wvt,t,y0),{wvt.Ap,wvt.Am,wvt.A0},deltaT);
+% wvt.summarizeEnergyContent;
+% for j=1:totalOuterLoop
+% for i=1:5
+%     integrator2.IncrementForward();
+%     wvt.Ap = integrator2.currentY{1};
+%     wvt.Am = integrator2.currentY{2};
+%     wvt.A0 = integrator2.currentY{3};
+% end
+% wvm.summarizeEnergyContent;
+% wvt.summarizeEnergyContent;
+% end
+% 
+% 
+% function Farray = nonlinearFluxAtTime(wvt,t,y0)
+% wvt.t = t;
+% [Fp,Fm,F0] = wvt.nonlinearFlux;
+% Farray = {Fp,Fm,F0};
+% end

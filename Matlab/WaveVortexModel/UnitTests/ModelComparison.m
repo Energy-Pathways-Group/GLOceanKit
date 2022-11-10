@@ -13,7 +13,7 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 rho0 = 1025;
 
-outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
+t = 500;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -23,8 +23,8 @@ outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
 
 wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
 rng(1)
-% wvt.initWithGMSpectrum(1.0)
-wvt.initWithRandomFlow();
+wvt.initWithGMSpectrum(1.0)
+% wvt.initWithRandomFlow();
 wvt.removeEnergyFromAliasedModes();
 wvt.nonlinearFluxOperation = BoussinesqConstantN(wvt,shouldAntialias=1);
 
@@ -48,8 +48,9 @@ fprintf('\tAp error: The solution matches to 1 part in 10^%d\n', round((log10(ma
 fprintf('\tAm error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Am_error)))))));
 fprintf('\tA0 error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(A0_error)))))));
 
+wvt.t = 0;
 [wvtFp,wvtFm,wvtF0] = wvt.nonlinearFlux;
-[wvmFp,wvmFm,wvmF0] = wvm.NonlinearFluxAtTime(0,wvm.Ap,wvm.Am,wvm.A0);
+[wvmFp,wvmFm,wvmF0] = wvm.NonlinearFluxAtTime(wvt.t,wvm.Ap,wvm.Am,wvm.A0);
 
 Fp_error = error3(wvtFp,wvmFp);
 Fm_error = error3(wvtFm,wvmFm);
@@ -64,7 +65,7 @@ dFm = wvtFm-wvmFm;
 dF0 = wvtF0-wvmF0;
 
 [wvtEp,wvtEm,wvtE0] = wvt.energyFlux;
-[wvmEp,wvmEm,wvmE0] = wvm.EnergyFluxAtTime(0,wvm.Ap,wvm.Am,wvm.A0);
+[wvmEp,wvmEm,wvmE0] = wvm.EnergyFluxAtTime(wvt.t,wvm.Ap,wvm.Am,wvm.A0);
 
 Ep_error = error3(wvtEp,wvmEp);
 Em_error = error3(wvtEm,wvmEm);
@@ -77,13 +78,12 @@ fprintf('\tE0 error: The solution matches to 1 part in 10^%d\n', round((log10(ma
 dEp = wvtEp-wvmEp;
 dEm = wvtEm-wvmEm;
 dE0 = wvtE0-wvmE0;
-
 % The issue is clearly with the transformation from (Ap,Am,A0) ->
 % (uNL,vNL,nNL) using the new transform. But what aspect of that
 % transformation?
 
-[Ubar1,Vbar1,Wbar1,Nbar1] = physicalVarsFromWaveVortexVars(wvm,wvt.Ap,wvt.Am,wvt.A0);
-[uNL1,vNL1,nNL1] = nonlinearTermsWithOldWVM(wvm,Ubar1,Vbar1,Wbar1,Nbar1);
+[Ubar1,Vbar1,Wbar1,Nbar1] = physicalVarsFromWaveVortexVars(wvt,wvt.Ap,wvt.Am,wvt.A0);
+[uNL1,vNL1,nNL1] = nonlinearTermsWithNewWVT(wvt,Ubar1,Vbar1,Wbar1,Nbar1);
 
 [Ubar2,Vbar2,Wbar2,Nbar2] = physicalVarsFromWaveVortexVars(wvm,wvm.Ap,wvm.Am,wvm.A0);
 [uNL2,vNL2,nNL2] = nonlinearTermsWithOldWVM(wvm,Ubar2,Vbar2,Wbar2,Nbar2);
@@ -125,6 +125,39 @@ F02_error = error3(F01,F02);
 fprintf('\tFp error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Fp2_error)))))));
 fprintf('\tFm error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Fm2_error)))))));
 fprintf('\tF0 error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(F02_error)))))));
+
+
+deltaT = 500;
+totalOuterLoop = round(3*wvt.inertialPeriod/deltaT/5);
+
+integrator = ArrayIntegrator(@(t,y0) wvm.NonlinearFluxAtTimeArray(t,y0),{wvm.Ap,wvm.Am,wvm.A0},deltaT);
+integrator2 = ArrayIntegrator(@(t,y0) nonlinearFluxAtTime(wvt,t,y0),{wvt.Ap,wvt.Am,wvt.A0},deltaT);
+wvm.summarizeEnergyContent;
+wvt.summarizeEnergyContent;
+for j=1:totalOuterLoop
+for i=1:5
+    integrator.IncrementForward();
+    wvm.Ap = integrator.currentY{1};
+    wvm.Am = integrator.currentY{2};
+    wvm.A0 = integrator.currentY{3};
+
+    integrator2.IncrementForward();
+    wvt.Ap = integrator2.currentY{1};
+    wvt.Am = integrator2.currentY{2};
+    wvt.A0 = integrator2.currentY{3};
+end
+wvm.summarizeEnergyContent;
+wvt.summarizeEnergyContent;
+end
+
+function Farray = nonlinearFluxAtTime(wvt,t,y0)
+wvt.t = t;
+wvt.Ap = y0{1};
+wvt.Am = y0{2};
+wvt.A0 = y0{3};
+[Fp,Fm,F0] = wvt.nonlinearFlux;
+Farray = {Fp,Fm,F0};
+end
 
 function [Ubar,Vbar,Wbar,Nbar] = physicalVarsFromWaveVortexVars(wvt,Ap,Am,A0)
 Ubar = wvt.UAp.*Ap + wvt.UAm.*Am + wvt.UA0.*A0;

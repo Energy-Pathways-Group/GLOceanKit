@@ -786,9 +786,10 @@ classdef WVModel < handle
         end
 
         function F = fluxAtTime(self,t,y0)
+            self.updateIntegratorValues(t,y0);
+
             F = cell(1,1);
             n = 0;
-            self.wvt.t = t;
             if self.linearDynamics == 0
                 nlF = cell(1,self.nonlinearFluxOperation.nVarOut);
                 [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
@@ -825,35 +826,38 @@ classdef WVModel < handle
             end
         end
 
-        function modelTime = integrateOneTimeStep(self)
-            % Ask the integrator to take one step forward, then record the
-            % results.
-            self.integrator.IncrementForward();
+        function updateIntegratorValues(self,t,y0)
             n=0;
+            self.wvt.t = t;
             if self.linearDynamics == 0
                 if self.nonlinearFluxOperation.doesFluxAp == 1
-                    n=n+1; self.wvt.Ap = self.integrator.currentY{n};
+                    n=n+1; self.wvt.Ap = y0{n};
                 end
                 if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1; self.wvt.Am = self.integrator.currentY{n};
+                    n=n+1; self.wvt.Am = y0{n};
                 end
                 if self.nonlinearFluxOperation.doesFluxA0 == 1
-                    n=n+1; self.wvt.A0 = self.integrator.currentY{n};
+                    n=n+1; self.wvt.A0 = y0{n};
                 end
             end
 
             for iParticles=1:length(self.particle)
-                n=n+1; self.particle{iParticles}.x = self.integrator.currentY{n};
-                n=n+1; self.particle{iParticles}.y = self.integrator.currentY{n};
+                n=n+1; self.particle{iParticles}.x = y0{n};
+                n=n+1; self.particle{iParticles}.y = y0{n};
                 if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1; self.particle{iParticles}.z = self.integrator.currentY{n};
+                    n=n+1; self.particle{iParticles}.z = y0{n};
                 end
             end
 
             for iTracer=1:length(self.tracerArray)
-                n=n+1; self.tracerArray{iTracer} = self.integrator.currentY{n};
+                n=n+1; self.tracerArray{iTracer} = self.y0{n};
             end
-            
+        end
+
+        function modelTime = integrateOneTimeStep(self)
+            % Ask the integrator to take one step forward, then record the
+            % results.
+            self.integrator.IncrementForward();
 
             % Rather than use the integrator time, which add floating point
             % numbers each time step, we multiple the steps taken by the
@@ -861,6 +865,9 @@ classdef WVModel < handle
             self.stepsTaken = self.stepsTaken + 1;
             modelTime = self.initialTime + self.stepsTaken * self.integrator.stepSize;
             self.wvt.t = modelTime;
+
+            self.updateIntegratorValues(modelTime,self.integrator.currentY);
+             
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 self.outputIndex = self.outputIndex + 1;
 

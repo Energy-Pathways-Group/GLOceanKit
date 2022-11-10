@@ -35,7 +35,7 @@ period = 2*pi/omega;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt);
+model = WVModel(wvt,nonlinearFlux=wvt.nonlinearFluxOperation);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
