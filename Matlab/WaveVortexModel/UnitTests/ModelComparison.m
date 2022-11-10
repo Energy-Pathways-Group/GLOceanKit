@@ -78,62 +78,34 @@ dEp = wvtEp-wvmEp;
 dEm = wvtEm-wvmEm;
 dE0 = wvtE0-wvmE0;
 
-% Nonlinear terms with new wvt.
-Ubar = wvt.UAp.*wvt.Ap + wvt.UAm.*wvt.Am + wvt.UA0.*wvt.A0;
-Vbar = wvt.VAp.*wvt.Ap + wvt.VAm.*wvt.Am + wvt.VA0.*wvt.A0;
-Wbar = wvt.WAp.*wvt.Ap + wvt.WAm.*wvt.Am;
-Nbar = wvt.NAp.*wvt.Ap + wvt.NAm.*wvt.Am + wvt.NA0.*wvt.A0;
-[U1,Ux1,Uy1,Uz1] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
-[V1,Vx1,Vy1,Vz1] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
-W1 = wvt.transformToSpatialDomainWithG(Wbar);
-[~,ETAx1,ETAy1,ETAz1] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
-uNL1 = -U1.*Ux1 - V1.*Uy1 - W1.*Uz1;
-vNL1 = -U1.*Vx1 - V1.*Vy1 - W1.*Vz1;
-nNL1 = -U1.*ETAx1 - V1.*ETAy1 - W1.*ETAz1;
+% The issue is clearly with the transformation from (Ap,Am,A0) ->
+% (uNL,vNL,nNL) using the new transform. But what aspect of that
+% transformation?
 
-% Ubar = wvm.UAp.*wvt.Ap + wvm.UAm.*wvt.Am + wvm.UA0.*wvt.A0;
-% Vbar = wvm.VAp.*wvt.Ap + wvm.VAm.*wvt.Am + wvm.VA0.*wvt.A0;
-% Wbar = wvm.WAp.*wvt.Ap + wvm.WAm.*wvt.Am;
-% Nbar = wvm.NAp.*wvt.Ap + wvm.NAm.*wvt.Am + wvm.NA0.*wvt.A0;
-% [U,Ux,Uy,Uz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-% [V,Vx,Vy,Vz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-% W = wvm.TransformToSpatialDomainWithG(Wbar);
-% [~,ETAx,ETAy,ETAz] = wvm.TransformToSpatialDomainWithGAllDerivatives(Nbar);
-% uNL1 = -U.*Ux - V.*Uy - W.*Uz;
-% vNL1 = -U.*Vx - V.*Vy - W.*Vz;
-% nNL1 = -U.*ETAx - V.*ETAy - W.*ETAz;
+[Ubar1,Vbar1,Wbar1,Nbar1] = physicalVarsFromWaveVortexVars(wvm,wvt.Ap,wvt.Am,wvt.A0);
+[uNL1,vNL1,nNL1] = nonlinearTermsWithOldWVM(wvm,Ubar1,Vbar1,Wbar1,Nbar1);
 
-% Nonlinear terms with old wvm.
-Ubar = wvm.UAp.*wvm.Ap + wvm.UAm.*wvm.Am + wvm.UA0.*wvm.A0;
-Vbar = wvm.VAp.*wvm.Ap + wvm.VAm.*wvm.Am + wvm.VA0.*wvm.A0;
-Wbar = wvm.WAp.*wvm.Ap + wvm.WAm.*wvm.Am;
-Nbar = wvm.NAp.*wvm.Ap + wvm.NAm.*wvm.Am + wvm.NA0.*wvm.A0;
-[U,Ux,Uy,Uz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Ubar);
-[V,Vx,Vy,Vz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Vbar);
-W = wvm.TransformToSpatialDomainWithG(Wbar);
-[~,ETAx,ETAy,ETAz] = wvm.TransformToSpatialDomainWithGAllDerivatives(Nbar);
-uNL2 = -U.*Ux - V.*Uy - W.*Uz;
-vNL2 = -U.*Vx - V.*Vy - W.*Vz;
-nNL2 = -U.*ETAx - V.*ETAy - W.*ETAz;
+[Ubar2,Vbar2,Wbar2,Nbar2] = physicalVarsFromWaveVortexVars(wvm,wvm.Ap,wvm.Am,wvm.A0);
+[uNL2,vNL2,nNL2] = nonlinearTermsWithOldWVM(wvm,Ubar2,Vbar2,Wbar2,Nbar2);
 
-u_error = error3(U,U1);
-v_error = error3(V,V1);
-w_error = error3(W,W1);
-ux_error = error3(Ux,Ux1);
-vx_error = error3(Vx,Vx1);
-uy_error = error3(Uy,Uy1);
-vy_error = error3(Vy,Vy1);
-uz_error = error3(Uz,Uz1);
-vz_error = error3(Vz,Vz1);
-fprintf('\tu error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-fprintf('\tv error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(v_error)))))));
-fprintf('\tw error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
-fprintf('\tux error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(ux_error)))))));
-fprintf('\tvx error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vx_error)))))));
-fprintf('\tuy error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(uy_error)))))));
-fprintf('\tvy error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vy_error)))))));
-fprintf('\tuz error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(uz_error)))))));
-fprintf('\tvz error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vz_error)))))));
+% u_error = error3(U,U1);
+% v_error = error3(V,V1);
+% w_error = error3(W,W1);
+% ux_error = error3(Ux,Ux1);
+% vx_error = error3(Vx,Vx1);
+% uy_error = error3(Uy,Uy1);
+% vy_error = error3(Vy,Vy1);
+% uz_error = error3(Uz,Uz1);
+% vz_error = error3(Vz,Vz1);
+% fprintf('\tu error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
+% fprintf('\tv error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(v_error)))))));
+% fprintf('\tw error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
+% fprintf('\tux error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(ux_error)))))));
+% fprintf('\tvx error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vx_error)))))));
+% fprintf('\tuy error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(uy_error)))))));
+% fprintf('\tvy error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vy_error)))))));
+% fprintf('\tuz error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(uz_error)))))));
+% fprintf('\tvz error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vz_error)))))));
 
 uNL_error = error3(uNL1,uNL2);
 vNL_error = error3(vNL1,vNL2);
@@ -143,22 +115,8 @@ fprintf('\tuNL error: The solution matches to 1 part in 10^%d\n', round((log10(m
 fprintf('\tvNL error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(vNL_error)))))));
 fprintf('\tnNL error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(nNL_error)))))));
 
-% Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = wvt.transformFromSpatialDomainWithF(uNL1);
-vNLbar = wvt.transformFromSpatialDomainWithF(vNL1);
-nNLbar = wvt.transformFromSpatialDomainWithG(nNL1);
-
-Fp1 = wvm.EMAp .* (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar);
-Fm1 = wvm.EMAm .* (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar);
-F01 = wvm.EMA0 .* (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
-
-uNLbar = wvm.TransformFromSpatialDomainWithF(uNL2);
-vNLbar = wvm.TransformFromSpatialDomainWithF(vNL2);
-nNLbar = wvm.TransformFromSpatialDomainWithG(nNL2);
-
-Fp2 = wvm.EMAp .* (wvm.ApU.*uNLbar + wvm.ApV.*vNLbar + wvm.ApN.*nNLbar);
-Fm2 = wvm.EMAm .* (wvm.AmU.*uNLbar + wvm.AmV.*vNLbar + wvm.AmN.*nNLbar);
-F02 = wvm.EMA0 .* (wvm.A0U.*uNLbar + wvm.A0V.*vNLbar + wvm.A0N.*nNLbar);
+[Fp1,Fm1,F01] = nonlinearFluxNewWVT(wvt,uNL1,vNL1,nNL1,wvm.EMAp);
+[Fp2,Fm2,F02] = nonlinearFluxOldWVM(wvm,uNL2,vNL2,nNL2,wvm.EMAp);
 
 Fp2_error = error3(Fp1,Fp2);
 Fm2_error = error3(Fm1,Fm2);
@@ -167,3 +125,50 @@ F02_error = error3(F01,F02);
 fprintf('\tFp error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Fp2_error)))))));
 fprintf('\tFm error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(Fm2_error)))))));
 fprintf('\tF0 error: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(F02_error)))))));
+
+function [Ubar,Vbar,Wbar,Nbar] = physicalVarsFromWaveVortexVars(wvt,Ap,Am,A0)
+Ubar = wvt.UAp.*Ap + wvt.UAm.*Am + wvt.UA0.*A0;
+Vbar = wvt.VAp.*Ap + wvt.VAm.*Am + wvt.VA0.*A0;
+Wbar = wvt.WAp.*Ap + wvt.WAm.*Am;
+Nbar = wvt.NAp.*Ap + wvt.NAm.*Am + wvt.NA0.*A0;
+end
+
+function [uNL,vNL,nNL] = nonlinearTermsWithNewWVT(wvt,Ubar,Vbar,Wbar,Nbar)
+[U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
+[V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
+W = wvt.transformToSpatialDomainWithG(Wbar);
+[~,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
+uNL = -U.*Ux - V.*Uy - W.*Uz;
+vNL = -U.*Vx - V.*Vy - W.*Vz;
+nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+end
+
+function [uNL,vNL,nNL] = nonlinearTermsWithOldWVM(wvm,Ubar,Vbar,Wbar,Nbar)
+[U,Ux,Uy,Uz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Ubar);
+[V,Vx,Vy,Vz] = wvm.TransformToSpatialDomainWithFAllDerivatives(Vbar);
+W = wvm.TransformToSpatialDomainWithG(Wbar);
+[~,ETAx,ETAy,ETAz] = wvm.TransformToSpatialDomainWithGAllDerivatives(Nbar);
+uNL = -U.*Ux - V.*Uy - W.*Uz;
+vNL = -U.*Vx - V.*Vy - W.*Vz;
+nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+end
+
+function [Fp,Fm,F0] = nonlinearFluxOldWVM(wvm,uNL,vNL,nNL,AAMask)
+uNLbar = wvm.TransformFromSpatialDomainWithF(uNL);
+vNLbar = wvm.TransformFromSpatialDomainWithF(vNL);
+nNLbar = wvm.TransformFromSpatialDomainWithG(nNL);
+
+Fp = AAMask .* (wvm.ApU.*uNLbar + wvm.ApV.*vNLbar + wvm.ApN.*nNLbar);
+Fm = AAMask .* (wvm.AmU.*uNLbar + wvm.AmV.*vNLbar + wvm.AmN.*nNLbar);
+F0 = AAMask .* (wvm.A0U.*uNLbar + wvm.A0V.*vNLbar + wvm.A0N.*nNLbar);
+end
+
+function [Fp,Fm,F0] = nonlinearFluxNewWVT(wvt,uNL,vNL,nNL,AAMask)
+uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
+vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
+nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
+
+Fp = AAMask .* (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar);
+Fm = AAMask .* (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar);
+F0 = AAMask .* (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar);
+end

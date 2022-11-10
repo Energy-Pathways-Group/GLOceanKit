@@ -22,7 +22,7 @@ end
 nX = self.Nk; nY = self.Nl;
 A = WVTransform.makeHermitian(randn(self.Nk,self.Nl,self.Nj) + sqrt(-1)*randn(self.Nk,self.Nl,self.Nj) )/sqrt(2);
 if options.shouldExcludeNyquist == 1
-    mask = ~WVTransform.maskForNyquistModes();
+    mask = ~self.maskForNyquistModes();
     A = mask.*A;
 else
     A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
