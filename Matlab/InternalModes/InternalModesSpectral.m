@@ -224,6 +224,8 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.custom
                     A(n,:) = Tz(n,:);% + (self.N2_xLobatto(n)/self.g).*T(n,:);
                     B(n,:) = -T(n,:);
+                    A(n,:) = -Tz(1,:)+Tz(n,:);
+                    B(n,:) = 0;
                 case LowerBoundary.none
                 otherwise
                     error('Unknown boundary condition');
@@ -242,6 +244,9 @@ classdef InternalModesSpectral < InternalModesBase
                     B(1,:) = 1;
                 case UpperBoundary.geostrophicFreeSurface
                     A(1,:) = Tz(1,:) + (self.g/(self.f0*self.f0))*(options.k*options.k)*T(1,:);
+                    B(1,:) = 0;
+                case UpperBoundary.custom
+                    A(1,:) = T(1,:)-T(n,:);
                     B(1,:) = 0;
                 case UpperBoundary.none
                 otherwise
