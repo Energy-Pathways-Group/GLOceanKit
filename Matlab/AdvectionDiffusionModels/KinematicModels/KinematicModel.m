@@ -104,7 +104,7 @@ classdef KinematicModel < handle
 
 %                 quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y)), hold on
                 quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale), hold on
-                plot(scale(self.obstacles,1e-3))
+                plot(scale(self.obstacles,1/self.visualScale))
             else
                 quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale)
             end
