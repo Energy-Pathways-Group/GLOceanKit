@@ -9,6 +9,8 @@ classdef KinematicModel < handle
         yIsPeriodic = 0 % If ylim is finite, this may be set to 1 (true)
         obstacles = [] % polygon structure defining island/continents/other structures
         
+        isSpherical = 0 % indicates whether to use spherical geometry
+        
         xVisLim % visual (box) limits of the ocean, no infinities
         yVisLim % visual (box) limits of the ocean, no infinities   
         visualScale = 1e3

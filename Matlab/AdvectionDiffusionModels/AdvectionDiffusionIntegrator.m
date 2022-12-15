@@ -24,7 +24,11 @@ classdef AdvectionDiffusionIntegrator
             % size(t) = [nT 1], size(x) = [nT nParticles]
             x0 = reshape(x0,[],1);
             y0 = reshape(y0,[],1);
-            flux = @(t,p) cat(2,self.kinematicModel.u(t,p(:,1),p(:,2)),self.kinematicModel.v(t,p(:,1),p(:,2)));
+            if self.kinematicModel.isSpherical == 0
+                flux = @(t,p) cat(2,self.kinematicModel.u(t,p(:,1),p(:,2)),self.kinematicModel.v(t,p(:,1),p(:,2)));
+            else
+                flux = @(t,p) cat(2,self.kinematicModel.u(t,p(:,1),p(:,2))./cos(p(:,2)/self.kinematicModel.R),self.kinematicModel.v(t,p(:,1),p(:,2)));
+            end
 
             [x0,y0] = self.kinematicModel.removeOutOfBoundsParticles(x0,y0);
             if isempty(x0)
