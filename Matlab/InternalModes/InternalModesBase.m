@@ -121,94 +121,53 @@ classdef (Abstract) InternalModesBase < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)
-            % Initialize with either a grid or analytical profile.
-            
-            % Make everything a column vector
-            if isrow(z_in)
-                z_in = z_in.';
+        function self = InternalModesBase(options)
+            arguments
+                options.rho function_handle = @disp
+                options.N2 function_handle = @disp
+                options.rhoGrid (:,1) double = []
+%                 options.rhoSpline BSpline = BSpline(1,0,0)
+                options.zIn (:,1) double = []
+                options.zOut (:,1) double = []
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
             end
-            if isrow(z_out)
-                z_out = z_out.';
+            if isempty(options.zIn)
+                error('You must specify z');
             end
-            
-            self.zDomain = [min(z_in) max(z_in)];
+
+            self.zDomain = [min(options.zIn) max(options.zIn)];
             self.Lz = self.zDomain(2)-self.zDomain(1);
-            self.latitude = latitude;
-            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
-            
-            % Set properties supplied as name,value pairs
-            userSpecifiedRho0 = 0;
-            userSpecifiedN2 = 0;
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
-            for k = 1:2:length(varargin) 
-                if strcmp(varargin{k}, 'rho0')
-                    userSpecifiedRho0 = 1;
-                end
-                if strcmp(varargin{k}, 'N2')
-                    userSpecifiedN2 = 1;
-                    continue; % no property to set
-                end
-                self.(varargin{k}) = varargin{k+1};
+            self.latitude = options.latitude;
+            self.f0 = 2*(7.2921e-5)*sin(self.latitude*pi/180);
+            self.rho0 = options.rho0;
+            self.nModes = options.nModes;
+
+            if isempty(options.zOut)
+                self.z = options.zIn;
+            else
+                self.z = options.zOut;
             end
             
-            if userSpecifiedN2 == 1 && userSpecifiedRho0 == 0
-                error('If you pass N2 instead of rho, you must also provide a rho0')
-            end
-             
-            % Is density specified as a function handle or as a grid of
-            % values?
-            if isa(rho,'BSpline') == true
-                if userSpecifiedRho0 == 0
-                    self.rho0 = rho(max(rho.domain));
-                end
-                if userSpecifiedN2 == 1
-                    error('Initialization with an N2 BSpline is not yet supported.')
-                else
-                    self.InitializeWithBSpline(rho);
-                end
-            elseif isa(rho,'function_handle') == true
-                if numel(z_in) ~= 2
-                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
-                end
-                if userSpecifiedRho0 == 0
-                    self.rho0 = rho(max(z_in));
-                end
-                if self.shouldShowDiagnostics == 1
-                    fprintf('Initialized %s class with a function handle.\n', class(self));
-                end
-                if userSpecifiedN2 == 1
-                    self.InitializeWithN2Function(rho, min(z_in), max(z_in));
-                else
-                    self.InitializeWithFunction(rho, min(z_in), max(z_in));
-                end
-            elseif isa(rho,'numeric') == true
-                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
+            if ~isequal(options.rho,@disp)
+                self.InitializeWithFunction(options.rho, min(options.zIn), max(options.zIn));
+            elseif ~isequal(options.N2,@disp)
+                self.InitializeWithN2Function(options.N2, min(options.zIn), max(options.zIn));
+            elseif ~isempty(options.rhoGrid)
+                if length(options.rhoGrid) ~= length(options.zIn)
                     error('rho must be 1 dimensional and z must have the same length');
                 end
-                if isrow(rho)
-                    rho = rho.';
-                end
-                if userSpecifiedRho0 == 0
-                    self.rho0 = min(rho);
-                end
-                if self.shouldShowDiagnostics == 1
-                    fprintf('Initialized %s class with gridded data.\n', class(self));
-                end
-                [z_in,I] = sort(z_in,'ascend');
-                rho = rho(I);
-                if userSpecifiedN2 == 1
-                    error('Initialization with a gridded N2 is not yet supported.')
-                else
-                    self.InitializeWithGrid(rho,z_in);
-                end
+                self.rho0 = min(rho);
+                [zGrid,I] = sort(options.zIn,'ascend');
+                rhoGrid = options.rhoGrid(I);
+                self.InitializeWithGrid(rhoGrid,zGrid);
+            elseif options.rhoSpline.t_knot ~= 0
+                self.rho0 = rho(max(rho.domain));
+                self.InitializeWithBSpline(options.rhoSpline);
             else
-                error('rho must be a function handle or an array.');
-            end   
+                error('You must initialize InternalModes with rho, N2, rhoGrid, or rhoSpline');
+            end
             
             self.kFromOmega = @(h,omega) sqrt((omega^2 - self.f0^2)./(self.g * h));
             self.omegaFromK = @(h,k) sqrt( self.g * h * k^2 + self.f0^2 );

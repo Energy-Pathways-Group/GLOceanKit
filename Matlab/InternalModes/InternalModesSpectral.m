@@ -124,8 +124,21 @@ classdef InternalModesSpectral < InternalModesBase
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesSpectral(rho, zIn, zOut, latitude,varargin)
-            self@InternalModesBase(rho,zIn,zOut,latitude,varargin{:});
+        function self = InternalModesSpectral(options)
+            arguments
+                options.rho function_handle = @disp
+                options.N2 function_handle = @disp
+                options.rhoGrid (:,1) double = []
+%                 options.rhoSpline BSpline = BSpline(1,[0 1],[0 0])
+                options.zIn (:,1) double = []
+                options.zOut (:,1) double = []
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
+                options.nEVP = 512;
+            end
+            self@InternalModesBase(rho=options.rho,N2=options.N2,rhoGrid=options.rhoGrid,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes);
+            self.nEVP = options.nEVP;
             self.SetupEigenvalueProblem();            
         end
 
@@ -405,25 +418,27 @@ classdef InternalModesSpectral < InternalModesBase
                    error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
                end
                warning('Two strategies here---need to consolidate.')
-               F = self.Diff1_xCheb(G_cheb(:,rootMode));
-               value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-               [~,indices] = sort(abs(value),'descend');
-               indices = indices(1:nPoints);
-               roots = roots(indices);
+%                F = self.Diff1_xCheb(G_cheb(:,rootMode));
+%                value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+%                [~,indices] = sort(abs(value),'descend');
+%                indices = indices(1:nPoints);
+%                roots = roots(indices);
                
 % This strategy was useful for the vertical mode atlas
-%                while (length(roots) > nPoints)
-%                    roots = sort(roots);
-%                    F = self.Diff1_xCheb(G_cheb(:,rootMode));
-%                    value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-%                    dr = diff(roots);
-%                    [~,minIndex] = min(abs(dr));
-%                    if abs(value(minIndex)) < abs(value(minIndex+1))
-%                        roots(minIndex) = [];
-%                    else
-%                        roots(minIndex+1) = [];
-%                    end
-%                end
+% 1/25/2023 -- this also seems to work better with the analytical mixed layer
+% stratification profile
+               while (length(roots) > nPoints)
+                   roots = sort(roots);
+                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
+                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
+                   dr = diff(roots);
+                   [~,minIndex] = min(abs(dr));
+                   if abs(value(minIndex)) < abs(value(minIndex+1))
+                       roots(minIndex) = [];
+                   else
+                       roots(minIndex+1) = [];
+                   end
+               end
 
                z_g = reshape(roots,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
@@ -602,7 +617,7 @@ classdef InternalModesSpectral < InternalModesBase
             [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
             G_cheb=V(:,permutation);
             
-            if isempty(self.nModes)
+            if self.nModes == 0
                 maxModes = ceil(find(h>0,1,'last')/2); % Have to do ceil, not floor, or we lose the barotropic mode.
                 if maxModes == 0
                     fprintf('No usable modes found! Try with higher resolution.\n');

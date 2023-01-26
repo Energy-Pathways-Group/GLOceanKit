@@ -33,12 +33,12 @@ classdef WVTransformHydrostatic < WVTransform
         
     methods
          
-        function self = WVTransformHydrostatic(Lxyz, Nxyz, rhoFunc, options)
+        function self = WVTransformHydrostatic(Lxyz, Nxyz, options)
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
-                rhoFunc function_handle
-                options.N2func function_handle = @disp
+                options.rho function_handle
+                options.N2 function_handle
                 options.dLnN2func function_handle = @disp
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
@@ -49,7 +49,13 @@ classdef WVTransformHydrostatic < WVTransform
             nModes = Nxyz(3)-1;
             Nz = Nxyz(3);
             z = linspace(-Lxyz(3),0,Nz*10)';
-            im = InternalModesSpectral(rhoFunc,[-Lxyz(3) 0],z,options.latitude);
+            if isfield(options,'N2')
+                im = InternalModesSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);
+            elseif isfield(options,'rho')
+                im = InternalModesSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);   
+            else
+                error('You must specify either rho or N2.');
+            end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
@@ -63,16 +69,21 @@ classdef WVTransformHydrostatic < WVTransform
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
-            im = InternalModesSpectral(rhoFunc,[-Lxyz(3) 0],z,options.latitude,'nModes',nModes);
+            if isfield(options,'N2')
+                im = InternalModesSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+            elseif isfield(options,'rho')
+                im = InternalModesSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+            end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             
-            if isequal(options.N2func,@disp)
+            if ~isfield(options,'N2')
                 N2 = im.N2;
                 N2func = im.N2_function;
             else
-                N2 = options.N2func(z);
-                N2func = options.N2func;
+                N2 = options.N2(z);
+                N2func = options.N2;
+                rhoFunc = im.rho_function;
             end
 
             % This is enough information to initialize
