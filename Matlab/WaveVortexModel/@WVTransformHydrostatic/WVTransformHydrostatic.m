@@ -196,28 +196,54 @@ classdef WVTransformHydrostatic < WVTransform
             self.Q = shiftdim(cat(2,1,self.Q),-1);
 
             self.buildTransformationMatrices();
+        end
 
-            dof = 3;
-            self.zInterp = cat(1,-self.Lz,-self.Lz + cumsum(reshape(shiftdim(repmat(diff(self.z)/dof,[1 dof]),1),[],1)));
-            self.zInterp(end) = self.z(end);
-            if ~isempty(self.zInterp)
-                im = InternalModesWKBSpectral(N2=self.N2Function,zIn=[-self.Lz 0],zOut=self.zInterp,latitude=self.latitude,nModes=self.internalModes.nModes);
-                im.normalization = Normalization.kConstant;
-                im.upperBoundary = UpperBoundary.rigidLid;
-                [Finv,Ginv] = im.ModesAtFrequency(0);
-                N = length(self.zInterp);
-                
-                % dump the Nyquist mode
-                Finv = Finv(:,1:end-1);
-                Ginv = Ginv(:,1:end-1);
+        function self = buildInterpolationProjectionOperators(self,dof)
+            zInterp_ = cat(1,-self.Lz,-self.Lz + cumsum(reshape(shiftdim(repmat(diff(self.z)/dof,[1 dof]),1),[],1)));
+            zInterp_(end) = self.z(end);
+            self.buildInterpolationProjectionOperatorsForGrid(zInterp_);
+        end
 
-                % add the barotropic mode
-                Finv = cat(2,ones(N,1),Finv);
-                Ginv = cat(2,zeros(N,1),Ginv);
+        function self = buildInterpolationProjectionOperatorsForGrid(self,zInterp)
+            self.zInterp = zInterp;
+            im = InternalModesWKBSpectral(N2=self.N2Function,zIn=[-self.Lz 0],zOut=self.zInterp,latitude=self.latitude,nModes=self.internalModes.nModes);
+            im.normalization = Normalization.kConstant;
+            im.upperBoundary = UpperBoundary.rigidLid;
+            [Finv,Ginv] = im.ModesAtFrequency(0);
+            N = length(self.zInterp);
 
-                self.PFinvInterp = Finv./shiftdim(self.P,1);
-                self.QGinvInterp = Ginv./shiftdim(self.Q,1);
-            end
+            % dump the Nyquist mode
+            Finv = Finv(:,1:end-1);
+            Ginv = Ginv(:,1:end-1);
+
+            % add the barotropic mode
+            Finv = cat(2,ones(N,1),Finv);
+            Ginv = cat(2,zeros(N,1),Ginv);
+
+            self.PFinvInterp = Finv./shiftdim(self.P,1);
+            self.QGinvInterp = Ginv./shiftdim(self.Q,1);
+
+            self.addDimensionAnnotations(WVDimensionAnnotation('z-interp', 'm', 'z-coordinate dimension for interpolation'));
+
+            outputVar = WVVariableAnnotation('uInterp',{'x','y','z-interp'},'m/s', 'x-component of the fluid velocity');
+            f = @(wvt) wvt.transformToSpatialDomainWithFInterp(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
+            self.addOperation(WVOperation('uInterp',outputVar,f));
+
+            outputVar = WVVariableAnnotation('vInterp',{'x','y','z-interp'},'m/s', 'y-component of the fluid velocity');
+            f = @(wvt) wvt.transformToSpatialDomainWithFInterp(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
+            self.addOperation(WVOperation('vInterp',outputVar,f));
+
+            outputVar = WVVariableAnnotation('wInterp',{'x','y','z-interp'},'m/s', 'z-component of the fluid velocity');
+            f = @(wvt) wvt.transformToSpatialDomainWithGInterp(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
+            self.addOperation(WVOperation('wInterp',outputVar,f));
+
+            outputVar = WVVariableAnnotation('pInterp',{'x','y','z-interp'},'kg/m/s2', 'pressure anomaly');
+            f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithFInterp(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            self.addOperation(WVOperation('pInterp',outputVar,f));
+
+            outputVar = WVVariableAnnotation('etaInterp',{'x','y','z-interp'},'m', 'isopycnal deviation');
+            f = @(wvt) wvt.transformToSpatialDomainWithGInterp(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            self.addOperation(WVOperation('etaInterp',outputVar,f));
         end
 
         function self = SetProjectionOperators(self, PFinv, QGinv, PF, QG, P, Q, h)
@@ -365,6 +391,18 @@ classdef WVTransformHydrostatic < WVTransform
             u = self.PFinvInterp*u_bar;
             u = reshape(u,length(self.zInterp),self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
+        end
+
+        function w = transformToSpatialDomainWithGInterp(self, w_bar )
+            w_bar = (self.Q .* w_bar)*(self.Nx*self.Ny);
+            % hydrostatic modes commute with the DFT
+            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+
+            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+            w_bar = reshape(w_bar,self.Nj,[]);
+            w = self.QGinvInterp*w_bar;
+            w = reshape(w,length(self.zInterp),self.Nx,self.Ny);
+            w = permute(w,[2 3 1]);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

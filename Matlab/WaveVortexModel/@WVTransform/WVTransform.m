@@ -226,16 +226,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addOperation(WVTransform.defaultOperations);
         end
 
-        function addDimensionAnnotations(self,transformDimension)
+        function addDimensionAnnotations(self,dimensionAnnotation)
             % add one or more WVDimensions
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WVTransform {mustBeNonempty}
-                transformDimension (1,:) WVDimensionAnnotation {mustBeNonempty}
+                dimensionAnnotation (1,:) WVDimensionAnnotation {mustBeNonempty}
             end
-            for i=1:length(transformDimension)
-                self.dimensionAnnotationNameMap(transformDimension(i).name) = transformDimension(i);
+            for i=1:length(dimensionAnnotation)
+                self.dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
             end
         end
 
@@ -250,16 +250,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             val = self.dimensionAnnotationNameMap(name);
         end
 
-        function addPropertyAnnotations(self,transformProperty)
+        function addPropertyAnnotations(self,propertyAnnotation)
             % add a addProperty
             %
             % - Topic: Utility function — Metadata
             arguments
                 self WVTransform {mustBeNonempty}
-                transformProperty (1,:) WVPropertyAnnotation {mustBeNonempty}
+                propertyAnnotation (1,:) WVPropertyAnnotation {mustBeNonempty}
             end
-            for i=1:length(transformProperty)
-                self.propertyAnnotationNameMap(transformProperty(i).name) = transformProperty(i);
+            for i=1:length(propertyAnnotation)
+                self.propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
             end
         end
 
