@@ -50,9 +50,9 @@ classdef WVTransformHydrostatic < WVTransform
             Nz = Nxyz(3);
             z = linspace(-Lxyz(3),0,Nz*10)';
             if isfield(options,'N2')
-                im = InternalModesSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.5*Nz)));
             elseif isfield(options,'rho')
-                im = InternalModesSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);   
+                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);   
             else
                 error('You must specify either rho or N2.');
             end
@@ -70,9 +70,9 @@ classdef WVTransformHydrostatic < WVTransform
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
             if isfield(options,'N2')
-                im = InternalModesSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
             elseif isfield(options,'rho')
-                im = InternalModesSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;

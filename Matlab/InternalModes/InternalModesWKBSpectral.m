@@ -24,6 +24,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     properties %(Access = private)
         Nz_function
         Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
+        requiresMonotonicDensitySetting = 1
     end
     
     methods
@@ -33,10 +34,19 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesWKBSpectral(rho, z_in, z_out, latitude, varargin)
-            varargin{end+1} = 'requiresMonotonicDensity';
-            varargin{end+1} = 1;
-            self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
+        function self = InternalModesWKBSpectral(options)
+            arguments
+                options.rho = ''
+                options.N2 function_handle = @disp
+                options.zIn (:,1) double = []
+                options.zOut (:,1) double = []
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
+                options.nEVP = 512;
+            end
+            self@InternalModesSpectral(rho=options.rho,N2=options.N2,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes);
+
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

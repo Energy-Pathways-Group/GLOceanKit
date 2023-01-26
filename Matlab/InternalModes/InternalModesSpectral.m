@@ -126,10 +126,8 @@ classdef InternalModesSpectral < InternalModesBase
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesSpectral(options)
             arguments
-                options.rho function_handle = @disp
+                options.rho = ''
                 options.N2 function_handle = @disp
-                options.rhoGrid (:,1) double = []
-%                 options.rhoSpline BSpline = BSpline(1,[0 1],[0 0])
                 options.zIn (:,1) double = []
                 options.zOut (:,1) double = []
                 options.latitude (1,1) double = 33
@@ -137,7 +135,7 @@ classdef InternalModesSpectral < InternalModesBase
                 options.nModes (1,1) double = 0
                 options.nEVP = 512;
             end
-            self@InternalModesBase(rho=options.rho,N2=options.N2,rhoGrid=options.rhoGrid,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes);
+            self@InternalModesBase(rho=options.rho,N2=options.N2,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes);
             self.nEVP = options.nEVP;
             self.SetupEigenvalueProblem();            
         end

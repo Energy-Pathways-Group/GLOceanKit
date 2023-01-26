@@ -49,7 +49,7 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         zDomain % [zMin zMax]
-        requiresMonotonicDensity = 0
+        requiresMonotonicDensity
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
@@ -123,10 +123,8 @@ classdef (Abstract) InternalModesBase < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function self = InternalModesBase(options)
             arguments
-                options.rho function_handle = @disp
+                options.rho = ''
                 options.N2 function_handle = @disp
-                options.rhoGrid (:,1) double = []
-%                 options.rhoSpline BSpline = BSpline(1,0,0)
                 options.zIn (:,1) double = []
                 options.zOut (:,1) double = []
                 options.latitude (1,1) double = 33
@@ -134,9 +132,10 @@ classdef (Abstract) InternalModesBase < handle
                 options.nModes (1,1) double = 0
             end
             if isempty(options.zIn)
-                error('You must specify z');
+                error('You must specify zIn');
             end
 
+            self.requiresMonotonicDensity = self.requiresMonotonicDensitySetting();
             self.zDomain = [min(options.zIn) max(options.zIn)];
             self.Lz = self.zDomain(2)-self.zDomain(1);
             self.latitude = options.latitude;
@@ -150,21 +149,22 @@ classdef (Abstract) InternalModesBase < handle
                 self.z = options.zOut;
             end
             
-            if ~isequal(options.rho,@disp)
-                self.InitializeWithFunction(options.rho, min(options.zIn), max(options.zIn));
-            elseif ~isequal(options.N2,@disp)
+            if ~isequal(options.N2,@disp)
                 self.InitializeWithN2Function(options.N2, min(options.zIn), max(options.zIn));
-            elseif ~isempty(options.rhoGrid)
-                if length(options.rhoGrid) ~= length(options.zIn)
+            elseif isa(options.rho,'function_handle') == true
+                self.InitializeWithFunction(options.rho, min(options.zIn), max(options.zIn));
+            elseif isa(options.rho,'BSpline') == true
+                self.rho0 = rho(max(options.rho.domain));
+                self.InitializeWithBSpline(options.rho);
+            elseif isa(options.rho,'numeric') == true
+                if length(options.rho) ~= length(options.zIn)
                     error('rho must be 1 dimensional and z must have the same length');
                 end
-                self.rho0 = min(rho);
+                self.rho0 = min(options.rho);
+                options.rho = reshape(options.rho,[],1);
                 [zGrid,I] = sort(options.zIn,'ascend');
-                rhoGrid = options.rhoGrid(I);
+                rhoGrid = options.rho(I);
                 self.InitializeWithGrid(rhoGrid,zGrid);
-            elseif options.rhoSpline.t_knot ~= 0
-                self.rho0 = rho(max(rho.domain));
-                self.InitializeWithBSpline(options.rhoSpline);
             else
                 error('You must initialize InternalModes with rho, N2, rhoGrid, or rhoSpline');
             end
@@ -173,6 +173,10 @@ classdef (Abstract) InternalModesBase < handle
             self.omegaFromK = @(h,k) sqrt( self.g * h * k^2 + self.f0^2 );
         end
                 
+        function out=requiresMonotonicDensitySetting(~)
+            out=0;
+        end
+
         function self = upperBoundaryDidChange(self)
             % This function is called when the user changes the surface
             % boundary condition. By overriding this function, a subclass

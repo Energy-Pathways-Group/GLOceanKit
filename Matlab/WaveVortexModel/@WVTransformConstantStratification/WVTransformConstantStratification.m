@@ -26,14 +26,14 @@ classdef WVTransformConstantStratification < WVTransform
     end
         
     methods
-        function self = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
+        function self = WVTransformConstantStratification(Lxyz, Nxyz, options)
             % initialze a wave-vortex transform with constant stratification
             %
             % - Topic: Initialization
             % - Declaration: wvt = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
             % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
             % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
-            % - Parameter N0: buoyancy frequency (radians/s)
+            % - Parameter N0:  (optional) buoyancy frequency (radians/s) default is 5.2e-3, or 3 cph)
             % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
             % - Parameter rho0: (optional) density at the surface z=0 (default is 1025 kg/m^3)
             % - Parameter isHydrostatic: (optional) flag indicating whether to use hydrostatic transformations (default 0)
@@ -41,7 +41,7 @@ classdef WVTransformConstantStratification < WVTransform
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
-                N0 (1,1) double {mustBePositive}
+                options.N0 (1,1) double {mustBePositive} = 5.2e-3
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0 
@@ -57,6 +57,7 @@ classdef WVTransformConstantStratification < WVTransform
             dz = Lz/(Nz-1);
             z = dz*(0:(Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
             nModes = Nz-1;
+            N0 = options.N0;
             
             self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=N0);
             
@@ -67,7 +68,8 @@ classdef WVTransformConstantStratification < WVTransform
             self.rhobar = rhoFunction(z);
 
             self.buildTransformationMatrices();
-            internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
+%             internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
+            internalModes = InternalModesConstantStratification(N0=N0, rho0=self.rho0, zIn=[-Lxyz(3) 0], zOut=z, latitude=self.latitude);
             self.offgridModes = WVOffGridTransform(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             
             % Preallocate this array for a faster dct
