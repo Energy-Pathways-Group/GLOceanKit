@@ -24,6 +24,9 @@ classdef WVTransformHydrostatic < WVTransform
         
         P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
         Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
+        
+        zInterp
+        PFinvInterp, QGinvInterp
 
         Apm_TE_factor
         A0_HKE_factor
@@ -50,7 +53,7 @@ classdef WVTransformHydrostatic < WVTransform
             Nz = Nxyz(3);
             z = linspace(-Lxyz(3),0,Nz*10)';
             if isfield(options,'N2')
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.5*Nz)));
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
             elseif isfield(options,'rho')
                 im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);   
             else
@@ -165,7 +168,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.PF = inv(self.PFinv);
             self.QG = inv(self.QGinv);
             
-            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],1);
+            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],2);
             if maxCond > 1000
                 warning('Condition number is %f the vertical transformations.',maxCond);
             end
@@ -193,6 +196,28 @@ classdef WVTransformHydrostatic < WVTransform
             self.Q = shiftdim(cat(2,1,self.Q),-1);
 
             self.buildTransformationMatrices();
+
+            dof = 3;
+            self.zInterp = cat(1,-self.Lz,-self.Lz + cumsum(reshape(shiftdim(repmat(diff(self.z)/dof,[1 dof]),1),[],1)));
+            self.zInterp(end) = self.z(end);
+            if ~isempty(self.zInterp)
+                im = InternalModesWKBSpectral(N2=self.N2Function,zIn=[-self.Lz 0],zOut=self.zInterp,latitude=self.latitude,nModes=self.internalModes.nModes);
+                im.normalization = Normalization.kConstant;
+                im.upperBoundary = UpperBoundary.rigidLid;
+                [Finv,Ginv] = im.ModesAtFrequency(0);
+                N = length(self.zInterp);
+                
+                % dump the Nyquist mode
+                Finv = Finv(:,1:end-1);
+                Ginv = Ginv(:,1:end-1);
+
+                % add the barotropic mode
+                Finv = cat(2,ones(N,1),Finv);
+                Ginv = cat(2,zeros(N,1),Ginv);
+
+                self.PFinvInterp = Finv./shiftdim(self.P,1);
+                self.QGinvInterp = Ginv./shiftdim(self.Q,1);
+            end
         end
 
         function self = SetProjectionOperators(self, PFinv, QGinv, PF, QG, P, Q, h)
@@ -329,6 +354,17 @@ classdef WVTransformHydrostatic < WVTransform
             wz = self.PFinv* ( squeeze(self.P./(self.Q .* self.h)) .* w_bar);
             wz = reshape(wz,self.Nz,self.Nx,self.Ny);
             wz = permute(wz,[2 3 1]);
+        end
+        
+        function u = transformToSpatialDomainWithFInterp(self, u_bar)
+            u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
+            % hydrostatic modes commute with the DFT
+            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            u_bar = reshape(u_bar,self.Nj,[]);
+            u = self.PFinvInterp*u_bar;
+            u = reshape(u,length(self.zInterp),self.Nx,self.Ny);
+            u = permute(u,[2 3 1]);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
