@@ -52,7 +52,7 @@ wvt.summarizeEnergyContent;
 
 model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
 model.setupIntegrator(timeStepConstraint="advective", outputInterval=wvt.inertialPeriod/10);
-% model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
 model.integrateToTime(3*wvt.inertialPeriod);
 
 % ncfile = model.ncfile;

@@ -130,7 +130,7 @@ f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt
 operations(end+1) = WVOperation('eta',outputVar,f);
 
 outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
-f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega / (wvt.h * wvt.f)) .*wvt.A0t);
+f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega ./ (wvt.h * wvt.f)) .*wvt.A0t);
 operations(end+1) = WVOperation('qgpv',outputVar,f);
 
 fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap',detailedDescription='- topic: State Variables');
