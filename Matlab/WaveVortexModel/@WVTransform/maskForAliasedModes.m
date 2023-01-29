@@ -25,6 +25,6 @@ end
 Kh = sqrt(K.*K + L.*L);
 
 AntiAliasFilter = zeros(self.Nk,self.Nl,self.Nj);
-AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > options.jFraction*max(abs(self.j))) = 1;
+AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > options.jFraction*self.Nj) = 1;
 
 end

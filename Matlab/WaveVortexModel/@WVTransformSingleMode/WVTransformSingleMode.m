@@ -33,10 +33,6 @@ classdef WVTransformSingleMode < WVTransform
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addOperation(WVOperation('ssh',outputVar,f));
 
-            outputVar = WVVariableAnnotation('psi',{'x','y','z'},'m^2/s', 'sea-surface anomaly');
-            f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f) * wvt.A0t);
-            self.addOperation(WVOperation('psi',outputVar,f));
-
             [K,L] = ndgrid(self.k,self.l);
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
             f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
