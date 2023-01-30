@@ -405,6 +405,8 @@ classdef WVTransformHydrostatic < WVTransform
             w = permute(w,[2 3 1]);
         end
         
+        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Needed to add and remove internal waves from the model

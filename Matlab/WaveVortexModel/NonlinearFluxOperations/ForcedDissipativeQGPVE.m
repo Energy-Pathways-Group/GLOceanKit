@@ -47,8 +47,11 @@ classdef ForcedDissipativeQGPVE < QGPVE
             self.k_r = k_r;
             if wvt.isBarotropic == 1
                 self.j_f = 0;
+                F = 1;
             else
                 self.j_f = options.j_f;
+                Finv = wvt.FinvMatrix;
+                F = Finv(end,self.j_f+1);
             end
 
             smallDampIndex = find(abs(self.damp(:,1,1)) > 1.1*abs(r),1,'first');
@@ -77,7 +80,7 @@ classdef ForcedDissipativeQGPVE < QGPVE
                 for iK=1:(length(wvt.kRadial)-1)
                     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2   );
                     energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                    wvt.A0(indicesForK) = energy/length(indicesForK);
+                    wvt.A0(indicesForK) = energy/length(indicesForK)/(F*F);
                     ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
                 end
                 wvt.A0 = WVTransform.makeHermitian(wvt.A0);

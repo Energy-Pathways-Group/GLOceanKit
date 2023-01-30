@@ -41,7 +41,7 @@ wvt.addOperation(WVOperation('zeta_z',outputVar,f));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 dk = (wvt.k(2)-wvt.k(1));
-k_f = 20*dk;
+k_f = 15*dk;
 k_r = 4*dk;
 u_rms = 0.05;
 
@@ -59,7 +59,7 @@ fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narro
 
 model = WVModel(wvt,nonlinearFlux=fdFlux);
 model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
-
+return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Set an output file, set the variables that we want written to file, and
@@ -70,7 +70,7 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 
 model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(50*86400);
+model.integrateToTime(5*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
@@ -89,7 +89,7 @@ colormap("gray")
 xlabel('km'), ylabel('km')
 
 subplot(1,2,2)
-plot(wvt.kRadial,EkT(:,1)/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+plot(wvt.kRadial,EkT(:,2)/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
 plot(wvt.kRadial,fdFlux.model_spectrum(wvt.kRadial))
 ylabel('m^3/s^2')
 xlabel('1/m')
