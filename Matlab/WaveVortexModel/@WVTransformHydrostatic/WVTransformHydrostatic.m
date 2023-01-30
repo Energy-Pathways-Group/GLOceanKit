@@ -74,21 +74,18 @@ classdef WVTransformHydrostatic < WVTransform
             % modes, but the boundaries.
             if isfield(options,'N2')
                 im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                N2 = options.N2(z);
+                N2func = options.N2;
+                rhoFunc = im.rho_function;
             elseif isfield(options,'rho')
                 im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                N2 = im.N2;
+                N2func = im.N2_function;
+                rhoFunc = options.rho;
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             
-            if ~isfield(options,'N2')
-                N2 = im.N2;
-                N2func = im.N2_function;
-            else
-                N2 = options.N2(z);
-                N2func = options.N2;
-                rhoFunc = im.rho_function;
-            end
-
             % This is enough information to initialize
             self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
 
@@ -290,6 +287,7 @@ classdef WVTransformHydrostatic < WVTransform
         end
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
+            value(:,:,1) = 0;
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;

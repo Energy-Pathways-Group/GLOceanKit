@@ -137,6 +137,15 @@ outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic p
 f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega ./ (wvt.h * wvt.f)) .*wvt.A0t);
 operations(end+1) = WVOperation('qgpv',outputVar,f);
 
+outputVar = WVVariableAnnotation('seaSurfaceU',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface');
+operations(end+1) = WVOperation('seaSurfaceU', outputVar,@(wvt) wvt.seaSurfaceU);
+
+outputVar = WVVariableAnnotation('seaSurfaceV',{'x','y'},'m/s', 'y-component of the fluid velocity at the surface');
+operations(end+1) = WVOperation('seaSurfaceV', outputVar,@(wvt) wvt.seaSurfaceV);
+
+outputVar = WVVariableAnnotation('seaSurfaceHeight',{'x','y'},'m', 'sea-surface height');
+operations(end+1) = WVOperation('seaSurfaceHeight', outputVar,@(wvt) wvt.seaSurfaceHeight);
+
 fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap',detailedDescription='- topic: State Variables');
 fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am',detailedDescription='- topic: State Variables');
 fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0',detailedDescription='- topic: State Variables');

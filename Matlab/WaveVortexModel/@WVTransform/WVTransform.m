@@ -691,12 +691,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % These can be pulled from equation C4 in the manuscript
             self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
             self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.UA0 = -sqrt(-1)*(g_/f_)*Kh.*sin(alpha); % Kh*sin(alpha) is the same as L
             self.UA0 = -sqrt(-1)*(g_/f_)*L_;
 
             self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
             self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.VA0 = sqrt(-1)*(g_/f_)*Kh.*cos(alpha); % Kh*cos(alpha) is the same as K
             self.VA0 = sqrt(-1)*(g_/f_)*K_;
                 
             self.WAp = -sqrt(-1)*Kh.*self.h;
@@ -1096,6 +1094,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
   
+        ssu = seaSurfaceU(self);
+        ssv = seaSurfaceV(self);
+        ssh = seaSurfaceHeight(self);
+
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

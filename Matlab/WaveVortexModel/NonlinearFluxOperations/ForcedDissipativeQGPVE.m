@@ -80,13 +80,13 @@ classdef ForcedDissipativeQGPVE < QGPVE
                 for iK=1:(length(wvt.kRadial)-1)
                     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2   );
                     energy = integral(self.model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                    wvt.A0(indicesForK) = energy/length(indicesForK)/(F*F);
+                    wvt.A0(indicesForK) = energy/length(indicesForK);
                     ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
                 end
                 wvt.A0 = WVTransform.makeHermitian(wvt.A0);
 
                 AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
-                wvt.A0 = AA .* (sqrt(wvt.h .* wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
+                wvt.A0 = AA .* (sqrt(wvt.h .* wvt.A0) ./(F * sqrt(wvt.A0_TE_factor)) ) .* ARand;
                 WVTransform.checkHermitian(wvt.A0);
 
                 if strcmp(options.initialPV,'narrow-band')

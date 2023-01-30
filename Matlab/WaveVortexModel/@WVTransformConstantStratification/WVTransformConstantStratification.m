@@ -185,8 +185,10 @@ classdef WVTransformConstantStratification < WVTransform
         function value = get.A0_PE_factor(self)
             if self.isHydrostatic == 1
                 value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
+                value(:,:,1) = 0;
             else
                 value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f*self.f)/2; % factor of 2 larger than in the manuscript
+                value(:,:,1) = 0;
             end
         end
         function value = get.A0_TE_factor(self)

@@ -42,11 +42,11 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvtConst = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0, latitude=latitude,isHydrostatic=1 );
+wvtConst = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0=N0, latitude=latitude,isHydrostatic=1 );
 
 rho0 = 1025; g = 9.81;
 rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho, latitude=latitude);
+wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho=rho, latitude=latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

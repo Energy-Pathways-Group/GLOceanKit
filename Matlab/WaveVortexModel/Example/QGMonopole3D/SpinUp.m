@@ -45,7 +45,8 @@ k_f = 15*dk;
 k_r = 4*dk;
 u_rms = 0.05;
 
-fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narrow-band');
+% fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narrow-band');
+fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='full-spectrum');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

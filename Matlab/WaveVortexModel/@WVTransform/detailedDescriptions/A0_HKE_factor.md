@@ -8,10 +8,10 @@ $$
 HKE = \frac{g}{2} \left( \frac{gh}{f_0^2} K^2 \right)
 $$ 
 
-and
+for the $$j>0$$ modes and
 
 $$
 HKE = \frac{g}{2} \left( \frac{g L_z}{f_0^2} K^2\right)
 $$ 
 
-for the barotropic mode.
+for the $$j=0$$ barotropic mode.
