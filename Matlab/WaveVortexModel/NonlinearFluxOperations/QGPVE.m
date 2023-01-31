@@ -30,7 +30,7 @@ classdef QGPVE < WVNonlinearFluxOperation
             self.doesFluxAm = 0;
             self.doesFluxA0 = 1;
             
-            AA = ~(wvt.maskForAliasedModes(jFraction=1));
+            AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
             self.PVA0 = - (wvt.Omega .* wvt.Omega) ./ (wvt.h * wvt.f);
             self.A0PV = AA./self.PVA0;
             

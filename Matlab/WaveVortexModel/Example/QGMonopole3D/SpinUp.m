@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Specify the problem dimensions and initialize a WVTransform.
 % The 'h' parameter is the equivalent depth, and 0.80 m is a typical value
 % for the first baroclinic mode.
@@ -45,11 +45,19 @@ k_f = 15*dk;
 k_r = 4*dk;
 u_rms = 0.05;
 
-% fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narrow-band');
-fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='full-spectrum');
+fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='narrow-band');
+% fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='full-spectrum');
+
+ssu = wvt.seaSurfaceU;
+ssv = wvt.seaSurfaceV;
+ssh = wvt.seaSurfaceHeight;
+
+mean(mean(ssu.^2 + ssv.^2))
+wvt.g*mean(mean(ssh.^2))/wvt.h(2)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Once a WVTransform and a NonlinearFlux operator have been
 % initialized, we can now initialize a model.
 % 
@@ -60,9 +68,9 @@ fdFlux = ForcedDissipativeQGPVE(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='full-
 
 model = WVModel(wvt,nonlinearFlux=fdFlux);
 model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
-return
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Set an output file, set the variables that we want written to file, and
 % integrate. How to integrate for? We need to wait until energy reaches
 % steady-state. You can always keep integrating to be certain.
@@ -71,7 +79,7 @@ return
 
 model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(5*86400);
+model.integrateToTime(25*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
@@ -80,19 +88,33 @@ model.integrateToTime(5*86400);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor./wvt.h) .* (wvt.A0.*conj(wvt.A0)));
+EkT = wvt.transformToRadialWavenumber(wvt.A0_TE_factor.* (wvt.A0.*conj(wvt.A0)));
 
 zeta_z = wvt.zeta_z;
-figure(Position=[100 100 1000 400])
-subplot(1,2,1)
+figure(Position=[100 100 1000 1000])
+tiledlayout('flow')
+
+nexttile
 pcolor(wvt.x/1000,wvt.y/1000,zeta_z(:,:,end)), shading interp
 colormap("gray")
 xlabel('km'), ylabel('km')
 
-subplot(1,2,2)
-plot(wvt.kRadial,EkT(:,2)/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+nexttile
+pcolor(wvt.y/1000,wvt.z/1000,squeeze(zeta_z(1,:,:)).'), shading interp
+colormap("gray")
+xlabel('km'), ylabel('km')
+
+nexttile
+plot(wvt.kRadial,EkT(:,1)/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+plot(wvt.kRadial,EkT(:,2)/(wvt.kRadial(2)-wvt.kRadial(1)))
+plot(wvt.kRadial,EkT(:,3)/(wvt.kRadial(2)-wvt.kRadial(1)))
 plot(wvt.kRadial,fdFlux.model_spectrum(wvt.kRadial))
 ylabel('m^3/s^2')
 xlabel('1/m')
 title('horizontal velocity spectrum')
 vlines([k_f,k_r],'g--')
+legend('mode 0','mode 1', 'mode 2', 'model spectrum', 'k_r', 'k_f')
+
+nexttile
+plot(wvt.j, sum(EkT,1) )
+
