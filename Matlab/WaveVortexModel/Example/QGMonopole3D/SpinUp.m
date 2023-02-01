@@ -67,7 +67,7 @@ wvt.g*mean(mean(ssh.^2))/wvt.h(2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 model = WVModel(wvt,nonlinearFlux=fdFlux);
-model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
+model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=10*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
@@ -79,7 +79,7 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 
 model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(25*86400);
+model.integrateToTime(200*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%

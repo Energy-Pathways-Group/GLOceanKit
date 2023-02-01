@@ -44,7 +44,7 @@ elseif strcmp(ncfile.attributes('WVTransform'),'WVTransformHydrostatic')
     if exist(matFile.dLnN2Function,'var') && ~isempty(matFile.dLnN2Function)
         wvt = WVTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function, dLnN2func=matFile.dLnN2Function);
     else
-        wvt = WVTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], matFile.rhoFunction,latitude=latitude,rho0=rho0, N2func=matFile.N2Function);
+        wvt = WVTransformHydrostatic([Lx Ly Lz],[Nx Ny Nz], latitude=latitude,rho0=rho0, N2=matFile.N2Function);
     end
 else
     error("stratification not supported.");
