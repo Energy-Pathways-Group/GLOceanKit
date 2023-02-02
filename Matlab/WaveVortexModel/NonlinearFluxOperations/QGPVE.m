@@ -2,7 +2,9 @@ classdef QGPVE < WVNonlinearFluxOperation
     properties
         PVA0 % conversion from A0 to PV
         A0PV % conversion from PV to A0
+        RVA0 % conversion from A0 to RV
         beta
+        uEady = 0
         damp
         nu
         r
@@ -13,6 +15,7 @@ classdef QGPVE < WVNonlinearFluxOperation
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
+                options.u_eady (1,1) double = 0 % delta velocity for the Eady profile
                 options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'QGPVE'
@@ -32,6 +35,7 @@ classdef QGPVE < WVNonlinearFluxOperation
             
             AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
             self.PVA0 = - (wvt.Omega .* wvt.Omega) ./ (wvt.h * wvt.f);
+            self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
             self.A0PV = AA./self.PVA0;
             
             % Components to the damping operator (which will multiply A0):
@@ -46,13 +50,32 @@ classdef QGPVE < WVNonlinearFluxOperation
                 self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_damp/(pi^2);
             end
             self.r = options.r;
-            [K,L] = ndgrid(wvt.k,wvt.l,wvt.j);
-            self.damp = -self.r*(K.^2 +L.^2) - self.nu*Qkl.*(-(K.^2 +L.^2)).^2; 
+            [K,L] = wvt.kljGrid;
+            if wvt.isBarotropic
+                friction = -self.r*(K.^2 +L.^2);
+            else
+                % only apply friction to the bottom
+                friction = -0*self.r*(K.^2 +L.^2);
+                mask = zeros(length(wvt.z),1);
+                mask(1) = 1;
+                maskTransform = abs(wvt.FMatrix * mask);
+                friction = friction.*shiftdim(maskTransform,-2);
+            end
+            self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2; 
             self.damp = (wvt.g*wvt.h ./(wvt.Omega .* wvt.Omega)) .* AA.* self.damp; % (g/f) converts A0 into a velocity
             if options.shouldUseBeta == 1
                 self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
             else
                 self.beta = 0;
+            end
+
+            
+            if abs(options.u_eady) > 0
+                self.uEady = zeros(1,1,length(wvt.z));
+                A = integral(wvt.N2Function,-wvt.Lz,0);
+                for i=1:length(wvt.z)
+                    self.uEady(i) = (options.u_eady/A)*integral(wvt.N2Function,-wvt.Lz,wvt.z(i));
+                end
             end
         end
 
@@ -72,7 +95,11 @@ classdef QGPVE < WVNonlinearFluxOperation
             PVx = wvt.transformToSpatialDomainWithF(sqrt(-1)*wvt.k.*PVbar);
             PVy = wvt.transformToSpatialDomainWithF(sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
-            PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
+            mask = zeros(size(wvt.X));
+            mask(:,:,1) = 1;
+            PVabs = -self.r * mask.*wvt.transformToSpatialDomainWithF(self.RVA0 .* wvt.A0);
+
+            PVnl = (u_g + self.uEady).*PVx + v_g.*(PVy+self.beta) + PVabs;
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
             varargout = {F0,u_g,v_g};
         end

@@ -34,7 +34,7 @@ AmIGW(:,:,1) = 0;
 AmIGW(1,1,:) = 0;
 
 % barotropic geostrophic at all k and l>0, j=0
-A0G0(:,:,1) = 0.1*A0G(:,:,1);
+A0G0(:,:,1) = 0.01*A0G(:,:,1);
 A0G0(1,1,1) = 0;
 
 % mean density anomaly
