@@ -1,4 +1,4 @@
-function ncfile = writeToFile(wvt,path,variables,options)
+function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     % Output the `WVTransform` to file.
     %
     % - Topic: Write to file
@@ -62,17 +62,6 @@ function ncfile = writeToFile(wvt,path,variables,options)
         attributesToWrite = union({'N0'},attributesToWrite);
     elseif isa(wvt,'WVTransformSingleMode')
         attributesToWrite = union({'h'},attributesToWrite);
-    elseif isa(wvt,'WVTransformHydrostatic')
-        %                 attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','h','P','Q'},attributesToWrite);
-        attributesToWrite = union({'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG'},attributesToWrite);
-
-        rhoFunction = wvt.rhoFunction;
-        N2Function = wvt.N2Function;
-        dLnN2Function = wvt.dLnN2Function;
-        save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
-        fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
-    else
-        error('Not implemented');
     end
 
     for iVar=1:length(attributesToWrite)

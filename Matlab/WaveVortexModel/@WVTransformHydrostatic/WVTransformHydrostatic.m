@@ -20,7 +20,7 @@ classdef WVTransformHydrostatic < WVTransform
         % Transformation matrices
         PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nj]
         PF, QG % size(PF,PG)=[Nj x Nz]
-        h % [1 x Nj]
+        h % [1 1 Nj]
         
         P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
         Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
@@ -45,67 +45,108 @@ classdef WVTransformHydrostatic < WVTransform
                 options.dLnN2func function_handle = @disp
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+
+                % ALL of these must be set for direct initialization to
+                % avoid actually computing the modes.
+                options.dLnN2 (:,1) double
+                options.PFinv
+                options.QGinv
+                options.PF
+                options.QG
+                options.h (1,1,:) double
+                options.P (1,1,:) double
+                options.Q (1,1,:) double
+                options.z (:,1) double
             end
-                        
-            % First thing we do is find the Gauss-quadrature points for
-            % this stratification profile.
+                     
             nModes = Nxyz(3)-1;
-            Nz = Nxyz(3);
-            z = linspace(-Lxyz(3),0,Nz*10)';
-            if isfield(options,'N2')
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-            elseif isfield(options,'rho')
-                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);   
-            else
-                error('You must specify either rho or N2.');
-            end
-            im.normalization = Normalization.kConstant;
-            im.upperBoundary = UpperBoundary.rigidLid;
-            z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
-                        
-            % If the user requests nModes---we will have that many fully
-            % resolved modes. It works as follows for rigid lid:
-            % - There is one barotropic mode that appears in F
-            % - There are nModes-1 *internal modes* for G and F.
-            % - We compute the nModes+1 internal mode for F, to make it
-            % complete.
-            % This is nModes+1 grid points necessary to make this happen.
-            % This should make sense because there are nModes-1 internal
-            % modes, but the boundaries.
-            if isfield(options,'N2')
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
-                N2 = options.N2(z);
-                N2func = options.N2;
-                rhoFunc = im.rho_function;
-            elseif isfield(options,'rho')
-                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
-                N2 = im.N2;
-                N2func = im.N2_function;
-                rhoFunc = options.rho;
-            end
-            im.normalization = Normalization.kConstant;
-            im.upperBoundary = UpperBoundary.rigidLid;
             
-            % This is enough information to initialize
+            % if all of these things are set initially (presumably read
+            % from file), then we can initialize without computing modes.
+            canInitializeDirectly = all(isfield(options,{'rho','N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
+
+            if canInitializeDirectly
+                % We already know the quadrature points
+                z = options.z;
+                N2 = options.N2(z);
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+            else
+                % Before initializing the superclass, we need to find the
+                % Gauss-quadrature points for this stratification profile.
+                Nz = Nxyz(3);
+                z = linspace(-Lxyz(3),0,Nz*10)';
+                if isfield(options,'N2')
+                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
+                elseif isfield(options,'rho')
+                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);
+                else
+                    error('You must specify either rho or N2.');
+                end
+                im.normalization = Normalization.kConstant;
+                im.upperBoundary = UpperBoundary.rigidLid;
+                z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
+
+                % If the user requests nModes---we will have that many fully
+                % resolved modes. It works as follows for rigid lid:
+                % - There is one barotropic mode that appears in F
+                % - There are nModes-1 *internal modes* for G and F.
+                % - We compute the nModes+1 internal mode for F, to make it
+                % complete.
+                % This is nModes+1 grid points necessary to make this happen.
+                % This should make sense because there are nModes-1 internal
+                % modes, but the boundaries.
+                if isfield(options,'N2')
+                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                    N2 = options.N2(z);
+                    N2func = options.N2;
+                    rhoFunc = im.rho_function;
+                elseif isfield(options,'rho')
+                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                    N2 = im.N2;
+                    N2func = im.N2_function;
+                    rhoFunc = options.rho;
+                end
+            end
+            im.normalization = Normalization.kConstant;
+            im.upperBoundary = UpperBoundary.rigidLid;
+
+            % This is enough information to initialize the superclass
             self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
 
-            if isequal(options.dLnN2func,@disp)
-                dLnN2 = im.rho_zz./im.rho_z;
+            if canInitializeDirectly
+                self.rhoFunction = options.rho;
+                self.N2Function = options.N2;
+                self.internalModes = im;
+
+                self.rhobar = self.rhoFunction(self.z);
+                self.N2 = self.N2Function(self.z);
+                self.dLnN2 = options.dLnN2;
+
+                self.PFinv = options.PFinv;
+                self.QGinv = options.QGinv;
+                self.PF = options.PF;
+                self.QG = options.QG;
+                self.h = options.h;
+                self.P = options.P;
+                self.Q = options.Q;
             else
-                dLnN2 = options.dLnN2func(z);
+                if isequal(options.dLnN2func,@disp)
+                    dLnN2 = im.rho_zz./im.rho_z;
+                else
+                    dLnN2 = options.dLnN2func(z);
+                end
+
+                self.rhoFunction = rhoFunc;
+                self.N2Function = N2func;
+                self.internalModes = im;
+
+                self.rhobar = rhoFunc(self.z);
+                self.N2 = N2;
+                self.dLnN2 = dLnN2;
+
+                self.BuildProjectionOperators();
             end
 
-            self.rhoFunction = rhoFunc;
-            self.N2Function = N2func;
-            warning('dLnN2func is left initialized.')
-%             self.dLnN2Function = dLnN2func;
-            self.internalModes = im;
-
-            self.rhobar = rhoFunc(self.z);
-            self.N2 = N2;
-            self.dLnN2 = dLnN2;
-
-            self.BuildProjectionOperators();
             self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
             self.addPropertyAnnotations(WVPropertyAnnotation('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
@@ -414,7 +455,48 @@ classdef WVTransformHydrostatic < WVTransform
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
         end   
-        
+
+
+        function ncfile = writeToFile(wvt,path,variables,options)
+            % Output the `WVTransform` to file.
+            %
+            % - Topic: Write to file
+            % - Declaration: ncfile = writeToFile(netcdfFile,variables,options)
+            % - Parameter path: path to write file
+            % - Parameter variables: strings of variable names.
+            % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
+            % - Parameter shouldAddDefaultVariables: (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
+            arguments
+                wvt WVTransform {mustBeNonempty}
+                path char {mustBeNonempty}
+            end
+            arguments (Repeating)
+                variables char
+            end
+            arguments
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+                options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1
+            end
+            [ncfile,matFilePath] = writeToFile@WVTransform(wvt,path,variables{:},shouldAddDefaultVariables=options.shouldAddDefaultVariables,shouldOverwriteExisting=options.shouldOverwriteExisting);
+
+            attributesToWrite = {'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','P','Q','h'};
+
+            rhoFunction = wvt.rhoFunction;
+            N2Function = wvt.N2Function;
+            dLnN2Function = wvt.dLnN2Function;
+            CreationDate = datestr(datetime('now'));
+            save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
+            fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
+
+            for iVar=1:length(attributesToWrite)
+                transformVar = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
+                attributes = containers.Map();
+                attributes('units') = transformVar.units;
+                attributes('description') = transformVar.description;
+                ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
+            end
+        end
+
     end
    
         

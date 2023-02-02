@@ -217,7 +217,7 @@ classdef NetCDFFile < handle
         %addVariable(self,name,data,dimNames,properties,ncType)
         function complexVariable = initComplexVariable(self,name,dimNames,properties,ncType)
             if isKey(self.complexVariableWithName,name)
-                error('A variable with that name already exists.');
+                error('A variable with the name %s already exists.',name);
             end
             if isempty(properties)
                 properties = containers.Map;
@@ -268,12 +268,16 @@ classdef NetCDFFile < handle
         end
 
         function setVariable(self,name,data)
+            if ~isvector(data) && length(data) == numel(data)
+                % rare case that something is, e.g., size(data) = [1 1 N]
+                data=squeeze(data);
+            end
             if isKey(self.complexVariableWithName,name)
                 complexVariable = self.complexVariableWithName(name);
                 variable = complexVariable.realVar;
                 for iDim=1:length(variable.dimensions)
                     if (isvector(data) && length(data) ~= variable.dimensions(iDim).nPoints) || (~isvector(data) && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
-                        error('Incorrect dimension size: dimension %d of the data is length %d, but the dimension %s has length %d.',iDim,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
+                        error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,name,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
                     end
                 end
                 netcdf.putVar(self.ncid, complexVariable.realVar.varID, real(data));
@@ -290,7 +294,7 @@ classdef NetCDFFile < handle
                 variable = self.variableWithName(name);
                 for iDim=1:length(variable.dimensions)
                     if (isvector(data) && length(data) ~= variable.dimensions(iDim).nPoints) || (~isvector(data) && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
-                        error('Incorrect dimension size: dimension %d of the data is length %d, but the dimension %s has length %d.',iDim,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
+                        error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,name,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
                     end
                 end
                 netcdf.putVar(self.ncid, variable.varID, data);
