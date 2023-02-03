@@ -97,9 +97,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Amt`](/classes/wvtransform/amt.html) negative wave coefficients at time t
     + [`Apt`](/classes/wvtransform/apt.html) positive wave coefficients at time t
 + Initial Conditions
+  + [`initFromNetCDFFile`](/classes/wvtransform/initfromnetcdffile.html) initialize the flow from a NetCDF file
   + [`initWithRandomFlow`](/classes/wvtransform/initwithrandomflow.html) initialize with a randomized flow
   + [`initWithUVEta`](/classes/wvtransform/initwithuveta.html) initialize with fluid variables $$(u,v,\eta)$$
   + [`initWithUVRho`](/classes/wvtransform/initwithuvrho.html) initialize with fluid variables $$(u,v,\rho)$$
+  + [`removeEnergyFromAliasedModes`](/classes/wvtransform/removeenergyfromaliasedmodes.html) remove all energy from aliased modes
   + Waves
     + [`addWaveModes`](/classes/wvtransform/addwavemodes.html) add amplitudes of the given wave modes
     + [`initWithGMSpectrum`](/classes/wvtransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
@@ -185,7 +187,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`Fp`](/classes/wvtransform/fp.html) non-linear flux into Ap
   + [`eta`](/classes/wvtransform/eta.html) isopycnal deviation
   + [`p`](/classes/wvtransform/p.html) pressure anomaly
+  + [`psi`](/classes/wvtransform/psi.html) geostrophic streamfunction
   + [`qgpv`](/classes/wvtransform/qgpv.html) quasigeostrophic potential vorticity
+  + [`seaSurfaceHeight`](/classes/wvtransform/seasurfaceheight.html) sea-surface height
+  + [`seaSurfaceU`](/classes/wvtransform/seasurfaceu.html) x-component of the fluid velocity at the surface
+  + [`seaSurfaceV`](/classes/wvtransform/seasurfacev.html) y-component of the fluid velocity at the surface
   + [`u`](/classes/wvtransform/u.html) x-component of the fluid velocity
   + [`uMax`](/classes/wvtransform/umax.html) max horizontal fluid speed
   + [`v`](/classes/wvtransform/v.html) y-component of the fluid velocity
@@ -211,7 +217,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`generateHermitianRandomMatrix`](/classes/wvtransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
   + [`generateRandomFlowState`](/classes/wvtransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
   + [`makeHermitian`](/classes/wvtransform/makehermitian.html) Forces a 3D matrix to be Hermitian
-  + [`nyquistWavenumbers`](/classes/wvtransform/nyquistwavenumbers.html) Returns a matrix with 1s at the Nyquist frequencies.
   + [`redundantHermitianCoefficients`](/classes/wvtransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
   + Metadata
     + [`addDimensionAnnotations`](/classes/wvtransform/adddimensionannotations.html) add one or more WVDimensions
@@ -220,6 +225,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
     + [`operationWithName`](/classes/wvtransform/operationwithname.html) retrieve a WVOperation by name
     + [`propertyAnnotationWithName`](/classes/wvtransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
+    + [`removeOperation`](/classes/wvtransform/removeoperation.html) remove an existing WVOperation
     + [`variableAnnotationWithName`](/classes/wvtransform/variableannotationwithname.html) retrieve a WVVariableAnnotation by name
     + [`variableNames`](/classes/wvtransform/variablenames.html) retrieve the names of all available variables
 + External (non-gridded) modes
@@ -255,6 +261,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
 + Masks
   + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
+  + [`maskForNyquistModes`](/classes/wvtransform/maskfornyquistmodes.html) returns a mask with locations of modes that are not fully resolved
   + [`masksForAllFlowConstituents`](/classes/wvtransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six
   + [`masksForFlowConstituents`](/classes/wvtransform/masksforflowconstituents.html) Returns a sets of 'masks' indicating where different solution types live in the Ap, Am, A0 matrices.
 + Validation and internal unit testing

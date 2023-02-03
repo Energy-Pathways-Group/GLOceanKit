@@ -27,11 +27,11 @@ $$
 E = \frac{g}{2} \left( \frac{gh}{f_0^2} K^2 + 1 \right)
 $$ 
 
-and
+for the $$j>0$$ modes and
 
 $$
-E = \frac{g}{2} \left( \frac{g L_z}{f_0^2} K^2 + 1 \right)
+E = \frac{g^2 L_z}{2f_0^2} K^2
 $$ 
 
-for the barotropic mode.
+for the $$j=0$$ barotropic mode.
 

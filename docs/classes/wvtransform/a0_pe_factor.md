@@ -27,3 +27,11 @@ $$
 PE = \frac{g}{2}
 $$ 
 
+for the $$j>0$$ modes and
+
+$$
+PE = 0
+$$ 
+
+for the $$j=0$$ barotropic mode.
+

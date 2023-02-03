@@ -1,6 +1,13 @@
 function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     % Output the `WVTransform` to file.
     %
+    % Writes the WVTransform instance to file, with enough information to
+    % re-initialize. Pass additional variables to the variable list that
+    % should also be written to file.
+    %
+    % Subclasses should add any necessary properties or variables to the
+    % variable list before calling this superclass method.
+    %
     % - Topic: Write to file
     % - Declaration: ncfile = writeToFile(netcdfFile,variables,options)
     % - Parameter path: path to write file
@@ -57,20 +64,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     ncfile.addAttribute('WVTransform',class(wvt));
 
     attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
-
-    if isa(wvt,'WVTransformConstantStratification')
-        attributesToWrite = union({'N0'},attributesToWrite);
-    elseif isa(wvt,'WVTransformSingleMode')
-        attributesToWrite = union({'h'},attributesToWrite);
-    end
-
-    for iVar=1:length(attributesToWrite)
-        transformVar = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
-        attributes = containers.Map();
-        attributes('units') = transformVar.units;
-        attributes('description') = transformVar.description;
-        ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
-    end
+    variables = union(variables,attributesToWrite);
 
     if options.shouldAddDefaultVariables == 1
         if isempty(variables)
@@ -81,7 +75,13 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end
 
     for iVar=1:length(variables)
-        transformVar = wvt.variableAnnotationWithName(variables{iVar});
+        if isKey(wvt.variableAnnotationNameMap,variables{iVar})
+            transformVar = wvt.variableAnnotationWithName(variables{iVar});
+        elseif isKey(wvt.propertyAnnotationNameMap,variables{iVar})
+            transformVar = wvt.propertyAnnotationWithName(variables{iVar});
+        else
+            error('Unrecognized property or variable, %s',variables{iVar});
+        end
         attributes = containers.Map();
         attributes('units') = transformVar.units;
         attributes('description') = transformVar.description;

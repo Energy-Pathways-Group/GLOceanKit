@@ -97,7 +97,7 @@ classdef WVTransformConstantStratification < WVTransform
             f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             self.addOperation(WVOperation('rho_total',outputVar,f));
 
-            self.nonlinearFluxOperation = BoussinesqConstantN(self);
+            self.nonlinearFluxOperation = Boussinesq(self);
         end
                 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -546,9 +546,12 @@ classdef WVTransformConstantStratification < WVTransform
             end
         end   
         
+        [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end
-   
-        
+
+    methods (Static)
+        wvt = waveVortexTransformFromFile(path,options)
+    end
         
 end 
 

@@ -3,7 +3,7 @@ layout: default
 title: redundantHermitianCoefficients
 parent: WVTransform
 grand_parent: Classes
-nav_order: 135
+nav_order: 137
 mathjax: true
 ---
 

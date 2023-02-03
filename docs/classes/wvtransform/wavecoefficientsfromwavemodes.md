@@ -3,7 +3,7 @@ layout: default
 title: waveCoefficientsFromWaveModes
 parent: WVTransform
 grand_parent: Classes
-nav_order: 178
+nav_order: 185
 mathjax: true
 ---
 
@@ -36,7 +36,7 @@ Returns the indices (and re-normalized values) of the wave mode appropriate for 
   the future.
   
   For example, wave mode with l<0, is equivalent to a wave mode with l>0
-  and the signs fliipped on all the other quantities.
+  and the signs flipped on all the other quantities.
  
   The values given must meet the following requirements:
   (k0 > -Nx/2 && k0 < Nx/2)

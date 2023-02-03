@@ -16,6 +16,7 @@ Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
 
 latitude = 25;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
+phi=pi/3;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -25,7 +26,7 @@ N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 for iTransform=2
     if iTransform==1
-        wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
+        wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0=N0,latitude=latitude);
 
         U = .2;
         omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
@@ -39,18 +40,13 @@ for iTransform=2
         L = 80e3;
         wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
     elseif iTransform==3
-        rho0 = 1025; g = 9.81;
-        rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-        N2Function = @(z) N0*N0*ones(size(z));
-        dLnN2Function = @(z) zeros(size(z));
-        wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], rho,latitude=latitude,N2func=N2Function,dLnN2func=dLnN2Function);
+        N2 = @(z) N0*N0*ones(size(z));
+        wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=latitude);
 
         U = .2;
         omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
 		period = 2*pi/omega;
     end
-
-
 
     wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
 

@@ -3,7 +3,7 @@ layout: default
 title: writeToFile
 parent: WVTransform
 grand_parent: Classes
-nav_order: 185
+nav_order: 192
 mathjax: true
 ---
 
@@ -26,4 +26,11 @@ Output the `WVTransform` to file.
 
 ## Discussion
 
+  Writes the WVTransform instance to file, with enough information to
+  re-initialize. Pass additional variables to the variable list that
+  should also be written to file.
+ 
+  Subclasses should add any necessary properties or variables to the
+  variable list before calling this superclass method.
+ 
             

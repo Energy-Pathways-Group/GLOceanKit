@@ -63,7 +63,7 @@ classdef WVTransformHydrostatic < WVTransform
             
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
-            canInitializeDirectly = all(isfield(options,{'rho','N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
+            canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
 
             if canInitializeDirectly
                 % We already know the quadrature points
@@ -114,7 +114,7 @@ classdef WVTransformHydrostatic < WVTransform
             self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
 
             if canInitializeDirectly
-                self.rhoFunction = options.rho;
+                self.rhoFunction = im.rho_function;
                 self.N2Function = options.N2;
                 self.internalModes = im;
 
@@ -129,6 +129,8 @@ classdef WVTransformHydrostatic < WVTransform
                 self.h = options.h;
                 self.P = options.P;
                 self.Q = options.Q;
+
+                self.buildTransformationMatrices();
             else
                 if isequal(options.dLnN2func,@disp)
                     dLnN2 = im.rho_zz./im.rho_z;
@@ -456,47 +458,12 @@ classdef WVTransformHydrostatic < WVTransform
             ratio = 1/self.P(j0+1);
         end   
 
+        [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 
-        function ncfile = writeToFile(wvt,path,variables,options)
-            % Output the `WVTransform` to file.
-            %
-            % - Topic: Write to file
-            % - Declaration: ncfile = writeToFile(netcdfFile,variables,options)
-            % - Parameter path: path to write file
-            % - Parameter variables: strings of variable names.
-            % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
-            % - Parameter shouldAddDefaultVariables: (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
-            arguments
-                wvt WVTransform {mustBeNonempty}
-                path char {mustBeNonempty}
-            end
-            arguments (Repeating)
-                variables char
-            end
-            arguments
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-                options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1
-            end
-            [ncfile,matFilePath] = writeToFile@WVTransform(wvt,path,variables{:},shouldAddDefaultVariables=options.shouldAddDefaultVariables,shouldOverwriteExisting=options.shouldOverwriteExisting);
+    end
 
-            attributesToWrite = {'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','P','Q','h'};
-
-            rhoFunction = wvt.rhoFunction;
-            N2Function = wvt.N2Function;
-            dLnN2Function = wvt.dLnN2Function;
-            CreationDate = datestr(datetime('now'));
-            save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
-            fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
-
-            for iVar=1:length(attributesToWrite)
-                transformVar = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
-                attributes = containers.Map();
-                attributes('units') = transformVar.units;
-                attributes('description') = transformVar.description;
-                ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
-            end
-        end
-
+    methods (Static)
+        wvt = waveVortexTransformFromFile(path,options)
     end
    
         
