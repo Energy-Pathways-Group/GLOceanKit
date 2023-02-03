@@ -3,9 +3,10 @@ layout: default
 title: Operations
 parent: Users guide
 mathjax: true
+nav_order: 4
 ---
 
-#  Operations
+#  Creating new state variables
 
 The WaveVortexModel allows you to quickly and easily create custom operations to define new variables describing the state of the ocean. These new variables can saved to file and their values can be tracked along particle trajectories using the model.
 
