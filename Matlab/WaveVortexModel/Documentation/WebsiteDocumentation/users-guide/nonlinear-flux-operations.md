@@ -7,7 +7,31 @@ mathjax: true
 
 #  Nonlinear flux operations
 
-A the nonlinear flux defines how energy moves between the wave-vortex coefficients---these are the nonlinear terms in the equations of motion, transformed into wave-vortex space. The most basic implementation is a freely evolving, unforced (and undamped) flux. Customized forcing and damping are implemented by creating subclasses of WVNonlinearFluxOperation.
+A the nonlinear flux defines how energy moves between the wave-vortex coefficients---these are the nonlinear terms in the equations of motion, transformed into wave-vortex space.
+
+The following nonlinear flux operations are available,
+- `BoussinesqSpatial`
+- `Boussinesq`
+- `QGPVE`
+- `ForcedDissipativeQGPVE`
+
+Customized forcing and damping are implemented by creating subclasses of WVNonlinearFluxOperation.
+
+To set the nonlinear flux operation to be used call, for example,
+```matlab
+wvt.nonlinearFluxOperation = Boussinesq()
+```
+which then specifies how to compute `F0`, `Fp`, and `Fm`. The default nonlinear flux that is initialized with the `WVTransform` may not be appropriate for running a numerical model, which usually requires some combination of anti-aliasing or damping.
+
+When initializing a model `WVTransform` you can set the nonlinear flux to something more appropriate, e.g.,
+```matlab
+ model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,uv_damp=wvt.uMax));
+ ```
+
+
+## BoussinesqSpatial
+
+The most basic implementation is a freely evolving, unforced (and undamped) flux. 
 
 The unforced, undamped nonlinear terms in the equations of motion are,
 $$
@@ -59,7 +83,15 @@ end
 This operation can now be used by the `WVTransform` to compute nonlinear fluxes, and therefore also used by the `WVModel` to time step forward (integrate) the model. If you are just using a `WVTransform`, then calling
 
 ```matlab
-wvt.nonlinearFluxOperation = WVBoussinesq()
+wvt.nonlinearFluxOperation = BoussinesqSpatial()
 ```
 
-will cause the 
+will cause the `WVTransform` instance to use the new flux operation.
+
+## Boussinesq
+
+The `Boussinesq` nonlinear flux operation computes exactly the same flux terms as `BoussinesqSpatial`, but is more computationally efficient and offers additional options for anti-aliasing and damping. 
+
+## QGPVE
+
+The `QGPVE` nonlinear flux operation computes the quasigeostrophic potential vorticity flux, which *only* operates on the vortex coefficients `A0`.
