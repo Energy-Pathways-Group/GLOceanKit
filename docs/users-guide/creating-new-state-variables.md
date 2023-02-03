@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Operations
+title: Creating new state variables
 parent: Users guide
 mathjax: true
 nav_order: 4

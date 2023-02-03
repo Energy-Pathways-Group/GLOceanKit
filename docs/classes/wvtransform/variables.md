@@ -9,10 +9,8 @@ mathjax: true
 
 #  variables
 
-Primary method for accessing the dynamical variables on the
+access the dynamical variables
 
 
 ---
 
-## Discussion
-internal grid.

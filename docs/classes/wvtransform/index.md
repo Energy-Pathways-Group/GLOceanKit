@@ -176,8 +176,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
   + [`uMaxGNormRatioForWave`](/classes/wvtransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
-  + [`variables`](/classes/wvtransform/variables.html) Primary method for accessing the dynamical variables on the
-  + [`variablesAtPosition`](/classes/wvtransform/variablesatposition.html) Primary method for accessing the dynamical variables on the
+  + [`variables`](/classes/wvtransform/variables.html) access the dynamical variables
+  + [`variablesAtPosition`](/classes/wvtransform/variablesatposition.html) access the dynamical variables at any position in the domain
   + [`velocityField`](/classes/wvtransform/velocityfield.html) Return the velocity field, which is the sum of the gridded
   + [`version`](/classes/wvtransform/version.html) 
   + [`waveVortexCoefficientsAtTimeT`](/classes/wvtransform/wavevortexcoefficientsattimet.html) 

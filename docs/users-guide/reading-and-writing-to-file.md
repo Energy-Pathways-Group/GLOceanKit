@@ -4,6 +4,7 @@ title: Reading and writing to file
 parent: Users guide
 mathjax: true
 nav_order: 3
+has_toc: true
 ---
 
 #  Reading and writing to file
@@ -16,7 +17,7 @@ After you create a `WVTransform` instance
 ```matlab
 wvt = WVTransformConstantStratification([50e3 50e3 1300], [64 64 32]);
 ```
-you can simply call [`writeToFile`](/classes/wvtransform/writetofile.html)
+you call [`writeToFile`](/classes/wvtransform/writetofile.html)
 ```matlab
 wvt.writeToFile('test.nc');
 ```

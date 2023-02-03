@@ -12,7 +12,7 @@ There are two high-level components to the wave-vortex model, the `WVTransform` 
 
 ## WVTransform
 
-The `WVTransform` subclasses encapsulate data representing the *state* of the ocean at a given instant in time (e.g., $$u$$, $$v$$, $$w$$, and $$\rho$$). The `WVTransform` can be customized to tell you anything you want about the state of the ocean at a given point in time.
+The `WVTransform` subclasses encapsulate data representing the *state* of the ocean at a given instant in time (e.g., $$u$$, $$v$$, $$w$$, and $$\rho$$). The `WVTransform` can be customized to tell you anything you want about the state of the ocean at a point in time.
 
 ## WVModel
 

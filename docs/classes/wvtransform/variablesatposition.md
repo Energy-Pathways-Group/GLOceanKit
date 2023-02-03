@@ -9,18 +9,8 @@ mathjax: true
 
 #  variablesAtPosition
 
-Primary method for accessing the dynamical variables on the
+access the dynamical variables at any position in the domain
 
 
 ---
 
-## Discussion
-at any position or time.
- 
-  The method argument specifies how off-grid values should be
-  interpolated. Use 'exact' for the slow, but accurate,
-  spectral interpolation. Otherwise use 'spline' or some other
-  method used by Matlab's interp function.
- 
-  Valid variable options are 'u', 'v', 'w', 'rho_prime', and
-  'zeta'.
