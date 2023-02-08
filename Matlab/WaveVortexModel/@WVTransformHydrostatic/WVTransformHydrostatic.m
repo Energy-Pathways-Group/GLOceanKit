@@ -298,6 +298,8 @@ classdef WVTransformHydrostatic < WVTransform
             self.buildTransformationMatrices();
         end
                                 
+        u_z = diffZF(self,u,n);
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Nonlinear Flux

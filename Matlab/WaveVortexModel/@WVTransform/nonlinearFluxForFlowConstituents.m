@@ -51,9 +51,14 @@ Nxbar = ApmUxMask.*(self.NAp.*Apt + self.NAm.*Amt) + A0UxMask.*self.NA0.*A0t;
 % (pseudospectral!)
 uNL = -U.*Ux - V.*Uy - W.*Uz;
 vNL = -U.*Vx - V.*Vy - W.*Vz;
-nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
-% nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-
+if isa(self,'WVTransformConstantStratification')
+    nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+elseif isa(self,'WVTransformHydrostatic')
+    nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
+else
+    nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
+    warning('WVTransform not recognized.')
+end
 
 % Now apply the operator S^{-1} and then T_\omega^{-1}
 uNLbar = self.transformFromSpatialDomainWithF(uNL);
