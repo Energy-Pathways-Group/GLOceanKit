@@ -76,6 +76,26 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
         end
+
+        function [A,B] = EigenmatricesForGeostrophicGModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
+            B = diag( (- self.N2_xLobatto)/self.g )*T;
+
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+
+            if (self.g/(self.f0*self.f0))*(k*k) < 1
+                A(1,:) = sqrt(self.N2_xLobatto(1))*Tz(1,:) + (self.g/(self.f0*self.f0))*(k*k)*T(1,:);
+            else
+                A(1,:) = sqrt(self.N2_xLobatto(1))*(self.f0*self.f0)/(self.g *k*k)* Tz(1,:) + T(1,:);
+            end
+            B(1,:) = 0;
+        end
                 
         function [A,B] = ApplyBoundaryConditions(self,A,B)
             T = self.T_xLobatto;
