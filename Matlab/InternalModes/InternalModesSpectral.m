@@ -659,6 +659,8 @@ classdef InternalModesSpectral < InternalModesBase
                         A = sqrt(self.GNorm( Gj ));
                     case Normalization.omegaConstant
                         A = sqrt(self.FNorm( Fj ));
+                    case Normalization.geostrophicFreeSurface
+                        A = sqrt(self.GeostrophicNorm( Gj ));
                 end
                 if Fj(maxIndexZ) < 0
                     A = -A;
