@@ -183,6 +183,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
             self.FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
+            self.GeostrophicNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
         end   
     end

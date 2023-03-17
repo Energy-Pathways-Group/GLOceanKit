@@ -110,6 +110,7 @@ classdef InternalModesSpectral < InternalModesBase
         FFromGCheb;
         GNorm;
         FNorm;
+        GeostrophicNorm
     end
     
     properties (Dependent)
@@ -501,6 +502,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
             self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
+            self.GeostrophicNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* Gj .^ 2)));
             self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
         end
         
@@ -685,6 +687,9 @@ classdef InternalModesSpectral < InternalModesBase
                         varargout{iArg}(j) = abs(A/B);
                     elseif ( strcmp(varargin{iArg}, 'omegaConstant') )
                         B = sqrt(self.FNorm( Fj ));
+                        varargout{iArg}(j) = abs(A/B);
+                    elseif ( strcmp(varargin{iArg}, 'geostrophicNorm') )
+                        B = sqrt(self.GeostrophicNorm( Gj ));
                         varargout{iArg}(j) = abs(A/B);
                     else
                         error('Invalid option. You may request F2, G2, N2G2');
