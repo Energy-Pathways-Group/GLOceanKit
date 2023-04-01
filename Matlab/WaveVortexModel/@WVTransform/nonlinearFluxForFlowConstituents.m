@@ -1,6 +1,11 @@
 function [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUconstituent)
 % returns the flux of each coefficient as determined by the nonlinear flux operation
 %
+% This computes the nonlinear flux that results from a subset of flow
+% constituents. The masks are applied to the coefficients Ap,Am,A0 before
+% computing the nonlinear flux, $$\vec{u} \cdot \nabla \vec{u}$$. This
+% function calls -nonlinearFluxWithGradientMasks.
+%
 % - Topic: Nonlinear flux and energy transfers
 % - Declaration: [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(Uconstituent,gradUconstituent)
 % - Parameter Uconstituent: `WVFlowConstituent` type for $$\vec{u} \cdot \nabla \vec{u}$$
@@ -14,58 +19,14 @@ arguments
     gradUconstituent WVFlowConstituent
 end
 
-AA = ~(self.maskForAliasedModes(jFraction=2/3));
-
-% Apply operator T_\omega---defined in (C2) in the manuscript
-phase = exp(self.iOmega*(self.t-self.t0));
-Apt = AA .* self.Ap .* phase;
-Amt = AA .* self.Am .* conj(phase);
-A0t = AA .* self.A0;
-
 [ApmUMask,A0UMask] = self.masksForFlowConstituents(Uconstituent);
-
-% Apply operator S---defined in (C4) in the manuscript
-Ubar = ApmUMask.*(self.UAp.*Apt + self.UAm.*Amt) + A0UMask.*self.UA0.*A0t;
-Vbar = ApmUMask.*(self.VAp.*Apt + self.VAm.*Amt) + A0UMask.*self.VA0.*A0t;
-Wbar = ApmUMask.*(self.WAp.*Apt + self.WAm.*Amt);
-Nbar = ApmUMask.*(self.NAp.*Apt + self.NAm.*Amt) + A0UMask.*self.NA0.*A0t;
-
-% Finishing applying S, but also compute derivatives at the
-% same time
-U = self.transformToSpatialDomainWithF(Ubar);
-V = self.transformToSpatialDomainWithF(Vbar);
-W = self.transformToSpatialDomainWithG(Wbar);
-ETA = self.transformToSpatialDomainWithG(Nbar);
-
-% Finishing applying S, but also compute derivatives at the
-% same time
 [ApmUxMask,A0UxMask] = self.masksForFlowConstituents(gradUconstituent);
-Uxbar = ApmUxMask.*(self.UAp.*Apt + self.UAm.*Amt) + A0UxMask.*self.UA0.*A0t;
-Vxbar = ApmUxMask.*(self.VAp.*Apt + self.VAm.*Amt) + A0UxMask.*self.VA0.*A0t;
-Nxbar = ApmUxMask.*(self.NAp.*Apt + self.NAm.*Amt) + A0UxMask.*self.NA0.*A0t;
-[~,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Uxbar);
-[~,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Vxbar);
-[~,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Nxbar);
 
-% Compute the nonlinear terms in the spatial domain
-% (pseudospectral!)
-uNL = -U.*Ux - V.*Uy - W.*Uz;
-vNL = -U.*Vx - V.*Vy - W.*Vz;
-if isa(self,'WVTransformConstantStratification')
-    nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
-elseif isa(self,'WVTransformHydrostatic')
-    nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-else
-    nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-    warning('WVTransform not recognized.')
-end
+AA = ~(self.maskForAliasedModes(jFraction=2/3));
+ApmUMask = AA.*ApmUMask;
+A0UMask = AA.*A0UMask;
+ApmUxMask = AA.*ApmUxMask;
+A0UxMask = AA.*A0UxMask;
 
-% Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = self.transformFromSpatialDomainWithF(uNL);
-vNLbar = self.transformFromSpatialDomainWithF(vNL);
-nNLbar = self.transformFromSpatialDomainWithG(nNL);
-
-Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+[Fp,Fm,F0] = self.nonlinearFluxWithGradientMasks(ApmUMask,A0UMask,ApmUxMask,A0UxMask);
 end

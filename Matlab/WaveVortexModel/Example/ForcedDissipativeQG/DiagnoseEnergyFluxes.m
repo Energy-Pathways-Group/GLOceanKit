@@ -1,4 +1,4 @@
-file = 'ForcedDissipativeQG-256-restart.nc';
+file = 'ForcedDissipativeQG-spinup-256.nc';
 iTime = 10;
 wvt = WVTransform.waveVortexTransformFromFile(file,iTime=Inf);
 TotalEnergy = (wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0));
