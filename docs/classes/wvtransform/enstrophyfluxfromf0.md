@@ -1,15 +1,15 @@
 ---
 layout: default
-title: offgridModes
+title: enstrophyFluxFromF0
 parent: WVTransform
 grand_parent: Classes
-nav_order: 129
+nav_order: 81
 mathjax: true
 ---
 
-#  offgridModes
+#  enstrophyFluxFromF0
 
-subclass should initialize
+
 
 
 ---

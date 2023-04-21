@@ -9,7 +9,7 @@ function [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
 % The nonlinear flux used is the unforced, invicid equations.
 %
 % - Topic: Nonlinear flux and energy transfers
-% - Declaration: [Fp,Fm,F0] = nonlinearFluxWithMasks(ApmUMask,A0UMask,ApmUxMask,A0UxMask)
+% - Declaration: [Fp,Fm,F0] = nonlinearFluxWithMask(mask)
 % - Parameter mask: mask applied to all constituents
 % - Returns Fp: flux into the Ap coefficients
 % - Returns Fm: flux into the Am coefficients

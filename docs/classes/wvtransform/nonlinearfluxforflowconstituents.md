@@ -29,4 +29,9 @@ returns the flux of each coefficient as determined by the nonlinear flux operati
 
 ## Discussion
 
+  This computes the nonlinear flux that results from a subset of flow
+  constituents. The masks are applied to the coefficients Ap,Am,A0 before
+  computing the nonlinear flux, $$\vec{u} \cdot \nabla \vec{u}$$. This
+  function calls -nonlinearFluxWithGradientMasks.
+ 
               

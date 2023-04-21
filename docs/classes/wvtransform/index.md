@@ -170,9 +170,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Other
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
   + [`ExponentialFilter`](/classes/wvtransform/exponentialfilter.html) 
+  + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
   + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize
   + [`ongridModes`](/classes/wvtransform/ongridmodes.html) This is a cached copy
+  + [`qgpvFluxFromF0`](/classes/wvtransform/qgpvfluxfromf0.html) 
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
   + [`uMaxGNormRatioForWave`](/classes/wvtransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
@@ -254,11 +256,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformUVEtaToWaveVortex`](/classes/wvtransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
     + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
 + Nonlinear flux and energy transfers
-  + [`energyFlux`](/classes/wvtransform/energyflux.html) returns the energy flux into each coefficient
-  + [`energyFluxForFlowConstituents`](/classes/wvtransform/energyfluxforflowconstituents.html) returns the energy flux into each coefficient, from specific flow constituents
+  + [`energyFluxFromNonlinearFlux`](/classes/wvtransform/energyfluxfromnonlinearflux.html) converts nonlinear flux into energy flux
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxForFlowConstituents`](/classes/wvtransform/nonlinearfluxforflowconstituents.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
+  + [`nonlinearFluxWithGradientMasks`](/classes/wvtransform/nonlinearfluxwithgradientmasks.html) returns the flux of each coefficient as determined by the nonlinear flux operation
+  + [`nonlinearFluxWithMask`](/classes/wvtransform/nonlinearfluxwithmask.html) returns the flux of each coefficient as determined by the nonlinear flux
 + Masks
   + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
   + [`maskForNyquistModes`](/classes/wvtransform/maskfornyquistmodes.html) returns a mask with locations of modes that are not fully resolved
