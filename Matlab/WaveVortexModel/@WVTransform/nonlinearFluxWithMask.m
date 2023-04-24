@@ -26,16 +26,16 @@ Amt = mask .* self.Am .* conj(phase);
 A0t = mask .* self.A0;
 
 % Apply operator S---defined in (C4) in the manuscript
-Ubar = wvt.UAp.*Apt + wvt.UAm.*Amt + wvt.UA0.*A0t;
-Vbar = wvt.VAp.*Apt + wvt.VAm.*Amt + wvt.VA0.*A0t;
-Wbar = wvt.WAp.*Apt + wvt.WAm.*Amt;
-Nbar = wvt.NAp.*Apt + wvt.NAm.*Amt + wvt.NA0.*A0t;
+Ubar = self.UAp.*Apt + self.UAm.*Amt + self.UA0.*A0t;
+Vbar = self.VAp.*Apt + self.VAm.*Amt + self.VA0.*A0t;
+Wbar = self.WAp.*Apt + self.WAm.*Amt;
+Nbar = self.NAp.*Apt + self.NAm.*Amt + self.NA0.*A0t;
 
 % Finishing applying S, but also compute derivatives at the same time
-[U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
-[V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
-W = wvt.transformToSpatialDomainWithG(Wbar);
-[ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
+[U,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Ubar);
+[V,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Vbar);
+W = self.transformToSpatialDomainWithG(Wbar);
+[ETA,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Nbar);
 
 % Compute the nonlinear terms in the spatial domain (pseudospectral!)
 uNL = -U.*Ux - V.*Uy - W.*Uz;
