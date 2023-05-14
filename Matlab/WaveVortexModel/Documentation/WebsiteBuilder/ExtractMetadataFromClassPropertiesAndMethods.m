@@ -24,7 +24,7 @@ end
 
 metadataNameMap = containers.Map;
 for i=1:length(mc.MethodList)
-    metadata = ExtractMethodMetadata(mc.MethodList(i));
+    metadata = ExtractMethodMetadata(mc.MethodList(i),mc.Name);
     if ~isempty(metadata)
         if mc.MethodList(i).Static == 1
             metadata.functionType = FunctionType.staticMethod;
@@ -37,7 +37,7 @@ for i=1:length(mc.MethodList)
     end
 end
 for i=1:length(mc.PropertyList)
-    metadata = ExtractMethodMetadata(mc.PropertyList(i));
+    metadata = ExtractMethodMetadata(mc.PropertyList(i),mc.Name);
     if ~isempty(metadata)
         metadata.functionType = FunctionType.instanceProperty;
         metadataNameMap(metadata.name) = metadata;
@@ -45,9 +45,14 @@ for i=1:length(mc.PropertyList)
 end
 end
 
-function metadata = ExtractMethodMetadata(mp)
+function metadata = ExtractMethodMetadata(mp,className)
 % Extract documentation from method or property (mp) metadata.
 metadata = [];
+
+% Don't create documentation if this is a method defined in the superclass
+if ~strcmp(mp.DefiningClass.Name,className)
+    return;
+end
 
 % First check if we even want to create documentation for this particular
 % property or method.
