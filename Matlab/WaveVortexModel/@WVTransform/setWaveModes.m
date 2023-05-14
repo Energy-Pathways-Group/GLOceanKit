@@ -1,4 +1,4 @@
-function [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, u, signs)
+function [omega,k,l] = setWaveModes(self, waveproperties)
 % set amplitudes of the given wave modes
 %
 % Overwrite any existing wave modes with the given new values
@@ -13,6 +13,23 @@ function [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, u, signs)
 % - Returns omega: frequencies of the waves (radians/s)
 % - Returns k: wavenumber k of the waves (radians/m)
 % - Returns l: wavenumber l of the waves (radians/m)
+arguments
+    self WVTransform {mustBeNonempty}
+    waveproperties.k (:,1) double
+    waveproperties.l (:,1) double
+    waveproperties.j (:,1) double
+    waveproperties.phi (:,1) double
+    waveproperties.u (:,1) double
+    waveproperties.sign (:,1) double
+end
+
+kMode = waveproperties.k;
+lMode = waveproperties.l;
+jMode = waveproperties.j;
+phi = waveproperties.phi;
+u = waveproperties.u;
+signs = waveproperties.sign;
+
 [kIndex,lIndex,jIndex,ApAmp,AmAmp] = self.waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs);
 self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = ApAmp(abs(ApAmp)>0);
 self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = AmAmp(abs(AmAmp)>0);

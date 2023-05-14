@@ -993,9 +993,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        [omega,k,l] = initWithWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
-        [omega,k,l] = setWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)
-        [omega,k,l] = addWaveModes(self, kMode, lMode, jMode, phi, Amp, signs)  
+        [omega,k,l] = initWithWaveModes(self, waveproperties)
+        [omega,k,l] = setWaveModes(self, waveproperties)
+        [omega,k,l] = addWaveModes(self, waveproperties) 
         removeAllWaves(self);
         
         [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)

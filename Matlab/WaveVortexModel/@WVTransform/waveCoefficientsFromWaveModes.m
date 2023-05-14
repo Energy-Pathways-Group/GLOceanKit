@@ -27,6 +27,16 @@ function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self
 % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
 % - Parameter Amp: fluid velocity u (m/s)
 % - Parameter sign: sign of the frequency, +1 or -1
+arguments
+    self WVTransform {mustBeNonempty}
+    kMode (:,1) double
+    lMode (:,1) double
+    jMode (:,1) double
+    phi (:,1) double
+    u (:,1) double
+    signs (:,1) double
+end
+
 if ~isequal(size(kMode), size(lMode), size(jMode), size(phi), size(u), size(signs))
     error('All input array must be of equal size');
 end
