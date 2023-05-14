@@ -3,7 +3,7 @@ layout: default
 title: isComplex
 parent: WVPropertyAnnotation
 grand_parent: Classes
-nav_order: 5
+nav_order: 3
 mathjax: true
 ---
 

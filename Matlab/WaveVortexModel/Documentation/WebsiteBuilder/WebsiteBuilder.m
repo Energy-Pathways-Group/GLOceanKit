@@ -13,3 +13,4 @@ BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
 BuildDocumentationForClass('WVModel',classDocumentationFolder);
 
 BuildDocumentationForWVTransformSubclass(classDocumentationFolder);
+BuildDocumentationForClass('WVTransformHydrostatic',classDocumentationFolder);

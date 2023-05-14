@@ -37,9 +37,6 @@ Describes a coordinate dimension of the WVTransform
 + Initialization
   + [`WVDimensionAnnotation`](/classes/wvdimensionannotation/wvdimensionannotation.html) create a new instance of WVDimensionAnnotation
 + Properties
-  + [`description`](/classes/wvdimensionannotation/description.html) short description of the method, property, or variable
-  + [`detailedDescription`](/classes/wvdimensionannotation/detaileddescription.html) a detailed description of the method, property, or variable
-  + [`name`](/classes/wvdimensionannotation/name.html) of the method, property, or variable
   + [`units`](/classes/wvdimensionannotation/units.html) of the dimension
 
 

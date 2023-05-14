@@ -1,16 +1,21 @@
 classdef WVTransformHydrostatic < WVTransform
-    % 3D hydrostatic Boussinesq model with arbitrary stratification solved
-    % in wave-vortex space
+    % A class for disentangling hydrostatic waves and vortices in variable
+    % stratification
     %
-    % Couple of different initialization paths:
-    % 1) You want to run this as a prognostic model and therefore want
-    %    the chebyshev points automatically found for you
-    %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho)
+    % To initialization an instance of the WVTransformHydrostatic class you
+    % must specific the domain size, the number of grid points and *either*
+    % the density profile or the stratification profile.
+    % 
+    % ```matlab
+    % N0 = 3*2*pi/3600;
+    % L_gm = 1300;
+    % N2 = @(z) N0*N0*exp(2*z/L_gm);
+    % wvt = WVTransformHydrostatic([100e3, 100e3, 4000],[64, 64, 65], N2=N2,latitude=30);
+    % ```
     %
-    % 2) You want to run this as a diagnostic model and therefore want
-    %    to specify the depths and modes yourself
-    %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho, 'zgrid', z)
-
+    % - Topic: Initialization
+    %
+    % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
     properties (GetAccess=public, SetAccess=protected)
         rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
         rhoFunction, N2Function, dLnN2Function % function handles
@@ -37,6 +42,21 @@ classdef WVTransformHydrostatic < WVTransform
     methods
          
         function self = WVTransformHydrostatic(Lxyz, Nxyz, options)
+            % create a wave-vortex transform for variable stratification
+            %
+            % Creates a new instance of the WVTransformHydrostatic class
+            % appropriate for disentangling hydrostatic waves and vortices
+            % in variable stratification
+            %
+            % - Topic: Initialization
+            % - Declaration: wvt = WVTransformHydrostatic(Lxyz, Nxyz, options)
+            % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
+            % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
+            % - Parameter rho:  (optional) function_handle specifying the density as a function of depth on the domain [-Lz 0]
+            % - Parameter stratificaiton:  (optional) function_handle specifying the stratification as a function of depth on the domain [-Lz 0]
+            % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
+            % - Parameter rho0: (optional) density at the surface z=0 (default is 1025 kg/m^3)
+            % - Returns wvt: a new WVTransformConstantStratification instance
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}

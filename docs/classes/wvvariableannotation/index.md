@@ -41,14 +41,11 @@ Describes a variable computed from the WVTransform
 + Initialization
   + [`WVVariableAnnotation`](/classes/wvvariableannotation/wvvariableannotation.html) create a new instance of WVVariableAnnotation
 + Properties
-  + [`description`](/classes/wvvariableannotation/description.html) short description of the method, property, or variable
-  + [`detailedDescription`](/classes/wvvariableannotation/detaileddescription.html) a detailed description of the method, property, or variable
   + [`dimensions`](/classes/wvvariableannotation/dimensions.html) ordered cell array with the names of the dimensions
   + [`isComplex`](/classes/wvvariableannotation/iscomplex.html) boolean indicating whether or not the variable may have an imaginary part
   + [`isVariableWithLinearTimeStep`](/classes/wvvariableannotation/isvariablewithlineartimestep.html) boolean indicating whether the variable changes value with a linear time step
   + [`isVariableWithNonlinearTimeStep`](/classes/wvvariableannotation/isvariablewithnonlineartimestep.html) boolean indicating whether the variable changes value with a non-linear time step
   + [`modelOp`](/classes/wvvariableannotation/modelop.html) WVOperation responsible for computing this variable
-  + [`name`](/classes/wvvariableannotation/name.html) of the method, property, or variable
   + [`units`](/classes/wvvariableannotation/units.html) of the variable
 
 

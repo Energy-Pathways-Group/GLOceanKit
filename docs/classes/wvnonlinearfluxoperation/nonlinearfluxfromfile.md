@@ -3,7 +3,7 @@ layout: default
 title: nonlinearFluxFromFile
 parent: WVNonlinearFluxOperation
 grand_parent: Classes
-nav_order: 11
+nav_order: 6
 mathjax: true
 ---
 
