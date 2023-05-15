@@ -1,4 +1,18 @@
 cd(fileparts(which(mfilename)))
+
+transformAndModelClassDocumentationFolder = '../../../../docs/classestransformandmodel';
+
+BuildDocumentationForClass('WVModel',classDocumentationFolder);
+BuildDocumentationForWVTransformSubclass(classDocumentationFolder);
+BuildDocumentationForClass('WVTransformHydrostatic',classDocumentationFolder);
+BuildDocumentationForClass('WVTransformConstantStratification',classDocumentationFolder);
+
+nonlinearFluxClassDocumentationFolder = '../../../../docs/classesnonlinearflux';
+
+BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
+BuildDocumentationForClass('Boussinesq',classDocumentationFolder);
+BuildDocumentationForClass('BoussinesqSpatial',classDocumentationFolder);
+
 classDocumentationFolder = '../../../../docs/classes';
 
 BuildDocumentationForClass('WVAnnotation',classDocumentationFolder);
@@ -10,10 +24,6 @@ BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
 
 % ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 
-BuildDocumentationForClass('WVModel',classDocumentationFolder);
 
-BuildDocumentationForWVTransformSubclass(classDocumentationFolder);
-BuildDocumentationForClass('WVTransformHydrostatic',classDocumentationFolder);
-BuildDocumentationForClass('WVTransformConstantStratification',classDocumentationFolder);
 
 BuildDocumentationForClass('NetCDFFile',classDocumentationFolder);

@@ -1,5 +1,25 @@
 classdef Boussinesq < WVNonlinearFluxOperation
-
+    % 3D nonlinear flux for Boussinesq flow, appropriate for numerical modeling
+    %
+    % Computes the nonlinear flux for a Boussinesq model, and has options
+    % for anti-aliasing and damping appropriate for running a numerical
+    % model. This is *not* the simplest implementation, but instead adds
+    % some complexity in favor of speed. The [BoussinesqSpatial](/classes/boussinesqspatial/) class
+    % shows a simple implementation.
+    %
+    % The damping is a simple Laplacian, but with a spectral vanishing
+    % viscosity (SVV) operator applied that prevents any damping below a
+    % cutoff wavenumber. The SVV operator adjusts the wavenumbers being
+    % damped depending on whether anti-aliasing is applied.
+    %
+    % This is most often used when initializing a model, e.g.,
+    %
+    % ```matlab
+    % model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+    % ```
+    %
+    % - Topic: Initializing
+    % - Declaration: Boussinesq < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         shouldAntialias = 0
         AA
@@ -11,9 +31,19 @@ classdef Boussinesq < WVNonlinearFluxOperation
 
     methods
         function self = Boussinesq(wvt,options)
+            % initialize the Boussinesq nonlinear flux
+            %
+            % - Declaration: nlFlux = Boussinesq(wvt,options)
+            % - Parameter wvt: a WVTransform instance
+            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax.
+            % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
+            % - Parameter nu_xy: (optional) coefficient for damping
+            % - Parameter nu_z: (optional) coefficient for damping
+            % - Parameter shouldAntialias: (optional) a Boolean indicating whether or not to antialias (default 1)
+            % - Returns nlFlux: a Boussinesq instance
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.uv_damp (1,1) double % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double 
                 options.w_damp (1,1) double % characteristic speed used to set the damping. Try using wMax
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double

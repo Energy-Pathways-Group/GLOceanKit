@@ -1,6 +1,18 @@
 classdef BoussinesqSpatial < WVNonlinearFluxOperation
+    % 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
+    %
+    % Computes the nonlinear flux for a Boussinesq model. This class is not
+    % intended to be used for numerical modeling as it does not have any
+    % antialiasing or damping, but is indended as an example. The
+    % implementation is *simple* and follows directly from the equations of
+    % motion, but it is not the fastest implementation. To compute
+    % nonlinear fluxes appropriate for numerical modeling, use the
+    % [Boussinesq](/classes/boussinesq/) class.
+    %
+    % - Topic: Initializing
+    % - Declaration: BoussinesqSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
-        dLnN2
+        dLnN2 = 0
     end
     methods
         function self = BoussinesqSpatial(wvt)
@@ -14,9 +26,13 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
             self@WVNonlinearFluxOperation('BoussinesqSpatial',fluxVar);
 
             if isa(wvt,'WVTransformConstantStratification')
-                self.dLnN2 = zeros(size(wvt.z));
+                self.dLnN2 = 0;
             elseif isa(wvt,'WVTransformHydrostatic')
                 self.dLnN2 = wvt.dLnN2;
+            else
+                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
+                warning('WVTransform not recognized.')
+            end
             end
         end
 
