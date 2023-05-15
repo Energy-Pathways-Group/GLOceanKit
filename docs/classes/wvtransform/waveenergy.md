@@ -3,7 +3,7 @@ layout: default
 title: waveEnergy
 parent: WVTransform
 grand_parent: Classes
-nav_order: 190
+nav_order: 191
 mathjax: true
 ---
 

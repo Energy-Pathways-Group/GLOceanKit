@@ -133,9 +133,17 @@ outputVar = WVVariableAnnotation('eta',{'x','y','z'},'m', 'isopycnal deviation')
 f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
 operations(end+1) = WVOperation('eta',outputVar,f);
 
-outputVar = WVVariableAnnotation('rho_e',{'x','y','z'},'kg/m^3', 'excess density');
+% outputVar = WVVariableAnnotation('rho_e',{'x','y','z'},'kg/m^3', 'excess density');
+% f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
+% operations(end+1) = WVOperation('rho_e',outputVar,f);
+
+outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
 f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
-operations(end+1) = WVOperation('rho_e',outputVar,f);
+operations(end+1) = WVOperation('rho_prime',outputVar,f);
+
+outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
+operations(end+1) = WVOperation('rho_total',outputVar,f);
 
 outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
 f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega ./ (wvt.h * wvt.f)) .*wvt.A0t);

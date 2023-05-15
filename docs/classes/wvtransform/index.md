@@ -191,7 +191,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`p`](/classes/wvtransform/p.html) pressure anomaly
   + [`psi`](/classes/wvtransform/psi.html) geostrophic streamfunction
   + [`qgpv`](/classes/wvtransform/qgpv.html) quasigeostrophic potential vorticity
-  + [`rho_e`](/classes/wvtransform/rho_e.html) excess density
+  + [`rho_prime`](/classes/wvtransform/rho_prime.html) density anomaly
+  + [`rho_total`](/classes/wvtransform/rho_total.html) total potential density
   + [`seaSurfaceHeight`](/classes/wvtransform/seasurfaceheight.html) sea-surface height
   + [`seaSurfaceU`](/classes/wvtransform/seasurfaceu.html) x-component of the fluid velocity at the surface
   + [`seaSurfaceV`](/classes/wvtransform/seasurfacev.html) y-component of the fluid velocity at the surface

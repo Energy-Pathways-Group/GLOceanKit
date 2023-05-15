@@ -1,7 +1,10 @@
 function wvt = waveVortexTransformFromFile(path,options)
 % Initialize a WVTransformHydrostatic instance from an existing file
 %
-% - Topic: Initialization
+% This static method is called by WVTransform.waveVortexTransformFromFile
+% and should not need to be called directly.
+%
+% - Topic: Initialization (Static)
 % - Declaration: wvt = waveVortexTransformFromFile(path,options)
 % - Parameter path: path to a NetCDF file
 % - Parameter iTime: (optional) time index to initialize from (default 1)

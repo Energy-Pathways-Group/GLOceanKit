@@ -14,3 +14,4 @@ BuildDocumentationForClass('WVModel',classDocumentationFolder);
 
 BuildDocumentationForWVTransformSubclass(classDocumentationFolder);
 BuildDocumentationForClass('WVTransformHydrostatic',classDocumentationFolder);
+BuildDocumentationForClass('WVTransformConstantStratification',classDocumentationFolder);

@@ -1,6 +1,5 @@
 classdef WVTransformHydrostatic < WVTransform
-    % A class for disentangling hydrostatic waves and vortices in variable
-    % stratification
+    % A class for disentangling hydrostatic waves and vortices in variable stratification
     %
     % To initialization an instance of the WVTransformHydrostatic class you
     % must specific the domain size, the number of grid points and *either*
@@ -48,15 +47,18 @@ classdef WVTransformHydrostatic < WVTransform
             % appropriate for disentangling hydrostatic waves and vortices
             % in variable stratification
             %
+            % You must initialization by passing *either* the density
+            % profile or the stratification profile.
+            %
             % - Topic: Initialization
             % - Declaration: wvt = WVTransformHydrostatic(Lxyz, Nxyz, options)
             % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
             % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
             % - Parameter rho:  (optional) function_handle specifying the density as a function of depth on the domain [-Lz 0]
-            % - Parameter stratificaiton:  (optional) function_handle specifying the stratification as a function of depth on the domain [-Lz 0]
+            % - Parameter stratification:  (optional) function_handle specifying the stratification as a function of depth on the domain [-Lz 0]
             % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
             % - Parameter rho0: (optional) density at the surface z=0 (default is 1025 kg/m^3)
-            % - Returns wvt: a new WVTransformConstantStratification instance
+            % - Returns wvt: a new WVTransformHydrostatic instance
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
@@ -177,14 +179,6 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
-
-            outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addOperation(WVOperation('rho_prime',outputVar,f));
-
-            outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
-            f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
-            self.addOperation(WVOperation('rho_total',outputVar,f));
 
             self.nonlinearFluxOperation = Boussinesq(self);
         end

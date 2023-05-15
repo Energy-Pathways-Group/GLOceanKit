@@ -1,6 +1,15 @@
 classdef WVTransformConstantStratification < WVTransform
     % Wave-vortex transformation that assumes constant stratification
     %
+    % To initialization an instance of the
+    % WVTransformConstantStratification class you must specific the
+    % stratification and latitude, otherwise defaults will be assumed for
+    % you.
+    % 
+    % ```matlab
+    % N0 = 3*2*pi/3600;
+    % wvt = WVTransformConstantStratification([100e3, 100e3, 1300],[64, 64, 65], NN0=N0,latitude=30);
+    % ```
     %
     % - Topic: Initialization
     %
@@ -88,14 +97,14 @@ classdef WVTransformConstantStratification < WVTransform
                 self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
             end
 
-
-            outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
-            f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
-            self.addOperation(WVOperation('rho_prime',outputVar,f));
-
-            outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
-            f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
-            self.addOperation(WVOperation('rho_total',outputVar,f));
+            % 
+            % outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+            % f = @(wvt) (wvt.rho0/9.81)*reshape(wvt.N2,1,1,[]).*wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + self.NAm.*wvt.Amt + self.NA0.*wvt.A0t);
+            % self.addOperation(WVOperation('rho_prime',outputVar,f));
+            % 
+            % outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
+            % f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
+            % self.addOperation(WVOperation('rho_total',outputVar,f));
 
             self.nonlinearFluxOperation = Boussinesq(self);
         end

@@ -9,7 +9,7 @@ mathjax: true
 
 #  WVTransformHydrostatic
 
-A class for disentangling hydrostatic waves and vortices in variable
+A class for disentangling hydrostatic waves and vortices in variable stratification
 
 
 ---
@@ -19,7 +19,6 @@ A class for disentangling hydrostatic waves and vortices in variable
 <div class="language-matlab highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classdef WVTransformHydrostatic < <a href="/classes/wvtransform/" title="WVTransform">WVTransform</a></code></pre></div></div>
 
 ## Overview
-  stratification
  
   To initialization an instance of the WVTransformHydrostatic class you
   must specific the domain size, the number of grid points and *either*
@@ -39,7 +38,6 @@ A class for disentangling hydrostatic waves and vortices in variable
 ## Topics
 + Initialization
   + [`WVTransformHydrostatic`](/classes/wvtransformhydrostatic/wvtransformhydrostatic.html) create a wave-vortex transform for variable stratification
-  + [`waveVortexTransformFromFile`](/classes/wvtransformhydrostatic/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
   + [`waveVortexTransformWithResolution`](/classes/wvtransformhydrostatic/wavevortextransformwithresolution.html) create a new WVTransform with increased resolution
 + Other
   + [`A0_HKE_factor`](/classes/wvtransformhydrostatic/a0_hke_factor.html) 
@@ -83,6 +81,8 @@ A class for disentangling hydrostatic waves and vortices in variable
     + [`FinvMatrix`](/classes/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
 + Nonlinear flux and energy transfers
   + [`nonlinearFlux`](/classes/wvtransformhydrostatic/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
++ Initialization (Static)
+  + [`waveVortexTransformFromFile`](/classes/wvtransformhydrostatic/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
 + Write to file
   + [`writeToFile`](/classes/wvtransformhydrostatic/writetofile.html) Output the `WVTransform` to file.
 

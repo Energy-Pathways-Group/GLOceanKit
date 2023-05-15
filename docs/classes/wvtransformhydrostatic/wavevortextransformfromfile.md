@@ -24,4 +24,7 @@ Initialize a WVTransformHydrostatic instance from an existing file
 
 ## Discussion
 
+  This static method is called by WVTransform.waveVortexTransformFromFile
+  and should not need to be called directly.
+ 
         
