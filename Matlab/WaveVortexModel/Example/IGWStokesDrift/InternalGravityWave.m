@@ -1,32 +1,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Specify the problem dimensions
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-N = 64;
-
-Lx = 50e3;
-Ly = Lx;
-Lz = 1300;
-
-Nx = N;
-Ny = N;
-Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
-
-latitude = 25;
-N0 = 5.2e-3; % Choose your stratification 7.6001e-04
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
 % Initialize the model
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
-
-U = .2; phi=0;
-omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
+wvt = WVTransformConstantStratification([50e3, 50e3, 1300],[64, 64, 65], N0=5.2e-3,latitude=25);
+omega = wvt.initWithWaveModes(k=10,l=0,j=1,phi=0,U=0.2,sign=1);
 period = 2*pi/omega;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,9 +19,9 @@ model = WVModel(wvt);
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
-xFloat = Lx/2*ones(1,nTrajectories);
-yFloat = Ly/2*ones(1,nTrajectories);
-zFloat = linspace(-Lz,0,nTrajectories);
+xFloat = wvt.Lx/2*ones(1,nTrajectories);
+yFloat = wvt.Ly/2*ones(1,nTrajectories);
+zFloat = linspace(-wvt.Lz,0,nTrajectories);
 
 model.setFloatPositions(xFloat,yFloat,zFloat,'rho_total');
 

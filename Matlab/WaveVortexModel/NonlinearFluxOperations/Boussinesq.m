@@ -36,7 +36,7 @@ classdef Boussinesq < WVNonlinearFluxOperation
             end
             
             if isa(wvt,'WVTransformConstantStratification')
-                self.dLnN2 = zeros(size(wvt.z));
+                self.dLnN2 = 0;
             elseif isa(wvt,'WVTransformHydrostatic')
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             else
