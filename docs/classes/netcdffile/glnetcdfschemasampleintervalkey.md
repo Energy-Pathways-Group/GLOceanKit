@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaSampleIntervalKey
 
-- Topic: Schema keys — Dimensions
+sample interval of the domain, if it is evenly sampled
 
 
 ---

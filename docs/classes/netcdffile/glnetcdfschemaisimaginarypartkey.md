@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsImaginaryPartKey
 
-- Topic: Schema keys — Variables
+A Boolean value that indicates whether this is the complex part of the variable
 
 
 ---

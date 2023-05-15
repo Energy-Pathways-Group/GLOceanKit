@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsEvenlySampledKey
 
-- Topic: Schema keys — Dimensions
+A Boolean value that indicates whether the dimension has even sampling
 
 
 ---

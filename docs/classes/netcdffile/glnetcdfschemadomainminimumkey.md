@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaDomainMinimumKey
 
-- Topic: Schema keys — Dimensions
+The minimum value of the domain
 
 
 ---

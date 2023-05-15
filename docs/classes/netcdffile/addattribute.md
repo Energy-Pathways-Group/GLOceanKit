@@ -9,8 +9,19 @@ mathjax: true
 
 #  addAttribute
 
-- Topic: Working with global attributes
+add a global attribute to the file
 
 
 ---
 
+## Declaration
+```matlab
+ addAttribute(name,data)
+```
+## Parameters
++ `name`  string of the attribute name
++ `data`  value
+
+## Discussion
+
+        

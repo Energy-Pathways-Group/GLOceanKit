@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaProperNameKey
 
-- Topic: Schema keys — Variables
+Human readable name of the variable
 
 
 ---

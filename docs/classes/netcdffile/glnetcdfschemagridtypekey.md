@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaGridTypeKey
 
-- Topic: Schema keys — Dimensions
+type of grid
 
 
 ---

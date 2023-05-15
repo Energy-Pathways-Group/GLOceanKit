@@ -1,8 +1,25 @@
 classdef NetCDFFile < handle
     % A class for reading and writing to NetCDF files
-
-    % Simplifies and improves the consistency of reading and writing to
-    % NetCDF files compared to the built-in Matlab options.
+    %
+    % NetCDF files are a standard file format for reading and writing data.
+    % This class is designed to simplify the task of adding new dimensions,
+    % variables, and attributes to a NetCDF file compared to using the
+    % built-in `ncread` and `ncwrite` functions.
+    %
+    % ```matlab
+    % ncfile = NetCDFFile('myfile.nc')
+    %
+    % % create two new dimensions and add them to the file
+    % x = linspace(0,10,11);
+    % y = linspace(-10,0,11);
+    % ncfile.addDimension('x',x);
+    % ncfile.addDimension('y',y);
+    %
+    % % Create new multi-dimensional variables, and add those to the file
+    % [X,Y] = ncgrid(x,y);
+    % ncfile.addVariable(X,{'x','y'});
+    % ncfile.addVariable(Y,{'x','y'});
+    % ```
     %
     % - Topic: Initializing
     % - Topic: Accessing file properties
@@ -10,6 +27,8 @@ classdef NetCDFFile < handle
     % - Topic: Working with variables
     % - Topic: Working with global attributes
     % - Topic: Schema keys
+    % - Topic: Schema keys — Dimensions
+    % - Topic: Schema keys — Variables
     %
     % - Declaration: classdef NetCDFFile < handle
     properties
@@ -80,40 +99,71 @@ classdef NetCDFFile < handle
         % - Topic: Schema keys
         GLNetCDFSchemaVersionKey = "GLNetCDFSchemaVersion";
 
+        % A Boolean value that indicates whether the dimension is associated with a coordinate variable
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsCoordinateVariableKey = "isCoordinateVariable";
+
+        % A Boolean value that indicates whether the dimension is periodic
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsPeridiocKey = "isPeriodic";
+
+        % A Boolean value that indicates whether the dimension is mutable
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaMutableKey = "isMutable";
+
+        % The minimum value of the domain
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaDomainMinimumKey = "domainMin";
+
+        % What basis function describe this dimension
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaBasisFunctionKey = "basisFunction";
+
+        % The length of the domain
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaDomainLengthKey = "domainLength";
+
+        % A Boolean value that indicates whether the dimension has even sampling
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsEvenlySampledKey = "isEvenlySampled";
+
+        % sample interval of the domain, if it is evenly sampled
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaSampleIntervalKey = "sampleInterval";
+
+        % type of grid
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaGridTypeKey = "gridType";
+
+        % A Boolean value that indicates whether the dimension is considered in the frequency (spectral) domain
         % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsFrequencyDomainKey = "isFrequencyDomain";
 
+        % Units of the variable or dimension
         % - Topic: Schema keys
         GLNetCDFSchemaUnitsKey = "units";
 
+        % A Boolean value that indicates whether the variable is complex valued
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsComplexKey = "isComplex";
+
+        % Human readable name of the variable
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaProperNameKey = "properName";
+
+        % A Boolean value that indicates whether this is the real part of the variable
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsRealPartKey = "isRealPart";
+
+        % A Boolean value that indicates whether this is the complex part of the variable
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsImaginaryPartKey = "isImaginaryPart";
+
+        % A Boolean value that indicates whether the variable was defined as a row vector
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsRowVectorKey = "isRowVector";
+
+        % A custom unique variable ID
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaUniqueVariableIDKey = "uniqueVariableID";
     end
@@ -228,7 +278,12 @@ classdef NetCDFFile < handle
 
 
         function addAttribute(self,name,data)
+            % add a global attribute to the file
+            %
             % - Topic: Working with global attributes
+            % - Declaration: addAttribute(name,data)
+            % - Parameter name: string of the attribute name
+            % - Parameter data: value
             netcdf.reDef(self.ncid);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), name, data);
             netcdf.endDef(self.ncid);
@@ -319,6 +374,12 @@ classdef NetCDFFile < handle
             % imaginary parts separately.
             %
             % - Topic: Working with variables
+            % - Declaration: complexVariable = initComplexVariable(name,dimNames,properties,ncType)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter dimNames: cell array containing the dimension names
+            % - Parameter properties: (optional) `containers.Map`
+            % - Parameter properties: ncType
+            % - Returns complexVariable: a NetCDFComplexVariable object
             if isKey(self.complexVariableWithName,name)
                 error('A variable with the name %s already exists.',name);
             end

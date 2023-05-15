@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsFrequencyDomainKey
 
-- Topic: Schema keys — Dimensions
+A Boolean value that indicates whether the dimension is considered in the frequency (spectral) domain
 
 
 ---

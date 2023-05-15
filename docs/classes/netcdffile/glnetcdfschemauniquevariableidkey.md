@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaUniqueVariableIDKey
 
-- Topic: Schema keys — Variables
+A custom unique variable ID
 
 
 ---

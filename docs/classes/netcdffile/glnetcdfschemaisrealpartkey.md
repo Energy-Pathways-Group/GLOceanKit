@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsRealPartKey
 
-- Topic: Schema keys — Variables
+A Boolean value that indicates whether this is the real part of the variable
 
 
 ---

@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsComplexKey
 
-- Topic: Schema keys — Variables
+A Boolean value that indicates whether the variable is complex valued
 
 
 ---

@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaDomainLengthKey
 
-- Topic: Schema keys — Dimensions
+The length of the domain
 
 
 ---

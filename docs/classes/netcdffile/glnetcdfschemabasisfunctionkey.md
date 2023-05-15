@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaBasisFunctionKey
 
-- Topic: Schema keys — Dimensions
+What basis function describe this dimension
 
 
 ---

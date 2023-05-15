@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaUnitsKey
 
-- Topic: Schema keys
+Units of the variable or dimension
 
 
 ---

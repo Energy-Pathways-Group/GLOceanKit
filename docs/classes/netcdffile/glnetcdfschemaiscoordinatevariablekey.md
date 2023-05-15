@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsCoordinateVariableKey
 
-- Topic: Schema keys — Dimensions
+A Boolean value that indicates whether the dimension is associated with a coordinate variable
 
 
 ---
