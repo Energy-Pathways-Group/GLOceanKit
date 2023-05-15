@@ -9,8 +9,11 @@ mathjax: true
 
 #  concatenateVariableAlongDimension
 
-
+append new data to an existing variable
 
 
 ---
 
+## Discussion
+
+  

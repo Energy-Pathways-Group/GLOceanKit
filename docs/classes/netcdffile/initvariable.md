@@ -9,8 +9,12 @@ mathjax: true
 
 #  initVariable
 
-
+initialize a real-valued variable
 
 
 ---
 
+## Discussion
+
+ 
+  

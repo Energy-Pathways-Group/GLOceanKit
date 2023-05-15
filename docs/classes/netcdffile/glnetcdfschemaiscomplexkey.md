@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsComplexKey
 
-attributes for variables
+- Topic: Schema keys — Variables
 
 
 ---

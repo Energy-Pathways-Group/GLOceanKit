@@ -9,8 +9,11 @@ mathjax: true
 
 #  setVariable
 
-
+add data for a variable with a given name
 
 
 ---
 
+## Discussion
+
+  

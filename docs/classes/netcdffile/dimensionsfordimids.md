@@ -9,8 +9,11 @@ mathjax: true
 
 #  dimensionsForDimIDs
 
-
+return the dimension IDs given the dimension names
 
 
 ---
 
+## Discussion
+
+  

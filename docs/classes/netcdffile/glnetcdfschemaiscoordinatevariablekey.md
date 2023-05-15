@@ -9,7 +9,7 @@ mathjax: true
 
 #  GLNetCDFSchemaIsCoordinateVariableKey
 
-attributes for coordinate variables (dimensions)
+- Topic: Schema keys — Dimensions
 
 
 ---

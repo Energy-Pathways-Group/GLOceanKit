@@ -50,7 +50,7 @@ classdef NetCDFFile < handle
         % ```matlab
         % model = ncfile.attributes('model');
         % ```
-        % - Topic: Properties
+        % - Topic: Working with global attributes
         attributes
 
         % key-value Map to retrieve a NetCDFDimension object by name
@@ -64,43 +64,57 @@ classdef NetCDFFile < handle
         dimensionWithName   
 
         % key-value Map to retrieve a NetCDFVariable object by name
-        % - Topic: Properties
+        % - Topic: Working with variables
         variableWithName
 
         % array of NetCDFComplexVariable objects
-        % - Topic: Properties
+        % - Topic: Working with variables
         complexVariables            
 
         % key-value Map to retrieve a NetCDFComplexVariable object by name
-        % - Topic: Properties
+        % - Topic: Working with variables
         complexVariableWithName     
     end
 
     properties (Constant)
+        % - Topic: Schema keys
         GLNetCDFSchemaVersionKey = "GLNetCDFSchemaVersion";
 
-        % attributes for coordinate variables (dimensions)
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsCoordinateVariableKey = "isCoordinateVariable";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsPeridiocKey = "isPeriodic";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaMutableKey = "isMutable";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaDomainMinimumKey = "domainMin";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaBasisFunctionKey = "basisFunction";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaDomainLengthKey = "domainLength";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsEvenlySampledKey = "isEvenlySampled";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaSampleIntervalKey = "sampleInterval";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaGridTypeKey = "gridType";
+        % - Topic: Schema keys — Dimensions
         GLNetCDFSchemaIsFrequencyDomainKey = "isFrequencyDomain";
 
-        % attributes for variables and dimensions
+        % - Topic: Schema keys
         GLNetCDFSchemaUnitsKey = "units";
 
-        % attributes for variables
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsComplexKey = "isComplex";
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaProperNameKey = "properName";
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsRealPartKey = "isRealPart";
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsImaginaryPartKey = "isImaginaryPart";
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsRowVectorKey = "isRowVector";
-        
+        % - Topic: Schema keys — Variables
         GLNetCDFSchemaUniqueVariableIDKey = "uniqueVariableID";
     end
 
@@ -214,6 +228,7 @@ classdef NetCDFFile < handle
 
 
         function addAttribute(self,name,data)
+            % - Topic: Working with global attributes
             netcdf.reDef(self.ncid);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), name, data);
             netcdf.endDef(self.ncid);
@@ -227,22 +242,22 @@ classdef NetCDFFile < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function [dimension,variable] = addDimension(self,name,data,properties,dimLength)
-        % Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
-        % 
-        % Usage
-        % ```matlab
-        % x = linspace(0,10,11);
-        % ncfile.addDimension('x',x,[]);
-        % ```
-        %
-        % - Topic: Working with dimensions
-        % - Declaration: [dimension,variable] = addDimension(name,data,properties,dimLength)
-        % - Parameter name: string with the name of the dimension
-        % - Parameter data: array of values along that dimension, or empty
-        % - Parameter properties: containers.Map containing any key-value pairs to be associated with the dimension.
-        % - Parameter dimLength: (optional) length of the dimension
-        % - Returns dimension: a NetCDFDimension object with the newly create dimension
-        % - Returns variable: a NetCDFVariable object with the associated coordinate variable
+            % Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
+            %
+            % Usage
+            % ```matlab
+            % x = linspace(0,10,11);
+            % ncfile.addDimension('x',x,[]);
+            % ```
+            %
+            % - Topic: Working with dimensions
+            % - Declaration: [dimension,variable] = addDimension(name,data,properties,dimLength)
+            % - Parameter name: string with the name of the dimension
+            % - Parameter data: array of values along that dimension, or empty
+            % - Parameter properties: containers.Map containing any key-value pairs to be associated with the dimension.
+            % - Parameter dimLength: (optional) length of the dimension
+            % - Returns dimension: a NetCDFDimension object with the newly create dimension
+            % - Returns variable: a NetCDFVariable object with the associated coordinate variable
             if nargin < 5
                 dimLength = 0;
             end
@@ -297,6 +312,13 @@ classdef NetCDFFile < handle
 
         %addVariable(self,name,data,dimNames,properties,ncType)
         function complexVariable = initComplexVariable(self,name,dimNames,properties,ncType)
+            % initialize a complex-valued variable
+            %
+            % NetCDF does not directly work with complex variables, so this
+            % method manages the hassle of working with the real and
+            % imaginary parts separately.
+            %
+            % - Topic: Working with variables
             if isKey(self.complexVariableWithName,name)
                 error('A variable with the name %s already exists.',name);
             end
@@ -319,6 +341,10 @@ classdef NetCDFFile < handle
         end
 
         function variable = initVariable(self,name,dimNames,properties,ncType)
+            % initialize a real-valued variable
+            %
+            %
+            % - Topic: Working with variables
             if isKey(self.variableWithName,name)
                 error('A variable with that name already exists.');
             end
@@ -349,6 +375,9 @@ classdef NetCDFFile < handle
         end
 
         function setVariable(self,name,data)
+            % add data for a variable with a given name
+            %
+            % - Topic: Working with variables
             if ~isvector(data) && length(data) == numel(data)
                 % rare case that something is, e.g., size(data) = [1 1 N]
                 data=squeeze(data);
@@ -390,6 +419,9 @@ classdef NetCDFFile < handle
         end
 
         function varargout = readVariables(self,varargin)
+            % read data from variables
+            %
+            % - Topic: Working with variables
             varargout = cell(size(varargin));
             for iArg=1:length(varargin)
                 if isKey(self.complexVariableWithName,varargin{iArg})
@@ -417,6 +449,9 @@ classdef NetCDFFile < handle
         end
 
         function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,varargin)
+            % read data from variables from a particular index
+            %
+            % - Topic: Working with variables
             varargout = cell(size(varargin));
             for iArg=1:length(varargin)
                 if isKey(self.complexVariableWithName,varargin{iArg})
@@ -455,6 +490,9 @@ classdef NetCDFFile < handle
         end
 
         function variable = addVariable(self,name,data,dimNames,properties,ncType)
+            % add a new variable to the file
+            %
+            % - Topic: Working with variables
             if nargin < 6 || isempty(ncType)
                 ncType = self.netCDFTypeForData(data);
             end
@@ -472,6 +510,9 @@ classdef NetCDFFile < handle
         end
 
         function concatenateVariableAlongDimension(self,name,data,dimName,index)
+            % append new data to an existing variable
+            %
+            % - Topic: Working with variables
             if isKey(self.complexVariableWithName,name)
                 complexVariable = self.complexVariableWithName(name);
                 variable = complexVariable.realVar;
@@ -514,6 +555,9 @@ classdef NetCDFFile < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function dims = dimensionsForDimIDs(self,dimids)
+            % return the dimension IDs given the dimension names
+            %
+            % - Topic: Working with dimensions
             dims = NetCDFDimension.empty(length(dimids),0);
             for iDim=1:length(dimids)
                 dims(iDim) = self.dimensions(dimids(iDim)+1);
@@ -542,14 +586,17 @@ classdef NetCDFFile < handle
         end
 
         function self = sync(self)
+            % - Topic: Accessing file properties
             netcdf.sync(self.ncid);
         end
 
         function self = open(self)
+            % - Topic: Accessing file properties
             self.ncid = netcdf.open(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
         end
 
         function self = close(self)
+            % - Topic: Accessing file properties
             netcdf.close(self.ncid);
             self.ncid = [];
         end

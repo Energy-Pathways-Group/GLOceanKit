@@ -9,8 +9,11 @@ mathjax: true
 
 #  readVariables
 
-
+read data from variables
 
 
 ---
 
+## Discussion
+
+  

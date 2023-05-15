@@ -9,8 +9,11 @@ mathjax: true
 
 #  readVariablesAtIndexAlongDimension
 
-
+read data from variables from a particular index
 
 
 ---
 
+## Discussion
+
+  

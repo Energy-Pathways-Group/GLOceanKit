@@ -9,8 +9,11 @@ mathjax: true
 
 #  addVariable
 
-
+add a new variable to the file
 
 
 ---
 
+## Discussion
+
+  
