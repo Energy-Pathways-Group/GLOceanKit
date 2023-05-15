@@ -1,22 +1,68 @@
-%% 
 classdef NetCDFFile < handle
-    %NetCDFFile Class for reading and writing to NetCDF files
-    %   Simplifies and improves the consistency of reading and writing to
-    %   NetCDF files compared to the built-in Matlab options.
+    % A class for reading and writing to NetCDF files
 
+    % Simplifies and improves the consistency of reading and writing to
+    % NetCDF files compared to the built-in Matlab options.
+    %
+    % - Topic: Initialization
+    %
+    % - Declaration: classdef NetCDFFile < handle
     properties
-        path    % path the NetCDF file
-        ncid    % NetCDF file handle
+        % file path the NetCDF file
+        % - Topic: Properties
+        path
 
-        dimensions  % array of NetCDFDimension objects
-        variables   % array of NetCDFVariable objects
-        attributes  % key-value Map of global attributes
+        % file handle
+        % - Topic: Properties
+        ncid
 
-        dimensionWithName   % key-value Map to retrieve a NetCDFDimension object by name
-        variableWithName    % key-value Map to retrieve a NetCDFVariable object by name
+        % array of NetCDFDimension objects
+        %
+        % An array of NetCDFDimension objects for each coordinate dimension
+        % defined in the NetCDF file. The dimensions order in the array
+        % should reflect the underlying dimensionID defined in the NetCDF
+        % file.
+        %
+        % Usage
+        % ```matlab
+        % dim = ncfile.dimensions(dimID+1); % get the dimension with dimID
+        % ```
+        % - Topic: Properties
+        dimensions
 
-        complexVariables            % array of NetCDFComplexVariable objects
-        complexVariableWithName     % key-value Map to retrieve a NetCDFComplexVariable object by name
+        % array of NetCDFVariable objects
+        % - Topic: Properties
+        variables
+
+        % key-value Map of global attributes
+        %
+        % A `containers.Map` type that contains the key-value pairs of all
+        % global attributes in the NetCDF file. This is intended to be
+        % *read only*. If you need to add a new attribute to file, use
+        % [`addAttribute`](#addattribute).
+        %
+        % Usage
+        % ```matlab
+        % model = ncfile.attributes('model');
+        % ```
+        % - Topic: Properties
+        attributes
+
+        % key-value Map to retrieve a NetCDFDimension object by name
+        % - Topic: Properties
+        dimensionWithName   
+
+        % key-value Map to retrieve a NetCDFVariable object by name
+        % - Topic: Properties
+        variableWithName
+
+        % array of NetCDFComplexVariable objects
+        % - Topic: Properties
+        complexVariables            
+
+        % key-value Map to retrieve a NetCDFComplexVariable object by name
+        % - Topic: Properties
+        complexVariableWithName     
     end
 
     properties (Constant)
@@ -48,7 +94,7 @@ classdef NetCDFFile < handle
     end
 
     methods
-        function self = NetCDFFile(path,overwriteExisting)
+        function self = NetCDFFile(path,options)
             % NetCDFFile initialize an from existing or create new file
             %
             % Calling,
@@ -56,9 +102,18 @@ classdef NetCDFFile < handle
             % will load an existing file (if one exists) or create a new
             % file (if none exists).
             %
-            %   ncfile = NetCDFFile(path,'OVERWRITE_EXISTING')
+            %   ncfile = NetCDFFile(path,shouldOverwriteExisting=1)
             % will delete any existing file and create a new file.
-
+            %
+            % - Topic: Initialization
+            % - Declaration: ncfile = etCDFFile(path,options)
+            % - Parameter path: path to write file
+            % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
+            % - Returns: a new NetCDFFile instance
+            arguments
+                path char {mustBeNonempty}
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
+            end
             self.path = path;
             shouldOverwrite = 0;
             self.dimensions = NetCDFDimension.empty(0,0);
@@ -69,7 +124,7 @@ classdef NetCDFFile < handle
             self.complexVariables = NetCDFComplexVariable.empty(0,0);
             self.complexVariableWithName = containers.Map;
 
-            if nargin == 2 && strcmp(overwriteExisting,'OVERWRITE_EXISTING')
+            if options.shouldOverwriteExisting == 1
                 shouldOverwrite = 1;
             end
             if isfile(self.path)
