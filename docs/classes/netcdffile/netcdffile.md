@@ -16,7 +16,7 @@ initialize an from existing or create new file
 
 ## Declaration
 ```matlab
- ncfile = etCDFFile(path,options)
+ ncfile = NetCDFFile(path,options)
 ```
 ## Parameters
 + `path`  path to write file

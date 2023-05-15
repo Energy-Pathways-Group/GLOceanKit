@@ -46,6 +46,7 @@ A class for reading and writing to NetCDF files
 
 ## Topics
 + Initializing
+  + [`NetCDFFile`](/classes/netcdffile/netcdffile.html) initialize an from existing or create new file
 + Accessing file properties
   + [`ncid`](/classes/netcdffile/ncid.html) file handle
   + [`path`](/classes/netcdffile/path.html) file path the NetCDF file
@@ -99,8 +100,6 @@ A class for reading and writing to NetCDF files
   + [`open`](/classes/netcdffile/open.html) - Topic: Accessing file properties
   + [`sync`](/classes/netcdffile/sync.html) - Topic: Accessing file properties
   + [`typeStringForTypeID`](/classes/netcdffile/typestringfortypeid.html) 
-+ Initialization
-  + [`NetCDFFile`](/classes/netcdffile/netcdffile.html) initialize an from existing or create new file
 
 
 ---

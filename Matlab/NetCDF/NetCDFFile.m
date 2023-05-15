@@ -180,8 +180,8 @@ classdef NetCDFFile < handle
             %   ncfile = NetCDFFile(path,shouldOverwriteExisting=1)
             % will delete any existing file and create a new file.
             %
-            % - Topic: Initialization
-            % - Declaration: ncfile = etCDFFile(path,options)
+            % - Topic: Initializing
+            % - Declaration: ncfile = NetCDFFile(path,options)
             % - Parameter path: path to write file
             % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
             % - Returns: a new NetCDFFile instance
