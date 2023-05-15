@@ -243,7 +243,7 @@ classdef NetCDFFile < handle
                     gattname = netcdf.inqAttName(self.ncid,iVar,iAtt);
                     variableAttributes(gattname) = netcdf.getAtt(self.ncid,iVar,gattname);
                 end
-                self.variables(iVar+1) = NetCDFVariable(varname,self.dimensionsForDimIDs(dimids),variableAttributes,self.typeStringForTypeID(xtype),iVar);
+                self.variables(iVar+1) = NetCDFVariable(varname,self.dimensionsForDimIDs(dimids),variableAttributes,NetCDFFile.typeStringForTypeID(xtype),iVar);
                 self.variableWithName(varname) = self.variables(iVar+1);
             end
             self.variables = self.variables.';
@@ -330,7 +330,7 @@ classdef NetCDFFile < handle
                 n = length(data);
             end
             
-            ncType = self.netCDFTypeForData(data);
+            ncType = NetCDFFile.netCDFTypeForData(data);
             netcdf.reDef(self.ncid);
             dimID = netcdf.defDim(self.ncid, name, n);
             varID = netcdf.defVar(self.ncid, name, ncType, dimID);
@@ -365,13 +365,25 @@ classdef NetCDFFile < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        %addVariable(self,name,data,dimNames,properties,ncType)
         function complexVariable = initComplexVariable(self,name,dimNames,properties,ncType)
             % initialize a complex-valued variable
             %
             % NetCDF does not directly work with complex variables, so this
             % method manages the hassle of working with the real and
             % imaginary parts separately.
+            %
+            % The basic work flow is that you need to first,
+            % - `initComplexVariable`
+            % followed by either,
+            % - `setVariable`,
+            % or
+            % - `concatenateVariableAlongDimension`
+            % depending on whether you have a variable dimension.
+            %
+            % ```matlab
+            % ncfile.initComplexVariable('wave-components', {'k','l','j'},containers.Map({'units'},{'m/s'}),'NC_DOUBLE');
+            % ncfile.setVariable('wave-components',myVariable);
+            % ```
             %
             % - Topic: Working with variables
             % - Declaration: complexVariable = initComplexVariable(name,dimNames,properties,ncType)
@@ -404,8 +416,25 @@ classdef NetCDFFile < handle
         function variable = initVariable(self,name,dimNames,properties,ncType)
             % initialize a real-valued variable
             %
+            % The basic work flow is that you need to first,
+            % - initVariable followed by,
+            % - setVariable
+            % Or you can just call
+            % - addVariable
+            % which will both initialize and then set. The reason to
+            %
+            % ```matlab
+            % ncfile.initVariable('fluid-tracer', {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
+            % ncfile.setVariable('fluid-tracer',myVariable);
+            % ```
             %
             % - Topic: Working with variables
+            % - Declaration: variable = initVariable(name,dimNames,properties,ncType)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter dimNames: cell array containing the dimension names
+            % - Parameter properties: (optional) `containers.Map`
+            % - Parameter properties: ncType
+            % - Returns variable: a NetCDFVariable object
             if isKey(self.variableWithName,name)
                 error('A variable with that name already exists.');
             end
@@ -479,44 +508,72 @@ classdef NetCDFFile < handle
 
         end
 
-        function varargout = readVariables(self,varargin)
-            % read data from variables
+        function varargout = readVariables(self,variableNames)
+            % read variables from file
+            %
+            % Pass a list of variables to read and the data will be
+            % returned in the same order.
+            % 
+            % ```matlab
+            % [x,y] = ncfile.readVariables('x','y');
+            % ```
             %
             % - Topic: Working with variables
-            varargout = cell(size(varargin));
-            for iArg=1:length(varargin)
-                if isKey(self.complexVariableWithName,varargin{iArg})
-                    varargout{iArg} = complex(netcdf.getVar(self.ncid,self.complexVariableWithName(varargin{iArg}).realVar.varID),netcdf.getVar(self.ncid,self.complexVariableWithName(varargin{iArg}).imagVar.varID));
-                    if isvector(varargout{iArg}) && isKey(self.complexVariableWithName(varargin{iArg}).realVar.attributes, self.GLNetCDFSchemaIsRowVectorKey)
-                        if self.complexVariableWithName(varargin{iArg}).realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) == 1
+            % - Declaration: varargout = readVariables(variableNames)
+            % - Parameter variableNames: (repeating) list of variable names
+            % - Returns varargout: (repeating) list of variable data
+            arguments
+                self NetCDFFile {mustBeNonempty}
+            end
+            arguments (Repeating)
+                variableNames char
+            end
+            varargout = cell(size(variableNames));
+            for iArg=1:length(variableNames)
+                if isKey(self.complexVariableWithName,variableNames{iArg})
+                    varargout{iArg} = complex(netcdf.getVar(self.ncid,self.complexVariableWithName(variableNames{iArg}).realVar.varID),netcdf.getVar(self.ncid,self.complexVariableWithName(variableNames{iArg}).imagVar.varID));
+                    if isvector(varargout{iArg}) && isKey(self.complexVariableWithName(variableNames{iArg}).realVar.attributes, self.GLNetCDFSchemaIsRowVectorKey)
+                        if self.complexVariableWithName(variableNames{iArg}).realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) == 1
                             varargout{iArg}=reshape(varargout{iArg},1,[]);
                         else
                             varargout{iArg}=reshape(varargout{iArg},[],1);
                         end
                     end
-                elseif isKey(self.variableWithName,varargin{iArg})
-                    varargout{iArg} = netcdf.getVar(self.ncid,self.variableWithName(varargin{iArg}).varID);
-                    if isvector(varargout{iArg}) && isKey(self.variableWithName(varargin{iArg}).attributes, self.GLNetCDFSchemaIsRowVectorKey)
-                        if self.variableWithName(varargin{iArg}).attributes(self.GLNetCDFSchemaIsRowVectorKey) == 1
+                elseif isKey(self.variableWithName,variableNames{iArg})
+                    varargout{iArg} = netcdf.getVar(self.ncid,self.variableWithName(variableNames{iArg}).varID);
+                    if isvector(varargout{iArg}) && isKey(self.variableWithName(variableNames{iArg}).attributes, self.GLNetCDFSchemaIsRowVectorKey)
+                        if self.variableWithName(variableNames{iArg}).attributes(self.GLNetCDFSchemaIsRowVectorKey) == 1
                             varargout{iArg}=reshape(varargout{iArg},1,[]);
                         else
                             varargout{iArg}=reshape(varargout{iArg},[],1);
                         end
                     end
                 else
-                    error('Unable to find a variable with the name %s',varargin{iArg});
+                    error('Unable to find a variable with the name %s',variableNames{iArg});
                 end
             end
         end
 
-        function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,varargin)
-            % read data from variables from a particular index
+        function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,variableNames)
+            % read variables from file at a particular index (e.g., time)
+            %
+            % Pass a list of variables to read and the data will be
+            % returned in the same order.
+            %
+            % ```matlab
+            % [u,v] = ncfile.readVariablesAtIndexAlongDimension('t',100,'u','v');
+            % ```
             %
             % - Topic: Working with variables
-            varargout = cell(size(varargin));
-            for iArg=1:length(varargin)
-                if isKey(self.complexVariableWithName,varargin{iArg})
-                    complexVariable = self.complexVariableWithName(varargin{iArg});
+            % - Declaration: varargout = readVariables(variableNames)
+            % - Parameter dimName: name of the dimension, character string
+            % - Parameter index: index at which to read the data, positive integer
+            % - Parameter variableNames: (repeating) list of variable names
+            % - Returns varargout: (repeating) list of variable data
+            varargout = cell(size(variableNames));
+            for iArg=1:length(variableNames)
+                if isKey(self.complexVariableWithName,variableNames{iArg})
+                    complexVariable = self.complexVariableWithName(variableNames{iArg});
                     variable = complexVariable.realVar;
                     start = zeros(1,length(variable.dimensions));
                     count = zeros(1,length(variable.dimensions));
@@ -530,8 +587,8 @@ classdef NetCDFFile < handle
                         end
                     end
                 varargout{iArg} = complex(netcdf.getVar(self.ncid, complexVariable.realVar.varID, start, count),netcdf.getVar(self.ncid, complexVariable.imagVar.varID, start, count));
-                elseif isKey(self.variableWithName,varargin{iArg})
-                    variable = self.variableWithName(varargin{iArg});
+                elseif isKey(self.variableWithName,variableNames{iArg})
+                    variable = self.variableWithName(variableNames{iArg});
                     start = zeros(1,length(variable.dimensions));
                     count = zeros(1,length(variable.dimensions));
                     for iDim=1:length(variable.dimensions)
@@ -551,11 +608,25 @@ classdef NetCDFFile < handle
         end
 
         function variable = addVariable(self,name,data,dimNames,properties,ncType)
-            % add a new variable to the file
+            % add a new (real or complex) variable to the file
+            %
+            % Immediately initializes and writes the given variable data to
+            % file.
+            %
+            % ```matlab
+            % ncfile.addVariable('fluid-tracer',myVariableData, {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
+            % ```
             %
             % - Topic: Working with variables
+            % - Declaration: variable = addVariable(name,data,dimNames,properties,ncType)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter data: variable data
+            % - Parameter dimNames: cell array containing the dimension names
+            % - Parameter properties: (optional) `containers.Map`
+            % - Parameter properties: ncType
+            % - Returns variable: a NetCDFVariable object
             if nargin < 6 || isempty(ncType)
-                ncType = self.netCDFTypeForData(data);
+                ncType = NetCDFFile.netCDFTypeForData(data);
             end
             if nargin < 5
                 properties = [];
@@ -573,7 +644,19 @@ classdef NetCDFFile < handle
         function concatenateVariableAlongDimension(self,name,data,dimName,index)
             % append new data to an existing variable
             %
+            % concatenates data along a variable dimension (such as a time
+            % dimension).
+            %
+            % ```matlab
+            % ncfile.concatenateVariableAlongDimension('u',u,'t',outputIndex);
+            % ```
+            %
             % - Topic: Working with variables
+            % - Declaration: concatenateVariableAlongDimension(name,data,dimName,index)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter data: variable data
+            % - Parameter dimName: the variable dimension along which to concatenate
+            % - Parameter properties: index at which to write data
             if isKey(self.complexVariableWithName,name)
                 complexVariable = self.complexVariableWithName(name);
                 variable = complexVariable.realVar;
@@ -625,27 +708,6 @@ classdef NetCDFFile < handle
             end
         end
 
-        function val = netCDFTypeForData(self,data)
-            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
-            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
-            map = containers.Map(keys, values);
-            if ~isKey(map,class(data))
-                error('unknown data type');
-            end
-            val = map(class(data));
-        end
-
-        function val = typeStringForTypeID(self,type)
-            types = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR'};
-            val = nan;
-            for i=1:length(types)
-                if netcdf.getConstant(types{i}) == type
-                    val = types{i};
-                    return
-                end
-            end
-        end
-
         function self = sync(self)
             % - Topic: Accessing file properties
             netcdf.sync(self.ncid);
@@ -660,6 +722,29 @@ classdef NetCDFFile < handle
             % - Topic: Accessing file properties
             netcdf.close(self.ncid);
             self.ncid = [];
+        end
+    end
+
+    methods (Static)
+        function val = netCDFTypeForData(data)
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            map = containers.Map(keys, values);
+            if ~isKey(map,class(data))
+                error('unknown data type');
+            end
+            val = map(class(data));
+        end
+
+        function val = typeStringForTypeID(type)
+            types = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR'};
+            val = nan;
+            for i=1:length(types)
+                if netcdf.getConstant(types{i}) == type
+                    val = types{i};
+                    return
+                end
+            end
         end
     end
 end

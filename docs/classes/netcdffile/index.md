@@ -56,14 +56,14 @@ A class for reading and writing to NetCDF files
   + [`dimensions`](/classes/netcdffile/dimensions.html) array of NetCDFDimension objects
   + [`dimensionsForDimIDs`](/classes/netcdffile/dimensionsfordimids.html) return the dimension IDs given the dimension names
 + Working with variables
-  + [`addVariable`](/classes/netcdffile/addvariable.html) add a new variable to the file
+  + [`addVariable`](/classes/netcdffile/addvariable.html) add a new (real or complex) variable to the file
   + [`complexVariableWithName`](/classes/netcdffile/complexvariablewithname.html) key-value Map to retrieve a NetCDFComplexVariable object by name
   + [`complexVariables`](/classes/netcdffile/complexvariables.html) array of NetCDFComplexVariable objects
   + [`concatenateVariableAlongDimension`](/classes/netcdffile/concatenatevariablealongdimension.html) append new data to an existing variable
   + [`initComplexVariable`](/classes/netcdffile/initcomplexvariable.html) initialize a complex-valued variable
   + [`initVariable`](/classes/netcdffile/initvariable.html) initialize a real-valued variable
-  + [`readVariables`](/classes/netcdffile/readvariables.html) read data from variables
-  + [`readVariablesAtIndexAlongDimension`](/classes/netcdffile/readvariablesatindexalongdimension.html) read data from variables from a particular index
+  + [`readVariables`](/classes/netcdffile/readvariables.html) read variables from file
+  + [`readVariablesAtIndexAlongDimension`](/classes/netcdffile/readvariablesatindexalongdimension.html) read variables from file at a particular index (e.g., time)
   + [`setVariable`](/classes/netcdffile/setvariable.html) add data for a variable with a given name
   + [`variableWithName`](/classes/netcdffile/variablewithname.html) key-value Map to retrieve a NetCDFVariable object by name
   + [`variables`](/classes/netcdffile/variables.html) array of NetCDFVariable objects

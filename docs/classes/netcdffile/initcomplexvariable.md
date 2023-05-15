@@ -33,4 +33,17 @@ initialize a complex-valued variable
   method manages the hassle of working with the real and
   imaginary parts separately.
  
+  The basic work flow is that you need to first,
+  - `initComplexVariable`
+  followed by either,
+  - `setVariable`,
+  or
+  - `concatenateVariableAlongDimension`
+  depending on whether you have a variable dimension.
+ 
+  ```matlab
+  ncfile.initComplexVariable('wave-components', {'k','l','j'},containers.Map({'units'},{'m/s'}),'NC_DOUBLE');
+  ncfile.setVariable('wave-components',myVariable);
+  ```
+ 
               
