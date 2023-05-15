@@ -39,7 +39,6 @@ A class for reading and writing to NetCDF files
   + [`GLNetCDFSchemaVersionKey`](/classes/netcdffile/glnetcdfschemaversionkey.html) 
   + [`InitializeFromExistingFile`](/classes/netcdffile/initializefromexistingfile.html) 
   + [`addAttribute`](/classes/netcdffile/addattribute.html) 
-  + [`addDimension`](/classes/netcdffile/adddimension.html) 
   + [`addMutableDimension`](/classes/netcdffile/addmutabledimension.html) 
   + [`addVariable`](/classes/netcdffile/addvariable.html) 
   + [`close`](/classes/netcdffile/close.html) 
@@ -56,15 +55,19 @@ A class for reading and writing to NetCDF files
   + [`typeStringForTypeID`](/classes/netcdffile/typestringfortypeid.html) 
 + Initialization
   + [`NetCDFFile`](/classes/netcdffile/netcdffile.html) initialize an from existing or create new file
++ Working with dimensions
+  + [`addDimension`](/classes/netcdffile/adddimension.html) Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
+  + [`dimensionWithName`](/classes/netcdffile/dimensionwithname.html) key-value Map to retrieve a NetCDFDimension object by name
+  + [`dimensions`](/classes/netcdffile/dimensions.html) array of NetCDFDimension objects
 + Properties
   + [`attributes`](/classes/netcdffile/attributes.html) key-value Map of global attributes
   + [`complexVariableWithName`](/classes/netcdffile/complexvariablewithname.html) key-value Map to retrieve a NetCDFComplexVariable object by name
   + [`complexVariables`](/classes/netcdffile/complexvariables.html) array of NetCDFComplexVariable objects
-  + [`dimensionWithName`](/classes/netcdffile/dimensionwithname.html) key-value Map to retrieve a NetCDFDimension object by name
-  + [`dimensions`](/classes/netcdffile/dimensions.html) array of NetCDFDimension objects
+  + [`variableWithName`](/classes/netcdffile/variablewithname.html) key-value Map to retrieve a NetCDFVariable object by name
++ Accessing file properties
   + [`ncid`](/classes/netcdffile/ncid.html) file handle
   + [`path`](/classes/netcdffile/path.html) file path the NetCDF file
-  + [`variableWithName`](/classes/netcdffile/variablewithname.html) key-value Map to retrieve a NetCDFVariable object by name
++ Working with variables
   + [`variables`](/classes/netcdffile/variables.html) array of NetCDFVariable objects
 
 

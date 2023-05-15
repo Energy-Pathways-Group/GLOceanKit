@@ -14,3 +14,11 @@ key-value Map to retrieve a NetCDFDimension object by name
 
 ---
 
+## Discussion
+
+  Usage
+  ```matlab
+  xDim = ncfile.dimensionWithName('x');
+  ```
+ 
+  

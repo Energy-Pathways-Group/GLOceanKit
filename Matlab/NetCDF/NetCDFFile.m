@@ -4,16 +4,21 @@ classdef NetCDFFile < handle
     % Simplifies and improves the consistency of reading and writing to
     % NetCDF files compared to the built-in Matlab options.
     %
-    % - Topic: Initialization
+    % - Topic: Initializing
+    % - Topic: Accessing file properties
+    % - Topic: Working with dimensions
+    % - Topic: Working with variables
+    % - Topic: Working with global attributes
+    % - Topic: Schema keys
     %
     % - Declaration: classdef NetCDFFile < handle
     properties
         % file path the NetCDF file
-        % - Topic: Properties
+        % - Topic: Accessing file properties
         path
 
         % file handle
-        % - Topic: Properties
+        % - Topic: Accessing file properties
         ncid
 
         % array of NetCDFDimension objects
@@ -27,11 +32,11 @@ classdef NetCDFFile < handle
         % ```matlab
         % dim = ncfile.dimensions(dimID+1); % get the dimension with dimID
         % ```
-        % - Topic: Properties
+        % - Topic: Working with dimensions
         dimensions
 
         % array of NetCDFVariable objects
-        % - Topic: Properties
+        % - Topic: Working with variables
         variables
 
         % key-value Map of global attributes
@@ -49,7 +54,13 @@ classdef NetCDFFile < handle
         attributes
 
         % key-value Map to retrieve a NetCDFDimension object by name
-        % - Topic: Properties
+        %
+        % Usage
+        % ```matlab
+        % xDim = ncfile.dimensionWithName('x');
+        % ```
+        %
+        % - Topic: Working with dimensions
         dimensionWithName   
 
         % key-value Map to retrieve a NetCDFVariable object by name
@@ -216,7 +227,22 @@ classdef NetCDFFile < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function [dimension,variable] = addDimension(self,name,data,properties,dimLength)
-            
+        % Adds a both a new dimension and its associated coordinate variable to the NetCDF file.
+        % 
+        % Usage
+        % ```matlab
+        % x = linspace(0,10,11);
+        % ncfile.addDimension('x',x,[]);
+        % ```
+        %
+        % - Topic: Working with dimensions
+        % - Declaration: [dimension,variable] = addDimension(name,data,properties,dimLength)
+        % - Parameter name: string with the name of the dimension
+        % - Parameter data: array of values along that dimension, or empty
+        % - Parameter properties: containers.Map containing any key-value pairs to be associated with the dimension.
+        % - Parameter dimLength: (optional) length of the dimension
+        % - Returns dimension: a NetCDFDimension object with the newly create dimension
+        % - Returns variable: a NetCDFVariable object with the associated coordinate variable
             if nargin < 5
                 dimLength = 0;
             end

@@ -10,16 +10,16 @@ permalink: /classes
 
 The `WaveVortexModel` consists of several classes and subclasses.
 
-- [WVTransform](/classes/wvtransform.html)
-- [WVModel](/classes/wvmodel.html)
-- [NetCDFFile](/classes/netcdffile.html)
+- [WVTransform](/classes/wvtransform/)
+- [WVModel](/classes/wvmodel/)
+- [NetCDFFile](/classes/netcdffile/)
 
 ## WVTransform
 
 The WVTransform subclasses encapsulate data representing the *state* of the ocean at a given instant in time (e.g., u, v, w, and rho). What makes the WaveVortexTransform subclasses special is that the state of the ocean is represented as energetically independent waves and geostrophic motions (vortices). These classes can be queried for other information, e.g., Ertel PV, relative vorticity, etc.
 
-- [WaveVortexTransformConstantStratification]()
-- [WaveVortexTransformHydrostatic]()
+- [WVTransformConstantStratification]()
+- [WVTransformHydrostatic]()
 
 ## WVModel
 
@@ -29,4 +29,4 @@ The WaveVortexModel uses the WaveVortexTransform to integrate (time-step) the no
 
 Tools for reading and writing the model to file, including support for tracers, floats and model restarts.
 
-- [NetCDFFile](/classes/netcdffile.html)
+- [NetCDFFile](/classes/netcdffile/)
