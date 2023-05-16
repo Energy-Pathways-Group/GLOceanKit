@@ -1,6 +1,10 @@
 function [omega,k,l] = initWithWaveModes(self, waveproperties)
 % initialize with the given wave modes
 %
+% $$
+% sin(k*x+l*y)*F_j*sin(omega*t + phi)
+% $$
+%
 % Clears variables Ap,Am,A0 and then sets the given wave modes.
 % - Topic: Initial conditions — Waves
 % - Declaration: [omega,k,l] = initWithWaveModes( kMode, lMode, jMode, phi, Amp, signs)
