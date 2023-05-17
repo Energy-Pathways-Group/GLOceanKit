@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Classes — operations & annotations
+title: Operations & annotations
 nav_order: 6
 has_children: true
-permalink: /classes
+permalink: /classes-operations-and-annotations
 ---
 
 #  Operation and annotation classes

@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Classes — Nonlinear Flux
+title: Nonlinear flux operations
 nav_order: 5
 has_children: true
-permalink: /classes
+permalink: /classes-nonlinearfluxes
 ---
 
 #  Nonlinear Flux classes
