@@ -1,7 +1,7 @@
 ---
 layout: default
 title: compute
-parent: WVOperation
+parent: BoussinesqSpatial
 grand_parent: Classes
 nav_order: 2
 mathjax: true
@@ -33,3 +33,4 @@ the promised variable
   implement computations with other dependencies.
   
         
+Help for BoussinesqSpatial/compute is inherited from superclass WVOperation

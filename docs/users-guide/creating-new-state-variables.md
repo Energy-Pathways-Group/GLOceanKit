@@ -42,7 +42,7 @@ When doing a model simulation, this variable is also available to write to file 
 
 ### Tracking along particle trajectories
 
-If the output variable has spatial dimension $$(x,y)$$ or $$(x,y,z)$$$, then the WVModel can track its value along advected particle trajectories. See the documentation for `addParticles`, `setFloatPositions`, or `setDrifterPositions`. 
+If the output variable has spatial dimension $$(x,y)$$ or $$(x,y,z)$$, then the WVModel can track its value along advected particle trajectories. See the documentation for `addParticles`, `setFloatPositions`, or `setDrifterPositions`. 
 
 ## Notes
 
