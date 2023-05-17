@@ -1,4 +1,17 @@
 classdef QGPVE < WVNonlinearFluxOperation
+    % 3D quasigeostrophic potential vorticity flux
+    %
+    % The 3D quasigeostrophic potential vorticity flux will only use and
+    % modify the A0 coefficients.
+    %
+    % To initialize the QGPVE,
+    %
+    % ```matlab
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+    % ```
+    %
+    % - Topic: Initializing
+    % - Declaration: QGPVE < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         PVA0 % conversion from A0 to PV
         A0PV % conversion from PV to A0
@@ -12,6 +25,15 @@ classdef QGPVE < WVNonlinearFluxOperation
 
     methods
         function self = QGPVE(wvt,options)
+            % initialize 3D quasigeostrophic potential vorticity flux
+            %
+            % - Declaration: nlFlux = QGPVE(wvt,options)
+            % - Parameter wvt: a WVTransform instance
+            % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
+            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
+            % - Parameter r: (optional) bottom friction
+            % - Parameter nu: (optional) coefficient for damping
+            % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 

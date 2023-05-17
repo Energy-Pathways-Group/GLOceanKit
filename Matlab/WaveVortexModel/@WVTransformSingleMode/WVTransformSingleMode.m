@@ -1,6 +1,20 @@
 classdef WVTransformSingleMode < WVTransform
-    % Single mode wave-vortex solutions, values at the surface.
-
+    % A class for disentangling waves and vortices in a single layer
+    %
+    % This is a two-dimensional, single-layer which may be interepreted as
+    % the sea-surface height. The 'h' parameter is the equivalent depth,
+    % and 0.80 m is a typical value for the first baroclinic mode.
+    %
+    % ```matlab
+    % Lxy = 50e3;
+    % Nxy = 256;
+    % latitude = 25;
+    % wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
+    % ```
+    %
+    % - Topic: Initialization
+    %
+    % - Declaration: classdef WVTransformSingleMode < [WVTransform](/classes/wvtransform/)
     properties (GetAccess=public, SetAccess=protected)
         h % [1 x 1]
 
@@ -13,6 +27,23 @@ classdef WVTransformSingleMode < WVTransform
     methods
          
         function self = WVTransformSingleMode(Lxy, Nxy, options)
+            % create a single mode wave-vortex transform
+            %
+            % ```matlab
+            % Lxy = 50e3;
+            % Nxy = 256;
+            % latitude = 25;
+            % wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
+            % ```
+            %
+            %
+            % - Topic: Initialization
+            % - Declaration: wvt = WVTransformSingleMode(Lxyz, Nxyz, options)
+            % - Parameter Lxy: length of the domain (in meters) in the two coordinate directions, e.g. [Lx Ly]
+            % - Parameter Nxy: number of grid points in the two coordinate directions, e.g. [Nx Ny]
+            % - Parameter h:  (optional) equivalent depth (default 0.8)
+            % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
+            % - Returns wvt: a new WVTransformSingleMode instance
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}

@@ -12,6 +12,7 @@ BuildDocumentationForClass(name='WVModel',folder=destinationFolder,parent=folder
 BuildDocumentationForWVTransformSubclass(destinationFolder,folderName);
 BuildDocumentationForClass(name='WVTransformHydrostatic',folder=destinationFolder,parent=folderName);
 BuildDocumentationForClass(name='WVTransformConstantStratification',folder=destinationFolder,parent=folderName);
+BuildDocumentationForClass(name='WVTransformSingleMode',folder=destinationFolder,parent=folderName);
 
 folderName = 'Nonlinear flux operations';
 destinationFolder = '../../../../docs/classes-nonlinearfluxes';
@@ -19,6 +20,7 @@ destinationFolder = '../../../../docs/classes-nonlinearfluxes';
 BuildDocumentationForClass(name='WVNonlinearFluxOperation',folder=destinationFolder,parent=folderName);
 BuildDocumentationForClass(name='Boussinesq',folder=destinationFolder,parent=folderName);
 BuildDocumentationForClass(name='BoussinesqSpatial',folder=destinationFolder,parent=folderName);
+BuildDocumentationForClass(name='QGPVE',folder=destinationFolder,parent=folderName);
 
 folderName = 'Operations & annotations';
 destinationFolder = '../../../../docs/classes-operations-and-annotations';
