@@ -1,0 +1,5 @@
+remote_theme: just-the-docs/just-the-docs
+title: WaveVortexModel
+description: A decompose a rotating stratified fluid into waves and vortices
+compress_html:
+  blanklines: true
