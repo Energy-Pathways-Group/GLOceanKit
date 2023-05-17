@@ -1,4 +1,4 @@
-function MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics, metadataNameMap)
+function MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics, metadataNameMap,parent)
 
 mc = meta.class.fromName(className);
 
@@ -12,7 +12,7 @@ else
 end
 
 fileID = fopen(path,'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: Classes\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className,parent);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n',mc.Description);
 

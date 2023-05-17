@@ -1,7 +1,7 @@
 ---
 layout: default
 title: WVNonlinearFluxOperation
-parent: Classes
+parent: Nonlinear flux operations
 has_children: false
 has_toc: false
 mathjax: true

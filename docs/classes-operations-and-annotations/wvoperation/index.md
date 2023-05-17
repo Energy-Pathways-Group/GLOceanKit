@@ -1,7 +1,7 @@
 ---
 layout: default
 title: WVOperation
-parent: Classes
+parent: Operations & annotations
 has_children: false
 has_toc: false
 mathjax: true
