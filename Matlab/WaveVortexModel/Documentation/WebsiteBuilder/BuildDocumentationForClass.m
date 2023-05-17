@@ -1,4 +1,4 @@
-function BuildDocumentationForClass(className,classDocumentationFolder)
+function BuildDocumentationForClass(options)
 % Generates documentation for a class from the class metadata
 %
 % Specifically, this script takes the class metadata and creates a markdown
@@ -9,9 +9,13 @@ function BuildDocumentationForClass(className,classDocumentationFolder)
 % The metadata for the property and methods is extracted from the property
 % and method metadata (from Matlab's metaclass) as well. Each property and
 % method gets its own page.
+arguments
+    options.name
+    options.folder
+    options.parent
+end
 
-
-mc = meta.class.fromName(className);
+mc = meta.class.fromName(options.name);
 
 metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
 
@@ -19,14 +23,14 @@ metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
 
 
 % Make a folder for all the class contents
-targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
+targetFolder = sprintf('%s/%s',options.folder,lower(options.name));
 if ~exist(targetFolder,'dir')
     mkdir(targetFolder);
 end
 path = sprintf('%s/index.md',targetFolder);
 
 
-MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics,metadataNameMap);
+MakeMarkdownFileForClass(path,options.name,classDetailedDescription,classDefinedTopics,metadataNameMap,options.parent);
 
 
 iPageNumber = 0;

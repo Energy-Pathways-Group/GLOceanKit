@@ -1,7 +1,7 @@
 ---
 layout: default
 title: WVModel
-parent: Classes
+parent: WV transform & model
 has_children: false
 has_toc: false
 mathjax: true
