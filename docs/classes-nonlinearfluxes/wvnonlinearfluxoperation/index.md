@@ -57,17 +57,17 @@ Computes the nonlinear flux for a WVTransform
 
 ## Topics
 + Initialization
-  + [`WVNonlinearFluxOperation`](/classes/wvnonlinearfluxoperation/wvnonlinearfluxoperation.html) create a new nonlinear flux operation
-  + [`nonlinearFluxFromFile`](/classes/wvnonlinearfluxoperation/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`WVNonlinearFluxOperation`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/wvnonlinearfluxoperation.html) create a new nonlinear flux operation
+  + [`nonlinearFluxFromFile`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithDoubleResolution`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
 + Properties
-  + [`doesFluxA0`](/classes/wvnonlinearfluxoperation/doesfluxa0.html) boolean indicating whether or not this operation returns F0
-  + [`doesFluxAm`](/classes/wvnonlinearfluxoperation/doesfluxam.html) boolean indicating whether or not this operation returns Fm
-  + [`doesFluxAp`](/classes/wvnonlinearfluxoperation/doesfluxap.html) boolean indicating whether or not this operation returns Fp
+  + [`doesFluxA0`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/doesfluxa0.html) boolean indicating whether or not this operation returns F0
+  + [`doesFluxAm`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/doesfluxam.html) boolean indicating whether or not this operation returns Fm
+  + [`doesFluxAp`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/doesfluxap.html) boolean indicating whether or not this operation returns Fp
 + Equality
-  + [`isequal`](/classes/wvnonlinearfluxoperation/isequal.html) check for equality with another nonlinear flux operation
+  + [`isequal`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/isequal.html) check for equality with another nonlinear flux operation
 + Write to file
-  + [`writeToFile`](/classes/wvnonlinearfluxoperation/writetofile.html) write information about the nonlinear flux operation to file
+  + [`writeToFile`](/classes-nonlinearfluxes/wvnonlinearfluxoperation/writetofile.html) write information about the nonlinear flux operation to file
 
 
 ---

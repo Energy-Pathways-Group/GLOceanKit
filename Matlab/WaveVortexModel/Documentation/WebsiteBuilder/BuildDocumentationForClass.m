@@ -12,7 +12,8 @@ function BuildDocumentationForClass(options)
 arguments
     options.name
     options.folder
-    options.parent
+    options.parentName
+    options.parentFolder
 end
 
 mc = meta.class.fromName(options.name);
@@ -30,7 +31,7 @@ end
 path = sprintf('%s/index.md',targetFolder);
 
 
-MakeMarkdownFileForClass(path,options.name,classDetailedDescription,classDefinedTopics,metadataNameMap,options.parent);
+MakeMarkdownFileForClass(path,options.name,classDetailedDescription,classDefinedTopics,metadataNameMap,options.parentName,options.parentFolder);
 
 
 iPageNumber = 0;
