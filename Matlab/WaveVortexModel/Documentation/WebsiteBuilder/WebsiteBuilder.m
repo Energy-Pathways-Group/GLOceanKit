@@ -1,29 +1,35 @@
 cd(fileparts(which(mfilename)))
 
-transformAndModelClassDocumentationFolder = '../../../../docs/classestransformandmodel';
+destinationFolder = '../../../../docs/';
+sourceFolder = '../WebsiteDocumentation/';
 
-BuildDocumentationForClass('WVModel',classDocumentationFolder);
-BuildDocumentationForWVTransformSubclass(classDocumentationFolder);
-BuildDocumentationForClass('WVTransformHydrostatic',classDocumentationFolder);
-BuildDocumentationForClass('WVTransformConstantStratification',classDocumentationFolder);
+copyfile(sourceFolder,destinationFolder);
 
-nonlinearFluxClassDocumentationFolder = '../../../../docs/classesnonlinearflux';
+return
 
-BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
-BuildDocumentationForClass('Boussinesq',classDocumentationFolder);
-BuildDocumentationForClass('BoussinesqSpatial',classDocumentationFolder);
+transformAndModelClassDocumentationFolder = '../../../../docs/classes-transform-and-model';
 
-classDocumentationFolder = '../../../../docs/classes';
+BuildDocumentationForClass('WVModel',transformAndModelClassDocumentationFolder);
+BuildDocumentationForWVTransformSubclass(transformAndModelClassDocumentationFolder);
+BuildDocumentationForClass('WVTransformHydrostatic',transformAndModelClassDocumentationFolder);
+BuildDocumentationForClass('WVTransformConstantStratification',transformAndModelClassDocumentationFolder);
 
-BuildDocumentationForClass('WVAnnotation',classDocumentationFolder);
-BuildDocumentationForClass('WVDimensionAnnotation',classDocumentationFolder);
-BuildDocumentationForClass('WVPropertyAnnotation',classDocumentationFolder);
-BuildDocumentationForClass('WVVariableAnnotation',classDocumentationFolder);
-BuildDocumentationForClass('WVOperation',classDocumentationFolder);
-BuildDocumentationForClass('WVNonlinearFluxOperation',classDocumentationFolder);
+nonlinearFluxClassDocumentationFolder = '../../../../docs/classes-nonlinearfluxes';
+
+BuildDocumentationForClass('WVNonlinearFluxOperation',nonlinearFluxClassDocumentationFolder);
+BuildDocumentationForClass('Boussinesq',nonlinearFluxClassDocumentationFolder);
+BuildDocumentationForClass('BoussinesqSpatial',nonlinearFluxClassDocumentationFolder);
+
+operationsClassDocumentationFolder = '../../../../docs/classes-operations-and-annotations';
+
+BuildDocumentationForClass('WVAnnotation',operationsClassDocumentationFolder);
+BuildDocumentationForClass('WVDimensionAnnotation',operationsClassDocumentationFolder);
+BuildDocumentationForClass('WVPropertyAnnotation',operationsClassDocumentationFolder);
+BuildDocumentationForClass('WVVariableAnnotation',operationsClassDocumentationFolder);
+BuildDocumentationForClass('WVOperation',operationsClassDocumentationFolder);
 
 % ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 
 
 
-BuildDocumentationForClass('NetCDFFile',classDocumentationFolder);
+BuildDocumentationForClass('NetCDFFile',operationsClassDocumentationFolder);
