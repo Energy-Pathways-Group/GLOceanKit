@@ -2,6 +2,7 @@
 layout: default
 title: BoussinesqSpatial
 parent: Nonlinear flux operations
+grandparent: Class documentation
 has_children: false
 has_toc: false
 mathjax: true

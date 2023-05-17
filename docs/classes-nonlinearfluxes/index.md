@@ -2,6 +2,7 @@
 layout: default
 title: Nonlinear flux operations
 nav_order: 5
+parent: Class documentation
 has_children: true
 permalink: /classes-nonlinearfluxes
 ---
