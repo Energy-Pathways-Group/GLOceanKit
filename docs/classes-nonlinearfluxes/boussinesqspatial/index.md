@@ -33,11 +33,11 @@ mathjax: true
 
 ## Topics
 + Initializing
-  + [`BoussinesqSpatial`](/classes/boussinesqspatial/boussinesqspatial.html) 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
+  + [`BoussinesqSpatial`](/classes-nonlinearfluxes/boussinesqspatial/boussinesqspatial.html) 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
 + Computation
-  + [`compute`](/classes/boussinesqspatial/compute.html) the promised variable
+  + [`compute`](/classes-nonlinearfluxes/boussinesqspatial/compute.html) the promised variable
 + Other
-  + [`dLnN2`](/classes/boussinesqspatial/dlnn2.html) 
+  + [`dLnN2`](/classes-nonlinearfluxes/boussinesqspatial/dlnn2.html) 
 
 
 ---

@@ -1,4 +1,4 @@
-function MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics, metadataNameMap,parent)
+function MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics, metadataNameMap,parentName,parentFolder)
 
 mc = meta.class.fromName(className);
 
@@ -12,7 +12,7 @@ else
 end
 
 fileID = fopen(path,'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className,parent);
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className,parentName);
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n',mc.Description);
 
@@ -55,7 +55,7 @@ for topicIndex = 1:length(classDefinedTopics)
 
         subtopic = classDefinedTopics(topicIndex).subtopics(otherSubtopicIndex);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'  + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'  + [`%s`](/%s/%s/%s.html) ',subtopic.methodNames{methodIndex},parentFolder,lower(className),lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     else
@@ -68,7 +68,7 @@ for topicIndex = 1:length(classDefinedTopics)
         subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'    + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'    + [`%s`](/%s/%s/%s.html) ',subtopic.methodNames{methodIndex},parentFolder,lower(className),lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     end
