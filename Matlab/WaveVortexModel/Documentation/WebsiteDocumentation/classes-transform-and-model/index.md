@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Classes
+title: WV transform & model
 nav_order: 4
 has_children: true
-permalink: /classes
+permalink: /classes-transform-and-model
 ---
 
 #  Classes
