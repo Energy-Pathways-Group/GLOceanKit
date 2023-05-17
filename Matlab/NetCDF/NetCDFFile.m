@@ -570,6 +570,14 @@ classdef NetCDFFile < handle
             % - Parameter index: index at which to read the data, positive integer
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
+            arguments
+                self NetCDFFile {mustBeNonempty}
+                dimName char {mustBeNonempty}
+                index  (1,1) double {mustBePositive} = 1
+            end
+            arguments (Repeating)
+                variableNames char
+            end
             varargout = cell(size(variableNames));
             for iArg=1:length(variableNames)
                 if isKey(self.complexVariableWithName,variableNames{iArg})

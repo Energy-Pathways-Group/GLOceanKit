@@ -29,17 +29,6 @@ wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=25);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% "Deep eddy"
-% We are going to have its velocity vanish at the bottom, and only have its
-% density anomaly in the middle--hence the errorfunction.
-x0 = 3*Lx/4;
-y0 = Ly/2;
-% Le = 80e3;
-% z0 = -wvt.Lz/4;
-% He = wvt.Lz/10;
-% U = 0.25; % m/s
-% psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2) .* (erf((z-z0)/He)+1)/2;
-
 % "Shallow eddy"
 % Density anomaly sits close to the surface
 Le = 80e3;
@@ -66,6 +55,7 @@ axis equal
 rho = wvt.rho_prime;
 rho_total = wvt.rho_total;
 sliceIndex = find(wvt.y<200e3,1,'last');
+sliceIndex = floor(wvt.Ny/2);
 
 nexttile
 pcolor(wvt.x/1000,wvt.z,squeeze(rho(:,sliceIndex,:)).'); colorbar; clim([min(rho(:)),max(rho(:))]), shading interp, hold on
@@ -93,6 +83,8 @@ wvt.writeToFile('eddy-365.nc');
 
 %%
 
+wvt = WVTransform.waveVortexTransformFromFile('eddy-365.nc');
+
 U_io = 0.2;
 Ld = wvt.Lz/5;
 u_NIO = @(z) U_io*exp(-(z/Ld));
@@ -100,7 +92,11 @@ v_NIO = @(z) zeros(size(z));
 
 wvt.setInertialMotions(u_NIO,v_NIO);
 
-model
+%%
+
+model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model.setupIntegrator(timeStepConstraint="advective");
+model.integrateToTime(wvt.t + 1*wvt.inertialPeriod);
 
 return
 

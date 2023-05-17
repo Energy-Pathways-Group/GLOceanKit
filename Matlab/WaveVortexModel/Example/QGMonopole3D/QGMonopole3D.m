@@ -68,8 +68,8 @@ max(ssh(:))
 model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
 model.createNetCDFFileForModelOutput('qg-eddy.nc')
-model.setNetCDFOutputVariables('u','v','eta','seaSurfaceHeight');
-model.integrateToTime(355*86400);
+model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
+model.integrateToTime(365*86400);
 
 return
 
