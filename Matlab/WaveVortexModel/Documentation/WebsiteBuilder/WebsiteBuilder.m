@@ -5,8 +5,6 @@ sourceFolder = '../WebsiteDocumentation/';
 
 copyfile(sourceFolder,destinationFolder);
 
-return
-
 transformAndModelClassDocumentationFolder = '../../../../docs/classes-transform-and-model';
 
 BuildDocumentationForClass('WVModel',transformAndModelClassDocumentationFolder);

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Mathematical introduction
+nav_order: 3
 has_children: true
 permalink: /mathematical-introduction
 ---

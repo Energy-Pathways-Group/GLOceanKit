@@ -1,13 +1,13 @@
 ---
 layout: default
-title: detailedDescription
-parent: WVOperation
+title: dLnN2
+parent: BoussinesqSpatial
 grand_parent: Classes
 nav_order: 3
 mathjax: true
 ---
 
-#  detailedDescription
+#  dLnN2
 
 
 

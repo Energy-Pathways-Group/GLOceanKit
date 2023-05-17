@@ -33,7 +33,6 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
                 warning('WVTransform not recognized.')
             end
-            end
         end
 
         function varargout = compute(self,wvt,varargin)
@@ -45,5 +44,4 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
             [varargout{:}] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,wvt.t);
         end
     end
-
 end

@@ -33,5 +33,9 @@ initialize with the given wave modes
 
 ## Discussion
 
+  $$
+  sin(k*x+l*y)*F_j*sin(omega*t + phi)
+  $$
+ 
   Clears variables Ap,Am,A0 and then sets the given wave modes.
                       
