@@ -270,6 +270,21 @@ classdef NetCDFFile < handle
             end
         end
 
+        function dump(self)
+            for iVar=1:length(self.variables)
+                variable = self.variables(iVar);
+                fprintf('%s\t{',variable.name);
+                for iDim=1:length(variable.dimensions)
+                    if iDim==length(variable.dimensions)
+                        fprintf('%s',variable.dimensions(iDim).name);
+                    else
+                        fprintf('%s,',variable.dimensions(iDim).name);
+                    end
+                end
+                fprintf('}\n');
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Attributes
