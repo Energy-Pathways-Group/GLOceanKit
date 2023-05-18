@@ -5,37 +5,38 @@ sourceFolder = '../WebsiteDocumentation/';
 
 copyfile(sourceFolder,destinationFolder);
 
-parentName = 'WV transform & model';
-parentFolder = 'classes-transform-and-model';
-destinationFolder = '../../../../docs/classes-transform-and-model';
+classFolderName = 'Class documentation';
+destinationFolder = '../../../../docs/classes';
+BuildDocumentationForWVTransformSubclass(folder=destinationFolder,parent=classFolderName,nav_order=1);
+BuildDocumentationForClass(name='WVModel',folder=destinationFolder,parent=classFolderName,nav_order=2);
 
-BuildDocumentationForClass(name='WVModel',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForWVTransformSubclass(destinationFolder,parentName,parentFolder);
-BuildDocumentationForClass(name='WVTransformHydrostatic',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVTransformConstantStratification',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVTransformSingleMode',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
+parentName = 'Transforms';
+destinationFolder = '../../../../docs/classes/transforms';
 
-parentName = 'Nonlinear flux operations';
-parentFolder = 'classes-nonlinearfluxes';
-destinationFolder = '../../../../docs/classes-nonlinearfluxes';
+BuildDocumentationForClass(name='WVTransformHydrostatic',folder=destinationFolder,parent=parentName,grandparent=classFolderName);
+BuildDocumentationForClass(name='WVTransformConstantStratification',folder=destinationFolder,parent=parentName,grandparent=classFolderName);
+BuildDocumentationForClass(name='WVTransformSingleMode',folder=destinationFolder,parent=parentName,grandparent=classFolderName);
 
-BuildDocumentationForClass(name='WVNonlinearFluxOperation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='Boussinesq',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='BoussinesqSpatial',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='QGPVE',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
+parentName = 'Nonlinear fluxes';
+destinationFolder = '../../../../docs/classes/nonlinear-fluxes';
+
+BuildDocumentationForClass(name='WVNonlinearFluxOperation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
+BuildDocumentationForClass(name='Boussinesq',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='BoussinesqSpatial',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
+BuildDocumentationForClass(name='QGPVE',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
 
 parentName = 'Operations & annotations';
-parentFolder = 'classes-operations-and-annotations';
-destinationFolder = '../../../../docs/classes-operations-and-annotations';
+destinationFolder = '../../../../docs/classes/operations-and-annotations';
 
-BuildDocumentationForClass(name='WVAnnotation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVDimensionAnnotation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVPropertyAnnotation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVVariableAnnotation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
-BuildDocumentationForClass(name='WVOperation',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
+BuildDocumentationForClass(name='WVOperation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
+BuildDocumentationForClass(name='WVAnnotation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='WVDimensionAnnotation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
+BuildDocumentationForClass(name='WVPropertyAnnotation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
+BuildDocumentationForClass(name='WVVariableAnnotation',folder=destinationFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
+
 
 % ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 
 
 
-BuildDocumentationForClass(name='NetCDFFile',folder=destinationFolder,parentName=parentName,parentFolder=parentFolder);
+BuildDocumentationForClass(name='NetCDFFile',folder=destinationFolder,parent=classFolderName,nav_order=6);

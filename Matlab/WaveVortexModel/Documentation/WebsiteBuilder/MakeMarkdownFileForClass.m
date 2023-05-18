@@ -1,18 +1,42 @@
-function MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics, metadataNameMap,parentName,parentFolder)
+function MakeMarkdownFileForClass(options)
+arguments
+    options.path
+    options.className
+    options.classDetailedDescription
+    options.classDefinedTopics
+    options.metadataNameMap
+    options.parent = []
+    options.grandparent = []
+    options.nav_order = []
+end
+className = options.className;
+classDefinedTopics = options.classDefinedTopics;
+metadataNameMap = options.metadataNameMap;
 
 mc = meta.class.fromName(className);
 
 declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
-matchStr = regexpi(classDetailedDescription,declarationExpression,'names');
-classDetailedDescription = regexprep(classDetailedDescription,declarationExpression,'','ignorecase');
+matchStr = regexpi(options.classDetailedDescription,declarationExpression,'names');
+classDetailedDescription = regexprep(options.classDetailedDescription,declarationExpression,'','ignorecase');
 if ~isempty(matchStr)
     declaration = matchStr.declaration;
 else
     declaration = [];
 end
 
-fileID = fopen(path,'w');
-fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n---\n\n',className,parentName);
+fileID = fopen(options.path,'w');
+fprintf(fileID,'---\nlayout: default\ntitle: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n',className);
+if ~isempty(options.parent)
+    fprintf(fileID,'parent: %s\n',options.parent);
+end
+if ~isempty(options.grandparent)
+    fprintf(fileID,'grand_parent: %s\n',options.grandparent);
+end
+if ~isempty(options.nav_order)
+    fprintf(fileID,'nav_order: %d\n',options.nav_order);
+end
+fprintf(fileID,'---\n\n');
+
 fprintf(fileID,'#  %s\n',className);
 fprintf(fileID,'\n%s\n',mc.Description);
 
@@ -55,7 +79,7 @@ for topicIndex = 1:length(classDefinedTopics)
 
         subtopic = classDefinedTopics(topicIndex).subtopics(otherSubtopicIndex);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'  + [`%s`](/%s/%s/%s.html) ',subtopic.methodNames{methodIndex},parentFolder,lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'  + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     else
@@ -68,7 +92,7 @@ for topicIndex = 1:length(classDefinedTopics)
         subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'    + [`%s`](/%s/%s/%s.html) ',subtopic.methodNames{methodIndex},parentFolder,lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'    + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     end
