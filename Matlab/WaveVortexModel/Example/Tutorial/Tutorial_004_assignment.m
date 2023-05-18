@@ -68,6 +68,8 @@ rv = wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
 pcolor(wvt.x/1000,wvt.z,squeeze(rv(:,sliceIndex,:)).'); colorbar; clim([-1,1]*max(abs(rv(:)))), shading interp
 xlabel('x (km)'), ylabel('z (m)')
 
+return
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
