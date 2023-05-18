@@ -519,7 +519,7 @@ classdef WVModel < handle
             if isempty(Y0{1})
                 error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
             end
-            self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
+            self.integrator = WVArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
 
             if isfield(options,"outputInterval")
                 self.outputInterval = options.outputInterval;
