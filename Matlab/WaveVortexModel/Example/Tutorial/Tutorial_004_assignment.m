@@ -77,14 +77,14 @@ model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
 model.setupIntegrator(timeStepConstraint="advective");
 % model.createNetCDFFileForModelOutput('qg-eddy.nc')
 % model.setNetCDFOutputVariables('u','v','eta','seaSurfaceHeight');
-model.integrateToTime(355*86400);
+model.integrateToTime(3*86400);
 
-wvt.writeToFile('eddy-365.nc');
-
-
-%%
-
-wvt = WVTransform.waveVortexTransformFromFile('eddy-365.nc');
+% wvt.writeToFile('eddy-365.nc');
+% 
+% 
+% %%
+% 
+% wvt = WVTransform.waveVortexTransformFromFile('eddy-365.nc');
 
 U_io = 0.2;
 Ld = wvt.Lz/5;

@@ -603,7 +603,7 @@ classdef WVModel < handle
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
             end
 
-            if self.didSetupIntegrator == 1 && ~isfield(options,"outputInterval")
+            if self.didSetupIntegrator == 1 && isempty(self.outputInterval)
                 error('You creating a NetCDF output file, but when when you called -setupIntegrator you did set an outputInterval.');
             end
 
