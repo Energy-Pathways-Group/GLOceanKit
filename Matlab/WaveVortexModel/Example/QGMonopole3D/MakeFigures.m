@@ -7,12 +7,14 @@ nexttile
 ssh = wvt.seaSurfaceHeight;
 pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
 axis equal
-% max(ssh(:))
+
+[~,I] = max(ssh(:));
+[i1,i2] = ind2sub(size(ssh),I);
+
 
 rho = wvt.rho_prime;
 rho_total = wvt.rho_total;
-sliceIndex = find(wvt.y<200e3,1,'last');
-sliceIndex = floor(wvt.Ny/2);
+sliceIndex = find(wvt.y< wvt.y(i2),1,'last');
 
 nexttile
 pcolor(wvt.x/1000,wvt.z,squeeze(rho(:,sliceIndex,:)).'); colorbar; clim([min(rho(:)),max(rho(:))]), shading interp, hold on

@@ -34,6 +34,7 @@ wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=25);
 Le = 80e3;
 He = wvt.Lz/5;
 U = 0.30; % m/s
+x0 = (3/4)*max(wvt.x), y0=max(wvt.y)/2;
 psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 );
 
 wvt.setGeostrophicStreamfunction(psi);
@@ -73,7 +74,7 @@ xlabel('x (km)'), ylabel('z (m)')
 
 % initialize the integrator with the model
 model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
-model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
+model.setupIntegrator(timeStepConstraint="advective");
 % model.createNetCDFFileForModelOutput('qg-eddy.nc')
 % model.setNetCDFOutputVariables('u','v','eta','seaSurfaceHeight');
 model.integrateToTime(355*86400);
