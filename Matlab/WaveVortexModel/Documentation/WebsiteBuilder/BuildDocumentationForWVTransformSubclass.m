@@ -1,7 +1,12 @@
-function BuildDocumentationForWVTransformSubclass(classDocumentationFolder,parentName,parentFolder)
+function BuildDocumentationForWVTransformSubclass(options)
+arguments
+    options.folder
+    options.parent = []
+    options.nav_order = []
+end
 className = 'WVTransform';
 
-targetFolder = sprintf('%s/%s',classDocumentationFolder,lower(className));
+targetFolder = sprintf('%s/%s',options.folder,lower(className));
 mc = meta.class.fromName(className);
 
 metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
@@ -74,7 +79,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 path = sprintf('%s/index.md',targetFolder);
-MakeMarkdownFileForClass(path,className,classDetailedDescription,classDefinedTopics,metadataNameMap,parentName,parentFolder);
+MakeMarkdownFileForClass(path=path,className=className,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,nav_order=options.nav_order);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
