@@ -8,8 +8,15 @@ L_gm = 1300; % thermocline exponential scale, meters
 N2 = @(z) N0*N0*exp(2*z/L_gm);
 wvt = WVTransformHydrostatic([Lxy, Lxy, Lz], [N, N, Nz], N2=N2,latitude=31);
 
-a = shiftdim(Finv(:,3),-2) .* ones(size(wvt.X));
+% coeff = (wvt.Q ./ wvt.P);
+
+%%
+Finv = wvt.FinvMatrix;
+f = Finv(:,3)/max(Finv(:,3));
+figure, plot(f);
+
+a = shiftdim(f,-2) .* ones(size(wvt.X));
 da = wvt.diffZF(a);
 
 figure, plot(squeeze(da(1,1,:)),wvt.z)
-hold on, plot(diff(squeeze(da(1,1,:)))./diff(wvt.z),wvt.z(2:end))
+hold on, plot(diff(squeeze(a(1,1,:)))./diff(wvt.z),wvt.z(2:end))
