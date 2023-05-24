@@ -1,7 +1,8 @@
 function addGeostrophicStreamfunction(self,psi)
 % add a geostrophic streamfunction to existing geostrophic motions
 %
-% The geostrophic streamfunction, $\psi$, is defined such that
+% The geostrophic streamfunction, $$\psi$$, is defined such that
+%
 % $$
 % u= - \frac{\partial \psi}{\partial y}
 % $$
