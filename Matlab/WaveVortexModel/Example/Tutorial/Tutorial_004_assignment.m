@@ -68,6 +68,18 @@ rv = wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
 pcolor(wvt.x/1000,wvt.z,squeeze(rv(:,sliceIndex,:)).'); colorbar; clim([-1,1]*max(abs(rv(:)))), shading interp
 xlabel('x (km)'), ylabel('z (m)')
 
+%%
+
+A0 = wvt.A0;
+TE = wvt.A0_TE_factor .* (A0 .* conj(A0));
+TE_radial = wvt.transformToRadialWavenumber(TE);
+figure, pcolor(wvt.kRadial,wvt.j,TE_radial.'), shading flat
+
+%%
+[Fp,Fm,F0] = wvt.nonlinearFlux();
+
+% figure, pcolor(wvt.k,wvt.l,fftshift(TE(:,:,2)).'), shading flat
+
 return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
