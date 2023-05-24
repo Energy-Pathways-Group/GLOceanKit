@@ -1,7 +1,8 @@
 function initWithGeostrophicStreamfunction(self,psi)
 % initialize with a geostrophic streamfunction
 %
-% The geostrophic streamfunction, $\psi$, is defined such that
+% The geostrophic streamfunction, $$\psi$$, is defined such that
+%
 % $$
 % u= - \frac{\partial \psi}{\partial y}
 % $$
