@@ -15,12 +15,12 @@ function [omega,k,l] = addWaveModes(self, waveproperties)
 % - Returns l: wavenumber l of the waves (radians/m)
 arguments
     self WVTransform {mustBeNonempty}
-    waveproperties.k (1,1) double
-    waveproperties.l (1,1) double
-    waveproperties.j (1,1) double
-    waveproperties.phi (1,1) double
-    waveproperties.u (1,1) double
-    waveproperties.sign (1,1) double
+    waveproperties.k (:,1) double
+    waveproperties.l (:,1) double
+    waveproperties.j (:,1) double
+    waveproperties.phi (:,1) double
+    waveproperties.u (:,1) double
+    waveproperties.sign (:,1) double
 end
 kMode = waveproperties.k;
 lMode = waveproperties.l;
