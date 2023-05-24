@@ -23,5 +23,18 @@ initialize with a geostrophic streamfunction
 
 ## Discussion
 
+  The geostrophic streamfunction, $\psi$, is defined such that
+  $$
+  u= - \frac{\partial \psi}{\partial y}
+  $$
+  
+  $$
+  v=\frac{\partial \psi}{\partial x}
+  $$
+  
+  $$
+  N^2 \eta = - f \frac{\partial \psi}{\partial z}
+  $$
+ 
   Clears variables Ap,Am,A0 and then sets the geostrophic streamfunction
       

@@ -62,6 +62,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`dLnN2`](/classes/wvtransformhydrostatic/dlnn2.html) 
   + [`dLnN2Function`](/classes/wvtransformhydrostatic/dlnn2function.html) 
   + [`diffZF`](/classes/wvtransformhydrostatic/diffzf.html) 
+  + [`diffZG`](/classes/wvtransformhydrostatic/diffzg.html) 
   + [`h`](/classes/wvtransformhydrostatic/h.html) [1 1 Nj]
   + [`internalModes`](/classes/wvtransformhydrostatic/internalmodes.html) 
   + [`rhoFunction`](/classes/wvtransformhydrostatic/rhofunction.html) function handles

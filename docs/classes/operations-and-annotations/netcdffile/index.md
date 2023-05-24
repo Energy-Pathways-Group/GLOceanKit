@@ -97,6 +97,7 @@ A class for reading and writing to NetCDF files
   + [`InitializeFromExistingFile`](/classes/netcdffile/initializefromexistingfile.html) 
   + [`addMutableDimension`](/classes/netcdffile/addmutabledimension.html) 
   + [`close`](/classes/netcdffile/close.html) - Topic: Accessing file properties
+  + [`dump`](/classes/netcdffile/dump.html) 
   + [`netCDFTypeForData`](/classes/netcdffile/netcdftypefordata.html) 
   + [`open`](/classes/netcdffile/open.html) - Topic: Accessing file properties
   + [`sync`](/classes/netcdffile/sync.html) - Topic: Accessing file properties
