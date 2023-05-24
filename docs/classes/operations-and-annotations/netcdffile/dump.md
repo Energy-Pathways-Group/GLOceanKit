@@ -1,15 +1,15 @@
 ---
 layout: default
-title: sync
+title: dump
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 44
+nav_order: 34
 mathjax: true
 ---
 
-#  sync
+#  dump
 
-- Topic: Accessing file properties
+
 
 
 ---

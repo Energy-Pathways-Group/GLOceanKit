@@ -3,7 +3,7 @@ layout: default
 title: initVariable
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 35
+nav_order: 36
 mathjax: true
 ---
 
