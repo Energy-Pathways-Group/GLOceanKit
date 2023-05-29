@@ -1004,6 +1004,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initWithGMSpectrum(self, GMAmplitude, varargin);
         [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
         
+        initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove geostrophic features from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
