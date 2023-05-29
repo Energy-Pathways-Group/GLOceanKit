@@ -313,7 +313,6 @@ classdef WVTransformHydrostatic < WVTransform
         end
                                 
         u_z = diffZF(self,u,n);
-        w_z = diffZG(self,w,n);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

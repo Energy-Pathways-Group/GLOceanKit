@@ -12,7 +12,7 @@ end
 u = permute(u,[3 1 2]); % keep adjacent in memory
 u = reshape(u,self.Nz,[]);
 
-D = self.QGinv*(squeeze(self.Q ./ self.P).*self.PF);
+D = self.QGinv*self.PF;
 du =  D*u;
 
 du = reshape(du,self.Nz,self.Nx,self.Ny);

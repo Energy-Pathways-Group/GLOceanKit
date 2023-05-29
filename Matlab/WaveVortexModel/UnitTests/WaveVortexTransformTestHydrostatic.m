@@ -112,17 +112,6 @@ fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log1
 u_error = error2(uz,uz_unit);
 fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 
-ux = wvt.diffX(u);
-uy = wvt.diffY(u);
-uz = wvt.diffZF(u);
-
-u_error = error2(ux,ux_unit);
-fprintf('\tx-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-u_error = error2(uy,uy_unit);
-fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-u_error = error2(uz,uz_unit);
-fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-
 Nbar = wvt.NAp.*App + wvt.NAm.*Amm + wvt.NA0.*A00;
 
 [~,~,~,eta_unit] = wvt.transformWaveVortexToUVWEta(App,Amm,A00);
@@ -135,16 +124,6 @@ etaz_unit = DiffSine(wvt.z,eta_unit,1,3);
 u_error = error2(eta,eta_unit);
 fprintf('\tNo-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 u_error = error2(etax,etax_unit);
-fprintf('\tx-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-u_error = error2(etay,etay_unit);
-fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-u_error = error2(etaz,etaz_unit);
-fprintf('\tz-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
-
-wx = wvt.diffX(w);
-wy = wvt.diffY(w);
-wz = wvt.diffZG(w);
-
 fprintf('\tx-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 u_error = error2(etay,etay_unit);
 fprintf('\ty-derivative: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));

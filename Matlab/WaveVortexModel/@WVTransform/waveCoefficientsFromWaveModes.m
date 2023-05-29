@@ -88,7 +88,7 @@ for iMode = 1:length(kMode)
     end
 
     ratio = self.uMaxGNormRatioForWave(kNorm(iMode), lNorm(iMode), jNorm(iMode));
-    A = uNorm(iMode)*ratio/2*exp(sqrt(-1)*phiNorm(iMode));
+    A = uNorm*ratio/2*exp(sqrt(-1)*phiNorm);
     if lNorm(iMode) == 0 && kNorm(iMode) == 0
         ApAmp(iMode) = A;
         AmAmp(iMode) = conj(A);

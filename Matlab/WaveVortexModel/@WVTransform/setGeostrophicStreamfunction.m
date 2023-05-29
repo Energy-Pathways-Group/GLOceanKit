@@ -1,20 +1,6 @@
 function setGeostrophicStreamfunction(self,psi)
 % set a geostrophic streamfunction
 %
-% The geostrophic streamfunction, $$\psi$$, is defined such that
-%
-% $$
-% u= - \frac{\partial \psi}{\partial y}
-% $$
-% 
-% $$
-% v=\frac{\partial \psi}{\partial x}
-% $$
-% 
-% $$
-% N^2 \eta = - f \frac{\partial \psi}{\partial z}
-% $$
-%
 % Clears A0 by setting a geostrophic streamfunction
 % - Topic: Initial conditions — Geostrophic Motions
 % - Declaration: setGeostrophicStreamfunction(psi)

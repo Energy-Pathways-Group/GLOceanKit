@@ -1,18 +1,9 @@
 function setInertialMotions(self,u,v)
 % set inertial motions
 %
-% ```matlab
-% U_io = 0.2;
-% Ld = wvt.Lz/5;
-% u_NIO = @(z) U_io*exp(-(z/Ld));
-% v_NIO = @(z) zeros(size(z));
-% 
-% wvt.setInertialMotions(u_NIO,v_NIO);
-% ```
-%
 % Overwrites existing inertial motions with the new values
 % - Topic: Initial conditions — Inertial Oscillations
-% - Declaration: setInertialMotions(self,u,v)
+% - Declaration: setInertialMotions(psi)
 % - Parameter u: function handle that takes a single argument, u(Z)
 % - Parameter v: function handle that takes a single argument, v(Z)
 [~,~,Z] = ndgrid(self.x,self.y,self.z);

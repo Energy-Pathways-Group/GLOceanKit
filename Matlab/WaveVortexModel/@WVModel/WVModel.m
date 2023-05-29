@@ -519,7 +519,7 @@ classdef WVModel < handle
             if isempty(Y0{1})
                 error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
             end
-            self.integrator = WVArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
+            self.integrator = ArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
 
             if isfield(options,"outputInterval")
                 self.outputInterval = options.outputInterval;
@@ -601,10 +601,6 @@ classdef WVModel < handle
                 netcdfFile char {mustBeNonempty}
                 options.Nt (1,1) double {mustBePositive} = Inf
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
-            end
-
-            if self.didSetupIntegrator == 1 && isempty(self.outputInterval)
-                error('You creating a NetCDF output file, but when when you called -setupIntegrator you did set an outputInterval.');
             end
 
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);

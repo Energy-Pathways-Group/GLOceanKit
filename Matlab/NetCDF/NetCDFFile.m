@@ -270,21 +270,6 @@ classdef NetCDFFile < handle
             end
         end
 
-        function dump(self)
-            for iVar=1:length(self.variables)
-                variable = self.variables(iVar);
-                fprintf('%s\t{',variable.name);
-                for iDim=1:length(variable.dimensions)
-                    if iDim==length(variable.dimensions)
-                        fprintf('%s',variable.dimensions(iDim).name);
-                    else
-                        fprintf('%s,',variable.dimensions(iDim).name);
-                    end
-                end
-                fprintf('}\n');
-            end
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Attributes
@@ -585,14 +570,6 @@ classdef NetCDFFile < handle
             % - Parameter index: index at which to read the data, positive integer
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
-            arguments
-                self NetCDFFile {mustBeNonempty}
-                dimName char {mustBeNonempty}
-                index  (1,1) double {mustBePositive} = 1
-            end
-            arguments (Repeating)
-                variableNames char
-            end
             varargout = cell(size(variableNames));
             for iArg=1:length(variableNames)
                 if isKey(self.complexVariableWithName,variableNames{iArg})
