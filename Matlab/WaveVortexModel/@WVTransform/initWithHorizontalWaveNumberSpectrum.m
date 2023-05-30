@@ -15,7 +15,7 @@ arguments
     self WVTransform {mustBeNonempty}
     GMAmplitude (1,1) double
     options.j_star (1,1) double = 3
-    options.slope (1,1) double = -5/2
+    options.slope (1,1) double = 1
 end
 
 
@@ -24,18 +24,8 @@ end
 % Create a reasonable total wavenumber (Radial) axis
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 Kh= self.Kh;
-Kh_max=sqrt(min(abs(self.k))^2 + max(abs(self.l))^2);
-
-allKs = unique(reshape(abs(Kh),[],1),'sorted');
-deltaK = max(diff(allKs));
-kAxis = 0:deltaK:Kh_max;
-
-% This is the final output axis for wavenumber
-kRadial = reshape(kAxis(1:(length(kAxis)-1)),[],1);
-
-
+kRadial = self.radialWavenumberAxis();
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Distribution of Energy
