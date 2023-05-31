@@ -16,6 +16,7 @@ arguments
     GMAmplitude (1,1) double
     options.j_star (1,1) double = 3
     options.slope (1,1) double = 1
+    options.shouldRandomizeAmplitude = 1    
 end
 
 
@@ -92,24 +93,36 @@ fprintf('After distributing energy across frequency and mode, you still have %.2
 
 %The amplitude is:
 
+shouldRandomizeAmplitude=options.shouldRandomizeAmplitude;
+
 A = sqrt((TotalEnergy./self.h)/2);
 
-%Compute the positive and negative amplitude
+ if shouldRandomizeAmplitude == 1 
+        A_plus = A.*self.generateHermitianRandomMatrix( );
+        A_minus = A.*self.generateHermitianRandomMatrix(  );
 
-A_plus_test = self.generateHermitianRandomMatrix();
-A_minus_test = self.generateHermitianRandomMatrix();
+        %self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext).*randn( size(self.offgridModes.h_ext) );
+        %self.offgridModes.PrecomputeExternalWaveCoefficients();                
+    else
+        % Randomize phases, but keep unit length
+        A_plus = self.generateHermitianRandomMatrix(shouldExcludeNyquist=1, allowMeanPhase=1 );
+        A_minus = self.generateHermitianRandomMatrix(shouldExcludeNyquist=1, allowMeanPhase=1 );
 
-goodIndices = abs(A_plus_test) > 0;
-A_plus_test(goodIndices) = A_plus_test(goodIndices)./abs(A_plus_test(goodIndices));
-A_plus_test = A.*A_plus_test;
+        goodIndices = abs(A_plus) > 0;
+        A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
+        A_plus = A.*A_plus;
 
-goodIndices = abs(A_minus_test) > 0;
-A_minus_test(goodIndices) = A_minus_test(goodIndices)./abs(A_minus_test(goodIndices));
-A_minus_test = A.*A_minus_test;
-A_minus_test(1,1,:) = conj(A_plus_test(1,1,:)); % Inertial motions go only one direction! 
+        goodIndices = abs(A_minus) > 0;
+        A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
+        A_minus = A.*A_minus;
 
+        % Check this factor of 2!!! Is the correct? squared
+        % velocity to energy, I think.
+        %self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext);
+        %self.offgridModes.PrecomputeExternalWaveCoefficients();   
+ end
 
-self.Ap=A_plus_test;
-self.Am=A_minus_test;
+self.Ap=A_plus;
+self.Am=A_minus;
 
 end
