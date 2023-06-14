@@ -84,7 +84,7 @@ transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 operations(end+1) = WVOperation('geostrophicEnergyBarotropic',transformVar,@(wvt) wvt.geostrophicEnergyBarotropic);
 
-transformVar = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+transformVar = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
 transformVar.isVariableWithLinearTimeStep = 0;
 transformVar.isVariableWithNonlinearTimeStep = 1;
 operations(end+1) = WVOperation('geostrophicEnergy', transformVar,@(wvt) wvt.geostrophicEnergy);
