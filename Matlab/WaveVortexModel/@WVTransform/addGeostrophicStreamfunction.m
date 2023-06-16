@@ -12,7 +12,7 @@ function addGeostrophicStreamfunction(self,psi)
 % $$
 % 
 % $$
-% N^2 \eta = - f \frac{\partial \psi}{\partial z}
+% N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
 % $$
 %
 % The geostrophic streamfunction is added to the existing values in `A0`

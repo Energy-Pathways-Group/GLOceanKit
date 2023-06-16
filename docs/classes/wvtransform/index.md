@@ -106,6 +106,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Waves
     + [`addWaveModes`](/classes/wvtransform/addwavemodes.html) add amplitudes of the given wave modes
     + [`initWithGMSpectrum`](/classes/wvtransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
+    + [`initWithHorizontalWaveNUmberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
+    + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
     + [`initWithSpectralFunction`](/classes/wvtransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
     + [`initWithWaveModes`](/classes/wvtransform/initwithwavemodes.html) initialize with the given wave modes
     + [`removeAllWaves`](/classes/wvtransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
@@ -129,7 +131,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`totalEnergySpatiallyIntegrated`](/classes/wvtransform/totalenergyspatiallyintegrated.html) horizontally-averaged depth-integrated energy computed in the spatial domain
   + [`totalHydrostaticEnergy`](/classes/wvtransform/totalhydrostaticenergy.html) horizontally-averaged depth-integrated energy *without w* computed in the spatial domain
   + Major Constituents
-    + [`geostrophicEnergy`](/classes/wvtransform/geostrophicenergy.html) total energy, inertial oscillations
+    + [`geostrophicEnergy`](/classes/wvtransform/geostrophicenergy.html) total energy, geostrophic
     + [`inertialEnergy`](/classes/wvtransform/inertialenergy.html) total energy, inertial oscillations
     + [`waveEnergy`](/classes/wvtransform/waveenergy.html) total energy, waves
   + Geostrophic Constituents
@@ -243,12 +245,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`setExternalWavesWithFrequencies`](/classes/wvtransform/setexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given frequency
   + [`setExternalWavesWithWavenumbers`](/classes/wvtransform/setexternalwaveswithwavenumbers.html) set external (non-gridded) waves with a given wavenumber
 + Operations
-  + Differentiation
-    + [`diffX`](/classes/wvtransform/diffx.html) differentiate a spatial variable in the x-direction
-    + [`diffY`](/classes/wvtransform/diffy.html) differentiate a spatial variable in the y-direction
-    + [`diffZF`](/classes/wvtransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
-    + [`diffZG`](/classes/wvtransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
   + Transformations
+    + [`convertFromWavenumberToFrequency`](/classes/wvtransform/convertfromwavenumbertofrequency.html) Summary
     + [`transformFromSpatialDomainWithF`](/classes/wvtransform/transformfromspatialdomainwithf.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the F-modes
     + [`transformFromSpatialDomainWithG`](/classes/wvtransform/transformfromspatialdomainwithg.html) transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the G-modes
     + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (k,l,j) to (kRadial,j)
@@ -258,6 +256,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithgallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.
     + [`transformUVEtaToWaveVortex`](/classes/wvtransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
     + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
+  + Differentiation
+    + [`diffX`](/classes/wvtransform/diffx.html) differentiate a spatial variable in the x-direction
+    + [`diffY`](/classes/wvtransform/diffy.html) differentiate a spatial variable in the y-direction
+    + [`diffZF`](/classes/wvtransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
+    + [`diffZG`](/classes/wvtransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
 + Nonlinear flux and energy transfers
   + [`energyFluxFromNonlinearFlux`](/classes/wvtransform/energyfluxfromnonlinearflux.html) converts nonlinear flux into energy flux
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation

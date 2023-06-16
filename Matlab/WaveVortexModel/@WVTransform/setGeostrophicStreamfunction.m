@@ -12,7 +12,7 @@ function setGeostrophicStreamfunction(self,psi)
 % $$
 % 
 % $$
-% N^2 \eta = - f \frac{\partial \psi}{\partial z}
+% N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
 % $$
 %
 % Clears A0 by setting a geostrophic streamfunction

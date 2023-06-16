@@ -3,7 +3,7 @@ layout: default
 title: initWithGeostrophicStreamfunction
 parent: WVTransform
 grand_parent: Classes
-nav_order: 103
+nav_order: 104
 mathjax: true
 ---
 
@@ -23,7 +23,8 @@ initialize with a geostrophic streamfunction
 
 ## Discussion
 
-  The geostrophic streamfunction, $\psi$, is defined such that
+  The geostrophic streamfunction, $$\psi$$, is defined such that
+ 
   $$
   u= - \frac{\partial \psi}{\partial y}
   $$
@@ -33,7 +34,7 @@ initialize with a geostrophic streamfunction
   $$
   
   $$
-  N^2 \eta = - f \frac{\partial \psi}{\partial z}
+  N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
   $$
  
   Clears variables Ap,Am,A0 and then sets the geostrophic streamfunction

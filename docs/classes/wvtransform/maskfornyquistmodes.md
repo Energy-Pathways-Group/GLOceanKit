@@ -3,7 +3,7 @@ layout: default
 title: maskForNyquistModes
 parent: WVTransform
 grand_parent: Classes
-nav_order: 121
+nav_order: 124
 mathjax: true
 ---
 

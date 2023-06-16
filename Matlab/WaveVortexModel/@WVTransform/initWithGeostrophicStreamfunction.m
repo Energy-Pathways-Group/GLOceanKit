@@ -12,7 +12,7 @@ function initWithGeostrophicStreamfunction(self,psi)
 % $$
 % 
 % $$
-% N^2 \eta = - f \frac{\partial \psi}{\partial z}
+% N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
 % $$
 %
 % Clears variables Ap,Am,A0 and then sets the geostrophic streamfunction
