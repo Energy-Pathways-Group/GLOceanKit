@@ -1,23 +1,4 @@
----
-layout: default
-title: qgpv
-parent: WVTransform
-grand_parent: Classes
-nav_order: 140
-mathjax: true
----
-
-#  qgpv
-
-quasigeostrophic potential vorticity
-
-
----
-
-## Description
-Real valued state variable with dimensions $$(x,y,z)$$ and units of $$1/s$$.
-
-## Discussion
+- topic: State Variables
 
 The quasigeostrophic potential vorticty (QGPV) is defined as,
 
@@ -50,4 +31,3 @@ and thus, in practice, the implementation in the hydrostatic transform uses,
 $$
 \textrm{QGPV} = \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{F}^{-1} \left[-\frac{\omega_j^2}{h f_0} A_0^{klj} \right] \right] \right].
 $$
-
