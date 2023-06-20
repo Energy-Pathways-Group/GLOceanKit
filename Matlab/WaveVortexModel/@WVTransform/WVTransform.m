@@ -1121,7 +1121,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         A = generateHermitianRandomMatrix( self, options );
 
-        [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
+        % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
         ncfile = writeToFile(self,netcdfFile,variables,options);
 
