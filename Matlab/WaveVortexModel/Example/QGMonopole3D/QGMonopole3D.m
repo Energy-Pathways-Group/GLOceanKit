@@ -32,8 +32,8 @@ wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=25);
 % "Deep eddy"
 % We are going to have its velocity vanish at the bottom, and only have its
 % density anomaly in the middle--hence the errorfunction.
-% x0 = 3*Lx/4;
-% y0 = Ly/2;
+x0 = 3*Lx/4;
+y0 = Ly/2;
 % Le = 80e3;
 % z0 = -wvt.Lz/4;
 % He = wvt.Lz/10;
@@ -61,17 +61,60 @@ max(ssh(:))
 % figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Set up the integrator
+%% Initialize the model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
 model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Add floats
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+xf = wvt.x(1:4:end);
+yf = wvt.y(1:4:end);
+zf = wvt.z(end:-4:1); % make sure we grab the surface
+[XF,YF,ZF] = ndgrid(xf,yf,zf);
+model.setFloatPositions(XF(:),YF(:),ZF(:));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Set up the integrator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
-model.createNetCDFFileForModelOutput('qg-eddy.nc')
+model.createNetCDFFileForModelOutput('qg-eddy.nc');
 model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
 model.integrateToTime(365*86400);
 
 return
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Read float positions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ncfile = model.ncfile;
+% [x,y,z] = ncfile.floatPositions();
+[xFloat,yFloat,zFloat] = ncfile.readVariables('float-x','float-y','float-z');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Make plot
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+uniqueDepths = unique(zFloat(:,1));
+
+figure
+tl = tiledlayout('flow');
+tl.TileSpacing = 'compact';
+tl.Padding = 'compact';
+
+for iDepth=length(uniqueDepths):-1:1
+    indices = find( abs(zFloat(:,1)-uniqueDepths(iDepth)) < 1e-3);
+    x = xFloat(indices,:);
+    y = yFloat(indices,:);
+    z = zFloat(indices,:);
+    nexttile
+    plot(x.',y.')
+    title(sprintf('float at depth %d m',round(uniqueDepths(iDepth))))
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
