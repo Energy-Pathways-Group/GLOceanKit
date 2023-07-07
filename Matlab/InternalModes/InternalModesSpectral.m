@@ -215,6 +215,43 @@ classdef InternalModesSpectral < InternalModesBase
             end
             B(1,:) = 0;
         end
+
+        function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = Tzz;
+            B = -diag((self.N2_xLobatto)/self.g)*T;
+
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+    
+            c = (self.g/(self.f0*self.f0))*(k*k);
+            if c < 1
+                A(1,:) = c*Tz(1,:);
+                B(1,:) = -(Tz(1,:) + c*T(1,:));
+
+                A(n,:) = c*Tz(1,:);
+                B(n,:) = -(Tz(1,:) + c*T(n,:));
+
+                % A(n,:) = T(n,:);
+                % B(n,:) = 0;
+            else
+                cinv = (self.f0*self.f0)/(self.g *k*k);
+                A(1,:) = Tz(1,:);
+                B(1,:) = -(cinv * Tz(1,:) + T(1,:));
+
+                A(n,:) = Tz(1,:);
+                B(n,:) = -(cinv * Tz(1,:) + T(n,:));
+
+                % A(n,:) = T(n,:);
+                % B(n,:) = 0;
+            end
+
+
+        end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
             T = self.T_xLobatto;
@@ -236,7 +273,8 @@ classdef InternalModesSpectral < InternalModesBase
                 case LowerBoundary.custom
 %                     A(n,:) = Tz(n,:);% + (self.N2_xLobatto(n)/self.g).*T(n,:);
 %                     B(n,:) = -T(n,:);
-                    A(n,:) = -Tz(1,:)+Tz(n,:);
+%                     A(n,:) = -Tz(1,:)+Tz(n,:);
+                    A(n,:) = Tz(n,:);
                     B(n,:) = 0;
                 case LowerBoundary.none
                 otherwise
@@ -259,6 +297,7 @@ classdef InternalModesSpectral < InternalModesBase
                     B(1,:) = 0;
                 case UpperBoundary.custom
                     A(1,:) = T(1,:)-T(n,:);
+                    A(1,:) = Tz(1,:);
                     B(1,:) = 0;
                 case UpperBoundary.none
                 otherwise
@@ -270,6 +309,14 @@ classdef InternalModesSpectral < InternalModesBase
             self.gridFrequency = 0;
 
             [A,B] = self.EigenmatricesForGeostrophicGModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
+        function [F,G,h] = GeostrophicRigidLidModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForGeostrophicRigidLidModes(k);
 
             [F,G,h] = self.ModesFromGEP(A,B);
         end
