@@ -216,41 +216,57 @@ classdef InternalModesSpectral < InternalModesBase
             B(1,:) = 0;
         end
 
+        % function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
+        %     T = self.T_xLobatto;
+        %     Tz = self.Tx_xLobatto;
+        %     Tzz = self.Txx_xLobatto;
+        %     n = self.nEVP;
+        % 
+        %     A = Tzz;
+        %     B = -diag((self.N2_xLobatto)/self.g)*T;
+        % 
+        %     A(n,:) = T(n,:);
+        %     B(n,:) = 0;
+        % 
+        %     c = (self.g/(self.f0*self.f0))*(k*k);
+        %     if c < 1
+        %         A(1,:) = c*Tz(1,:);
+        %         B(1,:) = -(Tz(1,:) + c*T(1,:));
+        % 
+        %         A(n,:) = c*Tz(1,:);
+        %         B(n,:) = -(Tz(1,:) + c*T(n,:));
+        % 
+        %         % A(n,:) = T(n,:);
+        %         % B(n,:) = 0;
+        %     else
+        %         cinv = (self.f0*self.f0)/(self.g *k*k);
+        %         A(1,:) = Tz(1,:);
+        %         B(1,:) = -(cinv * Tz(1,:) + T(1,:));
+        % 
+        %         A(n,:) = Tz(1,:);
+        %         B(n,:) = -(cinv * Tz(1,:) + T(n,:));
+        % 
+        %         % A(n,:) = T(n,:);
+        %         % B(n,:) = 0;
+        %     end
+        % end
+
         function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
 
-            A = Tzz;
-            B = -diag((self.N2_xLobatto)/self.g)*T;
+            A = Tzz - diag(k*k*self.N2_xLobatto/(self.f0*self.f0))*T;
+            B = -(diag(self.N2_xLobatto)/self.g)*T;
 
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
-    
-            c = (self.g/(self.f0*self.f0))*(k*k);
-            if c < 1
-                A(1,:) = c*Tz(1,:);
-                B(1,:) = -(Tz(1,:) + c*T(1,:));
+            % upper-boundary
+            A(1,:) = self.Lz*Tz(1,:)+T(1,:);
+            B(1,:) = 0*T(1,:);
 
-                A(n,:) = c*Tz(1,:);
-                B(n,:) = -(Tz(1,:) + c*T(n,:));
-
-                % A(n,:) = T(n,:);
-                % B(n,:) = 0;
-            else
-                cinv = (self.f0*self.f0)/(self.g *k*k);
-                A(1,:) = Tz(1,:);
-                B(1,:) = -(cinv * Tz(1,:) + T(1,:));
-
-                A(n,:) = Tz(1,:);
-                B(n,:) = -(cinv * Tz(1,:) + T(n,:));
-
-                % A(n,:) = T(n,:);
-                % B(n,:) = 0;
-            end
-
-
+            % lower-boundary
+            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = 0*T(n,:);
         end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
