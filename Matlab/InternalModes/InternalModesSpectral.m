@@ -257,6 +257,27 @@ classdef InternalModesSpectral < InternalModesBase
             Tzz = self.Txx_xLobatto;
             n = self.nEVP;
 
+            A = Tzz;
+            B = -(diag(self.N2_xLobatto)/self.g)*T;
+
+            gamma = (self.g/(self.f0*self.f0))*(k*k);
+            % upper-boundary
+            A(1,:) = gamma*Tz(1,:);
+            B(1,:) = -gamma*T(1,:)-Tz(1,:);
+            B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
+
+
+            % lower-boundary
+            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = 0*T(n,:);
+        end
+
+        function [A,B] = EigenmatricesForSmithVannesteModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
             A = Tzz - diag(k*k*self.N2_xLobatto/(self.f0*self.f0))*T;
             B = -(diag(self.N2_xLobatto)/self.g)*T;
 
