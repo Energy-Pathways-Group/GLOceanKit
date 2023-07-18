@@ -16,18 +16,49 @@ wvt = WVTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
 
 x0 = 3*Lx/4;
 y0 = Ly/2;
-A = 0.15;
 L = 80e3;
-wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
 
-figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
+beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
+c = beta*wvt.g*wvt.h/(wvt.f)^2;
+
+%%
+
+% Equation 9.2 in Flierl, et. al 1980.
+
+c = 1; % units of beta*Lr^2
+a = 2/sqrt(2); % units of L
+q = a * sqrt( 1/c + 1);
+k = 4.0732;
+D1 = -c * a / besselk(1, q);
+B1 = c * (1/c + 1) * a * a * a / ( k * k * besselj(1, k) );
+kovera = k/a;
+linearCoeff = ( 1.0 + ( kovera * kovera + 1 ) * c )/(kovera*kovera);
+
+theta = atan2(wvt.Y - y0,wvt.X-x0);
+r2 = (wvt.X-x0).^2 + (wvt.Y-y0).^2;
+r = sqrt(r2)/L;
+
+psiInterior = (B1 * besselj(1, kovera*r) - linearCoeff * r).*sin(theta);
+psiExterior = (D1 * besselk(1, sqrt(1/c+1) * r)).*sin(theta);
+psiExterior(isnan(psiExterior)) = 0;
+psi = psiInterior .* (r2<=L^2) + psiExterior .* (r2>L^2);
+
+wvt.A0 = (wvt.f/wvt.g)*wvt.transformFromSpatialDomainWithF(psi);
+
+figure, pcolor(wvt.x,wvt.y,wvt.psi.'), shading interp
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% initialize the integrator with the model
+%% initialize the integrator with the model
 model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+
+model.integrateToTime(50*86400);
+
+figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
+return
 
 if model.nonlinearFluxOperation.beta > 0
     beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;

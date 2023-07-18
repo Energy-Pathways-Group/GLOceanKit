@@ -289,6 +289,24 @@ classdef InternalModesSpectral < InternalModesBase
             A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0*T(n,:);
         end
+
+        function [A,B] = EigenmatricesForMDAModes(self )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = Tzz;
+            B = -(diag(self.N2_xLobatto)/self.g)*T;
+
+            % upper-boundary
+            A(1,:) = Tz(1,:)-Tz(n,:);
+            B(1,:) = 0*T(n,:);
+
+            % lower-boundary
+            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = 0*T(n,:);
+        end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
             T = self.T_xLobatto;
@@ -342,6 +360,14 @@ classdef InternalModesSpectral < InternalModesBase
             end
         end
         
+        function [F,G,h] = MDAModes(self )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForMDAModes();
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
         function [F,G,h] = GeostrophicModesAtWavenumber(self, k )
             self.gridFrequency = 0;
 
