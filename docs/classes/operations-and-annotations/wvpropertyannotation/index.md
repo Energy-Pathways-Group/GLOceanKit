@@ -38,11 +38,11 @@ Describes a property of the WVTransform
 
 ## Topics
 + Initialization
-  + [`WVPropertyAnnotation`](/classes/wvpropertyannotation/wvpropertyannotation.html) create a new instance of WVPropertyAnnotation
+  + [`WVPropertyAnnotation`](/classes/operations-and-annotations/wvpropertyannotation/wvpropertyannotation.html) create a new instance of WVPropertyAnnotation
 + Properties
-  + [`dimensions`](/classes/wvpropertyannotation/dimensions.html) ordered cell array with the names of the dimensions
-  + [`isComplex`](/classes/wvpropertyannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
-  + [`units`](/classes/wvpropertyannotation/units.html) of the dimension
+  + [`dimensions`](/classes/operations-and-annotations/wvpropertyannotation/dimensions.html) ordered cell array with the names of the dimensions
+  + [`isComplex`](/classes/operations-and-annotations/wvpropertyannotation/iscomplex.html) boolean indicating whether or not the property may have an imaginary part
+  + [`units`](/classes/operations-and-annotations/wvpropertyannotation/units.html) of the dimension
 
 
 ---

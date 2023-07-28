@@ -45,22 +45,22 @@ nav_order: 2
 ## Topics
 + Initializing
 + Other
-  + [`AA`](/classes/boussinesq/aa.html) 
-  + [`Boussinesq`](/classes/boussinesq/boussinesq.html) initialize the Boussinesq nonlinear flux
-  + [`dLnN2`](/classes/boussinesq/dlnn2.html) 
-  + [`damp`](/classes/boussinesq/damp.html) 
-  + [`nu_xy`](/classes/boussinesq/nu_xy.html) 
-  + [`nu_z`](/classes/boussinesq/nu_z.html) 
-  + [`shouldAntialias`](/classes/boussinesq/shouldantialias.html) 
+  + [`AA`](/classes/nonlinear-fluxes/boussinesq/aa.html) 
+  + [`Boussinesq`](/classes/nonlinear-fluxes/boussinesq/boussinesq.html) initialize the Boussinesq nonlinear flux
+  + [`dLnN2`](/classes/nonlinear-fluxes/boussinesq/dlnn2.html) 
+  + [`damp`](/classes/nonlinear-fluxes/boussinesq/damp.html) 
+  + [`nu_xy`](/classes/nonlinear-fluxes/boussinesq/nu_xy.html) 
+  + [`nu_z`](/classes/nonlinear-fluxes/boussinesq/nu_z.html) 
+  + [`shouldAntialias`](/classes/nonlinear-fluxes/boussinesq/shouldantialias.html) 
 + Computation
-  + [`compute`](/classes/boussinesq/compute.html) the promised variable
+  + [`compute`](/classes/nonlinear-fluxes/boussinesq/compute.html) the promised variable
 + Equality
-  + [`isequal`](/classes/boussinesq/isequal.html) check for equality with another nonlinear flux operation
+  + [`isequal`](/classes/nonlinear-fluxes/boussinesq/isequal.html) check for equality with another nonlinear flux operation
 + Initialization
-  + [`nonlinearFluxFromFile`](/classes/boussinesq/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/boussinesq/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/boussinesq/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/boussinesq/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
 + Write to file
-  + [`writeToFile`](/classes/boussinesq/writetofile.html) write information about the nonlinear flux operation to file
+  + [`writeToFile`](/classes/nonlinear-fluxes/boussinesq/writetofile.html) write information about the nonlinear flux operation to file
 
 
 ---

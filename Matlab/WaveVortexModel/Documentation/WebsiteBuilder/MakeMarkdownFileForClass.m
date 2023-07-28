@@ -1,6 +1,7 @@
 function MakeMarkdownFileForClass(options)
 arguments
     options.path
+    options.websiteFolder
     options.className
     options.classDetailedDescription
     options.classDefinedTopics
@@ -79,7 +80,7 @@ for topicIndex = 1:length(classDefinedTopics)
 
         subtopic = classDefinedTopics(topicIndex).subtopics(otherSubtopicIndex);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'  + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'  + [`%s`](/%s/%s.html) ',subtopic.methodNames{methodIndex},options.websiteFolder,lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     else
@@ -92,7 +93,7 @@ for topicIndex = 1:length(classDefinedTopics)
         subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
         fprintf(fileID,'  + %s\n',subtopic.subtopicName);
         for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'    + [`%s`](/classes/%s/%s.html) ',subtopic.methodNames{methodIndex},lower(className),lower(subtopic.methodNames{methodIndex}));
+            fprintf(fileID,'    + [`%s`](/%s/%s.html) ',subtopic.methodNames{methodIndex},options.websiteFolder,lower(subtopic.methodNames{methodIndex}));
             fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
         end
     end

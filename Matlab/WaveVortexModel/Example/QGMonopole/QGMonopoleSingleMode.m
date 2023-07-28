@@ -34,6 +34,7 @@ if model.nonlinearFluxOperation.beta > 0
     outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
     f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega ./ (wvt.h * wvt.f)) .*wvt.A0t) + beta*wvt.Y;
     wvt.addOperation(WVOperation('qgpv',outputVar,f),overwriteExisting=1);
+    f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u) - (wvt.f)^2/(wvt.h * wvt.g)*wvt.psi + beta*wvt.Y;
 end
 
 

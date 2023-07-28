@@ -41,14 +41,14 @@ Describes a variable computed from the WVTransform
 
 ## Topics
 + Initialization
-  + [`WVVariableAnnotation`](/classes/wvvariableannotation/wvvariableannotation.html) create a new instance of WVVariableAnnotation
+  + [`WVVariableAnnotation`](/classes/operations-and-annotations/wvvariableannotation/wvvariableannotation.html) create a new instance of WVVariableAnnotation
 + Properties
-  + [`dimensions`](/classes/wvvariableannotation/dimensions.html) ordered cell array with the names of the dimensions
-  + [`isComplex`](/classes/wvvariableannotation/iscomplex.html) boolean indicating whether or not the variable may have an imaginary part
-  + [`isVariableWithLinearTimeStep`](/classes/wvvariableannotation/isvariablewithlineartimestep.html) boolean indicating whether the variable changes value with a linear time step
-  + [`isVariableWithNonlinearTimeStep`](/classes/wvvariableannotation/isvariablewithnonlineartimestep.html) boolean indicating whether the variable changes value with a non-linear time step
-  + [`modelOp`](/classes/wvvariableannotation/modelop.html) WVOperation responsible for computing this variable
-  + [`units`](/classes/wvvariableannotation/units.html) of the variable
+  + [`dimensions`](/classes/operations-and-annotations/wvvariableannotation/dimensions.html) ordered cell array with the names of the dimensions
+  + [`isComplex`](/classes/operations-and-annotations/wvvariableannotation/iscomplex.html) boolean indicating whether or not the variable may have an imaginary part
+  + [`isVariableWithLinearTimeStep`](/classes/operations-and-annotations/wvvariableannotation/isvariablewithlineartimestep.html) boolean indicating whether the variable changes value with a linear time step
+  + [`isVariableWithNonlinearTimeStep`](/classes/operations-and-annotations/wvvariableannotation/isvariablewithnonlineartimestep.html) boolean indicating whether the variable changes value with a non-linear time step
+  + [`modelOp`](/classes/operations-and-annotations/wvvariableannotation/modelop.html) WVOperation responsible for computing this variable
+  + [`units`](/classes/operations-and-annotations/wvvariableannotation/units.html) of the variable
 
 
 ---

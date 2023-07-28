@@ -172,7 +172,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`WAp`](/classes/wvtransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 + Other
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
-  + [`ExponentialFilter`](/classes/wvtransform/exponentialfilter.html) 
   + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
   + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize

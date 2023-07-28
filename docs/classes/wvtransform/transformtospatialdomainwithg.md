@@ -3,7 +3,7 @@ layout: default
 title: transformToSpatialDomainWithG
 parent: WVTransform
 grand_parent: Classes
-nav_order: 176
+nav_order: 175
 mathjax: true
 ---
 
@@ -26,7 +26,7 @@ transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using 
 This is the component of the [inverse discrete transformation](/mathematical-introduction/transformations.html) $$D^{-1}$$ that projects from the vertical modes $G$, followed by a transformation $$ (k,l) \mapsto (x,y)$$ with a discrete Fourier transform. Mathematically we write,
 
 $$
-g(x,y,z) =&  \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{G}^{-1} \left[ \tilde{f}^{klj} \right] \right] \right] 
+g(x,y,z) =  \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{G}^{-1} \left[ \tilde{f}^{klj} \right] \right] \right] 
 $$
 
 The $$G$$ mode projection is applicable to dynamical variables $$w$$, $$\eta$$.

@@ -11,7 +11,8 @@ function BuildDocumentationForClass(options)
 % method gets its own page.
 arguments
     options.name
-    options.folder
+    options.buildFolder % the folder where we are dumping everything on the local hard drive. This will become the *root* website folder
+    options.websiteFolder % the folder relative to the root website folder
     options.parent = []
     options.grandparent = []
     options.nav_order = []
@@ -25,14 +26,14 @@ metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
 
 
 % Make a folder for all the class contents
-targetFolder = sprintf('%s/%s',options.folder,lower(options.name));
+targetFolder = sprintf('%s/%s/%s',options.buildFolder,options.websiteFolder,lower(options.name));
 if ~exist(targetFolder,'dir')
     mkdir(targetFolder);
 end
 path = sprintf('%s/index.md',targetFolder);
 
-
-MakeMarkdownFileForClass(path=path,className=options.name,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,grandparent=options.grandparent,nav_order=options.nav_order);
+websiteFolder = sprintf('%s/%s',options.websiteFolder,lower(options.name));
+MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=options.name,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,grandparent=options.grandparent,nav_order=options.nav_order);
 
 
 iPageNumber = 0;

@@ -3,7 +3,7 @@ layout: default
 title: eta
 parent: WVTransform
 grand_parent: Classes
-nav_order: 83
+nav_order: 82
 mathjax: true
 ---
 

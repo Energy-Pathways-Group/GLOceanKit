@@ -3,7 +3,7 @@ layout: default
 title: Lz
 parent: WVTransform
 grand_parent: Classes
-nav_order: 31
+nav_order: 30
 mathjax: true
 ---
 

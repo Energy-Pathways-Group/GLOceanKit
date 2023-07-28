@@ -37,9 +37,9 @@ Describes a coordinate dimension of the WVTransform
 
 ## Topics
 + Initialization
-  + [`WVDimensionAnnotation`](/classes/wvdimensionannotation/wvdimensionannotation.html) create a new instance of WVDimensionAnnotation
+  + [`WVDimensionAnnotation`](/classes/operations-and-annotations/wvdimensionannotation/wvdimensionannotation.html) create a new instance of WVDimensionAnnotation
 + Properties
-  + [`units`](/classes/wvdimensionannotation/units.html) of the dimension
+  + [`units`](/classes/operations-and-annotations/wvdimensionannotation/units.html) of the dimension
 
 
 ---

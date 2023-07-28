@@ -1,12 +1,13 @@
 function BuildDocumentationForWVTransformSubclass(options)
 arguments
-    options.folder
+    options.buildFolder % the folder where we are dumping everything on the local hard drive. This will become the *root* website folder
+    options.websiteFolder % the folder relative to the root website folder
     options.parent = []
     options.nav_order = []
 end
 className = 'WVTransform';
 
-targetFolder = sprintf('%s/%s',options.folder,lower(className));
+targetFolder = sprintf('%s/%s/%s',options.buildFolder,options.websiteFolder,lower(className));
 mc = meta.class.fromName(className);
 
 metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
@@ -79,7 +80,8 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 path = sprintf('%s/index.md',targetFolder);
-MakeMarkdownFileForClass(path=path,className=className,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,nav_order=options.nav_order);
+websiteFolder = sprintf('%s/%s',options.websiteFolder,lower(className));
+MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=className,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,nav_order=options.nav_order);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

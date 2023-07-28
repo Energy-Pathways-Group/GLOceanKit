@@ -37,11 +37,11 @@ annotates methods, properties, operations, and variables
 
 ## Topics
 + Initialization
-  + [`WVAnnotation`](/classes/wvannotation/wvannotation.html) create a new instance of WVAnnotation
+  + [`WVAnnotation`](/classes/operations-and-annotations/wvannotation/wvannotation.html) create a new instance of WVAnnotation
 + Properties
-  + [`description`](/classes/wvannotation/description.html) short description of the method, property, or variable
-  + [`detailedDescription`](/classes/wvannotation/detaileddescription.html) a detailed description of the method, property, or variable
-  + [`name`](/classes/wvannotation/name.html) of the method, property, or variable
+  + [`description`](/classes/operations-and-annotations/wvannotation/description.html) short description of the method, property, or variable
+  + [`detailedDescription`](/classes/operations-and-annotations/wvannotation/detaileddescription.html) a detailed description of the method, property, or variable
+  + [`name`](/classes/operations-and-annotations/wvannotation/name.html) of the method, property, or variable
 
 
 ---

@@ -51,16 +51,16 @@ Perform an operation and return a variable using a WVTransform
 
 ## Topics
 + Initialization
-  + [`WVOperation`](/classes/wvoperation/wvoperation.html) create a new WVOperation for computing a new variable
+  + [`WVOperation`](/classes/operations-and-annotations/wvoperation/wvoperation.html) create a new WVOperation for computing a new variable
 + Computation
-  + [`compute`](/classes/wvoperation/compute.html) the promised variable
+  + [`compute`](/classes/operations-and-annotations/wvoperation/compute.html) the promised variable
 + Other
-  + [`detailedDescription`](/classes/wvoperation/detaileddescription.html) 
+  + [`detailedDescription`](/classes/operations-and-annotations/wvoperation/detaileddescription.html) 
 + Properties
-  + [`f`](/classes/wvoperation/f.html) function handle to be called when computing the operation
-  + [`nVarOut`](/classes/wvoperation/nvarout.html) number of variables returned by the computation
-  + [`name`](/classes/wvoperation/name.html) of the operation
-  + [`outputVariables`](/classes/wvoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
+  + [`f`](/classes/operations-and-annotations/wvoperation/f.html) function handle to be called when computing the operation
+  + [`nVarOut`](/classes/operations-and-annotations/wvoperation/nvarout.html) number of variables returned by the computation
+  + [`name`](/classes/operations-and-annotations/wvoperation/name.html) of the operation
+  + [`outputVariables`](/classes/operations-and-annotations/wvoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
 
 
 ---
