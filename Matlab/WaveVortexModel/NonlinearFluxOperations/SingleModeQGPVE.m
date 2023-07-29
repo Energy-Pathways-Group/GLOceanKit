@@ -21,7 +21,9 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
             fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+            fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
 %             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
             fluxVar = cat(2,fluxVar,options.stateVariables);
 

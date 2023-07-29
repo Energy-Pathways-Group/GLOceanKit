@@ -56,10 +56,10 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         ncfile.addDimension(dimAnnotation.name,wvt.(dimAnnotation.name),dimAnnotation.attributes);
     end
 
-    CreationDate = datetime('now');
     ncfile.addAttribute('Model','Created with the WaveVortexModel, written by Jeffrey J. Early and collaborators.');
     ncfile.addAttribute('model_version',wvt.version);
-    ncfile.addAttribute('date_created',CreationDate);
+    ncfile.addAttribute('date_created',string(datetime('now')));
+    ncfile.addAttribute('references','Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995');
     ncfile.addAttribute('WVTransform',class(wvt));
 
     attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
