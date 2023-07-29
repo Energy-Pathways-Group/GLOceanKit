@@ -610,11 +610,15 @@ classdef WVModel < handle
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
 
             % Now add a time dimension
-            transformVar = self.wvt.variableAnnotationWithName('t');
-            attributes = containers.Map();
-            attributes('units') = transformVar.units;
-            attributes('description') = transformVar.description;
-            ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
+            varAnnotation = self.wvt.variableAnnotationWithName('t');
+            varAnnotation.attributes('units') = varAnnotation.units;
+            varAnnotation.attributes('long_name') = varAnnotation.description;
+            varAnnotation.attributes('standard_name') = 'time';
+            varAnnotation.attributes('long_name') = 'time';
+            varAnnotation.attributes('units') = 's since 000';
+            varAnnotation.attributes('axis') = 'T';
+            varAnnotation.attributes('calendar') = 'standard';
+            ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
 
             if ~self.linearDynamics
                 ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFluxOperation));

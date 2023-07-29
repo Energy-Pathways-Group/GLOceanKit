@@ -50,17 +50,16 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 
     dims = {'x','y','z','k','l','j'};
     for iDim=1:length(dims)
-        transformDim = wvt.dimensionAnnotationWithName(dims{iDim});
-        attributes = containers.Map();
-        attributes('units') = transformDim.units;
-        attributes('description') = transformDim.description;
-        ncfile.addDimension(transformDim.name,wvt.(transformDim.name),attributes);
+        dimAnnotation = wvt.dimensionAnnotationWithName(dims{iDim});
+        dimAnnotation.attributes('units') = dimAnnotation.units;
+        dimAnnotation.attributes('long_name') = dimAnnotation.description;
+        ncfile.addDimension(dimAnnotation.name,wvt.(dimAnnotation.name),dimAnnotation.attributes);
     end
 
-    CreationDate = datestr(datetime('now'));
+    CreationDate = datetime('now');
     ncfile.addAttribute('Model','Created with the WaveVortexModel, written by Jeffrey J. Early and collaborators.');
-    ncfile.addAttribute('ModelVersion',wvt.version);
-    ncfile.addAttribute('CreationDate',CreationDate);
+    ncfile.addAttribute('model_version',wvt.version);
+    ncfile.addAttribute('date_created',CreationDate);
     ncfile.addAttribute('WVTransform',class(wvt));
 
     attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
@@ -76,20 +75,19 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 
     for iVar=1:length(variables)
         if isKey(wvt.variableAnnotationNameMap,variables{iVar})
-            transformVar = wvt.variableAnnotationWithName(variables{iVar});
+            varAnnotation = wvt.variableAnnotationWithName(variables{iVar});
         elseif isKey(wvt.propertyAnnotationNameMap,variables{iVar})
-            transformVar = wvt.propertyAnnotationWithName(variables{iVar});
+            varAnnotation = wvt.propertyAnnotationWithName(variables{iVar});
         else
             error('Unrecognized property or variable, %s',variables{iVar});
         end
-        attributes = containers.Map();
-        attributes('units') = transformVar.units;
-        attributes('description') = transformVar.description;
-        if transformVar.isComplex == 1
-            ncfile.initComplexVariable(transformVar.name,transformVar.dimensions,attributes,'NC_DOUBLE');
-            ncfile.setVariable(transformVar.name,wvt.(transformVar.name));
+        varAnnotation.attributes('units') = varAnnotation.units;
+        varAnnotation.attributes('long_name') = varAnnotation.description;
+        if varAnnotation.isComplex == 1
+            ncfile.initComplexVariable(varAnnotation.name,varAnnotation.dimensions,varAnnotation.attributes,'NC_DOUBLE');
+            ncfile.setVariable(varAnnotation.name,wvt.(varAnnotation.name));
         else
-            ncfile.addVariable(transformVar.name,wvt.(transformVar.name),transformVar.dimensions,attributes);
+            ncfile.addVariable(varAnnotation.name,wvt.(varAnnotation.name),varAnnotation.dimensions,varAnnotation.attributes);
         end
     end
 end

@@ -23,7 +23,7 @@ classdef WVAnnotation < handle
         % short description of the method, property, or variable
         % 
         % The short description is used in the table-of-contents of
-        % documentation and in NetCDF files.
+        % documentation and as the long_name property in NetCDF files.
         % - Topic: Properties
         description
     end
@@ -42,6 +42,8 @@ classdef WVAnnotation < handle
         % file extension .md.
         % - Topic: Properties
         detailedDescription
+
+        attributes
     end
 
     methods
@@ -65,10 +67,12 @@ classdef WVAnnotation < handle
                 name char {mustBeNonempty}
                 description char {mustBeNonempty}
                 options.detailedDescription char = ''
+                options.attributes = containers.Map();
             end
             self.name = name;
             self.description = description;
             self.loadDetailedDescriptionIfAvailable;
+            self.attributes = options.attributes;
             if ~isempty(options.detailedDescription)
 %                 if ~isempty(self.detailedDescription)
 %                     warning('Founded a detailedDescription md file for %s, but one was also set in code!',self.name);
