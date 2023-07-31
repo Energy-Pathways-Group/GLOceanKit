@@ -1,10 +1,15 @@
+%   This script adds NetCDF-compliant metadata to BetaEddyOne.
+%
+%   (c) 2023 J.J. Early and J.M. Lilly 
+
+
 ncfile = NetCDFFile('BetaEddyOne.nc');
 
 %% Highly recommended ACDD conventions
 % Descriptions of these four attributes are found here:
 % https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Highly_Recommended
-ncfile.addAttribute('title','CanonicalEddy'); 
-ncfile.addAttribute('summary','A numerical model of a propagating, isolated, 1.5 layer eddy under quasigeostrophic balance on a beta-plane, with trajectories of advected particles.'); 
+ncfile.addAttribute('title','BetaEddyOne'); 
+ncfile.addAttribute('summary','A long-lived 1.5 layer quasigeostrophic eddy on a beta plane, with Lagrangian particles'); 
 ncfile.addAttribute('Conventions','CF-1.10, ACDD-1.3'); 
 
 % Using this vocabulary for keywords as recommended by ACDD:
@@ -46,7 +51,6 @@ ncfile.addAttribute('publisher_institution','Planetary Science Institute') %sugg
 %ncfile.addAttribute('contributor_role',''); %suggested
 
 addGeospatialAnnotations(ncfile);
-
 
 ncfile.addAttribute('platform','Models'); %suggested
 ncfile.addAttribute('platform_vocabulary','GCMD, https://gcmd.earthdata.nasa.gov/static/kms/'); %suggested

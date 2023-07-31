@@ -1,3 +1,19 @@
+%   This script makes the simulation BetaEddyOne.  
+%
+%   Early JJ, Lilly JM. 2023 BetaEddyOne: A long-lived 1.5 layer 
+%      quasigeostrophic eddy on a beta plane, with Lagrangian particles. 
+%      (10.5281/zenodo.8200056)
+%
+%   To run it, you'll need to install the GLOceanKit from GitHub
+%
+%       https://github.com/Energy-Pathways-Group/GLOceanKit
+%
+%   specifically the netCDF-conventions branch.  You'll also need to
+%   recursively set the Matlab path to include GLOceanKit/Matlab and all 
+%   subdirectories.  Then, run this script followed by BetaEddyOne_AddMeta.
+%
+%   (c) 2023 J.J. Early and J.M. Lilly
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Specify the problem dimensions
@@ -49,7 +65,7 @@ wvt.addOperation(WVOperation('sigma',outputVar,f));
 model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
 
 % set initial positions for a bunch of floats
-[xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
+[xFloat,yFloat] = ndgrid(wvt.x,wvt.y);
 xFloat = reshape(xFloat,1,[]);
 yFloat = reshape(yFloat,1,[]);
 nTrajectories = length(xFloat);
@@ -59,10 +75,11 @@ model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400);
 
 model.createNetCDFFileForModelOutput('BetaEddyOne.nc',shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','ssh','qgpv','u','v','zeta','nu','sigma');
-model.integrateToTime(50*86400);
+model.integrateToTime(365*86400);
 
 ncfile = model.ncfile;
 % [x,y] = ncfile.readVariables('drifter-x','drifter-y');
 % qgpv = ncfile.readVariables('drifter-qgpv');
 % 
 % figure, plot(x.',y.')
+
