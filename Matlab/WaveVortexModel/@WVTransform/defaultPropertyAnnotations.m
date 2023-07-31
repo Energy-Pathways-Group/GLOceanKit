@@ -13,7 +13,7 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('Lx',{},'m', 'domain size in t
 propertyAnnotations(end+1) = WVPropertyAnnotation('Ly',{},'m', 'domain size in the y-direction');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lz',{},'m', 'domain size in the z-direction');
 propertyAnnotations(end+1) = WVPropertyAnnotation('t0',{},'s', 'reference time of Ap, Am, A0');
-propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'latitude of the simulation', detailedDescription='- topic: Domain Attributes');
+propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end).attributes('standard_name') = 'latitude';
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis parameter', detailedDescription='- topic: Domain Attributes');

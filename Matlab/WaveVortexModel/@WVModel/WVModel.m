@@ -640,7 +640,7 @@ classdef WVModel < handle
             varAnnotation.attributes('long_name') = varAnnotation.description;
             varAnnotation.attributes('standard_name') = 'time';
             varAnnotation.attributes('long_name') = 'time';
-            varAnnotation.attributes('units') = 'seconds since 1980-02-29 17:34:00';
+            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
             varAnnotation.attributes('axis') = 'T';
             varAnnotation.attributes('calendar') = 'standard';
             ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);

@@ -57,9 +57,9 @@ model.setDrifterPositions(xFloat,yFloat,[],'ssh','qgpv','u','v','zeta','nu','sig
 
 model.setupIntegrator(timeStepConstraint="advective", outputInterval=86400);
 
-model.createNetCDFFileForModelOutput('BetaEddy.nc',shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput('BetaEddyOne.nc',shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','ssh','qgpv','u','v','zeta','nu','sigma');
-model.integrateToTime(1*86400);
+model.integrateToTime(50*86400);
 
 ncfile = model.ncfile;
 % [x,y] = ncfile.readVariables('drifter-x','drifter-y');

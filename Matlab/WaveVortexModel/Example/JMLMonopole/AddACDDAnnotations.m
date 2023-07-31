@@ -1,4 +1,4 @@
-ncfile = NetCDFFile('BetaEddy.nc');
+ncfile = NetCDFFile('BetaEddyOne.nc');
 
 %% Highly recommended ACDD conventions
 % Descriptions of these four attributes are found here:
@@ -19,20 +19,13 @@ ncfile.addAttribute('naming_authority','com.jeffreyearly');%Could also be Zenodo
 ncfile.addAttribute('product_version','1.0.0');%suggested
 
 %%
-a = sprintf('%s: adding ACDD annotations to file.',datetime('now'));
-if isKey(ncfile.attributes,'history')
-    history = ncfile.attributes('history');
-    history =[history,a];
-else
-    history = a;
-end
-ncfile.addAttribute('history',history);
+newHistory = sprintf('%s: adding ACDD annotations to file.',datetime('now'));
 
 %This is the only CF convention that is not also an ACDD convention...seems redundant with creator_institution below but whatever 
 ncfile.addAttribute('institution','NorthWest Research Associates');
 ncfile.addAttribute('processing_level','Unprocessed original model output'); %textual description 
 ncfile.addAttribute('comment','Initially created in support of ''A tensor-valued integral theorem for the gradient of a vector field, with a fluid dynamical application'', by Lilly, Feske, Fox-Kemper, and Early (2023).');
-ncfile.addAttribute('acknowledgment','J. Early''s work on this model run was supported by grant number 2049521 from the Physical Oceanography program of the United States National Science Foundation.  Additional support for the model development was provided by XXX.');
+ncfile.addAttribute('acknowledgment','J. Early''s work on this model run was supported by grant number 2049521 from the Physical Oceanography program of the United States National Science Foundation.');
 ncfile.addAttribute('license','Creative Commons Attribution 4.0 International, https://creativecommons.org/licenses/by/4.0/');
 ncfile.addAttribute('standard_name_vocabulary','CF Standard Name Table');
 
@@ -51,17 +44,9 @@ ncfile.addAttribute('publisher_institution','Planetary Science Institute') %sugg
 %skipping these unless you want to acknowledge another contributor 
 %ncfile.addAttribute('contributor_name',''); %suggested
 %ncfile.addAttribute('contributor_role',''); %suggested
-%skipping these recommended attributes as they seem like overkill:
-%geospatial_bounds, geospatial_bounds_crs, geospatial_bounds_vertical_crs
-% ncfile.addAttribute('geoespatial_lat_min',min(lat));%XXX
-% ncfile.addAttribute('geoespatial_lat_max',max(lat));%XXX
-% ncfile.addAttribute('geoespatial_lat_units','degree_north');
-% ncfile.addAttribute('geoespatial_lon_min',min(lon));%XXX
-% ncfile.addAttribute('geoespatial_lon_max',max(lon));%XXX
-% ncfile.addAttribute('geoespatial_lon_units','degree_east');
-% ncfile.addAttribute('time_coverage_start',datestr(min(num)));%XXX
-% ncfile.addAttribute('time_coverage_end',datestr(max(num)));%XXX
-% ncfile.addAttribute('time_coverage_resolution','1h');%XXX
+
+addGeospatialAnnotations(ncfile);
+
 
 ncfile.addAttribute('platform','Models'); %suggested
 ncfile.addAttribute('platform_vocabulary','GCMD, https://gcmd.earthdata.nasa.gov/static/kms/'); %suggested
@@ -70,13 +55,105 @@ ncfile.addAttribute('platform_vocabulary','GCMD, https://gcmd.earthdata.nasa.gov
 ncfile.addAttribute('cdm_data_type','Grid'); 
 
 newReference = "Lilly, Feske, Fox-Kemper, and Early (2023).  A tensor-valued integral theorem for the gradient of a vector field, with a fluid dynamical application, submitted.";
-if isKey(ncfile.attributes,'references')
-    references = ncfile.attributes('references');
-    references =[references,newReference];
-else
-    references = newReference;
-end
-ncfile.addAttribute('references',references);
-
+appendStringAttribute(ncfile,'references',newReference);
 
 ncfile.close();
+
+function appendStringAttribute(ncfile,attname,string)
+if isKey(ncfile.attributes,attname)
+    existingStrings = ncfile.attributes(attname);
+    existingStrings =[existingStrings,string];
+else
+    existingStrings = string;
+end
+ncfile.addAttribute(attname,existingStrings);
+end
+
+function addGeospatialAnnotations(ncfile)
+% Let's say we have some model simulation with domain size (Lx, Ly) and we
+% are going to pretend the box is located at its midpoint at lat0, lon0.
+lat0 = ncfile.readVariables('latitude');
+lon0 = 0;
+Lx = ncfile.readVariables('Lx');
+Ly = ncfile.readVariables('Ly');
+
+[x0,y0] = LatitudeLongitudeToTransverseMercator(lat0,lon0,lon0=lon0);
+xll = x0 - Lx/2;
+yll = y0 - Ly/2;
+xur = x0 + Lx/2;
+yur = y0 + Ly/2;
+
+[latMin,lonMin] = TransverseMercatorToLatitudeLongitude(xll,yll,lon0=lon0);
+[latMax,lonMax] = TransverseMercatorToLatitudeLongitude(xur,yur,lon0=lon0);
+
+%geospatial_bounds, geospatial_bounds_crs, geospatial_bounds_vertical_crs
+ncfile.addAttribute('geospatial_lat_min',latMin);%XXX
+ncfile.addAttribute('geospatial_lat_max',latMax);%XXX
+ncfile.addAttribute('geospatial_lat_units','degree_north');
+ncfile.addAttribute('geospatial_lon_min',lonMin);%XXX
+ncfile.addAttribute('geospatial_lon_max',lonMax);%XXX
+ncfile.addAttribute('geospatial_lon_units','degree_east');
+
+t = ncfile.readVariables('t');
+
+
+ncfile.addAttribute('time_coverage_start',string(datetime(t(1),ConvertFrom='posixtime',Format='yyyy-MM-dd HH:mm:ss.SSS')));%XXX
+ncfile.addAttribute('time_coverage_end',string(datetime(t(end),ConvertFrom='posixtime',Format='yyyy-MM-dd HH:mm:ss.SSS')));%XXX
+if length(t)>1
+    ncfile.addAttribute('time_coverage_resolution',sprintf('PT%dS',t(2)-t(1)));%XXX
+end
+end
+
+function [x,y] = LatitudeLongitudeToTransverseMercator(lat, lon, options)
+arguments
+    lat (:,1) double {mustBeNumeric,mustBeReal}
+    lon (:,1) double {mustBeNumeric,mustBeReal}
+    options.lon0 (1,1) double {mustBeNumeric,mustBeReal}
+    options.k0 (1,1) double {mustBeNumeric,mustBeReal} = 0.9996;
+end
+k0 = options.k0;
+if ~isfield(options,'lon0')
+    lon0 = min(lon) + (max(lon)-min(lon))/2;
+else
+    lon0 = options.lon0;
+end
+
+% These are the *defined* values for WGS84
+WGS84a=6378137;
+WGS84invf=298.257223563;
+
+% Convert from degrees to radians
+phi = lat*pi/180;
+
+% Compute a few trig functions that we'll be using a lot
+s = sin(phi);
+c = cos(phi);
+t = tan(phi);
+s2 = s.*s;
+c2 = c.*c;
+t2 = t.*t;
+
+% Compute v and e2 -- pieces of this could be precomputed and #define
+f = 1 / WGS84invf;
+e2 = f*(2 - f);
+v = WGS84a ./ sqrt( 1 - e2*s2);
+e2 = e2 / (1 - e2); % From this point forward e2 will actually be (e^prime)^2
+e2c2 = e2*c2;
+
+deltaLambda = (lon - lon0)*pi/180;
+d2c2 = deltaLambda.*deltaLambda.*c2;
+
+% Terms to compute x.
+T7 = 1 - t2 + e2c2;
+T8 = 5 +t2.*(t2- 18) + e2c2.*(14 - 58*t2); % + 13.*e4*c4 + 4.*e6*c6 - 64.*t2*e4*c4 - 24.*t2*e6*c6;
+T9 = 61 - t2.*(479 - t2.*(179 - t2));
+
+x = k0 .* v .* c .* deltaLambda .* (1 + (d2c2/6).*( T7 + (d2c2/20).*( T8 + (d2c2/42).*T9 )));
+
+% Terms to compute y.
+T3 = 5 - t2 + e2c2.*(9 + 4*e2c2);
+T4 = 61 - t2.*(58 - t2) + 270*e2c2 - 330*t2.*e2c2; % + 445.*e4*c4 + 324.*e6*c6 - 680.*t2*e4*c4 + 88.*e8*c8 - 600.*t2*e6*c6 - 192.*t2*e8*c8;
+T5 = 1385 - t2.*(3111 - t2.*(543 - t2));
+
+y = k0 * MeridionalArcPROJ4(phi) + (k0 * v .* s .* c / 2) .* deltaLambda.*deltaLambda .* (1 + (d2c2/12).*( T3 + (d2c2/30).*( T4 + (d2c2/56.).*T5)));
+end

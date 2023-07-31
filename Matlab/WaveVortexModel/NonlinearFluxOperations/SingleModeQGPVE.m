@@ -91,7 +91,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
 
             attributes = containers.Map();
             attributes('units') = '1/s';
-            attributes('description') = 'Linear damping operator applied to A0 to produce damping flux.';
+            attributes('long_name') = 'linear damping operator applied to A0 to produce damping flux';
             ncfile.initComplexVariable('L_damp',{'k','l','j'},attributes,'NC_DOUBLE');
             ncfile.setVariable('L_damp',self.damp);
         end
