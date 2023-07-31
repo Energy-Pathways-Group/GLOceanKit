@@ -560,6 +560,7 @@ classdef WVModel < handle
                 end
                 self.showIntegrationTimeDiagnostics(finalTime);
             end
+            self.recordNetCDFFileHistory();
         end
 
 
@@ -575,6 +576,7 @@ classdef WVModel < handle
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 modelTime = self.integrateOneTimeStep;
                 if self.didBlowUp == 1
+                    self.recordNetCDFFileHistory(didBlowUp=1);
                     return;
                 end
             end
@@ -582,9 +584,32 @@ classdef WVModel < handle
             while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
                 modelTime = self.integrateOneTimeStep;
                 if self.didBlowUp == 1
+                    self.recordNetCDFFileHistory(didBlowUp=1);
                     return;
                 end
             end
+
+            self.recordNetCDFFileHistory();
+        end
+
+        function recordNetCDFFileHistory(self,options)
+            arguments
+                self WVModel {mustBeNonempty}
+                options.didBlowUp {mustBeNumeric} = 0
+            end
+
+            if options.didBlowUp == 1
+                a = sprintf('%s: wrote %d time points to file. Terminated to do model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+            else
+                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+            end
+            if isKey(self.ncfile.attributes,'history')
+                history = self.ncfile.attributes('history');
+                history =[history;a];
+            else
+                history = a;
+            end
+            self.ncfile.addAttribute('history',history);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -60,14 +60,16 @@ classdef WVTransformSingleMode < WVTransform
             % Includes the extra factors from the FFTs.
             self.buildTransformationMatrices();
 
-            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
+            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface height anomaly');
+            outputVar.attributes('short_name') = 'sea_surface_height_above_mean_sea_level';
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addOperation(WVOperation('ssh',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
-            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            outputVar = WVVariableAnnotation('zeta',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
             f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
-            self.addOperation(WVOperation('zeta_z',outputVar,f));
+            self.addOperation(WVOperation('zeta',outputVar,f));
 
             self.nonlinearFluxOperation = SingleMode();
         end
