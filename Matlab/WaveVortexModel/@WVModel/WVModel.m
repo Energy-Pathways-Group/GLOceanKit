@@ -597,6 +597,9 @@ classdef WVModel < handle
                 self WVModel {mustBeNonempty}
                 options.didBlowUp {mustBeNumeric} = 0
             end
+            if isempty(self.ncfile)
+                return
+            end
 
             if options.didBlowUp == 1
                 a = sprintf('%s: wrote %d time points to file. Terminated to do model blow-up.',datetime('now'),self.incrementsWrittenToFile);
