@@ -264,12 +264,15 @@ classdef InternalModesSpectral < InternalModesBase
             % upper-boundary
             A(1,:) = gamma*Tz(1,:);
             B(1,:) = -gamma*T(1,:)-Tz(1,:);
-            B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
+            % B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
 
 
             % lower-boundary
             A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0*T(n,:);
+
+            self.FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
         end
 
         function [A,B] = EigenmatricesForSmithVannesteModes(self, k )
@@ -280,14 +283,26 @@ classdef InternalModesSpectral < InternalModesBase
 
             A = Tzz - diag(k*k*self.N2_xLobatto/(self.f0*self.f0))*T;
             B = -(diag(self.N2_xLobatto)/self.g)*T;
-
+            
             % upper-boundary
-            A(1,:) = self.Lz*Tz(1,:)+T(1,:);
-            B(1,:) = 0*T(1,:);
+            A(1,:) = Tz(1,:); %+T(1,:);
+            B(1,:) = self.N2_xLobatto(1)*T(1,:)/self.g;
 
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
-            B(n,:) = 0*T(n,:);
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = -self.N2_xLobatto(n)*T(n,:)/self.g;
+
+            gamma = (self.g/(self.f0*self.f0))*(k*k);
+            self.FOutFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+
+            % % upper-boundary
+            % A(1,:) = self.Lz*Tz(1,:)+T(1,:);
+            % B(1,:) = 0*T(1,:);
+            % 
+            % % lower-boundary
+            % A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            % B(n,:) = 0*T(n,:);
         end
 
         function [A,B] = EigenmatricesForMDAModes(self )
@@ -300,11 +315,11 @@ classdef InternalModesSpectral < InternalModesBase
             B = -(diag(self.N2_xLobatto)/self.g)*T;
 
             % upper-boundary
-            A(1,:) = Tz(1,:)-Tz(n,:);
+            A(1,:) = Tz(1,:); %-Tz(n,:);
             B(1,:) = 0*T(n,:);
 
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0*T(n,:);
         end
         
@@ -380,6 +395,14 @@ classdef InternalModesSpectral < InternalModesBase
             self.gridFrequency = 0;
 
             [A,B] = self.EigenmatricesForGeostrophicRigidLidModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
+        function [F,G,h] = GeostrophicSmithVannesteModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForSmithVannesteModes(k);
 
             [F,G,h] = self.ModesFromGEP(A,B);
         end
