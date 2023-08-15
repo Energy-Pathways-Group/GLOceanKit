@@ -12,6 +12,18 @@ function varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin)
     dy = self.y(2)-self.y(1);
     y_index = floor(y_tilde/dy);
 
+    if(strcmp(method, "finufft"))
+        varargout = cell(1,nargout);
+        for i = 1:nargout
+            U = varargin{i};
+            ubar = self.transformFromSpatialDomainWithF(U);
+            u = self.transformToSpatialDomainWithFNU(ubar, x_tilde, y_tilde);
+            % u = self.transformToSpatialDomainWithF(ubar);
+            varargout{i} = u;
+        end
+        return
+    end
+
     % Identify the particles along the interpolation boundary
     if strcmp(method,'spline')
         S = 3+1; % cubic spline, plus buffer

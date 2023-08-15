@@ -26,7 +26,7 @@ arguments (Repeating)
     variableNames char
 end
 arguments
-    options.interpolationMethod char {mustBeMember(options.interpolationMethod,["linear","spline","exact"])} = "linear"
+    options.interpolationMethod char {mustBeMember(options.interpolationMethod,["linear","spline","exact","finufft"])} = "linear"
 end
 
 varargout = cell(size(variableNames));

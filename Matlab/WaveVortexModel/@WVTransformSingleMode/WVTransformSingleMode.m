@@ -270,6 +270,22 @@ classdef WVTransformSingleMode < WVTransform
             u_bar = u_bar*(self.Nx*self.Ny);
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
+
+        function u = transformToSpatialDomainWithFNU(self, u_bar, X, Y)
+            arguments (Output)
+                u (1, :)
+            end
+            % u_bar = u_bar*(self.Nx*self.Ny);
+            u_bar = fftshift(u_bar);
+            x = reshape(X, [numel(X), 1]) * 2*pi / self.Lx;
+            y = reshape(Y, [numel(Y), 1]) * 2*pi / self.Ly;
+
+            opts.debug=0;
+            plan = finufft_plan(2,[self.Nx,self.Ny],+1,1,1e-10,opts);
+            plan.setpts(x, y);
+
+            u = real(plan.execute(u_bar));
+        end
                 
         function w = transformToSpatialDomainWithG(self, w_bar )
             w_bar = w_bar*(self.Nx*self.Ny);
