@@ -114,16 +114,17 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     properties (Abstract,GetAccess=public, SetAccess=protected)
-        h % all subclasses need to have a function that returns the eigendepths
+        h_0  % [Nk Nl Nj]
+        h_pm  % [Nk Nl Nj]
         
         % These convert the coefficients to their depth integrated energies
 %         Apm_HKE_factor
 %         Apm_VKE_factor
 %         Apm_PE_factor
-        Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor
-        A0_TE_factor
+        Apm_TE_factor % [Nk Nl Nj]
+        A0_HKE_factor % [Nk Nl Nj] 
+        A0_PE_factor % [Nk Nl Nj]
+        A0_TE_factor % [Nk Nl Nj]
     end
     
     methods (Abstract)
@@ -533,7 +534,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end 
         
         function Omega = Omega(self)
-            Omega = sqrt(self.g*self.h.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
+            Omega = sqrt(self.g*self.h_pm.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
         end
 
         function value = get.inertialPeriod(self)
@@ -650,8 +651,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.AmV(1,1,:) = sqrt(-1)/2;
             
             % Equation B14
-            self.A0U = sqrt(-1)*self.h.*(fOmega./omega) .* L_;
-            self.A0V = -sqrt(-1)*self.h.*(fOmega./omega) .* K_;
+            self.A0U = sqrt(-1)*self.h_0.*(fOmega./omega) .* L_;
+            self.A0V = -sqrt(-1)*self.h_0.*(fOmega./omega) .* K_;
             self.A0N = fOmega.^2;
             
             % k > 0, l > 0, j=0; Equation B11 in the manuscript
@@ -697,11 +698,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
             self.VA0 = sqrt(-1)*(g_/f_)*K_;
                 
-            self.WAp = -sqrt(-1)*Kh.*self.h;
-            self.WAm = -sqrt(-1)*Kh.*self.h;
+            self.WAp = -sqrt(-1)*Kh.*self.h_pm;
+            self.WAm = -sqrt(-1)*Kh.*self.h_pm;
             
-            self.NAp = -Kh.*self.h./omega;
-            self.NAm = Kh.*self.h./omega;
+            self.NAp = -Kh.*self.h_pm./omega;
+            self.NAm = Kh.*self.h_pm./omega;
             self.NA0 = ones(size(Kh));
             
             % No buoyancy anomaly for j=0 geostrophic solutions
@@ -859,15 +860,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
  
-        function Fqgpv = qgpvFluxFromF0(self,F0)
-            Fqgpv = -(self.Omega .* self.Omega ./ (self.h * self.f)) .* F0;
-        end
-
-        function Z0 = enstrophyFluxFromF0(self,F0)
-            PVFactor = -self.Omega .* self.Omega / (self.h * self.f);
-            Fqgpv = PVFactor .* F0;    
-            Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
-        end
+        % function Fqgpv = qgpvFluxFromF0(self,F0)
+        %     Fqgpv = -(self.Omega .* self.Omega ./ (self.h * self.f)) .* F0;
+        % end
+        % 
+        % function Z0 = enstrophyFluxFromF0(self,F0)
+        %     PVFactor = -self.Omega .* self.Omega / (self.h * self.f);
+        %     Fqgpv = PVFactor .* F0;    
+        %     Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
+        % end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

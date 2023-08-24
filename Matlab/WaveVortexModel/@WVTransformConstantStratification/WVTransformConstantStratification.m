@@ -17,7 +17,7 @@ classdef WVTransformConstantStratification < WVTransform
     properties (GetAccess=public, SetAccess=protected)
         N0, N2, rhobar
         F,G
-        h
+        h_pm
 
         DCT, iDCT, DST, iDST, DFT, iDFT
         
@@ -123,7 +123,7 @@ classdef WVTransformConstantStratification < WVTransform
             end
         end
 
-        function h = get.h(self)
+        function h = get.h_pm(self)
             [K,L,J] = ndgrid(self.k,self.l,self.j);
             M = J*pi/self.Lz;
             if self.isHydrostatic == 1
@@ -151,10 +151,10 @@ classdef WVTransformConstantStratification < WVTransform
             % This comes from equations B12 in the manuscript.
             signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
             if self.isHydrostatic == 1
-                self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*N*N));
+                self.F = signNorm .* ((self.h_pm).*M)*sqrt(2*g_/(self.Lz*N*N));
                 self.G = signNorm .* sqrt(2*g_/(self.Lz*N*N));
             else
-                self.F = signNorm .* ((self.h).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
+                self.F = signNorm .* ((self.h_pm).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
                 self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             end
             self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
@@ -170,7 +170,7 @@ classdef WVTransformConstantStratification < WVTransform
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function value = get.Apm_TE_factor(self)
-            value = self.h; % factor of 2 larger than in the manuscript
+            value = self.h_pm; % factor of 2 larger than in the manuscript
             value(:,:,1) = self.Lz;
         end
         
@@ -187,7 +187,7 @@ classdef WVTransformConstantStratification < WVTransform
                 % the relation from equation A2b
                 % omega = sqrt(self.g*h.*K2 + self.f*self.f);
                 % value = (self.g/(self.f*self.f)) * (omega.*omega - self.f*self.f) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f*self.f) );
-                value = (self.g^3/(self.f*self.f)) * K2.*self.h.*self.h.*M.*M / (2 * (self.N0*self.N0 - self.f*self.f) ); % factor of 2 larger than in the manuscript
+                value = (self.g^3/(self.f*self.f)) * K2.*self.h_pm.*self.h_pm.*M.*M / (2 * (self.N0*self.N0 - self.f*self.f) ); % factor of 2 larger than in the manuscript
                 value(:,:,1) = (self.g^2/(self.f*self.f)) * K2(:,:,1) * self.Lz/2;
             end
         end
