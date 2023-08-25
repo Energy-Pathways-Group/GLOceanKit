@@ -362,8 +362,8 @@ classdef WVModel < handle
                 trackedFields char
             end
             arguments
-                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
-                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
             end
             floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
             self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
