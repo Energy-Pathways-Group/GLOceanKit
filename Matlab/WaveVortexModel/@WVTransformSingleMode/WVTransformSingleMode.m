@@ -312,7 +312,7 @@ classdef WVTransformSingleMode < WVTransform
             y = reshape(Y, [numel(Y), 1]) * 2*pi / self.Ly;
 
             opts.debug=0;
-            plan = finufft_plan(2,[self.Nx,self.Ny],+1,1,1e-10,opts);
+            plan = finufft_plan(2,[self.Nx,self.Ny],+1,1,1e-12,opts);
             plan.setpts(x, y);
 
             u = real(plan.execute(u_bar));
