@@ -216,6 +216,37 @@ classdef InternalModesSpectral < InternalModesBase
             B(1,:) = 0;
         end
 
+        function [A,B] = EigenmatricesForGeostrophicFModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            % N2z = diff(self.N2_function);
+            % N2z_xLobatto = N2z(self.z_xLobatto);
+            % 
+            % A = diag((self.N2_xLobatto))*Tzz - diag(N2z_xLobatto)*Tz;
+            % B = -diag((self.N2_xLobatto).^2/self.g)*T;
+
+            dzLnN2 = diff(log(self.N2_function));
+            dzLnN2_xLobatto = dzLnN2(self.z_xLobatto);
+
+            A = Tzz - diag(dzLnN2_xLobatto)*Tz;
+            B = -diag((self.N2_xLobatto)/self.g)*T;
+
+            A(n,:) = Tz(n,:);
+            B(n,:) = 0;
+
+            alpha = (self.g/(self.f0*self.f0))*(k*k);
+            if alpha < 1
+                A(1,:) = alpha*Tz(1,:);
+                B(1,:) = -B(1,:);
+            else
+                A(1,:) = Tz(1,:);
+                B(1,:) = -B(1,:)/alpha;
+            end
+        end
+
         % function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
         %     T = self.T_xLobatto;
         %     Tz = self.Tx_xLobatto;
@@ -387,6 +418,14 @@ classdef InternalModesSpectral < InternalModesBase
             self.gridFrequency = 0;
 
             [A,B] = self.EigenmatricesForGeostrophicGModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
+        function [F,G,h] = GeostrophicFModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForGeostrophicFModes(k);
 
             [F,G,h] = self.ModesFromGEP(A,B);
         end
