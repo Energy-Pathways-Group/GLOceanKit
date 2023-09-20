@@ -16,8 +16,9 @@ classdef WVTransformConstantStratification < WVTransform
     % - Declaration: classdef WVTransformConstantStratification < [WVTransform](/classes/wvtransform/)
     properties (GetAccess=public, SetAccess=protected)
         N0, N2, rhobar
-        F,G
+        F_g,G_g
         h_pm
+        h_0
 
         DCT, iDCT, DST, iDST, DFT, iDFT
         
@@ -136,6 +137,12 @@ classdef WVTransformConstantStratification < WVTransform
                 h(:,:,1) = 1; % prevent divide by zero
             end
         end
+
+        function h = get.h_0(self)
+            M = shiftdim(self.j,-2)*pi/self.Lz;
+            h = (1/self.g)*(self.N0*self.N0)./(M.*M);
+            h(1) = self.Lz;
+        end
                 
         function self = buildTransformationMatrices(self)
 
@@ -151,78 +158,161 @@ classdef WVTransformConstantStratification < WVTransform
             % Normalization for the vertical modes
             % This comes from equations B12 in the manuscript.
             signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
+            self.F_g = signNorm .* ((self.h_0).*M)*sqrt(2*g_/(self.Lz*N*N));
+            self.G_g = signNorm .* sqrt(2*g_/(self.Lz*N*N));
+            self.F_g(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
+            self.G_g(:,:,1) = 1; % j=0 mode doesn't exist for G
+ 
             if self.isHydrostatic == 1
-                self.F = signNorm .* ((self.h_pm).*M)*sqrt(2*g_/(self.Lz*N*N));
-                self.G = signNorm .* sqrt(2*g_/(self.Lz*N*N));
+                G_w = self.G_g;
             else
-                self.F = signNorm .* ((self.h_pm).*M)*sqrt(2*g_/(self.Lz*(N*N-f*f)));
-                self.G = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
+                G_w = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             end
-            self.F(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
-            self.G(:,:,1) = 1; % j=0 mode doesn't exist for G
+            G_w(:,:,1) = 1;
+            
+            self.G_wg = self.G_g ./ G_w;
 
             buildTransformationMatrices@WVTransform(self);
         end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Energetics
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function value = get.Apm_TE_factor(self)
-            value = self.h_pm; % factor of 2 larger than in the manuscript
-            value(:,:,1) = self.Lz;
-        end
-        
-        function value = get.A0_HKE_factor(self)
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
-
-            if self.isHydrostatic == 1
-                value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
-            else
-                M = J*pi/self.Lz;
-
-                % This comes from equation (3.10) in the manuscript, but using
-                % the relation from equation A2b
-                % omega = sqrt(self.g*h.*K2 + self.f*self.f);
-                % value = (self.g/(self.f*self.f)) * (omega.*omega - self.f*self.f) .* (self.N0*self.N0 - omega.*omega) / (2 * (self.N0*self.N0 - self.f*self.f) );
-                value = (self.g^3/(self.f*self.f)) * K2.*self.h_pm.*self.h_pm.*M.*M / (2 * (self.N0*self.N0 - self.f*self.f) ); % factor of 2 larger than in the manuscript
-                value(:,:,1) = (self.g^2/(self.f*self.f)) * K2(:,:,1) * self.Lz/2;
+        function self = buildTransformationMatricesNew(self)
+            % Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
+            %
+            % - Topic: Internal
+            [K_,L_,~] = ndgrid(self.k,self.l,self.j);
+            alpha = atan2(L_,K_);
+            K2 = K_.*K_ + L_.*L_;
+            Kh = sqrt(K2);      % Total horizontal wavenumber
+            
+            f = self.f;
+            g = 9.81;
+            
+            omega = self.Omega;
+            if abs(self.f) < 1e-14 % This handles the f=0 case.
+                omega(omega == 0) = 1;
             end
-        end
-        function value = get.A0_PE_factor(self)
-            if self.isHydrostatic == 1
-                value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
-                value(:,:,1) = 0;
-            else
-                value = self.g*self.N0*self.N0/(self.N0*self.N0-self.f*self.f)/2; % factor of 2 larger than in the manuscript
-                value(:,:,1) = 0;
+            fOmega = f./omega;
+            
+            makeHermitian = @(f) WVTransform.makeHermitian(f);
+            
+            self.iOmega = makeHermitian(sqrt(-1)*omega);
+
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Transform matrices (U,V,N) -> (A0)
+            % A0 = self.A0U.*u_hat + self.A0V.*v_hat + self.A0N.*n_hat;
+            Lr2 = g*self.h_0/(f*f);
+            invLr2 = 1./Lr2;
+            invLr2(:,:,1) = 0;
+            self.A0U = sqrt(-1)*(f/g)*L_./(K2 + invLr2);
+            self.A0V = -sqrt(-1)*(f/g)*K_./(K2 + invLr2);
+            self.A0N = 1./(Lr2.*K2 + 1);
+            self.A0N(:,:,1) = 0;
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Transform matrices (U,V,N) -> (Ap,Am)
+            % Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
+            C = self.G_wg ./(2*Kh*self.h_pm);
+            self.ApU = C.*(K_.*self.h_0 + omega.*self.A0U);
+            self.ApV = C.*(L_.*self.h_0 + omega.*self.A0V);
+            self.ApN = C.*omega.*(self.A0N-1);
+            
+            self.AmU = C.*(K_.*self.h_0 - omega.*self.A0U);
+            self.AmV = C.*(L_.*self.h_0 - omega.*self.A0V);
+            self.AmN = -C.*omega.*(self.A0N-1);
+            
+            % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
+            % solution exists at k=l=j=0.
+            self.ApU(:,:,1) = 0;
+            self.ApV(:,:,1) = 0;
+            self.ApN(:,:,1) = 0;
+            
+            self.AmU(:,:,1) = 0;
+            self.AmV(:,:,1) = 0;
+            self.AmN(:,:,1) = 0;
+            
+            % Now set the inertial stuff (this is just a limit of above)
+            self.ApU(1,1,:) = 1/2;
+            self.ApV(1,1,:) = -sqrt(-1)/2;
+            self.AmU(1,1,:) = 1/2;
+            self.AmV(1,1,:) = sqrt(-1)/2;
+                        
+            % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
+            self.A0U(1,1,:) = 0;
+            self.A0V(1,1,:) = 0;
+            self.A0N(1,1,:) = 1;
+            self.A0N(1,1,1) = 0;
+            
+            % Now make the Hermitian conjugate match.
+            nyquistMask = ~self.maskForNyquistModes();
+            self.ApU = nyquistMask .* makeHermitian(self.ApU);
+            self.ApV = nyquistMask .* makeHermitian(self.ApV);
+            self.ApN = nyquistMask .* makeHermitian(self.ApN);
+            self.AmU = nyquistMask .* makeHermitian(self.AmU);
+            self.AmV = nyquistMask .* makeHermitian(self.AmV);
+            self.AmN = nyquistMask .* makeHermitian(self.AmN);
+            self.A0U = nyquistMask .* makeHermitian(self.A0U);
+            self.A0V = nyquistMask .* makeHermitian(self.A0V);
+            self.A0N = nyquistMask .* makeHermitian(self.A0N);
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
+            % These can be pulled from equation C4 in the manuscript
+            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
+            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
+            self.UA0 = -sqrt(-1)*(g/f)*L_;
+
+            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
+            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
+            self.VA0 = sqrt(-1)*(g/f)*K_;
+                
+            self.WAp = -sqrt(-1)*Kh.*self.h_pm;
+            self.WAm = -sqrt(-1)*Kh.*self.h_pm;
+            
+            self.NAp = -Kh.*self.h_pm./omega;
+            self.NAm = Kh.*self.h_pm./omega;
+            self.NA0 = ones(size(Kh));
+            
+            % No buoyancy anomaly for j=0 geostrophic solutions
+            self.NA0(:,:,1) = 0;
+            
+            % There are no k^2+l^2>0, j=0 wave solutions. 
+            self.UAp(:,:,1) = 0;
+            self.VAp(:,:,1) = 0;
+            self.NAp(:,:,1) = 0;
+            
+            self.UAm(:,:,1) = 0;
+            self.VAm(:,:,1) = 0;
+            self.NAm(:,:,1) = 0;
+            
+            % Only the inertial solution exists at k=l=j=0 as a negative
+            % wave.
+            self.UAp(1,1,:) = 1;
+            self.VAp(1,1,:) = sqrt(-1);
+            self.UAm(1,1,:) = 1;
+            self.VAm(1,1,:) = -sqrt(-1);
+            
+            if abs(self.f) < 1e-14 % This handles the f=0 case.
+                self.UA0 = zeros(size(Kh));
+                self.VA0 = zeros(size(Kh));
+                self.NA0 = zeros(size(Kh));
             end
+            
+            % Now make the Hermitian conjugate match AND pre-multiply the
+            % coefficients for the transformations.
+            self.UAp = nyquistMask .* makeHermitian(self.UAp);
+            self.UAm = nyquistMask .* makeHermitian(self.UAm);
+            self.UA0 = nyquistMask .* makeHermitian(self.UA0);
+            self.VAp = nyquistMask .* makeHermitian(self.VAp);
+            self.VAm = nyquistMask .* makeHermitian(self.VAm);
+            self.VA0 = nyquistMask .* makeHermitian(self.VA0);
+            self.WAp = nyquistMask .* makeHermitian(self.WAp);
+            self.WAm = nyquistMask .* makeHermitian(self.WAm);   
+            self.NAp = nyquistMask .* makeHermitian(self.NAp);
+            self.NAm = nyquistMask .* makeHermitian(self.NAm);
+            self.NA0 = nyquistMask .* makeHermitian(self.NA0);
         end
-        function value = get.A0_TE_factor(self)
-            value = self.A0_HKE_factor + self.A0_PE_factor;
-        end
-
-        function value = get.A0_TZ_factor(self)
-            error('Not yet implemented for constant stratification');
-            % Kh = self.Kh;
-            % Lr2 = wvt.g*(wvt.h)/(wvt.f*wvt.f);
-            % Lr2(1) = wvt.g*wvt.Lz/(wvt.f*wvt.f);
-            % value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            % value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
-        end
-
-        function value = get.A0_QGPV_factor(self)
-            error('Not yet implemented for constant stratification');
-            % Kh = self.Kh;
-            % Lr2 = wvt.g*(wvt.h)/(wvt.f*wvt.f);
-            % Lr2(1) = wvt.g*wvt.Lz/(wvt.f*wvt.f);
-            % value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            % value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
-        end
-          
+  
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Wave properties
@@ -380,7 +470,7 @@ classdef WVTransformConstantStratification < WVTransform
             u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
             u_bar = permute(u_bar,[2 3 1]);
             u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
-            u_bar = (u_bar./self.F)/(self.Nx*self.Ny);
+            u_bar = (u_bar./self.F_g)/(self.Nx*self.Ny);
         end
         
         function w_bar = transformFromSpatialDomainWithG_MM(self, w)
@@ -392,13 +482,13 @@ classdef WVTransformConstantStratification < WVTransform
             w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
-            w_bar = (w_bar./self.G)/(self.Nx*self.Ny);
+            w_bar = (w_bar./self.G_g)/(self.Nx*self.Ny);
         end
         
         function u = transformToSpatialDomainWithF_MM(self, u_bar)
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
-            u_bar = self.F .* u_bar;
+            u_bar = self.F_g .* u_bar;
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
             u_bar = reshape(u_bar,self.Nj,[]);
@@ -410,7 +500,7 @@ classdef WVTransformConstantStratification < WVTransform
         function w = transformToSpatialDomainWithG_MM(self, w_bar )
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
-            w_bar = self.G .* w_bar;
+            w_bar = self.G_g .* w_bar;
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
             w_bar = reshape(w_bar,self.Nj,[]);
@@ -420,7 +510,7 @@ classdef WVTransformConstantStratification < WVTransform
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives_MM(self, u_bar)
-            u_bar = self.F .* u_bar;
+            u_bar = self.F_g .* u_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
@@ -443,7 +533,7 @@ classdef WVTransformConstantStratification < WVTransform
         end  
         
         function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives_MM(self, w_bar )
-            w_bar = self.G .* w_bar;
+            w_bar = self.G_g .* w_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
@@ -474,7 +564,7 @@ classdef WVTransformConstantStratification < WVTransform
         function u_bar = transformFromSpatialDomainWithF_FFT(self, u)     
             u = ifft(cat(3,u,flip(u,3)),2*(self.Nz-1),3,'symmetric');
             u_bar = fft(fft(u(:,:,1:(self.Nz-1)),self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
-            u_bar = (u_bar./self.F);
+            u_bar = (u_bar./self.F_g);
         end
         
         function w_bar = transformFromSpatialDomainWithG_FFT(self, w)
@@ -483,11 +573,11 @@ classdef WVTransformConstantStratification < WVTransform
             w = ifft(cat(3,w,-w(:,:,(self.Nz-1):-1:2)),2*(self.Nz-1),3);
             w_bar = imag(w(:,:,1:(self.Nz-1)));
             w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2)/(0.5*self.Nx*self.Ny);
-            w_bar = (w_bar./self.G);
+            w_bar = (w_bar./self.G_g);
         end
         
         function u = transformToSpatialDomainWithF_FFT(self, u_bar)
-            u_bar = self.F .* u_bar;
+            u_bar = self.F_g .* u_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
@@ -500,7 +590,7 @@ classdef WVTransformConstantStratification < WVTransform
         end  
                 
         function w = transformToSpatialDomainWithG_FFT(self, w_bar )
-            w_bar = self.G .* w_bar;
+            w_bar = self.G_g .* w_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
@@ -513,7 +603,7 @@ classdef WVTransformConstantStratification < WVTransform
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives_FFT(self, u_bar)
-            u_bar = self.F .* u_bar;
+            u_bar = self.F_g .* u_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients UAp,UAm,etc.
@@ -537,7 +627,7 @@ classdef WVTransformConstantStratification < WVTransform
         end  
         
         function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives_FFT(self, w_bar )
-            w_bar = self.G .* w_bar;
+            w_bar = self.G_g .* w_bar;
 
             % All coefficients are subsumbed into the transform
             % coefficients NAp,NAm,etc.
@@ -570,7 +660,7 @@ classdef WVTransformConstantStratification < WVTransform
             if j0 == 0
                 ratio = 1;
             else
-                ratio = abs(1/self.F(k0+1,l0+1,j0+1));
+                ratio = abs(1/self.F_g(k0+1,l0+1,j0+1));
             end
         end   
         

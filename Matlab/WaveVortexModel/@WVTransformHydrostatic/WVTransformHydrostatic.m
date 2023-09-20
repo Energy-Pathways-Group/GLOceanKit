@@ -338,46 +338,7 @@ classdef WVTransformHydrostatic < WVTransform
             [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Energetics and enstrophy
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function value = get.Apm_TE_factor(self)
-            value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
-            value(:,:,1) = self.Lz;
-        end
-        
-        function value = get.A0_HKE_factor(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
 
-            value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
-        end
-        function value = get.A0_PE_factor(self)
-            value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
-            value(:,:,1) = 0;
-        end
-        function value = get.A0_TE_factor(self)
-            value = self.A0_HKE_factor + self.A0_PE_factor;
-        end
-
-        function value = get.A0_QGPV_factor(self)
-            Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
-            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2;
-        end
-
-        function value = get.A0_TZ_factor(self)
-            Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
-        end
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

@@ -86,6 +86,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
+
+        Apm_TE_factor % [Nk Nl Nj]
+        A0_HKE_factor % [Nk Nl Nj]
+        A0_PE_factor % [Nk Nl Nj]
+        A0_TE_factor % [Nk Nl Nj]
+        A0_TZ_factor
+        A0_QGPV_factor
     end
 
     properties (Dependent, SetAccess=private)
@@ -116,17 +123,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (Abstract,GetAccess=public, SetAccess=protected)
         h_0  % [Nk Nl Nj]
         h_pm  % [Nk Nl Nj]
-        
-        % These convert the coefficients to their depth integrated energies
-%         Apm_HKE_factor
-%         Apm_VKE_factor
-%         Apm_PE_factor
-        Apm_TE_factor % [Nk Nl Nj]
-        A0_HKE_factor % [Nk Nl Nj] 
-        A0_PE_factor % [Nk Nl Nj]
-        A0_TE_factor % [Nk Nl Nj]
-        A0_TZ_factor
-        A0_QGPV_factor
     end
     
     methods (Abstract)
@@ -862,6 +858,44 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
  
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Energetics and enstrophy
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function value = get.Apm_TE_factor(self)
+            value = self.h_pm; % factor of 2 larger than in the manuscript
+            value(:,:,1) = self.Lz;
+        end
+        
+        function value = get.A0_HKE_factor(self)
+            value = (self.g/2) * self.Kh .* self.Kh .* self.Lr2;
+        end
+        function value = get.A0_PE_factor(self)
+            value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
+            value(:,:,1) = 0;
+        end
+        function value = get.A0_TE_factor(self)
+            value = self.A0_HKE_factor + self.A0_PE_factor;
+        end
+
+        function value = get.A0_QGPV_factor(self)
+            Kh = self.Kh;
+            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
+            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2;
+        end
+
+        function value = get.A0_TZ_factor(self)
+            Kh = self.Kh;
+            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+            value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Enstrophy
