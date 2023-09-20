@@ -125,6 +125,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         A0_HKE_factor % [Nk Nl Nj] 
         A0_PE_factor % [Nk Nl Nj]
         A0_TE_factor % [Nk Nl Nj]
+        A0_TZ_factor
+        A0_QGPV_factor
     end
     
     methods (Abstract)
@@ -860,15 +862,28 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
  
-        % function Fqgpv = qgpvFluxFromF0(self,F0)
-        %     Fqgpv = -(self.Omega .* self.Omega ./ (self.h * self.f)) .* F0;
-        % end
-        % 
-        % function Z0 = enstrophyFluxFromF0(self,F0)
-        %     PVFactor = -self.Omega .* self.Omega / (self.h * self.f);
-        %     Fqgpv = PVFactor .* F0;    
-        %     Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
-        % end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Enstrophy
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function Fqgpv = qgpvFluxFromF0(self,F0)
+            Fqgpv = self.A0_QGPV_factor .* F0;
+        end
+
+        function Z0 = enstrophyFluxFromF0(self,F0)
+            Fqgpv = self.A0_QGPV_factor .* F0;    
+            Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
+        end
+
+        function enstrophy = totalEnstrophySpatiallyIntegrated(self)
+            enstrophy = 0.5*trapz(self.z,squeeze(mean(mean((self.qgpv).^2,1),2)) );
+        end
+
+        function enstrophy = totalEnstrophy(self)
+            enstrophy = sum(sum(sum(self.A0_TZ_factor.* (self.A0.*conj(self.A0)))));
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
