@@ -36,6 +36,8 @@ classdef WVTransformHydrostatic < WVTransform
         A0_HKE_factor
         A0_PE_factor
         A0_TE_factor
+        A0_TZ_factor
+        A0_QGPV_factor
     end
         
     methods
@@ -330,7 +332,7 @@ classdef WVTransformHydrostatic < WVTransform
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Energetics
+        % Energetics and enstrophy
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -351,6 +353,22 @@ classdef WVTransformHydrostatic < WVTransform
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;
+        end
+
+        function value = get.A0_QGPV_factor(self)
+            Kh = self.Kh;
+            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
+            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2;
+        end
+
+        function value = get.A0_TZ_factor(self)
+            Kh = self.Kh;
+            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+            value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
         end
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
