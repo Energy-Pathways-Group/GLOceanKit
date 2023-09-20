@@ -19,17 +19,12 @@ classdef WVTransformConstantStratification < WVTransform
         F_g,G_g
         h_pm
         h_0
+        G_wg
 
         DCT, iDCT, DST, iDST, DFT, iDFT
         
         isHydrostatic = 0
         cg_x, cg_y, cg_z
-        
-        Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor
-        A0_TE_factor
-        A0_TZ_factor
     end
 
     properties (Access=private)
@@ -173,6 +168,7 @@ classdef WVTransformConstantStratification < WVTransform
             self.G_wg = self.G_g ./ G_w;
 
             buildTransformationMatrices@WVTransform(self);
+            % self.buildTransformationMatricesNew;
         end
         
         function self = buildTransformationMatricesNew(self)
@@ -212,7 +208,7 @@ classdef WVTransformConstantStratification < WVTransform
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (U,V,N) -> (Ap,Am)
             % Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
-            C = self.G_wg ./(2*Kh*self.h_pm);
+            C = self.G_wg ./(2*Kh.*self.h_pm);
             self.ApU = C.*(K_.*self.h_0 + omega.*self.A0U);
             self.ApV = C.*(L_.*self.h_0 + omega.*self.A0V);
             self.ApN = C.*omega.*(self.A0N-1);
