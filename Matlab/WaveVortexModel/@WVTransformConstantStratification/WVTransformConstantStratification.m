@@ -29,6 +29,7 @@ classdef WVTransformConstantStratification < WVTransform
         A0_PE_factor
         A0_TE_factor
         A0_TZ_factor
+        A0_QGPV_factor
     end
 
     properties (Access=private)
