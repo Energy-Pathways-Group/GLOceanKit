@@ -16,7 +16,7 @@ z_g = zeros(nPoints,length(k));
 for iK=1:length(k)
     
 
-    im = InternalModesWKBSpectral(rhoFunc,zIn,z,33,'nEVP',256);
+    im = InternalModesSpectral(rho=rhoFunc,zIn=zIn,zOut=z,latitude=33,nEVP=512);
     im.normalization = normalization;
     im.upperBoundary = upperBoundary;
     

@@ -576,42 +576,43 @@ classdef InternalModesSpectral < InternalModesBase
                    % boundary, and not zero at upper)
                    rootMode = nPoints;
                end
-               roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
+               rootsVar = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
 
                % First we make sure the roots are within the bounds
-               roots(roots<self.xMin) = self.xMin;
-               roots(roots>self.xMax) = self.xMax;
+               rootsVar(rootsVar<self.xMin) = self.xMin;
+               rootsVar(rootsVar>self.xMax) = self.xMax;
 
                % Then we eliminate any repeats (it happens)
-               roots = unique(roots,'stable');
+               rootsVar = unique(rootsVar,'stable');
                
-               if length(roots) < nPoints
-                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
+               if length(rootsVar) < nPoints
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(rootsVar),nPoints);
                end
                warning('Two strategies here---need to consolidate.')
-%                F = self.Diff1_xCheb(G_cheb(:,rootMode));
-%                value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-%                [~,indices] = sort(abs(value),'descend');
-%                indices = indices(1:nPoints);
-%                roots = roots(indices);
+               % F = self.Diff1_xCheb(G_cheb(:,rootMode));
+               % value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( rootsVar, self.xDomain, F );
+               % [~,indices] = sort(abs(value),'descend');
+               % indices = indices(1:nPoints);
+               % rootsVar = rootsVar(indices);
                
 % This strategy was useful for the vertical mode atlas
 % 1/25/2023 -- this also seems to work better with the analytical mixed layer
 % stratification profile
-               while (length(roots) > nPoints)
-                   roots = sort(roots);
-                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
-                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                   dr = diff(roots);
-                   [~,minIndex] = min(abs(dr));
-                   if abs(value(minIndex)) < abs(value(minIndex+1))
-                       roots(minIndex) = [];
-                   else
-                       roots(minIndex+1) = [];
-                   end
+               while (length(rootsVar) > nPoints)
+                   rootsVar = sort(rootsVar);
+                   F = InternalModesSpectral.IntegrateChebyshevVector(G_cheb(:,rootMode));
+                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( rootsVar, self.xDomain, F );
+                   dv = diff(value);
+                   [~,minIndex] = min(abs(dv));
+                   rootsVar(minIndex+1) = [];
+                   % if abs(value(minIndex)) < abs(value(minIndex+1))
+                   %     rootsVar(minIndex) = [];
+                   % else
+                   %     rootsVar(minIndex+1) = [];
+                   % end
                end
 
-               z_g = reshape(roots,[],1);          
+               z_g = reshape(rootsVar,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
             else
                 error('GLOceanKit:NeedMorePoints', 'You need at least twice as many nEVP as points you request');
@@ -1371,7 +1372,7 @@ classdef InternalModesSpectral < InternalModesBase
             % All rights reserved.
             n = length(f_cheb);
             
-            f_cheb(abs(f_cheb)<1e-15) = 1e-15;
+            f_cheb(abs(f_cheb)<1e-12) = 1e-15;
             
             A=zeros(n-1);   % "n-1" because Boyd's notation includes the zero-indexed
             A(1,2)=1;       % elements whereas Matlab's of course does not allow this.
