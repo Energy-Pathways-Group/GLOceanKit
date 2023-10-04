@@ -1003,7 +1003,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initWithRandomFlow(self)
         
         removeEnergyFromAliasedModes(self,options)
-
+        removeAll(self)
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
