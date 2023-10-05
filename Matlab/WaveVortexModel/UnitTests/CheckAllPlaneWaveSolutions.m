@@ -26,7 +26,7 @@ Ny = 8;
 Nz = 5;
 
 latitude = [31]; % usually we check latitude 0 as well.
-isHydrostatic = 0;
+isHydrostatic = 1;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 U = 0.01; % m/s
 phi = pi*0.232; % random, just to see if its doing the right thing API = 1 will fail, because you can't set the phase using that API.
@@ -44,7 +44,7 @@ for iLat = 1:length(latitude)
     fprintf('\nlatitude: %.1f\n',latitude(iLat));
     rho0 = 1025;
     if 1 == 1
-        wavemodel = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude(iLat), isHydrostatic=isHydrostatic,rho0=rho0);
+        wavemodel = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0=N0,latitude=latitude(iLat), isHydrostatic=isHydrostatic,rho0=rho0);
         rho0 = wavemodel.rho0;
         g = 9.81;
     else
@@ -142,16 +142,16 @@ for iLat = 1:length(latitude)
                     %
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
-                    for API = 1:4
+                    for API = 1:2
                         wavemodel.removeAllExternalWaves();
                         wavemodel.removeAllWaves();
                         
                         if API == 1
                             apiName = 'initWithWaveModes';
-                            wavemodel.initWithWaveModes(k_loop,l_loop,j0,phi,U,thesign);         
+                            wavemodel.initWithWaveModes(k=k_loop,l=l_loop,j=j0,phi=phi,U=U,sign=thesign);         
                         elseif API == 2
                             apiName = 'setWaveModes';
-                            wavemodel.setWaveModes(k_loop,l_loop,j0,phi,U,thesign);
+                            wavemodel.setWaveModes(k=k_loop,l=l_loop,j=j0,phi=phi,U=U,sign=thesign); 
                             [omega_p, alpha_p, k_p, l_p, j_p, phi_p, A_p,norm] = wavemodel.waveModesFromWaveCoefficients();
                         elseif API == 3
                             apiName = 'setExternalWavesWithWavenumbers';

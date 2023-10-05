@@ -216,6 +216,37 @@ classdef InternalModesSpectral < InternalModesBase
             B(1,:) = 0;
         end
 
+        function [A,B] = EigenmatricesForGeostrophicFModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            % N2z = diff(self.N2_function);
+            % N2z_xLobatto = N2z(self.z_xLobatto);
+            % 
+            % A = diag((self.N2_xLobatto))*Tzz - diag(N2z_xLobatto)*Tz;
+            % B = -diag((self.N2_xLobatto).^2/self.g)*T;
+
+            dzLnN2 = diff(log(self.N2_function));
+            dzLnN2_xLobatto = dzLnN2(self.z_xLobatto);
+
+            A = Tzz - diag(dzLnN2_xLobatto)*Tz;
+            B = -diag((self.N2_xLobatto)/self.g)*T;
+
+            A(n,:) = Tz(n,:);
+            B(n,:) = 0;
+
+            alpha = (self.g/(self.f0*self.f0))*(k*k);
+            if alpha < 1
+                A(1,:) = alpha*Tz(1,:);
+                B(1,:) = -B(1,:);
+            else
+                A(1,:) = Tz(1,:);
+                B(1,:) = -B(1,:)/alpha;
+            end
+        end
+
         % function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
         %     T = self.T_xLobatto;
         %     Tz = self.Tx_xLobatto;
@@ -264,12 +295,15 @@ classdef InternalModesSpectral < InternalModesBase
             % upper-boundary
             A(1,:) = gamma*Tz(1,:);
             B(1,:) = -gamma*T(1,:)-Tz(1,:);
-            B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
+            % B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
 
 
             % lower-boundary
             A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0*T(n,:);
+
+            self.FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
         end
 
         function [A,B] = EigenmatricesForSmithVannesteModes(self, k )
@@ -280,14 +314,26 @@ classdef InternalModesSpectral < InternalModesBase
 
             A = Tzz - diag(k*k*self.N2_xLobatto/(self.f0*self.f0))*T;
             B = -(diag(self.N2_xLobatto)/self.g)*T;
-
+            
             % upper-boundary
-            A(1,:) = self.Lz*Tz(1,:)+T(1,:);
-            B(1,:) = 0*T(1,:);
+            A(1,:) = Tz(1,:); %+T(1,:);
+            B(1,:) = self.N2_xLobatto(1)*T(1,:)/self.g;
 
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
-            B(n,:) = 0*T(n,:);
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = -self.N2_xLobatto(n)*T(n,:)/self.g;
+
+            gamma = (self.g/(self.f0*self.f0))*(k*k);
+            self.FOutFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+
+            % % upper-boundary
+            % A(1,:) = self.Lz*Tz(1,:)+T(1,:);
+            % B(1,:) = 0*T(1,:);
+            % 
+            % % lower-boundary
+            % A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            % B(n,:) = 0*T(n,:);
         end
 
         function [A,B] = EigenmatricesForMDAModes(self )
@@ -300,11 +346,11 @@ classdef InternalModesSpectral < InternalModesBase
             B = -(diag(self.N2_xLobatto)/self.g)*T;
 
             % upper-boundary
-            A(1,:) = Tz(1,:)-Tz(n,:);
+            A(1,:) = Tz(1,:); %-Tz(n,:);
             B(1,:) = 0*T(n,:);
 
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0*T(n,:);
         end
         
@@ -376,10 +422,26 @@ classdef InternalModesSpectral < InternalModesBase
             [F,G,h] = self.ModesFromGEP(A,B);
         end
 
+        function [F,G,h] = GeostrophicFModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForGeostrophicFModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
         function [F,G,h] = GeostrophicRigidLidModesAtWavenumber(self, k )
             self.gridFrequency = 0;
 
             [A,B] = self.EigenmatricesForGeostrophicRigidLidModes(k);
+
+            [F,G,h] = self.ModesFromGEP(A,B);
+        end
+
+        function [F,G,h] = GeostrophicSmithVannesteModesAtWavenumber(self, k )
+            self.gridFrequency = 0;
+
+            [A,B] = self.EigenmatricesForSmithVannesteModes(k);
 
             [F,G,h] = self.ModesFromGEP(A,B);
         end
@@ -514,42 +576,43 @@ classdef InternalModesSpectral < InternalModesBase
                    % boundary, and not zero at upper)
                    rootMode = nPoints;
                end
-               roots = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
+               rootsVar = InternalModesSpectral.FindRootsFromChebyshevVector(G_cheb(:,rootMode), self.xDomain);
 
                % First we make sure the roots are within the bounds
-               roots(roots<self.xMin) = self.xMin;
-               roots(roots>self.xMax) = self.xMax;
+               rootsVar(rootsVar<self.xMin) = self.xMin;
+               rootsVar(rootsVar>self.xMax) = self.xMax;
 
                % Then we eliminate any repeats (it happens)
-               roots = unique(roots,'stable');
+               rootsVar = unique(rootsVar,'stable');
                
-               if length(roots) < nPoints
-                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(roots),nPoints);
+               if length(rootsVar) < nPoints
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(rootsVar),nPoints);
                end
                warning('Two strategies here---need to consolidate.')
-%                F = self.Diff1_xCheb(G_cheb(:,rootMode));
-%                value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-%                [~,indices] = sort(abs(value),'descend');
-%                indices = indices(1:nPoints);
-%                roots = roots(indices);
+               % F = self.Diff1_xCheb(G_cheb(:,rootMode));
+               % value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( rootsVar, self.xDomain, F );
+               % [~,indices] = sort(abs(value),'descend');
+               % indices = indices(1:nPoints);
+               % rootsVar = rootsVar(indices);
                
 % This strategy was useful for the vertical mode atlas
 % 1/25/2023 -- this also seems to work better with the analytical mixed layer
 % stratification profile
-               while (length(roots) > nPoints)
-                   roots = sort(roots);
-                   F = self.Diff1_xCheb(G_cheb(:,rootMode));
-                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( roots, self.xDomain, F );
-                   dr = diff(roots);
-                   [~,minIndex] = min(abs(dr));
-                   if abs(value(minIndex)) < abs(value(minIndex+1))
-                       roots(minIndex) = [];
-                   else
-                       roots(minIndex+1) = [];
-                   end
+               while (length(rootsVar) > nPoints)
+                   rootsVar = sort(rootsVar);
+                   F = InternalModesSpectral.IntegrateChebyshevVector(G_cheb(:,rootMode));
+                   value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( rootsVar, self.xDomain, F );
+                   dv = diff(value);
+                   [~,minIndex] = min(abs(dv));
+                   rootsVar(minIndex+1) = [];
+                   % if abs(value(minIndex)) < abs(value(minIndex+1))
+                   %     rootsVar(minIndex) = [];
+                   % else
+                   %     rootsVar(minIndex+1) = [];
+                   % end
                end
 
-               z_g = reshape(roots,[],1);          
+               z_g = reshape(rootsVar,[],1);          
                z_g = InternalModesSpectral.fInverseBisection(self.x_function,z_g,min(self.zDomain),max(self.zDomain),1e-12);
             else
                 error('GLOceanKit:NeedMorePoints', 'You need at least twice as many nEVP as points you request');
@@ -1309,7 +1372,7 @@ classdef InternalModesSpectral < InternalModesBase
             % All rights reserved.
             n = length(f_cheb);
             
-            f_cheb(abs(f_cheb)<1e-15) = 1e-15;
+            f_cheb(abs(f_cheb)<1e-12) = 1e-15;
             
             A=zeros(n-1);   % "n-1" because Boyd's notation includes the zero-indexed
             A(1,2)=1;       % elements whereas Matlab's of course does not allow this.

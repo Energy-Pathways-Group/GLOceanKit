@@ -149,7 +149,7 @@ f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
 operations(end+1) = WVOperation('rho_total',outputVar,f);
 
 outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
-f = @(wvt) -wvt.transformToSpatialDomainWithF( (wvt.Omega .* wvt.Omega ./ (wvt.h * wvt.f)) .*wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF( wvt.A0_QGPV_factor .*wvt.A0t);
 operations(end+1) = WVOperation('qgpv',outputVar,f);
 
 outputVar = WVVariableAnnotation('seaSurfaceU',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface');

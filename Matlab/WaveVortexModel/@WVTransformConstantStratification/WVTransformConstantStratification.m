@@ -28,6 +28,8 @@ classdef WVTransformConstantStratification < WVTransform
         A0_HKE_factor
         A0_PE_factor
         A0_TE_factor
+        A0_TZ_factor
+        A0_QGPV_factor
     end
 
     properties (Access=private)
@@ -202,6 +204,24 @@ classdef WVTransformConstantStratification < WVTransform
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;
+        end
+
+        function value = get.A0_TZ_factor(self)
+            error('Not yet implemented for constant stratification');
+            % Kh = self.Kh;
+            % Lr2 = wvt.g*(wvt.h)/(wvt.f*wvt.f);
+            % Lr2(1) = wvt.g*wvt.Lz/(wvt.f*wvt.f);
+            % value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+            % value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
+        end
+
+        function value = get.A0_QGPV_factor(self)
+            error('Not yet implemented for constant stratification');
+            % Kh = self.Kh;
+            % Lr2 = wvt.g*(wvt.h)/(wvt.f*wvt.f);
+            % Lr2(1) = wvt.g*wvt.Lz/(wvt.f*wvt.f);
+            % value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+            % value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
         end
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
