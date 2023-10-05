@@ -29,6 +29,6 @@ model.integrateToTime(3*period);
 
 ncfile = model.ncfile;
 % [x,y,z] = ncfile.floatPositions();
-[x,z] = ncfile.readVariables('float-x','float-z');
+[x,z] = ncfile.readVariables('float_x','float_z');
 
 figure, plot(x.',z.')

@@ -24,7 +24,6 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
             fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
             fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
-%             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@WVNonlinearFluxOperation(options.fluxName,fluxVar);
@@ -33,7 +32,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             self.doesFluxA0 = 1;
             
             AA = ~(wvt.maskForAliasedModes(jFraction=1));
-            self.PVA0 = - wvt.Omega .* wvt.Omega / (wvt.h * wvt.f);
+            self.PVA0 = wvt.A0_QGPV_factor;
             self.A0PV = AA./self.PVA0;
             
             % Components to the damping operator (which will multiply A0):

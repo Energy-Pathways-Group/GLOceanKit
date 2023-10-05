@@ -78,8 +78,8 @@ model.setNetCDFOutputVariables('A0','ssh','qgpv','u','v','zeta','nu','sigma');
 model.integrateToTime(365*86400);
 
 ncfile = model.ncfile;
-% [x,y] = ncfile.readVariables('drifter-x','drifter-y');
-% qgpv = ncfile.readVariables('drifter-qgpv');
+% [x,y] = ncfile.readVariables('drifter_x','drifter_y');
+% qgpv = ncfile.readVariables('drifter_qgpv');
 % 
 % figure, plot(x.',y.')
 
