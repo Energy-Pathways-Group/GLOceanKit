@@ -1,5 +1,5 @@
 ncfile = NetCDFFile('run-1/ForcedDissipativeQG-particles-512.nc');
-[x,y,eta,t] = ncfile.readVariables('drifter-x','drifter-y','drifter-eta','t');
+[x,y,eta,t] = ncfile.readVariables('drifter_x','drifter_y','drifter_eta_f','t');
 x = x.';
 y = y.';
 

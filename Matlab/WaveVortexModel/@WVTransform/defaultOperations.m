@@ -110,14 +110,17 @@ f = @(wvt) max(max(max( abs(wvt.w)  )));
 operations(end+1) = WVOperation('wMax',outputVar,f);
 
 outputVar = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
+outputVar.attributes('standard_name') = 'eastward_sea_water_velocity';
 f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
 operations(end+1) = WVOperation('u',outputVar,f);
 
 outputVar = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
+outputVar.attributes('standard_name') = 'northward_sea_water_velocity';
 f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
 operations(end+1) = WVOperation('v',outputVar,f);
 
 outputVar = WVVariableAnnotation('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
+outputVar.attributes('standard_name') = 'upwardward_sea_water_velocity';
 f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
 operations(end+1) = WVOperation('w',outputVar,f);
 

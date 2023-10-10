@@ -93,7 +93,7 @@ return
 
 ncfile = model.ncfile;
 % [x,y,z] = ncfile.floatPositions();
-[xFloat,yFloat,zFloat] = ncfile.readVariables('float-x','float-y','float-z');
+[xFloat,yFloat,zFloat] = ncfile.readVariables('float_x','float_y','float_z');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Make plot

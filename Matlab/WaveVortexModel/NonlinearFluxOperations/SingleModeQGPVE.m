@@ -21,8 +21,9 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
             fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
-%             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
+            fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@WVNonlinearFluxOperation(options.fluxName,fluxVar);
@@ -31,7 +32,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             self.doesFluxA0 = 1;
             
             AA = ~(wvt.maskForAliasedModes(jFraction=1));
-            self.PVA0 = - wvt.Omega .* wvt.Omega / (wvt.h * wvt.f);
+            self.PVA0 = wvt.A0_QGPV_factor;
             self.A0PV = AA./self.PVA0;
             
             % Components to the damping operator (which will multiply A0):
@@ -89,7 +90,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
 
             attributes = containers.Map();
             attributes('units') = '1/s';
-            attributes('description') = 'Linear damping operator applied to A0 to produce damping flux.';
+            attributes('long_name') = 'linear damping operator applied to A0 to produce damping flux';
             ncfile.initComplexVariable('L_damp',{'k','l','j'},attributes,'NC_DOUBLE');
             ncfile.setVariable('L_damp',self.damp);
         end

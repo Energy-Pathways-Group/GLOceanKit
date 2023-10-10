@@ -40,6 +40,10 @@ classdef NetCDFFile < handle
         % - Topic: Accessing file properties
         ncid
 
+        % format
+        % - Topic: Accessing file properties
+        format = 'FORMAT_NETCDF4'
+
         % array of NetCDFDimension objects
         %
         % An array of NetCDFDimension objects for each coordinate dimension
@@ -187,7 +191,8 @@ classdef NetCDFFile < handle
             % - Returns: a new NetCDFFile instance
             arguments
                 path char {mustBeNonempty}
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+                options.shouldUseClassicNetCDF = 0
             end
             self.path = path;
             shouldOverwrite = 0;
@@ -202,20 +207,27 @@ classdef NetCDFFile < handle
             if options.shouldOverwriteExisting == 1
                 shouldOverwrite = 1;
             end
+            if options.shouldUseClassicNetCDF == 1
+                self.format = 'FORMAT_CLASSIC';
+            end
             if isfile(self.path)
                 if shouldOverwrite == 1
                     delete(self.path);
-                    self.CreateNewFile();
+                    self.createNewFile();
                 else
                     self.InitializeFromExistingFile();
                 end
             else
-                self.CreateNewFile();
+                self.createNewFile();
             end
         end
 
-        function CreateNewFile(self)
-            self.ncid = netcdf.create(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+        function createNewFile(self)
+            if strcmp(self.format,'FORMAT_NETCDF4')
+                self.ncid = netcdf.create(self.path, netcdf.getConstant('NETCDF4'));
+            else
+                self.ncid = netcdf.create(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+            end
             netcdf.endDef(self.ncid);
         end
 
@@ -299,6 +311,13 @@ classdef NetCDFFile < handle
             % - Declaration: addAttribute(name,data)
             % - Parameter name: string of the attribute name
             % - Parameter data: value
+            if (strcmp(self.format,'FORMAT_CLASSIC') || strcmp(self.format,'FORMAT_64BIT')) && isa(data,'string') && numel(data) > 1
+                if iscolumn(data)
+                    data = data.';
+                end
+                data = char(data+'~');
+            end
+
             netcdf.reDef(self.ncid);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), name, data);
             netcdf.endDef(self.ncid);
@@ -739,6 +758,7 @@ classdef NetCDFFile < handle
         function self = open(self)
             % - Topic: Accessing file properties
             self.ncid = netcdf.open(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+            self.format = netcdf.inqFormat(self.ncid);
         end
 
         function self = close(self)

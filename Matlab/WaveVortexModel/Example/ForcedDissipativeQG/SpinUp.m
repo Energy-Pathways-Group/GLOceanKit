@@ -59,7 +59,7 @@ model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
 model.integrateToTime(50*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % At the end of the integration, let's make a plot showing the relative
 % vorticity and resulting energy spectrum.
 %

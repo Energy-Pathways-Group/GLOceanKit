@@ -36,6 +36,6 @@ model.integrateToTime(3*wvt.inertialPeriod);
 %% Read the particles from file
 
 ncfile = model.ncfile;
-[x,y,z] = ncfile.readVariables('float-x','float-y','float-z');
+[x,y,z] = ncfile.readVariables('float_x','float_y','float_z');
 
 figure, plot3(x.',y.',z.')
