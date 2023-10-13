@@ -873,7 +873,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function Z0 = enstrophyFluxFromF0(self,F0)
             Fqgpv = self.A0_QGPV_factor .* F0;    
-            Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
+            Z0 = self.A0_QGPV_factor.*real( Fqgpv .* conj(self.A0) );
         end
 
         function enstrophy = totalEnstrophySpatiallyIntegrated(self)
