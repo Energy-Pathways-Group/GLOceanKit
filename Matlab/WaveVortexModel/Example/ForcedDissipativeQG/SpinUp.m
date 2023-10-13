@@ -49,8 +49,11 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Set an output file, set the variables that we want written to file, and
-% integrate. How to integrate for? We need to wait until energy reaches
-% steady-state. You can always keep integrating to be certain.
+% integrate. How long to integrate for? We need to wait until energy
+% reaches steady-state. You can always keep integrating to be certain.
+%
+% For these particular settings, I find 150 days is a good initial
+% integration.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

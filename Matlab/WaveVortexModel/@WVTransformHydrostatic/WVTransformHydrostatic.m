@@ -359,8 +359,7 @@ classdef WVTransformHydrostatic < WVTransform
 
         function value = get.A0_QGPV_factor(self)
             Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
-            value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) ); % valid for geostrophic and mda modes
+            value = -(self.g/self.f) * Kh.^2 - self.f ./ self.h; % valid for geostrophic and mda modes
             value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2; % valid for the vortical mode
         end
 

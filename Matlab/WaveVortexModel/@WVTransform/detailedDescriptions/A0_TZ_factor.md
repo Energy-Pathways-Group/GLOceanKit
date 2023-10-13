@@ -1,6 +1,6 @@
  - Topic: Potential Vorticity & Enstrophy — Multiplicative factors
 
-These coefficients multiply $$|A_0|.^2$$ to give a horizontally-averaged depth-integrated total quasigeostrophic enstrophy.
+These coefficients multiply $$A_0^2$$ to give a horizontally-averaged depth-integrated total quasigeostrophic enstrophy.
 
 For $$j>0$$, both the geostrophic ($$K_h>0$$) and mean-density anomaly ($$K_h=0$$) modes have coefficients computed with
 
