@@ -3,7 +3,7 @@ layout: default
 title: GLNetCDFSchemaIsRealPartKey
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 12
+nav_order: 11
 mathjax: true
 ---
 

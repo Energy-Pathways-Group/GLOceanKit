@@ -3,7 +3,7 @@ layout: default
 title: close
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 27
+nav_order: 26
 mathjax: true
 ---
 

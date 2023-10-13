@@ -43,7 +43,9 @@ Wave-vortex transformation that assumes constant stratification
 + Other
   + [`A0_HKE_factor`](/classes/transforms/wvtransformconstantstratification/a0_hke_factor.html) 
   + [`A0_PE_factor`](/classes/transforms/wvtransformconstantstratification/a0_pe_factor.html) 
+  + [`A0_QGPV_factor`](/classes/transforms/wvtransformconstantstratification/a0_qgpv_factor.html) 
   + [`A0_TE_factor`](/classes/transforms/wvtransformconstantstratification/a0_te_factor.html) 
+  + [`A0_TZ_factor`](/classes/transforms/wvtransformconstantstratification/a0_tz_factor.html) 
   + [`Apm_TE_factor`](/classes/transforms/wvtransformconstantstratification/apm_te_factor.html) These convert the coefficients to their depth integrated energies
   + [`DCT`](/classes/transforms/wvtransformconstantstratification/dct.html) 
   + [`DFT`](/classes/transforms/wvtransformconstantstratification/dft.html) 

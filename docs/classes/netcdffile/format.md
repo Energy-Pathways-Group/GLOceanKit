@@ -1,15 +1,15 @@
 ---
 layout: default
-title: addMutableDimension
+title: format
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 24
+nav_order: 35
 mathjax: true
 ---
 
-#  addMutableDimension
+#  format
 
-
+format
 
 
 ---

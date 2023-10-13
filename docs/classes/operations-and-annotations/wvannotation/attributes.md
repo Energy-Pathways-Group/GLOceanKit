@@ -1,13 +1,13 @@
 ---
 layout: default
-title: CreateNewFile
-parent: NetCDFFile
+title: attributes
+parent: WVAnnotation
 grand_parent: Classes
-nav_order: 1
+nav_order: 2
 mathjax: true
 ---
 
-#  CreateNewFile
+#  attributes
 
 
 

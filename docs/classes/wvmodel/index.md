@@ -73,6 +73,8 @@ The WVModel is responsible for time-stepping (integrating) the ocean state forwa
   + [`netCDFOutputVariables`](/classes/wvmodel/netcdfoutputvariables.html) List of all StateVariables being written to NetCDF file
   + [`removeNetCDFOutputVariables`](/classes/wvmodel/removenetcdfoutputvariables.html) Remove variables from the list of variables to be written to the NetCDF variable during the model run.
   + [`setNetCDFOutputVariables`](/classes/wvmodel/setnetcdfoutputvariables.html) Set list of variables to be written to the NetCDF variable during the model run.
++ Other
+  + [`recordNetCDFFileHistory`](/classes/wvmodel/recordnetcdffilehistory.html) 
 
 
 ---

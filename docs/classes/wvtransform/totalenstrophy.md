@@ -1,13 +1,13 @@
 ---
 layout: default
-title: ExponentialFilter
+title: totalEnstrophy
 parent: WVTransform
 grand_parent: Classes
-nav_order: 21
+nav_order: 172
 mathjax: true
 ---
 
-#  ExponentialFilter
+#  totalEnstrophy
 
 
 
