@@ -182,7 +182,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
-            self.nonlinearFluxOperation = Boussinesq(self);
+            self.nonlinearFluxOperation = WVNonlinearFluxUnforced(self);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)

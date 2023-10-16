@@ -2,7 +2,7 @@
 
 file = 'ForcedDissipativeQG-particles-512.nc';
 wvt = WVTransform.waveVortexTransformFromFile(file,iTime=Inf);
-wvt.nonlinearFluxOperation = WVFluxQGUnforced(wvt);
+wvt.nonlinearFluxOperation = QGPVE(wvt);
 
 ncfile = NetCDFFile(file);
 tDim = ncfile.readVariables('t');

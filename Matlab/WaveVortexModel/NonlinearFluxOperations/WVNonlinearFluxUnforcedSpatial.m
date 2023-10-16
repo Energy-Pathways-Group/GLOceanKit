@@ -1,4 +1,4 @@
-classdef BoussinesqSpatial < WVNonlinearFluxOperation
+classdef WVNonlinearFluxUnforcedSpatial < WVNonlinearFluxOperation
     % 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
     %
     % Computes the nonlinear flux for a Boussinesq model. This class is not
@@ -7,15 +7,15 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
     % implementation is *simple* and follows directly from the equations of
     % motion, but it is not the fastest implementation. To compute
     % nonlinear fluxes appropriate for numerical modeling, use the
-    % [Boussinesq](/classes/boussinesq/) class.
+    % [WVNonlinearFluxUnforced](/classes/wvnonlinearfluxunforced/) class.
     %
     % - Topic: Initializing
-    % - Declaration: BoussinesqSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFluxUnforcedSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         dLnN2 = 0
     end
     methods
-        function self = BoussinesqSpatial(wvt)
+        function self = WVNonlinearFluxUnforcedSpatial(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
@@ -41,7 +41,7 @@ classdef BoussinesqSpatial < WVNonlinearFluxOperation
             vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);
             nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* shiftdim(self.dLnN2,-2));
 
-            [varargout{:}] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,wvt.t);
+            [varargout{:}] = wvt.transformUVEtaToWaveVortex(-uNL,-vNL,-nNL,wvt.t);
         end
     end
 end

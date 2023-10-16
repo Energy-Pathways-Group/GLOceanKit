@@ -27,7 +27,7 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
 
 if model.nonlinearFluxOperation.beta > 0
     beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
@@ -39,7 +39,7 @@ end
 
 
 % set initial positions for a bunch of floats
-[xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
+[xFloat,yFloat] = ndgrid(wvt.x(1:20:end),wvt.y(1:20:end));
 xFloat = reshape(xFloat,1,[]);
 yFloat = reshape(yFloat,1,[]);
 nTrajectories = length(xFloat);
@@ -55,11 +55,13 @@ t = zeros(nT,1);
 [xFloatT(1,:),yFloatT(1,:),~,tracked] = model.drifterPositions;
 qgpvFloatT(model.outputIndex,:) = tracked.qgpv;
 
+tic
 while(model.t < finalTime)
     t(model.outputIndex) = model.integrateToNextOutputTime();
     [xFloatT(model.outputIndex,:),yFloatT(model.outputIndex,:),~,tracked] = model.drifterPositions;
     qgpvFloatT(model.outputIndex,:) = tracked.qgpv;
 end
+toc
 
 figure
 subplot(2,1,1)

@@ -21,7 +21,7 @@ parentName = 'Nonlinear fluxes';
 websiteFolder = 'classes/nonlinear-fluxes';
 
 BuildDocumentationForClass(name='WVNonlinearFluxOperation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='Boussinesq',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='WVNonlinearFluxUnforced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
 BuildDocumentationForClass(name='BoussinesqSpatial',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
 BuildDocumentationForClass(name='QGPVE',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
 
