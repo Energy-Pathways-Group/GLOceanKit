@@ -9,7 +9,7 @@ mathjax: true
 
 #  A0_PE_factor
 
-multiplicative factor that multiplies $$A_0$$ to compute potential energy.
+multiplicative factor that multiplies $$|A_0|^2$$ to compute potential energy.
 
 
 ---

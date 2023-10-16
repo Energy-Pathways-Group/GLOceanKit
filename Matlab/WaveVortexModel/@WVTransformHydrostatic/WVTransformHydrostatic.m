@@ -182,7 +182,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
-            self.nonlinearFluxOperation = Boussinesq(self);
+            self.nonlinearFluxOperation = WVNonlinearFluxUnforced(self);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -359,18 +359,16 @@ classdef WVTransformHydrostatic < WVTransform
 
         function value = get.A0_QGPV_factor(self)
             Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
-            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2;
+            value = -(self.g/self.f) * Kh.^2 - self.f ./ self.h; % valid for geostrophic and mda modes
+            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2; % valid for the vortical mode
         end
 
         function value = get.A0_TZ_factor(self)
             Kh = self.Kh;
             Lr2 = self.g*(self.h)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
+            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2; % valid for geostrophic and mda modes
+            L02 = self.g*self.Lz/(self.f*self.f);
+            value(:,:,1) = (self.g/2) * L02 .* (Kh(:,:,1)).^4; % valid for the vortical mode
         end
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

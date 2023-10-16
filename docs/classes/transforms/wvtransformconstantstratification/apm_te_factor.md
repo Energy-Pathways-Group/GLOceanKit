@@ -3,7 +3,7 @@ layout: default
 title: Apm_TE_factor
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 4
+nav_order: 6
 mathjax: true
 ---
 

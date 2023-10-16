@@ -17,7 +17,6 @@ classdef QGPVE < WVNonlinearFluxOperation
         A0PV % conversion from PV to A0
         RVA0 % conversion from A0 to RV
         beta
-        uEady = 0
         damp
         nu
         r
@@ -37,7 +36,6 @@ classdef QGPVE < WVNonlinearFluxOperation
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_eady (1,1) double = 0 % delta velocity for the Eady profile
                 options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'QGPVE'
@@ -46,8 +44,9 @@ classdef QGPVE < WVNonlinearFluxOperation
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
             fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
-%             fluxVar(4) = WVVariableAnnotation('qgpv',{'x','y','z'},'m/s', 'quasigeostrophic potential vorticity');
+            fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@WVNonlinearFluxOperation(options.fluxName,fluxVar);
@@ -56,9 +55,10 @@ classdef QGPVE < WVNonlinearFluxOperation
             self.doesFluxA0 = 1;
             
             AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
-            self.PVA0 = - (wvt.Omega .* wvt.Omega) ./ (wvt.h * wvt.f);
+            self.PVA0 = wvt.A0_QGPV_factor;
             self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
             self.A0PV = AA./self.PVA0;
+            self.A0PV(1,1,1) = 0;
             
             % Components to the damping operator (which will multiply A0):
             % 1. Convert A0 to a velocity streamfunction (g/f)
@@ -84,20 +84,11 @@ classdef QGPVE < WVNonlinearFluxOperation
                 friction = friction.*shiftdim(maskTransform,-2);
             end
             self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2; 
-            self.damp = (wvt.g*wvt.h ./(wvt.Omega .* wvt.Omega)) .* AA.* self.damp; % (g/f) converts A0 into a velocity
+            self.damp = -(wvt.g/wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
             if options.shouldUseBeta == 1
                 self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
             else
                 self.beta = 0;
-            end
-
-            
-            if abs(options.u_eady) > 0
-                self.uEady = zeros(1,1,length(wvt.z));
-                A = integral(wvt.N2Function,-wvt.Lz,0);
-                for i=1:length(wvt.z)
-                    self.uEady(i) = (options.u_eady/A)*integral(wvt.N2Function,-wvt.Lz,wvt.z(i));
-                end
             end
         end
 
@@ -113,15 +104,17 @@ classdef QGPVE < WVNonlinearFluxOperation
 
             u_g = wvt.transformToSpatialDomainWithF(Ubar);
             v_g = wvt.transformToSpatialDomainWithF(Vbar);
-%             QGPV = wvt.transformToSpatialDomainWithF(PVbar);
             PVx = wvt.transformToSpatialDomainWithF(sqrt(-1)*wvt.k.*PVbar);
             PVy = wvt.transformToSpatialDomainWithF(sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
-            mask = zeros(size(wvt.X));
-            mask(:,:,1) = 1;
-            PVabs = -self.r * mask.*wvt.transformToSpatialDomainWithF(self.RVA0 .* wvt.A0);
-
-            PVnl = (u_g + self.uEady).*PVx + v_g.*(PVy+self.beta) + PVabs;
+            if wvt.isBarotropic
+                PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
+            else
+                mask = zeros(size(wvt.X));
+                mask(:,:,1) = 1;
+                PVabs = -self.r * mask.*wvt.transformToSpatialDomainWithF(self.RVA0 .* wvt.A0);
+                PVnl = u_g.*PVx + v_g.*(PVy+self.beta) + PVabs;
+            end
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
             varargout = {F0,u_g,v_g};
         end
@@ -138,13 +131,13 @@ classdef QGPVE < WVNonlinearFluxOperation
 
             attributes = containers.Map();
             attributes('units') = '1/s';
-            attributes('description') = 'Linear damping operator applied to A0 to produce damping flux.';
+            attributes('long_name') = 'Linear damping operator applied to A0 to produce damping flux.';
             ncfile.initComplexVariable('L_damp',{'k','l','j'},attributes,'NC_DOUBLE');
             ncfile.setVariable('L_damp',self.damp);
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = SingleModeQGPVE(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+            nlFlux = QGPVE(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
         end
 
         function flag = isequal(self,other)

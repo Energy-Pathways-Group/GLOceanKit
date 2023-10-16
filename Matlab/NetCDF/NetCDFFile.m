@@ -644,7 +644,7 @@ classdef NetCDFFile < handle
                     end
                     varargout{iArg} = netcdf.getVar(self.ncid, variable.varID, start, count);
                 else
-                    error('Unable to find a variable with the name %s',name);
+                    error('Unable to find a variable with the name %s',variableNames{iArg});
                 end
             end
         end

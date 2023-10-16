@@ -53,7 +53,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`inertialPeriod`](/classes/wvtransform/inertialperiod.html) inertial period
   + [`isBarotropic`](/classes/wvtransform/isbarotropic.html) Boolean indicating whether there is a single (equivalent barotropic) mode
   + [`kRadial`](/classes/wvtransform/kradial.html) isotropic wavenumber dimension
-  + [`latitude`](/classes/wvtransform/latitude.html) latitude of the simulation
+  + [`latitude`](/classes/wvtransform/latitude.html) central latitude of the simulation
   + [`t`](/classes/wvtransform/t.html) time of observations
   + [`t0`](/classes/wvtransform/t0.html) reference time of Ap, Am, A0
   + Grid
@@ -74,13 +74,13 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
     + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
     + [`j`](/classes/wvtransform/j.html) vertical mode number
-    + [`k`](/classes/wvtransform/k.html) wavenumber-coordinate dimension in the x-direction
+    + [`k`](/classes/wvtransform/k.html) wavenumber coordinate in the x-direction
     + [`kljGrid`](/classes/wvtransform/kljgrid.html) returns the K, L, J coordinate matrices
-    + [`l`](/classes/wvtransform/l.html) wavenumber-coordinate dimension in the y-direction
-    + [`x`](/classes/wvtransform/x.html) x-coordinate dimension
+    + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
+    + [`x`](/classes/wvtransform/x.html) x coordinate
     + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
-    + [`y`](/classes/wvtransform/y.html) y-coordinate dimension
-    + [`z`](/classes/wvtransform/z.html) z-coordinate dimension
+    + [`y`](/classes/wvtransform/y.html) y coordinate
+    + [`z`](/classes/wvtransform/z.html) z coordinate
   + Stratification
     + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density
@@ -110,6 +110,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
     + [`initWithSpectralFunction`](/classes/wvtransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
     + [`initWithWaveModes`](/classes/wvtransform/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAll`](/classes/wvtransform/removeall.html) removes all energy from the model
     + [`removeAllWaves`](/classes/wvtransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
     + [`setWaveModes`](/classes/wvtransform/setwavemodes.html) set amplitudes of the given wave modes
     + [`waveCoefficientsFromWaveModes`](/classes/wvtransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
@@ -143,10 +144,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`internalWaveEnergyMinus`](/classes/wvtransform/internalwaveenergyminus.html) total energy, internal waves, minus
     + [`internalWaveEnergyPlus`](/classes/wvtransform/internalwaveenergyplus.html) total energy, internal waves, positive
   + Multiplicative factors
-    + [`A0_HKE_factor`](/classes/wvtransform/a0_hke_factor.html) multiplicative factor that multiplies $$A_0$$ to compute horizontal kinetic energy.
-    + [`A0_PE_factor`](/classes/wvtransform/a0_pe_factor.html) multiplicative factor that multiplies $$A_0$$ to compute potential energy.
-    + [`A0_TE_factor`](/classes/wvtransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0$$ to compute total energy.
-    + [`Apm_TE_factor`](/classes/wvtransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm$$ to compute total energy.
+    + [`A0_HKE_factor`](/classes/wvtransform/a0_hke_factor.html) multiplicative factor that multiplies $$|A_0|^2$$ to compute horizontal kinetic energy.
+    + [`A0_PE_factor`](/classes/wvtransform/a0_pe_factor.html) multiplicative factor that multiplies $$|A_0|^2$$ to compute potential energy.
+    + [`A0_TE_factor`](/classes/wvtransform/a0_te_factor.html) multiplicative factor that multiplies $$|A_0|^2$$ to compute total energy.
+    + [`Apm_TE_factor`](/classes/wvtransform/apm_te_factor.html) multiplicative factor that multiplies $$|A_\pm|^2$$ to compute total energy.
 + Wave-vortex sorting matrix
   + inverse components ($$S^{-1}$$)
     + [`A0N`](/classes/wvtransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
@@ -170,6 +171,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`VAp`](/classes/wvtransform/vap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
     + [`WAm`](/classes/wvtransform/wam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
     + [`WAp`](/classes/wvtransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
++ Potential Vorticity & Enstrophy
+  + [`qgpv`](/classes/wvtransform/qgpv.html) quasigeostrophic potential vorticity
+  + Multiplicative factors
+    + [`A0_QGPV_factor`](/classes/wvtransform/a0_qgpv_factor.html) multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).
+    + [`A0_TZ_factor`](/classes/wvtransform/a0_tz_factor.html) multiplicative factor that multiplies $$|A_0|^2$$ to compute quasigeostrophic enstrophy.
 + Other
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
   + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
@@ -179,6 +185,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`qgpvFluxFromF0`](/classes/wvtransform/qgpvfluxfromf0.html) 
   + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
+  + [`totalEnstrophy`](/classes/wvtransform/totalenstrophy.html) 
+  + [`totalEnstrophySpatiallyIntegrated`](/classes/wvtransform/totalenstrophyspatiallyintegrated.html) 
   + [`uMaxGNormRatioForWave`](/classes/wvtransform/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`variables`](/classes/wvtransform/variables.html) access the dynamical variables
   + [`variablesAtPosition`](/classes/wvtransform/variablesatposition.html) access the dynamical variables at any position in the domain
@@ -192,7 +200,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`eta`](/classes/wvtransform/eta.html) isopycnal deviation
   + [`p`](/classes/wvtransform/p.html) pressure anomaly
   + [`psi`](/classes/wvtransform/psi.html) geostrophic streamfunction
-  + [`qgpv`](/classes/wvtransform/qgpv.html) quasigeostrophic potential vorticity
   + [`rho_prime`](/classes/wvtransform/rho_prime.html) density anomaly
   + [`rho_total`](/classes/wvtransform/rho_total.html) total potential density
   + [`seaSurfaceHeight`](/classes/wvtransform/seasurfaceheight.html) sea-surface height

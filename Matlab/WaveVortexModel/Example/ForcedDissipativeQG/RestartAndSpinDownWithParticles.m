@@ -12,7 +12,7 @@ model = WVModel.modelFromFile('ForcedDissipativeQG-spinup-256.nc',restartIndex=I
 
 %...so let's replace that forcing with an unforced version, but still use
 %the same damping (nu).
-unforcedFlux = SingleModeQGPVE(model.wvt,nu=model.nonlinearFluxOperation.nu);
+unforcedFlux = QGPVE(model.wvt,nu=model.nonlinearFluxOperation.nu);
 model.nonlinearFluxOperation = unforcedFlux;
 
 [xFloat,yFloat] = ndgrid(wvt.x(1:4:end),wvt.y(1:4:end));

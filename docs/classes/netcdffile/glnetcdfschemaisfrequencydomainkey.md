@@ -3,7 +3,7 @@ layout: default
 title: GLNetCDFSchemaIsFrequencyDomainKey
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 9
+nav_order: 8
 mathjax: true
 ---
 

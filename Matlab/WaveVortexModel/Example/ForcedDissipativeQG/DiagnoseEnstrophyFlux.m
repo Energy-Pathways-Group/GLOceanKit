@@ -1,4 +1,6 @@
-file = 'run-1/ForcedDissipativeQG-particles-512.nc';
+%% Load the file
+
+file = 'ForcedDissipativeQG-particles-512.nc';
 
 ncfile = NetCDFFile(file);
 tDim = ncfile.readVariables('t');
@@ -7,14 +9,14 @@ k_r = ncfile.attributes('k_r');
 L_damp = ncfile.readVariables('L_damp');
 
 iTime = 350;
-[F0_psi,F_psi,zeta_z] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi','F_psi','zeta_z');
-eta = mean(mean(zeta_z .* F_psi)); % 1/s * 1/s^2 = 1/s^3
+[F0_psi,F_psi,qgpv] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'F0_psi','F_psi','qgpv');
+eta = mean(mean(qgpv .* F_psi)); % 1/s * 1/s^2 = 1/s^3
 fprintf('Enstrophy forcing, computed spatially: %g 1/s^3\n',eta);
 
 wvt = WVTransform.waveVortexTransformFromFile(file,iTime=iTime);
 
 % Muliply A0 by this factor and you get QGPV
-PVFactor = -wvt.Omega .* wvt.Omega / (wvt.h * wvt.f); % real, units of 1/(m s)
+PVFactor = wvt.A0_QGPV_factor; % real, units of 1/(m s)
 FZ_forcing = PVFactor.*F0_psi;
 FZ_damping = PVFactor.*(L_damp.*wvt.A0);
 
@@ -132,7 +134,7 @@ xlabel('1/m')
 title('horizontal velocity spectrum, spectral density')
 vlines([k_f,k_r],'g--')
 
-
+%%
 [K,L,~] = ndgrid(wvt.k,wvt.l,wvt.j);
 Kh = sqrt(K.*K + L.*L);
 kRadial = wvt.kRadial;
@@ -148,7 +150,7 @@ figure, plot(kRadial,energyFlux/wvt.h), xlog
 title('energy flux into a given wavenumber')
 ylabel('m^2/s^3')
 
-
+%%
 ncfile = NetCDFFile(file);
 tDim = ncfile.readVariables('t');
 [psi,F_psi,F0_psi,zeta_z,A0,L_damp] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'psi','F_psi','F0_psi','zeta_z','A0','L_damp');

@@ -3,7 +3,7 @@ layout: default
 title: GLNetCDFSchemaIsCoordinateVariableKey
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 7
+nav_order: 6
 mathjax: true
 ---
 

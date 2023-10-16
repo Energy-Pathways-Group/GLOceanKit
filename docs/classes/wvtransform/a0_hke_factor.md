@@ -9,7 +9,7 @@ mathjax: true
 
 #  A0_HKE_factor
 
-multiplicative factor that multiplies $$A_0$$ to compute horizontal kinetic energy.
+multiplicative factor that multiplies $$|A_0|^2$$ to compute horizontal kinetic energy.
 
 
 ---
