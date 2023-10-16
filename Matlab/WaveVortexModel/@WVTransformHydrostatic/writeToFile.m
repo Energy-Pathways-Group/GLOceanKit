@@ -24,7 +24,7 @@ variables = union(variables,{'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','P'
 rhoFunction = wvt.rhoFunction;
 N2Function = wvt.N2Function;
 dLnN2Function = wvt.dLnN2Function;
-CreationDate = ncfile.attributes('CreationDate');
-save(matFilePath,'rhoFunction','N2Function','dLnN2Function','CreationDate');
+date_created = ncfile.attributes('date_created');
+save(matFilePath,'rhoFunction','N2Function','dLnN2Function','date_created');
 fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
 end
