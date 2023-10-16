@@ -12,24 +12,27 @@ wvt = model.wvt;
 model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
 model.createNetCDFFileForModelOutput('ForcedDissipativeQG-spinup-512.nc',shouldOverwriteExisting=1);
 model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(wvt.t + 10*86400);
+model.integrateToTime(wvt.t + 50*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% At the end of the integration, let's make a plot showing the relative
+%% At the end of the integration, let's make a plot showing the relative
 % vorticity and resulting energy spectrum.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 
-figure(Position=[100 100 1000 400])
-subplot(1,2,1)
-pcolor(wvt.X/1000,wvt.Y/1000,wvt.zeta_z), shading interp
+tiledlayout(1,2,TileSpacing="tight")
+nexttile
+pcolor(wvt.X/1000,wvt.Y/1000,wvt.zeta_z), shading interp, axis equal
+xlim([min(wvt.x) max(wvt.x)]/1000), ylim([min(wvt.y) max(wvt.y)]/1000)
 colormap("gray")
 xlabel('km'), ylabel('km')
-subplot(1,2,2)
+
+nexttile
 plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
+% plot(wvt.kRadial,wvt.nonlinearFluxOperation.model_spectrum(wvt.kRadial))
 ylabel('m^3/s^2')
 xlabel('1/m')
 title('horizontal velocity spectrum')
@@ -39,7 +42,7 @@ vlines([k_f,k_r],'g--')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% What is the enstrophy cascade rate time scale? This is useful for setting
+%% What is the enstrophy cascade rate time scale? This is useful for setting
 % the output time when we add particles.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
