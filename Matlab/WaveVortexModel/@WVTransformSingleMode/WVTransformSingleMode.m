@@ -338,7 +338,10 @@ classdef WVTransformSingleMode < WVTransform
         
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
-        end   
+        end
+        function ratio = uMaxA0(self,k0, l0, j0)
+            ratio = 1/self.P(j0+1);
+        end
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end

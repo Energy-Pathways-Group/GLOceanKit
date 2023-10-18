@@ -1,4 +1,4 @@
-classdef WVNonlinearFluxUnforcedSpatial < WVNonlinearFluxOperation
+classdef WVNonlinearFluxSpatial < WVNonlinearFluxOperation
     % 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
     %
     % Computes the nonlinear flux for a Boussinesq model. This class is not
@@ -10,12 +10,12 @@ classdef WVNonlinearFluxUnforcedSpatial < WVNonlinearFluxOperation
     % [WVNonlinearFluxUnforced](/classes/wvnonlinearfluxunforced/) class.
     %
     % - Topic: Initializing
-    % - Declaration: WVNonlinearFluxUnforcedSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFluxSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         dLnN2 = 0
     end
     methods
-        function self = WVNonlinearFluxUnforcedSpatial(wvt)
+        function self = WVNonlinearFluxSpatial(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
@@ -23,7 +23,7 @@ classdef WVNonlinearFluxUnforcedSpatial < WVNonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@WVNonlinearFluxOperation('BoussinesqSpatial',fluxVar);
+            self@WVNonlinearFluxOperation('WVNonlinearFluxSpatial',fluxVar);
 
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;

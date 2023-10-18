@@ -108,7 +108,7 @@ classdef WVTransformConstantStratification < WVTransform
             % f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
             % self.addOperation(WVOperation('rho_total',outputVar,f));
 
-            self.nonlinearFluxOperation = WVNonlinearFluxUnforced(self);
+            self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
                 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -573,7 +573,14 @@ classdef WVTransformConstantStratification < WVTransform
             else
                 ratio = abs(1/self.F(k0+1,l0+1,j0+1));
             end
-        end   
+        end
+        function ratio = uMaxA0(self,k0, l0, j0)
+            if j0 == 0
+                ratio = 1;
+            else
+                ratio = abs(1/self.F(k0+1,l0+1,j0+1));
+            end
+        end  
         
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end

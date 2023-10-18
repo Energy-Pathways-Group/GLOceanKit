@@ -182,7 +182,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
-            self.nonlinearFluxOperation = WVNonlinearFluxUnforced(self);
+            self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -491,7 +491,13 @@ classdef WVTransformHydrostatic < WVTransform
         
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
-        end   
+        end 
+
+        function ratio = uMaxA0(self,k0, l0, j0)
+            % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
+            Kh = self.Kh;
+            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P(j0);
+        end 
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 

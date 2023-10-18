@@ -13,5 +13,5 @@ Nonlinear flux operations are used for taking a nonlinear time step with the mod
 
 All nonlinear flux operations are a subclass of [WVNonlinearFluxOperation](/classes-nonlinearfluxes/wvnonlinearfluxoperation/).
 
-- [WVNonlinearFluxUnforced](/classes-nonlinearfluxes/wvnonlinearfluxunforced/)
+- [WVNonlinearFlux](/classes-nonlinearfluxes/wvnonlinearflux/)
 - [BoussinesqSpatial](/classes-nonlinearfluxes/boussinesqspatial/)
