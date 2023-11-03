@@ -5,7 +5,7 @@ function initWithHorizontalWaveNumberSpectrum(self,GMAmplitude,options)
 % This only initializes the wave components, A0 is left untouched.
 %
 % - Topic: Initial conditions — Waves
-% - Declaration: initWithHorizontalWaveNumberSpectrum(GMAmplitude,options)
+% - Declaration: initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
 % - Parameter GMAmplitude: 
 % - Parameter j_star: (optional) 
 % - Parameter slope: (optional)

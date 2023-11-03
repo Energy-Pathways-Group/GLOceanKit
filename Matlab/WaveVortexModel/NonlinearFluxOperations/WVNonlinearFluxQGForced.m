@@ -46,7 +46,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             qgArgs = namedargs2cell(options);
             self@WVNonlinearFluxQG(wvt,qgArgs{:});
 
-            % self.setGeostrophicForcingCoefficients(zeros(wvt.Nk,wvt.Nl,wvt.Nj),ones(wvt.Nk,wvt.Nl,wvt.Nj),newOptions.FTA0);
+            self.setGeostrophicForcingCoefficients(zeros(wvt.Nk,wvt.Nl,wvt.Nj),ones(wvt.Nk,wvt.Nl,wvt.Nj),newOptions.FTA0);
         end
 
         function setGeostrophicForcingCoefficients(self,forcedCoefficients,coefficientMask,relaxationTime)

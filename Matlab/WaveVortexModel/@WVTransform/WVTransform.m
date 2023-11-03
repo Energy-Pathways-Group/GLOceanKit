@@ -102,16 +102,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         Nz
     end
 
-    properties %(Access=private)
+    properties (Access=private)
         halfK = 0;
 
+        operationNameMap
         variableAnnotationNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
-
-        operationNameMap
-        operationVariableNameMap
-        timeDependentVariablesNameMap
+        timeDependentVariables
         variableCache
     end
 
@@ -119,6 +117,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         h % all subclasses need to have a function that returns the eigendepths
         
         % These convert the coefficients to their depth integrated energies
+%         Apm_HKE_factor
+%         Apm_VKE_factor
+%         Apm_PE_factor
         Apm_TE_factor
         A0_HKE_factor
         A0_PE_factor
@@ -149,21 +150,27 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % Typically the request will be directly for a WVOperation,
             % but sometimes it will be for a variable that can only be
             % produced as a bi-product of some operation.
-            if isKey(self.operationVariableNameMap,indexOp(1).Name)
-                varargout{1} = self.stateVariables(indexOp(1).Name);
-                if length(indexOp) > 1
-                    varargout{1} = varargout{1}.(indexOp(2:end));
+            if isKey(self.operationNameMap,indexOp(1).Name)
+                modelOp = self.operationNameMap(indexOp(1).Name);
+
+                varargout=cell(1,modelOp.nVarOut);
+                if length(indexOp) == 1
+                    [varargout{:}] = self.performOperationWithName(indexOp(1).Name);
+                else
+                    error('No indices allowed!!!')
+%                     [varargout{:}] = self.performOperation(indexOp(1).Name,indexOp(2).Indices{:});
                 end
-            elseif isKey(self.operationNameMap,indexOp(1).Name)
-                [varargout{:}] = self.performOperation(self.operationNameMap(indexOp(1).Name));
+            else
+                % User requested a variable that we only have an indirect
+                % way of computing.
+                varargout{1} = self.stateVariables(indexOp(1).Name);
             end
-            
         end
 
         function self = dotAssign(self,indexOp,varargin)
             error("The WVVariableAnnotation %s is read-only.",indexOp(1).Name)
         end
-
+        
         function n = dotListLength(self,indexOp,indexContext)
             if isKey(self.operationNameMap,indexOp(1).Name)
                 modelOp = self.operationNameMap(indexOp(1).Name);
@@ -213,15 +220,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.dimensionAnnotationNameMap = containers.Map();
             self.propertyAnnotationNameMap = containers.Map();
-            self.variableAnnotationNameMap = containers.Map(); % contains names of *all* variables
-
-            self.operationVariableNameMap = containers.Map(); % contains names of variables with associated operations
+            self.variableAnnotationNameMap = containers.Map();
             self.operationNameMap = containers.Map();
-            self.timeDependentVariablesNameMap = containers.Map();
+            self.timeDependentVariables = {};
 
             self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
-            self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
         end
 
@@ -250,7 +254,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addPropertyAnnotations(self,propertyAnnotation)
-            % add a property annotation
+            % add a addProperty
             %
             % - Topic: Utility function — Metadata
             arguments
@@ -271,39 +275,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 name char {mustBeNonempty}
             end
             val = self.propertyAnnotationNameMap(name);
-        end
-
-        function addVariableAnnotations(self,variableAnnotation)
-            % add a variable annotation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
-            end
-            for i=1:length(variableAnnotation)
-                self.variableAnnotationNameMap(variableAnnotation(i).name) = variableAnnotation(i);
-                if variableAnnotation(i).isVariableWithLinearTimeStep == 1 && ~isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
-                    self.timeDependentVariablesNameMap(variableAnnotation(i).name) = variableAnnotation(i);
-                end
-            end
-        end
-
-        function removeVariableAnnotations(self,variableAnnotation)
-            % add a variable annotation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
-            end
-            for i=1:length(variableAnnotation)
-                remove(self.variableAnnotationNameMap,variableAnnotation(i).name);
-                self.variableAnnotationNameMap(variableAnnotation(i).name) = variableAnnotation(i);
-                if isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
-                    remove(self.timeDependentVariablesNameMap,variableAnnotation(i).name);
-                end
-            end
         end
 
         function val = variableAnnotationWithName(self,name)
@@ -330,22 +301,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function addOperation(self,transformOperation,options)
             % add a WVOperation
             %
-            % Several things happen when adding an operation.
-            % 1. We check that dimensions exist for all output variables
-            % produced by this operation.
-            % 2. We see if there are any existing output variables with the
-            % same name.
-            %   2a. We remove the operation that produced the existing
-            %   variables, if it exists.
-            % 3. We map each new variable to this operation variableAnnotationNameMap
-            % 4. Map each operation name to the operation
-            %
-            % In our revision,
-            %   - The variableAnnotationNameMap will map the name to the
-            %   variable annotation
-            %   - The operationVariableNameMap will map the name to the
-            %   operation
-            % 
             % - Topic: Utility function — Metadata
             arguments
                 self WVTransform {mustBeNonempty}
@@ -386,9 +341,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 end
 
                 % Now go ahead and actually add the operation and its variables
-                self.addVariableAnnotations(transformOperation(iOp).outputVariables);
                 for iVar=1:length(transformOperation(iOp).outputVariables)
-                    self.operationVariableNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
+                    self.variableAnnotationNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
+                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentVariables,transformOperation(iOp).outputVariables(iVar).name))
+                        self.timeDependentVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
+                    end
                 end
                 self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
 
@@ -403,9 +360,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 self WVTransform {mustBeNonempty}
                 transformOperation (1,1) WVOperation {mustBeNonempty}
             end
-            self.removeVariableAnnotations(transformOperation.outputVariables);
             for iVar=1:transformOperation.nVarOut
-                remove(self.operationVariableNameMap,transformOperation.outputVariables(iVar).name);
+                remove(self.variableAnnotationNameMap,transformOperation.outputVariables(iVar).name);
             end
             remove(self.operationNameMap,transformOperation.name);
             self.clearVariableCache();
@@ -512,7 +468,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % clear the internal cache of variables that claim to be time dependent
             %
             % - Topic: Internal
-            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys));
+            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariables));
         end
         function varargout = fetchFromVariableCache(self,varargin)
             % retrieve a set of variables from the internal cache
@@ -1103,6 +1059,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % but accurate, spectral interpolation.
         % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
+  
+        ssu = seaSurfaceU(self);
+        ssv = seaSurfaceV(self);
+        ssh = seaSurfaceHeight(self);
+
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1196,7 +1157,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         dimensions = defaultDimensionAnnotations()
         transformProperties = defaultPropertyAnnotations()
         transformOperations = defaultOperations()
-        variableAnnotations = defaultVariableAnnotations()
         transformMethods = defaultMethodAnnotations()
 
         % Initialize the a transform from file
