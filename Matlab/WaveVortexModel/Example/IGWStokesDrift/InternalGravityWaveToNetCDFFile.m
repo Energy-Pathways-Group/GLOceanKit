@@ -14,7 +14,7 @@ period = 2*pi/omega;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxUnforced(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;

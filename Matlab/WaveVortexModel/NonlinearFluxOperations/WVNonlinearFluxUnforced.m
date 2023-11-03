@@ -1,4 +1,4 @@
-classdef WVNonlinearFlux < WVNonlinearFluxOperation
+classdef WVNonlinearFluxUnforced < WVNonlinearFluxOperation
     % 3D nonlinear flux for Boussinesq flow, appropriate for numerical modeling
     %
     % Computes the nonlinear flux for a Boussinesq model, and has options
@@ -15,11 +15,11 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     % This is most often used when initializing a model, e.g.,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxUnforced(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
-    % - Declaration: WVNonlinearFlux < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFluxUnforced < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         shouldAntialias = 0
         AA
@@ -30,17 +30,17 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     end
 
     methods
-        function self = WVNonlinearFlux(wvt,options)
-            % initialize the WVNonlinearFlux nonlinear flux
+        function self = WVNonlinearFluxUnforced(wvt,options)
+            % initialize the WVNonlinearFluxUnforced nonlinear flux
             %
-            % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
+            % - Declaration: nlFlux = WVNonlinearFluxUnforced(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax.
             % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Parameter nu_z: (optional) coefficient for damping
             % - Parameter shouldAntialias: (optional) a Boolean indicating whether or not to antialias (default 1)
-            % - Returns nlFlux: a WVNonlinearFlux instance
+            % - Returns nlFlux: a WVNonlinearFluxUnforced instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.uv_damp (1,1) double 
@@ -53,7 +53,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
 
-            self@WVNonlinearFluxOperation('WVNonlinearFlux',fluxVar);
+            self@WVNonlinearFluxOperation('WVNonlinearFluxUnforced',fluxVar);
             self.shouldAntialias = options.shouldAntialias;
             
             if self.shouldAntialias == 1
@@ -159,7 +159,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
+            nlFlux = WVNonlinearFluxUnforced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
         end
 
         function flag = isequal(self,other)
@@ -182,7 +182,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+            nlFlux = WVNonlinearFluxUnforced(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
         end
     end
 

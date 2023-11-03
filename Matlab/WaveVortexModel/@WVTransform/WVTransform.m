@@ -138,7 +138,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % Needed to add and remove internal waves from the model
         ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-        ratio = uMaxA0(self,k0, l0, j0)
     end
     
     properties (Constant)
@@ -1026,10 +1025,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove geostrophic features from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        [k,l] = setGeostrophicModes(self, vortexproperties);
-        [k,l] = addGeostrophicModes(self, vortexproperties);
-        [kIndex,lIndex,jIndex,A0Amp] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u);
 
         initWithGeostrophicStreamfunction(self,psi);
         setGeostrophicStreamfunction(self,psi);
