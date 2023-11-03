@@ -84,20 +84,20 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
         function set.r(self,value)
             self.r = value;
-            self.buildDampingOperator();
+            self.buildDampingOperator(value);
         end
 
         function buildDampingOperator(self,r)
             [K,L] = self.wvt.kljGrid;
             if self.wvt.isBarotropic
+                % For a single mode, the bottom friction operator is
+                % linear, and thus we can build it into the damping
+                % operator.
                 friction = -r*(K.^2 +L.^2);
             else
-                % only apply friction to the bottom
-                friction = -0*r*(K.^2 +L.^2);
-                mask = zeros(length(self.wvt.z),1);
-                mask(1) = 1;
-                maskTransform = abs(self.wvt.FMatrix * mask);
-                friction = friction.*shiftdim(maskTransform,-2);
+                % In general, bottom friction is nonlinear, so we cannot
+                % compute it yet.
+                friction = 0;
             end
             Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=1);
             self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2;
@@ -106,6 +106,24 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
         function dampingTimeScale = dampingTimeScale(self)
             dampingTimeScale = 1/max(abs(self.damp(:)));
+        end
+
+        function D = dampingOperator(self)
+            Finv = self.wvt.FinvMatrix;
+            F = self.wvt.FMatrix;
+            mask = zeros(length(self.wvt.z));
+            mask(1,1) = 1;
+            D = F*mask*Finv;
+
+            % this is how you'd actually apply this
+            % it could be built into to the transformation operator, I
+            % think
+            % u_bar = forcedFlux3D.RVA0;
+            % u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+            % u_bar = reshape(u_bar,wvt3D.Nj,[]);
+            % u = D*u_bar;
+            % u = reshape(u,wvt3D.Nj,wvt3D.Nk,wvt3D.Nl);
+            % u = permute(u,[2 3 1]);
         end
 
         function varargout = compute(self,wvt,varargin)

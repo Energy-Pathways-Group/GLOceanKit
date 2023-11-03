@@ -588,16 +588,7 @@ classdef InternalModesSpectral < InternalModesBase
                if length(rootsVar) < nPoints
                    error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(rootsVar),nPoints);
                end
-               warning('Two strategies here---need to consolidate.')
-               % F = self.Diff1_xCheb(G_cheb(:,rootMode));
-               % value = InternalModesSpectral.ValueOfFunctionAtPointOnGrid( rootsVar, self.xDomain, F );
-               % [~,indices] = sort(abs(value),'descend');
-               % indices = indices(1:nPoints);
-               % rootsVar = rootsVar(indices);
-               
-% This strategy was useful for the vertical mode atlas
-% 1/25/2023 -- this also seems to work better with the analytical mixed layer
-% stratification profile
+
                while (length(rootsVar) > nPoints)
                    rootsVar = sort(rootsVar);
                    F = InternalModesSpectral.IntegrateChebyshevVector(G_cheb(:,rootMode));
@@ -605,11 +596,6 @@ classdef InternalModesSpectral < InternalModesBase
                    dv = diff(value);
                    [~,minIndex] = min(abs(dv));
                    rootsVar(minIndex+1) = [];
-                   % if abs(value(minIndex)) < abs(value(minIndex+1))
-                   %     rootsVar(minIndex) = [];
-                   % else
-                   %     rootsVar(minIndex+1) = [];
-                   % end
                end
 
                z_g = reshape(rootsVar,[],1);          

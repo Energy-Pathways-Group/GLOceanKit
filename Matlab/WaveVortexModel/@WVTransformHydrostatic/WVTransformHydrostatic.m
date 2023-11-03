@@ -182,6 +182,11 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
+            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
+            f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
+            self.addOperation(WVOperation('zeta_z',outputVar,f));
+
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
 

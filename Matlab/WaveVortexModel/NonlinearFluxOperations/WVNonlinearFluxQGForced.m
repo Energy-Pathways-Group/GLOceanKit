@@ -85,15 +85,33 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 options.k_r (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*2
                 options.k_f (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*20
                 options.j_f (1,1) double = 1
-                options.u_rms (1,1) double = 0.2
+                options.u_rms (1,1) double = 0.2 % set the *total* energy (not just kinetic) equal to 0.5*u_rms^2
                 options.initialPV {mustBeMember(options.initialPV,{'none','narrow-band','full-spectrum'})} = 'narrow-band'
             end
+            
+            if ~self.wvt.isBarotropic
+                % the idea is to set the energy at the sea-surface and
+                % so we need to know the relative amplitude of this
+                % mode at the surface.
+                F = self.wvt.FinvMatrix;
+                surfaceMag = 1/F(end,options.j_f+1);
+                sbRatio = abs(F(end,options.j_f+1)/F(1,options.j_f+1));
+                h = self.wvt.h(options.j_f+1);
+            else
+                surfaceMag = 1;
+                sbRatio = 1;
+                h = self.wvt.h;
+                options.j_f = 0;
+            end
+
             magicNumber = 0.0225;
             if isfield(options,"r")
                 r = options.r;
                 k_r = r/(magicNumber*options.u_rms);
             else
-                r = magicNumber*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
+                r = magicNumber*sbRatio*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
+                fprintf('1/r is %.1f days, switching to %.1f days\n',1/(self.r*86400),1/(r*86400));
+                self.r = r;
                 k_r = options.k_r;
             end
             k_f = options.k_f;
@@ -109,7 +127,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             self.MA0(wvt.Kh > k_f-deltaK/2 & wvt.Kh < k_f+deltaK/2 & wvt.J == j_f) = 1;
 
             if strcmp(options.initialPV,'narrow-band') || strcmp(options.initialPV,'full-spectrum')
-                u_rms = options.u_rms;
+                u_rms = surfaceMag * options.u_rms;
 
                 m = 3/2; % We don't really know what this number is.
                 kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
@@ -141,7 +159,15 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 if strcmp(options.initialPV,'narrow-band')
                     wvt.A0 = (self.MA0) .* wvt.A0;
                 else
-                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/wvt.h(j_f+1));
+                    u = wvt.seaSurfaceU;
+                    v = wvt.seaSurfaceV;
+                    zeta = wvt.seaSurfaceHeight;
+                    KE = mean(mean(0.5*(u.^2+v.^2)));
+                    PE = mean(mean(0.5*(9.81*zeta.^2)/h));
+                    u_rms_surface = mean(mean(sqrt(u.^2+v.^2)));
+                    fprintf("surface u_rms: %.2g cm/s\n",100*u_rms_surface);
+                    fprintf("surface energy, %g.\n",KE+PE);
+                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/h);
                 end
             end
             self.A0bar = (self.MA0) .* wvt.A0;
