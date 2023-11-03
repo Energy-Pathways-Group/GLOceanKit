@@ -897,7 +897,25 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns Fp: flux into the Ap coefficients
             % - Returns Fm: flux into the Am coefficients
             % - Returns F0: flux into the A0 coefficients
-            [Fp,Fm,F0] = self.performOperation(self.nonlinearFluxOperation);
+            F = cell(self.nonlinearFluxOperation.nVarOut,1);
+            [F{:}] = self.performOperation(self.nonlinearFluxOperation);
+            
+            n = 0;
+            if self.nonlinearFluxOperation.doesFluxAp == 1
+                n=n+1;Fp = F{n};
+            else
+                Fp = zeros(self.Nk,self.Nl,self.Nj);
+            end
+            if self.nonlinearFluxOperation.doesFluxAm == 1
+                n=n+1;Fm = F{n};
+            else
+                Fm = zeros(self.Nk,self.Nl,self.Nj);
+            end
+            if self.nonlinearFluxOperation.doesFluxA0 == 1
+                n=n+1;F0 = F{n};
+            else
+                F0 = zeros(self.Nk,self.Nl,self.Nj);
+            end
         end
         
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
