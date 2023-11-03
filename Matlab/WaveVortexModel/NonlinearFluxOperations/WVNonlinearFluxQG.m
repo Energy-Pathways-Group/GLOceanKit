@@ -67,41 +67,31 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % 2. bi-harmonic operator
             % 3. spectral vanish viscosity
             % 4. nu is set to create approximately Reynolds number=1.
-            
+            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=1);
             if isfield(options,"nu")
                 self.nu = options.nu;
             else
                 self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_damp/(pi^2);
             end
             self.r = options.r;
-            
+            [K,L] = wvt.kljGrid;
+            if wvt.isBarotropic
+                friction = -self.r*(K.^2 +L.^2);
+            else
+                % only apply friction to the bottom
+                friction = -0*self.r*(K.^2 +L.^2);
+                mask = zeros(length(wvt.z),1);
+                mask(1) = 1;
+                maskTransform = abs(wvt.FMatrix * mask);
+                friction = friction.*shiftdim(maskTransform,-2);
+            end
+            self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2; 
+            self.damp = -(wvt.g/wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
             if options.shouldUseBeta == 1
                 self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
             else
                 self.beta = 0;
             end
-        end
-
-        function set.r(self,value)
-            self.r = value;
-            self.buildDampingOperator();
-        end
-
-        function buildDampingOperator(self,r)
-            [K,L] = self.wvt.kljGrid;
-            if self.wvt.isBarotropic
-                friction = -r*(K.^2 +L.^2);
-            else
-                % only apply friction to the bottom
-                friction = -0*r*(K.^2 +L.^2);
-                mask = zeros(length(self.wvt.z),1);
-                mask(1) = 1;
-                maskTransform = abs(self.wvt.FMatrix * mask);
-                friction = friction.*shiftdim(maskTransform,-2);
-            end
-            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=1);
-            self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2;
-            self.damp = -(self.wvt.g/self.wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
         end
 
         function dampingTimeScale = dampingTimeScale(self)

@@ -1,12 +1,8 @@
 classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
-    % 3D forced quasigeostrophic potential vorticity flux
+    % 3D quasigeostrophic potential vorticity flux
     %
     % The 3D quasigeostrophic potential vorticity flux will only use and
     % modify the A0 coefficients.
-    %
-    % $$
-    % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
-    % $$
     %
     % To initialize the QGPVE,
     %
@@ -17,9 +13,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
     % - Topic: Initializing
     % - Declaration: QGPVE < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
-        MA0         % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
-        A0bar = []  % A0 'mean' value to relax to
-        tau0        % relaxation time
+        EMA0 % energy mask, A0
+        FA0 = []  % forcing value, A0
+        FTA0  % forcing time, A0 (scalar)
     end
 
     methods
@@ -42,9 +38,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 options.nu (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
 
-                newOptions.MA0
-                newOptions.A0bar = []
-                newOptions.tau0 = 0
+                newOptions.EMA0
+                newOptions.FA0 = []
+                newOptions.FTA0 = 0
             end
 
             qgArgs = namedargs2cell(options);
@@ -53,109 +49,36 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             % self.setGeostrophicForcingCoefficients(zeros(wvt.Nk,wvt.Nl,wvt.Nj),ones(wvt.Nk,wvt.Nl,wvt.Nj),newOptions.FTA0);
         end
 
-        function setGeostrophicForcingCoefficients(self,A0bar,options)
-            % set forcing values for the geostrophic part of the flow
-            %
-            % $$
-            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
-            % $$
-            %
-            % - Topic: Computation
-            % - Declaration: varargout = compute(wvt,varargin)
-            % - Parameter A0bar: A0 'mean' value to relax to
-            % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
-            % - Parameter tau0: (optional) relaxation time
-            % - Returns varargout: cell array of returned variables
+        function setGeostrophicForcingCoefficients(self,forcedCoefficients,coefficientMask,relaxationTime)
             arguments
                 self WVNonlinearFluxQGForced {mustBeNonempty}
-                A0bar (:,:,:) double {mustBeNonempty}
-                options.MA0 (:,:,:) logical = abs(A0bar) > 1
-                options.tau0 (1,1) double = 0
+                forcedCoefficients (:,:,:) double {mustBeNonempty}
+                coefficientMask (:,:,:) double {mustBeNonempty,mustBeReal}
+                relaxationTime (1,1) double = 0
             end
 
-            self.A0bar = A0bar;
-            self.MA0 = options.MA0;
-            self.tau0 = options.tau0;
-        end
-
-        function model_spectrum = setNarrowBandForcing(self, options)
-            arguments
-                self WVNonlinearFluxQGForced {mustBeNonempty}
-                options.r (1,1) double
-                options.k_r (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*2
-                options.k_f (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*20
-                options.j_f (1,1) double = 1
-                options.u_rms (1,1) double = 0.2
-                options.initialPV {mustBeMember(options.initialPV,{'none','narrow-band','full-spectrum'})} = 'narrow-band'
-            end
-            magicNumber = 0.0225;
-            if isfield(options,"r")
-                r = options.r;
-                k_r = r/(magicNumber*options.u_rms);
+            if relaxationTime > 0
+                self.EMA0 = coefficientMask;
+                self.FA0 = forcedCoefficients;
+                self.FTA0 = relaxationTime;
             else
-                r = magicNumber*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
-                k_r = options.k_r;
+                % if the relaxation time is zero, then we just want to fix
+                % the energy at this mode. So we first make sure the wvt is
+                % set to force with those values, then invert the mask, so
+                % that it is zeros at the forcing modes.
+                self.wvt.A0(logical(coefficientMask)) = forcedCoefficients(logical(coefficientMask));
+                self.EMA0 = ~WVTransform.makeHermitian(coefficientMask);
             end
-            k_f = options.k_f;
-            j_f = options.j_f;
-            wvt = self.wvt;
-
-            smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(r),1,'first');
-            fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
-
-            
-            deltaK = wvt.kRadial(2)-wvt.kRadial(1);
-            self.MA0 = zeros(wvt.Nk,wvt.Nl,wvt.Nj);
-            self.MA0(wvt.Kh > k_f-deltaK/2 & wvt.Kh < k_f+deltaK/2 & wvt.J == j_f) = 1;
-
-            if strcmp(options.initialPV,'narrow-band') || strcmp(options.initialPV,'full-spectrum')
-                u_rms = options.u_rms;
-
-                m = 3/2; % We don't really know what this number is.
-                kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
-                model_viscous = @(k) kappa_epsilon * k_r^(-5/3 - m) * k.^m;
-                model_inverse = @(k) kappa_epsilon * k.^(-5/3);
-                model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
-                model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
-
-                % In this loop we set the energy level directly to wvt.A0
-                % as computed by integrated the spectrum--so it is *not*
-                % depth integrated and must be converted at the end.
-                % ARand contains the random orientations
-                kAxis = wvt.kRadial;
-                dk = kAxis(2)-kAxis(1);
-                ARand = wvt.generateHermitianRandomMatrix();
-                for iK=1:(length(wvt.kRadial)-1)
-                    indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2 & wvt.J == j_f  );
-                    energy = integral(model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                    wvt.A0(indicesForK) = energy/length(indicesForK);
-                    ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
-                end
-                wvt.A0 = WVTransform.makeHermitian(wvt.A0);
-
-                AA = ~(wvt.maskForAliasedModes(jFraction=1));
-                wvt.A0 = AA .* (sqrt(wvt.h .* wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
-                wvt.A0(isnan(wvt.A0)) = 0;
-                WVTransform.checkHermitian(wvt.A0);
-
-                if strcmp(options.initialPV,'narrow-band')
-                    wvt.A0 = (self.MA0) .* wvt.A0;
-                else
-                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/wvt.h(j_f+1));
-                end
-            end
-            self.A0bar = (self.MA0) .* wvt.A0;
-            self.tau0 = 0;
         end
 
         function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
             [varargout{:}] = compute@WVNonlinearFluxQG(self,wvt,varargin{:});
 
-            if self.tau0 > 0
-                varargout{1} = self.MA0.*(self.A0bar - wvt.A0)/self.tau0 + varargout{1};
+            if self.FTA0 > 0
+                varargout{1} = self.EMA0.*(self.FA0 - wvt.A0)/self.FTA0 + varargout{1};
             else
-                varargout{1} = (~self.MA0) .* varargout{1};
+                varargout{1} = self.EMA0 .* varargout{1};
             end
         end
 
@@ -166,9 +89,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 wvt WVTransform {mustBeNonempty}
             end
             writeToFile@WVNonlinearFluxQG(self,ncfile,wvt);
-            ncfile.addVariable('MA0',int8(self.MA0),{'k','l','j'});
-            ncfile.addVariable('A0bar',self.A0bar,{'k','l','j'});
-            ncfile.addVariable('tau0',wvt.tau0,{});
+            ncfile.addVariable('EMA0',int8(self.EMA0),{'k','l','j'});
+            ncfile.addVariable('FA0',self.FA0,{'k','l','j'});
+            ncfile.addVariable('FTA0',wvt.FTA0,{});
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
@@ -181,9 +104,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 other WVNonlinearFluxOperation
             end
             flag = isequal@WVNonlinearFluxQG(self,other);
-            flag = flag & isequal(self.MA0, other.MA0);
-            flag = flag & isequal(self.A0bar, other.A0bar);
-            flag = flag & isequal(self.tau0, other.tau0);
+            flag = flag & isequal(self.EMA0, other.EMA0);
+            flag = flag & isequal(self.FA0, other.FA0);
+            flag = flag & isequal(self.FTA0, other.FTA0);
         end
 
     end
@@ -195,9 +118,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 wvt WVTransform {mustBeNonempty}
             end
             nlFlux = WVNonlinearFluxQGForced(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
-            nlFlux.MA0 = logical(ncfile.readVariables('MA0'));
-            nlFlux.A0bar = ncfile.readVariables('A0bar');
-            nlFlux.tau0 = ncfile.readVariables('tau0');
+            nlFlux.EMA0 = logical(ncfile.readVariables('EMA0'));
+            nlFlux.FA0 = ncfile.readVariables('FA0');
+            nlFlux.FTA0 = ncfile.readVariables('FTA0');
         end
     end
 
