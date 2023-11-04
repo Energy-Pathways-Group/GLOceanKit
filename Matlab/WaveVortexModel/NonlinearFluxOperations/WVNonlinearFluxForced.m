@@ -40,23 +40,82 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             self@WVNonlinearFlux(wvt,qgArgs{:});
         end
 
+        function setWaveForcingCoefficients(self,Apbar,Ambar,options)
+            % set forcing values for the geostrophic part of the flow
+            %
+            % $$
+            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
+            % $$
+            %
+            % - Topic: Computation
+            % - Declaration: varargout = compute(wvt,varargin)
+            % - Parameter A0bar: A0 'mean' value to relax to
+            % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
+            % - Parameter tau0: (optional) relaxation time
+            % - Returns varargout: cell array of returned variables
+            arguments
+                self WVNonlinearFluxForced {mustBeNonempty}
+                Apbar (:,:,:) double {mustBeNonempty}
+                Ambar (:,:,:) double {mustBeNonempty}
+                options.MAp (:,:,:) logical = abs(Apbar) > 0
+                options.MAm (:,:,:) logical = abs(Ambar) > 0
+                options.tauP (1,1) double = 0
+                options.tauM (1,1) double = 0
+            end
+
+            % multiply by the anti-alias filter so we don't force in the
+            % aliased region.
+            self.Apbar = self.AA .* Apbar;
+            self.MAp = options.MAp;
+            self.tauP = options.tauP;
+
+            self.Ambar = self.AA .* Ambar;
+            self.MAm = options.MAm;
+            self.tauM = options.tauM;
+        end
+
+        function setGeostrophicForcingCoefficients(self,A0bar,options)
+            % set forcing values for the geostrophic part of the flow
+            %
+            % $$
+            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
+            % $$
+            %
+            % - Topic: Computation
+            % - Declaration: varargout = compute(wvt,varargin)
+            % - Parameter A0bar: A0 'mean' value to relax to
+            % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
+            % - Parameter tau0: (optional) relaxation time
+            % - Returns varargout: cell array of returned variables
+            arguments
+                self WVNonlinearFluxForced {mustBeNonempty}
+                A0bar (:,:,:) double {mustBeNonempty}
+                options.MA0 (:,:,:) logical = abs(A0bar) > 0
+                options.tau0 (1,1) double = 0
+            end
+
+            self.A0bar = self.AA .* A0bar;
+            self.MA0 = options.MA0;
+            self.tau0 = options.tau0;
+        end
+
         function varargout = compute(self,wvt,varargin)
             varargout = cell(1,self.nVarOut);
             [varargout{:}] = compute@WVNonlinearFlux(self,wvt,varargin{:});
 
-            if self.tau0P > 0
-                varargout{1} = self.MAp.*(self.Apbar - wvt.Ap)/self.tau0P + varargout{1};
-            else
+            if self.tauP > 0
+                varargout{1} = self.MAp.*(self.Apbar - wvt.Ap)/self.tauP + varargout{1};
+            elseif ~isempty(self.MAp)
                 varargout{1} = (~self.MAp) .* varargout{1};
             end
-            if self.tau0M > 0
-                varargout{2} = self.MAm.*(self.Ambar - wvt.Am)/self.tau0M + varargout{2};
-            else
+            if self.tauM > 0
+                varargout{2} = self.MAm.*(self.Ambar - wvt.Am)/self.tauM + varargout{2};
+            elseif ~isempty(self.MAm)
                 varargout{2} = (~self.MAm) .* varargout{2};
             end
             if self.tau0 > 0
                 varargout{3} = self.MA0.*(self.A0bar - wvt.A0)/self.tau0 + varargout{3};
-            else
+            elseif ~isempty(self.MA0)
                 varargout{3} = (~self.MA0) .* varargout{3};
             end
         end
