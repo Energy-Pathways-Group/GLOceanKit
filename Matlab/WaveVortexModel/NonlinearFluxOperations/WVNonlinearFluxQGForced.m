@@ -26,7 +26,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
         function self = WVNonlinearFluxQGForced(wvt,options,newOptions)
             % initialize 3D quasigeostrophic potential vorticity flux
             %
-            % - Declaration: nlFlux = QGPVE(wvt,options)
+            % - Declaration: nlFlux = WVNonlinearFluxQGForced(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
             % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
@@ -200,6 +200,13 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
             nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+            if ~isempty(self.MA0)
+                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            if ~isempty(self.A0bar)
+                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            nlFlux.tau0 = self.tau0;
         end
 
         function flag = isequal(self,other)

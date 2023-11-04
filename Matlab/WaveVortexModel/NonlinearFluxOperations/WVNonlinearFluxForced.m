@@ -1,36 +1,22 @@
-classdef WVNonlinearFlux < WVNonlinearFluxOperation
-    % 3D nonlinear flux for Boussinesq flow, appropriate for numerical modeling
+classdef WVNonlinearFluxForced < WVNonlinearFlux
+    % 3D forced nonlinear flux for Boussinesq flow
     %
-    % Computes the nonlinear flux for a Boussinesq model, and has options
-    % for anti-aliasing and damping appropriate for running a numerical
-    % model. This is *not* the simplest implementation, but instead adds
-    % some complexity in favor of speed. The [BoussinesqSpatial](/classes/boussinesqspatial/) class
-    % shows a simple implementation.
-    %
-    % The damping is a simple Laplacian, but with a spectral vanishing
-    % viscosity (SVV) operator applied that prevents any damping below a
-    % cutoff wavenumber. The SVV operator adjusts the wavenumbers being
-    % damped depending on whether anti-aliasing is applied.
-    %
-    % This is most often used when initializing a model, e.g.,
-    %
-    % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
-    % ```
-    %
-    % - Topic: Initializing
-    % - Declaration: WVNonlinearFlux < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
-        shouldAntialias = 0
-        AA
-        nu_xy
-        nu_z
-        damp
-        dLnN2 = 0
+        MA0         % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
+        MAp         % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
+        MAm         % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
+
+        A0bar = []  % A0 'mean' value to relax to
+        Apbar = []  % Ap 'mean' value to relax to
+        Ambar = []  % Am 'mean' value to relax to
+
+        tau0        % A0 relaxation time
+        tauP        % Ap relaxation time
+        tauM        % Am relaxation time
     end
 
     methods
-        function self = WVNonlinearFlux(wvt,options)
+        function self = WVNonlinearFluxForced(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -49,102 +35,30 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 options.nu_z (1,1) double
                 options.shouldAntialias double = 1
             end
-            fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
-            fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
-            fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
-
-            self@WVNonlinearFluxOperation('WVNonlinearFlux',fluxVar);
-            self.shouldAntialias = options.shouldAntialias;
             
-            if self.shouldAntialias == 1
-                self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
-                wvt.Ap = self.AA .* wvt.Ap;
-                wvt.Am = self.AA .* wvt.Am;
-                wvt.A0 = self.AA .* wvt.A0;
-            else
-                self.AA = 1;
-            end
-            
-            if isa(wvt,'WVTransformConstantStratification')
-                self.dLnN2 = 0;
-            elseif isa(wvt,'WVTransformHydrostatic')
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-            else
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-                warning('WVTransform not recognized.')
-            end
-
-            if isfield(options,'nu_xy')
-                self.nu_xy = nu_xy;
-            else
-                if isfield(options,'uv_damp')
-                    if self.shouldAntialias == 1
-                        self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
-                    else
-                        self.nu_xy = (wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
-                    end
-                else
-                    self.nu_xy = 0;
-                end
-            end
-
-            if isfield(options,'nu_z')
-                self.nu_z = nu_z;
-            else
-                if isfield(options,'w_damp')
-                    if self.shouldAntialias == 1
-                        self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
-                    else
-                        self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
-                    end
-                else
-                    self.nu_z = 0;
-                end
-            end
-            
-            [K,L,J] = ndgrid(wvt.k,wvt.l,wvt.j);
-            M = J*pi/wvt.Lz;
-            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-
-            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
-            self.damp = Qkl.*self.damp;
+            qgArgs = namedargs2cell(options);
+            self@WVNonlinearFlux(wvt,qgArgs{:});
         end
 
         function varargout = compute(self,wvt,varargin)
-            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
-            Apt = wvt.Ap .* phase;
-            Amt = wvt.Am .* conj(phase);
-            A0t = wvt.A0;
+            varargout = cell(1,self.nVarOut);
+            [varargout{:}] = compute@WVNonlinearFlux(self,wvt,varargin{:});
 
-            % Apply operator S---defined in (C4) in the manuscript
-            Ubar = wvt.UAp.*Apt + wvt.UAm.*Amt + wvt.UA0.*A0t;
-            Vbar = wvt.VAp.*Apt + wvt.VAm.*Amt + wvt.VA0.*A0t;
-            Wbar = wvt.WAp.*Apt + wvt.WAm.*Amt;
-            Nbar = wvt.NAp.*Apt + wvt.NAm.*Amt + wvt.NA0.*A0t;
-
-            % Finishing applying S, but also compute derivatives at the
-            % same time
-            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = wvt.transformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
-
-            % compute the nonlinear terms in the spatial domain
-            % (pseudospectral!)
-            uNL = -U.*Ux - V.*Uy - W.*Uz;
-            vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*self.dLnN2);
-
-            % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
-            vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
-            nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
-
-            Fp = self.AA .* (self.damp .* wvt.Ap + (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase));
-            Fm = self.AA .* (self.damp .* wvt.Am + (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase);
-            F0 = self.AA .* (self.damp .* wvt.A0 + (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar));
-
-            varargout = {Fp,Fm,F0};
+            if self.tau0P > 0
+                varargout{1} = self.MAp.*(self.Apbar - wvt.Ap)/self.tau0P + varargout{1};
+            else
+                varargout{1} = (~self.MAp) .* varargout{1};
+            end
+            if self.tau0M > 0
+                varargout{2} = self.MAm.*(self.Ambar - wvt.Am)/self.tau0M + varargout{2};
+            else
+                varargout{2} = (~self.MAm) .* varargout{2};
+            end
+            if self.tau0 > 0
+                varargout{3} = self.MA0.*(self.A0bar - wvt.A0)/self.tau0 + varargout{3};
+            else
+                varargout{3} = (~self.MA0) .* varargout{3};
+            end
         end
 
         function writeToFile(self,ncfile,wvt)
@@ -153,13 +67,43 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            ncfile.addAttribute('nu_xy',self.nu_xy)
-            ncfile.addAttribute('nu_z',self.nu_z)
-            ncfile.addAttribute('shouldAntialias',self.shouldAntialias)
+            writeToFile@WVNonlinearFlux(self,ncfile,wvt);
+            ncfile.addVariable('MAp',int8(self.MAp),{'k','l','j'});
+            ncfile.addVariable('Apbar',self.Apbar,{'k','l','j'});
+            ncfile.addVariable('tauP',wvt.tauP,{});
+            ncfile.addVariable('MAm',int8(self.MAm),{'k','l','j'});
+            ncfile.addVariable('Ambar',self.Ambar,{'k','l','j'});
+            ncfile.addVariable('tauM',wvt.tauM,{});
+            ncfile.addVariable('MA0',int8(self.MA0),{'k','l','j'});
+            ncfile.addVariable('A0bar',self.A0bar,{'k','l','j'});
+            ncfile.addVariable('tau0',wvt.tau0,{});
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
+            nlFlux = WVNonlinearFluxForced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
+            if ~isempty(self.MAp)
+                nlFlux.MAp = WVTransform.spectralVariableWithResolution(self.MAp,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            if ~isempty(self.Apbar)
+                nlFlux.Apbar = WVTransform.spectralVariableWithResolution(self.Apbar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            nlFlux.tauP = self.tauP;
+
+            if ~isempty(self.MAm)
+                nlFlux.MAm = WVTransform.spectralVariableWithResolution(self.MAm,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            if ~isempty(self.Ambar)
+                nlFlux.Ambar = WVTransform.spectralVariableWithResolution(self.Ambar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            nlFlux.tauM = self.tauM;
+
+            if ~isempty(self.MA0)
+                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            if ~isempty(self.A0bar)
+                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            nlFlux.tau0 = self.tau0;
         end
 
         function flag = isequal(self,other)
@@ -167,12 +111,16 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self WVNonlinearFluxOperation
                 other WVNonlinearFluxOperation
             end
-            flag = isequal@WVNonlinearFluxOperation(self,other);
-            flag = flag & isequal(self.shouldAntialias, other.shouldAntialias);
-            flag = flag & isequal(self.AA, other.AA);
-            flag = flag & isequal(self.nu_xy, other.nu_xy);
-            flag = flag & isequal(self.nu_z,other.nu_z);
-            flag = flag & isequal(self.damp, other.damp);
+            flag = isequal@WVNonlinearFlux(self,other);
+            flag = flag & isequal(self.MAp, other.MAp);
+            flag = flag & isequal(self.Apbar, other.Apbar);
+            flag = flag & isequal(self.tauP, other.tauP);
+            flag = flag & isequal(self.MAm, other.MAm);
+            flag = flag & isequal(self.Ambar, other.Ambar);
+            flag = flag & isequal(self.tauM, other.tauM);
+            flag = flag & isequal(self.MA0, other.MA0);
+            flag = flag & isequal(self.A0bar, other.A0bar);
+            flag = flag & isequal(self.tau0, other.tau0);
         end
     end
 
@@ -182,7 +130,16 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+            nlFlux = WVNonlinearFluxForced(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+            nlFlux.MAp = logical(ncfile.readVariables('MAp'));
+            nlFlux.Apbar = ncfile.readVariables('Apbar');
+            nlFlux.tauP = ncfile.readVariables('tauP');
+            nlFlux.MAm = logical(ncfile.readVariables('MAm'));
+            nlFlux.Ambar = ncfile.readVariables('Ambar');
+            nlFlux.tauM = ncfile.readVariables('tauM');
+            nlFlux.MA0 = logical(ncfile.readVariables('MA0'));
+            nlFlux.A0bar = ncfile.readVariables('A0bar');
+            nlFlux.tau0 = ncfile.readVariables('tau0');
         end
     end
 

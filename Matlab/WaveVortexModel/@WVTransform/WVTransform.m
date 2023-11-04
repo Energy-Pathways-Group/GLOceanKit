@@ -1231,6 +1231,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         A = redundantHermitianCoefficients(A)
         
         [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
+        
+        varX2 = spectralVariableWithResolution(var,Nklj)
     end
         
         
