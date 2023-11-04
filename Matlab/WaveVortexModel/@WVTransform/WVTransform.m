@@ -1063,6 +1063,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         initWithUVRho(self,u,v,rho,t)
         initWithUVEta(self,U,V,N,t)
+        addUVEta(self,U,V,N)
         initWithRandomFlow(self)
         
         removeEnergyFromAliasedModes(self,options)

@@ -11,7 +11,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
     % To initialize the QGPVE,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
@@ -29,17 +29,17 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             % - Declaration: nlFlux = WVNonlinearFluxQGForced(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
-            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
+            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
             % - Parameter r: (optional) bottom friction
-            % - Parameter nu: (optional) coefficient for damping
+            % - Parameter nu_xy: (optional) coefficient for damping
             % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'WVNonlinearFluxQGForced'
-                options.nu (1,1) double
+                options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
 
                 newOptions.MA0
@@ -199,7 +199,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/2);
             if ~isempty(self.MA0)
                 nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
             end
@@ -228,7 +228,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFluxQGForced(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
+            nlFlux = WVNonlinearFluxQGForced(wvt,r=ncfile.attributes('r'),nu_xy=ncfile.attributes('nu_xy'),shouldUseBeta=(ncfile.attributes('beta')>0) );
             nlFlux.MA0 = logical(ncfile.readVariables('MA0'));
             nlFlux.A0bar = ncfile.readVariables('A0bar');
             nlFlux.tau0 = ncfile.readVariables('tau0');

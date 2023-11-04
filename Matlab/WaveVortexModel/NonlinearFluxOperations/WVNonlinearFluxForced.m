@@ -33,6 +33,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 options.w_damp (1,1) double % characteristic speed used to set the damping. Try using wMax
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double
+                options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
                 options.shouldAntialias double = 1
             end
             

@@ -7,7 +7,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
     % To initialize the QGPVE,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
@@ -19,7 +19,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         RVA0 % conversion from A0 to RV
         beta
         damp
-        nu
+        nu_xy
         r
     end
 
@@ -32,15 +32,15 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
             % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
             % - Parameter r: (optional) bottom friction
-            % - Parameter nu: (optional) coefficient for damping
+            % - Parameter nu_xy: (optional) coefficient for damping
             % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'QGPVE'
-                options.nu (1,1) double
+                options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
@@ -66,12 +66,12 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % 1. Convert A0 to a velocity streamfunction (g/f)
             % 2. bi-harmonic operator
             % 3. spectral vanish viscosity
-            % 4. nu is set to create approximately Reynolds number=1.
+            % 4. nu_xy is set to create approximately Reynolds number=1.
             
-            if isfield(options,"nu")
-                self.nu = options.nu;
+            if isfield(options,"nu_xy")
+                self.nu_xy = options.nu_xy;
             else
-                self.nu = (3/2)*(wvt.x(2)-wvt.x(1))*options.u_damp/(pi^2);
+                self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
             end
             self.r = options.r;
             
@@ -100,7 +100,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 friction = 0;
             end
             Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=1);
-            self.damp = friction - self.nu*Qkl.*(-(K.^2 +L.^2)).^2;
+            self.damp = friction - self.nu_xy*Qkl.*(-(K.^2 +L.^2)).^2;
             self.damp = -(self.wvt.g/self.wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
         end
 
@@ -157,7 +157,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             end
             ncfile.addAttribute('beta',self.beta)
             ncfile.addAttribute('r',self.r)
-            ncfile.addAttribute('nu',self.nu)
+            ncfile.addAttribute('nu',self.nu_xy)
 
             attributes = containers.Map();
             attributes('units') = '1/s';
@@ -167,7 +167,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFluxQG(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu/2);
+            nlFlux = WVNonlinearFluxQG(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu_xy/2);
         end
 
         function flag = isequal(self,other)
@@ -179,7 +179,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             flag = flag & isequal(self.PVA0, other.PVA0);
             flag = flag & isequal(self.beta, other.beta);
             flag = flag & isequal(self.damp, other.damp);
-            flag = flag & isequal(self.nu,other.nu);
+            flag = flag & isequal(self.nu_xy,other.nu_xy);
             flag = flag & isequal(self.r, other.r);
         end
 
@@ -191,7 +191,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFluxQG(wvt,r=ncfile.attributes('r'),nu=ncfile.attributes('nu'),shouldUseBeta=(ncfile.attributes('beta')>0) );
+            nlFlux = WVNonlinearFluxQG(wvt,r=ncfile.attributes('r'),nu_xy=ncfile.attributes('nu_xy'),shouldUseBeta=(ncfile.attributes('beta')>0) );
         end
     end
 
