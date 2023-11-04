@@ -2,17 +2,17 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
     % 3D forced nonlinear flux for Boussinesq flow
     %
     properties
-        MA0         % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
-        MAp         % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
-        MAm         % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
+        MA0 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
+        MAp = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
+        MAm = []    % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
 
         A0bar = []  % A0 'mean' value to relax to
         Apbar = []  % Ap 'mean' value to relax to
         Ambar = []  % Am 'mean' value to relax to
 
-        tau0        % A0 relaxation time
-        tauP        % Ap relaxation time
-        tauM        % Am relaxation time
+        tau0 = 0    % A0 relaxation time
+        tauP = 0    % Ap relaxation time
+        tauM = 0    % Am relaxation time
     end
 
     methods
@@ -128,15 +128,23 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 wvt WVTransform {mustBeNonempty}
             end
             writeToFile@WVNonlinearFlux(self,ncfile,wvt);
-            ncfile.addVariable('MAp',int8(self.MAp),{'k','l','j'});
-            ncfile.addVariable('Apbar',self.Apbar,{'k','l','j'});
-            ncfile.addVariable('tauP',wvt.tauP,{});
-            ncfile.addVariable('MAm',int8(self.MAm),{'k','l','j'});
-            ncfile.addVariable('Ambar',self.Ambar,{'k','l','j'});
-            ncfile.addVariable('tauM',wvt.tauM,{});
-            ncfile.addVariable('MA0',int8(self.MA0),{'k','l','j'});
-            ncfile.addVariable('A0bar',self.A0bar,{'k','l','j'});
-            ncfile.addVariable('tau0',wvt.tau0,{});
+            self.addVariableOfType(ncfile,wvt,'MAp',self.MAp,@(v) uint8(v));
+            self.addVariableOfType(ncfile,wvt,'Apbar',self.Apbar,@(v) v);
+            ncfile.addVariable('tauP',self.tauP,{});
+            self.addVariableOfType(ncfile,wvt,'MAm',self.MAm,@(v) uint8(v));
+            self.addVariableOfType(ncfile,wvt,'Ambar',self.Ambar,@(v) v);
+            ncfile.addVariable('tauM',self.tauM,{});
+            self.addVariableOfType(ncfile,wvt,'MA0',self.MA0,@(v) uint8(v));
+            self.addVariableOfType(ncfile,wvt,'A0bar',self.A0bar,@(v) v);
+            ncfile.addVariable('tau0',self.tau0,{});
+        end
+
+        function addVariableOfType(self,ncfile,wvt,name,var,type)
+            if isempty(var)
+                ncfile.addVariable(name,type(zeros(wvt.Nk,wvt.Nl,wvt.Nj)),{'k','l','j'});
+            else
+                ncfile.addVariable(name,type(var),{'k','l','j'});
+            end
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
@@ -191,15 +199,30 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 wvt WVTransform {mustBeNonempty}
             end
             nlFlux = WVNonlinearFluxForced(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+
             nlFlux.MAp = logical(ncfile.readVariables('MAp'));
             nlFlux.Apbar = ncfile.readVariables('Apbar');
             nlFlux.tauP = ncfile.readVariables('tauP');
+            if ~any(nlFlux.MAp)
+                nlFlux.MAp = [];
+                nlFlux.Apbar = [];
+            end       
+            
             nlFlux.MAm = logical(ncfile.readVariables('MAm'));
             nlFlux.Ambar = ncfile.readVariables('Ambar');
             nlFlux.tauM = ncfile.readVariables('tauM');
+            if ~any(nlFlux.MAm)
+                nlFlux.MAm = [];
+                nlFlux.Ambar = [];
+            end
+
             nlFlux.MA0 = logical(ncfile.readVariables('MA0'));
             nlFlux.A0bar = ncfile.readVariables('A0bar');
             nlFlux.tau0 = ncfile.readVariables('tau0');
+            if ~any(nlFlux.MA0)
+                nlFlux.MA0 = [];
+                nlFlux.A0bar = [];
+            end
         end
     end
 
