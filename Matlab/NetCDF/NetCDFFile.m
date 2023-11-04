@@ -490,6 +490,8 @@ classdef NetCDFFile < handle
                 for iKey = 1:length(keyNames)
                     netcdf.putAtt(self.ncid,varID, keyNames{iKey}, properties(keyNames{iKey}));
                 end
+            else
+                properties = containers.Map();
             end
             netcdf.endDef(self.ncid);
 
@@ -517,8 +519,8 @@ classdef NetCDFFile < handle
                 netcdf.putVar(self.ncid, complexVariable.realVar.varID, real(data));
                 netcdf.putVar(self.ncid, complexVariable.imagVar.varID, imag(data));
                 if isvector(data)
-                    complexVariable.realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
-                    complexVariable.imagVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
+                    complexVariable.realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
+                    complexVariable.imagVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
                     netcdf.reDef(self.ncid);
                     netcdf.putAtt(self.ncid,complexVariable.realVar.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
                     netcdf.putAtt(self.ncid,complexVariable.imagVar.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
@@ -533,7 +535,7 @@ classdef NetCDFFile < handle
                 end
                 netcdf.putVar(self.ncid, variable.varID, data);
                 if isvector(data)
-                    variable.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
+                    variable.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
                     netcdf.reDef(self.ncid);
                     netcdf.putAtt(self.ncid,variable.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
                     netcdf.endDef(self.ncid);
