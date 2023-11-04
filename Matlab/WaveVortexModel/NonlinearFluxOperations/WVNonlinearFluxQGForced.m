@@ -195,7 +195,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             writeToFile@WVNonlinearFluxQG(self,ncfile,wvt);
             ncfile.addVariable('MA0',int8(self.MA0),{'k','l','j'});
             ncfile.addVariable('A0bar',self.A0bar,{'k','l','j'});
-            ncfile.addVariable('tau0',wvt.tau0,{});
+            ncfile.addVariable('tau0',self.tau0,{});
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
