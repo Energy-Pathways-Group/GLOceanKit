@@ -25,9 +25,9 @@ NjX2 = Nklj(3);
 varX2 = zeros(Nklj);
 
 if NkX2>=Nk && NlX2>=Nl && NjX2>=Nj
-    kIndices = cat(2,1:(self.Nk/2),(NkX2-self.Nk/2 + 1):NkX2);
-    lIndices = cat(2,1:(self.Nl/2),(NlX2-self.Nl/2 + 1):NlX2);
-    varX2.Ap(kIndices,lIndices,1:self.Nj) = var;
+    kIndices = cat(2,1:(Nk/2),(NkX2-Nk/2 + 1):NkX2);
+    lIndices = cat(2,1:(Nl/2),(NlX2-Nl/2 + 1):NlX2);
+    varX2(kIndices,lIndices,1:Nj) = var;
 else
     error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
 end
