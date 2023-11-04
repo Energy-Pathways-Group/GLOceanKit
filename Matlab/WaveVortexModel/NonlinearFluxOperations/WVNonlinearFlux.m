@@ -110,6 +110,10 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             self.damp = Qkl.*self.damp;
         end
 
+        function dampingTimeScale = dampingTimeScale(self)
+            dampingTimeScale = 1/max(abs(self.damp(:)));
+        end
+
         function varargout = compute(self,wvt,varargin)
             phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
             Apt = wvt.Ap .* phase;

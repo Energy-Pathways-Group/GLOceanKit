@@ -69,7 +69,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             arguments
                 self WVNonlinearFluxQGForced {mustBeNonempty}
                 A0bar (:,:,:) double {mustBeNonempty}
-                options.MA0 (:,:,:) logical = abs(A0bar) > 1
+                options.MA0 (:,:,:) logical = abs(A0bar) > 0
                 options.tau0 (1,1) double = 0
             end
 
