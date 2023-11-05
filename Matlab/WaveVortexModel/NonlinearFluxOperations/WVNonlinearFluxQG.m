@@ -157,7 +157,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             end
             ncfile.addAttribute('beta',self.beta)
             ncfile.addAttribute('r',self.r)
-            ncfile.addAttribute('nu',self.nu_xy)
+            ncfile.addAttribute('nu_xy',self.nu_xy)
 
             attributes = containers.Map();
             attributes('units') = '1/s';

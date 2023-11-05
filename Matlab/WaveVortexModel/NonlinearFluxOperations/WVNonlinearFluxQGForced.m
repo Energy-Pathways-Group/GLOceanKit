@@ -199,7 +199,20 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
         end
 
         function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
-            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/2);
+            ratio = wvtX2.Nk/self.wvt.Nk;
+            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
+            if ~isempty(self.MA0)
+                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            if ~isempty(self.A0bar)
+                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+            end
+            nlFlux.tau0 = self.tau0;
+        end
+
+        function nlFlux = nonlinearFluxWithResolutionForTransform(self,wvtX2)
+            ratio = wvtX2.Nk/self.wvt.Nk;
+            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
             if ~isempty(self.MA0)
                 nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
             end

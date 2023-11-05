@@ -40,7 +40,7 @@ classdef WVNonlinearFluxWindForced < WVNonlinearFluxForced
             self.maxT = max(wind.t);
             self.slabDepth = abs(wvt.z(end-1));
 
-            fprintf('WVNonlinearFluxWindForced: effective slab depth: %.1f m, decay time: %.1f days',self.slabDepth,self.slabDampTime/86400);
+            fprintf('WVNonlinearFluxWindForced: effective slab depth: %.1f m, decay time: %.1f days\n',self.slabDepth,self.slabDampTime/86400);
         end
 
         function varargout = spatialFlux(self,wvt,varargin)
