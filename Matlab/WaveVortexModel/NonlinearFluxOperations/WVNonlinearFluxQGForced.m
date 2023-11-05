@@ -107,8 +107,8 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
 
             magicNumber = 0.0225;
             if isfield(options,"r")
-                r = options.r;
-                k_r = r/(magicNumber*options.u_rms);
+                self.r = options.r;
+                k_r = self.r/(magicNumber*options.u_rms);
             else
                 r = magicNumber*sbRatio*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
                 fprintf('1/r is %.1f days, switching to %.1f days\n',1/(self.r*86400),1/(r*86400));
@@ -119,8 +119,9 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             j_f = options.j_f;
             wvt = self.wvt;
 
-            smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(r),1,'first');
-            fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
+            smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(self.r),1,'first');
+            fprintf('(k_r=%.2f dk, k_f=%d dk, k_nu=%d dk.\n',k_r/(wvt.k(2)-wvt.k(1)),round(k_f/(wvt.k(2)-wvt.k(1))),smallDampIndex-1);
+            % fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
 
             
             deltaK = wvt.kRadial(2)-wvt.kRadial(1);

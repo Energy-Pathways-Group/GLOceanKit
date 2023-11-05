@@ -24,13 +24,16 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         wvt
         shouldAntialias = 0
         AA
-        nu_xy
-        nu_z
+        nu_xy = 0
+        nu_z = 0
         r
         damp
         dLnN2 = 0
         beta
         betaA0
+    end
+    properties (Dependent)
+        uv_damp
     end
 
     methods
@@ -124,6 +127,35 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
 
             Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
+            self.damp = Qkl.*self.damp;
+        end
+
+        function set.nu_xy(self,value)
+            self.nu_xy = value;
+            self.buildDampingOperator();
+        end
+
+        function set.uv_damp(self,uv_damp)
+            if self.shouldAntialias == 1
+                self.nu_xy = (3/2)*(self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
+            else
+                self.nu_xy = (self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
+            end
+        end
+
+        function val = get.uv_damp(self)
+            if self.shouldAntialias == 1
+                val = self.nu_xy*(pi^2)*(2/3)/(self.wvt.x(2)-self.wvt.x(1));
+            else
+                val = self.nu_xy*(pi^2)/(self.wvt.x(2)-self.wvt.x(1));
+            end
+        end
+
+        function buildDampingOperator(self)
+            [K,L,J] = self.wvt.kljGrid;
+            M = J*pi/self.wvt.Lz;
+            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
+            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
             self.damp = Qkl.*self.damp;
         end
 

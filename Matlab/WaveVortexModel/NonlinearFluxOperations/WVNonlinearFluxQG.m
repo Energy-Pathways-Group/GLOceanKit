@@ -23,6 +23,10 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         r
     end
 
+    properties (Dependent)
+        uv_damp
+    end
+
     methods
         function self = WVNonlinearFluxQG(wvt,options)
             % initialize 3D quasigeostrophic potential vorticity flux
@@ -44,9 +48,9 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
-            fluxVar(2) = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            fluxVar(2) = WVVariableAnnotation('u_g',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
             fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
-            fluxVar(3) = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+            fluxVar(3) = WVVariableAnnotation('v_g',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
             fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
@@ -71,7 +75,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             if isfield(options,"nu_xy")
                 self.nu_xy = options.nu_xy;
             else
-                self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
+                self.uv_damp = options.uv_damp;
             end
             self.r = options.r;
             
@@ -84,16 +88,29 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
         function set.r(self,value)
             self.r = value;
-            self.buildDampingOperator(value);
+            self.buildDampingOperator();
         end
 
-        function buildDampingOperator(self,r)
+        function set.nu_xy(self,value)
+            self.nu_xy = value;
+            self.buildDampingOperator();
+        end
+
+        function set.uv_damp(self,uv_damp)
+            self.nu_xy = (3/2)*(self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
+        end
+
+        function val = get.uv_damp(self)
+            val = self.nu_xy*(pi^2)*(2/3)/(self.wvt.x(2)-self.wvt.x(1));
+        end
+
+        function buildDampingOperator(self)
             [K,L] = self.wvt.kljGrid;
             if self.wvt.isBarotropic
                 % For a single mode, the bottom friction operator is
                 % linear, and thus we can build it into the damping
                 % operator.
-                friction = -r*(K.^2 +L.^2);
+                friction = -self.r*(K.^2 +L.^2);
             else
                 % In general, bottom friction is nonlinear, so we cannot
                 % compute it yet.

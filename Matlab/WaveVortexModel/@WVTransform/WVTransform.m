@@ -299,7 +299,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             for i=1:length(variableAnnotation)
                 remove(self.variableAnnotationNameMap,variableAnnotation(i).name);
-                self.variableAnnotationNameMap(variableAnnotation(i).name) = variableAnnotation(i);
                 if isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
                     remove(self.timeDependentVariablesNameMap,variableAnnotation(i).name);
                 end
