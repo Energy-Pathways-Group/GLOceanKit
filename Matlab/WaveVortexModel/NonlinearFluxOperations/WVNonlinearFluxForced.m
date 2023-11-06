@@ -63,6 +63,13 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 options.tauP (1,1) double = 0
                 options.tauM (1,1) double = 0
             end
+            dampedIndicesAp = options.MAp(self.wvt.Kh > self.k_damp);
+            dampedIndicesAm = options.MAm(self.wvt.Kh > self.k_damp);
+            warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesAp(:))+sum(dampedIndicesAm(:)));
+            Apbar(self.wvt.Kh > self.k_damp) = 0;
+            options.MAp(self.wvt.Kh > self.k_damp) = 0;
+            Ambar(self.wvt.Kh > self.k_damp) = 0;
+            options.MAm(self.wvt.Kh > self.k_damp) = 0;
 
             % multiply by the anti-alias filter so we don't force in the
             % aliased region.
@@ -73,6 +80,8 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             self.Ambar = self.AA .* Ambar;
             self.MAm = options.MAm;
             self.tauM = options.tauM;
+
+            fprintf('You are forcing at %d wave modes.\n',sum(options.MAp(:))+sum(options.MAm(:)));
         end
 
         function setGeostrophicForcingCoefficients(self,A0bar,options)

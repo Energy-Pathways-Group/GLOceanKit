@@ -31,6 +31,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         dLnN2 = 0
         beta
         betaA0
+        k_damp % wavenumber at which the first small scale damping starts.
     end
     properties (Dependent)
         uv_damp
@@ -155,7 +156,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
             self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
+            [Qkl,~,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
             self.damp = Qkl.*self.damp;
         end
 

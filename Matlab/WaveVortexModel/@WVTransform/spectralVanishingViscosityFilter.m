@@ -1,4 +1,4 @@
-function [Qkl,Qj] = spectralVanishingViscosityFilter(self,options)
+function [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options)
 arguments
     self WVTransform {mustBeNonempty}
     options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1

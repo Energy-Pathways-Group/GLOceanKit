@@ -1195,7 +1195,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         AntiAliasMask= maskForAliasedModes(self,options);
         NyquistMask = maskForNyquistModes(self);
 
-        [Qkl,Qj] = spectralVanishingViscosityFilter(self,options);
+        [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options);
         
         A = generateHermitianRandomMatrix( self, options );
 
