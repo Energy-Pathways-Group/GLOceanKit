@@ -81,7 +81,7 @@ model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
-model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1,shouldUseClassicNetCDF=1);
 model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
 model.integrateToTime(100*86400);
 

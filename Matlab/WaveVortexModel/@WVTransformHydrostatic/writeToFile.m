@@ -17,9 +17,10 @@ end
 arguments
     options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
     options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1
+    options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 0 
 end
 variables = union(variables,{'rhobar','N2','dLnN2','PFinv','QGinv','PF','QG','P','Q','h'});
-[ncfile,matFilePath] = writeToFile@WVTransform(wvt,path,variables{:},shouldAddDefaultVariables=options.shouldAddDefaultVariables,shouldOverwriteExisting=options.shouldOverwriteExisting);
+[ncfile,matFilePath] = writeToFile@WVTransform(wvt,path,variables{:},shouldAddDefaultVariables=options.shouldAddDefaultVariables,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
 rhoFunction = wvt.rhoFunction;
 N2Function = wvt.N2Function;
