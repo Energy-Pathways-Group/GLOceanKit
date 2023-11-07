@@ -364,7 +364,11 @@ classdef NetCDFFile < handle
                 n = length(data);
             end
             
-            ncType = NetCDFFile.netCDFTypeForData(data);
+            if strcmp(self.format,'FORMAT_NETCDF4')
+                ncType = NetCDFFile.netCDFTypeForData(data);
+            else
+                ncType = NetCDFFile.netCDF3TypeForData(data);
+            end
             netcdf.reDef(self.ncid);
             dimID = netcdf.defDim(self.ncid, name, n);
             varID = netcdf.defVar(self.ncid, name, ncType, dimID);
@@ -670,7 +674,11 @@ classdef NetCDFFile < handle
             % - Parameter properties: ncType
             % - Returns variable: a NetCDFVariable object
             if nargin < 6 || isempty(ncType)
-                ncType = NetCDFFile.netCDFTypeForData(data);
+                if strcmp(self.format,'FORMAT_NETCDF4')
+                    ncType = NetCDFFile.netCDFTypeForData(data);
+                else
+                    ncType = NetCDFFile.netCDF3TypeForData(data);
+                end
             end
             if nargin < 5
                 properties = [];
@@ -774,6 +782,16 @@ classdef NetCDFFile < handle
         function val = netCDFTypeForData(data)
             keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
             values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            map = containers.Map(keys, values);
+            if ~isKey(map,class(data))
+                error('unknown data type');
+            end
+            val = map(class(data));
+        end
+
+        function val = netCDF3TypeForData(data)
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_INT64','NC_INT','NC_INT','NC_SHORT','NC_SHORT','NC_BYTE','NC_BYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
             map = containers.Map(keys, values);
             if ~isKey(map,class(data))
                 error('unknown data type');
