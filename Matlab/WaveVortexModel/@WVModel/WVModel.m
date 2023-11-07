@@ -629,13 +629,14 @@ classdef WVModel < handle
                 netcdfFile char {mustBeNonempty}
                 options.Nt (1,1) double {mustBePositive} = Inf
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+                options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 0 
             end
 
             if self.didSetupIntegrator == 1 && isempty(self.outputInterval)
                 error('You creating a NetCDF output file, but when when you called -setupIntegrator you did set an outputInterval.');
             end
 
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
             % Now add a time dimension
             varAnnotation = self.wvt.variableAnnotationWithName('t');
