@@ -24,7 +24,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     arguments
         options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
         options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1 
-        options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 0 
+        options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
     end
     % Will not add 't' by default to allow for alternative definitions. Do
     % include 't' in the option input arguments if you want it written.
