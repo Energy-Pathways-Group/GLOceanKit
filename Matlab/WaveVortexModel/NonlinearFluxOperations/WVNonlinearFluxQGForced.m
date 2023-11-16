@@ -8,14 +8,14 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
     % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
     % $$
     %
-    % To initialize the QGPVE,
+    % To initialize the WVNonlinearFluxQGForced,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQGForced(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
-    % - Declaration: QGPVE < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFluxQGForced < [WVNonlinearFluxQG](/classes/wvnonlinearfluxqg/)
     properties
         MA0         % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
         A0bar = []  % A0 'mean' value to relax to

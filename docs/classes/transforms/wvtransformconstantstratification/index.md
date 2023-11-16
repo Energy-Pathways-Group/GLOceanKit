@@ -88,6 +88,7 @@ Wave-vortex transformation that assumes constant stratification
   + [`transformToSpatialDomainWithGAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_mm.html) 
   + [`transformToSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_fft.html) 
   + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) All coefficients are subsumbed into the transform
+  + [`uMaxA0`](/classes/transforms/wvtransformconstantstratification/umaxa0.html) 
   + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformconstantstratification/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
 + Internal
   + [`defaultPropertyAnnotations`](/classes/transforms/wvtransformconstantstratification/defaultpropertyannotations.html) return array of WVPropertyAnnotation initialized by default

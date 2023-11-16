@@ -1,6 +1,18 @@
 classdef WVNonlinearFluxForced < WVNonlinearFlux
     % 3D forced nonlinear flux for Boussinesq flow
     %
+    % $$
+    % \frac{\partial}{\partial t} A^{klj} = \underbrace{M_{A}^{klj} \left(\bar{A}^{klj}  - A^{klj} \right)/ \tau}_{F_\textrm{force}} + F^{klj} + F_\textrm{damp}^{klj}
+    % $$
+    %
+    % This is most often used when initializing a model, e.g.,
+    %
+    % ```matlab
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxForced(wvt,uv_damp=wvt.uMax));
+    % ```
+    %
+    % - Topic: Initializing
+    % - Declaration: WVNonlinearFluxForced < [WVNonlinearFlux](/classes/wvnonlinearflux/)
     properties
         MA0 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
         MAp = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes

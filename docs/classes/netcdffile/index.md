@@ -99,6 +99,7 @@ A class for reading and writing to NetCDF files
   + [`close`](/classes/netcdffile/close.html) - Topic: Accessing file properties
   + [`createNewFile`](/classes/netcdffile/createnewfile.html) 
   + [`dump`](/classes/netcdffile/dump.html) 
+  + [`netCDF3TypeForData`](/classes/netcdffile/netcdf3typefordata.html) 
   + [`netCDFTypeForData`](/classes/netcdffile/netcdftypefordata.html) 
   + [`open`](/classes/netcdffile/open.html) - Topic: Accessing file properties
   + [`sync`](/classes/netcdffile/sync.html) - Topic: Accessing file properties

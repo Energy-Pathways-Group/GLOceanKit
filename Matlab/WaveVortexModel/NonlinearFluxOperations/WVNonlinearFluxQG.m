@@ -4,14 +4,14 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
     % The 3D quasigeostrophic potential vorticity flux will only use and
     % modify the A0 coefficients.
     %
-    % To initialize the QGPVE,
+    % To initialize the WVNonlinearFluxQG,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
-    % - Declaration: QGPVE < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFluxQG < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         wvt
         PVA0 % conversion from A0 to PV

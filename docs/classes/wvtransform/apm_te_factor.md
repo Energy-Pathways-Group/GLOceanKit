@@ -9,7 +9,7 @@ mathjax: true
 
 #  Apm_TE_factor
 
-multiplicative factor that multiplies $$|A_\pm|^2$$ to compute total energy.
+multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 
 
 ---

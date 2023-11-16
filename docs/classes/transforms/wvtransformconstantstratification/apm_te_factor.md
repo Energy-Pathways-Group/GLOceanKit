@@ -15,8 +15,5 @@ These convert the coefficients to their depth integrated energies
 ---
 
 ## Discussion
-Apm_HKE_factor
-          Apm_VKE_factor
-          Apm_PE_factor
 
 Help for WVTransformConstantStratification/Apm_TE_factor is inherited from superclass WVTransform

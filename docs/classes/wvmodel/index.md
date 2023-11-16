@@ -30,7 +30,7 @@ The WVModel is responsible for time-stepping (integrating) the ocean state forwa
   By default the model only takes a linear time-step. To specify a
   nonlinear flux on initialization, for example,
  ```matlab
-  model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.uMax));
+  model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,u_damp=wvt.uMax));
  ```
  
   You can also initialize a model from existing output,

@@ -58,7 +58,7 @@ wvt.initWithFile(ncfile,iTime=100);
 Time series model output is created with
 
 ```matlab
-model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1));
 model.setupIntegrator(timeStepConstraint="min",outputInterval=wvt.inertialPeriod/10);
 model.createNetCDFFileForModelOutput("test.nc",shouldOverwriteExisting=0);
 model.integrateToTime(10*wvt.inertialPeriod);

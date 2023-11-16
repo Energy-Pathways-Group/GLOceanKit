@@ -77,6 +77,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithg.html) 
   + [`transformToSpatialDomainWithGAllDerivatives`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithgallderivatives.html) 
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
+  + [`uMaxA0`](/classes/transforms/wvtransformhydrostatic/umaxa0.html) uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
   + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformhydrostatic/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`zInterp`](/classes/transforms/wvtransformhydrostatic/zinterp.html) 
 + Operations
@@ -84,8 +85,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F$$
     + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
     + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
-+ Nonlinear flux and energy transfers
-  + [`nonlinearFlux`](/classes/transforms/wvtransformhydrostatic/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
 + Initialization (Static)
   + [`waveVortexTransformFromFile`](/classes/transforms/wvtransformhydrostatic/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
 + Write to file

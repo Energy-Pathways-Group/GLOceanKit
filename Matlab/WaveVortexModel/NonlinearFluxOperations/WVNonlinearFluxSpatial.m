@@ -7,7 +7,7 @@ classdef WVNonlinearFluxSpatial < WVNonlinearFluxOperation
     % implementation is *simple* and follows directly from the equations of
     % motion, but it is not the fastest implementation. To compute
     % nonlinear fluxes appropriate for numerical modeling, use the
-    % [WVNonlinearFluxUnforced](/classes/wvnonlinearfluxunforced/) class.
+    % [WVNonlinearFlux](/classes/wvnonlinearflux/) class.
     %
     % - Topic: Initializing
     % - Declaration: WVNonlinearFluxSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)

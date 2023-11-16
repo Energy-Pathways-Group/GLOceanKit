@@ -62,6 +62,7 @@ A class for disentangling waves and vortices in a single layer
   + [`transformToSpatialDomainWithFAllDerivatives`](/classes/transforms/wvtransformsinglemode/transformtospatialdomainwithfallderivatives.html) 
   + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformsinglemode/transformtospatialdomainwithg.html) 
   + [`transformToSpatialDomainWithGAllDerivatives`](/classes/transforms/wvtransformsinglemode/transformtospatialdomainwithgallderivatives.html) 
+  + [`uMaxA0`](/classes/transforms/wvtransformsinglemode/umaxa0.html) 
   + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformsinglemode/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
 + Write to file
   + [`writeToFile`](/classes/transforms/wvtransformsinglemode/writetofile.html) Output the `WVTransformSingleMode` instance to file.
