@@ -1,9 +1,20 @@
 classdef WVNonlinearFluxForced < WVNonlinearFlux
     % 3D forced nonlinear flux for Boussinesq flow
     %
+    % The unforced model basically looks likes like this,
+    %
     % $$
-    % \frac{\partial}{\partial t} A^{klj} = \underbrace{M_{A}^{klj} \left(\bar{A}^{klj}  - A^{klj} \right)/ \tau}_{F_\textrm{force}} + F^{klj} + F_\textrm{damp}^{klj}
+    % \frac{\partial}{\partial t} A^{klj} = F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj}
     % $$
+    %
+    % for each of the three components. The forcing adds a new term,
+    %
+    % $$
+    % \frac{\partial}{\partial t} A^{klj} = \underbrace{M_{A}^{klj} \left(\bar{A}^{klj}  - A^{klj} \right)/ \tau}_{F_\textrm{force}} + F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj}
+    % $$
+    %
+    % which forces those select modes to relax to their $$\bar{A}^{klj}$$
+    % state with time scale $$\tau$$.
     %
     % This is most often used when initializing a model, e.g.,
     %
