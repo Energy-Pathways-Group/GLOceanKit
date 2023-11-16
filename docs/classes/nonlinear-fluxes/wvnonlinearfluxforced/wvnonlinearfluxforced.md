@@ -9,14 +9,14 @@ mathjax: true
 
 #  WVNonlinearFluxForced
 
-initialize the WVNonlinearFlux nonlinear flux
+initialize WVNonlinearFluxForced
 
 
 ---
 
 ## Declaration
 ```matlab
- nlFlux = WVNonlinearFlux(wvt,options)
+ nlFlux = WVNonlinearFluxForced(wvt,options)
 ```
 ## Parameters
 + `wvt`  a WVTransform instance
@@ -31,4 +31,4 @@ initialize the WVNonlinearFlux nonlinear flux
 
 ## Discussion
 
-                
+                  

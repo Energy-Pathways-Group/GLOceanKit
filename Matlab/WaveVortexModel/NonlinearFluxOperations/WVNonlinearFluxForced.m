@@ -14,7 +14,13 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
     % $$
     %
     % which forces those select modes to relax to their $$\bar{A}^{klj}$$
-    % state with time scale $$\tau$$.
+    % state with time scale $$\tau$$.  If the time scale is set to 0, then the mean
+    % amplitudes remain fixed for all time. In that limit, the
+    % equations can be written as,
+    %
+    % $$
+    % \frac{\partial}{\partial t} A^{klj} = \neg M_{A}^{klj} \left( F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj} \right)
+    % $$
     %
     % This is most often used when initializing a model, e.g.,
     %
@@ -40,9 +46,10 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
 
     methods
         function self = WVNonlinearFluxForced(wvt,options)
-            % initialize the WVNonlinearFlux nonlinear flux
+            % initialize WVNonlinearFluxForced
             %
-            % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
+            % - Topic: Initialization
+            % - Declaration: nlFlux = WVNonlinearFluxForced(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax.
             % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
@@ -65,18 +72,32 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
         end
 
         function setWaveForcingCoefficients(self,Apbar,Ambar,options)
-            % set forcing values for the geostrophic part of the flow
+            % set forcing values for the wave part of the flow
+            %
+            % Forcing takes the following form,
             %
             % $$
-            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
+            % \frac{\partial}{\partial t} A_\pm^{klj} = \underbrace{M_{A_\pm}^{klj} \left(\bar{A}_\pm^{klj}  - A_\pm^{klj} \right)/ \tau_\pm}_{F_\textrm{force}} + F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj}
             % $$
             %
-            % - Topic: Computation
-            % - Declaration: varargout = compute(wvt,varargin)
-            % - Parameter A0bar: A0 'mean' value to relax to
-            % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
-            % - Parameter tau0: (optional) relaxation time
-            % - Returns varargout: cell array of returned variables
+            % where $$M_{A_\pm}^{klj}$$ are masks (1s and 0s),
+            % $$\bar{A}_\pm^{klj}$$ are mean amplitudes, and $$\tau_\pm$$
+            % are time scales. If the time scale is set to 0, then the mean
+            % amplitudes remain fixed for all time. In that limit, the
+            % equations can be written as,
+            %
+            % $$
+            % \frac{\partial}{\partial t} A_\pm^{klj} = \neg M_{A_\pm}^{klj} \left( F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj} \right)
+            % $$
+            %
+            % - Topic: Set forcing
+            % - Declaration:  setWaveForcingCoefficients(Apbar,Ambar,options)
+            % - Parameter Apbar: Ap 'mean' value to relax to
+            % - Parameter Ambar: Am 'mean' value to relax to
+            % - Parameter MAp: (optional) forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes. Default is MAp = abs(Apbar) > 0
+            % - Parameter MAm: (optional) forcing mask, Am. 1s at the forced modes, 0s at the unforced modes. Default is MAm = abs(Apbar) > 0
+            % - Parameter tauP: (optional) relaxation time (default 0)
+            % - Parameter tauM: (optional) relaxation time (default 0)
             arguments
                 self WVNonlinearFluxForced {mustBeNonempty}
                 Apbar (:,:,:) double {mustBeNonempty}
@@ -110,16 +131,27 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
         function setGeostrophicForcingCoefficients(self,A0bar,options)
             % set forcing values for the geostrophic part of the flow
             %
+            % Forcing takes the following form,
+            %
             % $$
-            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
+            % \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj}
             % $$
             %
-            % - Topic: Computation
-            % - Declaration: varargout = compute(wvt,varargin)
+            % where $$M_{A_0}^{klj}$$ are masks (1s and 0s),
+            % $$\bar{A}_0^{klj}$$ are mean amplitudes, and $$\tau_0$$
+            % are time scales. If the time scale is set to 0, then the mean
+            % amplitudes remain fixed for all time. In that limit, the
+            % equations can be written as,
+            %
+            % $$
+            % \frac{\partial}{\partial t} A_0^{klj} = \neg M_{A_0}^{klj} \left( F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj} \right)
+            % $$
+            %
+            % - Topic: Set forcing
+            % - Declaration: setGeostrophicForcingCoefficients(A0bar,options)
             % - Parameter A0bar: A0 'mean' value to relax to
             % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
             % - Parameter tau0: (optional) relaxation time
-            % - Returns varargout: cell array of returned variables
             arguments
                 self WVNonlinearFluxForced {mustBeNonempty}
                 A0bar (:,:,:) double {mustBeNonempty}

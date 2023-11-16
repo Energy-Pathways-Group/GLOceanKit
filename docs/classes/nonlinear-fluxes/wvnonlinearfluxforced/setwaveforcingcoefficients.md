@@ -9,27 +9,39 @@ mathjax: true
 
 #  setWaveForcingCoefficients
 
-set forcing values for the geostrophic part of the flow
+set forcing values for the wave part of the flow
 
 
 ---
 
 ## Declaration
 ```matlab
- varargout = compute(wvt,varargin)
+  setWaveForcingCoefficients(Apbar,Ambar,options)
 ```
 ## Parameters
-+ `A0bar`  A0 'mean' value to relax to
-+ `MA0`  (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
-+ `tau0`  (optional) relaxation time
-
-## Returns
-+ `varargout`  cell array of returned variables
++ `Apbar`  Ap 'mean' value to relax to
++ `Ambar`  Am 'mean' value to relax to
++ `MAp`  (optional) forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes. Default is MAp = abs(Apbar) > 0
++ `MAm`  (optional) forcing mask, Am. 1s at the forced modes, 0s at the unforced modes. Default is MAm = abs(Apbar) > 0
++ `tauP`  (optional) relaxation time (default 0)
++ `tauM`  (optional) relaxation time (default 0)
 
 ## Discussion
 
+  Forcing takes the following form,
+ 
   $$
-  \frac{\partial}{\partial t} A_0^{klj} = \underbrace{M_{A_0}^{klj} \left(\bar{A}_0^{klj}  - A_0^{klj} \right)/ \tau_0}_{F_\textrm{force}} + F_0^{klj} + F_\textrm{damp}^{klj}
+  \frac{\partial}{\partial t} A_\pm^{klj} = \underbrace{M_{A_\pm}^{klj} \left(\bar{A}_\pm^{klj}  - A_\pm^{klj} \right)/ \tau_\pm}_{F_\textrm{force}} + F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj}
   $$
  
-            
+  where $$M_{A_\pm}^{klj}$$ are masks (1s and 0s),
+  $$\bar{A}_\pm^{klj}$$ are mean amplitudes, and $$\tau_\pm$$
+  are time scales. If the time scale is set to 0, then the mean
+  amplitudes remain fixed for all time. In that limit, the
+  equations can be written as,
+ 
+  $$
+  \frac{\partial}{\partial t} A_\pm^{klj} = \neg M_{A_\pm}^{klj} \left( F_\textrm{inertial}^{klj} + F_\textrm{damp}^{klj} \right)
+  $$
+ 
+                
