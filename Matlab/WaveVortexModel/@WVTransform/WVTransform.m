@@ -87,6 +87,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         WAp, WAm
         NAp, NAm, NA0
 
+        % These convert the coefficients to their depth integrated energies
         Apm_TE_factor % [Nk Nl Nj]
         A0_HKE_factor % [Nk Nl Nj]
         A0_PE_factor % [Nk Nl Nj]
@@ -109,14 +110,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         Nz
     end
 
-    properties (Access=private)
+    properties %(Access=private)
         halfK = 0;
 
-        operationNameMap
         variableAnnotationNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
-        timeDependentVariables
+
+        operationNameMap
+        operationVariableNameMap
+        timeDependentVariablesNameMap
         variableCache
     end
 
@@ -135,6 +138,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % Needed to add and remove internal waves from the model
         ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
+        ratio = uMaxA0(self,k0, l0, j0)
     end
     
     properties (Constant)
@@ -146,27 +150,21 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % Typically the request will be directly for a WVOperation,
             % but sometimes it will be for a variable that can only be
             % produced as a bi-product of some operation.
-            if isKey(self.operationNameMap,indexOp(1).Name)
-                modelOp = self.operationNameMap(indexOp(1).Name);
-
-                varargout=cell(1,modelOp.nVarOut);
-                if length(indexOp) == 1
-                    [varargout{:}] = self.performOperationWithName(indexOp(1).Name);
-                else
-                    error('No indices allowed!!!')
-%                     [varargout{:}] = self.performOperation(indexOp(1).Name,indexOp(2).Indices{:});
-                end
-            else
-                % User requested a variable that we only have an indirect
-                % way of computing.
+            if isKey(self.operationVariableNameMap,indexOp(1).Name)
                 varargout{1} = self.stateVariables(indexOp(1).Name);
+                if length(indexOp) > 1
+                    varargout{1} = varargout{1}.(indexOp(2:end));
+                end
+            elseif isKey(self.operationNameMap,indexOp(1).Name)
+                [varargout{:}] = self.performOperation(self.operationNameMap(indexOp(1).Name));
             end
+            
         end
 
         function self = dotAssign(self,indexOp,varargin)
             error("The WVVariableAnnotation %s is read-only.",indexOp(1).Name)
         end
-        
+
         function n = dotListLength(self,indexOp,indexContext)
             if isKey(self.operationNameMap,indexOp(1).Name)
                 modelOp = self.operationNameMap(indexOp(1).Name);
@@ -216,12 +214,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.dimensionAnnotationNameMap = containers.Map();
             self.propertyAnnotationNameMap = containers.Map();
-            self.variableAnnotationNameMap = containers.Map();
+            self.variableAnnotationNameMap = containers.Map(); % contains names of *all* variables
+
+            self.operationVariableNameMap = containers.Map(); % contains names of variables with associated operations
             self.operationNameMap = containers.Map();
-            self.timeDependentVariables = {};
+            self.timeDependentVariablesNameMap = containers.Map();
 
             self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
+            self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
         end
 
@@ -250,7 +251,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function addPropertyAnnotations(self,propertyAnnotation)
-            % add a addProperty
+            % add a property annotation
             %
             % - Topic: Utility function — Metadata
             arguments
@@ -271,6 +272,38 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 name char {mustBeNonempty}
             end
             val = self.propertyAnnotationNameMap(name);
+        end
+
+        function addVariableAnnotations(self,variableAnnotation)
+            % add a variable annotation
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
+            end
+            for i=1:length(variableAnnotation)
+                self.variableAnnotationNameMap(variableAnnotation(i).name) = variableAnnotation(i);
+                if variableAnnotation(i).isVariableWithLinearTimeStep == 1 && ~isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
+                    self.timeDependentVariablesNameMap(variableAnnotation(i).name) = variableAnnotation(i);
+                end
+            end
+        end
+
+        function removeVariableAnnotations(self,variableAnnotation)
+            % add a variable annotation
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
+            end
+            for i=1:length(variableAnnotation)
+                remove(self.variableAnnotationNameMap,variableAnnotation(i).name);
+                if isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
+                    remove(self.timeDependentVariablesNameMap,variableAnnotation(i).name);
+                end
+            end
         end
 
         function val = variableAnnotationWithName(self,name)
@@ -297,6 +330,22 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function addOperation(self,transformOperation,options)
             % add a WVOperation
             %
+            % Several things happen when adding an operation.
+            % 1. We check that dimensions exist for all output variables
+            % produced by this operation.
+            % 2. We see if there are any existing output variables with the
+            % same name.
+            %   2a. We remove the operation that produced the existing
+            %   variables, if it exists.
+            % 3. We map each new variable to this operation variableAnnotationNameMap
+            % 4. Map each operation name to the operation
+            %
+            % In our revision,
+            %   - The variableAnnotationNameMap will map the name to the
+            %   variable annotation
+            %   - The operationVariableNameMap will map the name to the
+            %   operation
+            % 
             % - Topic: Utility function — Metadata
             arguments
                 self WVTransform {mustBeNonempty}
@@ -337,11 +386,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 end
 
                 % Now go ahead and actually add the operation and its variables
+                self.addVariableAnnotations(transformOperation(iOp).outputVariables);
                 for iVar=1:length(transformOperation(iOp).outputVariables)
-                    self.variableAnnotationNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
-                    if transformOperation(iOp).outputVariables(iVar).isVariableWithLinearTimeStep == 1 && ~any(ismember(self.timeDependentVariables,transformOperation(iOp).outputVariables(iVar).name))
-                        self.timeDependentVariables{end+1} = transformOperation(iOp).outputVariables(iVar).name;
-                    end
+                    self.operationVariableNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
                 end
                 self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
 
@@ -356,8 +403,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 self WVTransform {mustBeNonempty}
                 transformOperation (1,1) WVOperation {mustBeNonempty}
             end
+            self.removeVariableAnnotations(transformOperation.outputVariables);
             for iVar=1:transformOperation.nVarOut
-                remove(self.variableAnnotationNameMap,transformOperation.outputVariables(iVar).name);
+                remove(self.operationVariableNameMap,transformOperation.outputVariables(iVar).name);
             end
             remove(self.operationNameMap,transformOperation.name);
             self.clearVariableCache();
@@ -464,7 +512,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % clear the internal cache of variables that claim to be time dependent
             %
             % - Topic: Internal
-            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariables));
+            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys));
         end
         function varargout = fetchFromVariableCache(self,varargin)
             % retrieve a set of variables from the internal cache
@@ -849,7 +897,25 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns Fp: flux into the Ap coefficients
             % - Returns Fm: flux into the Am coefficients
             % - Returns F0: flux into the A0 coefficients
-            [Fp,Fm,F0] = self.performOperation(self.nonlinearFluxOperation);
+            F = cell(self.nonlinearFluxOperation.nVarOut,1);
+            [F{:}] = self.performOperation(self.nonlinearFluxOperation);
+            
+            n = 0;
+            if self.nonlinearFluxOperation.doesFluxAp == 1
+                n=n+1;Fp = F{n};
+            else
+                Fp = zeros(self.Nk,self.Nl,self.Nj);
+            end
+            if self.nonlinearFluxOperation.doesFluxAm == 1
+                n=n+1;Fm = F{n};
+            else
+                Fm = zeros(self.Nk,self.Nl,self.Nj);
+            end
+            if self.nonlinearFluxOperation.doesFluxA0 == 1
+                n=n+1;F0 = F{n};
+            else
+                F0 = zeros(self.Nk,self.Nl,self.Nj);
+            end
         end
         
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
@@ -908,7 +974,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function Z0 = enstrophyFluxFromF0(self,F0)
             Fqgpv = self.A0_QGPV_factor .* F0;    
-            Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) );
+            Z0 = self.A0_QGPV_factor.*real( Fqgpv .* conj(self.A0) );
         end
 
         function enstrophy = totalEnstrophySpatiallyIntegrated(self)
@@ -1035,10 +1101,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         initWithUVRho(self,u,v,rho,t)
         initWithUVEta(self,U,V,N,t)
+        addUVEta(self,U,V,N)
         initWithRandomFlow(self)
         
         removeEnergyFromAliasedModes(self,options)
-
+        removeAll(self)
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1059,6 +1127,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove geostrophic features from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        [k,l] = setGeostrophicModes(self, vortexproperties);
+        [k,l] = addGeostrophicModes(self, vortexproperties);
+        [kIndex,lIndex,jIndex,A0Amp] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u);
 
         initWithGeostrophicStreamfunction(self,psi);
         setGeostrophicStreamfunction(self,psi);
@@ -1088,11 +1160,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % but accurate, spectral interpolation.
         % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
-  
-        ssu = seaSurfaceU(self);
-        ssv = seaSurfaceV(self);
-        ssh = seaSurfaceHeight(self);
-
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1167,7 +1234,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         AntiAliasMask= maskForAliasedModes(self,options);
         NyquistMask = maskForNyquistModes(self);
 
-        [Qkl,Qj] = spectralVanishingViscosityFilter(self,options);
+        [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options);
         
         A = generateHermitianRandomMatrix( self, options );
 
@@ -1186,6 +1253,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         dimensions = defaultDimensionAnnotations()
         transformProperties = defaultPropertyAnnotations()
         transformOperations = defaultOperations()
+        variableAnnotations = defaultVariableAnnotations()
         transformMethods = defaultMethodAnnotations()
 
         % Initialize the a transform from file
@@ -1202,6 +1270,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         A = redundantHermitianCoefficients(A)
         
         [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
+        
+        varX2 = spectralVariableWithResolution(var,Nklj)
     end
         
         

@@ -3,7 +3,7 @@ layout: default
 title: readVariablesAtIndexAlongDimension
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 42
+nav_order: 44
 mathjax: true
 ---
 

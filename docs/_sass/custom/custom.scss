@@ -3,6 +3,12 @@
 //
 // stylelint-disable selector-no-qualifying-type, declaration-block-semicolon-newline-after,declaration-block-single-line-max-declarations, selector-no-type, selector-max-type
 
+@media (min-width: 66.5rem) {
+    .site-nav, .site-header, .site-footer {
+        width:18.0rem
+    }
+}
+
 code {
   padding: 0.2em 0.15em;
   font-weight: 400;

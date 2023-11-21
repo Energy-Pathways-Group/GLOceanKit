@@ -22,6 +22,8 @@ classdef WVTransformSingleMode < WVTransform
         A0_HKE_factor
         A0_PE_factor
         A0_TE_factor
+        A0_TZ_factor
+        A0_QGPV_factor
     end
         
     methods
@@ -60,12 +62,19 @@ classdef WVTransformSingleMode < WVTransform
             % Includes the extra factors from the FFTs.
             self.buildTransformationMatrices();
 
-            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface anomaly');
+            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            self.A0_QGPV_factor = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
+            self.A0_TZ_factor = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+
+            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface height anomaly');
+            outputVar.attributes('short_name') = 'sea_surface_height_above_mean_sea_level';
             f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
             self.addOperation(WVOperation('ssh',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
             f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
             self.addOperation(WVOperation('zeta_z',outputVar,f));
 
@@ -219,8 +228,7 @@ classdef WVTransformSingleMode < WVTransform
 
         function Z0 = enstrophyFlux(self)
             Fqgpv = self.qgpvFlux;
-            PVFactor = -self.Omega .* self.Omega / (self.h * self.f);
-            Z0 = PVFactor.*real( Fqgpv .* conj(self.A0) ); % 1/s^3
+            Z0 = self.A0_QGPV_factor.*real( Fqgpv .* conj(self.A0) ); % 1/s^3
         end
 
         function [Fp,Fm,F0] = nonlinearFluxWithMasks(self,ApMask,AmMask,A0Mask)
@@ -262,7 +270,7 @@ classdef WVTransformSingleMode < WVTransform
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Energetics
+        % Energetics and enstrophy
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -280,6 +288,7 @@ classdef WVTransformSingleMode < WVTransform
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
         end
+        
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;
         end
@@ -329,7 +338,10 @@ classdef WVTransformSingleMode < WVTransform
         
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
-        end   
+        end
+        function ratio = uMaxA0(self,k0, l0, j0)
+            ratio = 1/self.P(j0+1);
+        end
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end

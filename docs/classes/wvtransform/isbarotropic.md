@@ -3,7 +3,7 @@ layout: default
 title: isBarotropic
 parent: WVTransform
 grand_parent: Classes
-nav_order: 114
+nav_order: 123
 mathjax: true
 ---
 

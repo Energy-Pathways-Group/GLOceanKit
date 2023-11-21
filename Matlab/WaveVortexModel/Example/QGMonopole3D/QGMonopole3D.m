@@ -65,25 +65,29 @@ max(ssh(:))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uMax,r = 1/(200*86400)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Add floats
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-xf = wvt.x(1:4:end);
-yf = wvt.y(1:4:end);
-zf = wvt.z(end:-4:1); % make sure we grab the surface
-[XF,YF,ZF] = ndgrid(xf,yf,zf);
-model.setFloatPositions(XF(:),YF(:),ZF(:));
+% xf = wvt.x(1:4:end);
+% yf = wvt.y(1:4:end);
+% zf = wvt.z(end:-4:1); % make sure we grab the surface
+% [XF,YF,ZF] = ndgrid(xf,yf,zf);
+% model.setFloatPositions(XF(:),YF(:),ZF(:));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
-model.createNetCDFFileForModelOutput('qg-eddy.nc');
+model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1,shouldUseClassicNetCDF=1);
 model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
-model.integrateToTime(365*86400);
+model.integrateToTime(100*86400);
+
+ssh = wvt.seaSurfaceHeight;
+figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
+max(ssh(:))
 
 return
 
@@ -93,7 +97,7 @@ return
 
 ncfile = model.ncfile;
 % [x,y,z] = ncfile.floatPositions();
-[xFloat,yFloat,zFloat] = ncfile.readVariables('float-x','float-y','float-z');
+[xFloat,yFloat,zFloat] = ncfile.readVariables('float_x','float_y','float_z');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Make plot

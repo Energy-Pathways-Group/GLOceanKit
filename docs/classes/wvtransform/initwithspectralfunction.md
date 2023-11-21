@@ -3,7 +3,7 @@ layout: default
 title: initWithSpectralFunction
 parent: WVTransform
 grand_parent: Classes
-nav_order: 108
+nav_order: 117
 mathjax: true
 ---
 

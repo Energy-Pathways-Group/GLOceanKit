@@ -3,7 +3,7 @@ layout: default
 title: enstrophyFlux
 parent: WVTransformSingleMode
 grand_parent: Classes
-nav_order: 8
+nav_order: 10
 mathjax: true
 ---
 

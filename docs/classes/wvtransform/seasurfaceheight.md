@@ -3,7 +3,7 @@ layout: default
 title: seaSurfaceHeight
 parent: WVTransform
 grand_parent: Classes
-nav_order: 153
+nav_order: 167
 mathjax: true
 ---
 
@@ -25,5 +25,5 @@ $$
 \hat{\zeta} = - \frac{K h}{\omega} A_p + \frac{K h}{\omega} A_m + A_0 
 $$
 
-which is then transformed back in the spatial domain using the $F$ inverse transformation, [transformToSpatialDomainWithF](classes/wvtransform/transformtospatialdomainwithf.html).
+which is then transformed back in the spatial domain using the $$F$$ inverse transformation, [transformToSpatialDomainWithF](classes/wvtransform/transformtospatialdomainwithf.html).
 

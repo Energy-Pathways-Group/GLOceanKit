@@ -3,19 +3,16 @@ layout: default
 title: t
 parent: WVTransform
 grand_parent: Classes
-nav_order: 165
+nav_order: 181
 mathjax: true
 ---
 
 #  t
 
-time of observations
+time coordinate
 
 
 ---
-
-## Description
-Real valued state variable with no dimensions and units of $$s$$.
 
 ## Discussion
 

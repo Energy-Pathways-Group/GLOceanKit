@@ -14,7 +14,7 @@ period = 2*pi/omega;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
 
 % set initial positions for a bunch of floats
 nTrajectories = 101;
@@ -29,6 +29,6 @@ model.integrateToTime(3*period);
 
 ncfile = model.ncfile;
 % [x,y,z] = ncfile.floatPositions();
-[x,z] = ncfile.readVariables('float-x','float-z');
+[x,z] = ncfile.readVariables('float_x','float_z');
 
 figure, plot(x.',z.')

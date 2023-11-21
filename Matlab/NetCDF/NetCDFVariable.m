@@ -13,6 +13,13 @@ classdef NetCDFVariable < handle
 
     methods
         function self = NetCDFVariable(name,dimensions,attributes,type,varID)
+            arguments
+                name string
+                dimensions (:,1) NetCDFDimension
+                attributes containers.Map
+                type string
+                varID (1,1) double
+            end
             self.name = name;
             self.dimensions = dimensions;
             self.attributes = attributes;

@@ -40,6 +40,10 @@ classdef NetCDFFile < handle
         % - Topic: Accessing file properties
         ncid
 
+        % format
+        % - Topic: Accessing file properties
+        format = 'FORMAT_NETCDF4'
+
         % array of NetCDFDimension objects
         %
         % An array of NetCDFDimension objects for each coordinate dimension
@@ -187,7 +191,8 @@ classdef NetCDFFile < handle
             % - Returns: a new NetCDFFile instance
             arguments
                 path char {mustBeNonempty}
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+                options.shouldUseClassicNetCDF = 0
             end
             self.path = path;
             shouldOverwrite = 0;
@@ -202,20 +207,27 @@ classdef NetCDFFile < handle
             if options.shouldOverwriteExisting == 1
                 shouldOverwrite = 1;
             end
+            if options.shouldUseClassicNetCDF == 1
+                self.format = 'FORMAT_CLASSIC';
+            end
             if isfile(self.path)
                 if shouldOverwrite == 1
                     delete(self.path);
-                    self.CreateNewFile();
+                    self.createNewFile();
                 else
                     self.InitializeFromExistingFile();
                 end
             else
-                self.CreateNewFile();
+                self.createNewFile();
             end
         end
 
-        function CreateNewFile(self)
-            self.ncid = netcdf.create(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+        function createNewFile(self)
+            if strcmp(self.format,'FORMAT_NETCDF4')
+                self.ncid = netcdf.create(self.path, netcdf.getConstant('NETCDF4'));
+            else
+                self.ncid = netcdf.create(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+            end
             netcdf.endDef(self.ncid);
         end
 
@@ -299,6 +311,13 @@ classdef NetCDFFile < handle
             % - Declaration: addAttribute(name,data)
             % - Parameter name: string of the attribute name
             % - Parameter data: value
+            if (strcmp(self.format,'FORMAT_CLASSIC') || strcmp(self.format,'FORMAT_64BIT')) && isa(data,'string') && numel(data) > 1
+                if iscolumn(data)
+                    data = data.';
+                end
+                data = char(data+'~');
+            end
+
             netcdf.reDef(self.ncid);
             netcdf.putAtt(self.ncid,netcdf.getConstant('NC_GLOBAL'), name, data);
             netcdf.endDef(self.ncid);
@@ -345,7 +364,11 @@ classdef NetCDFFile < handle
                 n = length(data);
             end
             
-            ncType = NetCDFFile.netCDFTypeForData(data);
+            if strcmp(self.format,'FORMAT_NETCDF4')
+                ncType = NetCDFFile.netCDFTypeForData(data);
+            else
+                ncType = NetCDFFile.netCDF3TypeForData(data);
+            end
             netcdf.reDef(self.ncid);
             dimID = netcdf.defDim(self.ncid, name, n);
             varID = netcdf.defVar(self.ncid, name, ncType, dimID);
@@ -471,6 +494,8 @@ classdef NetCDFFile < handle
                 for iKey = 1:length(keyNames)
                     netcdf.putAtt(self.ncid,varID, keyNames{iKey}, properties(keyNames{iKey}));
                 end
+            else
+                properties = containers.Map();
             end
             netcdf.endDef(self.ncid);
 
@@ -498,8 +523,8 @@ classdef NetCDFFile < handle
                 netcdf.putVar(self.ncid, complexVariable.realVar.varID, real(data));
                 netcdf.putVar(self.ncid, complexVariable.imagVar.varID, imag(data));
                 if isvector(data)
-                    complexVariable.realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
-                    complexVariable.imagVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
+                    complexVariable.realVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
+                    complexVariable.imagVar.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
                     netcdf.reDef(self.ncid);
                     netcdf.putAtt(self.ncid,complexVariable.realVar.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
                     netcdf.putAtt(self.ncid,complexVariable.imagVar.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
@@ -514,7 +539,7 @@ classdef NetCDFFile < handle
                 end
                 netcdf.putVar(self.ncid, variable.varID, data);
                 if isvector(data)
-                    variable.attributes(self.GLNetCDFSchemaIsRowVectorKey) = isrow(data);
+                    variable.attributes(self.GLNetCDFSchemaIsRowVectorKey) = uint8(isrow(data));
                     netcdf.reDef(self.ncid);
                     netcdf.putAtt(self.ncid,variable.varID, self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
                     netcdf.endDef(self.ncid);
@@ -625,7 +650,7 @@ classdef NetCDFFile < handle
                     end
                     varargout{iArg} = netcdf.getVar(self.ncid, variable.varID, start, count);
                 else
-                    error('Unable to find a variable with the name %s',name);
+                    error('Unable to find a variable with the name %s',variableNames{iArg});
                 end
             end
         end
@@ -649,7 +674,11 @@ classdef NetCDFFile < handle
             % - Parameter properties: ncType
             % - Returns variable: a NetCDFVariable object
             if nargin < 6 || isempty(ncType)
-                ncType = NetCDFFile.netCDFTypeForData(data);
+                if strcmp(self.format,'FORMAT_NETCDF4')
+                    ncType = NetCDFFile.netCDFTypeForData(data);
+                else
+                    ncType = NetCDFFile.netCDF3TypeForData(data);
+                end
             end
             if nargin < 5
                 properties = [];
@@ -739,6 +768,7 @@ classdef NetCDFFile < handle
         function self = open(self)
             % - Topic: Accessing file properties
             self.ncid = netcdf.open(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+            self.format = netcdf.inqFormat(self.ncid);
         end
 
         function self = close(self)
@@ -752,6 +782,16 @@ classdef NetCDFFile < handle
         function val = netCDFTypeForData(data)
             keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
             values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            map = containers.Map(keys, values);
+            if ~isKey(map,class(data))
+                error('unknown data type');
+            end
+            val = map(class(data));
+        end
+
+        function val = netCDF3TypeForData(data)
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_INT64','NC_INT','NC_INT','NC_SHORT','NC_SHORT','NC_BYTE','NC_BYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
             map = containers.Map(keys, values);
             if ~isKey(map,class(data))
                 error('unknown data type');

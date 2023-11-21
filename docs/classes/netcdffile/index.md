@@ -49,6 +49,7 @@ A class for reading and writing to NetCDF files
 + Initializing
   + [`NetCDFFile`](/classes/netcdffile/netcdffile.html) initialize an from existing or create new file
 + Accessing file properties
+  + [`format`](/classes/netcdffile/format.html) format
   + [`ncid`](/classes/netcdffile/ncid.html) file handle
   + [`path`](/classes/netcdffile/path.html) file path the NetCDF file
 + Working with dimensions
@@ -92,12 +93,13 @@ A class for reading and writing to NetCDF files
     + [`GLNetCDFSchemaProperNameKey`](/classes/netcdffile/glnetcdfschemapropernamekey.html) Human readable name of the variable
     + [`GLNetCDFSchemaUniqueVariableIDKey`](/classes/netcdffile/glnetcdfschemauniquevariableidkey.html) A custom unique variable ID
 + Other
-  + [`CreateNewFile`](/classes/netcdffile/createnewfile.html) 
   + [`GLNetCDFSchemaVersionKey`](/classes/netcdffile/glnetcdfschemaversionkey.html) - Topic: Schema keys
   + [`InitializeFromExistingFile`](/classes/netcdffile/initializefromexistingfile.html) 
   + [`addMutableDimension`](/classes/netcdffile/addmutabledimension.html) 
   + [`close`](/classes/netcdffile/close.html) - Topic: Accessing file properties
+  + [`createNewFile`](/classes/netcdffile/createnewfile.html) 
   + [`dump`](/classes/netcdffile/dump.html) 
+  + [`netCDF3TypeForData`](/classes/netcdffile/netcdf3typefordata.html) 
   + [`netCDFTypeForData`](/classes/netcdffile/netcdftypefordata.html) 
   + [`open`](/classes/netcdffile/open.html) - Topic: Accessing file properties
   + [`sync`](/classes/netcdffile/sync.html) - Topic: Accessing file properties

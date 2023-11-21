@@ -1,6 +1,6 @@
  - Topic: Energetics — Multiplicative factors
 
-These coefficients multiply $$A_0$$ to give a horizontally-averaged depth-integrated horizontal kinetic energy for the geostrophic solutions.
+These coefficients multiply $$A_0^2$$ to give a horizontally-averaged depth-integrated horizontal kinetic energy for the geostrophic solutions.
 
 Assuming hydrostatic modes, this is
 

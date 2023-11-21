@@ -11,7 +11,7 @@ A the nonlinear flux defines how energy moves between the wave-vortex coefficien
 
 The following nonlinear flux operations are available,
 - `BoussinesqSpatial`
-- `Boussinesq`
+- `WVNonlinearFlux`
 - `QGPVE`
 - `ForcedDissipativeQGPVE`
 
@@ -19,13 +19,13 @@ Customized forcing and damping are implemented by creating subclasses of WVNonli
 
 To set the nonlinear flux operation to be used call, for example,
 ```matlab
-wvt.nonlinearFluxOperation = Boussinesq()
+wvt.nonlinearFluxOperation = WVNonlinearFlux()
 ```
 which then specifies how to compute `F0`, `Fp`, and `Fm`. The default nonlinear flux that is initialized with the `WVTransform` may not be appropriate for running a numerical model, which usually requires some combination of anti-aliasing or damping.
 
 When initializing a model `WVTransform` you can set the nonlinear flux to something more appropriate, e.g.,
 ```matlab
- model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,uv_damp=wvt.uMax));
+ model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
  ```
 
 
@@ -76,7 +76,7 @@ To implement this in code, you need to subclass the `WVNonlinearFluxOperation` a
      vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);
      nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* wvt.dLnN2);
 
-     [varargout{:}] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,wvt.t);
+     [varargout{:}] = wvt.transformUVEtaToWaveVortex(-uNL,-vNL,-nNL,wvt.t);
 end
 ```
 
@@ -88,9 +88,9 @@ wvt.nonlinearFluxOperation = BoussinesqSpatial()
 
 will cause the `WVTransform` instance to use the new flux operation.
 
-## Boussinesq
+## WVNonlinearFlux
 
-The `Boussinesq` nonlinear flux operation computes exactly the same flux terms as `BoussinesqSpatial`, but is more computationally efficient and offers additional options for anti-aliasing and damping. 
+The `WVNonlinearFlux` nonlinear flux operation computes exactly the same flux terms as `BoussinesqSpatial`, but is more computationally efficient and offers additional options for anti-aliasing and damping. 
 
 ## QGPVE
 

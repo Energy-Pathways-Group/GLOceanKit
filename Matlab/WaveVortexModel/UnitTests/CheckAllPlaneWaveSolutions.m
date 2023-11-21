@@ -142,7 +142,7 @@ for iLat = 1:length(latitude)
                     %
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
-                    for API = 1:4
+                    for API = 1:2
                         wavemodel.removeAllExternalWaves();
                         wavemodel.removeAllWaves();
                         

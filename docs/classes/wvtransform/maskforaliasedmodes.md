@@ -3,7 +3,7 @@ layout: default
 title: maskForAliasedModes
 parent: WVTransform
 grand_parent: Classes
-nav_order: 122
+nav_order: 131
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: initWithGMSpectrum
 parent: WVTransform
 grand_parent: Classes
-nav_order: 102
+nav_order: 111
 mathjax: true
 ---
 

@@ -3,13 +3,13 @@ layout: default
 title: Apm_TE_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 18
+nav_order: 20
 mathjax: true
 ---
 
 #  Apm_TE_factor
 
-multiplicative factor that multiplies $$A_\pm$$ to compute total energy.
+multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 
 
 ---

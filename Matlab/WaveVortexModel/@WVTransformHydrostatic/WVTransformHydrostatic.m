@@ -182,7 +182,12 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
 
-            self.nonlinearFluxOperation = Boussinesq(self);
+            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
+            f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
+            self.addOperation(WVOperation('zeta_z',outputVar,f));
+
+            self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -325,20 +330,8 @@ classdef WVTransformHydrostatic < WVTransform
             h_pm = self.h;
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Nonlinear Flux
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function [Fp,Fm,F0] = nonlinearFlux(self)
-            uNL = self.u .* self.diffX(self.u)   + self.v .* self.diffY(self.u)   + self.w .*  self.diffZF(self.u);
-            vNL = self.u .* self.diffX(self.v)   + self.v .* self.diffY(self.v)   + self.w .*  self.diffZF(self.v);
-            nNL = self.u .* self.diffX(self.eta) + self.v .* self.diffY(self.eta) + self.w .* (self.diffZG(self.eta) + self.eta .* self.dLnN2);
-            [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
-        end
-
-
+        Finv = FinvMatrix(self);
+        Ginv = GinvMatrix(self);
           
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -460,7 +453,13 @@ classdef WVTransformHydrostatic < WVTransform
         
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
-        end   
+        end 
+
+        function ratio = uMaxA0(self,k0, l0, j0)
+            % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
+            Kh = self.Kh;
+            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P(j0);
+        end 
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 

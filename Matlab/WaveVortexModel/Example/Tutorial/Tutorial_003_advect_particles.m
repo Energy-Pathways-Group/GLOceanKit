@@ -12,7 +12,7 @@ period = wvt.inertialPeriod;
 % You can also (optionally) specify a nonlinear flux operation. Here we add 
 % the nonlinear Boussinesq flux.
 
-model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
 %% Add particles with float like behavior
 % _Floats_ will faithfully follow the fluid flow, while _drifters_ will only 
 % follow (u,v), staying a fixed depth.
@@ -36,6 +36,6 @@ model.integrateToTime(3*wvt.inertialPeriod);
 %% Read the particles from file
 
 ncfile = model.ncfile;
-[x,y,z] = ncfile.readVariables('float-x','float-y','float-z');
+[x,y,z] = ncfile.readVariables('float_x','float_y','float_z');
 
 figure, plot3(x.',y.',z.')

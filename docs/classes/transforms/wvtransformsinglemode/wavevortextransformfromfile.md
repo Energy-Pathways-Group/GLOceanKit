@@ -3,7 +3,7 @@ layout: default
 title: waveVortexTransformFromFile
 parent: WVTransformSingleMode
 grand_parent: Classes
-nav_order: 20
+nav_order: 23
 mathjax: true
 ---
 

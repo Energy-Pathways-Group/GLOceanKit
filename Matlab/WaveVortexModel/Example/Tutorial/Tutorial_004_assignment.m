@@ -109,7 +109,7 @@ wvt.setInertialMotions(u_NIO,v_NIO);
 
 %%
 
-model = WVModel(wvt,nonlinearFlux=Boussinesq(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
 model.setupIntegrator(timeStepConstraint="advective");
 model.integrateToTime(wvt.t + 1*wvt.inertialPeriod);
 

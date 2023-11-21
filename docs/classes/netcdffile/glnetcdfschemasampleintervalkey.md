@@ -3,7 +3,7 @@ layout: default
 title: GLNetCDFSchemaSampleIntervalKey
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 16
+nav_order: 15
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: inertialPeriod
 parent: WVTransform
 grand_parent: Classes
-nav_order: 100
+nav_order: 109
 mathjax: true
 ---
 

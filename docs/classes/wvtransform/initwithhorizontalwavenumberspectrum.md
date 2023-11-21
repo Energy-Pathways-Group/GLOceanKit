@@ -3,7 +3,7 @@ layout: default
 title: initWithHorizontalWaveNumberSpectrum
 parent: WVTransform
 grand_parent: Classes
-nav_order: 105
+nav_order: 114
 mathjax: true
 ---
 
@@ -16,7 +16,7 @@ initialize with a Alternative Interal Wave Spectrum in
 
 ## Declaration
 ```matlab
- initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
+ initWithHorizontalWaveNumberSpectrum(GMAmplitude,options)
 ```
 ## Parameters
 + `GMAmplitude`  

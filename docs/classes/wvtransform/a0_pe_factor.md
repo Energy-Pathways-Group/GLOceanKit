@@ -9,7 +9,7 @@ mathjax: true
 
 #  A0_PE_factor
 
-multiplicative factor that multiplies $$A_0$$ to compute potential energy.
+multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.
 
 
 ---
@@ -19,7 +19,7 @@ Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m s^{-
 
 ## Discussion
 
-These coefficients multiply $$A_0$$ to give a horizontally-averaged depth-integrated potential energy for the geostrophic solutions.
+These coefficients multiply $$A_0^2$$ to give a horizontally-averaged depth-integrated potential energy for the geostrophic solutions.
 
 Assuming hydrostatic modes, this is
 

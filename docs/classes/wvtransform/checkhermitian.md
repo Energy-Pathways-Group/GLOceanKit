@@ -3,7 +3,7 @@ layout: default
 title: checkHermitian
 parent: WVTransform
 grand_parent: Classes
-nav_order: 66
+nav_order: 71
 mathjax: true
 ---
 

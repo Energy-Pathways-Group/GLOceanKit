@@ -3,7 +3,7 @@ layout: default
 title: qgpv
 parent: WVTransform
 grand_parent: Classes
-nav_order: 139
+nav_order: 151
 mathjax: true
 ---
 
@@ -36,18 +36,8 @@ $$
 The coefficients $$A_0$$ are linearly related to the QGPV and the streamfunction such that,
 
 $$
-\textrm{QGPV} = \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{F}^{-1} \left[-\left( K^2 + \frac{f^2}{gh_j} \right)\frac{g}{f} A_0^{klj} \right] \right] \right].
+\textrm{QGPV} = \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{F}^{-1} \left[ \textrm{QGPV}^{klj} A_0^{klj} \right] \right] \right].
 $$
 
-For hydrostatic motions, the coefficient can be related to the frequency of the internal gravity waves,
-
-$$
-\frac{\omega^2}{h f_0} = \left( K^2 + \frac{f^2}{gh} \right)\frac{g}{f}
-$$
-
-and thus, in practice, the implementation in the hydrostatic transform uses,
-
-$$
-\textrm{QGPV} = \mathcal{DFT}_x^{-1} \left[\mathcal{DFT}_y^{-1} \left[ \mathcal{F}^{-1} \left[-\frac{\omega_j^2}{h f_0} A_0^{klj} \right] \right] \right].
-$$
+where [$$\textrm{QGPV}^{klj}$$ are linear coefficients](./a0_qgpv_factor.html).
 

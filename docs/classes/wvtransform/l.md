@@ -3,13 +3,13 @@ layout: default
 title: l
 parent: WVTransform
 grand_parent: Classes
-nav_order: 119
+nav_order: 128
 mathjax: true
 ---
 
 #  l
 
-wavenumber-coordinate dimension in the y-direction
+wavenumber coordinate in the y-direction
 
 
 ---

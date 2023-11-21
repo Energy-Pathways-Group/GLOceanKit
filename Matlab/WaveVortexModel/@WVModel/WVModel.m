@@ -14,7 +14,7 @@ classdef WVModel < handle
     % By default the model only takes a linear time-step. To specify a
     % nonlinear flux on initialization, for example,
     %```matlab
-    % model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,u_damp=wvt.uMax));
     %```
     %
     % You can also initialize a model from existing output,
@@ -560,6 +560,7 @@ classdef WVModel < handle
                 end
                 self.showIntegrationTimeDiagnostics(finalTime);
             end
+            self.recordNetCDFFileHistory();
         end
 
 
@@ -575,6 +576,7 @@ classdef WVModel < handle
             if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
                 modelTime = self.integrateOneTimeStep;
                 if self.didBlowUp == 1
+                    self.recordNetCDFFileHistory(didBlowUp=1);
                     return;
                 end
             end
@@ -582,9 +584,35 @@ classdef WVModel < handle
             while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
                 modelTime = self.integrateOneTimeStep;
                 if self.didBlowUp == 1
+                    self.recordNetCDFFileHistory(didBlowUp=1);
                     return;
                 end
             end
+
+            self.recordNetCDFFileHistory();
+        end
+
+        function recordNetCDFFileHistory(self,options)
+            arguments
+                self WVModel {mustBeNonempty}
+                options.didBlowUp {mustBeNumeric} = 0
+            end
+            if isempty(self.ncfile)
+                return
+            end
+
+            if options.didBlowUp == 1
+                a = sprintf('%s: wrote %d time points to file. Terminated to do model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+            else
+                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+            end
+            if isKey(self.ncfile.attributes,'history')
+                history = self.ncfile.attributes('history');
+                history =[history;a];
+            else
+                history = a;
+            end
+            self.ncfile.addAttribute('history',history);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -601,20 +629,25 @@ classdef WVModel < handle
                 netcdfFile char {mustBeNonempty}
                 options.Nt (1,1) double {mustBePositive} = Inf
                 options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+                options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
             end
 
             if self.didSetupIntegrator == 1 && isempty(self.outputInterval)
                 error('You creating a NetCDF output file, but when when you called -setupIntegrator you did set an outputInterval.');
             end
 
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0);
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
             % Now add a time dimension
-            transformVar = self.wvt.variableAnnotationWithName('t');
-            attributes = containers.Map();
-            attributes('units') = transformVar.units;
-            attributes('description') = transformVar.description;
-            ncfile.addDimension(transformVar.name,[],attributes,options.Nt);
+            varAnnotation = self.wvt.variableAnnotationWithName('t');
+            varAnnotation.attributes('units') = varAnnotation.units;
+            varAnnotation.attributes('long_name') = varAnnotation.description;
+            varAnnotation.attributes('standard_name') = 'time';
+            varAnnotation.attributes('long_name') = 'time';
+            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
+            varAnnotation.attributes('axis') = 'T';
+            varAnnotation.attributes('calendar') = 'standard';
+            ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
 
             if ~self.linearDynamics
                 ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFluxOperation));
@@ -914,25 +947,24 @@ classdef WVModel < handle
                         continue;
                     end
 
-                    transformVar = self.wvt.variableAnnotationWithName(self.netCDFOutputVariables{iVar});
-                    attributes = containers.Map();
-                    attributes('units') = transformVar.units;
-                    attributes('description') = transformVar.description;
+                    varAnnotation = self.wvt.variableAnnotationWithName(self.netCDFOutputVariables{iVar});
+                    varAnnotation.attributes('units') = varAnnotation.units;
+                    varAnnotation.attributes('long_name') = varAnnotation.description;
 
-                    if (self.linearDynamics == 1 && transformVar.isVariableWithLinearTimeStep == 1) || (self.linearDynamics == 0 && transformVar.isVariableWithNonlinearTimeStep == 1)
+                    if (self.linearDynamics == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.linearDynamics == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
                         self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
-                        if transformVar.isComplex == 1
-                            self.ncfile.initComplexVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
+                        if varAnnotation.isComplex == 1
+                            self.ncfile.initComplexVariable(varAnnotation.name,horzcat(varAnnotation.dimensions,'t'),varAnnotation.attributes,'NC_DOUBLE');
                         else
-                            self.ncfile.initVariable(transformVar.name,horzcat(transformVar.dimensions,'t'),attributes,'NC_DOUBLE');
+                            self.ncfile.initVariable(varAnnotation.name,horzcat(varAnnotation.dimensions,'t'),varAnnotation.attributes,'NC_DOUBLE');
                         end
                     else
                         self.initialConditionOnlyVariables{end+1} = self.netCDFOutputVariables{iVar};
-                        if transformVar.isComplex == 1
-                            self.ncfile.initComplexVariable(transformVar.name,transformVar.dimensions,attributes,'NC_DOUBLE');
-                            self.ncfile.setVariable(transformVar.name,self.wvt.(transformVar.name));
+                        if varAnnotation.isComplex == 1
+                            self.ncfile.initComplexVariable(varAnnotation.name,varAnnotation.dimensions,varAnnotation.attributes,'NC_DOUBLE');
+                            self.ncfile.setVariable(varAnnotation.name,self.wvt.(varAnnotation.name));
                         else
-                            self.ncfile.addVariable(transformVar.name,self.wvt.(transformVar.name),transformVar.dimensions,attributes);
+                            self.ncfile.addVariable(varAnnotation.name,self.wvt.(varAnnotation.name),varAnnotation.dimensions,varAnnotation.attributes);
                         end
                     end
                 end
@@ -1014,7 +1046,7 @@ classdef WVModel < handle
             attributes = containers.Map(commonKeys,commonVals);
             attributes('units') = 'unitless id number';
             attributes('particleVariableName') = 'id';
-            [dim,var] = self.ncfile.addDimension(strcat(particleName,'-id'),(1:nParticles).',attributes);
+            [dim,var] = self.ncfile.addDimension(strcat(particleName,'_id'),(1:nParticles).',attributes);
             variables('id') = var;
             
             % careful to create a new object each time we init
@@ -1026,32 +1058,34 @@ classdef WVModel < handle
             for iVar=1:length(dimVars)
                 attributes = containers.Map(commonKeys,commonVals);
                 attributes('units') = self.wvt.dimensionAnnotationWithName(dimVars{iVar}).units;
+                attributes('long_name') = strcat(self.wvt.dimensionAnnotationWithName(dimVars{iVar}).description,', recorded along the particle trajectory');
                 attributes('particleVariableName') = dimVars{iVar};
-                variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
+                variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'_',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
             end
 
             for iVar=1:length(trackedFieldNames)
-                transformVar = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
+                varAnnotation = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
                 attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = transformVar.units;
+                attributes('units') = varAnnotation.units;
+                attributes('long_name') = strcat(varAnnotation.description,', recorded along the particle trajectory');
                 attributes('particleVariableName') = trackedFieldNames{iVar};
-                variables(trackedFieldNames{iVar}) = self.ncfile.initVariable(strcat(particleName,'-',trackedFieldNames{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
+                variables(trackedFieldNames{iVar}) = self.ncfile.initVariable(strcat(particleName,'_',trackedFieldNames{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
             end
  
             self.netcdfVariableMapForParticleWithName(particleName) = variables;
         end
 
         function writeParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
-            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-x'),x,'t',iTime);
-            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-y'),y,'t',iTime);
+            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_x'),x,'t',iTime);
+            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_y'),y,'t',iTime);
             if ~self.wvt.isBarotropic
-                self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-z'),z,'t',iTime);
+                self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_z'),z,'t',iTime);
             end
 
             if ~isempty(trackedFields)
                 trackedFieldNames = fieldnames(trackedFields);
                 for iField=1:length(trackedFieldNames)
-                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'-',trackedFieldNames{iField}),trackedFields.(trackedFieldNames{iField}),'t',iTime);
+                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_',trackedFieldNames{iField}),trackedFields.(trackedFieldNames{iField}),'t',iTime);
                 end
             end
         end

@@ -3,13 +3,13 @@ layout: default
 title: A0_TE_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 7
+nav_order: 8
 mathjax: true
 ---
 
 #  A0_TE_factor
 
-multiplicative factor that multiplies $$A_0$$ to compute total energy.
+multiplicative factor that multiplies $$A_0^2$$ to compute total energy.
 
 
 ---
@@ -19,7 +19,7 @@ Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m s^{-
 
 ## Discussion
 
-These coefficients multiply $$A_0$$ to give a horizontally-averaged depth-integrated total energy for the geostrophic solutions.
+These coefficients multiply $$A_0^2$$ to give a horizontally-averaged depth-integrated total energy for the geostrophic solutions.
 
 Assuming hydrostatic modes, this is
 

@@ -27,7 +27,7 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=SingleModeQGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
 
 % set initial positions for a bunch of floats
 [xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
@@ -43,7 +43,7 @@ model.setNetCDFOutputVariables('A0');
 model.integrateToTime(75*86400);
 
 ncfile = model.ncfile;
-[x,y] = ncfile.readVariables('drifter-x','drifter-y');
-qgpv = ncfile.readVariables('drifter-qgpv');
+[x,y] = ncfile.readVariables('drifter_x','drifter_y');
+qgpv = ncfile.readVariables('drifter_qgpv');
 
 figure, plot(x.',y.')

@@ -3,13 +3,13 @@ layout: default
 title: latitude
 parent: WVTransform
 grand_parent: Classes
-nav_order: 120
+nav_order: 129
 mathjax: true
 ---
 
 #  latitude
 
-latitude of the simulation
+central latitude of the simulation
 
 
 ---

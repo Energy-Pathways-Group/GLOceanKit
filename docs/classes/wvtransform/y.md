@@ -3,13 +3,13 @@ layout: default
 title: y
 parent: WVTransform
 grand_parent: Classes
-nav_order: 202
+nav_order: 224
 mathjax: true
 ---
 
 #  y
 
-y-coordinate dimension
+y coordinate
 
 
 ---

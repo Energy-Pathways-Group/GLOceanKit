@@ -13,11 +13,15 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('Lx',{},'m', 'domain size in t
 propertyAnnotations(end+1) = WVPropertyAnnotation('Ly',{},'m', 'domain size in the y-direction');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lz',{},'m', 'domain size in the z-direction');
 propertyAnnotations(end+1) = WVPropertyAnnotation('t0',{},'s', 'reference time of Ap, Am, A0');
-propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'latitude of the simulation', detailedDescription='- topic: Domain Attributes');
+propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
+propertyAnnotations(end).attributes('standard_name') = 'latitude';
+
 propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis parameter', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('inertialPeriod',{},'s', 'inertial period');
 propertyAnnotations(end+1) = WVPropertyAnnotation('g',{},'m s^{-2}', 'gravity of Earth', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('rho0',{},'kg m^{-3}', 'mean density at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
+propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
+
 propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad s^{-1}', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Nmax',{},'rad s^{-1}', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
 propertyAnnotations(end+1) = WVPropertyAnnotation('rhobar',{'z'},'kg m^{-3}', 'mean density', detailedDescription='- topic: Domain Attributes — Stratification');
@@ -62,9 +66,11 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('NAp',{'k','l','j'},'s', 'matr
 propertyAnnotations(end+1) = WVPropertyAnnotation('NAm',{'k','l','j'},'s', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 propertyAnnotations(end+1) = WVPropertyAnnotation('NA0',{'k','l','j'},'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 
-propertyAnnotations(end+1) = WVPropertyAnnotation('Apm_TE_factor',{'k','l','j'},'m', 'multiplicative factor that multiplies $$A_\pm$$ to compute total energy.',isComplex=0);
-propertyAnnotations(end+1) = WVPropertyAnnotation('A0_TE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute total energy.',isComplex=0);
-propertyAnnotations(end+1) = WVPropertyAnnotation('A0_HKE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute horizontal kinetic energy.',isComplex=0);
-propertyAnnotations(end+1) = WVPropertyAnnotation('A0_PE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute potential energy.',isComplex=0);
+propertyAnnotations(end+1) = WVPropertyAnnotation('Apm_TE_factor',{'k','l','j'},'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
+propertyAnnotations(end+1) = WVPropertyAnnotation('A0_TE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+propertyAnnotations(end+1) = WVPropertyAnnotation('A0_HKE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute horizontal kinetic energy.',isComplex=0);
+propertyAnnotations(end+1) = WVPropertyAnnotation('A0_PE_factor',{'k','l','j'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.',isComplex=0);
 
+propertyAnnotations(end+1) = WVPropertyAnnotation('A0_QGPV_factor',{'k','l','j'},'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+propertyAnnotations(end+1) = WVPropertyAnnotation('A0_TZ_factor',{'k','l','j'},'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
 end

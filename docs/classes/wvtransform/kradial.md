@@ -3,7 +3,7 @@ layout: default
 title: kRadial
 parent: WVTransform
 grand_parent: Classes
-nav_order: 117
+nav_order: 126
 mathjax: true
 ---
 

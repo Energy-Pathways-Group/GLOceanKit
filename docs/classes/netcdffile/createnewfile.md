@@ -1,13 +1,13 @@
 ---
 layout: default
-title: CreateNewFile
+title: createNewFile
 parent: NetCDFFile
 grand_parent: Classes
-nav_order: 1
+nav_order: 30
 mathjax: true
 ---
 
-#  CreateNewFile
+#  createNewFile
 
 
 

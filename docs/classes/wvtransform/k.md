@@ -3,13 +3,13 @@ layout: default
 title: k
 parent: WVTransform
 grand_parent: Classes
-nav_order: 116
+nav_order: 125
 mathjax: true
 ---
 
 #  k
 
-wavenumber-coordinate dimension in the x-direction
+wavenumber coordinate in the x-direction
 
 
 ---

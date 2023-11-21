@@ -3,7 +3,7 @@ layout: default
 title: uMaxGNormRatioForWave
 parent: WVTransform
 grand_parent: Classes
-nav_order: 181
+nav_order: 201
 mathjax: true
 ---
 

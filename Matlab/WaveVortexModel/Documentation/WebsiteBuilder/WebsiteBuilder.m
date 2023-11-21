@@ -21,9 +21,13 @@ parentName = 'Nonlinear fluxes';
 websiteFolder = 'classes/nonlinear-fluxes';
 
 BuildDocumentationForClass(name='WVNonlinearFluxOperation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='Boussinesq',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
-BuildDocumentationForClass(name='BoussinesqSpatial',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
-BuildDocumentationForClass(name='QGPVE',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
+BuildDocumentationForClass(name='WVNonlinearFlux',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='WVNonlinearFluxForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
+BuildDocumentationForClass(name='WVNonlinearFluxQG',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
+BuildDocumentationForClass(name='WVNonlinearFluxQGForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
+BuildDocumentationForClass(name='WVNonlinearFluxWindForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=6);
+BuildDocumentationForClass(name='WVNonlinearFluxSpatial',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=7);
+
 
 parentName = 'Operations & annotations';
 websiteFolder = 'classes/operations-and-annotations';

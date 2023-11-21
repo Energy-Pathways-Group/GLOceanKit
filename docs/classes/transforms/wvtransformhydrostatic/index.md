@@ -43,7 +43,9 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 + Other
   + [`A0_HKE_factor`](/classes/transforms/wvtransformhydrostatic/a0_hke_factor.html) 
   + [`A0_PE_factor`](/classes/transforms/wvtransformhydrostatic/a0_pe_factor.html) 
+  + [`A0_QGPV_factor`](/classes/transforms/wvtransformhydrostatic/a0_qgpv_factor.html) 
   + [`A0_TE_factor`](/classes/transforms/wvtransformhydrostatic/a0_te_factor.html) 
+  + [`A0_TZ_factor`](/classes/transforms/wvtransformhydrostatic/a0_tz_factor.html) 
   + [`Apm_TE_factor`](/classes/transforms/wvtransformhydrostatic/apm_te_factor.html) These convert the coefficients to their depth integrated energies
   + [`BuildProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildprojectionoperators.html) Now go compute the appropriate number of modes at the
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 
@@ -75,14 +77,14 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithg.html) 
   + [`transformToSpatialDomainWithGAllDerivatives`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithgallderivatives.html) 
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
+  + [`uMaxA0`](/classes/transforms/wvtransformhydrostatic/umaxa0.html) uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
   + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformhydrostatic/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`zInterp`](/classes/transforms/wvtransformhydrostatic/zinterp.html) 
 + Operations
   + Transformations
     + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F$$
     + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
-+ Nonlinear flux and energy transfers
-  + [`nonlinearFlux`](/classes/transforms/wvtransformhydrostatic/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
+    + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
 + Initialization (Static)
   + [`waveVortexTransformFromFile`](/classes/transforms/wvtransformhydrostatic/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
 + Write to file

@@ -38,6 +38,8 @@ annotates methods, properties, operations, and variables
 ## Topics
 + Initialization
   + [`WVAnnotation`](/classes/operations-and-annotations/wvannotation/wvannotation.html) create a new instance of WVAnnotation
++ Other
+  + [`attributes`](/classes/operations-and-annotations/wvannotation/attributes.html) 
 + Properties
   + [`description`](/classes/operations-and-annotations/wvannotation/description.html) short description of the method, property, or variable
   + [`detailedDescription`](/classes/operations-and-annotations/wvannotation/detaileddescription.html) a detailed description of the method, property, or variable
