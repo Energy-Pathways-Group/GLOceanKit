@@ -199,7 +199,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             ncfile.addVariable('tau0',self.tau0,{});
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             ratio = wvtX2.Nk/self.wvt.Nk;
             nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
             if ~isempty(self.MA0)

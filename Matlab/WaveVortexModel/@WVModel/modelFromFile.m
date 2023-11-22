@@ -14,20 +14,13 @@ function model = modelFromFile(path,options)
 
     wvt = WVTransform.waveVortexTransformFromFile(path,iTime=options.restartIndex);
 
-    ncfile = NetCDFFile(path);
-    if isKey(ncfile.attributes,'WVNonlinearFluxOperation')
-        nlFluxClassName = ncfile.attributes('WVNonlinearFluxOperation');
-        nlFlux = feval(strcat(nlFluxClassName,'.nonlinearFluxFromFile'),ncfile,wvt);
-    end
     if options.shouldDoubleResolution == 1
         wvt = wvt.waveVortexTransformWithDoubleResolution();
-        if exist('nlFlux','var')
-            nlFlux = nlFlux.nonlinearFluxWithDoubleResolution(wvt);
-        end
     end
 
-    if exist('nlFlux','var')
-        model = WVModel(wvt,nonlinearFlux=nlFlux);
+    ncfile = NetCDFFile(path);
+    if ncfile.attributes('shouldUseLinearDynamics') == 0
+        model = WVModel(wvt,nonlinearFlux=wvt.nonlinearFluxOperation);
     else
         model = WVModel(wvt);
     end

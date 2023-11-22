@@ -649,10 +649,7 @@ classdef WVModel < handle
             varAnnotation.attributes('calendar') = 'standard';
             ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
 
-            if ~self.linearDynamics
-                ncfile.addAttribute('WVNonlinearFluxOperation',class(self.nonlinearFluxOperation));
-                self.nonlinearFluxOperation.writeToFile(ncfile,self.wvt);
-            end
+            ncfile.addAttribute('shouldUseLinearDynamics',uint8(self.linearDynamics));
 
             self.ncfile = ncfile;
         end

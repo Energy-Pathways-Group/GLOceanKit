@@ -126,7 +126,7 @@ classdef ForcedDissipativeQGPVE < QGPVE
             ncfile.addAttribute('k_r',self.k_r)
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             nlFlux = ForcedDissipativeQGPVE(wvtX2,initialPV='none', j_f=self.j_f, k_f=self.k_f,r=self.r,nu=self.nu/2);
         end
 

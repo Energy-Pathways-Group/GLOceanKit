@@ -16,4 +16,11 @@ if isKey(ncfile.attributes,'WVTransform')
     wvt = feval(strcat(wvtClassName,'.waveVortexTransformFromFile'),path,'iTime',options.iTime);
 end
 
+if isKey(ncfile.attributes,'WVNonlinearFluxOperation')
+    nlFluxClassName = ncfile.attributes('WVNonlinearFluxOperation');
+    nlFlux = feval(strcat(nlFluxClassName,'.nonlinearFluxFromFile'),ncfile,wvt);
+end
+
+wvt.nonlinearFluxOperation = nlFlux;
+
 end
