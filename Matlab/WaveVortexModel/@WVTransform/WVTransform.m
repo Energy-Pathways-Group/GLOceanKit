@@ -534,24 +534,23 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny self.Nz]);
         end
 
-        function wvmX2 = waveVortexTransformWithResolution(self,m)
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
             % create a new WVTransform with increased resolution
             %
             % - Topic: Initialization
-            wvmX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
-            wvmX2.t0 = self.t0;
-            wvmX2.t = self.t;
-            if wvmX2.Nx>=self.Nx && wvmX2.Ny >= self.Ny && wvmX2.Nj >= self.Nj
-                kIndices = cat(2,1:(self.Nk/2),(wvmX2.Nk-self.Nk/2 + 1):wvmX2.Nk);
-                lIndices = cat(2,1:(self.Nl/2),(wvmX2.Nl-self.Nl/2 + 1):wvmX2.Nl);
-                wvmX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
-                wvmX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
-                wvmX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
-                
-
+            wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
+            wvtX2.t0 = self.t0;
+            wvtX2.t = self.t;
+            if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
+                kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
+                lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
+                wvtX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
+                wvtX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
+                wvtX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
             else
                 error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
             end
+            wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
         
         function [X,Y,Z] = xyzGrid(self)

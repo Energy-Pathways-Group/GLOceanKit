@@ -92,4 +92,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
             ncfile.addVariable(varAnnotation.name,wvt.(varAnnotation.name),varAnnotation.dimensions,varAnnotation.attributes);
         end
     end
+
+    ncfile.addAttribute('WVNonlinearFluxOperation',class(wvt.nonlinearFluxOperation));
+    wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
 end

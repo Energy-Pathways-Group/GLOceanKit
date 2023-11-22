@@ -183,7 +183,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             ncfile.setVariable('L_damp',self.damp);
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             nlFlux = WVNonlinearFluxQG(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu_xy/2);
         end
 

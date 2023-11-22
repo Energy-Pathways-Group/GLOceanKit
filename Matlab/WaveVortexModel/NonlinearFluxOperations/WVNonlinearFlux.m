@@ -87,7 +87,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             end
 
             if isfield(options,'nu_xy')
-                self.nu_xy = nu_xy;
+                self.nu_xy = options.nu_xy;
             else
                 if isfield(options,'uv_damp')
                     if self.shouldAntialias == 1
@@ -101,7 +101,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             end
 
             if isfield(options,'nu_z')
-                self.nu_z = nu_z;
+                self.nu_z = options.nu_z;
             else
                 if isfield(options,'w_damp')
                     if self.shouldAntialias == 1
@@ -230,7 +230,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             ncfile.addAttribute('shouldAntialias',self.shouldAntialias)
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
         end
 

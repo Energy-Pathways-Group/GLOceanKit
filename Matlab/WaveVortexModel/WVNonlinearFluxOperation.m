@@ -99,7 +99,7 @@ classdef WVNonlinearFluxOperation < WVOperation
             end
         end
 
-        function nlFluxOp = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFluxOp = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             %create a new nonlinear flux operation with double the resolution
             %
             % Subclasses to should override this method an implement the
@@ -108,7 +108,7 @@ classdef WVNonlinearFluxOperation < WVOperation
             % then this will work without modification.
             %
             % - Topic: Initialization
-            % - Declaration: nlFluxOp = nonlinearFluxWithDoubleResolution(wvtX2)
+            % - Declaration: nlFluxOp = nonlinearFluxWithResolutionOfTransform(wvtX2)
             % - Parameter wvtX2: the WVTransform with increased resolution
             % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
             nlFluxOp = WVNonlinearFluxOperation(self.name,self.outputVariables,f=self.f);

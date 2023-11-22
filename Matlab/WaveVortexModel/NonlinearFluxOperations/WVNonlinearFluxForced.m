@@ -211,7 +211,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             end
         end
 
-        function nlFlux = nonlinearFluxWithDoubleResolution(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             nlFlux = WVNonlinearFluxForced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
             if ~isempty(self.MAp)
                 nlFlux.MAp = WVTransform.spectralVariableWithResolution(self.MAp,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
