@@ -22,48 +22,34 @@ arguments
     lMode (:,1) double
     jMode (:,1) double
     options.A0 (:,1) double
-    options.phi (:,1) double = 0
-    options.u (:,1) double
     options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
 end
-if isfield(options,'u')
-    [kIndex,lIndex,jIndex,A0Amp] = self.geostrophicCoefficientsFromGeostrophicModes(kMode, lMode, jMode, options.phi, options.u);
-elseif isfield(options,'A0')
-    [kIndex,lIndex,jIndex] = self.geostrophicCoefficientsFromGeostrophicModes(kMode, lMode, jMode, options.phi, 0);
+if isfield(options,'A0')
+    [kIndex,lIndex,jIndex] = self.geostrophicCoefficientsFromGeostrophicModes(kMode, lMode, jMode, 0, 0);
     A0Amp = options.A0;
 else
-    [kIndex,lIndex,jIndex] = self.geostrophicCoefficientsFromGeostrophicModes(kMode, lMode, jMode, options.phi, 0);
-    A0Amp = wvt.A0(kIndex,lIndex,jIndex);
+    [kIndex,lIndex,jIndex] = self.geostrophicCoefficientsFromGeostrophicModes(kMode, lMode, jMode, 0, 0);
+    A0Amp = 2*self.A0(kIndex,lIndex,jIndex);
 end
+
+A = abs(A0Amp);
+phi = angle(A0Amp);
 
 m = self.j(jIndex)*pi/self.Lz;
 k = self.k(kIndex);
 l = self.l(lIndex);
-alpha=atan2(l,k);
-K = sqrt( k^2 + l^2);
-if j0 == 0
-    omega = f;
-else
-    if self.isHydrostatic ==1
-        omega = thesign*sqrt( (K*K*N0*N0 + m*m*f*f)/(m*m) );
-    else
-        omega = thesign*sqrt( (K*K*N0*N0 + m*m*f*f)/(K*K+m*m) );
-    end
-end
+h = self.N0^2/(self.g*m^2);
+sign = -2*(mod(jMode,2) == 1)+1;
+norm = sign*sqrt(2*self.g/self.Lz)/self.N0;
 
-f0OverOmega = f/omega;
-kOverOmega = K/omega;
+G = @(z) norm*sin(m*(z+self.Lz));
+F = @(z) norm*h*m*cos(m*(z+self.Lz));
 
- theta = @(x,y,t) kk*x + ll*y + omega*t + phi;
- u = @(x,y,z,t) U*(cos(alpha)*cos( theta(x,y,t) ) + f0OverOmega*sin(alpha)*sin( theta(x,y,t) )).*cos(m*z);
- v = @(x,y,z,t) U*(sin(alpha)*cos( theta(x,y,t) ) - f0OverOmega*cos(alpha)*sin( theta(x,y,t) )).*cos(m*z);
- w = @(x,y,z,t) (U*K/m) * sin( theta(x,y,t) ) .* sin(m*z);
- if j0 == 0
-     zeta_unit = zeros(size(Z));
- else
-     zeta_unit = -(U/m) * kOverOmega * cos( theta ) .* sin(m*Z);
- end
- rho_prime_unit = -(rho0/g)*N0*N0*(U*K/m/omega) * cos( theta ) .* sin(m*Z);
- rho_unit = rho0 -(N0*N0*rho0/g)*reshape(wavemodel.z,1,1,[]) + rho_prime_unit;
+theta = @(x,y,t) k*x + l*y + phi;
+u = @(x,y,z,t) A*(self.g*l/self.f)*sin( theta(x,y,t) ).*F(z);
+v = @(x,y,z,t) -A*(self.g*k/self.f)*sin( theta(x,y,t) ).*F(z);
+w = @(x,y,z,t) zeros(self.Nx,self.Ny,self.Nz);
+eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
+p = @(x,y,z,t) A*self.rho0*self.g*cos( theta(x,y,t) ).*F(z);
 
 end

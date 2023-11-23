@@ -39,15 +39,19 @@ elseif isfield(options,'Apm')
 else
     [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, options.phi, 1, sign);
     if ApAmp > 0
-        ApAmp = wvt.Ap(kIndex,lIndex,jIndex);
+        ApAmp = 2*wvt.Ap(kIndex,lIndex,jIndex);
     else
-        AmAmp = wvt.Am(kIndex,lIndex,jIndex);
+        AmAmp = 2*wvt.Am(kIndex,lIndex,jIndex);
     end 
 end
 
 m = self.j(jIndex)*pi/self.Lz;
 k = self.k(kIndex);
 l = self.l(lIndex);
+h = (self.N0^2-self.f^2)/(k^2 + l^2 + m^2)/self.g;
+sign = -2*(mod(jMode,2) == 1)+1;
+norm = sign*sqrt(2*self.g/((self.N0^2 -self.f^2)*self.Lz));
+
 alpha=atan2(l,k);
 K = sqrt( k^2 + l^2);
 if j0 == 0

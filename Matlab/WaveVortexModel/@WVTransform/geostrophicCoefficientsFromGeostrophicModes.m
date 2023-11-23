@@ -1,4 +1,4 @@
-function [kIndex,lIndex,jIndex,A0Amp] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u)
+function [kIndex,lIndex,jIndex,A0Amp,phiNorm,uNorm] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u)
 % Returns the indices (and re-normalized values) of the geostropic mode appropriate for the A0 matrix.
 %
 % Returns the indices (and re-normalized values) of the geostrophic mode
@@ -75,7 +75,7 @@ for iMode = 1:length(kMode)
         kNorm(iMode) = self.Nx + kNorm(iMode);
     end
 
-    ratio = self.uMaxA0(kNorm(iMode)+1, lNorm(iMode)+1, jNorm(iMode)+1);
+    ratio = self.uMaxA0(kNorm(iMode), lNorm(iMode), jNorm(iMode));
     A0Amp(iMode) = uNorm(iMode)/(2*ratio)*exp(sqrt(-1)*phiNorm(iMode));
 end
 

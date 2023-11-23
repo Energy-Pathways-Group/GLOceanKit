@@ -3,12 +3,12 @@ function [k,l] = addGeostrophicModes(self, vortexproperties)
 %
 % Add new amplitudes to any existing amplitudes
 % - Topic: Initial conditions — Geostrophic Motions
-% - Declaration: [k,l] = addGeostrophicModes(self)
-% - Parameter k: integer index, (k0 > -Nx/2 && k0 < Nx/2)
-% - Parameter l: integer index, (l0 > -Ny/2 && l0 < Ny/2)
-% - Parameter j: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
-% - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-% - Parameter u: fluid velocity u (m/s)
+% - Declaration: [k,l] = addGeostrophicModes(self,options)
+% - Parameter k: (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
+% - Parameter l: (optional) integer index, (l0 > -Ny/2 && l0 < Ny/2)
+% - Parameter j: (optional) integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
+% - Parameter phi: (optional) phase in radians, (0 <= phi <= 2*pi)
+% - Parameter u: (optional) fluid velocity u (m/s)
 % - Returns k: wavenumber k of the waves (radians/m)
 % - Returns l: wavenumber l of the waves (radians/m)
 arguments

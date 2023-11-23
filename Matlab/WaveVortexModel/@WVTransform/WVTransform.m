@@ -1129,7 +1129,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [k,l] = setGeostrophicModes(self, vortexproperties);
         [k,l] = addGeostrophicModes(self, vortexproperties);
-        [kIndex,lIndex,jIndex,A0Amp] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u);
+        [kIndex,lIndex,jIndex,A0Amp,phiNorm,uNorm] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u);
 
         initWithGeostrophicStreamfunction(self,psi);
         setGeostrophicStreamfunction(self,psi);
@@ -1232,6 +1232,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self);
         AntiAliasMask= maskForAliasedModes(self,options);
         NyquistMask = maskForNyquistModes(self);
+        A = maskForRedundantHermitianCoefficients(self);
 
         [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options);
         

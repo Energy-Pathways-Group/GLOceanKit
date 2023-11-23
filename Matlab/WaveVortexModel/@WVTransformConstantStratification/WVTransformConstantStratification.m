@@ -656,14 +656,14 @@ classdef WVTransformConstantStratification < WVTransform
             if j0 == 0
                 ratio = 1;
             else
-                ratio = abs(1/self.F_g(k0+1,l0+1,j0+1));
+                ratio = abs(1/self.F_w(k0+1,l0+1,j0+1));
             end
         end
         function ratio = uMaxA0(self,k0, l0, j0)
             if j0 == 0
                 ratio = 1;
             else
-                ratio = abs(1/self.F(k0+1,l0+1,j0+1));
+                ratio = abs(1/self.F_g(k0+1,l0+1,j0+1));
             end
         end  
         
