@@ -19,7 +19,7 @@ classdef WVTransformConstantStratification < WVTransform
         F_g,G_g
         h_pm
         h_0
-        G_wg
+        F_wg, G_wg
 
         DCT, iDCT, DST, iDST, DFT, iDFT
         
@@ -159,16 +159,19 @@ classdef WVTransformConstantStratification < WVTransform
             self.G_g(:,:,1) = 1; % j=0 mode doesn't exist for G
  
             if self.isHydrostatic == 1
+                F_w = self.F_g;
                 G_w = self.G_g;
             else
+                F_w = signNorm .* ((self.h_pm).*M) * sqrt(2*g_/(self.Lz*(N*N-f*f)));
                 G_w = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             end
             G_w(:,:,1) = 1;
             
             self.G_wg = self.G_g ./ G_w;
+            self.F_wg = self.F_g ./ F_w;
 
             buildTransformationMatrices@WVTransform(self);
-            % self.buildTransformationMatricesNew;
+            self.buildTransformationMatricesNew;
         end
         
         function self = buildTransformationMatricesNew(self)
@@ -254,19 +257,19 @@ classdef WVTransformConstantStratification < WVTransform
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
             % These can be pulled from equation C4 in the manuscript
-            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
+            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha))./self.F_wg;
+            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha))./self.F_wg;
             self.UA0 = -sqrt(-1)*(g/f)*L_;
 
-            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
+            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha))./self.F_wg;
+            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha))./self.F_wg;
             self.VA0 = sqrt(-1)*(g/f)*K_;
                 
-            self.WAp = -sqrt(-1)*Kh.*self.h_pm;
-            self.WAm = -sqrt(-1)*Kh.*self.h_pm;
+            self.WAp = -sqrt(-1)*Kh.*self.h_pm./self.G_wg;
+            self.WAm = -sqrt(-1)*Kh.*self.h_pm./self.G_wg;
             
-            self.NAp = -Kh.*self.h_pm./omega;
-            self.NAm = Kh.*self.h_pm./omega;
+            self.NAp = -Kh.*self.h_pm./omega./self.G_wg;
+            self.NAm = Kh.*self.h_pm./omega./self.G_wg;
             self.NA0 = ones(size(Kh));
             
             % No buoyancy anomaly for j=0 geostrophic solutions
@@ -656,7 +659,7 @@ classdef WVTransformConstantStratification < WVTransform
             if j0 == 0
                 ratio = 1;
             else
-                ratio = abs(1/self.F_w(k0+1,l0+1,j0+1));
+                ratio = abs(self.F_wg(k0+1,l0+1,j0+1)/self.F_g(k0+1,l0+1,j0+1));
             end
         end
         function ratio = uMaxA0(self,k0, l0, j0)

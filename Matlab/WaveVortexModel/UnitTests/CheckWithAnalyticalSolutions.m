@@ -17,22 +17,23 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-isHydrostatic = 1;
+isHydrostatic = 0;
 wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
 [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvt.generateRandomFlowState();
 [IO,SGW,IGW,MDA,SG,IG] = wvt.masksForAllFlowConstituents();
 RedundantMask = wvt.maskForRedundantHermitianCoefficients();
 
+%%
 uniqueGeostrophicModes = IG .* ~RedundantMask;
 linearIndices = find(uniqueGeostrophicModes == 1);
 
-%%
+
 totalErrors = 0;
 totalTests = 0;
 
 for iMode = 1:length(linearIndices)
     [kIndex,lIndex,jIndex] = ind2sub([wvt.Nk,wvt.Nl,wvt.Nj],linearIndices(iMode));
-    wvt.removeAllGeostrophicMotions;
+    wvt.removeAll;
     wvt.A0(linearIndices(iMode)) = A0G(linearIndices(iMode));
     wvt.A0 = wvt.makeHermitian(wvt.A0);
     if kIndex-1 >= wvt.Nx/2
@@ -41,6 +42,31 @@ for iMode = 1:length(linearIndices)
         kMode = kIndex-1;
     end
     [u,v,w,eta,p] = wvt.analyticalSolutionA0(kMode, lIndex-1, jIndex-1);
+
+    [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
+    [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
+end
+summarizeTestResults(totalErrors,totalTests);
+
+%%
+uniqueApIGWModes = IGW .* ~RedundantMask;
+linearIndices = find(uniqueApIGWModes == 1);
+
+
+totalErrors = 0;
+totalTests = 0;
+
+for iMode = 1:length(linearIndices)
+    [kIndex,lIndex,jIndex] = ind2sub([wvt.Nk,wvt.Nl,wvt.Nj],linearIndices(iMode));
+    wvt.removeAll;
+    wvt.Ap(linearIndices(iMode)) = ApIGW(linearIndices(iMode));
+    wvt.Ap = wvt.makeHermitian(wvt.Ap);
+    if kIndex-1 >= wvt.Nx/2
+        kMode = (kIndex-1) - wvt.Nx;
+    else
+        kMode = kIndex-1;
+    end
+    [u,v,w,eta,p] = wvt.analyticalSolutionApm(kMode, lIndex-1, jIndex-1,1);
 
     [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
     [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
