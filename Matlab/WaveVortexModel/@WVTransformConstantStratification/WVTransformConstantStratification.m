@@ -25,6 +25,8 @@ classdef WVTransformConstantStratification < WVTransform
         
         isHydrostatic = 0
         cg_x, cg_y, cg_z
+
+        A0Z, ApmD, ApmN
     end
 
     properties (Access=private)
@@ -205,9 +207,12 @@ classdef WVTransformConstantStratification < WVTransform
             invLr2(:,:,1) = 0;
             self.A0U = sqrt(-1)*(f/g)*L_./(K2 + invLr2);
             self.A0V = -sqrt(-1)*(f/g)*K_./(K2 + invLr2);
+            self.A0Z = -(f/g)*1./(K2 + invLr2);
+            self.A0Z(:,:,1) = 0;
+
             self.A0N = 1./(Lr2.*K2 + 1);
             self.A0N(:,:,1) = 0;
-
+            
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (U,V,N) -> (Ap,Am)
             % Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
@@ -219,6 +224,11 @@ classdef WVTransformConstantStratification < WVTransform
             self.AmU = C.*(K_.*self.h_0 - omega.*self.A0U);
             self.AmV = C.*(L_.*self.h_0 - omega.*self.A0V);
             self.AmN = -C.*omega.*(self.A0N-1);
+
+            self.ApmD = -sqrt(-1)./(2*Kh.*self.h_pm);
+            self.ApmN = -omega./(2*Kh.*self.h_pm);
+            self.ApmD(1,1,:) = 0;
+            self.ApmN(1,1,:) = 0;
             
             % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
             % solution exists at k=l=j=0.
@@ -253,6 +263,10 @@ classdef WVTransformConstantStratification < WVTransform
             self.A0U = nyquistMask .* makeHermitian(self.A0U);
             self.A0V = nyquistMask .* makeHermitian(self.A0V);
             self.A0N = nyquistMask .* makeHermitian(self.A0N);
+
+            self.A0Z = nyquistMask .* makeHermitian(self.A0Z);
+            self.ApmD = nyquistMask .* makeHermitian(self.ApmD);
+            self.ApmN = nyquistMask .* makeHermitian(self.ApmN);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
@@ -465,6 +479,48 @@ classdef WVTransformConstantStratification < WVTransform
             [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(w_bar );
         end
 
+        function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
+            % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
+            %
+            % This function **is** the WVTransform. It is a [linear
+            % transformation](/mathematical-introduction/transformations.html)
+            % denoted $$\mathcal{L}$$.
+            %
+            % This function is not intended to be used directly (although
+            % you can), and is kept here to demonstrate a simple
+            % implementation of the transformation. Instead, you should
+            % initialize the WVTransform using one of the
+            % initialization functions.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
+            % - Parameter u: x-component of the fluid velocity
+            % - Parameter v: y-component of the fluid velocity
+            % - Parameter n: scaled density anomaly
+            % - Parameter t: (optional) time of observations
+            % - Returns Ap: positive wave coefficients at reference time t0
+            % - Returns Am: negative wave coefficients at reference time t0
+            % - Returns A0: geostrophic coefficients at reference time t0
+            u_hat = self.transformFromSpatialDomainWithFourier(U);
+            v_hat = self.transformFromSpatialDomainWithFourier(V);
+            n_hat = self.transformFromSpatialDomainWithFourier(N);
+
+            n_bar = self.transformFromSpatialDomainWithGg(n_hat);
+            zeta_bar = self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* v_hat - sqrt(-1)*shiftdim(self.l,-1) .* u_hat);
+            A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
+            
+            delta_bar = self.G_wg.*self.h_0.*self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* u_hat + sqrt(-1)*shiftdim(self.l,-1) .* v_hat);
+            nw_bar = self.G_wg.*(n_bar - A0);
+            Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
+            Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
+
+            if nargin == 5
+                phase = exp(-self.iOmega*(t-self.t0));
+                Ap = Ap .* phase;
+                Am = Am .* conj(phase);
+            end
+        end
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -472,6 +528,28 @@ classdef WVTransformConstantStratification < WVTransform
         % multiplication (MM)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        function u_bar = transformFromSpatialDomainWithFourier(self,u)
+            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+        end
+
+        function u_bar = transformFromSpatialDomainWithFg(self,u)
+            dims = size(u);
+            u = permute(u,[3 1 2]); % keep adjacent in memory
+            u = reshape(u,self.Nz,[]);
+            u_bar = self.DCT*u;
+            u_bar = reshape(u_bar,self.Nj,dims(1),dims(2));
+            u_bar = permute(u_bar,[2 3 1])./self.F_g;
+        end
+
+        function w_bar = transformFromSpatialDomainWithGg(self,w)
+            dims = size(w);
+            w = permute(w,[3 1 2]); % keep adjacent in memory
+            w = reshape(w,self.Nz,[]);
+            w_bar = self.DST*w;
+            w_bar = reshape(w_bar,self.Nj,dims(1),dims(2));
+            w_bar = permute(w_bar,[2 3 1])./self.G_g;
+        end
+
         function u_bar = transformFromSpatialDomainWithF_MM(self, u)
             u = permute(u,[3 1 2]); % keep adjacent in memory
             u = reshape(u,self.Nz,[]);

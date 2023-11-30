@@ -45,6 +45,11 @@ for iMode = 1:length(linearIndices)
 
     [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
     [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
+
+    wvt.removeAll;
+    wvt.initWithUVEta(u(wvt.X,wvt.Y,wvt.Z,wvt.t), v(wvt.X,wvt.Y,wvt.Z,wvt.t),eta(wvt.X,wvt.Y,wvt.Z,wvt.t));
+    [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
+    [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
 end
 summarizeTestResults(totalErrors,totalTests);
 
@@ -68,6 +73,10 @@ for iMode = 1:length(linearIndices)
     end
     [u,v,w,eta,p] = wvt.analyticalSolutionApm(kMode, lIndex-1, jIndex-1,1);
 
+    [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
+    [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
+
+    wvt.initWithUVEta(u(wvt.X,wvt.Y,wvt.Z,wvt.t), v(wvt.X,wvt.Y,wvt.Z,wvt.t),eta(wvt.X,wvt.Y,wvt.Z,wvt.t));
     [u_error,v_error,w_error,eta_error,p_error] = errorsFromAnalyticalSolutions(wvt,u,v,w,eta,p);
     [totalTests,totalErrors] = recordAndReportTestErrors(totalTests,totalErrors, wvt, kIndex, lIndex, jIndex, u_error,v_error,w_error,eta_error,p_error);
 end
