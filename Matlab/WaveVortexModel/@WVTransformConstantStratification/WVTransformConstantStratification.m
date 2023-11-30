@@ -257,19 +257,19 @@ classdef WVTransformConstantStratification < WVTransform
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
             % These can be pulled from equation C4 in the manuscript
-            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha))./self.F_wg;
-            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha))./self.F_wg;
+            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
+            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
             self.UA0 = -sqrt(-1)*(g/f)*L_;
 
-            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha))./self.F_wg;
-            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha))./self.F_wg;
+            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
+            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
             self.VA0 = sqrt(-1)*(g/f)*K_;
                 
-            self.WAp = -sqrt(-1)*Kh.*self.h_pm./self.G_wg;
-            self.WAm = -sqrt(-1)*Kh.*self.h_pm./self.G_wg;
+            self.WAp = -sqrt(-1)*Kh.*self.h_pm;
+            self.WAm = -sqrt(-1)*Kh.*self.h_pm;
             
-            self.NAp = -Kh.*self.h_pm./omega./self.G_wg;
-            self.NAm = Kh.*self.h_pm./omega./self.G_wg;
+            self.NAp = -Kh.*self.h_pm./omega;
+            self.NAm = Kh.*self.h_pm./omega;
             self.NA0 = ones(size(Kh));
             
             % No buoyancy anomaly for j=0 geostrophic solutions
@@ -439,12 +439,22 @@ classdef WVTransformConstantStratification < WVTransform
             w_bar = self.transformFromSpatialDomainWithG_MM(w);
         end
         
-        function u = transformToSpatialDomainWithF(self, u_bar)
-            u = self.transformToSpatialDomainWithF_MM(u_bar);
+        function u = transformToSpatialDomainWithF(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            u = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
         end  
                 
-        function w = transformToSpatialDomainWithG(self, w_bar )
-            w = self.transformToSpatialDomainWithG_MM(w_bar );
+        function w = transformToSpatialDomainWithG(self, options )
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)

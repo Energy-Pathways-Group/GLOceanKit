@@ -56,9 +56,9 @@ Ubar = wvm.UAp.*Ap + wvm.UAm.*Am + wvm.UA0.*A0;
 % 
 % profile on
 % for i=1:100
-%     u = boussinesq.transformToSpatialDomainWithF(Ubar);
+%     u = boussinesq.transformToSpatialDomainWithF(A0=Ubar);
 %     ubar = boussinesq.transformFromSpatialDomainWithF(u);
-%     eta = boussinesq.transformToSpatialDomainWithG(Nbar);
+%     eta = boussinesq.transformToSpatialDomainWithG(A0=Nbar);
 %     nbar = boussinesq.transformFromSpatialDomainWithG(eta);
 % end
 % profile viewer

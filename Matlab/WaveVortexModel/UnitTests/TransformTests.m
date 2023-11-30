@@ -33,7 +33,7 @@ phi = pi/8;
 f = @(k) cos(k*X+phi) .* cos(0*Y) .* cos(0*Z);
 iK = 2*pi*(1:floor(Nx/2))'/Lx;
 
-Df_numerical = @(u) wvt.transformToSpatialDomainWithF(wvt.transformFromSpatialDomainWithF(u));
+Df_numerical = @(u) wvt.transformToSpatialDomainWithF(A0=wvt.transformFromSpatialDomainWithF(u));
 testname = sprintf('transformWithF, 1st dimension');
 ReportErrors(f,f,Df_numerical,testname,iK(1:end-1));
 
@@ -44,7 +44,7 @@ phi = pi/8;
 f = @(l) cos(0*X) .* cos(l*Y+phi) .* cos(0*Z);
 iL = 2*pi*(1:floor(Ny/2))'/Ly;
 
-Df_numerical = @(u) wvt.transformToSpatialDomainWithF(wvt.transformFromSpatialDomainWithF(u));
+Df_numerical = @(u) wvt.transformToSpatialDomainWithF(A0=wvt.transformFromSpatialDomainWithF(u));
 testname = sprintf('transformWithF, 2nd dimension');
 ReportErrors(f,f,Df_numerical,testname,iL(1:end-1));
 
@@ -55,7 +55,7 @@ f = @(m) cos(0*X) .* cos(0*Y) .* cos(m*Z);
 dm = 1/((Nz-1)*(wvt.z(2)-wvt.z(1)));
 iM = pi*dm*(0:(Nz-1))';
 
-Df_numerical = @(u) wvt.transformToSpatialDomainWithF(wvt.transformFromSpatialDomainWithF(u));
+Df_numerical = @(u) wvt.transformToSpatialDomainWithF(A0=wvt.transformFromSpatialDomainWithF(u));
 testname = sprintf('transformWithF, 3rd dimension');
 ReportErrors(f,f,Df_numerical,testname,iM(1:end-1));
 

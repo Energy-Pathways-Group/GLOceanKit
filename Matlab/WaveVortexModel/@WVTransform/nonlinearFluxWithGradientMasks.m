@@ -31,17 +31,12 @@ Amt = self.Am .* conj(phase);
 A0t = self.A0;
 
 % Apply operator S---defined in (C4) in the manuscript
-Ubar = ApmUMask.*(self.UAp.*Apt + self.UAm.*Amt) + A0UMask.*self.UA0.*A0t;
-Vbar = ApmUMask.*(self.VAp.*Apt + self.VAm.*Amt) + A0UMask.*self.VA0.*A0t;
-Wbar = ApmUMask.*(self.WAp.*Apt + self.WAm.*Amt);
-Nbar = ApmUMask.*(self.NAp.*Apt + self.NAm.*Amt) + A0UMask.*self.NA0.*A0t;
-
 % Finishing applying S, but also compute derivatives at the
 % same time
-U = self.transformToSpatialDomainWithF(Ubar);
-V = self.transformToSpatialDomainWithF(Vbar);
-W = self.transformToSpatialDomainWithG(Wbar);
-ETA = self.transformToSpatialDomainWithG(Nbar);
+U = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.UAp.*Apt + self.UAm.*Amt), A0=A0UMask.*self.UA0.*A0t);
+V = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.VAp.*Apt + self.VAm.*Amt), A0=A0UMask.*self.VA0.*A0t);
+W = self.transformToSpatialDomainWithG(Apm=ApmUMask.*(self.WAp.*Apt + self.WAm.*Amt));
+ETA = self.transformToSpatialDomainWithG(Apm=ApmUMask.*(self.NAp.*Apt + self.NAm.*Amt),A0=A0UMask.*self.NA0.*A0t);
 
 % Finishing applying S, but also compute derivatives at the
 % same time

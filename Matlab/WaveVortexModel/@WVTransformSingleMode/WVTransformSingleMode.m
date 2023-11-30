@@ -69,13 +69,13 @@ classdef WVTransformSingleMode < WVTransform
 
             outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface height anomaly');
             outputVar.attributes('short_name') = 'sea_surface_height_above_mean_sea_level';
-            f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt,A0=wvt.NA0.*wvt.A0t);
             self.addOperation(WVOperation('ssh',outputVar,f));
 
             [K,L] = ndgrid(self.k,self.l);
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
             outputVar.attributes('short_name') = 'ocean_relative_vorticity';
-            f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
+            f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
             self.addOperation(WVOperation('zeta_z',outputVar,f));
 
             self.nonlinearFluxOperation = SingleMode();
@@ -306,13 +306,23 @@ classdef WVTransformSingleMode < WVTransform
             w_bar = fft(fft(w,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);            
         end
         
-        function u = transformToSpatialDomainWithF(self, u_bar)
-            u_bar = u_bar*(self.Nx*self.Ny);
+        function u = transformToSpatialDomainWithF(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            u_bar = (options.Apm + options.A0)*(self.Nx*self.Ny);
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
                 
-        function w = transformToSpatialDomainWithG(self, w_bar )
-            w_bar = w_bar*(self.Nx*self.Ny);
+        function w = transformToSpatialDomainWithG(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w_bar = (options.Apm + options.A0)*(self.Nx*self.Ny);
             w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
         end
         

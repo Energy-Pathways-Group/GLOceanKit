@@ -23,7 +23,7 @@ N2 = @(z) N0*N0*exp(2*z/L_gm);
 wvt = WVTransformHydrostatic([Lxy, Lxy, Lz], [Nxy, Nxy, Nz], N2=N2,latitude=25);
 
 outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
-f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * ((wvt.K).^2 +(wvt.L).^2) .* wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * ((wvt.K).^2 +(wvt.L).^2) .* wvt.A0t);
 wvt.addOperation(WVOperation('zeta_z',outputVar,f));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,6 +1,7 @@
 - Topic: Operations — Transformations
-- Declaration: u = transformToSpatialDomainWithF(u_bar)
-- Parameter u_bar: variable with dimensions $$(k,l,j)$$
+- Declaration: u = transformToSpatialDomainWithF(options)
+- Parameter Apm: (optional) variable with dimensions $$(k,l,j)$$ to be transformed with the wave modes
+- Parameter A0: (optional) variable with dimensions $$(k,l,j)$$ to be transformed with the geostrophic modes
 
 This is the component of the [inverse discrete transformation](/mathematical-introduction/transformations.html) $$D^{-1}$$ that projects from the vertical modes $F$, followed by a transformation $$ (k,l) \mapsto (x,y)$$ with a discrete Fourier transform. Mathematically we write,
 

@@ -106,7 +106,7 @@ classdef ForcedDissipativeQGPVE < QGPVE
             [varargout{:}] = compute@QGPVE(self,wvt,varargin{:});
             F0 = varargout{1};
             F0_psi = (~self.EMA0) .* F0;
-            forcing = wvt.transformToSpatialDomainWithF(self.PVA0 .* F0_psi);
+            forcing = wvt.transformToSpatialDomainWithF(A0=self.PVA0 .* F0_psi);
             F0 = self.EMA0 .* F0;
             varargout{1} = F0;
             varargout{end+1} = F0_psi;

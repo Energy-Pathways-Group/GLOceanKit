@@ -11,5 +11,5 @@ and then transformed back to the spatial domain with the $$F$$ modes using [tran
 In code,
 
 ```matlab
-f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f) * wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=(wvt.g/wvt.f) * wvt.A0t);
 ```

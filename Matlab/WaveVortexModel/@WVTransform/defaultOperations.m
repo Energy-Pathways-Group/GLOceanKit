@@ -31,29 +31,29 @@ operations(end+1) = WVOperation('wMax',outputVar,f);
 
 outputVar = WVVariableAnnotation('u',{'x','y','z'},'m/s', 'x-component of the fluid velocity');
 outputVar.attributes('standard_name') = 'eastward_sea_water_velocity';
-f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt + wvt.UA0.*wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt,A0=wvt.UA0.*wvt.A0t);
 operations(end+1) = WVOperation('u',outputVar,f);
 
 outputVar = WVVariableAnnotation('v',{'x','y','z'},'m/s', 'y-component of the fluid velocity');
 outputVar.attributes('standard_name') = 'northward_sea_water_velocity';
-f = @(wvt) wvt.transformToSpatialDomainWithF(wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt + wvt.VA0.*wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.Apt + wvt.VAm.*wvt.Amt,A0=wvt.VA0.*wvt.A0t);
 operations(end+1) = WVOperation('v',outputVar,f);
 
 outputVar = WVVariableAnnotation('w',{'x','y','z'},'m/s', 'z-component of the fluid velocity');
 outputVar.attributes('standard_name') = 'upwardward_sea_water_velocity';
-f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
+f = @(wvt) wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt);
 operations(end+1) = WVOperation('w',outputVar,f);
 
 outputVar = WVVariableAnnotation('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
-f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(Apm=wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt,A0=wvt.NA0.*wvt.A0t);
 operations(end+1) = WVOperation('p',outputVar,f);
 
 outputVar = WVVariableAnnotation('psi',{'x','y','z'},'m^2/s', 'geostrophic streamfunction');
-f = @(wvt) wvt.transformToSpatialDomainWithF((wvt.g/wvt.f) * wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=(wvt.g/wvt.f) * wvt.A0t);
 operations(end+1) = WVOperation('psi',outputVar,f);
 
 outputVar = WVVariableAnnotation('eta',{'x','y','z'},'m', 'isopycnal deviation');
-f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt,A0=wvt.NA0.*wvt.A0t);
 operations(end+1) = WVOperation('eta',outputVar,f);
 
 % outputVar = WVVariableAnnotation('rho_e',{'x','y','z'},'kg/m^3', 'excess density');
@@ -69,7 +69,7 @@ f = @(wvt) reshape(wvt.rhobar,1,1,[]) + wvt.rho_prime;
 operations(end+1) = WVOperation('rho_total',outputVar,f);
 
 outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
-f = @(wvt) wvt.transformToSpatialDomainWithF( wvt.A0_QGPV_factor .*wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF( A0=wvt.A0_QGPV_factor .*wvt.A0t);
 operations(end+1) = WVOperation('qgpv',outputVar,f);
 
 outputVar = WVVariableAnnotation('Lr2',{'j'},'m^2', 'squared Rossby radius');

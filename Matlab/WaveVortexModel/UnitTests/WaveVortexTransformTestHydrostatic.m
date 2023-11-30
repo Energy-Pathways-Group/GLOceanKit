@@ -76,13 +76,13 @@ error2 = @(u,u_unit) abs((u-u_unit))./(max(max(max(abs(u_unit)))));
 % a factor of 2*(Nz-1).
 % First check the G transform
 w_bar = wvt.transformFromSpatialDomainWithG( w );
-w_back = wvt.transformToSpatialDomainWithG(w_bar);
+w_back = wvt.transformToSpatialDomainWithG(A0=w_bar);
 w_error = error2(w,w_back);
 fprintf('\tG-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(w_error)))))));
 
 % First check the F transform
 u_bar = wvt.transformFromSpatialDomainWithF( u );
-u_back = wvt.transformToSpatialDomainWithF(u_bar);
+u_back = wvt.transformToSpatialDomainWithF(A0=u_bar);
 u_error = error2(u,u_back);
 fprintf('\tF-transform: The solution matches to 1 part in 10^%d\n', round((log10(max(max(max(u_error)))))));
 

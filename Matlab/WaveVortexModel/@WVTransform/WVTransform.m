@@ -131,8 +131,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods (Abstract)
         u_bar = transformFromSpatialDomainWithF(self, u)
         w_bar = transformFromSpatialDomainWithG(self, w)
-        u = transformToSpatialDomainWithF(self, u_bar)
-        w = transformToSpatialDomainWithG(self, w_bar )
+        u = transformToSpatialDomainWithF(self, options)
+        w = transformToSpatialDomainWithG(self, options )
         [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
         [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
 
@@ -859,15 +859,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
 
             % This is the 'S' operator (C4) in the manuscript
-            Uhat = self.UAp.*Ap + self.UAm.*Am + self.UA0.*A0;
-            Vhat = self.VAp.*Ap + self.VAm.*Am + self.VA0.*A0;
-            What = self.WAp.*Ap + self.WAm.*Am;
-            Nhat = self.NAp.*Ap + self.NAm.*Am + self.NA0.*A0;
-            
-            U = self.transformToSpatialDomainWithF(Uhat);
-            V = self.transformToSpatialDomainWithF(Vhat);
-            W = self.transformToSpatialDomainWithG(What);
-            N = self.transformToSpatialDomainWithG(Nhat);
+            U = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap + self.UAm.*Am, A0=self.UA0.*A0);
+            V = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap + self.VAm.*Am, A0=self.VA0.*A0);
+            W = self.transformToSpatialDomainWithG(Apm=self.WAp.*Ap + self.WAm.*Am);
+            N = self.transformToSpatialDomainWithG(Apm=self.NAp.*Ap + self.NAm.*Am, A0=self.NA0.*A0);
         end
 
         function [Apt,Amt,A0t] = waveVortexCoefficientsAtTimeT(self)

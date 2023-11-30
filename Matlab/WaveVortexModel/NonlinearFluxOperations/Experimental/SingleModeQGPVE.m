@@ -67,11 +67,11 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             Vbar = wvt.VA0 .* wvt.A0;
             PVbar = self.PVA0 .* wvt.A0;
 
-            u_g = wvt.transformToSpatialDomainWithF(Ubar);
-            v_g = wvt.transformToSpatialDomainWithF(Vbar);
-%             QGPV = wvt.transformToSpatialDomainWithF(PVbar);
-            PVx = wvt.transformToSpatialDomainWithF(sqrt(-1)*wvt.k.*PVbar);
-            PVy = wvt.transformToSpatialDomainWithF(sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
+            u_g = wvt.transformToSpatialDomainWithF(A0=Ubar);
+            v_g = wvt.transformToSpatialDomainWithF(A0=Vbar);
+%             QGPV = wvt.transformToSpatialDomainWithF(A0=PVbar);
+            PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*wvt.k.*PVbar);
+            PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;

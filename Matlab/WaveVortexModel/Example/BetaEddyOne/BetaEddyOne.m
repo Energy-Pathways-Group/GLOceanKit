@@ -44,17 +44,17 @@ xlim([min(wvt.x) max(wvt.x)]/1000); ylim([min(wvt.y) max(wvt.y)]/1000);
 outputVar = WVVariableAnnotation('zeta',{'x','y','z'},'1/s', 'vertical component of relative vorticity');
 outputVar.attributes('short_name') = 'ocean_relative_vorticity';
 fs = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u); % simple definition, but computationally inefficient
-f = @(wvt) wvt.transformToSpatialDomainWithF(-(wvt.g/wvt.f) * (K.^2 + L.^2) .* wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * (K.^2 + L.^2) .* wvt.A0t);
 wvt.addOperation(WVOperation('zeta',outputVar,f),overwriteExisting=1);
 
 outputVar = WVVariableAnnotation('nu',{'x','y','z'},'1/s', 'normal strain');
 fs = @(wvt) wvt.diffX(wvt.u) - wvt.diffY(wvt.v); % simple definition, but computationally inefficient
-f = @(wvt) wvt.transformToSpatialDomainWithF( (wvt.g/wvt.f) * (2*K.*L) .* wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=(wvt.g/wvt.f) * (2*K.*L) .* wvt.A0t);
 wvt.addOperation(WVOperation('nu',outputVar,f));
 
 outputVar = WVVariableAnnotation('sigma',{'x','y','z'},'1/s', 'shear strain');
 fs = @(wvt) wvt.diffX(wvt.v) + wvt.diffY(wvt.u); % simple definition, but computationally inefficient
-f = @(wvt) wvt.transformToSpatialDomainWithF( -(wvt.g/wvt.f) * (K.^2 - L.^2) .* wvt.A0t);
+f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * (K.^2 - L.^2) .* wvt.A0t);
 wvt.addOperation(WVOperation('sigma',outputVar,f));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
