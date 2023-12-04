@@ -1,4 +1,4 @@
-classdef WVAnalyticalSolution < handle
+classdef WVOrthogonalSolution < handle
 %Analytical solution for one degree-of-freedom in the model
 % 
 % Each degree-of-freedom in the model is associated with an analytical
@@ -24,9 +24,9 @@ classdef WVAnalyticalSolution < handle
 % 
 % - Declaration: classdef WVAnalyticalSolution < handle
 properties
+    kMode, lMode, jMode
     amplitude
     phase
-    kMode, lMode, jMode
     u,v,w,eta,p
 
     coefficientMatrix WVCoefficientMatrix
@@ -39,6 +39,33 @@ properties
 
     energyFactor
     enstrophyFactor
+end
+
+methods
+    function self = WVOrthogonalSolution(kMode, lMode, jMode, amplitude,phase,u,v,w,eta,p)
+        arguments (Input)
+            kMode (1,1) double
+            lMode (1,1) double
+            jMode (1,1) double
+            amplitude (1,1) double
+            phase (1,1) double
+            u function_handle
+            v function_handle
+            w function_handle
+            eta function_handle
+            p function_handle
+        end
+        self.amplitude = amplitude;
+        self.phase = phase;
+        self.kMode = kMode;
+        self.lMode = lMode;
+        self.jMode = jMode;
+        self.u = u;
+        self.v = v;
+        self.w = w;
+        self.eta = eta;
+        self.p = p;
+    end
 end
 
 end
