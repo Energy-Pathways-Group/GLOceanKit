@@ -30,14 +30,27 @@ classdef WVFlowConstituent
                 wvt WVTransform {mustBeNonempty}
             end
         end
-        
-        function n = nUniqueSolutions(self)
+
+        function mask = maskForCoefficientMatrix(self,coefficientMatrix)
+            % returns a mask indicating where solutions live in the requested coefficient matrix.
+            %
+            % Returns a 'mask' (matrix with 1s or 0s) indicating where
+            % different solution types live in the Ap, Am, A0 matrices.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: mask = maskForCoefficientMatrix(self,coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
                 self WVFlowConstituent {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                n double {mustBeNonnegative}
+                mask double {mustBeNonnegative}
             end
+        end
+        
+        function n = nUniqueSolutions(self)
             % return the number of unique solutions of this type
             %
             % Returns the number of unique solutions of this type for the
@@ -46,17 +59,17 @@ classdef WVFlowConstituent
             % - Topic: Analytical solutions
             % - Declaration: n = nUniqueSolutions(self)
             % - Returns n: a non-negative integer number
+            arguments (Input)
+                self WVFlowConstituent {mustBeNonempty}
+            end
+            arguments (Output)
+                n double {mustBeNonnegative}
+            end
+
             n=0;
         end
 
         function solution = uniqueSolutionAtIndex(self,index)
-            arguments (Input)
-                self WVFlowConstituent {mustBeNonempty}
-                index double {mustBeNonnegative}
-            end
-            arguments (Output)
-                solution WVAnalyticalSolution
-            end
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
@@ -65,6 +78,13 @@ classdef WVFlowConstituent
             % - Declaration: solution = uniqueSolutionAtIndex(index)
             % - Parameter index: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
+            arguments (Input)
+                self WVFlowConstituent {mustBeNonempty}
+                index double {mustBeNonnegative}
+            end
+            arguments (Output)
+                solution WVAnalyticalSolution
+            end
             solution=0;
         end
 
