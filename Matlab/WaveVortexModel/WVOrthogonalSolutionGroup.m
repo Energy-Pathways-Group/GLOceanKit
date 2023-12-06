@@ -1,7 +1,7 @@
 classdef WVOrthogonalSolutionGroup
-    %Describes a flow constituent
+    %Orthogonal solution group
     %
-    % - Declaration: classdef WVFlowConstituent
+    % - Declaration: classdef WVOrthogonalSolutionGroup
     properties (Access=private)
         bitmask = 0
     end
@@ -23,12 +23,15 @@ classdef WVOrthogonalSolutionGroup
         % abreviated name, e.g., "igw" for internal gravity waves.
         % - Topic: Properties
         abbreviatedName
+
+        wvt
     end
     methods
         function self = WVOrthogonalSolutionGroup(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
+            self.wvt = wvt;
         end
 
         function mask = maskForCoefficientMatrix(self,coefficientMatrix)

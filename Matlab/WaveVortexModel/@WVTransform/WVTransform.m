@@ -94,6 +94,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         A0_TE_factor % [Nk Nl Nj]
         A0_TZ_factor
         A0_QGPV_factor
+
+        conjugateDimension = 2
     end
 
     properties (Dependent, SetAccess=private)

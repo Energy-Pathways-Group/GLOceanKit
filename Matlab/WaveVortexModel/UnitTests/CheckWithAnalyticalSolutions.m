@@ -24,6 +24,10 @@ wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrosta
 RedundantMask = wvt.maskForRedundantHermitianCoefficients();
 
 %%
+geostrophicSolutions = WVGeostrophicSolutionGroup(wvt);
+
+
+%%
 uniqueGeostrophicModes = IG .* ~RedundantMask;
 linearIndices = find(uniqueGeostrophicModes == 1);
 

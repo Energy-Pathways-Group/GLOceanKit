@@ -1,37 +1,13 @@
 classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
-    %Describes a flow constituent
+    %Geostrophic solution group
     %
-    % - Declaration: classdef WVFlowConstituent
-    properties (Access=private)
-        bitmask = 0
-    end
-    properties
-        % name of the flow feature
-        % 
-        % name, e.g., "internal gravity wave"
-        % - Topic: Properties
-        name
-
-        % name of the flow feature
-        % 
-        % name, e.g., "internalGravityWave"
-        % - Topic: Properties
-        camelCaseName
-
-        % abbreviated name
-        % 
-        % abreviated name, e.g., "igw" for internal gravity waves.
-        % - Topic: Properties
-        abbreviatedName
-
-        wvt
-    end
+    % - Declaration: classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
     methods
         function self = WVGeostrophicSolutionGroup(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self.wvt = wvt;
+            self@WVOrthogonalSolutionGroup(wvt);
             self.name = "geostrophic";
             self.camelCaseName = "geostrophic";
             self.abbreviatedName = "g";
@@ -68,14 +44,58 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskOfPrimaryCoefficients(self,coefficientMatrix)
+        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
+            % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
+            %
+            % Returns a 'mask' (matrix with 1s or 0s) indicating where
+            % different solution types live in the Ap, Am, A0 matrices.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            switch(coefficientMatrix)
+                case WVCoefficientMatrix.A0
+                    K = size(mask,1);
+                    L = size(mask,2);
+                    if self.wvt.conjugateDimension == 1
+                        % The order of the for-loop is chosen carefully here.
+                        for iK=1:(K/2+1)
+                            for iL=1:L
+                                if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                                    continue;
+                                else
+                                    mask = WVGeostrophicSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                                end
+                            end
+                        end
+                    elseif self.wvt.conjugateDimension == 2
+                        % The order of the for-loop is chosen carefully here.
+                        for iL=1:(L/2+1)
+                            for iK=1:K
+                                if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                                    continue;
+                                else
+                                    mask = WVGeostrophicSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                                end
+                            end
+                        end
+                    else
+                        error('invalid conjugate dimension')
+                    end
+            end
+            mask = mask .* self.maskForCoefficientMatrix(coefficientMatrix);
+        end
+
+        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskOfPrimaryCoefficients(coefficientMatrix)
+            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -86,7 +106,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
             mask = self.maskForCoefficientMatrix(coefficientMatrix);
-            maskr = self.wvt.maskForRedundantHermitianCoefficients();
+            maskr = self.maskForConjugateCoefficients(coefficientMatrix);
             mask = mask .* ~maskr;
         end
         
@@ -105,8 +125,83 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 n double {mustBeNonnegative}
             end
-            mask = self.maskOfPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
             n=sum(mask(:));
+        end
+
+        function [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(self,kMode,lMode,jMode)
+            % return subscript indices for a given mode number
+            %
+            % This function will return the subscript indices into the A0 array,
+            % given the primary mode numbers (k,l,j). Note that this will
+            % *not* normalize the mode to the primary mode number, but will
+            % throw an error.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: non-negative integer
+            % - Parameter lMode: non-negative integer
+            % - Parameter jMode: non-negative integer
+            % - Returns kIndex: a positive integer
+            % - Returns lIndex: a positive integer
+            % - Returns jIndex: a positive integer
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                kIndex (:,1) double {mustBeInteger,mustBePositive}
+                lIndex (:,1) double {mustBeInteger,mustBePositive}
+                jIndex (:,1) double {mustBeInteger,mustBePositive}
+            end
+            if self.wvt.conjugateDimension == 1
+                lMode(lMode<0) = lMode(lMode<0) + self.wvt.Ny;
+            elseif self.wvt.conjugateDimension == 2
+                kMode(kMode<0) = kMode(kMode<0) + self.wvt.Nx;
+            end
+            kIndex = kMode + 1;
+            lIndex = lMode + 1;
+            jIndex = jMode + 1;
+        end
+
+        function [kMode,lMode,jMode] = modeNumberFromSubscriptIndices(self,kIndex,lIndex,jIndex)
+            % return subscript indices for a given mode number
+            %
+            % This function will return the subscript indices into the A0 array,
+            % given the primary mode numbers (k,l,j). Note that this will
+            % *not* normalize the mode to the primary mode number, but will
+            % throw an error.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: non-negative integer
+            % - Parameter lMode: non-negative integer
+            % - Parameter jMode: non-negative integer
+            % - Returns kIndex: a positive integer
+            % - Returns lIndex: a positive integer
+            % - Returns jIndex: a positive integer
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                kIndex (:,1) double {mustBeInteger,mustBePositive}
+                lIndex (:,1) double {mustBeInteger,mustBePositive}
+                jIndex (:,1) double {mustBeInteger,mustBePositive}
+
+            end
+            arguments (Output)
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            kMode = kIndex - 1;
+            lMode = lIndex - 1;
+            jMode = jIndex - 1;
+            if self.wvt.conjugateDimension == 1
+                lMode(lMode>self.wvt.Ny/2) = lMode(lMode>self.wvt.Ny/2) - self.wvt.Ny;
+            elseif self.wvt.conjugateDimension == 2
+                kMode(kMode>self.wvt.Nx/2) = kMode(kMode>self.wvt.Nx/2) - self.wvt.Nx;
+            end   
         end
 
         function index = linearIndexFromModeNumber(self,kMode,lMode,jMode)
@@ -133,13 +228,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 index (:,1) double {mustBeInteger,mustBePositive}
             end
 
-            kMode(kMode<0) = kMode(kMode<0) + self.wvt.Nx;
-            kMode = kMode + 1;
-            lMode = lMode + 1;
-            jMode = jMode + 1;
-            index = sub2ind(size(self.wvt.A0),kMode,lMode,jMode);
+            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
+            index = sub2ind(size(self.wvt.A0),kIndex,lIndex,jIndex);
 
-            mask = self.maskOfPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
             if any(mask(index)==0)
                 error('Invalid mode number!');
             end
@@ -155,16 +247,50 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 lMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
             end
-            mask = self.maskOfPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
             if any(mask(linearIndex)==0)
                 error('Invalid mode number!');
             end
 
-            [kMode,lMode,jMode] = sub2ind(size(self.wvt.A0),linearIndex);
-            kMode = kMode - 1;
-            lMode = lMode - 1;
-            jMode = jMode - 1;
-            kMode(kMode>self.wvt.Nx/2) = kMode(kMode>self.wvt.Nx/2) - self.wvt.Nx;
+            [kIndex,lIndex,jIndex] = ind2sub(size(self.wvt.A0),linearIndex);
+            [kMode,lMode,jMode] = self.modeNumberFromSubscriptIndices(kIndex,lIndex,jIndex);
+        end
+
+        function index = linearIndexOfConjugateFromModeNumber(self,kMode,lMode,jMode)
+            % return the linear index of the conjugate from the primary mode number
+            %
+            % This function will return the linear index of the conjugate
+            % into the A0 array, given the primary mode numbers (k,l,j).
+            % Note that this will *not* normalize the mode to the primary
+            % mode number, but will throw an error.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: index = linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: non-negative integer
+            % - Parameter lMode: non-negative integer
+            % - Parameter jMode: non-negative integer
+            % - Returns linearIndex: a non-negative integer number
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                index (:,1) double {mustBeInteger,mustBePositive}
+            end
+
+            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
+            index = sub2ind(size(self.wvt.A0),kIndex,lIndex,jIndex);
+
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            if any(mask(index)==0)
+                error('Invalid mode number!');
+            end
+
+            kCIndex = mod(kIndex-self.wvt.Nk+1, self.wvt.Nk) + 1;
+            lCIndex = mod(lIndex-self.wvt.Nl+1, self.wvt.Nl) + 1;
+            index = sub2ind(size(self.wvt.A0),kCIndex,lCIndex,jIndex);
         end
 
         function solutions = uniqueSolutionAtIndex(self,index)
@@ -181,16 +307,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 index (:,1) double {mustBeNonnegative}
             end
             arguments (Output)
-                solutions (:,1) WVAnalyticalSolution
+                solutions (:,1) WVOrthogonalSolution
             end
-            mask = self.maskOfPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
             indicesForUniqueSolutions = find(mask==1);
-            solutions=WVAnalyticalSolution.empty(length(index),1);
-            for iSolution = 1:length(indicesForUniqueSolutions)
-                linearIndex = indicesForUniqueSolutions(iSolution);
+            solutions=WVOrthogonalSolution.empty(length(index),0);
+            for iSolution = 1:length(index)
+                linearIndex = indicesForUniqueSolutions(index(iSolution));
                 [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
-                A = abs(2*self.A0(linearIndex));
-                phi = angle(2*self.A0(linearIndex));
+                A = abs(2*self.wvt.A0(linearIndex));
+                phi = angle(2*self.wvt.A0(linearIndex));
                 solutions(iSolution) = self.geostrophicSolution(kMode,lMode,jMode,A,phi);
             end
         end
@@ -214,7 +340,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVTransform {mustBeNonempty}
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double
                 lMode (:,1) double
                 jMode (:,1) double
@@ -223,31 +349,40 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
             end
             arguments (Output)
-                solution (1,1) WVAnalyticalSolution
+                solution (1,1) WVOrthogonalSolution
             end
-            m = self.j(jIndex)*pi/self.Lz;
-            k = self.k(kIndex);
-            l = self.l(lIndex);
-            h = self.N0^2/(self.g*m^2);
+            wvt = self.wvt;
+            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
+            m = wvt.j(jIndex)*pi/wvt.Lz;
+            k = wvt.k(kIndex);
+            l = wvt.l(lIndex);
+            h = wvt.N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
-            norm = sign*sqrt(2*self.g/self.Lz)/self.N0;
+            norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
 
-            G = @(z) norm*sin(m*(z+self.Lz));
-            F = @(z) norm*h*m*cos(m*(z+self.Lz));
+            G = @(z) norm*sin(m*(z+wvt.Lz));
+            F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
 
             theta = @(x,y,t) k*x + l*y + phi;
-            u = @(x,y,z,t) A*(self.g*l/self.f)*sin( theta(x,y,t) ).*F(z);
-            v = @(x,y,z,t) -A*(self.g*k/self.f)*sin( theta(x,y,t) ).*F(z);
-            w = @(x,y,z,t) zeros(self.Nx,self.Ny,self.Nz);
+            u = @(x,y,z,t) A*(wvt.g*l/wvt.f)*sin( theta(x,y,t) ).*F(z);
+            v = @(x,y,z,t) -A*(wvt.g*k/wvt.f)*sin( theta(x,y,t) ).*F(z);
+            w = @(x,y,z,t) zeros(wvt.Nx,wvt.Ny,wvt.Nz);
             eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
-            p = @(x,y,z,t) A*self.rho0*self.g*cos( theta(x,y,t) ).*F(z);
+            p = @(x,y,z,t) A*wvt.rho0*wvt.g*cos( theta(x,y,t) ).*F(z);
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
+            solution.conjugateCoefficientMatrix = WVCoefficientMatrix.A0;
+            solution.conjugateCoefficientMatrixIndex = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode);
+            solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
+            K2 = k*k+l*l;
+            Lr2 = wvt.g*h/wvt.f/wvt.f;
+            solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
+            solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
         function bool = contains(self,otherFlowConstituent)
@@ -259,5 +394,30 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
         end
 
     end 
+
+    methods (Static)
+        function A0 = setConjugate(A0,iK,iL,K,L)
+            icK = mod(K-iK+1, K) + 1;
+            icL = mod(L-iL+1, L) + 1;
+            if iK == icK && iL == icL % self-conjugate terms
+                A0(iK,iL,:) = 0;
+            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
+                A0(iK,iL,:) = 0;
+            else
+                A0(icK,icL,:) = conj(A0(iK,iL,:));
+            end
+        end
+        function A0 = setConjugateToUnity(A0,iK,iL,K,L)
+            icK = mod(K-iK+1, K) + 1;
+            icL = mod(L-iL+1, L) + 1;
+            if iK == icK && iL == icL % self-conjugate terms
+                A0(iK,iL,:) = 0;
+            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
+                A0(iK,iL,:) = 0;
+            else
+                A0(icK,icL,:) = 1;
+            end
+        end
+    end
 end
 
