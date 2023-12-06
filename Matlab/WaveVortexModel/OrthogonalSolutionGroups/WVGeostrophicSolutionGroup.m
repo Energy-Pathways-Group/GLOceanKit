@@ -293,7 +293,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             index = sub2ind(size(self.wvt.A0),kCIndex,lCIndex,jIndex);
         end
 
-        function solutions = uniqueSolutionAtIndex(self,index)
+        function solutions = uniqueSolutionAtIndex(self,index,options)
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
@@ -305,6 +305,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Input)
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 index (:,1) double {mustBeNonnegative}
+                options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
             arguments (Output)
                 solutions (:,1) WVOrthogonalSolution
@@ -315,8 +316,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             for iSolution = 1:length(index)
                 linearIndex = indicesForUniqueSolutions(index(iSolution));
                 [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
-                A = abs(2*self.wvt.A0(linearIndex));
-                phi = angle(2*self.wvt.A0(linearIndex));
+                if strcmp(options.amplitude,'random')
+                    A = randn([1 1]);
+                    phi = 2*pi*rand([1 1]) - pi;
+                else
+                    A = abs(2*self.wvt.A0(linearIndex));
+                    phi = angle(2*self.wvt.A0(linearIndex));
+                end
                 solutions(iSolution) = self.geostrophicSolution(kMode,lMode,jMode,A,phi);
             end
         end
