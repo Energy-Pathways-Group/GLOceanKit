@@ -54,6 +54,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                mask double {mustBeNonnegative}
+            end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.A0
@@ -110,24 +117,6 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             mask = mask .* ~maskr;
         end
         
-        function n = nUniqueSolutions(self)
-            % return the number of unique solutions of this type
-            %
-            % Returns the number of unique solutions of this type for the
-            % transform in its current configuration.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: n = nUniqueSolutions(self)
-            % - Returns n: a non-negative integer number
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-            end
-            arguments (Output)
-                n double {mustBeNonnegative}
-            end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
-            n=sum(mask(:));
-        end
 
         function [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(self,kMode,lMode,jMode)
             % return subscript indices for a given mode number
@@ -291,6 +280,25 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             kCIndex = mod(kIndex-self.wvt.Nk+1, self.wvt.Nk) + 1;
             lCIndex = mod(lIndex-self.wvt.Nl+1, self.wvt.Nl) + 1;
             index = sub2ind(size(self.wvt.A0),kCIndex,lCIndex,jIndex);
+        end
+
+        function n = nUniqueSolutions(self)
+            % return the number of unique solutions of this type
+            %
+            % Returns the number of unique solutions of this type for the
+            % transform in its current configuration.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: n = nUniqueSolutions(self)
+            % - Returns n: a non-negative integer number
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                n double {mustBeNonnegative}
+            end
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            n=sum(mask(:));
         end
 
         function solutions = uniqueSolutionAtIndex(self,index,options)

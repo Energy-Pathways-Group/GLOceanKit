@@ -8,7 +8,7 @@ classdef WVOrthogonalSolution < handle
 % The amplitude and phase are real valued. kMode, lMode, jMode are the
 % indices (k,l,j) used to represent the solution mathematically. Some
 % solution types might not have k or l (and thus be nil), and j may start
-% at 0, unlike Matlab index.
+% at 0, unlike Matlab indexing.
 %
 % (u,v,w,eta,p) are function handles which take arguments @(x,y,z,t) and
 % return real values.

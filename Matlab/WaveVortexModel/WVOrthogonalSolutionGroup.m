@@ -1,25 +1,37 @@
 classdef WVOrthogonalSolutionGroup
     %Orthogonal solution group
     %
+    % Each degree-of-freedom in the model is associated with an analytical
+    % solution to the equations of motion. This class groups together
+    % solutions of a particular type and provides a mapping between their
+    % analytical solutions and their numerical representation.
+    %
+    % Perhaps the most complicate part of the numerical implementation is
+    % the indexing---finding where each solution is represented
+    % numerically. In general, a solution will have some properties, e.g.,
+    %   (kMode,lMode,jMode,phi,A,omegasign) 
+    % which will have a primary and conjugate part, each of which might be
+    % in two different matrices.
+    %
     % - Declaration: classdef WVOrthogonalSolutionGroup
     properties (Access=private)
         bitmask = 0
     end
     properties
         % name of the flow feature
-        % 
+        %
         % name, e.g., "internal gravity wave"
         % - Topic: Properties
         name
 
         % name of the flow feature
-        % 
+        %
         % name, e.g., "internalGravityWave"
         % - Topic: Properties
         camelCaseName
 
         % abbreviated name
-        % 
+        %
         % abreviated name, e.g., "igw" for internal gravity waves.
         % - Topic: Properties
         abbreviatedName
@@ -52,7 +64,45 @@ classdef WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
         end
-        
+
+        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
+            % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
+            %
+            % Returns a 'mask' (matrix with 1s or 0s) indicating where
+            % different solution types live in the Ap, Am, A0 matrices.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                mask double {mustBeNonnegative}
+            end
+        end
+
+        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
+            % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
+            %
+            % Returns a 'mask' (matrix with 1s or 0s) indicating where
+            % different solution types live in the Ap, Am, A0 matrices.
+            %
+            % - Topic: Analytical solutions
+            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                mask double {mustBeNonnegative}
+            end
+        end
+
         function n = nUniqueSolutions(self)
             % return the number of unique solutions of this type
             %
@@ -99,6 +149,6 @@ classdef WVOrthogonalSolutionGroup
             end
         end
 
-    end 
+    end
 end
 
