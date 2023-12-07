@@ -1,16 +1,16 @@
-classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
+classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
     %Geostrophic solution group
     %
     % - Declaration: classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
     methods
-        function self = WVGeostrophicSolutionGroup(wvt)
+        function self = WVInternalGravityWaveSolutionGroup(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
             self@WVOrthogonalSolutionGroup(wvt);
-            self.name = "geostrophic";
-            self.camelCaseName = "geostrophic";
-            self.abbreviatedName = "g";
+            self.name = "internal gravity wave";
+            self.camelCaseName = "internalGravityWave";
+            self.abbreviatedName = "igw";
         end
 
         function mask = maskForCoefficientMatrix(self,coefficientMatrix)
@@ -24,7 +24,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -32,15 +32,15 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = zeros(size(self.wvt.Ap));
+                    mask = ones(size(self.wvt.Ap)) .* ~self.wvt.maskForNyquistModes();
+                    mask(:,:,1) = 0; % no j=0 solution
+                    mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.Am
-                    mask = zeros(size(self.wvt.Am));
+                    mask = ones(size(self.wvt.Am)) .* ~self.wvt.maskForNyquistModes();
+                    mask(:,:,1) = 0; % no j=0 solution
+                    mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.A0
-                    mask = ~self.wvt.maskForNyquistModes();
-                    IG = ones(size(self.wvt.A0));
-                    IG(:,:,1) = 0;
-                    IG(1,1,:) = 0;
-                    mask = IG.*mask;
+                    mask = zeros(size(self.wvt.A0));
             end
         end
 
@@ -55,7 +55,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -63,7 +63,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
-                case WVCoefficientMatrix.A0
+                case {WVCoefficientMatrix.Ap, WVCoefficientMatrix.Am}
                     K = size(mask,1);
                     L = size(mask,2);
                     if self.wvt.conjugateDimension == 1
@@ -73,7 +73,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                                 if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
                                     continue;
                                 else
-                                    mask = WVGeostrophicSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                                    mask = WVInternalGravityWaveSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
                                 end
                             end
                         end
@@ -84,7 +84,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                                 if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
                                     continue;
                                 else
-                                    mask = WVGeostrophicSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                                    mask = WVInternalGravityWaveSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
                                 end
                             end
                         end
@@ -106,7 +106,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -135,7 +135,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns lIndex: a positive integer
             % - Returns jIndex: a positive integer
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -172,7 +172,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns lIndex: a positive integer
             % - Returns jIndex: a positive integer
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kIndex (:,1) double {mustBeInteger,mustBePositive}
                 lIndex (:,1) double {mustBeInteger,mustBePositive}
                 jIndex (:,1) double {mustBeInteger,mustBePositive}
@@ -208,7 +208,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter jMode: non-negative integer
             % - Returns linearIndex: a non-negative integer number
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -218,9 +218,9 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
 
             [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
-            index = sub2ind(size(self.wvt.A0),kIndex,lIndex,jIndex);
+            index = sub2ind(size(self.wvt.Ap),kIndex,lIndex,jIndex);
 
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
             if any(mask(index)==0)
                 error('Invalid mode number!');
             end
@@ -228,7 +228,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
 
         function [kMode,lMode,jMode] = modeNumberFromLinearIndex(self,linearIndex)
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 linearIndex (:,1) double {mustBeInteger,mustBePositive}
             end
             arguments (Output)
@@ -236,12 +236,12 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 lMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
             if any(mask(linearIndex)==0)
                 error('Invalid mode number!');
             end
 
-            [kIndex,lIndex,jIndex] = ind2sub(size(self.wvt.A0),linearIndex);
+            [kIndex,lIndex,jIndex] = ind2sub(size(self.wvt.Ap),linearIndex);
             [kMode,lMode,jMode] = self.modeNumberFromSubscriptIndices(kIndex,lIndex,jIndex);
         end
 
@@ -260,7 +260,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter jMode: non-negative integer
             % - Returns linearIndex: a non-negative integer number
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -270,16 +270,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
 
             [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
-            index = sub2ind(size(self.wvt.A0),kIndex,lIndex,jIndex);
+            index = sub2ind(size(self.wvt.Ap),kIndex,lIndex,jIndex);
 
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
             if any(mask(index)==0)
                 error('Invalid mode number!');
             end
 
             kCIndex = mod(kIndex-self.wvt.Nk+1, self.wvt.Nk) + 1;
             lCIndex = mod(lIndex-self.wvt.Nl+1, self.wvt.Nl) + 1;
-            index = sub2ind(size(self.wvt.A0),kCIndex,lCIndex,jIndex);
+            index = sub2ind(size(self.wvt.Ap),kCIndex,lCIndex,jIndex);
         end
 
         function n = nUniqueSolutions(self)
@@ -292,51 +292,71 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Declaration: n = nUniqueSolutions(self)
             % - Returns n: a non-negative integer number
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
             end
             arguments (Output)
                 n double {mustBeNonnegative}
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
-            n=sum(mask(:));
+            maskP = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
+            maskM = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Am);
+            n=sum(maskP(:)) + sum(maskM(:));
         end
 
-        function solutions = uniqueSolutionAtIndex(self,index,options)
+        function solutions = uniqueSolutionAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
             %
             % - Topic: Analytical solutions
             % - Declaration: solution = uniqueSolutionAtIndex(index)
-            % - Parameter index: non-negative integer
+            % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                index (:,1) double {mustBeNonnegative}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                solutionIndex (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
             arguments (Output)
                 solutions (:,1) WVOrthogonalSolution
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
-            indicesForUniqueSolutions = find(mask==1);
-            solutions=WVOrthogonalSolution.empty(length(index),0);
-            for iSolution = 1:length(index)
-                linearIndex = indicesForUniqueSolutions(index(iSolution));
-                [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
-                if strcmp(options.amplitude,'random')
-                    A = randn([1 1]);
-                    phi = 2*pi*rand([1 1]) - pi;
+            maskP = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
+            maskM = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Am);
+            nUniqueAp = sum(maskP(:));
+            nUniqueAm = sum(maskM(:));
+            indicesForUniqueApSolutions = find(maskP==1);
+            indicesForUniqueAmSolutions = find(maskM==1);
+            solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
+            for iSolution = 1:length(solutionIndex)
+                if solutionIndex(iSolution) <= nUniqueAp
+                    linearIndex = indicesForUniqueApSolutions(solutionIndex(iSolution));
+                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
+                    if strcmp(options.amplitude,'random')
+                        A = randn([1 1]);
+                        phi = 2*pi*rand([1 1]) - pi;
+                    else
+                        A = abs(2*self.wvt.Ap(linearIndex));
+                        phi = angle(2*self.wvt.Ap(linearIndex));
+                    end
+                    solutions(iSolution) = self.internalGravityWaveSolution(kMode,lMode,jMode,A,phi,+1);
+                elseif solutionIndex(iSolution) <= nUniqueAp + nUniqueAm
+                    linearIndex = indicesForUniqueAmSolutions(solutionIndex(iSolution)-nUniqueAp);
+                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
+                    if strcmp(options.amplitude,'random')
+                        A = randn([1 1]);
+                        phi = 2*pi*rand([1 1]) - pi;
+                    else
+                        A = abs(2*self.wvt.Am(linearIndex));
+                        phi = angle(2*self.wvt.Am(linearIndex));
+                    end
+                    solutions(iSolution) = self.internalGravityWaveSolution(kMode,lMode,jMode,A,phi,-1);
                 else
-                    A = abs(2*self.wvt.A0(linearIndex));
-                    phi = angle(2*self.wvt.A0(linearIndex));
+                    error('invalid solution index');
                 end
-                solutions(iSolution) = self.geostrophicSolution(kMode,lMode,jMode,A,phi);
             end
         end
 
-        function [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
-            % returns properties of a geostrophic solution relative to the primary mode number
+        function [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign)
+            % returns properties of a internal gravity wave solutions relative to the primary mode number
             %
             % This function will return the primary mode numbers (k,l,j),
             % given the any valid mode numbers (k,l,j) and adjust the
@@ -344,19 +364,26 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             %
             % - Topic: Analytical solutions
             % - Declaration: [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
-            % - Parameter jMode: non-negative integer
-            % - Returns kIndex: a positive integer
-            % - Returns lIndex: a positive integer
-            % - Returns jIndex: a positive integer
+            % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
+            % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
+            % - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes)
+            % - Parameter A: amplitude in m/s.
+            % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
+            % - Parameter omegasign: sign of omega, [-1 1]
+            % - Returns kMode: integer index
+            % - Returns lMode: integer index
+            % - Returns jMode: integer index
+            % - Returns A: amplitude in m.
+            % - Returns phi: phase in radians
+            % - Returns omegasign: sign of omega, [-1 1]
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBePositive}
                 A (:,1) double
                 phi (:,1) double
+                omegasign (:,1) double {mustBeMember(omegasign,[-1 1])}
             end
             arguments (Output)
                 kMode (:,1) double {mustBeInteger}
@@ -364,6 +391,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 jMode (:,1) double {mustBeInteger,mustBePositive}
                 A (:,1) double
                 phi (:,1) double
+                omegasign (:,1) double {mustBeMember(omegasign,[-1 1])}
             end
             if any(kMode <= -self.wvt.Nx/2 | kMode >= self.wvt.Nx/2)
                 error('Invalid choice for k0. Must be an integer %d < k0 < %d',-self.wvt.Nx/2+1,self.wvt.Nx/2-1);
@@ -371,8 +399,8 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             if any(lMode <= -self.wvt.Ny/2 | lMode >= self.wvt.Ny/2)
                 error('Invalid choice for l0. Must be an integer %d < l0 < %d',-self.wvt.Ny/2+1,self.wvt.Ny/2+1);
             end
-            if any(jMode == 0 & lMode == 0 & kMode == 0)
-                error('Invalid choice. There is no k=0, l=0, j=0 geostrophic mode.');
+            if any(jMode == 0 | jMode > self.wvt.Nj)
+                error('Invalid choice. j must be between 1 and Nj');
             end
 
             if self.wvt.conjugateDimension == 1
@@ -381,6 +409,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                     lMode(indices) = -lMode(indices);
                     A(indices) = -A(indices);
                     phi(indices) = -phi(indices);
+                    omegasign(indices) = -omegasign(indices);
                 end
 
                 indices = kMode < 0;
@@ -389,6 +418,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                     lMode(indices) = -lMode(indices);
                     A(indices) = -A(indices);
                     phi(indices) = -phi(indices);
+                    omegasign(indices) = -omegasign(indices);
                 end
             elseif self.wvt.conjugateDimension == 2
                 indices = kMode < 0 & lMode == 0;
@@ -396,6 +426,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                     kMode(indices) = -kMode(indices);
                     A(indices) = -A(indices);
                     phi(indices) = -phi(indices);
+                    omegasign(indices) = -omegasign(indices);
                 end
 
                 indices = lMode < 0;
@@ -404,23 +435,25 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                     lMode(indices) = -lMode(indices);
                     A(indices) = -A(indices);
                     phi(indices) = -phi(indices);
+                    omegasign(indices) = -omegasign(indices);
                 end
             end
 
         end
 
-        function solution = geostrophicSolution(self,kMode,lMode,jMode,A,phi,options)
-            % return a real-valued analytical solution of the geostrophic mode
+        function solution = internalGravityWaveSolution(self,kMode,lMode,jMode,A,phi,omegasign,options)
+            % return a real-valued analytical solution of the internal gravity wave mode
             %
             % Returns function handles of the form u=@(x,y,z,t)
             %
             % - Topic: Analytical solutions
-            % - Declaration: solution = geostrophicSolution(kMode,lMode,jMode,A,phi,options)
+            % - Declaration: solution = internalGravityWaveSolution(self,kMode,lMode,jMode,A,phi,omegasign,options)
             % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
             % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
             % - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
-            % - Parameter A: amplitude in m.
+            % - Parameter A: amplitude in m/s.
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
+            % - Parameter omegasign: sign of omega, [-1 1]
             % - Parameter shouldAssumeConstantN: (optional) default 1
             % - Returns u: fluid velocity, u = @(x,y,z,t)
             % - Returns v: fluid velocity, v = @(x,y,z,t)
@@ -428,50 +461,67 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (1,1) double
                 lMode (1,1) double
                 jMode (1,1) double
                 A (1,1) double
                 phi (1,1) double
+                omegasign (1,1) double {mustBeMember(omegasign,[-1 1])}
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
             end
             arguments (Output)
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
-            [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi);
+            [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
             [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
             m = wvt.j(jIndex)*pi/wvt.Lz;
             k = wvt.k(kIndex);
             l = wvt.l(lIndex);
-            h = wvt.N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
-            norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+            if wvt.isHydrostatic
+                h = wvt.N0^2/(wvt.g*m^2);
+                norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+            else
+                h = (wvt.N0^2-wvt.f^2)/(k^2 + l^2 + m^2)/wvt.g;
+                norm = sign*sqrt(2*wvt.g/((wvt.N0^2 -wvt.f^2)*wvt.Lz));
+            end
 
             G = @(z) norm*sin(m*(z+wvt.Lz));
             F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
 
-            theta = @(x,y,t) k*x + l*y + phi;
-            u = @(x,y,z,t) A*(wvt.g*l/wvt.f)*sin( theta(x,y,t) ).*F(z);
-            v = @(x,y,z,t) -A*(wvt.g*k/wvt.f)*sin( theta(x,y,t) ).*F(z);
-            w = @(x,y,z,t) zeros(wvt.Nx,wvt.Ny,wvt.Nz);
-            eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
-            p = @(x,y,z,t) A*wvt.rho0*wvt.g*cos( theta(x,y,t) ).*F(z);
+            alpha=atan2(l,k);
+            K = sqrt( k^2 + l^2);
+            omega = omegasign*sqrt( wvt.g*h*(k^2+l^2) + wvt.f^2 );
+            f0OverOmega = wvt.f/omega;
+            kOverOmega = K/omega;
 
+            theta = @(x,y,t) k*x + l*y + omega*t + phi;
+            u = @(x,y,z,t) A*(cos(alpha)*cos( theta(x,y,t) ) + f0OverOmega*sin(alpha)*sin( theta(x,y,t) )).*F(z);
+            v = @(x,y,z,t) A*(sin(alpha)*cos( theta(x,y,t) ) - f0OverOmega*cos(alpha)*sin( theta(x,y,t) )).*F(z);
+            w = @(x,y,z,t) A*K*h*sin( theta(x,y,t) ).*G(z);
+            eta = @(x,y,z,t) -A*h*kOverOmega * cos( theta(x,y,t)  ).*G(z);
+            p = @(x,y,z,t) -wvt.rho0*wvt.g*A*h*kOverOmega * cos( theta(x,y,t) ).*F(z);
+
+            if omegasign > 0
+                coefficientMatrix = WVCoefficientMatrix.Ap;
+            else
+                coefficientMatrix = WVCoefficientMatrix.Am;
+            end
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
-            solution.coefficientMatrix = WVCoefficientMatrix.A0;
+            solution.coefficientMatrix = coefficientMatrix;
             solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
-            solution.conjugateCoefficientMatrix = WVCoefficientMatrix.A0;
+            solution.conjugateCoefficientMatrix = coefficientMatrix;
             solution.conjugateCoefficientMatrixIndex = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode);
             solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
-            K2 = k*k+l*l;
-            Lr2 = wvt.g*h/wvt.f/wvt.f;
-            solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
-            solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            % K2 = k*k+l*l;
+            % Lr2 = wvt.g*h/wvt.f/wvt.f;
+            % solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
+            % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
         function bool = contains(self,otherFlowConstituent)
