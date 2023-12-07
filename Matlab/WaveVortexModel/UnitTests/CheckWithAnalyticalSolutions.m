@@ -20,9 +20,10 @@
 isHydrostatic = 0;
 wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
 
+solutionGroups{2} = WVMeanDensityAnomalySolutionGroup(wvt);
 solutionGroups{1} = WVInertialOscillationSolutionGroup(wvt);
-solutionGroups{2} = WVGeostrophicSolutionGroup(wvt);
-solutionGroups{3} = WVInternalGravityWaveSolutionGroup(wvt);
+solutionGroups{3} = WVGeostrophicSolutionGroup(wvt);
+solutionGroups{4} = WVInternalGravityWaveSolutionGroup(wvt);
 
 for iGroup = 1:length(solutionGroups)
     totalErrors = 0;
