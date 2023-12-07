@@ -20,13 +20,15 @@
 isHydrostatic = 0;
 wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
 
-solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);
-solutionGroups{2} = WVInternalGravityWaveSolutionGroup(wvt);
+solutionGroups{1} = WVInertialOscillationSolutionGroup(wvt);
+solutionGroups{2} = WVGeostrophicSolutionGroup(wvt);
+solutionGroups{3} = WVInternalGravityWaveSolutionGroup(wvt);
 
 for iGroup = 1:length(solutionGroups)
     totalErrors = 0;
     totalTests = 0;
     solnGroup = solutionGroups{iGroup};
+    fprintf('\n***************************************************\n');
     fprintf('Testing %s solution group:\n',solnGroup.name);
     for iSoln = 1:solnGroup.nUniqueSolutions
         soln = solnGroup.uniqueSolutionAtIndex(iSoln,amplitude='random');
@@ -34,10 +36,10 @@ for iGroup = 1:length(solutionGroups)
         [totalTests,totalErrors] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln);
     end
     summarizeTestResults(totalErrors,totalTests);
+    fprintf('***************************************************\n');
 end
 
 function summarizeTestResults(totalErrors,totalTests)
-fprintf('\n***************************************************\n');
 if totalErrors > 0
     fprintf('FAILED %d of %d tests.\n',totalErrors, totalTests);
 else

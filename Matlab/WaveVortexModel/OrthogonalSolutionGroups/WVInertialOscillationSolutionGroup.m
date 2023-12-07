@@ -119,45 +119,6 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.Ap );
         end
 
-
-
-        function index = linearIndexOfConjugateFromModeNumber(self,kMode,lMode,jMode)
-            % return the linear index of the conjugate from the primary mode number
-            %
-            % This function will return the linear index of the conjugate
-            % into the A0 array, given the primary mode numbers (k,l,j).
-            % Note that this will *not* normalize the mode to the primary
-            % mode number, but will throw an error.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: index = linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
-            % - Parameter jMode: non-negative integer
-            % - Returns linearIndex: a non-negative integer number
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                index (:,1) double {mustBeInteger,mustBePositive}
-            end
-
-            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
-            index = sub2ind(size(self.wvt.Ap),kIndex,lIndex,jIndex);
-
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            if any(mask(index)==0)
-                error('Invalid mode number!');
-            end
-
-            kCIndex = mod(kIndex-self.wvt.Nk+1, self.wvt.Nk) + 1;
-            lCIndex = mod(lIndex-self.wvt.Nl+1, self.wvt.Nl) + 1;
-            index = sub2ind(size(self.wvt.Ap),kCIndex,lCIndex,jIndex);
-        end
-
         function n = nUniqueSolutions(self)
             % return the number of unique solutions of this type
             %
@@ -196,128 +157,25 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                 solutions (:,1) WVOrthogonalSolution
             end
             maskP = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            maskM = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Am);
             nUniqueAp = sum(maskP(:));
-            nUniqueAm = sum(maskM(:));
             indicesForUniqueApSolutions = find(maskP==1);
-            indicesForUniqueAmSolutions = find(maskM==1);
             solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
             for iSolution = 1:length(solutionIndex)
-                if solutionIndex(iSolution) <= nUniqueAp
-                    linearIndex = indicesForUniqueApSolutions(solutionIndex(iSolution));
-                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
-                    if strcmp(options.amplitude,'random')
-                        A = randn([1 1]);
-                        phi = 2*pi*rand([1 1]) - pi;
-                    else
-                        A = abs(2*self.wvt.Ap(linearIndex));
-                        phi = angle(2*self.wvt.Ap(linearIndex));
-                    end
-                    solutions(iSolution) = self.internalGravityWaveSolution(kMode,lMode,jMode,A,phi,+1);
-                elseif solutionIndex(iSolution) <= nUniqueAp + nUniqueAm
-                    linearIndex = indicesForUniqueAmSolutions(solutionIndex(iSolution)-nUniqueAp);
-                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex);
-                    if strcmp(options.amplitude,'random')
-                        A = randn([1 1]);
-                        phi = 2*pi*rand([1 1]) - pi;
-                    else
-                        A = abs(2*self.wvt.Am(linearIndex));
-                        phi = angle(2*self.wvt.Am(linearIndex));
-                    end
-                    solutions(iSolution) = self.internalGravityWaveSolution(kMode,lMode,jMode,A,phi,-1);
+                linearIndex = indicesForUniqueApSolutions(solutionIndex(iSolution));
+                [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.Ap);
+                if strcmp(options.amplitude,'random')
+                    A = randn([1 1]);
+                    phi = 2*pi*rand([1 1]) - pi;
                 else
-                    error('invalid solution index');
+                    A = abs(2*self.wvt.Ap(linearIndex));
+                    phi = angle(2*self.wvt.Ap(linearIndex));
                 end
+                solutions(iSolution) = self.inertialOscillationSolution(kMode,lMode,jMode,A,phi);
+
             end
         end
 
-        function [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign)
-            % returns properties of a internal gravity wave solutions relative to the primary mode number
-            %
-            % This function will return the primary mode numbers (k,l,j),
-            % given the any valid mode numbers (k,l,j) and adjust the
-            % amplitude (A) and phase (phi), if necessary.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
-            % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
-            % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
-            % - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes)
-            % - Parameter A: amplitude in m/s.
-            % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter omegasign: sign of omega, [-1 1]
-            % - Returns kMode: integer index
-            % - Returns lMode: integer index
-            % - Returns jMode: integer index
-            % - Returns A: amplitude in m.
-            % - Returns phi: phase in radians
-            % - Returns omegasign: sign of omega, [-1 1]
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBePositive}
-                A (:,1) double
-                phi (:,1) double
-                omegasign (:,1) double {mustBeMember(omegasign,[-1 1])}
-            end
-            arguments (Output)
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBePositive}
-                A (:,1) double
-                phi (:,1) double
-                omegasign (:,1) double {mustBeMember(omegasign,[-1 1])}
-            end
-            if any(kMode <= -self.wvt.Nx/2 | kMode >= self.wvt.Nx/2)
-                error('Invalid choice for k0. Must be an integer %d < k0 < %d',-self.wvt.Nx/2+1,self.wvt.Nx/2-1);
-            end
-            if any(lMode <= -self.wvt.Ny/2 | lMode >= self.wvt.Ny/2)
-                error('Invalid choice for l0. Must be an integer %d < l0 < %d',-self.wvt.Ny/2+1,self.wvt.Ny/2+1);
-            end
-            if any(jMode == 0 | jMode > self.wvt.Nj)
-                error('Invalid choice. j must be between 1 and Nj');
-            end
-
-            if self.wvt.conjugateDimension == 1
-                indices = lMode < 0 & kMode == 0;
-                if any(indices)
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-
-                indices = kMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-            elseif self.wvt.conjugateDimension == 2
-                indices = kMode < 0 & lMode == 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-
-                indices = lMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-            end
-
-        end
-
-        function solution = internalGravityWaveSolution(self,kMode,lMode,jMode,A,phi,omegasign,options)
+        function solution = inertialOscillationSolution(self,kMode,lMode,jMode,A,phi,options)
             % return a real-valued analytical solution of the internal gravity wave mode
             %
             % Returns function handles of the form u=@(x,y,z,t)
@@ -329,7 +187,6 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
             % - Parameter A: amplitude in m/s.
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter omegasign: sign of omega, [-1 1]
             % - Parameter shouldAssumeConstantN: (optional) default 1
             % - Returns u: fluid velocity, u = @(x,y,z,t)
             % - Returns v: fluid velocity, v = @(x,y,z,t)
@@ -343,55 +200,49 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                 jMode (1,1) double
                 A (1,1) double
                 phi (1,1) double
-                omegasign (1,1) double {mustBeMember(omegasign,[-1 1])}
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
             end
             arguments (Output)
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
-            [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
-            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
-            m = wvt.j(jIndex)*pi/wvt.Lz;
-            k = wvt.k(kIndex);
-            l = wvt.l(lIndex);
-            sign = -2*(mod(jMode,2) == 1)+1;
-            if wvt.isHydrostatic
-                h = wvt.N0^2/(wvt.g*m^2);
-                norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+            [~,~,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
+
+            if jIndex == 1
+                G = @(z) zeros(size(z));
+                F = @(z) ones(size(z));
             else
-                h = (wvt.N0^2-wvt.f^2)/(k^2 + l^2 + m^2)/wvt.g;
-                norm = sign*sqrt(2*wvt.g/((wvt.N0^2 -wvt.f^2)*wvt.Lz));
+                m = wvt.j(jIndex)*pi/wvt.Lz;
+                sign = -2*(mod(jMode,2) == 1)+1;
+                if wvt.isHydrostatic
+                    h = wvt.N0^2/(wvt.g*m^2);
+                    norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+                else
+                    h = (wvt.N0^2-wvt.f^2)/(m^2)/wvt.g;
+                    norm = sign*sqrt(2*wvt.g/((wvt.N0^2 -wvt.f^2)*wvt.Lz));
+                end
+                G = @(z) zeros(size(z));
+                F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
             end
 
-            G = @(z) norm*sin(m*(z+wvt.Lz));
-            F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
 
-            alpha=atan2(l,k);
-            K = sqrt( k^2 + l^2);
-            omega = omegasign*sqrt( wvt.g*h*(k^2+l^2) + wvt.f^2 );
-            f0OverOmega = wvt.f/omega;
-            kOverOmega = K/omega;
 
-            theta = @(x,y,t) k*x + l*y + omega*t + phi;
-            u = @(x,y,z,t) A*(cos(alpha)*cos( theta(x,y,t) ) + f0OverOmega*sin(alpha)*sin( theta(x,y,t) )).*F(z);
-            v = @(x,y,z,t) A*(sin(alpha)*cos( theta(x,y,t) ) - f0OverOmega*cos(alpha)*sin( theta(x,y,t) )).*F(z);
-            w = @(x,y,z,t) A*K*h*sin( theta(x,y,t) ).*G(z);
-            eta = @(x,y,z,t) -A*h*kOverOmega * cos( theta(x,y,t)  ).*G(z);
-            p = @(x,y,z,t) -wvt.rho0*wvt.g*A*h*kOverOmega * cos( theta(x,y,t) ).*F(z);
+            theta = @(x,y,t) wvt.f*t + phi;
+            u = @(x,y,z,t) A*cos( theta(x,y,t) ).*F(z);
+            v = @(x,y,z,t) -A*sin( theta(x,y,t) ).*F(z);
+            w = @(x,y,z,t) G(z);
+            eta = @(x,y,z,t) G(z);
+            p = @(x,y,z,t) G(z);
 
-            if omegasign > 0
-                coefficientMatrix = WVCoefficientMatrix.Ap;
-            else
-                coefficientMatrix = WVCoefficientMatrix.Am;
-            end
+            coefficientMatrix = WVCoefficientMatrix.Ap;
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
             solution.coefficientMatrix = coefficientMatrix;
-            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode);
+            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
-            solution.conjugateCoefficientMatrix = coefficientMatrix;
-            solution.conjugateCoefficientMatrixIndex = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode);
+            [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
+            solution.conjugateCoefficientMatrixIndex = conjugateIndex;
             solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             % K2 = k*k+l*l;
@@ -409,30 +260,5 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
         end
 
     end 
-
-    methods (Static)
-        function A0 = setConjugate(A0,iK,iL,K,L)
-            icK = mod(K-iK+1, K) + 1;
-            icL = mod(L-iL+1, L) + 1;
-            if iK == icK && iL == icL % self-conjugate terms
-                A0(iK,iL,:) = 0;
-            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
-                A0(iK,iL,:) = 0;
-            else
-                A0(icK,icL,:) = conj(A0(iK,iL,:));
-            end
-        end
-        function A0 = setConjugateToUnity(A0,iK,iL,K,L)
-            icK = mod(K-iK+1, K) + 1;
-            icL = mod(L-iL+1, L) + 1;
-            if iK == icK && iL == icL % self-conjugate terms
-                A0(iK,iL,:) = 0;
-            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
-                A0(iK,iL,:) = 0;
-            else
-                A0(icK,icL,:) = 1;
-            end
-        end
-    end
 end
 

@@ -315,6 +315,7 @@ classdef WVOrthogonalSolutionGroup
                 else
                     conjugateCoefficientMatrix = coefficientMatrix;
                 end
+                index = sub2ind([self.wvt.Nk,self.wvt.Nl,self.wvt.Nj],kIndex,lIndex,jIndex);
             else
                 kCIndex = mod(kIndex-self.wvt.Nk+1, self.wvt.Nk) + 1;
                 lCIndex = mod(lIndex-self.wvt.Nl+1, self.wvt.Nl) + 1;
