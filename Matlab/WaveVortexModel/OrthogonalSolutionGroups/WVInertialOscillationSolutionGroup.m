@@ -30,17 +30,14 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = zeros(size(self.wvt.Ap));
                     mask(1,1,:) = 1;
                     mask = mask .* ~self.wvt.maskForNyquistModes();
                 case WVCoefficientMatrix.Am
-                    mask = zeros(size(self.wvt.Am));
                     mask(1,1,:) = 1;
                     mask = mask .* ~self.wvt.maskForNyquistModes();
-                case WVCoefficientMatrix.A0
-                    mask = zeros(size(self.wvt.A0));
             end
         end
 
@@ -63,36 +60,10 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
-                case {WVCoefficientMatrix.Ap, WVCoefficientMatrix.Am}
-                    K = size(mask,1);
-                    L = size(mask,2);
-                    if self.wvt.conjugateDimension == 1
-                        % The order of the for-loop is chosen carefully here.
-                        for iK=1:(K/2+1)
-                            for iL=1:L
-                                if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVInertialOscillationSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    elseif self.wvt.conjugateDimension == 2
-                        % The order of the for-loop is chosen carefully here.
-                        for iL=1:(L/2+1)
-                            for iK=1:K
-                                if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVInertialOscillationSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    else
-                        error('invalid conjugate dimension')
-                    end
+                case WVCoefficientMatrix.Am
+                    mask(1,1,:) = 1;
+                    mask = mask .* ~self.wvt.maskForNyquistModes();
             end
-            mask = mask .* self.maskForCoefficientMatrix(coefficientMatrix);
         end
 
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
@@ -112,138 +83,43 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = self.maskForCoefficientMatrix(coefficientMatrix);
-            maskr = self.maskForConjugateCoefficients(coefficientMatrix);
-            mask = mask .* ~maskr;
+            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            switch(coefficientMatrix)
+                case WVCoefficientMatrix.Ap
+                    mask(1,1,:) = 1;
+                    mask = mask .* ~self.wvt.maskForNyquistModes();
+            end
         end
         
-
-        function [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(self,kMode,lMode,jMode)
-            % return subscript indices for a given mode number
-            %
-            % This function will return the subscript indices into the A0 array,
-            % given the primary mode numbers (k,l,j). Note that this will
-            % *not* normalize the mode to the primary mode number, but will
-            % throw an error.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
-            % - Parameter jMode: non-negative integer
-            % - Returns kIndex: a positive integer
-            % - Returns lIndex: a positive integer
-            % - Returns jIndex: a positive integer
+        function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVInertialOscillationSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                kIndex (:,1) double {mustBeInteger,mustBePositive}
-                lIndex (:,1) double {mustBeInteger,mustBePositive}
-                jIndex (:,1) double {mustBeInteger,mustBePositive}
+                bool (1,1) logical {mustBeMember(bool,[0 1])}
             end
-            if self.wvt.conjugateDimension == 1
-                lMode(lMode<0) = lMode(lMode<0) + self.wvt.Ny;
-            elseif self.wvt.conjugateDimension == 2
-                kMode(kMode<0) = kMode(kMode<0) + self.wvt.Nx;
-            end
-            kIndex = kMode + 1;
-            lIndex = lMode + 1;
-            jIndex = jMode + 1;
+            bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix ~= WVCoefficientMatrix.A0 );
         end
 
-        function [kMode,lMode,jMode] = modeNumberFromSubscriptIndices(self,kIndex,lIndex,jIndex)
-            % return subscript indices for a given mode number
-            %
-            % This function will return the subscript indices into the A0 array,
-            % given the primary mode numbers (k,l,j). Note that this will
-            % *not* normalize the mode to the primary mode number, but will
-            % throw an error.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: [kIndex,lIndex,jIndex] = subscriptIndicesFromModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
-            % - Parameter jMode: non-negative integer
-            % - Returns kIndex: a positive integer
-            % - Returns lIndex: a positive integer
-            % - Returns jIndex: a positive integer
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kIndex (:,1) double {mustBeInteger,mustBePositive}
-                lIndex (:,1) double {mustBeInteger,mustBePositive}
-                jIndex (:,1) double {mustBeInteger,mustBePositive}
-
-            end
-            arguments (Output)
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            kMode = kIndex - 1;
-            lMode = lIndex - 1;
-            jMode = jIndex - 1;
-            if self.wvt.conjugateDimension == 1
-                lMode(lMode>self.wvt.Ny/2) = lMode(lMode>self.wvt.Ny/2) - self.wvt.Ny;
-            elseif self.wvt.conjugateDimension == 2
-                kMode(kMode>self.wvt.Nx/2) = kMode(kMode>self.wvt.Nx/2) - self.wvt.Nx;
-            end   
-        end
-
-        function index = linearIndexFromModeNumber(self,kMode,lMode,jMode)
-            % return the linear index from the primary mode number
-            %
-            % This function will return the linear index into the A0 array,
-            % given the primary mode numbers (k,l,j). Note that this will
-            % *not* normalize the mode to the primary mode number, but will
-            % throw an error.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: index = linearIndexFromModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
-            % - Parameter jMode: non-negative integer
-            % - Returns linearIndex: a non-negative integer number
+        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVInertialOscillationSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                index (:,1) double {mustBeInteger,mustBePositive}
+                bool (1,1) logical {mustBeMember(bool,[0 1])}
             end
-
-            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromModeNumber(kMode,lMode,jMode);
-            index = sub2ind(size(self.wvt.Ap),kIndex,lIndex,jIndex);
-
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            if any(mask(index)==0)
-                error('Invalid mode number!');
-            end
+            bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.Ap );
         end
 
-        function [kMode,lMode,jMode] = modeNumberFromLinearIndex(self,linearIndex)
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                linearIndex (:,1) double {mustBeInteger,mustBePositive}
-            end
-            arguments (Output)
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            if any(mask(linearIndex)==0)
-                error('Invalid mode number!');
-            end
 
-            [kIndex,lIndex,jIndex] = ind2sub(size(self.wvt.Ap),linearIndex);
-            [kMode,lMode,jMode] = self.modeNumberFromSubscriptIndices(kIndex,lIndex,jIndex);
-        end
 
         function index = linearIndexOfConjugateFromModeNumber(self,kMode,lMode,jMode)
             % return the linear index of the conjugate from the primary mode number
