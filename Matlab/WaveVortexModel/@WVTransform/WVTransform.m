@@ -76,8 +76,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         ongridModes % This is a cached copy 
         version = 2.1;
 
-        iOmega
-
         ApU, ApV, ApN
         AmU, AmV, AmN
         A0U, A0V, A0N
@@ -125,10 +123,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         variableCache
     end
 
-    properties (Abstract,GetAccess=public) %, SetAccess=protected
+    properties (Abstract,GetAccess=public) 
         h_0  % [Nk Nl Nj]
         h_pm  % [Nk Nl Nj]
         isHydrostatic
+        iOmega
     end
     
     methods (Abstract)

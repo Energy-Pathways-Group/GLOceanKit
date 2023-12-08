@@ -17,16 +17,20 @@ classdef WVTransformConstantStratification < WVTransform
     properties (GetAccess=public, SetAccess=protected)
         N0, N2, rhobar
         F_g,G_g
-        h_pm
-        h_0
         F_wg, G_wg
 
         DCT, iDCT, DST, iDST, DFT, iDFT
         
-        isHydrostatic = 0
         cg_x, cg_y, cg_z
 
         A0Z, ApmD, ApmN
+    end
+
+    properties (GetAccess=public)
+        h_pm
+        h_0
+        iOmega
+        isHydrostatic = 0
     end
 
     properties (Access=private)
@@ -200,6 +204,9 @@ classdef WVTransformConstantStratification < WVTransform
             self.VAm = conj(self.VAp);
             self.WAm = self.WAp;
             self.NAm = -self.NAp;
+
+            % This is not consistent with the new initialization model
+            self.iOmega = WVTransform.makeHermitian(sqrt(-1)*self.Omega);
         end
   
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

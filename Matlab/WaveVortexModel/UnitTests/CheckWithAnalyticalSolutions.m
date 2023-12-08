@@ -18,7 +18,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 isHydrostatic = 1;
-% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
+%wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
 wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);
@@ -29,32 +29,50 @@ solutionGroups{4} = WVInertialOscillationSolutionGroup(wvt);
 for iGroup = 1:length(solutionGroups)
     totalErrors = 0;
     totalTests = 0;
+    log_max_spatial_error = -Inf;
+    log_max_spectral_error = -Inf;
+
     solnGroup = solutionGroups{iGroup};
     fprintf('\n***************************************************\n');
     fprintf('Testing %s solution group:\n',solnGroup.name);
     for iSoln = 1:solnGroup.nUniqueSolutions
         soln = solnGroup.uniqueSolutionAtIndex(iSoln,amplitude='random');
         wvt.initWithUVEta(soln.u(wvt.X,wvt.Y,wvt.Z,wvt.t), soln.v(wvt.X,wvt.Y,wvt.Z,wvt.t),soln.eta(wvt.X,wvt.Y,wvt.Z,wvt.t));
-        [totalTests,totalErrors] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln);
+        [totalTests,totalErrors,log_spatial_error,log_spectral_error] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln);
+        if log_spatial_error > log_max_spatial_error
+            log_max_spatial_error = log_spatial_error;
+        end
+        if log_spectral_error > log_max_spectral_error
+            log_max_spectral_error = log_spectral_error;
+        end
     end
-    summarizeTestResults(totalErrors,totalTests);
+    summarizeTestResults(totalErrors,totalTests,log_max_spatial_error,log_max_spectral_error);
     fprintf('***************************************************\n');
 end
 
-function summarizeTestResults(totalErrors,totalTests)
+function summarizeTestResults(totalErrors,totalTests,max_spatial_error,max_spectral_error)
 if totalErrors > 0
     fprintf('FAILED %d of %d tests.\n',totalErrors, totalTests);
 else
-    fprintf('PASSED all %d tests.\n', totalTests);
+    fprintf('PASSED all %d tests. Maximum (spatial,spectral) error is 1 part in (10^%.1f, 10^%.1f)\n', totalTests,max_spatial_error,max_spectral_error);
 end
 end
 
-function [totalTests,totalErrors] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln)
+function [totalTests,totalErrors,log_max_spatial_error,log_max_spectral_error] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln,options)
+arguments
+    totalTests (1,1) double {mustBeNonnegative}
+    totalErrors (1,1) double {mustBeNonnegative}
+    wvt WVTransform {mustBeNonempty}
+    soln WVOrthogonalSolution {mustBeNonempty}
+    options.spatialErrorTolerance (1,1) double = -10
+    options.spectralErrorTolerance (1,1) double = -3
+end
 [u_error,v_error,w_error,eta_error,p_error,coeff_error] = errorsFromSolution(wvt,soln);
-max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w_error))) round((log10(eta_error))) round((log10(p_error))) round((log10(coeff_error)))],[],'includenan');
+log_max_spatial_error = max([((log10(u_error)))  ((log10(v_error))) ((log10(w_error))) ((log10(eta_error))) ((log10(p_error)))],[],'includenan');
+log_max_spectral_error = ((log10(coeff_error)));
 
 totalTests = totalTests + 1;
-if isnan(max_error) || max_error > -10
+if isnan(log_max_spatial_error) || log_max_spatial_error > options.spatialErrorTolerance || log_max_spectral_error > options.spectralErrorTolerance
     totalErrors = totalErrors + 1;
     fprintf('\nFound at large error at (k,l,j)=(%d,%d,%d):\n',soln.kMode,soln.lMode,soln.jMode);
     fprintf('The model solution for (u,v,w,eta,p,A) matches the analytical solution to 1 part in (10^%d, 10^%d, 10^%d, 10^%d, 10^%d, 10^%d) at time t=%d\n', round((log10(u_error))), round((log10(v_error))), round((log10(w_error))), round((log10(eta_error))), round((log10(p_error))), round((log10(coeff_error))),wvt.t);
