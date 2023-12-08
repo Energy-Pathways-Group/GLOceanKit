@@ -350,6 +350,36 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
+        function [A0Z,A0N] = geostrophicSpectralTransformCoefficients(self)
+            K2 = (self.wvt.Kh).^2;
+            f = self.wvt.f;
+            g = self.wvt.g;
+
+            Lr2 = g*self.wvt.h_0/(f*f);
+            invLr2 = 1./Lr2;
+            invLr2(:,:,1) = 0;
+
+            A0Z = -(f/g)*1./(K2 + invLr2);
+            A0Z(:,:,1) = 0;
+            A0N = 1./(Lr2.*K2 + 1);
+            A0N(:,:,1) = 0;
+        end
+
+        function [UA0,VA0,NA0] = geostrophicSpatialTransformCoefficients(self)
+            [K,L,~] = self.wvt.kljGrid;
+            f = self.wvt.f;
+            g = self.wvt.g;
+
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            mask = nyquistMask.*coeffMask;
+            UA0 = self.makeA0Hermitian(-sqrt(-1)*(g/f)*L) .* mask;
+            VA0 = self.makeA0Hermitian(sqrt(-1)*(g/f)*K) .* mask;
+            NA0 = 1;
+            % NA0 = ones(size(Kh));
+            % NA0(:,:,1) = 0;
+        end
+
         function bool = contains(self,otherFlowConstituent)
             if isa(otherFlowConstituent,"numeric")
                 bool = logical(bitand(self.bitmask,otherFlowConstituent));

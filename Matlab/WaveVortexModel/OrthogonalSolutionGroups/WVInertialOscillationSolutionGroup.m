@@ -249,6 +249,14 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
+        function [UAp,VAp] = inertialOscillationSpatialTransformCoefficients(self)
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            mask = nyquistMask.*coeffMask;
+            UAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
+            VAp = sqrt(-1)*ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
+        end
+
         function bool = contains(self,otherFlowConstituent)
             if isa(otherFlowConstituent,"numeric")
                 bool = logical(bitand(self.bitmask,otherFlowConstituent));

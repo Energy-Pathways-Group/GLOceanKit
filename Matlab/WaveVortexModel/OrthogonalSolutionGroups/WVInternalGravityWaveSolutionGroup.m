@@ -402,6 +402,27 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
+        function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            ApmD = self.makeA0Hermitian(-sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* nyquistMask;
+            ApmN = self.makeA0Hermitian(-(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* nyquistMask;
+            ApmD(1,1,:) = 0;
+            ApmN(1,1,:) = 0;
+        end
+
+        function [UAp,VAp,WAp,NAp] = internalGravityWaveSpatialTransformCoefficients(self)
+            [K,L,~] = self.wvt.kljGrid;
+            alpha = atan2(L,K);
+
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            mask = nyquistMask.*coeffMask;
+            UAp = self.makeA0Hermitian((cos(alpha)-sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*sin(alpha))) .* mask;
+            VAp = self.makeA0Hermitian((sin(alpha)+sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*cos(alpha))) .* mask;
+            WAp = self.makeA0Hermitian(-sqrt(-1)*self.wvt.Kh.*self.wvt.h_pm) .* mask;
+            NAp = self.makeA0Hermitian(-self.wvt.Kh.*self.wvt.h_pm./self.wvt.Omega) .* mask;
+        end
+
         function bool = contains(self,otherFlowConstituent)
             if isa(otherFlowConstituent,"numeric")
                 bool = logical(bitand(self.bitmask,otherFlowConstituent));

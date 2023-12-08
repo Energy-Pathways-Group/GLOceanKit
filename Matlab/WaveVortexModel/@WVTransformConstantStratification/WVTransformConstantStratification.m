@@ -325,6 +325,24 @@ classdef WVTransformConstantStratification < WVTransform
             self.NAp = nyquistMask .* makeHermitian(self.NAp);
             self.NAm = nyquistMask .* makeHermitian(self.NAm);
             self.NA0 = nyquistMask .* makeHermitian(self.NA0);
+
+            solutionGroup = WVGeostrophicSolutionGroup(self);
+            [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
+            [self.UA0,self.VA0,self.NA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
+
+            solutionGroup = WVInternalGravityWaveSolutionGroup(self);
+            [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
+            [self.UAp,self.VAp,self.WAp,self.NAp] = solutionGroup.internalGravityWaveSpatialTransformCoefficients;
+
+            solutionGroup = WVInertialOscillationSolutionGroup(self);
+            [UAp,VAp] = solutionGroup.inertialOscillationSpatialTransformCoefficients;
+            self.UAp = self.UAp + UAp;
+            self.VAp = self.VAp + VAp;
+
+            self.UAm = conj(self.UAp);
+            self.VAm = conj(self.VAp);
+            self.WAm = self.WAp;
+            self.NAm = -self.NAp;
         end
   
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
