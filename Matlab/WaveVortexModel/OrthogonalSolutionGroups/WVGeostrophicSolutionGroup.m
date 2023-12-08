@@ -317,12 +317,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             wvt = self.wvt;
             [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi);
             [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            if options.shouldAssumeConstantN == 1
+                N0=5.2e-3;
+            end
+
             m = wvt.j(jIndex)*pi/wvt.Lz;
             k = wvt.k(kIndex);
             l = wvt.l(lIndex);
-            h = wvt.N0^2/(wvt.g*m^2);
+            h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
-            norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+            norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
 
             G = @(z) norm*sin(m*(z+wvt.Lz));
             F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
@@ -359,10 +363,12 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             invLr2 = 1./Lr2;
             invLr2(:,:,1) = 0;
 
-            A0Z = -(f/g)*1./(K2 + invLr2);
-            A0Z(:,:,1) = 0;
-            A0N = 1./(Lr2.*K2 + 1);
-            A0N(:,:,1) = 0;
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            mask = nyquistMask.*coeffMask;
+
+            A0Z = -((f/g)*1./(K2 + invLr2)).*mask;
+            A0N = mask./(Lr2.*K2 + 1);
         end
 
         function [UA0,VA0,NA0] = geostrophicSpatialTransformCoefficients(self)
@@ -373,11 +379,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             nyquistMask = ~self.wvt.maskForNyquistModes();
             coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
             mask = nyquistMask.*coeffMask;
+
             UA0 = self.makeA0Hermitian(-sqrt(-1)*(g/f)*L) .* mask;
             VA0 = self.makeA0Hermitian(sqrt(-1)*(g/f)*K) .* mask;
-            NA0 = 1;
-            % NA0 = ones(size(Kh));
-            % NA0(:,:,1) = 0;
+            NA0 = mask;
         end
 
         function bool = contains(self,otherFlowConstituent)

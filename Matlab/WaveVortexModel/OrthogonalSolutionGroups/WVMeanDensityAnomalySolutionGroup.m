@@ -186,11 +186,14 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             kMode = 0;
             lMode = 0;
             [~,~,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            if options.shouldAssumeConstantN == 1
+                N0=5.2e-3;
+            end
 
             m = wvt.j(jIndex)*pi/wvt.Lz;
-            h = wvt.N0^2/(wvt.g*m^2);
+            h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
-            norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+            norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
 
             F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
             G = @(z) norm*sin(m*(z+wvt.Lz));
@@ -209,6 +212,18 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             Lr2 = wvt.g*h/wvt.f/wvt.f;
             solution.energyFactor = wvt.g/2;
             solution.enstrophyFactor = (wvt.g/2)/Lr2;
+        end
+
+        function A0N = meanDensityAnomalySpectralTransformCoefficients(self)
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            A0N = nyquistMask.*coeffMask;
+        end
+
+        function NA0 = meanDensityAnomalySpatialTransformCoefficients(self)
+            nyquistMask = ~self.wvt.maskForNyquistModes();
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            NA0 = nyquistMask.*coeffMask;
         end
 
         function bool = contains(self,otherFlowConstituent)

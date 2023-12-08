@@ -32,12 +32,18 @@ classdef WVTransformHydrostatic < WVTransform
         zInterp
         PFinvInterp, QGinvInterp
 
-        Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor
-        A0_TE_factor
-        A0_TZ_factor
-        A0_QGPV_factor
+        % Apm_TE_factor
+        % A0_HKE_factor
+        % A0_PE_factor
+        % A0_TE_factor
+        % A0_TZ_factor
+        % A0_QGPV_factor
+    end
+
+    properties (Dependent)
+        h_0  % [Nk Nl Nj]
+        h_pm  % [Nk Nl Nj]
+        isHydrostatic
     end
         
     methods
@@ -328,6 +334,10 @@ classdef WVTransformHydrostatic < WVTransform
 
         function h_pm = get.h_pm(self)
             h_pm = self.h;
+        end
+
+        function bool = get.isHydrostatic(~)
+            bool = 1;
         end
 
         Finv = FinvMatrix(self);

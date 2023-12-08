@@ -125,9 +125,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         variableCache
     end
 
-    properties (Abstract,GetAccess=public, SetAccess=protected)
+    properties (Abstract,GetAccess=public) %, SetAccess=protected
         h_0  % [Nk Nl Nj]
         h_pm  % [Nk Nl Nj]
+        isHydrostatic
     end
     
     methods (Abstract)

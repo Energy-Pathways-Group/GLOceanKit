@@ -207,6 +207,9 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             end
             wvt = self.wvt;
             [~,~,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
+            if options.shouldAssumeConstantN == 1
+                N0=5.2e-3;
+            end
 
             if jIndex == 1
                 G = @(z) zeros(size(z));
@@ -215,11 +218,11 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                 m = wvt.j(jIndex)*pi/wvt.Lz;
                 sign = -2*(mod(jMode,2) == 1)+1;
                 if wvt.isHydrostatic
-                    h = wvt.N0^2/(wvt.g*m^2);
-                    norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+                    h = N0^2/(wvt.g*m^2);
+                    norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
                 else
-                    h = (wvt.N0^2-wvt.f^2)/(m^2)/wvt.g;
-                    norm = sign*sqrt(2*wvt.g/((wvt.N0^2 -wvt.f^2)*wvt.Lz));
+                    h = (N0^2-wvt.f^2)/(m^2)/wvt.g;
+                    norm = sign*sqrt(2*wvt.g/((N0^2 -wvt.f^2)*wvt.Lz));
                 end
                 G = @(z) zeros(size(z));
                 F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
@@ -253,6 +256,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             nyquistMask = ~self.wvt.maskForNyquistModes();
             coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
             mask = nyquistMask.*coeffMask;
+
             UAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
             VAp = sqrt(-1)*ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
         end

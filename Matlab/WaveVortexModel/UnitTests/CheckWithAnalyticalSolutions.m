@@ -17,13 +17,14 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-isHydrostatic = 0;
-wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
+isHydrostatic = 1;
+% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
-solutionGroups{3} = WVMeanDensityAnomalySolutionGroup(wvt);
-solutionGroups{4} = WVInertialOscillationSolutionGroup(wvt);
 solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);
 solutionGroups{2} = WVInternalGravityWaveSolutionGroup(wvt);
+solutionGroups{3} = WVMeanDensityAnomalySolutionGroup(wvt);
+solutionGroups{4} = WVInertialOscillationSolutionGroup(wvt);
 
 for iGroup = 1:length(solutionGroups)
     totalErrors = 0;

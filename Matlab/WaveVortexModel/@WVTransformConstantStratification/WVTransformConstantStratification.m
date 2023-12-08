@@ -142,7 +142,6 @@ classdef WVTransformConstantStratification < WVTransform
         end
                 
         function self = buildTransformationMatrices(self)
-
             % We renormalization the transformation matrices to directly
             % incorporate normalization of the modes and the DFT.          
             [~,~,J] = ndgrid(self.k,self.l,self.j);
@@ -178,157 +177,15 @@ classdef WVTransformConstantStratification < WVTransform
         end
         
         function self = buildTransformationMatricesNew(self)
-            % Part of the internal initialization process where the coefficients for the transformation matrices are constructed.
-            %
-            % - Topic: Internal
-            [K_,L_,~] = ndgrid(self.k,self.l,self.j);
-            alpha = atan2(L_,K_);
-            K2 = K_.*K_ + L_.*L_;
-            Kh = sqrt(K2);      % Total horizontal wavenumber
-            
-            f = self.f;
-            g = 9.81;
-            
-            omega = self.Omega;
-            if abs(self.f) < 1e-14 % This handles the f=0 case.
-                omega(omega == 0) = 1;
-            end
-            fOmega = f./omega;
-            
-            makeHermitian = @(f) WVTransform.makeHermitian(f);
-            
-            self.iOmega = makeHermitian(sqrt(-1)*omega);
-
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (U,V,N) -> (A0)
-            % A0 = self.A0U.*u_hat + self.A0V.*v_hat + self.A0N.*n_hat;
-            Lr2 = g*self.h_0/(f*f);
-            invLr2 = 1./Lr2;
-            invLr2(:,:,1) = 0;
-            self.A0U = sqrt(-1)*(f/g)*L_./(K2 + invLr2);
-            self.A0V = -sqrt(-1)*(f/g)*K_./(K2 + invLr2);
-            self.A0Z = -(f/g)*1./(K2 + invLr2);
-            self.A0Z(:,:,1) = 0;
-
-            self.A0N = 1./(Lr2.*K2 + 1);
-            self.A0N(:,:,1) = 0;
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (U,V,N) -> (Ap,Am)
-            % Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
-            C = self.G_wg ./(2*Kh.*self.h_pm);
-            self.ApU = C.*(K_.*self.h_0 + omega.*self.A0U);
-            self.ApV = C.*(L_.*self.h_0 + omega.*self.A0V);
-            self.ApN = C.*omega.*(self.A0N-1);
-            
-            self.AmU = C.*(K_.*self.h_0 - omega.*self.A0U);
-            self.AmV = C.*(L_.*self.h_0 - omega.*self.A0V);
-            self.AmN = -C.*omega.*(self.A0N-1);
-
-            self.ApmD = -sqrt(-1)./(2*Kh.*self.h_pm);
-            self.ApmN = -omega./(2*Kh.*self.h_pm);
-            self.ApmD(1,1,:) = 0;
-            self.ApmN(1,1,:) = 0;
-            
-            % There are no k^2+l^2>0, j=0 wave solutions. Only the inertial
-            % solution exists at k=l=j=0.
-            self.ApU(:,:,1) = 0;
-            self.ApV(:,:,1) = 0;
-            self.ApN(:,:,1) = 0;
-            
-            self.AmU(:,:,1) = 0;
-            self.AmV(:,:,1) = 0;
-            self.AmN(:,:,1) = 0;
-            
-            % Now set the inertial stuff (this is just a limit of above)
-            self.ApU(1,1,:) = 1/2;
-            self.ApV(1,1,:) = -sqrt(-1)/2;
-            self.AmU(1,1,:) = 1/2;
-            self.AmV(1,1,:) = sqrt(-1)/2;
-                        
-            % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
-            self.A0U(1,1,:) = 0;
-            self.A0V(1,1,:) = 0;
-            self.A0N(1,1,:) = 1;
-            self.A0N(1,1,1) = 0;
-            
-            % Now make the Hermitian conjugate match.
-            nyquistMask = ~self.maskForNyquistModes();
-            self.ApU = nyquistMask .* makeHermitian(self.ApU);
-            self.ApV = nyquistMask .* makeHermitian(self.ApV);
-            self.ApN = nyquistMask .* makeHermitian(self.ApN);
-            self.AmU = nyquistMask .* makeHermitian(self.AmU);
-            self.AmV = nyquistMask .* makeHermitian(self.AmV);
-            self.AmN = nyquistMask .* makeHermitian(self.AmN);
-            self.A0U = nyquistMask .* makeHermitian(self.A0U);
-            self.A0V = nyquistMask .* makeHermitian(self.A0V);
-            self.A0N = nyquistMask .* makeHermitian(self.A0N);
-
-            self.A0Z = nyquistMask .* makeHermitian(self.A0Z);
-            self.ApmD = nyquistMask .* makeHermitian(self.ApmD);
-            self.ApmN = nyquistMask .* makeHermitian(self.ApmN);
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
-            % These can be pulled from equation C4 in the manuscript
-            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.UA0 = -sqrt(-1)*(g/f)*L_;
-
-            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.VA0 = sqrt(-1)*(g/f)*K_;
-                
-            self.WAp = -sqrt(-1)*Kh.*self.h_pm;
-            self.WAm = -sqrt(-1)*Kh.*self.h_pm;
-            
-            self.NAp = -Kh.*self.h_pm./omega;
-            self.NAm = Kh.*self.h_pm./omega;
-            self.NA0 = ones(size(Kh));
-            
-            % No buoyancy anomaly for j=0 geostrophic solutions
-            self.NA0(:,:,1) = 0;
-            
-            % There are no k^2+l^2>0, j=0 wave solutions. 
-            self.UAp(:,:,1) = 0;
-            self.VAp(:,:,1) = 0;
-            self.NAp(:,:,1) = 0;
-            
-            self.UAm(:,:,1) = 0;
-            self.VAm(:,:,1) = 0;
-            self.NAm(:,:,1) = 0;
-            
-            % Only the inertial solution exists at k=l=j=0 as a negative
-            % wave.
-            self.UAp(1,1,:) = 1;
-            self.VAp(1,1,:) = sqrt(-1);
-            self.UAm(1,1,:) = 1;
-            self.VAm(1,1,:) = -sqrt(-1);
-            
-            if abs(self.f) < 1e-14 % This handles the f=0 case.
-                self.UA0 = zeros(size(Kh));
-                self.VA0 = zeros(size(Kh));
-                self.NA0 = zeros(size(Kh));
-            end
-            
-            % Now make the Hermitian conjugate match AND pre-multiply the
-            % coefficients for the transformations.
-            self.UAp = nyquistMask .* makeHermitian(self.UAp);
-            self.UAm = nyquistMask .* makeHermitian(self.UAm);
-            self.UA0 = nyquistMask .* makeHermitian(self.UA0);
-            self.VAp = nyquistMask .* makeHermitian(self.VAp);
-            self.VAm = nyquistMask .* makeHermitian(self.VAm);
-            self.VA0 = nyquistMask .* makeHermitian(self.VA0);
-            self.WAp = nyquistMask .* makeHermitian(self.WAp);
-            self.WAm = nyquistMask .* makeHermitian(self.WAm);   
-            self.NAp = nyquistMask .* makeHermitian(self.NAp);
-            self.NAm = nyquistMask .* makeHermitian(self.NAm);
-            self.NA0 = nyquistMask .* makeHermitian(self.NA0);
-
             solutionGroup = WVGeostrophicSolutionGroup(self);
             [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
             [self.UA0,self.VA0,self.NA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
+
+            solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
+            A0N = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
+            NA0 = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
+            self.A0N = self.A0N + A0N;
+            self.NA0 = self.NA0 + NA0;
 
             solutionGroup = WVInternalGravityWaveSolutionGroup(self);
             [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;

@@ -357,16 +357,20 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
 
             [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
             [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            if options.shouldAssumeConstantN == 1
+                N0=5.2e-3;
+            end
+
             m = wvt.j(jIndex)*pi/wvt.Lz;
             k = wvt.k(kIndex);
             l = wvt.l(lIndex);
             sign = -2*(mod(jMode,2) == 1)+1;
             if wvt.isHydrostatic
-                h = wvt.N0^2/(wvt.g*m^2);
-                norm = sign*sqrt(2*wvt.g/wvt.Lz)/wvt.N0;
+                h = N0^2/(wvt.g*m^2);
+                norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
             else
-                h = (wvt.N0^2-wvt.f^2)/(k^2 + l^2 + m^2)/wvt.g;
-                norm = sign*sqrt(2*wvt.g/((wvt.N0^2 -wvt.f^2)*wvt.Lz));
+                h = (N0^2-wvt.f^2)/(k^2 + l^2 + m^2)/wvt.g;
+                norm = sign*sqrt(2*wvt.g/((N0^2 -wvt.f^2)*wvt.Lz));
             end
 
             G = @(z) norm*sin(m*(z+wvt.Lz));
@@ -404,10 +408,10 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
 
         function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)
             nyquistMask = ~self.wvt.maskForNyquistModes();
-            ApmD = self.makeA0Hermitian(-sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* nyquistMask;
-            ApmN = self.makeA0Hermitian(-(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* nyquistMask;
-            ApmD(1,1,:) = 0;
-            ApmN(1,1,:) = 0;
+            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            mask = nyquistMask.*coeffMask;
+            ApmD = self.makeA0Hermitian(-sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* mask;
+            ApmN = self.makeA0Hermitian(-(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* mask;
         end
 
         function [UAp,VAp,WAp,NAp] = internalGravityWaveSpatialTransformCoefficients(self)
