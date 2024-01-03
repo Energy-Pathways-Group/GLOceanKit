@@ -302,7 +302,7 @@ classdef InternalModesSpectral < InternalModesBase
         %     end
         % end
 
-        function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, eta0, etad)
+        function [A,B] = EigenmatricesForGeostrophicRigidLidGModes(self, eta0, etad)
             arguments
                 self InternalModesSpectral
                 eta0 (1,1) double = 0
@@ -455,7 +455,7 @@ classdef InternalModesSpectral < InternalModesBase
         function [F,G,h] = GeostrophicRigidLidModesAtWavenumber(self, k )
             self.gridFrequency = 0;
 
-            [A,B] = self.EigenmatricesForGeostrophicRigidLidModes(k);
+            [A,B] = self.EigenmatricesForGeostrophicRigidLidGModes(k);
 
             [F,G,h] = self.ModesFromGEP(A,B);
         end

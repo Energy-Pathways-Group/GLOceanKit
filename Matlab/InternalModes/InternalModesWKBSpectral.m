@@ -178,10 +178,10 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.Nz_xLobatto = self.Nz_function(self.z_xLobatto);
 
             self.hFromLambda = @(lambda) 1.0 ./ lambda;
-            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            self.FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            self.FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GOutFromVCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromVCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromVCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromVCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             self.GeostrophicNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
