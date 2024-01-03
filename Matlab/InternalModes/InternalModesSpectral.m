@@ -104,10 +104,10 @@ classdef InternalModesSpectral < InternalModesBase
         % Set on initialization by the subclass, these transformations are
         % applied after solving the EVP to transform back into z-space.
         hFromLambda;
-        GOutFromGCheb;
-        FOutFromGCheb;
-        GFromGCheb;
-        FFromGCheb;
+        GOutFromVCheb;
+        FOutFromVCheb;
+        GFromVCheb;
+        FFromVCheb;
         GNorm;
         FNorm;
         GeostrophicNorm
@@ -205,7 +205,27 @@ classdef InternalModesSpectral < InternalModesBase
             A = Tzz;
             B = -diag((self.N2_xLobatto)/self.g)*T;
 
-            A(n,:) = T(n,:);
+            A(n,:) = T(n,:)-T(1,:);
+            B(n,:) = 0;
+
+            if (self.g/(self.f0*self.f0))*(k*k) < 1
+                A(1,:) = Tz(1,:) + (self.g/(self.f0*self.f0))*(k*k)*T(1,:);
+            else
+                A(1,:) = (self.f0*self.f0)/(self.g *k*k)* Tz(1,:) + T(1,:);
+            end
+            B(1,:) = 0;
+        end
+
+        function [A,B] = EigenmatricesForRigidLidGModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = Tzz;
+            B = -diag((self.N2_xLobatto)/self.g)*T;
+
+            A(n,:) = T(n,:)-T(1,:);
             B(n,:) = 0;
 
             if (self.g/(self.f0*self.f0))*(k*k) < 1
@@ -282,7 +302,12 @@ classdef InternalModesSpectral < InternalModesBase
         %     end
         % end
 
-        function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, k )
+        function [A,B] = EigenmatricesForGeostrophicRigidLidModes(self, eta0, etad)
+            arguments
+                self InternalModesSpectral
+                eta0 (1,1) double = 0
+                etad (1,1) double = 0
+            end
             T = self.T_xLobatto;
             Tz = self.Tx_xLobatto;
             Tzz = self.Txx_xLobatto;
@@ -291,19 +316,16 @@ classdef InternalModesSpectral < InternalModesBase
             A = Tzz;
             B = -(diag(self.N2_xLobatto)/self.g)*T;
 
-            gamma = (self.g/(self.f0*self.f0))*(k*k);
             % upper-boundary
-            A(1,:) = gamma*Tz(1,:);
-            B(1,:) = -gamma*T(1,:)-Tz(1,:);
-            % B(1,:) = -(1/self.Lz)*T(1,:)-Tz(1,:); % this gets you smith-vanneste
-
-
+            A(1,:) = Tz(1,:);
+            B(1,:) = (eta0/self.g)*self.N2_xLobatto(1)*T(1,:);
+            
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
-            B(n,:) = 0*T(n,:);
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
 
-            self.FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.FOutFromVCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromVCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
         end
 
         function [A,B] = EigenmatricesForSmithVannesteModes(self, k )
@@ -324,8 +346,8 @@ classdef InternalModesSpectral < InternalModesBase
             B(n,:) = -self.N2_xLobatto(n)*T(n,:)/self.g;
 
             gamma = (self.g/(self.f0*self.f0))*(k*k);
-            self.FOutFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            self.FFromGCheb = @(G_cheb,h) (1/(gamma + 1/h)) * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.FOutFromVCheb = @(G_cheb,h) (1/(gamma + 1/h)) * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.FFromVCheb = @(G_cheb,h) (1/(gamma + 1/h)) * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
 
             % % upper-boundary
             % A(1,:) = self.Lz*Tz(1,:)+T(1,:);
@@ -347,11 +369,11 @@ classdef InternalModesSpectral < InternalModesBase
 
             % upper-boundary
             A(1,:) = Tz(1,:); %-Tz(n,:);
-            B(1,:) = 0*T(n,:);
+            B(1,:) = 1/self.Lz; %0*T(n,:);
 
             % lower-boundary
             A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
-            B(n,:) = 0*T(n,:);
+            B(n,:) = 1/self.Lz; %0*T(n,:);
         end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
@@ -656,10 +678,10 @@ classdef InternalModesSpectral < InternalModesBase
             self.x_function = @(z) z;             
 
             self.hFromLambda = @(lambda) 1.0 ./ lambda;
-            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            self.FOutFromGCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            self.FFromGCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GOutFromVCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromVCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromVCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromVCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* Gj .^ 2)));
             self.GeostrophicNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* Gj .^ 2)));
             self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * Fj.^ 2)));
@@ -774,7 +796,7 @@ classdef InternalModesSpectral < InternalModesBase
             [V,D] = eig( A, B );
             
             [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
-            G_cheb=V(:,permutation);
+            V_cheb=V(:,permutation);
             
             if self.nModes == 0
                 maxModes = ceil(find(h>0,1,'last')/2); % Have to do ceil, not floor, or we lose the barotropic mode.
@@ -807,8 +829,8 @@ classdef InternalModesSpectral < InternalModesBase
                 maxIndexZ = 1;
             end
             for j=1:maxModes
-                Fj = self.FFromGCheb(G_cheb(:,j),h(j));
-                Gj = self.GFromGCheb(G_cheb(:,j),h(j));
+                Fj = self.FFromVCheb(V_cheb(:,j),h(j));
+                Gj = self.GFromVCheb(V_cheb(:,j),h(j));
                 switch self.normalization
                     case Normalization.uMax
                         A = max( abs( Fj ));
@@ -825,8 +847,8 @@ classdef InternalModesSpectral < InternalModesBase
                     A = -A;
                 end
                 
-                G(:,j) = self.GOutFromGCheb(G_cheb(:,j),h(j))/A;
-                F(:,j) = self.FOutFromGCheb(G_cheb(:,j),h(j))/A;
+                G(:,j) = self.GOutFromVCheb(V_cheb(:,j),h(j))/A;
+                F(:,j) = self.FOutFromVCheb(V_cheb(:,j),h(j))/A;
 %                 Fz(:,j) = FzOutFromGCheb(G_cheb(:,j),h(j))/A;
                 % K-constant norm: G(0)^2 + \frac{1}{g} \int_{-D}^0 (N^2 -
                 % f_0^2)
