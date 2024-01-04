@@ -452,12 +452,21 @@ classdef InternalModesSpectral < InternalModesBase
             [F,G,h] = self.ModesFromGEP(A,B);
         end
 
-        function [F,G,h] = GeostrophicRigidLidModesAtWavenumber(self, k )
+        function [F,G,h] = GeostrophicRigidLidModes(self, eta0, etad )
+            arguments
+                self InternalModesSpectral
+                eta0 (1,1) double = 0
+                etad (1,1) double = 0
+            end
             self.gridFrequency = 0;
 
-            [A,B] = self.EigenmatricesForGeostrophicRigidLidGModes(k);
-
-            [F,G,h] = self.ModesFromGEP(A,B);
+            [A,B] = self.EigenmatricesForGeostrophicRigidLidGModes(eta0, etad);
+            if eta0 < 0
+                negativeEigenvalues = 1;
+            else
+                negativeEigenvalues = 0;
+            end
+            [F,G,h] = self.ModesFromGEP(A,B,negativeEigenvalues=negativeEigenvalues);
         end
 
         function [F,G,h] = GeostrophicSmithVannesteModesAtWavenumber(self, k )
@@ -789,7 +798,18 @@ classdef InternalModesSpectral < InternalModesBase
         % Take matrices A and B from the generalized eigenvalue problem
         % (GEP) and returns F,G,h. The last seven arguments are all
         % function handles that do as they say.
-        function [F,G,h,varargout] = ModesFromGEP(self,A,B,varargin)
+        function [F,G,h,varargout] = ModesFromGEP(self,A,B,varargin,options)
+            arguments
+                self InternalModesSpectral
+                A (:,:) double
+                B (:,:) double
+            end
+            arguments (Repeating)
+                varargin
+            end
+            arguments
+                options.negativeEigenvalues = 0
+            end
             if ( any(any(isnan(A))) || any(any(isnan(B))) )
                 error('EVP setup fail. Found at least one nan in matrices A and B.\n');
             end
@@ -797,6 +817,12 @@ classdef InternalModesSpectral < InternalModesBase
             
             [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
             V_cheb=V(:,permutation);
+            if options.negativeEigenvalues > 0
+                negIndices = find(h<0,options.negativeEigenvalues,'first');
+                permutation = cat(1,negIndices,setdiff((1:length(h))',negIndices));
+                h = h(permutation);
+                V_cheb=V_cheb(:,permutation);
+            end
             
             if self.nModes == 0
                 maxModes = ceil(find(h>0,1,'last')/2); % Have to do ceil, not floor, or we lose the barotropic mode.
