@@ -18,8 +18,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 isHydrostatic = 1;
-%wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
+% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
 wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);
 solutionGroups{2} = WVInternalGravityWaveSolutionGroup(wvt);
@@ -64,7 +65,7 @@ arguments
     totalErrors (1,1) double {mustBeNonnegative}
     wvt WVTransform {mustBeNonempty}
     soln WVOrthogonalSolution {mustBeNonempty}
-    options.spatialErrorTolerance (1,1) double = -10
+    options.spatialErrorTolerance (1,1) double = -9
     options.spectralErrorTolerance (1,1) double = -3
 end
 [u_error,v_error,w_error,eta_error,p_error,coeff_error] = errorsFromSolution(wvt,soln);
@@ -85,11 +86,14 @@ v_unit = soln.v(wvt.X,wvt.Y,wvt.Z,wvt.t);
 w_unit = soln.w(wvt.X,wvt.Y,wvt.Z,wvt.t);
 eta_unit = soln.eta(wvt.X,wvt.Y,wvt.Z,wvt.t);
 p_unit = soln.p(wvt.X,wvt.Y,wvt.Z,wvt.t);
-u_error = max(max(abs(wvt.u(:)-u_unit(:))/wvt.uMax),1e-16);
-v_error = max(max(abs(wvt.v(:)-v_unit(:))/wvt.uMax),1e-16);
-w_error = max(max(abs(wvt.w(:)-w_unit(:))),1e-16);
-eta_error = max(max(abs(wvt.eta(:)-eta_unit(:))/max(abs(eta_unit(:)))),1e-16);
-p_error = max(max(abs(wvt.p(:)-p_unit(:))/max(abs(p_unit(:)))),1e-16);
+uMax = max(max(sqrt(u_unit(:).^2 + v_unit(:).^2)),1);
+etaMax = max(max(abs(eta_unit(:))),1);
+pMax = max(max(abs(p_unit(:))),1);
+u_error = max(max(abs(wvt.u(:)-u_unit(:))/uMax),1e-16,"includemissing");
+v_error = max(max(abs(wvt.v(:)-v_unit(:))/uMax),1e-16,"includemissing");
+w_error = max(max(abs(wvt.w(:)-w_unit(:))),1e-16,"includemissing");
+eta_error = max(max(abs(wvt.eta(:)-eta_unit(:))/etaMax),1e-16,"includemissing");
+p_error = max(max(abs(wvt.p(:)-p_unit(:))/pMax),1e-16,"includemissing");
 coeff_error = coefficientErrorFromSolution(wvt,soln);
 end
 

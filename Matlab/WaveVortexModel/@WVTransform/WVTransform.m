@@ -131,8 +131,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
     
     methods (Abstract)
-        u_bar = transformFromSpatialDomainWithF(self, u)
-        w_bar = transformFromSpatialDomainWithG(self, w)
+        % u_bar = transformFromSpatialDomainWithF(self, u)
+        % w_bar = transformFromSpatialDomainWithG(self, w)
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
         [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)

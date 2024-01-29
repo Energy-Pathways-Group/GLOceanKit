@@ -360,15 +360,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             g = self.wvt.g;
 
             Lr2 = g*self.wvt.h_0/(f*f);
-            invLr2 = 1./Lr2;
-            invLr2(:,:,1) = 0;
 
             nyquistMask = ~self.wvt.maskForNyquistModes();
             coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
             mask = nyquistMask.*coeffMask;
 
-            A0Z = -((f/g)*1./(K2 + invLr2)).*mask;
             A0N = mask./(Lr2.*K2 + 1);
+            A0Z = - (f/g)*Lr2.*A0N;
         end
 
         function [UA0,VA0,NA0] = geostrophicSpatialTransformCoefficients(self)
