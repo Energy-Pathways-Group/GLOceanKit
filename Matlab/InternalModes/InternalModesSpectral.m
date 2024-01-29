@@ -319,7 +319,13 @@ classdef InternalModesSpectral < InternalModesBase
             % upper-boundary
             A(1,:) = Tz(1,:);
             B(1,:) = (eta0/self.g)*self.N2_xLobatto(1)*T(1,:);
-            
+self.g/(eta0*self.N2_xLobatto(1))
+            A(1,:) = self.g/(eta0*self.N2_xLobatto(1))*Tz(1,:);
+            B(1,:) = T(1,:);
+
+            % A(1,:) = (eta0/self.Lz)*Tz(1,:);
+            % B(1,:) = T(1,:);
+            % 
             % lower-boundary
             A(n,:) = T(n,:);
             B(n,:) = 0;
@@ -369,11 +375,11 @@ classdef InternalModesSpectral < InternalModesBase
 
             % upper-boundary
             A(1,:) = Tz(1,:); %-Tz(n,:);
-            B(1,:) = 1/self.Lz; %0*T(n,:);
+            B(1,:) = 0 ;%1/self.Lz; %0*T(n,:);
 
             % lower-boundary
             A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
-            B(n,:) = 1/self.Lz; %0*T(n,:);
+            B(n,:) = 0; %1/self.Lz; %0*T(n,:);
         end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
