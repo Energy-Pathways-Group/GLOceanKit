@@ -135,8 +135,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % w_bar = transformFromSpatialDomainWithG(self, w)
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
-        [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
-        [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
+        [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+        [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options )
 
         % Needed to add and remove internal waves from the model
         ratio = uMaxGNormRatioForWave(self,k0, l0, j0)

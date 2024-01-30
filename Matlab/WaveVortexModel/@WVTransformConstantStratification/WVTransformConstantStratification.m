@@ -354,12 +354,22 @@ classdef WVTransformConstantStratification < WVTransform
             w = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
         end
         
-        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
-            [u,ux,uy,uz] = self.transformToSpatialDomainWithFAllDerivatives_MM(u_bar);
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            [u,ux,uy,uz] = self.transformToSpatialDomainWithFAllDerivatives_MM(options.Apm./self.F_wg + options.A0);
         end  
         
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
-            [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(w_bar );
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options )
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(options.Apm./self.G_wg + options.A0 );
         end
 
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)

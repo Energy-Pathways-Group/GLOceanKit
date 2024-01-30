@@ -173,17 +173,12 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             A0t = wvt.A0;
 
             % Apply operator S---defined in (C4) in the manuscript
-            Ubar = wvt.UAp.*Apt + wvt.UAm.*Amt + wvt.UA0.*A0t;
-            Vbar = wvt.VAp.*Apt + wvt.VAm.*Amt + wvt.VA0.*A0t;
-            Wbar = wvt.WAp.*Apt + wvt.WAm.*Amt;
-            Nbar = wvt.NAp.*Apt + wvt.NAm.*Amt + wvt.NA0.*A0t;
-
             % Finishing applying S, but also compute derivatives at the
             % same time
-            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Ubar);
-            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Vbar);
-            W = wvt.transformToSpatialDomainWithG(Wbar);
-            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Nbar);
+            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.UAp.*Apt + wvt.UAm.*Amt,A0=wvt.UA0.*A0t);
+            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.VAp.*Apt + wvt.VAm.*Amt,A0=wvt.VA0.*A0t);
+            W = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*Apt + wvt.WAm.*Amt);
+            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Apm=wvt.NAp.*Apt + wvt.NAm.*Amt,A0=wvt.NA0.*A0t);
 
             % compute the nonlinear terms in the spatial domain
             % (pseudospectral!)
