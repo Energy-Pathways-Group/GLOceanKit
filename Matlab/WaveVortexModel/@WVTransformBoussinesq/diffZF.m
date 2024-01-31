@@ -1,4 +1,4 @@
-function du = diffZG(self,u,n)
+function du = diffZF(self,u,n)
 arguments
     self        WVTransform
     u (:,:,:)   double
@@ -12,10 +12,11 @@ end
 u = permute(u,[3 1 2]); % keep adjacent in memory
 u = reshape(u,self.Nz,[]);
 
-D = self.PFinv*(squeeze(self.P./(self.Q .* self.h_0)).*self.QG);
+D = self.QG0inv*(squeeze(self.Q0 ./ self.P0).*self.PF0);
 du =  D*u;
 
 du = reshape(du,self.Nz,self.Nx,self.Ny);
 du = permute(du,[2 3 1]);
+du = - shiftdim((self.N2/self.g),-2) .* du;
 
 end
