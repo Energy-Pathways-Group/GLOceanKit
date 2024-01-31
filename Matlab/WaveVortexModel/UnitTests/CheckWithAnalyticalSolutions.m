@@ -19,7 +19,7 @@
 
 isHydrostatic = 1;
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [4, 8, 5],isHydrostatic=isHydrostatic);
-wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);

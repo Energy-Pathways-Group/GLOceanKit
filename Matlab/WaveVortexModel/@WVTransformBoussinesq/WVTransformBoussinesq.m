@@ -472,8 +472,8 @@ classdef WVTransformBoussinesq < WVTransform
             Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
             Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
 
-            % Ap(1,1,:) = self.F_wg(1,1,:).*self.transformFromSpatialDomainWithFg1D(u_hat(1,1,:) - sqrt(-1)*v_hat(1,1,:))/2;
-            % Am(1,1,:) = conj(Ap(1,1,:));
+            Ap(1,1,:) = self.transformFromSpatialDomainWithFw1D(u_hat(1,1,:) - sqrt(-1)*v_hat(1,1,:))/2;
+            Am(1,1,:) = conj(Ap(1,1,:));
 
             if nargin == 5
                 phase = exp(-self.iOmega*(t-self.t0));
@@ -503,6 +503,17 @@ classdef WVTransformBoussinesq < WVTransform
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+        end
+
+        function u_bar = transformFromSpatialDomainWithFw1D(self,u)
+            arguments (Input)
+                self WVTransformBoussinesq {mustBeNonempty}
+                u (:,1) double
+            end
+            arguments (Output)
+                u_bar (1,1,:) double
+            end
+            u_bar = (self.PFpm(:,:,1 )*u)./squeeze(self.Ppm(1,1,:,1));
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
