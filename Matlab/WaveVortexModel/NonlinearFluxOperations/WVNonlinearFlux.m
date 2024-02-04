@@ -202,15 +202,11 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
 
         function varargout = compute(self,wvt,varargin)
             [uNL,vNL,nNL,phase] = self.spatialFlux(wvt,varargin);
+            [ApNL,AmNL,A0NL] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 
-            % Now apply the operator S^{-1} and then T_\omega^{-1}
-            uNLbar = wvt.transformFromSpatialDomainWithF(uNL);
-            vNLbar = wvt.transformFromSpatialDomainWithF(vNL);
-            nNLbar = wvt.transformFromSpatialDomainWithG(nNL);
-
-            Fp = self.AA .* (self.damp .* wvt.Ap + (wvt.ApU.*uNLbar + wvt.ApV.*vNLbar + wvt.ApN.*nNLbar) .* conj(phase));
-            Fm = self.AA .* (self.damp .* wvt.Am + (wvt.AmU.*uNLbar + wvt.AmV.*vNLbar + wvt.AmN.*nNLbar) .* phase);
-            F0 = self.AA .* ((self.damp + self.betaA0) .* wvt.A0 + (wvt.A0U.*uNLbar + wvt.A0V.*vNLbar + wvt.A0N.*nNLbar));
+            Fp = self.AA .* (self.damp .* wvt.Ap + ApNL .* conj(phase));
+            Fm = self.AA .* (self.damp .* wvt.Am + AmNL .* phase);
+            F0 = self.AA .* ((self.damp + self.betaA0) .* wvt.A0 + A0NL);
 
             varargout = {Fp,Fm,F0};
         end

@@ -517,8 +517,13 @@ classdef WVTransformHydrostatic < WVTransform
             w = permute(w,[2 3 1]);
         end
         
-        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
-            u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
 
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -536,8 +541,13 @@ classdef WVTransformHydrostatic < WVTransform
             uz = (-shiftdim(self.N2,-2)/self.g).*uz;
         end  
         
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
-            w_bar = (self.Q .* w_bar)*(self.Nx*self.Ny);
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
 
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory

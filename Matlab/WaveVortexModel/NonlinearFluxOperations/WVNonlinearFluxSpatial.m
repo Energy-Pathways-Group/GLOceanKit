@@ -28,7 +28,9 @@ classdef WVNonlinearFluxSpatial < WVNonlinearFluxOperation
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;
             elseif isa(wvt,'WVTransformHydrostatic')
-                self.dLnN2 = wvt.dLnN2;
+                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
+            elseif isa(wvt,'WVTransformBoussinesq')
+                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             else
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
                 warning('WVTransform not recognized.')
@@ -39,7 +41,7 @@ classdef WVNonlinearFluxSpatial < WVNonlinearFluxOperation
             varargout = cell(1,self.nVarOut);
             uNL = wvt.u .* wvt.diffX(wvt.u)   + wvt.v .* wvt.diffY(wvt.u)   + wvt.w .*  wvt.diffZF(wvt.u);
             vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);
-            nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* shiftdim(self.dLnN2,-2));
+            nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* self.dLnN2);
 
             [varargout{:}] = wvt.transformUVEtaToWaveVortex(-uNL,-vNL,-nNL,wvt.t);
         end

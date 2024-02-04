@@ -631,41 +631,28 @@ classdef WVTransformBoussinesq < WVTransform
             w = permute(w,[2 3 1]);
         end
         
-        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
-            u_bar = (self.P0 .* u_bar)*(self.Nx*self.Ny);
-            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-
-            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.Nj,[]);
-            u = self.PF0inv*u_bar;
-            u = reshape(u,self.Nz,self.Nx,self.Ny);
-            u = permute(u,[2 3 1]);
-
-            ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
-            uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
-
-            uz = self.QG0inv*( squeeze(self.Q0./self.P0).*u_bar );
-            uz = reshape(uz,self.Nz,self.Nx,self.Ny);
-            uz = permute(uz,[2 3 1]);
-            uz = (-shiftdim(self.N2,-2)/self.g).*uz;
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
+            ux = self.diffX(u);
+            uy = self.diffY(u);
+            uz = self.diffZF(u);
         end  
         
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, w_bar )
-            w_bar = (self.Q0 .* w_bar)*(self.Nx*self.Ny);
-            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-
-            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.Nj,[]);
-            w = self.QG0inv*w_bar;
-            w = reshape(w,self.Nz,self.Nx,self.Ny);
-            w = permute(w,[2 3 1]);
-
-            wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
-            wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
-            
-            wz = self.PF0inv* ( squeeze(self.P0./(self.Q0 .* self.h)) .* w_bar);
-            wz = reshape(wz,self.Nz,self.Nx,self.Ny);
-            wz = permute(wz,[2 3 1]);
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
+            wx = self.diffX(w);
+            wy = self.diffY(w);
+            wz = self.diffZG(w);
         end
         
         function u = transformToSpatialDomainWithFInterp(self, u_bar)

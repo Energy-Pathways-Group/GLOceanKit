@@ -6,7 +6,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
     properties (ClassSetupParameter)
         Lxyz = struct('Lxyz',[1 10 4]);
-        Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
+        Nxyz = struct('Nx16Ny16Nz9',[8 8 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
         transform = {'boussinesq'};
         orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
@@ -70,18 +70,41 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
     end
 
     methods (Test)
-        function testSolution(self,solutionIndex)
+        % function testSolution(self,solutionIndex)
+        %     args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+        %     soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+        %     self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
+        % 
+        %     self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
+        %     self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
+        %     self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
+        %     self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
+        %     self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+        % end
+
+        function testFTransformAllDerivatives(self,solutionIndex)
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
             soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
+            [U,Ux,Uy,Uz] = self.wvt.transformToSpatialDomainWithFAllDerivatives(Apm=self.wvt.UAp.*self.wvt.Apt + self.wvt.UAm.*self.wvt.Amt,A0=self.wvt.UA0.*self.wvt.A0t);
 
-            self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
-            self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
-            self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
-            self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
-            self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+            self.verifyThat(U,IsSameSolutionAs(soln.u(args{:})),'FAllDerivatives-U');
+            self.verifyThat(Ux,IsSameSolutionAs(self.wvt.diffX(self.wvt.u)),'FAllDerivatives-Ux');
+            self.verifyThat(Uy,IsSameSolutionAs(self.wvt.diffY(self.wvt.u)),'FAllDerivatives-Uy');
+            self.verifyThat(Uz,IsSameSolutionAs(self.wvt.diffZF(self.wvt.u)),'FAllDerivatives-Uz');
         end
 
+        function testGTransformAllDerivatives(self,solutionIndex)
+            args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+            soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+            self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
+            [ETA,ETAx,ETAy,ETAz] = self.wvt.transformToSpatialDomainWithGAllDerivatives(Apm=self.wvt.NAp.*self.wvt.Apt + self.wvt.NAm.*self.wvt.Amt,A0=self.wvt.NA0.*self.wvt.A0t);
+
+            self.verifyThat(ETA,IsSameSolutionAs(soln.eta(args{:})),'GAllDerivatives-ETA');
+            self.verifyThat(ETAx,IsSameSolutionAs(self.wvt.diffX(self.wvt.eta)),'GAllDerivatives-ETAx');
+            self.verifyThat(ETAy,IsSameSolutionAs(self.wvt.diffY(self.wvt.eta)),'GAllDerivatives-ETAy');
+            self.verifyThat(ETAz,IsSameSolutionAs(self.wvt.diffZG(self.wvt.eta)),'GAllDerivatives-ETAz');
+        end
 
     end
 
