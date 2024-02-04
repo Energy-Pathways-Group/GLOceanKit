@@ -21,12 +21,26 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
         end
     end
 
+    methods (TestParameterDefinition,Static)
+        function [k_n,l_n,m_n] = initializeProperty(transform)
+            % If you want to dynamically adjust the test parameters, you
+            % have to do it here.
+            for i=1:8
+                k_n.(sprintf('k_%d',i)) = i;
+                l_n.(sprintf('l_%d',i)) = i;
+            end
+            for i=0:8
+                m_n.(sprintf('m_%d',i)) = i;
+            end
+        end
+    end
+
     properties (TestParameter)
         % derivative = struct('first',1,'second',2,'third',3,'fourth',4);
         derivative = struct('first',1);
-        k_n = struct('k_1',1,'k_2',2,'k_3',3,'k_4',4,'k_5',5,'k_6',6,'k_7',7,'k_8',8)
-        l_n = struct('l_1',1,'l_2',2,'l_3',3,'l_4',4,'l_5',5,'l_6',6,'l_7',7,'l_8',8)
-        m_n = struct('m_0',0,'m_1',1,'m_2',2,'m_3',3,'m_4',4,'m_5',5,'m_6',6,'m_7',7,'m_8',8)
+        k_n
+        l_n
+        m_n
     end
 
     methods (Test)
