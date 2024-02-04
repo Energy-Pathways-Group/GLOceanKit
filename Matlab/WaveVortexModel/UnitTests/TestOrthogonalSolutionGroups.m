@@ -6,7 +6,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
     properties (ClassSetupParameter)
         Lxyz = struct('Lxyz',[1 10 4]);
-        Nxyz = struct('Nx16Ny16Nz9',[8 8 5]);
+        Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
         transform = {'boussinesq'};
         orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
@@ -70,17 +70,17 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
     end
 
     methods (Test)
-        % function testSolution(self,solutionIndex)
-        %     args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
-        %     soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
-        %     self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
-        % 
-        %     self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
-        %     self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
-        %     self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
-        %     self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
-        %     self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
-        % end
+        function testSolution(self,solutionIndex)
+            args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+            soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+            self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
+
+            self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
+            self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
+            self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
+            self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
+            self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+        end
 
         function testFTransformAllDerivatives(self,solutionIndex)
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
