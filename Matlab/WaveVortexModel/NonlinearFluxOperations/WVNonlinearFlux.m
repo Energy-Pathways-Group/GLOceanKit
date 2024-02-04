@@ -81,6 +81,8 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.dLnN2 = 0;
             elseif isa(wvt,'WVTransformHydrostatic')
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
+            elseif isa(wvt,'WVTransformBoussinesq')
+                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             else
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
                 warning('WVTransform not recognized.')
