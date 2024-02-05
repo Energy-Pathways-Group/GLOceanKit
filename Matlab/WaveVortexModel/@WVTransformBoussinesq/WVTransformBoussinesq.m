@@ -27,6 +27,7 @@ classdef WVTransformBoussinesq < WVTransform
         K2unique     % unique squared-wavenumbers
         nK2unique    % number of unique squared-wavenumbers
         iK2unique    % map from 2-dim K2, to 1-dim K2unique
+        K2uniqueK2Map % cell array Nk in length. Each cell contains indices back to K2
 
         % IGW transformation matrices
         PFpmInv, QGpmInv % size(PFinv,PGinv)=[Nz x Nj x Nk]
@@ -160,11 +161,18 @@ classdef WVTransformBoussinesq < WVTransform
                 self.N2 = N2;
                 self.dLnN2 = dLnN2;
                 
+                % K2unique are the unique wavenumbers (sorted)
+                % iK2unique is the same size as K2, but are the indices for
+                % the K2unique matrix to recreate/map back to K2unique.
                 Kh = self.Kh;
                 K2 = (Kh(:,:,1)).^2;
                 [self.K2unique,~,self.iK2unique] = unique(K2);
                 self.iK2unique = reshape(self.iK2unique,size(K2));
                 self.nK2unique = length(self.K2unique);
+                self.K2uniqueK2Map = cell(length(self.K2unique),1);
+                for iK=1:length(self.K2unique)
+                    self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
+                end
 
                 self.BuildProjectionOperators();
             end
@@ -490,10 +498,15 @@ classdef WVTransformBoussinesq < WVTransform
             w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
             w_bar = reshape(w_bar,self.Nj,[]);
 
-            for iK=1:size(w_bar,2)
-                % w_bar(:,iK) = self.QGpm(:,:,self.iK2unique(iK) )*self.QG0inv*w_bar(:,iK);
-                w_bar(:,iK) = self.QGwg(:,:,self.iK2unique(iK) )*w_bar(:,iK);
-                w_bar(:,iK) = w_bar(:,iK)./self.Qpm(:,self.iK2unique(iK));
+            % for iK=1:size(w_bar,2)
+            %     % w_bar(:,iK) = self.QGpm(:,:,self.iK2unique(iK) )*self.QG0inv*w_bar(:,iK);
+            %     w_bar(:,iK) = self.QGwg(:,:,self.iK2unique(iK) )*w_bar(:,iK);
+            %     w_bar(:,iK) = w_bar(:,iK)./self.Qpm(:,self.iK2unique(iK));
+            % end
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                w_bar(:,indices) = self.QGwg(:,:,iK) * w_bar(:,indices);
+                w_bar(:,indices) = w_bar(:,indices)./self.Qpm(:,iK); %self.QGpmInv(:,:,iK )*w_bar(:,indices);
             end
             w_bar = reshape(w_bar,self.Nj,self.Nk,self.Nl);
             w_bar = permute(w_bar,[2 3 1]);
@@ -614,9 +627,14 @@ classdef WVTransformBoussinesq < WVTransform
             u_bar = reshape(u_bar,self.Nj,[]);
 
             u = zeros(self.Nz,size(u_bar,2));
-            for iK=1:size(u_bar,2)
-                u_bar(:,iK) = self.Ppm(:,self.iK2unique(iK)) .* u_bar(:,iK);
-                u(:,iK) = self.PFpmInv(:,:,self.iK2unique(iK) )*u_bar(:,iK);
+            % for iK=1:size(u_bar,2)
+            %     u_bar(:,iK) = self.Ppm(:,self.iK2unique(iK)) .* u_bar(:,iK);
+            %     u(:,iK) = self.PFpmInv(:,:,self.iK2unique(iK) )*u_bar(:,iK);
+            % end
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                u_bar(:,indices) = self.Ppm(:,iK) .* u_bar(:,indices);
+                u(:,indices) = self.PFpmInv(:,:,iK )*u_bar(:,indices);
             end
             u = reshape(u,self.Nz,self.Nk,self.Nl);
             u = permute(u,[2 3 1]);
@@ -627,9 +645,14 @@ classdef WVTransformBoussinesq < WVTransform
             w_bar = reshape(w_bar,self.Nj,[]);
 
             w = zeros(self.Nz,size(w_bar,2));
-            for iK=1:size(w_bar,2)
-                w_bar(:,iK) = self.Qpm(:,self.iK2unique(iK)) .* w_bar(:,iK);
-                w(:,iK) = self.QGpmInv(:,:,self.iK2unique(iK) )*w_bar(:,iK);
+            % for iK=1:size(w_bar,2)
+            %     w_bar(:,iK) = self.Qpm(:,self.iK2unique(iK)) .* w_bar(:,iK);
+            %     w(:,iK) = self.QGpmInv(:,:,self.iK2unique(iK) )*w_bar(:,iK);
+            % end
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                w_bar(:,indices) = self.Qpm(:,iK) .* w_bar(:,indices);
+                w(:,indices) = self.QGpmInv(:,:,iK )*w_bar(:,indices);
             end
             w = reshape(w,self.Nz,self.Nk,self.Nl);
             w = permute(w,[2 3 1]);

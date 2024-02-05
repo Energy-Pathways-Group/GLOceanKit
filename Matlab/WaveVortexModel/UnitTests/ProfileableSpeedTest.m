@@ -48,6 +48,7 @@ toc
 % 18:15 2024-02-04 pre-omptimize: Elapsed time is 13.436532 seconds.
 % 18:23 2024-02-04 remove squeeze: Elapsed time is 9.491209 s seconds.
 % 18:38 2024-02-04 precompute double MM: Elapsed time is 8.681165 seconds.
+% 08:09 2024-02-05 loop over kUnique: Elapsed time is 5.783941 seconds.
 
 %%
 profile on
@@ -61,6 +62,6 @@ profile viewer
 % 18:15 2024-02-04 pre-omptimize: Elapsed time is 3.698 s seconds.
 % 18:23 2024-02-04 remove squeeze: Elapsed time is 2.725 s seconds.
 % 18:38 2024-02-04 precompute double MM: Elapsed time is 2.289  seconds.
-
+% 08:09 2024-02-05 loop over kUnique: Elapsed time is 1.649 seconds.
 % profile viewer
 
