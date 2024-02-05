@@ -219,8 +219,10 @@ classdef WVTransformBoussinesq < WVTransform
             h = zeros(self.Nj,self.nK2unique);
             self.Ppm =     zeros(self.Nj,self.nK2unique);
             self.Qpm =     zeros(self.Nj,self.nK2unique);
+            self.QGwg =    zeros(self.Nj,self.Nj,self.nK2unique);
             for iK=1:self.nK2unique
                 [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.BuildProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
+                self.QGwg(:,:,iK ) = self.QGpm(:,:,iK )*self.QG0inv;
             end
 
             self.h_pm = zeros(size(self.K));
@@ -489,7 +491,8 @@ classdef WVTransformBoussinesq < WVTransform
             w_bar = reshape(w_bar,self.Nj,[]);
 
             for iK=1:size(w_bar,2)
-                w_bar(:,iK) = self.QGpm(:,:,self.iK2unique(iK) )*self.QG0inv*w_bar(:,iK);
+                % w_bar(:,iK) = self.QGpm(:,:,self.iK2unique(iK) )*self.QG0inv*w_bar(:,iK);
+                w_bar(:,iK) = self.QGwg(:,:,self.iK2unique(iK) )*w_bar(:,iK);
                 w_bar(:,iK) = w_bar(:,iK)./self.Qpm(:,self.iK2unique(iK));
             end
             w_bar = reshape(w_bar,self.Nj,self.Nk,self.Nl);
