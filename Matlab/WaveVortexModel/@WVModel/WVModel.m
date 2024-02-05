@@ -608,7 +608,7 @@ classdef WVModel < handle
             end
             if isKey(self.ncfile.attributes,'history')
                 history = self.ncfile.attributes('history');
-                history =[history;a];
+                history =cat(3,history,a);
             else
                 history = a;
             end

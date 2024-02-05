@@ -1055,15 +1055,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function energy = internalWaveEnergyPlus(self)
             A = self.Ap;
             A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
+            C = self.Apm_TE_factor .* (A.*conj(A));
+            energy = sum( C(:)  );
         end
         
         function energy = internalWaveEnergyMinus(self)
             A = self.Am;
             A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
+            C = self.Apm_TE_factor .* (A.*conj(A));
+            energy = sum( C(:)  );
         end
         
         function summarizeEnergyContent(self)
