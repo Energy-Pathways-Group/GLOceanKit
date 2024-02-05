@@ -31,8 +31,9 @@ classdef WVTransformBoussinesq < WVTransform
         % IGW transformation matrices
         PFpmInv, QGpmInv % size(PFinv,PGinv)=[Nz x Nj x Nk]
         PFpm, QGpm % size(PF,PG)=[Nj x Nz x Nk]
-        Ppm % Preconditioner for F, size(P)=[1 1 Nj x Nk]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
-        Qpm % Preconditioner for G, size(Q)=[1 1 Nj x Nk]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
+        QGwg  % size(PF,PG)=[Nj x Nj x Nk]
+        Ppm % Preconditioner for F, size(P)=[Nj x Nk]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
+        Qpm % Preconditioner for G, size(Q)=[Nj x Nk]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
 
         zInterp
         PFinvInterp, QGinvInterp
@@ -216,10 +217,10 @@ classdef WVTransformBoussinesq < WVTransform
             self.PFpm =    zeros(self.Nj,self.Nz,self.nK2unique);
             self.QGpm =    zeros(self.Nj,self.Nz,self.nK2unique);
             h = zeros(self.Nj,self.nK2unique);
-            self.Ppm =     zeros(1,1,self.Nj,self.nK2unique);
-            self.Qpm =     zeros(1,1,self.Nj,self.nK2unique);
+            self.Ppm =     zeros(self.Nj,self.nK2unique);
+            self.Qpm =     zeros(self.Nj,self.nK2unique);
             for iK=1:self.nK2unique
-                [self.Ppm(1,1,:,iK),self.Qpm(1,1,:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.BuildProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
+                [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.BuildProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
             end
 
             self.h_pm = zeros(size(self.K));
@@ -489,7 +490,7 @@ classdef WVTransformBoussinesq < WVTransform
 
             for iK=1:size(w_bar,2)
                 w_bar(:,iK) = self.QGpm(:,:,self.iK2unique(iK) )*self.QG0inv*w_bar(:,iK);
-                w_bar(:,iK) = w_bar(:,iK)./squeeze(self.Qpm(1,1,:,self.iK2unique(iK)));
+                w_bar(:,iK) = w_bar(:,iK)./self.Qpm(:,self.iK2unique(iK));
             end
             w_bar = reshape(w_bar,self.Nj,self.Nk,self.Nl);
             w_bar = permute(w_bar,[2 3 1]);
@@ -513,7 +514,7 @@ classdef WVTransformBoussinesq < WVTransform
             arguments (Output)
                 u_bar (1,1,:) double
             end
-            u_bar = (self.PFpm(:,:,1 )*u)./squeeze(self.Ppm(1,1,:,1));
+            u_bar = (self.PFpm(:,:,1 )*u)./self.Ppm(:,1);
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
@@ -611,7 +612,7 @@ classdef WVTransformBoussinesq < WVTransform
 
             u = zeros(self.Nz,size(u_bar,2));
             for iK=1:size(u_bar,2)
-                u_bar(:,iK) = squeeze(self.Ppm(1,1,:,self.iK2unique(iK))) .* u_bar(:,iK);
+                u_bar(:,iK) = self.Ppm(:,self.iK2unique(iK)) .* u_bar(:,iK);
                 u(:,iK) = self.PFpmInv(:,:,self.iK2unique(iK) )*u_bar(:,iK);
             end
             u = reshape(u,self.Nz,self.Nk,self.Nl);
@@ -624,7 +625,7 @@ classdef WVTransformBoussinesq < WVTransform
 
             w = zeros(self.Nz,size(w_bar,2));
             for iK=1:size(w_bar,2)
-                w_bar(:,iK) = squeeze(self.Qpm(1,1,:,self.iK2unique(iK))) .* w_bar(:,iK);
+                w_bar(:,iK) = self.Qpm(:,self.iK2unique(iK)) .* w_bar(:,iK);
                 w(:,iK) = self.QGpmInv(:,:,self.iK2unique(iK) )*w_bar(:,iK);
             end
             w = reshape(w,self.Nz,self.Nk,self.Nl);

@@ -24,6 +24,7 @@ wvt.initWithRandomFlow();
 
 % return
 
+%%
 [Fp,Fm,F0] = wvt.nonlinearFlux();
 % profile on
 tic
@@ -33,9 +34,19 @@ for i=1:50
 end
 toc
 
+%%
 wvt.nonlinearFluxOperation = WVNonlinearFluxSpatial(wvt);
 [Fp,Fm,F0] = wvt.nonlinearFlux();
+
 tic
+for i=1:50
+    wvt.t = i;
+    [Fp,Fm,F0] = wvt.nonlinearFlux();
+end
+toc
+
+% 18:15 2024-02-04 pre-omptimize: Elapsed time is 13.436532 seconds.
+% 18:23 2024-02-04 remove squeeze: Elapsed time is 9.491209 s seconds.
 
 %%
 profile on
@@ -45,7 +56,9 @@ for i=1:10
 end
 profile viewer
 %%
-toc
+
+% 18:15 2024-02-04 pre-omptimize: Elapsed time is 3.698 s seconds.
+% 18:23 2024-02-04 remove squeeze: Elapsed time is 2.725 s seconds.
 
 % profile viewer
 
