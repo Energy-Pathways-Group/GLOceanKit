@@ -607,8 +607,8 @@ classdef WVModel < handle
                 a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
             end
             if isKey(self.ncfile.attributes,'history')
-                history = self.ncfile.attributes('history');
-                history =cat(3,history,a);
+                history = reshape(self.ncfile.attributes('history'),1,[]);
+                history =cat(2,squeeze(history),a);
             else
                 history = a;
             end
