@@ -96,16 +96,18 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 F = self.wvt.FinvMatrix;
                 surfaceMag = 1/F(end,options.j_f+1);
                 sbRatio = abs(F(end,options.j_f+1)/F(1,options.j_f+1));
-                sbRatio = 1; % should we change the damping scale? Or no?
+                % sbRatio = 1; % should we change the damping scale? Or no?
                 h = self.wvt.h(options.j_f+1);
+                magicNumber = 2.25;
             else
                 surfaceMag = 1;
                 sbRatio = 1;
                 h = self.wvt.h;
                 options.j_f = 0;
+                magicNumber = 0.0225;
             end
 
-            magicNumber = 0.0225;
+            
             if isfield(options,"r")
                 self.r = options.r;
                 k_r = self.r/(magicNumber*options.u_rms);
