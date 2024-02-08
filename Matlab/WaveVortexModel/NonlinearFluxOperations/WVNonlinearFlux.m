@@ -192,8 +192,8 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*self.dLnN2);
             
             % bottom friction
-            uNL(:,:,1) = - self.r*U(:,:,1);
-            vNL(:,:,1) = - self.r*V(:,:,1);
+            uNL(:,:,1) = uNL(:,:,1) - self.r*U(:,:,1);
+            vNL(:,:,1) = vNL(:,:,1) - self.r*V(:,:,1);
             
             if nargout == 5
                 uvw = struct('u',U,'v',V,'w',W,'eta',ETA,'ux',Ux,'uy',Uy,'uz',Uz,'vx',Vx,'vy',Vy,'vz',Vz,'etax',ETAx,'etay',ETAy,'etaz',ETAz);
