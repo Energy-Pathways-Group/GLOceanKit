@@ -36,13 +36,12 @@ A0t = self.A0;
 U = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.UAp.*Apt + self.UAm.*Amt), A0=A0UMask.*self.UA0.*A0t);
 V = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.VAp.*Apt + self.VAm.*Amt), A0=A0UMask.*self.VA0.*A0t);
 W = self.transformToSpatialDomainWithG(Apm=ApmUMask.*(self.WAp.*Apt + self.WAm.*Amt));
-ETA = self.transformToSpatialDomainWithG(Apm=ApmUMask.*(self.NAp.*Apt + self.NAm.*Amt),A0=A0UMask.*self.NA0.*A0t);
 
 % Finishing applying S, but also compute derivatives at the
 % same time
 [~,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Apm=ApmUxMask.*(self.UAp.*Apt + self.UAm.*Amt),A0=A0UxMask.*self.UA0.*A0t);
 [~,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Apm=ApmUxMask.*(self.VAp.*Apt + self.VAm.*Amt),A0=A0UxMask.*self.VA0.*A0t);
-[~,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Apm=ApmUxMask.*(self.NAp.*Apt + self.NAm.*Amt),A0=A0UxMask.*self.NA0.*A0t);
+[ETA,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Apm=ApmUxMask.*(self.NAp.*Apt + self.NAm.*Amt),A0=A0UxMask.*self.NA0.*A0t);
 
 % Compute the nonlinear terms in the spatial domain
 % (pseudospectral!)

@@ -1238,7 +1238,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
         ncfile = writeToFile(self,netcdfFile,variables,options);
-
+        [ncfile,matFilePath] = createNetCDFFileForTimeStepOutput(self,path,variables,options);
+        concatenateVariablesAlongTimeDimension(self,path);
     end
 
     methods (Access=protected)
