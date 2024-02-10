@@ -84,6 +84,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
+        PA0
 
         % These convert the coefficients to their depth integrated energies
         Apm_TE_factor % [Nk Nl Nj]
@@ -1055,15 +1056,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function energy = internalWaveEnergyPlus(self)
             A = self.Ap;
             A(1,1,:) = 0;
-            C = self.Apm_TE_factor .* (A.*conj(A));
-            energy = sum( C(:)  );
+            C = self.Apm_TE_factor;
+            energy = sum( C(:).* (A(:).*conj(A(:)))  );
         end
         
         function energy = internalWaveEnergyMinus(self)
             A = self.Am;
             A(1,1,:) = 0;
-            C = self.Apm_TE_factor .* (A.*conj(A));
-            energy = sum( C(:)  );
+            C = self.Apm_TE_factor;
+            energy = sum( C(:).* (A(:).*conj(A(:)))  );
         end
         
         function summarizeEnergyContent(self)
@@ -1238,8 +1239,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
         ncfile = writeToFile(self,netcdfFile,variables,options);
-        [ncfile,matFilePath] = createNetCDFFileForTimeStepOutput(self,path,variables,options);
-        concatenateVariablesAlongTimeDimension(self,path);
+
     end
 
     methods (Access=protected)

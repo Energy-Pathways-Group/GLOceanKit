@@ -38,7 +38,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 case WVCoefficientMatrix.A0
                     mask = ~self.wvt.maskForNyquistModes();
                     IG = ones(size(self.wvt.A0));
-                    IG(:,:,1) = 0;
+                    % IG(:,:,1) = 0;
                     IG(1,1,:) = 0;
                     mask = IG.*mask;
             end
@@ -229,14 +229,14 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBePositive}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 A (:,1) double
                 phi (:,1) double
             end
             arguments (Output)
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBePositive}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
                 A (:,1) double
                 phi (:,1) double
             end
@@ -328,8 +328,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
 
-            G = @(z) norm*sin(m*(z+wvt.Lz));
-            F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
+            if jMode == 0
+                G = @(z) zeros(size(z));
+                F = @(z) ones(size(z));
+            else
+                G = @(z) norm*sin(m*(z+wvt.Lz));
+                F = @(z) norm*h*m*cos(m*(z+wvt.Lz));
+            end
 
             theta = @(x,y,t) k*x + l*y + phi;
             u = @(x,y,z,t) A*(wvt.g*l/wvt.f)*sin( theta(x,y,t) ).*F(z);
@@ -349,9 +354,15 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             K2 = k*k+l*l;
-            Lr2 = wvt.g*h/wvt.f/wvt.f;
-            solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
-            solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            if jMode == 0
+                Lr0 = wvt.g*wvt.Lz/wvt.f/wvt.f;
+                solution.energyFactor = (wvt.g/2)*(K2*Lr0);
+                solution.enstrophyFactor = (wvt.g/2)*Lr0*(K2)^2;
+            else
+                Lr2 = wvt.g*h/wvt.f/wvt.f;
+                solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
+                solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            end
         end
 
         function [A0Z,A0N] = geostrophicSpectralTransformCoefficients(self)
@@ -359,17 +370,19 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             f = self.wvt.f;
             g = self.wvt.g;
 
-            Lr2 = g*self.wvt.h_0/(f*f);
-
             nyquistMask = ~self.wvt.maskForNyquistModes();
             coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
             mask = nyquistMask.*coeffMask;
 
-            A0N = mask./(Lr2.*K2 + 1);
-            A0Z = - (f/g)*Lr2.*A0N;
+            Lr2inv = (f*f)/(g*self.wvt.h_0);
+            Lr2inv(1) = 0;
+            A0N = (Lr2inv./(K2 + Lr2inv));
+            A0Z = - (f/g)./(K2 + Lr2inv);
+            A0N(~mask) = 0;
+            A0Z(~mask) = 0;
         end
 
-        function [UA0,VA0,NA0] = geostrophicSpatialTransformCoefficients(self)
+        function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)
             [K,L,~] = self.wvt.kljGrid;
             f = self.wvt.f;
             g = self.wvt.g;
@@ -380,7 +393,9 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
 
             UA0 = self.makeA0Hermitian(-sqrt(-1)*(g/f)*L) .* mask;
             VA0 = self.makeA0Hermitian(sqrt(-1)*(g/f)*K) .* mask;
+            PA0 = mask;
             NA0 = mask;
+            NA0(:,:,1) = 0;
         end
 
         function bool = contains(self,otherFlowConstituent)

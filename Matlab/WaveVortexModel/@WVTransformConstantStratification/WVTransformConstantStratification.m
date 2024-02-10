@@ -183,13 +183,14 @@ classdef WVTransformConstantStratification < WVTransform
         function self = buildTransformationMatricesNew(self)
             solutionGroup = WVGeostrophicSolutionGroup(self);
             [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
-            [self.UA0,self.VA0,self.NA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
+            [self.UA0,self.VA0,self.NA0,self.PA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
 
             solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
             A0N = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
             NA0 = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
             self.A0N = self.A0N + A0N;
             self.NA0 = self.NA0 + NA0;
+            self.PA0 = self.PA0 + NA0;
 
             solutionGroup = WVInternalGravityWaveSolutionGroup(self);
             [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
