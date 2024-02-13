@@ -29,6 +29,11 @@ classdef WVTransformHydrostatic < WVTransform
         P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
         Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
         
+        PFMDAinv, QGMDAinv % size(PFinv,PGinv)=[Nz x Nj]
+        PFMDA, QGMDA % size(PF,PG)=[Nj x Nz]
+        h_mda % [1 1 Nj]
+        PMDA, QMDA
+
         zInterp
         PFinvInterp, QGinvInterp
 
@@ -218,6 +223,55 @@ classdef WVTransformHydrostatic < WVTransform
             else
                 error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
             end
+        end
+
+        function self = BuildProjectionOperatorsForMDAModes(self)
+            % Now go compute the appropriate number of modes at the
+            % quadrature points.
+            [Finv,Ginv,self.h_mda] = self.internalModes.MDAModes();
+
+            % Make these matrices invertible by removing the boundaries
+            Finv = Finv(2:end-1,1:end-1);
+            Ginv = Ginv(2:end-1,1:end-1);
+
+            % Compute the precondition matrices (really, diagonals)
+            self.P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
+            self.Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
+
+            % Now create the actual transformation matrices
+            self.PFinv = Finv./self.P;
+            self.QGinv = Ginv./self.Q;
+            self.PF = inv(self.PFinv);
+            self.QG = inv(self.QGinv);
+
+            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],2);
+            if maxCond > 1000
+                warning('Condition number is %f the vertical transformations.',maxCond);
+            end
+            % size(F)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
+            % but, we will only multiply by vectors [Nj 1], so dump the
+            % last column. Now size(Fp) = [Nz x Nj].
+            self.PFinv = self.PFinv(:,1:end-1);
+
+            % size(Finv)=[Nj+1, Nz], but we don't care about the last mode
+            self.PF = self.PF(1:end-1,:);
+
+            % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
+            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
+            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.Nj-1),self.QGinv,zeros(1,self.Nj-1)));
+
+            % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
+            % mode, but also need zeros for the boundary
+            self.QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(self.Nj,1));
+
+            % want size(h)=[1 1 Nj]
+            self.h = cat(2,1,self.h(1:end-1)); % remove the extra mode at the end
+            self.h = shiftdim(self.h,-1);
+
+            self.P = shiftdim(self.P(1:end-1),-1);
+            self.Q = shiftdim(cat(2,1,self.Q),-1);
+
+            self.buildTransformationMatrices();
         end
 
         function self = BuildProjectionOperators(self)
