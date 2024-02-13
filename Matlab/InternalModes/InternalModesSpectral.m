@@ -380,6 +380,13 @@ self.g/(eta0*self.N2_xLobatto(1))
             % lower-boundary
             A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0; %1/self.Lz; %0*T(n,:);
+
+            % A(2,:) = T(2,:);
+            % B(2,:) = 0 ;
+            % 
+            % % lower-boundary
+            % A(n-1,:) = T(n-1,:);
+            % B(n-1,:) = 0;
         end
         
         function [A,B] = ApplyBoundaryConditions(self,A,B)
@@ -820,7 +827,29 @@ self.g/(eta0*self.N2_xLobatto(1))
                 error('EVP setup fail. Found at least one nan in matrices A and B.\n');
             end
             [V,D] = eig( A, B );
-            
+
+            % The following might be better, as it captures the the
+            % barotopic mode.
+            % d = diag(D);
+            % [d, permutation] = sort(real(d),'ascend');
+            % V_cheb=V(:,permutation);
+            % if options.negativeEigenvalues > 0
+            %     negIndices = find(d<0,options.negativeEigenvalues,'last');
+            % else
+            %     negIndices = [];
+            % end
+            % if isempty(negIndices)
+            %     minIndex = find(d>=0,1,'first');
+            %     if isempty(minIndex)
+            %         fprintf('No usable modes found! Try with higher resolution.\n');
+            %         return;
+            %     end
+            % else
+            %     minIndex = min(negIndices);
+            % end
+            % V_cheb = V_cheb(:,minIndex:end);
+            % h = self.hFromLambda(d(minIndex:end));
+
             [h, permutation] = sort(real(self.hFromLambda(diag(D))),'descend');
             V_cheb=V(:,permutation);
             if options.negativeEigenvalues > 0
