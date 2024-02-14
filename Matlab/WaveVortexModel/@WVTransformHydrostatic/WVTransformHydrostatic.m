@@ -249,8 +249,8 @@ classdef WVTransformHydrostatic < WVTransform
             % we are going to intentionally *swap* the inputs
             [Q,P,QGinv,QG,PFinv,PF,h] = self.BuildProjectionOperatorsWithRigidLid(Ginv,Finv,h);
             % the j=0 mode is not valid and must be removed.
-            QGinv(:,1) = 0;
-            QG(1,:) = 0;
+            % QGinv(:,1) = 0;
+            % QG(1,:) = 0;
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForGeostrophicModes(self)
@@ -558,7 +558,7 @@ classdef WVTransformHydrostatic < WVTransform
                 options.A0 double = 0
             end
             if ~isscalar(options.A0)
-                eta = self.transformToSpatialDomainWithGmda(options.A0(1,1,:))*(self.Nx*self.Ny);
+                eta = self.transformToSpatialDomainWithGmda(options.A0(1,1,:));
                 options.A0(1,1,:) = 0;
             else
                 eta = 0;

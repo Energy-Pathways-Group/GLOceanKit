@@ -319,16 +319,10 @@ classdef InternalModesSpectral < InternalModesBase
             % upper-boundary
             A(1,:) = Tz(1,:);
             B(1,:) = (eta0/self.g)*self.N2_xLobatto(1)*T(1,:);
-self.g/(eta0*self.N2_xLobatto(1))
-            A(1,:) = self.g/(eta0*self.N2_xLobatto(1))*Tz(1,:);
-            B(1,:) = T(1,:);
 
-            % A(1,:) = (eta0/self.Lz)*Tz(1,:);
-            % B(1,:) = T(1,:);
-            % 
             % lower-boundary
-            A(n,:) = T(n,:);
-            B(n,:) = 0;
+            A(n,:) = Tz(n,:);
+            B(n,:) = (etad/self.g)*self.N2_xLobatto(n)*T(n,:);
 
             self.FOutFromVCheb = @(G_cheb,h) h * self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
             self.FFromVCheb = @(G_cheb,h) h * InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
@@ -376,10 +370,12 @@ self.g/(eta0*self.N2_xLobatto(1))
             % upper-boundary
             A(1,:) = Tz(1,:); %-Tz(n,:);
             B(1,:) = 0 ;%1/self.Lz; %0*T(n,:);
+            self.upperBoundary = UpperBoundary.mda;
 
             % lower-boundary
             A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0; %1/self.Lz; %0*T(n,:);
+            self.lowerBoundary = LowerBoundary.mda;
 
             % A(2,:) = T(2,:);
             % B(2,:) = 0 ;
@@ -576,13 +572,19 @@ self.g/(eta0*self.N2_xLobatto(1))
         end
         
         function z_g = GaussQuadraturePointsForModesAtFrequency(self,nPoints,omega)
-            z_g = self.GaussQuadraturePointsForModesAtMethod(nPoints,omega,'EigenmatricesForFrequency');
+            [A,B] = self.EigenmatricesForFrequency(omega);
+            z_g = self.GaussQuadraturePointsForEigenmatrices(nPoints,A,B);
         end
         function z_g = GaussQuadraturePointsForModesAtWavenumber(self,nPoints,k)
-            z_g = self.GaussQuadraturePointsForModesAtMethod(nPoints,k,'EigenmatricesForWavenumber');
+            [A,B] = self.EigenmatricesForWavenumber(k);
+            z_g = self.GaussQuadraturePointsForEigenmatrices(nPoints,A,B);
+        end
+        function z_g = GaussQuadraturePointsForMDAModes(self,nPoints)
+            [A,B] = self.EigenmatricesForMDAModes();
+            z_g = self.GaussQuadraturePointsForEigenmatrices(nPoints,A,B);
         end
         
-        function z_g = GaussQuadraturePointsForModesAtMethod(self,nPoints,k,methodName)
+        function z_g = GaussQuadraturePointsForEigenmatrices(self,nPoints,A,B)
             % Now we just need to find the roots of the n+1 mode.
             % For constant stratification this should give back the
             % standard Fourier modes, i.e., an evenly spaced grid.
@@ -593,7 +595,6 @@ self.g/(eta0*self.N2_xLobatto(1))
             % useful information. So we'd expect cond(G(:,1:(nPoints-2))))
             % to be good (low), but not the next.
             if 2*nPoints < self.nEVP
-               [A,B] = self.(methodName)(k);
                if ( any(any(isnan(A))) || any(any(isnan(B))) )
                    error('GLOceanKit:NaNInMatrix', 'EVP setup fail. Found at least one nan in matrices A and B.\n');
                end
@@ -612,7 +613,13 @@ self.g/(eta0*self.N2_xLobatto(1))
 %                roots = InternalModesSpectral.FindRootsFromChebyshevVector(F(1:end-1), self.z_xLobatto);
 %                z_g = cat(1,min(self.z_xLobatto),reshape(roots,[],1),max(self.z_xLobatto));
 
-               if self.upperBoundary == UpperBoundary.rigidLid
+               % depending on the boundary conditions and particular
+               % problem, the nth mode might contain (n-1), (n), or (n+1)
+               % zero crossings. If nPoints are request, we want to include
+               % the boundaries in that number.
+               if self.upperBoundary == UpperBoundary.mda
+                    rootMode = nPoints-2;
+               elseif self.upperBoundary == UpperBoundary.rigidLid
                    % n-th mode has n+1 zeros (including boundaries)
                    rootMode = nPoints-1;
                elseif self.upperBoundary == UpperBoundary.freeSurface
@@ -625,14 +632,14 @@ self.g/(eta0*self.N2_xLobatto(1))
                % First we make sure the roots are within the bounds
                rootsVar(rootsVar<self.xMin) = self.xMin;
                rootsVar(rootsVar>self.xMax) = self.xMax;
+               
+               % Add the boundary points---if they are redundant, they will
+               % get eliminated below
+               rootsVar = cat(1,self.xMin,rootsVar,self.xMax);
 
                % Then we eliminate any repeats (it happens)
                rootsVar = unique(rootsVar,'stable');
                
-               if length(rootsVar) < nPoints
-                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(rootsVar),nPoints);
-               end
-
                while (length(rootsVar) > nPoints)
                    rootsVar = sort(rootsVar);
                    F = InternalModesSpectral.IntegrateChebyshevVector(G_cheb(:,rootMode));
@@ -640,6 +647,10 @@ self.g/(eta0*self.N2_xLobatto(1))
                    dv = diff(value);
                    [~,minIndex] = min(abs(dv));
                    rootsVar(minIndex+1) = [];
+               end
+
+               if length(rootsVar) < nPoints
+                   error('GLOceanKit:NeedMorePoints', 'Returned %d unique roots (requested %d). Maybe need more EVP.', length(rootsVar),nPoints);
                end
 
                z_g = reshape(rootsVar,[],1);          
@@ -901,7 +912,7 @@ self.g/(eta0*self.N2_xLobatto(1))
                         A = sqrt(self.GNorm( Gj ));
                     case Normalization.omegaConstant
                         A = sqrt(self.FNorm( Fj ));
-                    case Normalization.geostrophicFreeSurface
+                    case Normalization.geostrophic
                         A = sqrt(self.GeostrophicNorm( Gj ));
                 end
                 if Fj(maxIndexZ) < 0
