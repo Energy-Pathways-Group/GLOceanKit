@@ -20,5 +20,12 @@ function setGeostrophicStreamfunction(self,psi)
 % - Declaration: setGeostrophicStreamfunction(psi)
 % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
 [X,Y,Z] = ndgrid(self.x,self.y,self.z);
-self.A0 = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(X,Y,Z) ));
+psi_bar = self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(X,Y,Z) );
+psi_barz = self.diffZF(psi_bar);
+psi_bar(1,1,:) = 0;
+self.A0 = self.transformFromSpatialDomainWithFg( psi_bar);
+
+psi_bar0z = self.transformFromSpatialDomainWithGmda(-psi_barz(1,1,:)./shiftdim(self.N2,-2));
+self.A0(1,1,:) = psi_bar0z;
+
 end
