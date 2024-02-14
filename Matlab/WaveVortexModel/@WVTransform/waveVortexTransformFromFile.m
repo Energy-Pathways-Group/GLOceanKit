@@ -19,8 +19,7 @@ end
 if isKey(ncfile.attributes,'WVNonlinearFluxOperation')
     nlFluxClassName = ncfile.attributes('WVNonlinearFluxOperation');
     nlFlux = feval(strcat(nlFluxClassName,'.nonlinearFluxFromFile'),ncfile,wvt);
+    wvt.nonlinearFluxOperation = nlFlux;
 end
-
-wvt.nonlinearFluxOperation = nlFlux;
 
 end
