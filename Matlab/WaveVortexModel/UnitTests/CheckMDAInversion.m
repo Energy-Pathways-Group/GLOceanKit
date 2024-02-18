@@ -35,19 +35,22 @@ GmdaNorm = Gmda./Qg;
 
 
 %% MDA modes on the geostrophic quadrature grid
-im_mda_g = InternalModesWKBSpectral(N2=N2,zIn=[-Lz 0],zOut=z_g,latitude=33,nModes=nModes);
+im_mda_g = InternalModesSpectral(N2=N2,zIn=[-Lz 0],zOut=z_g,latitude=33,nModes=nModes+1);
 im_mda_g.normalization = Normalization.geostrophic;
 [FmdaInv,GmdaInv,hmda_g] = im_mda_g.MDAModes();
 
 Qg = max(abs(GmdaInv),[],1);
 GmdaNorm = GmdaInv./Qg;
+cond(GmdaNorm(2:end,:))
 
 Pg = max(abs(FmdaInv),[],1);
 FmdaNorm = FmdaInv./Pg;
+cond(FmdaNorm(1:end-1,:))
 
-A = FmdaNorm;
-A(1,:) = GmdaNorm(1,:);
-A(end,:) = GmdaNorm(end,:);
+A = FmdaInv;
+A(end,:) = GmdaInv(end,:);
+cond(A)
+Ainv = inv(A);
 
 % So what's the problem?
 % We make some nice MDA modes with G, project onto those, and because the
@@ -65,7 +68,8 @@ x0 = (1/2)*max(wvt.x); y0=max(wvt.y)/2;
 psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 );
 [X,Y,Z] = wvt.xyzGrid;
 psi_z = wvt.diffZF((wvt.f/wvt.g)*psi(X,Y,Z));
-
+psibar = mean(mean(psi(X,Y,Z),1),2);
+psizbar = mean(mean(psi_z,1),2);
 return
 
 %%
@@ -77,7 +81,7 @@ return
 figure, plot(cat(2,zeros(size(z_g)),ones(size(z_g))).',[z_g,z_mda].')
 figure, scatter(diff(z_g),diff(z_mda))
 %%
-modes=60;
+modes=1:4;
 figure
 tl = tiledlayout(2,2,"TileSpacing","compact");
 

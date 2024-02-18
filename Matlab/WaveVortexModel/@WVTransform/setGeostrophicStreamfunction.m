@@ -25,8 +25,8 @@ psi_barz = self.diffZF(psi_bar);
 psi_bar(1,1,:) = 0;
 self.A0 = self.transformFromSpatialDomainWithFg( psi_bar);
 
-a = -psi_barz(1,1,:)./shiftdim(self.N2,-2);
-psi_bar0z = self.transformFromSpatialDomainWithGmda(a);
-self.A0(1,1,:) = psi_bar0z;
+% a = -psi_barz(1,1,:)./shiftdim(self.N2,-2);
+% psi_bar0z = self.transformFromSpatialDomainWithGmda(a);
+% self.A0(1,1,:) = psi_bar0z;
 
 end
