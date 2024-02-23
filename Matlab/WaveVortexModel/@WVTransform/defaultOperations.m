@@ -45,7 +45,7 @@ f = @(wvt) wvt.transformToSpatialDomainWithG(wvt.WAp.*wvt.Apt + wvt.WAm.*wvt.Amt
 operations(end+1) = WVOperation('w',outputVar,f);
 
 outputVar = WVVariableAnnotation('p',{'x','y','z'},'kg/m/s2', 'pressure anomaly');
-f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.NA0.*wvt.A0t);
+f = @(wvt) wvt.rho0*wvt.g*wvt.transformToSpatialDomainWithF(wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt + wvt.PA0.*wvt.A0t);
 operations(end+1) = WVOperation('p',outputVar,f);
 
 outputVar = WVVariableAnnotation('psi',{'x','y','z'},'m^2/s', 'geostrophic streamfunction');

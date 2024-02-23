@@ -86,6 +86,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         VAp, VAm, VA0
         WAp, WAm
         NAp, NAm, NA0
+        PA0
     end
 
     properties (Dependent, SetAccess=private)
@@ -748,6 +749,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.NAp = -Kh.*self.h./omega;
             self.NAm = Kh.*self.h./omega;
             self.NA0 = ones(size(Kh));
+            self.PA0 = ones(size(Kh));
             
             % No buoyancy anomaly for j=0 geostrophic solutions
             self.NA0(:,:,1) = 0;
@@ -787,6 +789,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.NAp = nyquistMask .* makeHermitian(self.NAp);
             self.NAm = nyquistMask .* makeHermitian(self.NAm);
             self.NA0 = nyquistMask .* makeHermitian(self.NA0);
+            self.PA0 = nyquistMask .* makeHermitian(self.PA0);
         end
           
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)

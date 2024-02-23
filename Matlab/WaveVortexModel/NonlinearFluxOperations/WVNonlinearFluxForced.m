@@ -65,6 +65,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 options.nu_z (1,1) double
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
                 options.shouldAntialias double = 1
+                options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
             end
             
             qgArgs = namedargs2cell(options);
