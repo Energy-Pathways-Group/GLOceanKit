@@ -373,7 +373,7 @@ classdef InternalModesSpectral < InternalModesBase
             self.upperBoundary = UpperBoundary.mda;
 
             % lower-boundary
-            A(n,:) = T(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
             B(n,:) = 0; %1/self.Lz; %0*T(n,:);
             self.lowerBoundary = LowerBoundary.mda;
 

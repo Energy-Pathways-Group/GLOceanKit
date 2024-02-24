@@ -22,7 +22,7 @@ function setGeostrophicStreamfunction(self,psi)
 [X,Y,Z] = ndgrid(self.x,self.y,self.z);
 psi_bar = self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(X,Y,Z) );
 psi_barz = self.diffZF(psi_bar);
-psi_bar(1,1,:) = 0;
+% psi_bar(1,1,:) = 0;
 self.A0 = self.transformFromSpatialDomainWithFg( psi_bar);
 
 % a = -psi_barz(1,1,:)./shiftdim(self.N2,-2);

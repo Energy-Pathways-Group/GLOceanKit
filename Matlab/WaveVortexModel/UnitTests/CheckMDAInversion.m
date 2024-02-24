@@ -65,11 +65,30 @@ U = -0.30; % m/s
 Le = 120e3;
 He = wvt.Lz/5;
 x0 = (1/2)*max(wvt.x); y0=max(wvt.y)/2;
-psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 );
+% Finv = wvt.FinvMatrix;
+% Ginv = wvt.GinvMatrix;
+% F2 = Finv(:,2); G2 = Ginv(:,2); h2 = wvt.h(2);
+% w = @(z) (wvt.Lz/2 - abs(wvt.Lz/2 + z)).*interp1(wvt.z,F2,z) + h2*interp1(wvt.z,G2,z);
+% A = min(w(wvt.z));
+% w = @(z) ((wvt.Lz/2 - abs(wvt.Lz/2 + z)).*interp1(wvt.z,F2,z) + h2*interp1(wvt.z,G2,z))/A;
+
+%%
+pbar = @(z) (pi*Le*Le/(wvt.Lx*wvt.Ly))*U*(Le/sqrt(2))*exp(1/2)*exp(-(z/He).^2 );
+psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 ) - pbar(z);
+% psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 ) - (pi*Le*Le/(wvt.Lx*wvt.Ly))*U*(Le/sqrt(2))*exp(1/2)*exp(-(z/He).^2 );
+
 [X,Y,Z] = wvt.xyzGrid;
 psi_z = wvt.diffZF((wvt.f/wvt.g)*psi(X,Y,Z));
-psibar = mean(mean(psi(X,Y,Z),1),2);
-psizbar = mean(mean(psi_z,1),2);
+psibar = squeeze(mean(mean(psi(X,Y,Z),1),2));
+psizbar = squeeze(mean(mean(psi_z,1),2));
+
+figure, tiledlayout(1,2), nexttile, plot(psibar,wvt.z), hold on, plot(pbar(wvt.z),wvt.z), nexttile, plot(psizbar,wvt.z)
+figure, plot(psibar-pbar(wvt.z),wvt.z)
+
+%%
+figure
+plot
+
 return
 
 %%
