@@ -628,7 +628,7 @@ classdef WVModel < handle
                 self WVModel {mustBeNonempty}
                 netcdfFile char {mustBeNonempty}
                 options.Nt (1,1) double {mustBePositive} = Inf
-                options.shouldOverwriteExisting (1,1) {mustBeNumeric} = 0
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
                 options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
             end
 
