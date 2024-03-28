@@ -323,6 +323,8 @@ classdef WVTransformHydrostatic < WVTransform
         w_z = diffZG(self,w,n);
         Finv = FinvMatrix(self);
         Ginv = GinvMatrix(self);
+        F = FMatrix(self);
+        G = GMatrix(self);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
