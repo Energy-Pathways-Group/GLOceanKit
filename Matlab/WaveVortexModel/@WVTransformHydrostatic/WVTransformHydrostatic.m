@@ -29,11 +29,6 @@ classdef WVTransformHydrostatic < WVTransform
         P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
         Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
         
-        PFMDAinv, QGMDAinv % size(PFinv,PGinv)=[Nz x Nj]
-        PFMDA, QGMDA % size(PF,PG)=[Nj x Nz]
-        h_mda % [1 1 Nj]
-        PMDA, QMDA
-
         zInterp
         PFinvInterp, QGinvInterp
 
@@ -228,82 +223,51 @@ classdef WVTransformHydrostatic < WVTransform
         function self = BuildProjectionOperators(self)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
-            [self.P,self.Q,self.PFinv,self.PF,self.QGinv,self.QG,self.h] = self.BuildProjectionOperatorsForGeostrophicModes();
-            [self.PMDA,self.QMDA,self.PFMDAinv,self.PFMDA,self.QGMDAinv,self.QGMDA,self.h_mda] = self.BuildProjectionOperatorsForMDAModes();
-            self.QMDA = squeeze(self.QMDA);
-
-            self.buildTransformationMatrices();
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForMDAModes(self)
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
-            self.internalModes.normalization = Normalization.kConstant;
-            [Finv,Ginv,h] = self.internalModes.MDAModes();
-            for iMode=1:size(Ginv,2)
-                if Ginv(end,iMode) < 0
-                    Ginv(:,iMode)=-Ginv(:,iMode);
-                    Finv(:,iMode)=-Finv(:,iMode);
-                end
-            end
-            % we are going to intentionally *swap* the inputs
-            [Q,P,QGinv,QG,PFinv,PF,h] = self.BuildProjectionOperatorsWithRigidLid(Ginv,Finv,h);
-            % the j=0 mode is not valid and must be removed.
-            % QGinv(:,1) = 0;
-            % QG(1,:) = 0;
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForGeostrophicModes(self)
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
-            self.internalModes.normalization = Normalization.kConstant;
-            self.internalModes.upperBoundary = UpperBoundary.rigidLid;
-            [Finv,Ginv,h] = self.internalModes.ModesAtFrequency(0);
-            [P,Q,PFinv,PF,QGinv,QG,h] = self.BuildProjectionOperatorsWithRigidLid(Finv,Ginv,h);
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsWithRigidLid(self,Finv,Ginv,h)
+            [Finv,Ginv,self.h] = self.internalModes.ModesAtFrequency(0);
+            
             % Make these matrices invertible by adding the barotropic mode
             % to F, and removing the boundaries of G.
             Finv = cat(2,ones(self.Nz,1),Finv);
             Ginv = Ginv(2:end-1,1:end-1);
 
             % Compute the precondition matrices (really, diagonals)
-            P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
+            self.P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
+            self.Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
 
             % Now create the actual transformation matrices
-            PFinv = Finv./P;
-            QGinv = Ginv./Q;
-            PF = inv(PFinv);
-            QG = inv(QGinv);
-
-            maxCond = max([cond(PFinv), cond(QGinv), cond(PF), cond(QG)],[],2);
+            self.PFinv = Finv./self.P;
+            self.QGinv = Ginv./self.Q;
+            self.PF = inv(self.PFinv);
+            self.QG = inv(self.QGinv);
+            
+            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],2);
             if maxCond > 1000
                 warning('Condition number is %f the vertical transformations.',maxCond);
             end
             % size(F)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
             % but, we will only multiply by vectors [Nj 1], so dump the
             % last column. Now size(Fp) = [Nz x Nj].
-            PFinv = PFinv(:,1:end-1);
+            self.PFinv = self.PFinv(:,1:end-1);
 
             % size(Finv)=[Nj+1, Nz], but we don't care about the last mode
-            PF = PF(1:end-1,:);
-
+            self.PF = self.PF(1:end-1,:);
+            
             % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
             % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.Nj-1),QGinv,zeros(1,self.Nj-1)));
+            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.Nj-1),self.QGinv,zeros(1,self.Nj-1)));
 
             % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
             % mode, but also need zeros for the boundary
-            QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),QG),zeros(self.Nj,1));
+            self.QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(self.Nj,1));
 
             % want size(h)=[1 1 Nj]
-            h = cat(2,1,h(1:end-1)); % remove the extra mode at the end
-            h = shiftdim(h,-1);
+            self.h = cat(2,1,self.h(1:end-1)); % remove the extra mode at the end
+            self.h = shiftdim(self.h,-1);
 
-            P = shiftdim(P(1:end-1),-1);
-            Q = shiftdim(cat(2,1,Q),-1);
+            self.P = shiftdim(self.P(1:end-1),-1);
+            self.Q = shiftdim(cat(2,1,self.Q),-1);
+
+            self.buildTransformationMatrices();
         end
 
         function self = buildTransformationMatrices(self)
@@ -481,12 +445,6 @@ classdef WVTransformHydrostatic < WVTransform
             w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
             w_bar = permute(w_bar,[2 3 1]);
             w_bar = (w_bar./self.Q);
-
-            w_bar(1,1,:) = self.transformFromSpatialDomainWithGmda(w(1,1,:));
-        end
-
-        function w_bar = transformFromSpatialDomainWithGmda(self, w)
-            w_bar = (self.QGMDA*w(:))./self.QMDA;
         end
 
         function u_bar = transformFromSpatialDomainWithFg1D(self,u)
@@ -542,28 +500,13 @@ classdef WVTransformHydrostatic < WVTransform
             u = reshape(u,self.Nz,self.Nx,self.Ny);
             u = permute(u,[2 3 1]);
         end
-              
-        function eta = transformToSpatialDomainWithGmda(self, A0)
-            % arguments (Input)
-            %     A0 double
-            % end
-            eta = (self.QMDA .* A0(:));
-            eta = reshape(self.QGMDAinv*eta,1,1,[]);
-        end
-
+                
         function w = transformToSpatialDomainWithG(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            if ~isscalar(options.A0)
-                eta = self.transformToSpatialDomainWithGmda(options.A0(1,1,:));
-                options.A0(1,1,:) = 0;
-            else
-                eta = 0;
-            end
-            
             w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
             % hydrostatic modes commute with the DFT
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
@@ -573,7 +516,6 @@ classdef WVTransformHydrostatic < WVTransform
             w = self.QGinv*w_bar;
             w = reshape(w,self.Nz,self.Nx,self.Ny);
             w = permute(w,[2 3 1]);
-            w = w+eta;
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
