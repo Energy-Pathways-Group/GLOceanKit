@@ -30,13 +30,18 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = ones(size(self.wvt.Ap)) .* ~self.wvt.maskForNyquistModes();
+                    mask = ones(size(self.wvt.Ap)) .* ~self.wvt.maskForNyquistModes() .* ~AA;
                     mask(:,:,1) = 0; % no j=0 solution
                     mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.Am
-                    mask = ones(size(self.wvt.Am)) .* ~self.wvt.maskForNyquistModes();
+                    mask = ones(size(self.wvt.Am)) .* ~self.wvt.maskForNyquistModes() .* ~AA;
                     mask(:,:,1) = 0; % no j=0 solution
                     mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.A0

@@ -189,6 +189,10 @@ classdef WVTransformBoussinesq < WVTransform
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
 
+        function transformFromFFTGridToLinearGrid(self)
+            
+        end
+
         function wvtX2 = waveVortexTransformWithResolution(self,m)
             if ~isempty(self.dLnN2Function)
                 wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);

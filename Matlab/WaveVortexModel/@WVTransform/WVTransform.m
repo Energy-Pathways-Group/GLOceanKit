@@ -95,6 +95,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         A0_QGPV_factor
 
         conjugateDimension = 2
+        shouldAntialias = 1
     end
 
     properties (Dependent, SetAccess=private)
@@ -192,6 +193,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.Nj (1,1) double {mustBePositive} = length(z)
                 options.Nmax (1,1) double {mustBePositive} = Inf
+                options.shouldAntialias double = 1
             end
             
             % These first properties are directly set on initialization
@@ -207,6 +209,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.rho0 = options.rho0;
             self.Nj = options.Nj;
             self.Nmax = options.Nmax;
+            self.shouldAntialias = options.shouldAntialias;
         
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.Nj);

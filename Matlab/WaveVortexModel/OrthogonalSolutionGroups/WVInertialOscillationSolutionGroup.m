@@ -30,14 +30,19 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
                     mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes();
+                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
                 case WVCoefficientMatrix.Am
                     mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes();
+                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
             end
         end
 
@@ -58,11 +63,16 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Am
                     mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes();
+                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
             end
         end
 
@@ -83,11 +93,16 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
                     mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes();
+                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
             end
         end
         

@@ -30,13 +30,18 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
                     mask = zeros(size(self.wvt.Ap));
                 case WVCoefficientMatrix.Am
                     mask = zeros(size(self.wvt.Am));
                 case WVCoefficientMatrix.A0
-                    mask = ~self.wvt.maskForNyquistModes();
+                    mask = ~self.wvt.maskForNyquistModes() .* ~AA;
                     IG = ones(size(self.wvt.A0));
                     % IG(:,:,1) = 0;
                     IG(1,1,:) = 0;

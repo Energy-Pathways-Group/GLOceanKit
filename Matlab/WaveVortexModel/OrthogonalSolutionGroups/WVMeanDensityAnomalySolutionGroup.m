@@ -30,12 +30,17 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
+            if self.wvt.shouldAntialias == 1
+                AA = self.wvt.maskForAliasedModes();
+            else
+                AA = zeros(size(self.wvt.Ap));
+            end
             mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.A0
                     mask(1,1,:) = 1;
                     mask(1,1,1) = 0;
-                    mask = mask .* ~self.wvt.maskForNyquistModes();
+                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
             end
         end
 
