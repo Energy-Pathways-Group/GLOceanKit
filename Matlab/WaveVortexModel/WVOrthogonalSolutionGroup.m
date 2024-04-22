@@ -459,6 +459,54 @@ classdef WVOrthogonalSolutionGroup
                 Am(icK,icL,:) = conj(Am(iK,iL,:));
             end
         end
+        function mask = maskForConjugateFourierCoefficients(sz,conjugateDimension)
+            K = sz(1);
+            L = sz(2);
+            mask = zeros(sz);
+            if conjugateDimension == 1
+                % The order of the for-loop is chosen carefully here.
+                for iK=1:(K/2+1)
+                    for iL=1:L
+                        if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                            continue;
+                        else
+                            mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                        end
+                    end
+                end
+            elseif conjugateDimension == 2
+                % The order of the for-loop is chosen carefully here.
+                for iL=1:(L/2+1)
+                    for iK=1:K
+                        if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                            continue;
+                        else
+                            mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
+                        end
+                    end
+                end
+            else
+                error('invalid conjugate dimension')
+            end
+        end
+        function matrix = indexOfFourierConjugate(sz)
+            K = sz(1);
+            L = sz(2);
+            J = sz(3);
+            matrix = zeros(sz);
+
+            for iJ=1:J
+                for iK=1:K
+                    for iL=1:L
+                        icK = mod(K-iK+1, K) + 1;
+                        icL = mod(L-iL+1, L) + 1;
+                        icJ = J;
+                        matrix(iK,iL,iJ) = sub2ind(sz,icK,icL,icJ);
+                    end
+                end
+            end
+
+        end
     end
 end
 
