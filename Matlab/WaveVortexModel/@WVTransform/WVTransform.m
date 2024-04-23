@@ -57,7 +57,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly, Lz
-        Nx, Ny, Nj
+        Nx, Ny, Nj, Nkl
         z
         latitude
 
@@ -67,6 +67,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         isBarotropic = 0
 
         horizontalGeometry
+        primaryFFTindices
+        conjugateFFTindices
 
         % maximum buoyancy frequency (radians/s)
         Nmax
@@ -214,7 +216,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.shouldAntialias = options.shouldAntialias;
 
             self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny]);
-        
+            [self.primaryFFTindices,self.conjugateFFTindices,k,l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
+            self.Nkl = length(self.primaryFFTindices);
+
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.Nj);
             self.Am = zeros(self.Nk,self.Nl,self.Nj);
@@ -234,6 +238,40 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
+        end
+
+        function Azkl = transformFromFFTGridToLinearGrid(self,Aklz)
+            Aklz = reshape(Aklz,[self.Nx*self.Ny self.Nz]);
+            Azkl = zeros(self.Nz,self.Nkl);
+            for iK=1:self.Nkl
+                Azkl(:,iK) = Aklz(self.primaryFFTindices(iK),:);
+            end
+        end
+
+        function Aklz = transformFromLinearGridToFFTGrid(self,Azkl)
+            Aklz = zeros(self.Nx*self.Ny,self.Nz);
+            for iK=1:self.Nkl
+                Aklz(self.primaryFFTindices(iK),:) = Azkl(:,iK);
+                Aklz(self.conjugateFFTindices(iK),:) = conj(Azkl(:,iK));
+            end
+            Aklz = reshape(Aklz,[self.Nx self.Ny self.Nz]);
+        end
+
+        function Ajkl = transformFromRectangularGridToLinearGrid(self,Aklj)
+            Aklj = reshape(Aklj,[self.Nx*self.Ny self.Nj]);
+            Ajkl = zeros(self.Nj,self.Nkl);
+            for iK=1:self.Nkl
+                Ajkl(:,iK) = Aklj(self.primaryFFTindices(iK),:);
+            end
+        end
+
+        function Aklj = transformFromLinearGridToRectangularGrid(self,Ajkl)
+            Aklj = zeros(self.Nx*self.Ny,self.Nj);
+            for iK=1:self.Nkl
+                Aklj(self.primaryFFTindices(iK),:) = Ajkl(:,iK);
+                Aklj(self.conjugateFFTindices(iK),:) = conj(Ajkl(:,iK));
+            end
+            Aklj = reshape(Aklj,[self.Nx self.Ny self.Nj]);
         end
 
         function addDimensionAnnotations(self,dimensionAnnotation)
@@ -882,8 +920,24 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             A0t = self.A0;
         end
         
-        u_x = diffX(self,u,n);
-        u_y = diffY(self,u,n);
+        function u_x = diffX(self,u,n)
+            arguments
+                self         WVTransform
+                u (:,:,:)   double
+                n (1,1)     double = 1
+            end
+            u_x = self.horizontalGeometry.diffX(u,n);
+        end
+
+        function u_y = diffY(self,u,n)
+            arguments
+                self         WVTransform
+                u (:,:,:)   double
+                n (1,1)     double = 1
+            end
+            u_y = self.horizontalGeometry.diffY(u,n);
+        end
+
         u_z = diffZF(self,u,n);
         u_z = diffZG(self,u,n);
         

@@ -1,35 +1,56 @@
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 %%
-shouldAntialias = 1;
-if shouldAntialias == 1
-    aliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(wvt.Nk,wvt.Nl);
+u = randn([wvt.Nx wvt.Ny wvt.Nz]);
+aliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(wvt.Nk,wvt.Nl);
+nyquistMask = WVGeometryDoublyPeriodic.maskForNyquistModes(wvt.Nk,wvt.Nl);
+ubar = (~aliasMask) .* (~nyquistMask) .* wvt.horizontalGeometry.transformFromSpatialDomain(u);
+% Aklz = wvt.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=0 );
+% Aklz = cat(3,Aklz,Aklz(:,:,end));
+% ubar = (~aliasMask) .* Aklz;
+
+u_zkl = wvt.transformFromFFTGridToLinearGrid(ubar);
+ubar_back = wvt.transformFromLinearGridToFFTGrid(u_zkl);
+
+if max(abs(ubar(:)-ubar_back(:)))< 1e-15
+    fprintf('The matrices are the same.\n')
 else
-    aliasMask = zeros(wvt.Nk,wvt.Nl);
+    fprintf('The matrices are different.\n')
 end
 
-% Have to use j=2 (not j=1), and then we negate just so the sort order is
-% ascending.
-notPrimaryCoeffs = aliasMask | WVGeometryDoublyPeriodic.maskForNyquistModes(wvt.Nk,wvt.Nl) | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(wvt.Nk,wvt.Nl,wvt.conjugateDimension);
+%%
+shouldAntialias = 1;
+% if shouldAntialias == 1
+%     aliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(wvt.Nk,wvt.Nl);
+% else
+%     aliasMask = zeros(wvt.Nk,wvt.Nl);
+% end
+% 
+% % Have to use j=2 (not j=1), and then we negate just so the sort order is
+% % ascending.
+% notPrimaryCoeffs = aliasMask | WVGeometryDoublyPeriodic.maskForNyquistModes(wvt.Nk,wvt.Nl) | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(wvt.Nk,wvt.Nl,wvt.conjugateDimension);
+% 
+% Kh = wvt.Kh;
+% K2 = (Kh(:,:,1)).^2;
+% 
+% [K,L,J] = wvt.kljGrid;
+% K = K(:,:,1);
+% L = L(:,:,1);
+% 
+% 
+% multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:));
+% [sortedMultiIndex,indices] = sortrows(multiIndex);
+% 
+% % Now consider only primary numbers, that are not aliased
+% reducedIndices = indices(sortedMultiIndex(:,1) == 0);
+% 
+% conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(wvt.Nk,wvt.Nl);
+% reducedConjugateIndices = conjugateIndices(reducedIndices);
 
-Kh = wvt.Kh;
-K2 = (Kh(:,:,1)).^2;
-
-[K,L,J] = wvt.kljGrid;
-K = K(:,:,1);
-L = L(:,:,1);
-
-
-multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:));
-[sortedMultiIndex,indices] = sortrows(multiIndex);
-
-% Now consider only primary numbers, that are not aliased
-reducedIndices = indices(sortedMultiIndex(:,1) == 0);
+[reducedIndices,reducedConjugateIndices,k,l] = wvt.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=shouldAntialias);
 
 Nkl = length(reducedIndices);
 
-conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(wvt.Nk,wvt.Nl);
-reducedConjugateIndices = conjugateIndices(reducedIndices);
 
 % build a random matrix to test with. It's klj, but we want z, so tack on
 % another row.

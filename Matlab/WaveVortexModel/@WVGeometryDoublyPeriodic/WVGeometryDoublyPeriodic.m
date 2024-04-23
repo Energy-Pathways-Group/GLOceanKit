@@ -59,6 +59,57 @@ classdef WVGeometryDoublyPeriodic
             dl = 1/self.Ly;
             l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
         end
+
+        function u_bar = transformFromSpatialDomain(self,u)
+            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+        end
+
+        function u = transformToSpatialDomain(self,u_bar)
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+        end
+
+        u_x = diffX(self,u,n);
+        u_y = diffY(self,u,n);
+
+        function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self,options)
+            arguments (Input)
+                self (1,1) WVGeometryDoublyPeriodic
+                options.shouldAntialias (1,1) double {mustBeMember(options.shouldAntialias,[0 1])} = 1
+                options.shouldExcludeNyquist (1,1) double {mustBeMember(options.shouldExcludeNyquist,[0 1])} = 1
+                options.shouldExludeConjugates (1,1) double {mustBeMember(options.shouldExludeConjugates,[0 1])} = 1
+            end
+            arguments (Output)
+                indices (:,1) double
+                conjugateIndices (:,1) double
+                k (:,1) double
+                l (:,1) double
+            end
+
+            notPrimaryCoeffs = zeros(self.Nk,self.Nl);
+            if options.shouldAntialias == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nk,self.Nl);
+            end
+            if options.shouldExcludeNyquist == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk,self.Nl);
+            end
+            if options.shouldExludeConjugates == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk,self.Nl,self.conjugateDimension);
+            end
+
+            [K,L] = ndgrid(self.k,self.l);
+            K2 = K.*K + L.*L;
+
+            multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:));
+            [sortedMultiIndex,indices] = sortrows(multiIndex);
+
+            % Now consider only primary numbers, that are not aliased
+            indices = indices(sortedMultiIndex(:,1) == 0);
+
+            conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nk,self.Nl);
+            conjugateIndices = conjugateIndices(indices);
+            k = sortedMultiIndex(indices,3);
+            l = sortedMultiIndex(indices,4);
+        end
     end
 
     methods (Static)
