@@ -2,11 +2,19 @@ wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.
 
 %%
 shouldAntialias = 0;
+if shouldAntialias == 1
+    aliasMask = wvt.maskForAliasedModes();
+    aliasMask = aliasMask(:,:,1);
+else
+    aliasMask = zeros(wvt.Nk,wvt.Nl);
+end
 
 % Have to use j=2 (not j=1), and then we negate just so the sort order is
 % ascending.
 mask = wvt.maskForNyquistModes() | WVOrthogonalSolutionGroup.maskForConjugateFourierCoefficients([wvt.Nk wvt.Nl wvt.Nj],wvt.conjugateDimension);
-notPrimaryCoeffs = mask(:,:,1);
+notPrimaryCoeffs = mask(:,:,1) | aliasMask;
+
+notPrimaryCoeffs = WVGeometryDoublyPeriodic.
 
 Kh = wvt.Kh;
 K2 = (Kh(:,:,1)).^2;
@@ -15,18 +23,12 @@ K2 = (Kh(:,:,1)).^2;
 K = K(:,:,1);
 L = L(:,:,1);
 
-if shouldAntialias == 1
-    aliasMask = wvt.maskForAliasedModes();
-    aliasMask = aliasMask(:,:,1);
-else
-    aliasMask = zeros(wvt.Nk,wvt.Nl);
-end
 
-multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:),aliasMask(:));
+multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:));
 [sortedMultiIndex,indices] = sortrows(multiIndex);
 
 % Now consider only primary numbers, that are not aliased
-reducedIndices = indices(sortedMultiIndex(:,1) == 0 & sortedMultiIndex(:,5) == 0);
+reducedIndices = indices(sortedMultiIndex(:,1) == 0);
 
 Nkl = length(reducedIndices);
 
