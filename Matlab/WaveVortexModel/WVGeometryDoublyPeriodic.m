@@ -1,55 +1,69 @@
 classdef WVGeometryDoublyPeriodic
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    % A domain periodic in both x and y.
+    %
+    % The WVGeometryDoublyPeriodic encapsulates the transformations and
+    % logic necessary for computing Fourier transforms and spectral
+    % derivatives in a doubly periodic domain.
 
     properties
         Lx, Ly
-        Nx, Ny, Nz
+        Nx, Ny
+        conjugateDimension
     end
 
-    % properties (Dependent, SetAccess=private)
-    %     x, y
-    %     k, l, j
-    %     kRadial
-    % 
-    %     f, inertialPeriod
-    % 
-    %     X, Y, Z
-    %     K, L, J
-    % 
-    %     Nk, Nl
-    % end
+    properties (Dependent, SetAccess=private)
+        x, y
+        k, l
+        Nk, Nl
+    end
 
     methods
-        function self = WVGeometryDoublyPeriodic(Lxy, Nxyz)
+        function self = WVGeometryDoublyPeriodic(Lxy, Nxy, options)
+            arguments
+                Lxy (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
+            end
             self.Lx = Lxy(1);
             self.Ly = Lxy(2);
 
-            self.Nx = Nxyz(1);
-            self.Ny = Nxyz(2);
-            self.Nz = Nxyz(2);
+            self.Nx = Nxy(1);
+            self.Ny = Nxy(2);
+            self.conjugateDimension = options.conjugateDimension;
         end
 
-        % function value = get.Nk(self)
-        %     value=self.Nx;
-        % end
-        % function value = get.Nl(self)
-        %     value=self.Ny;
-        % end
-        % function k = get.k(self)
-        %     dk = 1/self.Lx;
-        %     k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-        % end
-        % 
-        % function l = get.l(self)
-        %     dl = 1/self.Ly;
-        %     l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-        % end
+        function x = get.x(self)
+            dx = self.Lx/self.Nx;
+            x = dx*(0:self.Nx-1)';
+        end
+
+        function y = get.y(self)
+            dy = self.Ly/self.Ny;
+            y = dy*(0:self.Ny-1)';
+        end
+
+        function value = get.Nk(self)
+            value=self.Nx;
+        end
+
+        function value = get.Nl(self)
+            value=self.Ny;
+        end
+
+        function k = get.k(self)
+            dk = 1/self.Lx;
+            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+        end
+
+        function l = get.l(self)
+            dl = 1/self.Ly;
+            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+        end
     end
 
     methods (Static)
 
-        function matrix = indexOfFourierConjugate(Nx,Ny,Nz)
+        function matrix = indicesOfFourierConjugates(Nx,Ny,Nz)
             % a matrix of linear indices of the conjugate
             %
             % - Topic: Utility function
@@ -71,7 +85,7 @@ classdef WVGeometryDoublyPeriodic
                         icK = mod(Nx-iK+1, Nx) + 1;
                         icL = mod(Ny-iL+1, Ny) + 1;
                         icJ = Nz;
-                        matrix(iK,iL,iJ) = sub2ind(sz,icK,icL,icJ);
+                        matrix(iK,iL,iJ) = sub2ind([Nx Ny Nz],icK,icL,icJ);
                     end
                 end
             end
@@ -97,43 +111,41 @@ classdef WVGeometryDoublyPeriodic
             end
         end
 
-        function matrix = maskForConjugateFourierCoefficients(Nx,Ny,Nz)
+        function mask = maskForConjugateFourierCoefficients(Nx,Ny,conjugateDimension)
             % a matrix of linear indices of the conjugate
             %
             % - Topic: Utility function
             % - Declaration: matrix = WVGeometryDoublyPeriodic.indexOfFourierConjugate(Nx,Ny,Nz);
             % - Parameter Nx: grid points in the x-direction
             % - Parameter Ny: grid points in the y-direction
-            % - Parameter Nz: grid points in the z-direction (defuault 1)
+            % - Parameter Nz: grid points in the z-direction (default 1)
             % - Returns matrix: matrix containing linear indices
             arguments (Input)
                 Nx (1,1) double {mustBeInteger,mustBePositive}
                 Ny (1,1) double {mustBeInteger,mustBePositive}
-                Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+                conjugateDimension (1,1) double {mustBeMember(conjugateDimension,[1 2])}
             end
 
-            K = sz(1);
-            L = sz(2);
-            mask = zeros(sz);
+            mask = zeros([Nx Ny]);
             if conjugateDimension == 1
                 % The order of the for-loop is chosen carefully here.
-                for iK=1:(K/2+1)
-                    for iL=1:L
-                        if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                for iK=1:(Nx/2+1)
+                    for iL=1:Ny
+                        if iK == 1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
                             continue;
                         else
-                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,K,L);
+                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
                         end
                     end
                 end
             elseif conjugateDimension == 2
                 % The order of the for-loop is chosen carefully here.
-                for iL=1:(L/2+1)
-                    for iK=1:K
-                        if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                for iL=1:(Ny/2+1)
+                    for iK=1:Nx
+                        if iL == 1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
                             continue;
                         else
-                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,K,L);
+                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
                         end
                     end
                 end
@@ -160,11 +172,14 @@ classdef WVGeometryDoublyPeriodic
             % - Parameter Ny: grid points in the y-direction
             % - Parameter Nz: grid points in the z-direction (defuault 1)
             % - Returns antialiasMask: mask aliased mode
-            dk = 1/self.Lx;
-            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-            dl = 1/self.Ly;
-            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-            [K,L,~] = ndgrid(k,l,1:self.Nz);
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+                Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+            end
+            k = 2*pi*([0:ceil(Nx/2)-1 -floor(Nx/2):-1])';
+            l = 2*pi*([0:ceil(Ny/2)-1 -floor(Ny/2):-1])';
+            [K,L,~] = ndgrid(k,l,1:Nz);
             Kh = sqrt(K.*K + L.*L);
 
             antialiasMask = zeros(Nx,Ny,Nz);
@@ -188,6 +203,11 @@ classdef WVGeometryDoublyPeriodic
             % - Parameter Ny: grid points in the y-direction
             % - Parameter Nz: grid points in the z-direction (defuault 1)
             % - Returns nyquistMask: mask aliased mode
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+                Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+            end
             nyquistMask = zeros(Nx,Ny,Nz);
             nyquistMask(Nx/2+1,:,:) = 1;
             nyquistMask(:,Ny/2+1,:) = 1;

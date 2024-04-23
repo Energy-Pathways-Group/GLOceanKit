@@ -1,20 +1,16 @@
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 %%
-shouldAntialias = 0;
+shouldAntialias = 1;
 if shouldAntialias == 1
-    aliasMask = wvt.maskForAliasedModes();
-    aliasMask = aliasMask(:,:,1);
+    aliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(wvt.Nk,wvt.Nl);
 else
     aliasMask = zeros(wvt.Nk,wvt.Nl);
 end
 
 % Have to use j=2 (not j=1), and then we negate just so the sort order is
 % ascending.
-mask = wvt.maskForNyquistModes() | WVOrthogonalSolutionGroup.maskForConjugateFourierCoefficients([wvt.Nk wvt.Nl wvt.Nj],wvt.conjugateDimension);
-notPrimaryCoeffs = mask(:,:,1) | aliasMask;
-
-notPrimaryCoeffs = WVGeometryDoublyPeriodic.
+notPrimaryCoeffs = aliasMask | WVGeometryDoublyPeriodic.maskForNyquistModes(wvt.Nk,wvt.Nl) | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(wvt.Nk,wvt.Nl,wvt.conjugateDimension);
 
 Kh = wvt.Kh;
 K2 = (Kh(:,:,1)).^2;
@@ -32,13 +28,14 @@ reducedIndices = indices(sortedMultiIndex(:,1) == 0);
 
 Nkl = length(reducedIndices);
 
-conjugateIndices = WVOrthogonalSolutionGroup.indexOfFourierConjugate([wvt.Nk wvt.Nl 1]);
+conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(wvt.Nk,wvt.Nl);
 reducedConjugateIndices = conjugateIndices(reducedIndices);
 
 % build a random matrix to test with. It's klj, but we want z, so tack on
 % another row.
 Aklz = wvt.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=0 );
 Aklz = cat(3,Aklz,Aklz(:,:,end));
+Aklz = (~aliasMask) .* Aklz;
 
 Azkl = zeros(wvt.Nz,Nkl);
 

@@ -66,6 +66,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % This indicates that the simulation is 2D.
         isBarotropic = 0
 
+        horizontalGeometry
+
         % maximum buoyancy frequency (radians/s)
         Nmax
         
@@ -210,6 +212,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nj = options.Nj;
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
+
+            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny]);
         
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nk,self.Nl,self.Nj);
