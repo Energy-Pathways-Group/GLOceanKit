@@ -21,10 +21,10 @@ arguments
     options.jFraction double {mustBePositive(options.jFraction),mustBeLessThanOrEqual(options.jFraction,1)} = 2/3
 end
 
-[K,L,J] = ndgrid(self.k,self.l,self.j);
+[K,L,J] = ndgrid(self.horizontalGeometry.k,self.horizontalGeometry.l,self.j);
 Kh = sqrt(K.*K + L.*L);
 
 AntiAliasFilter = zeros(self.Nk,self.Nl,self.Nj);
-AntiAliasFilter(Kh > 2*max(abs(self.k))/3 | J > options.jFraction*self.Nj) = 1;
+AntiAliasFilter(Kh > 2*max(abs(self.horizontalGeometry.k))/3 | J > options.jFraction*self.Nj) = 1;
 
 end

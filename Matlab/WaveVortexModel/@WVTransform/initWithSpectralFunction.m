@@ -30,7 +30,7 @@ function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
         error('Arguments must be given as name/value pairs.');
     end
     
-    [K,L,~] = ndgrid(self.k,self.l,self.j);
+    [K,L,~] = self.kljGrid;
     Kh = sqrt(K.*K + L.*L);
     Omega = self.Omega;
 

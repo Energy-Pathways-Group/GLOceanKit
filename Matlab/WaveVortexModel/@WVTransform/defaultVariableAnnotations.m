@@ -11,19 +11,19 @@ variableAnnotations = WVVariableAnnotation.empty(0,0);
 
 variableAnnotations(end+1) = WVVariableAnnotation('t',{}, 's', 'time of observations');
 
-annotation = WVVariableAnnotation('A0',{'k','l','j'},'m', 'geostrophic coefficients at reference time t0');
+annotation = WVVariableAnnotation('A0',{'j','kl'},'m', 'geostrophic coefficients at reference time t0');
 annotation.isComplex = 1;
 annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('Ap',{'k','l','j'},'m/s', 'positive wave coefficients at reference time t0');
+annotation = WVVariableAnnotation('Ap',{'j','kl'},'m/s', 'positive wave coefficients at reference time t0');
 annotation.isComplex = 1;
 annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('Am',{'k','l','j'},'m/s', 'negative wave coefficients at reference time t0');
+annotation = WVVariableAnnotation('Am',{'j','kl'},'m/s', 'negative wave coefficients at reference time t0');
 annotation.isComplex = 1;
 annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;

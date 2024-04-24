@@ -33,9 +33,9 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
                     mask(1,1,:) = 1;
@@ -66,9 +66,9 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Am
                     mask(1,1,:) = 1;
@@ -96,9 +96,9 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
                     mask(1,1,:) = 1;
@@ -267,13 +267,20 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
         end
 
+        % function [UAp,VAp] = inertialOscillationSpatialTransformCoefficients(self)
+        %     nyquistMask = ~self.wvt.maskForNyquistModes();
+        %     coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+        %     mask = nyquistMask.*coeffMask;
+        % 
+        %     UAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
+        %     VAp = sqrt(-1)*ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
+        % end
+        
         function [UAp,VAp] = inertialOscillationSpatialTransformCoefficients(self)
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            mask = nyquistMask.*coeffMask;
-
-            UAp = ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
-            VAp = sqrt(-1)*ones(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj) .* mask;
+            UAp = zeros(self.wvt.Nj,self.wvt.Nkl);
+            UAp(:,1) = 1;
+            VAp = zeros(self.wvt.Nj,self.wvt.Nkl);
+            VAp(:,1) = sqrt(-1);
         end
 
         function bool = contains(self,otherFlowConstituent)

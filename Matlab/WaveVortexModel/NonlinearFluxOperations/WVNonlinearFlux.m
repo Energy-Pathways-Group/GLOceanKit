@@ -23,7 +23,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     properties
         wvt
         shouldAntialias = 0
-        AA
+        AA = 1
         nu_xy = 0
         nu_z = 0
         r
@@ -68,14 +68,14 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             self.shouldAntialias = options.shouldAntialias;
             self.r = options.r;
             
-            if self.shouldAntialias == 1
-                self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
-                wvt.Ap = self.AA .* wvt.Ap;
-                wvt.Am = self.AA .* wvt.Am;
-                wvt.A0 = self.AA .* wvt.A0;
-            else
-                self.AA = 1;
-            end
+            % if self.shouldAntialias == 1
+            %     self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
+            %     wvt.Ap = self.AA .* wvt.Ap;
+            %     wvt.Am = self.AA .* wvt.Am;
+            %     wvt.A0 = self.AA .* wvt.A0;
+            % else
+            %     self.AA = 1;
+            % end
             
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;
@@ -125,7 +125,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.betaA0 = 0;
             end
 
-            [K,L,J] = ndgrid(wvt.k,wvt.l,wvt.j);
+            [K,L,J] = self.wvt.kljGrid;
             M = J*pi/wvt.Lz;
             self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
 
@@ -158,7 +158,8 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
             self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-            [Qkl,~,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
+            % do not assume anti-aliasing!
+            [Qkl,~,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
             self.damp = Qkl.*self.damp;
         end
 

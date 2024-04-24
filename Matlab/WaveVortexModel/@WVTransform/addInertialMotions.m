@@ -15,7 +15,7 @@ function addInertialMotions(self,u,v)
 % - Declaration: addInertialMotions(self,u,v)
 % - Parameter u: function handle that takes a single argument, u(Z)
 % - Parameter v: function handle that takes a single argument, v(Z)
-[~,~,Z] = ndgrid(self.x,self.y,self.z);
+[~,~,Z] = self.xyzGrid;
 
 Ubar = self.transformFromSpatialDomainWithF( u(Z) );
 Vbar = self.transformFromSpatialDomainWithF( v(Z) );

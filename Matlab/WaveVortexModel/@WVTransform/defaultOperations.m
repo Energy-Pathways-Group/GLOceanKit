@@ -9,13 +9,13 @@ function operations = defaultOperations()
 % - Returns operations: array of WVOperation instances
 operations = WVOperation.empty(0,0);
 
-outputVar(1) = WVVariableAnnotation('Apt',{'k','l','j'},'m/s', 'positive wave coefficients at time t');
+outputVar(1) = WVVariableAnnotation('Apt',{'j','kl'},'m/s', 'positive wave coefficients at time t');
 outputVar(1).isComplex = 1;
 
-outputVar(2) = WVVariableAnnotation('Amt',{'k','l','j'},'m/s', 'negative wave coefficients at time t');
+outputVar(2) = WVVariableAnnotation('Amt',{'j','kl'},'m/s', 'negative wave coefficients at time t');
 outputVar(2).isComplex = 1;
 
-outputVar(3) = WVVariableAnnotation('A0t',{'k','l','j'},'m', 'geostrophic coefficients at time t');
+outputVar(3) = WVVariableAnnotation('A0t',{'j','kl'},'m', 'geostrophic coefficients at time t');
 outputVar(3).isComplex = 1;
 
 f = @(wvt) wvt.waveVortexCoefficientsAtTimeT();
@@ -85,9 +85,9 @@ operations(end+1) = WVOperation('seaSurfaceV', outputVar,@(wvt) wvt.v(:,:,end));
 outputVar = WVVariableAnnotation('seaSurfaceHeight',{'x','y'},'m', 'sea-surface height');
 operations(end+1) = WVOperation('seaSurfaceHeight', outputVar,@(wvt) wvt.p(:,:,end)/(wvt.rho0*wvt.g));
 
-fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap', isComplex=1, detailedDescription='- topic: State Variables');
-fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am', isComplex=1,detailedDescription='- topic: State Variables');
-fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0', isComplex=1,detailedDescription='- topic: State Variables');
+fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap', isComplex=1, detailedDescription='- topic: State Variables');
+fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am', isComplex=1,detailedDescription='- topic: State Variables');
+fluxVar(3) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0', isComplex=1,detailedDescription='- topic: State Variables');
 operations(end+1) = WVOperation('nonlinearFlux',fluxVar,@(wvt) wvt.nonlinearFlux);
 
 end

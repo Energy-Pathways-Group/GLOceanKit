@@ -19,7 +19,7 @@ function setGeostrophicStreamfunction(self,psi)
 % - Topic: Initial conditions — Geostrophic Motions
 % - Declaration: setGeostrophicStreamfunction(psi)
 % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
-[X,Y,Z] = ndgrid(self.x,self.y,self.z);
+[X,Y,Z] = self.xyzGrid;
 psi_bar = self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(X,Y,Z) );
 % psi_barz = self.diffZF(psi_bar);
 % psi_bar(1,1,:) = 0;

@@ -33,19 +33,19 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = ones(size(self.wvt.Ap)) .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask = ones(self.spectralRectangularGridSize) .* ~self.wvt.maskForNyquistModes() .* ~AA;
                     mask(:,:,1) = 0; % no j=0 solution
                     mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.Am
-                    mask = ones(size(self.wvt.Am)) .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask = ones(self.spectralRectangularGridSize) .* ~self.wvt.maskForNyquistModes() .* ~AA;
                     mask(:,:,1) = 0; % no j=0 solution
                     mask(1,1,:) = 0; % no inertial oscillations
                 case WVCoefficientMatrix.A0
-                    mask = zeros(size(self.wvt.A0));
+                    mask = zeros(self.spectralRectangularGridSize);
             end
         end
 
@@ -66,7 +66,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
             switch(coefficientMatrix)
                 case {WVCoefficientMatrix.Ap, WVCoefficientMatrix.Am}
                     K = size(mask,1);
@@ -367,8 +367,8 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             end
 
             m = wvt.j(jIndex)*pi/wvt.Lz;
-            k = wvt.k(kIndex);
-            l = wvt.l(lIndex);
+            k = wvt.horizontalGeometry.k(kIndex);
+            l = wvt.horizontalGeometry.l(lIndex);
             sign = -2*(mod(jMode,2) == 1)+1;
             if wvt.isHydrostatic
                 h = N0^2/(wvt.g*m^2);
@@ -412,24 +412,20 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            mask = nyquistMask.*coeffMask;
-            ApmD = self.makeA0Hermitian(-sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* mask;
-            ApmN = self.makeA0Hermitian(-(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm)) .* mask;
+            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap));
+            ApmD = -sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm).* mask;
+            ApmN = -(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm) .* mask;
         end
 
         function [UAp,VAp,WAp,NAp] = internalGravityWaveSpatialTransformCoefficients(self)
             [K,L,~] = self.wvt.kljGrid;
             alpha = atan2(L,K);
 
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            mask = nyquistMask.*coeffMask;
-            UAp = self.makeA0Hermitian((cos(alpha)-sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*sin(alpha))) .* mask;
-            VAp = self.makeA0Hermitian((sin(alpha)+sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*cos(alpha))) .* mask;
-            WAp = self.makeA0Hermitian(-sqrt(-1)*self.wvt.Kh.*self.wvt.h_pm) .* mask;
-            NAp = self.makeA0Hermitian(-self.wvt.Kh.*self.wvt.h_pm./self.wvt.Omega) .* mask;
+            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap));
+            UAp = (cos(alpha)-sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*sin(alpha)) .* mask;
+            VAp = (sin(alpha)+sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*cos(alpha)) .* mask;
+            WAp = -sqrt(-1)*self.wvt.Kh.*self.wvt.h_pm .* mask;
+            NAp = -self.wvt.Kh.*self.wvt.h_pm./self.wvt.Omega .* mask;
         end
 
         function bool = contains(self,otherFlowConstituent)

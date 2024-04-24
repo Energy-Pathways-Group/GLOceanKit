@@ -46,6 +46,10 @@ classdef WVOrthogonalSolutionGroup
             self.wvt = wvt;
         end
 
+        function sz = spectralRectangularGridSize(self)
+            sz = [self.wvt.Nx self.wvt.Ny self.wvt.Nj];
+        end
+
         function mask = maskForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where solutions live in the requested coefficient matrix.
             %

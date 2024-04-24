@@ -16,7 +16,7 @@ A_p(1,1,:) = 2*A_p(1,1,:);
 A_m = self.Am;
 A_m(1,1,:) = 0*A_m(1,1,:);
 
-[K,L,J] = ndgrid(self.k,self.l,self.j);
+[K,L,J] = self.kljGrid;
 Omega = self.Omega;
 
 [A_plus,phi_plus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_p);

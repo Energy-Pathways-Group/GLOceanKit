@@ -10,8 +10,8 @@
 %
 % April 12th, 2018      Version 1.0
 
-% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
-wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8, 8, 5]);
 wvt.initWithRandomFlow();
 

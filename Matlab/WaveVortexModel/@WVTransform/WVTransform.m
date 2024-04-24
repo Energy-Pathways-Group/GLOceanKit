@@ -58,7 +58,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly, Lz
         Nx, Ny, Nj, Nkl
-        z
+        k, l, z
         latitude
 
         % Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -78,7 +78,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         offgridModes % subclass should initialize
         ongridModes % This is a cached copy 
-        version = 2.1;
+        version = 3.0;
 
         ApU, ApV, ApN
         AmU, AmV, AmN
@@ -104,7 +104,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     properties (Dependent, SetAccess=private)
         x, y
-        k, l, j
+        % k, l
+        dk, dl
+        j
         kRadial
 
         f, inertialPeriod
@@ -216,13 +218,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.shouldAntialias = options.shouldAntialias;
 
             self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny]);
-            [self.primaryFFTindices,self.conjugateFFTindices,k,l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
+            [self.primaryFFTindices,self.conjugateFFTindices,self.k,self.l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
             self.Nkl = length(self.primaryFFTindices);
 
             % Now set the initial conditions to zero
-            self.Ap = zeros(self.Nk,self.Nl,self.Nj);
-            self.Am = zeros(self.Nk,self.Nl,self.Nj);
-            self.A0 = zeros(self.Nk,self.Nl,self.Nj);  
+            self.Ap = zeros(self.Nj,self.Nkl);
+            self.Am = zeros(self.Nj,self.Nkl);
+            self.A0 = zeros(self.Nj,self.Nkl);  
             
             self.clearVariableCache();
 
@@ -607,19 +609,25 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function [K,L,J] = kljGrid(self)
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            K = repmat(shiftdim(self.k,-1),self.Nj,1);
+            L = repmat(shiftdim(self.l,-1),self.Nj,1);
+            J = repmat(self.j,1,self.Nkl);
         end
 
         function value = get.K(self)
-            [value,~,~] = ndgrid(self.k,self.l,self.j);
+            value = repmat(shiftdim(self.k,-1),self.Nj,1);
         end
 
         function value = get.L(self)
-            [~,value,~] = ndgrid(self.k,self.l,self.j);
+            value = repmat(shiftdim(self.l,-1),self.Nj,1);
         end
 
         function value = get.J(self)
-            [~,~,value] = ndgrid(self.k,self.l,self.j);
+            value = repmat(self.j,1,self.Nkl);
+        end
+
+        function K2 = K2(self)
+            K2 = self.K .* self.K + self.L .* self.L;
         end
 
         function Kh = Kh(self)
@@ -659,19 +667,25 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             dy = self.Ly/self.Ny;   
             y = dy*(0:self.Ny-1)';
         end
-
-        function k = get.k(self)
-            dk = 1/self.Lx; 
-            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
-%             if self.halfK == 1
-%                 k( (self.Nx/2+2):end ) = [];
-%             end
+        function dk = get.dk(self)
+            dk = 2*pi/self.Lx;
+        end
+        function dl = get.dl(self)
+            dl = 2*pi/self.Ly;
         end
 
-        function l = get.l(self)
-            dl = 1/self.Ly;  
-            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
-        end
+%         function k = get.k(self)
+%             dk = 1/self.Lx; 
+%             k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+% %             if self.halfK == 1
+% %                 k( (self.Nx/2+2):end ) = [];
+% %             end
+%         end
+% 
+%         function l = get.l(self)
+%             dl = 1/self.Ly;  
+%             l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+%         end
 
         function j = get.j(self)
             j = (0:(self.Nj-1))';

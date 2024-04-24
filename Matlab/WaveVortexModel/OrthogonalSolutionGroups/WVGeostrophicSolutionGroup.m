@@ -33,16 +33,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = zeros(size(self.wvt.Ap));
+                    mask = zeros(self.spectralRectangularGridSize);
                 case WVCoefficientMatrix.Am
-                    mask = zeros(size(self.wvt.Am));
+                    mask = zeros(self.spectralRectangularGridSize);
                 case WVCoefficientMatrix.A0
                     mask = ~self.wvt.maskForNyquistModes() .* ~AA;
-                    IG = ones(size(self.wvt.A0));
+                    IG = ones(self.spectralRectangularGridSize);
                     % IG(:,:,1) = 0;
                     IG(1,1,:) = 0;
                     mask = IG.*mask;
@@ -327,8 +327,8 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
 
             m = wvt.j(jIndex)*pi/wvt.Lz;
-            k = wvt.k(kIndex);
-            l = wvt.l(lIndex);
+            k = wvt.horizontalGeometry.k(kIndex);
+            l = wvt.horizontalGeometry.l(lIndex);
             h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
@@ -370,38 +370,65 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
+        % function [A0Z,A0N] = geostrophicSpectralTransformCoefficients(self)
+        %     K2 = (self.wvt.Kh).^2;
+        %     f = self.wvt.f;
+        %     g = self.wvt.g;
+        % 
+        %     nyquistMask = ~self.wvt.maskForNyquistModes();
+        %     coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+        %     mask = nyquistMask.*coeffMask;
+        % 
+        %     Lr2inv = (f*f)/(g*self.wvt.h_0);
+        %     Lr2inv(1) = 0;
+        %     A0N = (Lr2inv./(K2 + Lr2inv));
+        %     A0Z = - (f/g)./(K2 + Lr2inv);
+        %     A0N(~mask) = 0;
+        %     A0Z(~mask) = 0;
+        % end
+
         function [A0Z,A0N] = geostrophicSpectralTransformCoefficients(self)
-            K2 = (self.wvt.Kh).^2;
+            K2 = self.wvt.K2;
             f = self.wvt.f;
             g = self.wvt.g;
 
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
-            mask = nyquistMask.*coeffMask;
-
-            Lr2inv = (f*f)/(g*self.wvt.h_0);
+            Lr2inv = (f*f)./(g*self.wvt.h_0);
             Lr2inv(1) = 0;
             A0N = (Lr2inv./(K2 + Lr2inv));
             A0Z = - (f/g)./(K2 + Lr2inv);
-            A0N(~mask) = 0;
-            A0Z(~mask) = 0;
+            A0N(:,1) = 0;
+            A0Z(:,1) = 0;
         end
-
+        
         function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)
             [K,L,~] = self.wvt.kljGrid;
             f = self.wvt.f;
             g = self.wvt.g;
 
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
-            mask = nyquistMask.*coeffMask;
+            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
 
-            UA0 = self.makeA0Hermitian(-sqrt(-1)*(g/f)*L) .* mask;
-            VA0 = self.makeA0Hermitian(sqrt(-1)*(g/f)*K) .* mask;
+            UA0 = -sqrt(-1)*(g/f)*L .* mask;
+            VA0 = sqrt(-1)*(g/f)*K .* mask;
             PA0 = mask;
             NA0 = mask;
-            NA0(:,:,1) = 0;
+            NA0(1,:) = 0;
         end
+
+        % function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)
+        %     [K,L,~] = self.wvt.kljGrid;
+        %     f = self.wvt.f;
+        %     g = self.wvt.g;
+        % 
+        %     nyquistMask = ~self.wvt.maskForNyquistModes();
+        %     coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+        %     mask = nyquistMask.*coeffMask;
+        % 
+        %     UA0 = self.makeA0Hermitian(-sqrt(-1)*(g/f)*L) .* mask;
+        %     VA0 = self.makeA0Hermitian(sqrt(-1)*(g/f)*K) .* mask;
+        %     PA0 = mask;
+        %     NA0 = mask;
+        %     NA0(:,:,1) = 0;
+        % end
 
         function bool = contains(self,otherFlowConstituent)
             if isa(otherFlowConstituent,"numeric")

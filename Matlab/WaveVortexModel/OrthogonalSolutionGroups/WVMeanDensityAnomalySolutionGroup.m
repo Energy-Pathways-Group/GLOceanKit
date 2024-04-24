@@ -33,9 +33,9 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             if self.wvt.shouldAntialias == 1
                 AA = self.wvt.maskForAliasedModes();
             else
-                AA = zeros(size(self.wvt.Ap));
+                AA = zeros(self.spectralRectangularGridSize);
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.A0
                     mask(1,1,:) = 1;
@@ -61,7 +61,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.spectralRectangularGridSize);
         end
 
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
@@ -220,15 +220,11 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function A0N = meanDensityAnomalySpectralTransformCoefficients(self)
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
-            A0N = nyquistMask.*coeffMask;
+            A0N = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
         end
 
         function NA0 = meanDensityAnomalySpatialTransformCoefficients(self)
-            nyquistMask = ~self.wvt.maskForNyquistModes();
-            coeffMask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
-            NA0 = nyquistMask.*coeffMask;
+            NA0 = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
         end
 
         function bool = contains(self,otherFlowConstituent)

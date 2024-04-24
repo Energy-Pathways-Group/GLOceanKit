@@ -14,10 +14,10 @@ if options.shouldAssumeAntialiasing == 1
 end
 
 kl_max = min(k_max,l_max);
-dkl_min = min(self.k(2)-self.k(1), self.l(2)-self.l(1));
+dkl_min = min(self.dk, self.dl);
 kl_cutoff = dkl_min*(kl_max/dkl_min)^(3/4);
 
-[K,L,J] = ndgrid(self.k,self.l,self.j);
+[K,L,J] = self.kljGrid;
 Kh = sqrt(K.^2 + L.^2);
 
 Qkl = exp( - ((abs(Kh)-kl_max)./(abs(Kh)-kl_cutoff)).^2 );

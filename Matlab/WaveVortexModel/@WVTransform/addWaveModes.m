@@ -43,7 +43,7 @@ lMode(lMode<0) = lMode(lMode<0) + self.Ny;
 linearIndices = sub2ind(size(self.Ap),kMode+1,lMode+1,jIndex);
 omegaT = self.Omega;
 omega = signs.*abs(omegaT(linearIndices));
-[K,L,~] = ndgrid(self.k,self.l,self.j);
+[K,L,~] = self.kljGrid;
 k = K(linearIndices);
 l = L(linearIndices);
 end

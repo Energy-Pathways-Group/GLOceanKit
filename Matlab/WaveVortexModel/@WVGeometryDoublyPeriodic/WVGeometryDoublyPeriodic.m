@@ -97,9 +97,9 @@ classdef WVGeometryDoublyPeriodic
             end
 
             [K,L] = ndgrid(self.k,self.l);
-            K2 = K.*K + L.*L;
+            Kh = sqrt(K.*K + L.*L);
 
-            multiIndex = cat(2,notPrimaryCoeffs(:),K2(:),K(:),L(:));
+            multiIndex = cat(2,notPrimaryCoeffs(:),Kh(:),K(:),L(:));
             [sortedMultiIndex,indices] = sortrows(multiIndex);
 
             % Now consider only primary numbers, that are not aliased
@@ -107,8 +107,8 @@ classdef WVGeometryDoublyPeriodic
 
             conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nk,self.Nl);
             conjugateIndices = conjugateIndices(indices);
-            k = sortedMultiIndex(indices,3);
-            l = sortedMultiIndex(indices,4);
+            k = K(indices);
+            l = L(indices);
         end
     end
 

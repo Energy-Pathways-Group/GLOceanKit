@@ -24,10 +24,10 @@ classdef WVTransformHydrostatic < WVTransform
         % Transformation matrices
         PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nj]
         PF, QG % size(PF,PG)=[Nj x Nz]
-        h % [1 1 Nj]
+        h % [Nj 1]
         
-        P % Preconditioner for F, size(P)=[1 1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
-        Q % Preconditioner for G, size(Q)=[1 1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
+        P % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
+        Q % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
         
         zInterp
         PFinvInterp, QGinvInterp
@@ -261,11 +261,10 @@ classdef WVTransformHydrostatic < WVTransform
             self.QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(self.Nj,1));
 
             % want size(h)=[1 1 Nj]
-            self.h = cat(2,1,self.h(1:end-1)); % remove the extra mode at the end
-            self.h = shiftdim(self.h,-1);
+            self.h = cat(1,1,reshape(self.h(1:end-1),[],1)); % remove the extra mode at the end
 
-            self.P = shiftdim(self.P(1:end-1),-1);
-            self.Q = shiftdim(cat(2,1,self.Q),-1);
+            self.P = reshape(self.P(1:end-1),[],1);
+            self.Q = reshape(cat(2,1,self.Q),[],1);
 
             self.buildTransformationMatrices();
         end
@@ -326,17 +325,20 @@ classdef WVTransformHydrostatic < WVTransform
             v_hat = self.transformFromSpatialDomainWithFourier(V);
             n_hat = self.transformFromSpatialDomainWithFourier(N);
 
+            iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
+            iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
+
             n_bar = self.transformFromSpatialDomainWithGg(n_hat);
-            zeta_bar = self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* v_hat - sqrt(-1)*shiftdim(self.l,-1) .* u_hat);
+            zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
             A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
             
-            delta_bar = self.h_0.*self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* u_hat + sqrt(-1)*shiftdim(self.l,-1) .* v_hat);
+            delta_bar = self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat);
             nw_bar = (n_bar - A0);
             Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
             Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
 
-            Ap(1,1,:) = self.transformFromSpatialDomainWithFg1D(u_hat(1,1,:) - sqrt(-1)*v_hat(1,1,:))/2;
-            Am(1,1,:) = conj(Ap(1,1,:));
+            Ap(:,1) = self.transformFromSpatialDomainWithFg(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
+            Am(:,1) = conj(Ap(:,1));
 
             if nargin == 5
                 phase = exp(-self.iOmega*(t-self.t0));
@@ -425,26 +427,15 @@ classdef WVTransformHydrostatic < WVTransform
           
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            u_bar = self.transformFromFFTGridToLinearGrid(u_bar);
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
-            % hydrostatic modes commute with the DFT
-            u = permute(u,[3 1 2]); % keep adjacent in memory
-            u = reshape(u,self.Nz,[]);
-            u_bar = self.PF*u;
-            u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
-            u_bar = permute(u_bar,[2 3 1]);
-            u_bar = (u_bar./self.P);
+            u_bar = (self.PF*u)./self.P;
         end
 
         function w_bar = transformFromSpatialDomainWithGg(self, w)
-            % hydrostatic modes commute with the DFT
-            w = permute(w,[3 1 2]); % keep adjacent in memory
-            w = reshape(w,self.Nz,[]);
-            w_bar = self.QG*w;
-            w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
-            w_bar = permute(w_bar,[2 3 1]);
-            w_bar = (w_bar./self.Q);
+            w_bar = (self.QG*w)./self.Q;
         end
 
         function u_bar = transformFromSpatialDomainWithFg1D(self,u)
@@ -463,107 +454,158 @@ classdef WVTransformHydrostatic < WVTransform
         % Transformations to and from the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = transformFromSpatialDomainWithF(self, u)
-            % hydrostatic modes commute with the DFT
-            u = permute(u,[3 1 2]); % keep adjacent in memory
-            u = reshape(u,self.Nz,[]);
-            u_bar = self.PF*u;
-            u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
-            u_bar = permute(u_bar,[2 3 1]);
-            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
-            u_bar = (u_bar./self.P)/(self.Nx*self.Ny);
-        end
+        % function u_bar = transformFromSpatialDomainWithF(self, u)
+        %     % hydrostatic modes commute with the DFT
+        %     u = permute(u,[3 1 2]); % keep adjacent in memory
+        %     u = reshape(u,self.Nz,[]);
+        %     u_bar = self.PF*u;
+        %     u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
+        %     u_bar = permute(u_bar,[2 3 1]);
+        %     u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
+        %     u_bar = (u_bar./self.P)/(self.Nx*self.Ny);
+        % end
+        % 
+        % function w_bar = transformFromSpatialDomainWithG(self, w)
+        %     % hydrostatic modes commute with the DFT
+        %     w = permute(w,[3 1 2]); % keep adjacent in memory
+        %     w = reshape(w,self.Nz,[]);
+        %     w_bar = self.QG*w;
+        %     w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
+        %     w_bar = permute(w_bar,[2 3 1]);
+        %     w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);         
+        %     w_bar = (w_bar./self.Q)/(self.Nx*self.Ny);
+        % end
         
-        function w_bar = transformFromSpatialDomainWithG(self, w)
-            % hydrostatic modes commute with the DFT
-            w = permute(w,[3 1 2]); % keep adjacent in memory
-            w = reshape(w,self.Nz,[]);
-            w_bar = self.QG*w;
-            w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
-            w_bar = permute(w_bar,[2 3 1]);
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);         
-            w_bar = (w_bar./self.Q)/(self.Nx*self.Ny);
+        % function u = transformToSpatialDomainWithF(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
+        %     % hydrostatic modes commute with the DFT
+        %     u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+        %     u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+        %     u_bar = reshape(u_bar,self.Nj,[]);
+        %     u = self.PFinv*u_bar;
+        %     u = reshape(u,self.Nz,self.Nx,self.Ny);
+        %     u = permute(u,[2 3 1]);
+        % end
+        function u = transformToSpatialDomainWithFourier(self,u_bar)
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
-        
+
         function u = transformToSpatialDomainWithF(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
-            % hydrostatic modes commute with the DFT
-            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.Nj,[]);
-            u = self.PFinv*u_bar;
-            u = reshape(u,self.Nz,self.Nx,self.Ny);
-            u = permute(u,[2 3 1]);
+            u_jkl = (self.P .* (options.Apm + options.A0));
+            u_zkl = self.PFinv*u_jkl;
+            u_klz = self.transformFromLinearGridToFFTGrid(u_zkl);
+            u = self.transformToSpatialDomainWithFourier(u_klz);
         end
-                
+
         function w = transformToSpatialDomainWithG(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
-            % hydrostatic modes commute with the DFT
-            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-            
-            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.Nj,[]);
-            w = self.QGinv*w_bar;
-            w = reshape(w,self.Nz,self.Nx,self.Ny);
-            w = permute(w,[2 3 1]);
+            w_jkl = (self.Q .* (options.Apm + options.A0));
+            w_zkl = self.QGinv*w_jkl;
+            w_klz = self.transformFromLinearGridToFFTGrid(w_zkl);
+            w = self.transformToSpatialDomainWithFourier(w_klz);
         end
-        
+
+        % function w = transformToSpatialDomainWithG(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
+        %     % hydrostatic modes commute with the DFT
+        %     w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+        % 
+        %     w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+        %     w_bar = reshape(w_bar,self.Nj,[]);
+        %     w = self.QGinv*w_bar;
+        %     w = reshape(w,self.Nz,self.Nx,self.Ny);
+        %     w = permute(w,[2 3 1]);
+        % end
+
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
+                options.Apm double = []
+                options.A0 double = []
             end
-            u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
-            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-
-            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.Nj,[]);
-            u = self.PFinv*u_bar;
-            u = reshape(u,self.Nz,self.Nx,self.Ny);
-            u = permute(u,[2 3 1]);
-
-            ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
-            uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
-
-            uz = self.QGinv*( squeeze(self.Q./self.P).*u_bar );
-            uz = reshape(uz,self.Nz,self.Nx,self.Ny);
-            uz = permute(uz,[2 3 1]);
-            uz = (-shiftdim(self.N2,-2)/self.g).*uz;
+            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
+            ux = self.diffX(u);
+            uy = self.diffY(u);
+            uz = self.diffZF(u);
         end  
         
         function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
+                options.Apm double = []
+                options.A0 double = []
             end
-            w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
-            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-
-            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.Nj,[]);
-            w = self.QGinv*w_bar;
-            w = reshape(w,self.Nz,self.Nx,self.Ny);
-            w = permute(w,[2 3 1]);
-
-            wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
-            wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
-            
-            wz = self.PFinv* ( squeeze(self.P./(self.Q .* self.h)) .* w_bar);
-            wz = reshape(wz,self.Nz,self.Nx,self.Ny);
-            wz = permute(wz,[2 3 1]);
+            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
+            wx = self.diffX(w);
+            wy = self.diffY(w);
+            wz = self.diffZG(w);
         end
+
+        % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
+        %     u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+        % 
+        %     u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
+        %     u_bar = reshape(u_bar,self.Nj,[]);
+        %     u = self.PFinv*u_bar;
+        %     u = reshape(u,self.Nz,self.Nx,self.Ny);
+        %     u = permute(u,[2 3 1]);
+        % 
+        %     ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
+        %     uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
+        % 
+        %     uz = self.QGinv*( squeeze(self.Q./self.P).*u_bar );
+        %     uz = reshape(uz,self.Nz,self.Nx,self.Ny);
+        %     uz = permute(uz,[2 3 1]);
+        %     uz = (-shiftdim(self.N2,-2)/self.g).*uz;
+        % end  
+        % 
+        % function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
+        %     w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
+        % 
+        %     w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
+        %     w_bar = reshape(w_bar,self.Nj,[]);
+        %     w = self.QGinv*w_bar;
+        %     w = reshape(w,self.Nz,self.Nx,self.Ny);
+        %     w = permute(w,[2 3 1]);
+        % 
+        %     wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
+        %     wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
+        % 
+        %     wz = self.PFinv* ( squeeze(self.P./(self.Q .* self.h)) .* w_bar);
+        %     wz = reshape(wz,self.Nz,self.Nx,self.Ny);
+        %     wz = permute(wz,[2 3 1]);
+        % end
         
         function u = transformToSpatialDomainWithFInterp(self, u_bar)
             u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
