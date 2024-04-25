@@ -4,17 +4,32 @@ classdef WVGeometryDoublyPeriodic
     % The WVGeometryDoublyPeriodic encapsulates the transformations and
     % logic necessary for computing Fourier transforms and spectral
     % derivatives in a doubly periodic domain.
+    %
+    % The idea is that this class encapsulates all the index gymnastics 
 
-    properties
+    properties (GetAccess=public, SetAccess=protected)
         Lx, Ly
         Nx, Ny
         conjugateDimension
+        shouldAntialias 
+        shouldExcludeNyquist
+        shouldExludeConjugates
+
+        primaryDFTindices
+        conjugateDFTindices
+
+        k_wv, l_wv
     end
 
     properties (Dependent, SetAccess=private)
         x, y
-        k, l
-        Nk, Nl
+
+        k_dft, l_dft
+        kMode_dft, lMode_dft
+        Nk_dft, Nl_dft
+
+        Nkl_wv
+        kMode_wv, lMode_wv
     end
 
     methods
@@ -23,6 +38,9 @@ classdef WVGeometryDoublyPeriodic
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
                 options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
+                options.shouldAntialias (1,1) double {mustBeMember(options.shouldAntialias,[0 1])} = 1
+                options.shouldExcludeNyquist (1,1) double {mustBeMember(options.shouldExcludeNyquist,[0 1])} = 1
+                options.shouldExludeConjugates (1,1) double {mustBeMember(options.shouldExludeConjugates,[0 1])} = 1
             end
             self.Lx = Lxy(1);
             self.Ly = Lxy(2);
@@ -30,6 +48,11 @@ classdef WVGeometryDoublyPeriodic
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
             self.conjugateDimension = options.conjugateDimension;
+            self.shouldAntialias = options.shouldAntialias;
+            self.shouldExcludeNyquist = options.shouldExcludeNyquist;
+            self.shouldExludeConjugates = options.shouldExludeConjugates;
+
+            [self.primaryDFTindices,self.conjugateDFTindices,self.k_wv,self.l_wv] = self.indicesOfPrimaryCoefficients;
         end
 
         function x = get.x(self)
@@ -42,22 +65,44 @@ classdef WVGeometryDoublyPeriodic
             y = dy*(0:self.Ny-1)';
         end
 
-        function value = get.Nk(self)
+        function value = get.Nk_dft(self)
             value=self.Nx;
         end
 
-        function value = get.Nl(self)
+        function value = get.Nl_dft(self)
             value=self.Ny;
         end
 
-        function k = get.k(self)
+        function k = get.k_dft(self)
             dk = 1/self.Lx;
             k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
         end
 
-        function l = get.l(self)
+        function l = get.l_dft(self)
             dl = 1/self.Ly;
             l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+        end
+
+        function k = get.kMode_dft(self)
+            k = ([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1])';
+        end
+
+        function l = get.lMode_dft(self)
+            l = ([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1])';
+        end
+
+        function k = get.kMode_wv(self)
+            k = self.kMode_dft;
+            k = k(self.primaryDFTindices);
+        end
+
+        function l = get.lMode_wv(self)
+            l = self.lMode_dft;
+            l = l(self.primaryDFTindices);
+        end
+
+        function N = get.Nkl_wv(self)
+            N = length(self.k_wv);
         end
 
         function u_bar = transformFromSpatialDomain(self,u)
@@ -71,12 +116,50 @@ classdef WVGeometryDoublyPeriodic
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
 
-        function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self,options)
+        function bool = isValidWVModeNumber(self,kMode,lMode)
+            % return a boolean indicating whether (k,l) is a valid WV mode number
+            %
+            % returns a boolean indicating whether (k,l) is a valid WV mode
+            % number
+            %
+            % - Topic: 
+            % - Declaration: bool = isValidWVModeNumber(kMode,lMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns bool: [0 1]
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                bool (1,1) logical {mustBeMember(bool,[0 1])}
+            end
+            bool = any(self.kMode_wv == kMode & self.lMode_wv == lMode);
+        end
+
+        function Azkl = transformFromDFTGridToWVGrid(self,Aklz)
+            Nz = size(Aklz,3);
+            Aklz = reshape(Aklz,[self.Nx*self.Ny Nz]);
+            Azkl = zeros(Nz,self.Nkl_wv);
+            for iK=1:self.Nkl_wv
+                Azkl(:,iK) = Aklz(self.primaryDFTindices(iK),:);
+            end
+        end
+
+        function Aklz = transformFromWVGridToDFTGrid(self,Azkl)
+            Nz = size(Azkl,1);
+            Aklz = zeros(self.Nx*self.Ny,Nz);
+            for iK=1:self.Nkl_wv
+                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
+                Aklz(self.conjugateDFTindices(iK),:) = conj(Azkl(:,iK));
+            end
+            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
+        end
+
+        function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self)
             arguments (Input)
                 self (1,1) WVGeometryDoublyPeriodic
-                options.shouldAntialias (1,1) double {mustBeMember(options.shouldAntialias,[0 1])} = 1
-                options.shouldExcludeNyquist (1,1) double {mustBeMember(options.shouldExcludeNyquist,[0 1])} = 1
-                options.shouldExludeConjugates (1,1) double {mustBeMember(options.shouldExludeConjugates,[0 1])} = 1
             end
             arguments (Output)
                 indices (:,1) double
@@ -85,18 +168,18 @@ classdef WVGeometryDoublyPeriodic
                 l (:,1) double
             end
 
-            notPrimaryCoeffs = zeros(self.Nk,self.Nl);
-            if options.shouldAntialias == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nk,self.Nl);
+            notPrimaryCoeffs = zeros(self.Nk_dft,self.Nl_dft);
+            if self.shouldAntialias == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nk_dft,self.Nl_dft);
             end
-            if options.shouldExcludeNyquist == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk,self.Nl);
+            if self.shouldExcludeNyquist == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk_dft,self.Nl_dft);
             end
-            if options.shouldExludeConjugates == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk,self.Nl,self.conjugateDimension);
+            if self.shouldExludeConjugates == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,self.conjugateDimension);
             end
 
-            [K,L] = ndgrid(self.k,self.l);
+            [K,L] = ndgrid(self.k_dft,self.l_dft);
             Kh = sqrt(K.*K + L.*L);
 
             multiIndex = cat(2,notPrimaryCoeffs(:),Kh(:),K(:),L(:));
@@ -110,6 +193,7 @@ classdef WVGeometryDoublyPeriodic
             k = K(indices);
             l = L(indices);
         end
+        
     end
 
     methods (Static)

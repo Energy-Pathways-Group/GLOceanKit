@@ -604,6 +604,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
         
+        function sz = spatialMatrixSize(self)
+            % size of any real-valued field variable
+            sz = [self.Nx self.Ny self.Nz];
+        end
+
+        function sz = spectralMatrixSize(self)
+            % size of any spectral matrix, Ap, Am, A0
+            sz = [self.Nx self.Ny self.Nz];
+        end
+
         function [X,Y,Z] = xyzGrid(self)
             X = self.X; Y = self.Y; Z = self.Z;
         end

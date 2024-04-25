@@ -30,22 +30,15 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
+
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask = zeros(self.spectralRectangularGridSize);
+                    mask = zeros(self.wvt.spectralMatrixSize);
                 case WVCoefficientMatrix.Am
-                    mask = zeros(self.spectralRectangularGridSize);
+                    mask = zeros(self.wvt.spectralMatrixSize);
                 case WVCoefficientMatrix.A0
-                    mask = ~self.wvt.maskForNyquistModes() .* ~AA;
-                    IG = ones(self.spectralRectangularGridSize);
-                    % IG(:,:,1) = 0;
-                    IG(1,1,:) = 0;
-                    mask = IG.*mask;
+                    mask = ones(self.wvt.spectralMatrixSize);
+                    mask(self.wvt.Kh == 0) = 0;
             end
         end
 
@@ -118,8 +111,8 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
             mask = self.maskForCoefficientMatrix(coefficientMatrix);
-            maskr = self.maskForConjugateCoefficients(coefficientMatrix);
-            mask = mask .* ~maskr;
+            % maskr = self.maskForConjugateCoefficients(coefficientMatrix);
+            % mask = mask .* ~maskr;
         end
 
         function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
