@@ -3,7 +3,7 @@ solutionGroup = WVGeostrophicSolutionGroup(wvt);
 args = {wvt.X,wvt.Y,wvt.Z,wvt.t};
 
 %%
-solutionIndex = 1;
+solutionIndex = 10;
 soln = solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
 
 wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
@@ -11,3 +11,5 @@ u = wvt.u;
 u2 = soln.u(args{:});
 v = wvt.v;
 v2 = soln.v(args{:});
+p = wvt.p;
+p2 = soln.p(args{:});

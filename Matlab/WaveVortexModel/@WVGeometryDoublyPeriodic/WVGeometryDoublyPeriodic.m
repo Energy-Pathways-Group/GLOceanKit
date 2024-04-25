@@ -212,8 +212,13 @@ classdef WVGeometryDoublyPeriodic
             % modes are, assuming the 2/3 anti-aliasing rule for quadratic
             % interactions.
             %
+            % Technically one needs only restrict to 2/3s in each
+            % wavenumber direction. However, we prefer to maintain an
+            % isotropic effective grid size and instead restrict to a
+            % circle.
+            %
             % Basic usage,
-            % AntiAliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(Nx,Ny,Nz);
+            % antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(Nx,Ny,Nz);
             % will return a mask that contains 1 at the locations of modes that will
             % alias with a quadratic multiplication.
             %
