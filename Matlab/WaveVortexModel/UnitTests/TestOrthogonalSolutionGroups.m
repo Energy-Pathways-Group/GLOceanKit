@@ -9,8 +9,8 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         %transform = {'constant','hydrostatic','boussinesq'};
         transform = {'hydrostatic'};
-        % orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
-        orthogonalSolutionGroup = {'WVGeostrophicSolutionGroup'}
+        orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
+        % orthogonalSolutionGroup = {'WVMeanDensityAnomalySolutionGroup'}
     end
 
     methods (TestClassSetup)
@@ -60,7 +60,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
                 case 'WVGeostrophicSolutionGroup'
                     solnGroup = WVGeostrophicSolutionGroup(tmpwvt);
             end
-            for iSoln = 10:10 %solnGroup.nUniqueSolutions
+            for iSoln = 1:solnGroup.nUniqueSolutions
                 solutionIndex.(sprintf('solution_%d',iSoln)) = iSoln;
             end
         end

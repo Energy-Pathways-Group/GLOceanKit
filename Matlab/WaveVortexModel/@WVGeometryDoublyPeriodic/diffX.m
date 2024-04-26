@@ -14,6 +14,6 @@ arguments
     n (1,1)     double = 1
 end
 
-du = ifft( (sqrt(-1)*wvg.k).^n .* fft(u,wvg.Nx,1), wvg.Nx, 1,'symmetric');
+du = ifft( (sqrt(-1)*wvg.k_dft).^n .* fft(u,wvg.Nx,1), wvg.Nx, 1,'symmetric');
 
 end

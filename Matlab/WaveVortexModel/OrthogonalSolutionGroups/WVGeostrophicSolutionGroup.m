@@ -387,8 +387,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             Lr2inv(1) = 0;
             A0N = (Lr2inv./(K2 + Lr2inv));
             A0Z = - (f/g)./(K2 + Lr2inv);
-            A0N(:,1) = 0;
-            A0Z(:,1) = 0;
+
+            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            A0N(~mask) = 0;
+            A0Z(~mask) = 0;
         end
         
         function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)

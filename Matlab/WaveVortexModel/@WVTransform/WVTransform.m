@@ -1256,7 +1256,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         addUVEta(self,U,V,N)
         initWithRandomFlow(self)
         
-        removeEnergyFromAliasedModes(self,options)
         removeAll(self)
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

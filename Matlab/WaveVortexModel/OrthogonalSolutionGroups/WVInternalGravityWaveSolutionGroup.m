@@ -34,7 +34,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             switch(coefficientMatrix)
                 case {WVCoefficientMatrix.Am,WVCoefficientMatrix.Ap}
                     mask = ones(self.wvt.spectralMatrixSize);
-                    mask(self.wvt.Kh == 0 & self.wvt.J > 0) = 0; % no j=0 solution, no inertial oscillations
+                    mask(self.wvt.Kh == 0 | self.wvt.J == 0) = 0; % no j=0 solution, no inertial oscillations
                 case WVCoefficientMatrix.A0
                     mask = zeros(self.wvt.spectralMatrixSize);
             end
@@ -57,38 +57,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.spectralRectangularGridSize);
-            switch(coefficientMatrix)
-                case {WVCoefficientMatrix.Ap, WVCoefficientMatrix.Am}
-                    K = size(mask,1);
-                    L = size(mask,2);
-                    if self.wvt.conjugateDimension == 1
-                        % The order of the for-loop is chosen carefully here.
-                        for iK=1:(K/2+1)
-                            for iL=1:L
-                                if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    elseif self.wvt.conjugateDimension == 2
-                        % The order of the for-loop is chosen carefully here.
-                        for iL=1:(L/2+1)
-                            for iK=1:K
-                                if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    else
-                        error('invalid conjugate dimension')
-                    end
-            end
-            mask = mask .* self.maskForCoefficientMatrix(coefficientMatrix);
+            mask = zeros(self.wvt.spectralMatrixSize);
         end
 
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
@@ -200,7 +169,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             for iSolution = 1:length(solutionIndex)
                 if solutionIndex(iSolution) <= nUniqueAp
                     linearIndex = indicesForUniqueApSolutions(solutionIndex(iSolution));
-                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.Ap);
+                    [kMode,lMode,jMode] = self.wvt.modeNumberFromIndex(linearIndex);
                     if strcmp(options.amplitude,'random')
                         A = randn([1 1]);
                         phi = 2*pi*rand([1 1]) - pi;
@@ -211,7 +180,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                     solutions(iSolution) = self.internalGravityWaveSolution(kMode,lMode,jMode,A,phi,+1);
                 elseif solutionIndex(iSolution) <= nUniqueAp + nUniqueAm
                     linearIndex = indicesForUniqueAmSolutions(solutionIndex(iSolution)-nUniqueAp);
-                    [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.Am);
+                    [kMode,lMode,jMode] = self.wvt.modeNumberFromIndex(linearIndex);
                     if strcmp(options.amplitude,'random')
                         A = randn([1 1]);
                         phi = 2*pi*rand([1 1]) - pi;
@@ -351,15 +320,16 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix = WVCoefficientMatrix.Am;
             end
 
-            [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
-            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            % [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
+            % [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;
             end
 
-            m = wvt.j(jIndex)*pi/wvt.Lz;
-            k = wvt.horizontalGeometry.k(kIndex);
-            l = wvt.horizontalGeometry.l(lIndex);
+            m = wvt.J(index)*pi/wvt.Lz;
+            k = wvt.K(index);
+            l = wvt.L(index);
             sign = -2*(mod(jMode,2) == 1)+1;
             if wvt.isHydrostatic
                 h = N0^2/(wvt.g*m^2);

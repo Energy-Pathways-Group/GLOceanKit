@@ -147,7 +147,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
             for iSolution = 1:length(solutionIndex)
                 linearIndex = indicesForUniqueSolutions(solutionIndex(iSolution));
-                [~,~,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.A0);
+                [~,~,jMode] = self.wvt.modeNumberFromIndex(linearIndex);
                 if strcmp(options.amplitude,'random')
                     A = randn([1 1]);
                 else
@@ -184,12 +184,12 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             wvt = self.wvt;
             kMode = 0;
             lMode = 0;
-            [~,~,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;
             end
 
-            m = wvt.j(jIndex)*pi/wvt.Lz;
+            m = wvt.J(index)*pi/wvt.Lz;
             h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;

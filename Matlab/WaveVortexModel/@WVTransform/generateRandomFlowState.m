@@ -14,33 +14,21 @@ function [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(sel
 %
 % - Declaration: [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState()
 % - Topic: Utility function
-ApIGW = self.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=1 );
-AmIGW = self.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=1 );
-A0G = 6e-2*self.generateHermitianRandomMatrix( shouldExcludeNyquist=1 );
 
-ApIO = zeros(size(self.Ap));
-AmIO = zeros(size(self.Ap));
-A0G0 = zeros(size(self.Ap));
-A0rhobar = zeros(size(self.Ap));
+solutionGroup = WVInternalGravityWaveSolutionGroup(self);
+ApIGW = randn(self.spectralMatrixSize) .* solutionGroup.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+AmIGW = randn(self.spectralMatrixSize) .* solutionGroup.maskForCoefficientMatrix(WVCoefficientMatrix.Am);
 
-% inertial oscillations only exist at k=l=0
-ApIO(1,1,:) = ApIGW(1,1,:);
-AmIO(1,1,:) = conj(ApIGW(1,1,:));
+solutionGroup = WVGeostrophicSolutionGroup(self);
+A0G = 6e-2*randn(self.spectralMatrixSize) .* solutionGroup.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+A0G0 = zeros(self.spectralMatrixSize);
+A0G0(self.J==0) = A0G(self.J==0);
+A0G(self.J==0) = 0;
 
-% zero out all j=0, and k=l=0 values.
-ApIGW(:,:,1) = 0;
-ApIGW(1,1,:) = 0;
-AmIGW(:,:,1) = 0;
-AmIGW(1,1,:) = 0;
+solutionGroup = WVInertialOscillationSolutionGroup(self);
+ApIO = randn(self.spectralMatrixSize) .* solutionGroup.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+AmIO = conj(ApIO);
 
-% barotropic geostrophic at all k and l>0, j=0
-A0G0(:,:,1) = 0.01*A0G(:,:,1);
-A0G0(1,1,1) = 0;
-
-% mean density anomaly
-A0rhobar(1,1,2:end) = real(A0G(1,1,2:end));
-
-% zero out all j=0, and k=l=0 values.
-A0G(1,1,:) = 0;
-A0G(:,:,1) = 0;
+solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
+A0rhobar = randn(self.spectralMatrixSize) .* solutionGroup.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
 end

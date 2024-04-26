@@ -30,19 +30,13 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
-            mask = zeros(self.spectralRectangularGridSize);
+            
+            mask = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask(self.wvt.Kh == 0) = 1;
                 case WVCoefficientMatrix.Am
-                    mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask(self.wvt.Kh == 0) = 1;
             end
         end
 
@@ -63,16 +57,10 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
-            mask = zeros(self.spectralRectangularGridSize);
+            mask = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Am
-                    mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask(self.wvt.Kh == 0) = 1;
             end
         end
 
@@ -93,16 +81,10 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
-            mask = zeros(self.spectralRectangularGridSize);
+            mask = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.Ap
-                    mask(1,1,:) = 1;
-                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask(self.wvt.Kh == 0) = 1;
             end
         end
         
@@ -177,7 +159,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
             for iSolution = 1:length(solutionIndex)
                 linearIndex = indicesForUniqueApSolutions(solutionIndex(iSolution));
-                [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.Ap);
+                [kMode,lMode,jMode] = self.wvt.modeNumberFromIndex(linearIndex);
                 if strcmp(options.amplitude,'random')
                     A = randn([1 1]);
                     phi = 2*pi*rand([1 1]) - pi;
@@ -277,10 +259,10 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
         % end
         
         function [UAp,VAp] = inertialOscillationSpatialTransformCoefficients(self)
-            UAp = zeros(self.wvt.Nj,self.wvt.Nkl);
-            UAp(:,1) = 1;
-            VAp = zeros(self.wvt.Nj,self.wvt.Nkl);
-            VAp(:,1) = sqrt(-1);
+            UAp = zeros(self.wvt.spectralMatrixSize);
+            UAp(self.wvt.Kh == 0) = 1;
+            VAp = zeros(self.wvt.spectralMatrixSize);
+            VAp(self.wvt.Kh == 0) = sqrt(-1);
         end
 
         function bool = contains(self,otherFlowConstituent)

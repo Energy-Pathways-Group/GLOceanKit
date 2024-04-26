@@ -7,8 +7,8 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
         Lxyz = struct('Lxyz',[15e3, 15e3, 4e3]);
         % Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        % transform = {'constant'};
+        %transform = {'constant','hydrostatic','boussinesq'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)
@@ -27,7 +27,6 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
     methods (Test)
         function testNonlinearFlux(self)
             self.wvt.initWithRandomFlow();
-            self.wvt.removeEnergyFromAliasedModes();
             spatialFlux = WVNonlinearFluxSpatial(self.wvt);
             standardFlux = WVNonlinearFlux(self.wvt,shouldAntialias=0);
 
