@@ -282,8 +282,10 @@ classdef WVGeometryDoublyPeriodic
             icL = mod(Nl-iL+1, Nl) + 1;
             if iK == icK && iL == icL % self-conjugate terms
                 A(iK,iL,:) = 0;
-            elseif iL == Nl/2+1 % Kill the Nyquist, because its never resolved
-                A(iK,iL,:) = 0;
+            % elseif iL == Nl/2+1 % Kill the Nyquist, because its never resolved
+            %     A(iK,iL,:) = 0;
+            % elseif iK == Nk/2+1 % Kill the Nyquist, because its never resolved
+            %     A(iK,iL,:) = 0;
             else
                 A(icK,icL,:) = 1;
             end
@@ -303,6 +305,9 @@ classdef WVGeometryDoublyPeriodic
                 Ny (1,1) double {mustBeInteger,mustBePositive}
                 conjugateDimension (1,1) double {mustBeMember(conjugateDimension,[1 2])}
             end
+            arguments (Output)
+                mask double {mustBeNonnegative}
+            end
 
             mask = zeros([Nx Ny]);
             if conjugateDimension == 1
@@ -310,6 +315,8 @@ classdef WVGeometryDoublyPeriodic
                 for iK=1:(Nx/2+1)
                     for iL=1:Ny
                         if iK == 1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                            continue;
+                        elseif iK == Nx/2+1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
                             continue;
                         else
                             mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
@@ -322,6 +329,8 @@ classdef WVGeometryDoublyPeriodic
                     for iK=1:Nx
                         if iL == 1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
                             continue;
+                        elseif iL == Ny/2+1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                            continue;
                         else
                             mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
                         end
@@ -330,6 +339,47 @@ classdef WVGeometryDoublyPeriodic
             else
                 error('invalid conjugate dimension')
             end
+        end
+
+        function dof = degreesOfFreedomForComplexMatrix(Nx,Ny)
+            % a matrix of linear indices of the conjugate
+            %
+            % - Topic: Utility function
+            % - Declaration: dof = WVGeometryDoublyPeriodic.degreesOfFreedomForComplexMatrix(Nx,Ny);
+            % - Parameter Nx: grid points in the x-direction
+            % - Parameter Ny: grid points in the y-direction
+            % - Returns dof: matrix containing dof
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+            end
+            
+            dof = 2*ones(Nx,Ny);
+
+            % self-conjugates
+            dof(1,1) = 1;
+            dof(Nx/2+1,1) = 1;
+            dof(Nx/2+1,Ny/2+1) = 1;
+            dof(1,Ny/2+1) = 1;
+        end
+
+        function dof = degreesOfFreedomForRealMatrix(Nx,Ny,conjugateDimension)
+            % a matrix of linear indices of the conjugate
+            %
+            % - Topic: Utility function
+            % - Declaration: matrix = WVGeometryDoublyPeriodic.degreesOfFreedomForFourierCoefficients(Nx,Ny);
+            % - Parameter Nx: grid points in the x-direction
+            % - Parameter Ny: grid points in the y-direction
+            % - Returns matrix: matrix containing linear indices
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+                conjugateDimension (1,1) double {mustBeMember(conjugateDimension,[1 2])}
+            end
+
+            dof = WVGeometryDoublyPeriodic.degreesOfFreedomForComplexMatrix(Nx,Ny);
+            mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,conjugateDimension);
+            dof(logical(mask)) = 0;
         end
 
         function antialiasMask = maskForAliasedModes(Nx,Ny,Nz)
@@ -359,6 +409,9 @@ classdef WVGeometryDoublyPeriodic
                 Nx (1,1) double {mustBeInteger,mustBePositive}
                 Ny (1,1) double {mustBeInteger,mustBePositive}
                 Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+            end
+            arguments (Output)
+                antialiasMask double {mustBeNonnegative}
             end
             k = 2*pi*([0:ceil(Nx/2)-1 -floor(Nx/2):-1])';
             l = 2*pi*([0:ceil(Ny/2)-1 -floor(Ny/2):-1])';
@@ -390,6 +443,9 @@ classdef WVGeometryDoublyPeriodic
                 Nx (1,1) double {mustBeInteger,mustBePositive}
                 Ny (1,1) double {mustBeInteger,mustBePositive}
                 Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+            end
+            arguments (Output)
+                nyquistMask double {mustBeNonnegative}
             end
             nyquistMask = zeros(Nx,Ny,Nz);
             nyquistMask(Nx/2+1,:,:) = 1;

@@ -72,6 +72,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
     methods (Test)
         function testSolution(self,solutionIndex)
+            self.wvt.t =8426;
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
             soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));

@@ -80,6 +80,7 @@ classdef WVTransformHydrostatic < WVTransform
                 options.dLnN2func function_handle = @disp
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                options.shouldAntialias double = 1
 
                 % ALL of these must be set for direct initialization to
                 % avoid actually computing the modes.
@@ -146,7 +147,7 @@ classdef WVTransformHydrostatic < WVTransform
             im.upperBoundary = UpperBoundary.rigidLid;
 
             % This is enough information to initialize the superclass
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)),shouldAntialias=options.shouldAntialias);
 
             if canInitializeDirectly
                 self.rhoFunction = im.rho_function;

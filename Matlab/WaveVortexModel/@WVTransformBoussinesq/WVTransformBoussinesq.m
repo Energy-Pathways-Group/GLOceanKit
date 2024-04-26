@@ -165,7 +165,7 @@ classdef WVTransformBoussinesq < WVTransform
                 % iK2unique is the same size as K2, but are the indices for
                 % the K2unique matrix to recreate/map back to K2unique.
                 Kh = self.Kh;
-                K2 = (Kh(:,:,1)).^2;
+                K2 = (Kh(1,:)).^2;
                 [self.K2unique,~,self.iK2unique] = unique(K2);
                 self.iK2unique = reshape(self.iK2unique,size(K2));
                 self.nK2unique = length(self.K2unique);
