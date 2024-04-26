@@ -30,17 +30,11 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
-            mask = zeros(self.spectralRectangularGridSize);
+
+            mask = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.A0
-                    mask(1,1,:) = 1;
-                    mask(1,1,1) = 0;
-                    mask = mask .* ~self.wvt.maskForNyquistModes() .* ~AA;
+                    mask(self.wvt.Kh == 0 & self.wvt.J > 0) = 1;
             end
         end
 
@@ -220,11 +214,11 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function A0N = meanDensityAnomalySpectralTransformCoefficients(self)
-            A0N = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
+            A0N = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function NA0 = meanDensityAnomalySpatialTransformCoefficients(self)
-            NA0 = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
+            NA0 = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function bool = contains(self,otherFlowConstituent)

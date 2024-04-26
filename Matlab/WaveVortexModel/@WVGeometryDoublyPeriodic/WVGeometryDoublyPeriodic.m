@@ -92,13 +92,13 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function k = get.kMode_wv(self)
-            k = self.kMode_dft;
-            k = k(self.primaryDFTindices);
+            [K,~] = ndgrid(self.kMode_dft,self.lMode_dft);
+            k = K(self.primaryDFTindices);
         end
 
         function l = get.lMode_wv(self)
-            l = self.lMode_dft;
-            l = l(self.primaryDFTindices);
+            [~,L] = ndgrid(self.kMode_dft,self.lMode_dft);
+            l = L(self.primaryDFTindices);
         end
 
         function N = get.Nkl_wv(self)
@@ -120,22 +120,65 @@ classdef WVGeometryDoublyPeriodic
             % return a boolean indicating whether (k,l) is a valid WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid WV mode
-            % number
+            % number. Even if a mode number is available in the DFT matrix,
+            % it does not mean it is a valid WV mode number, e.g., it may
+            % be removed due to aliasing.
             %
-            % - Topic: 
+            % - Topic: Index Gymnastics
             % - Declaration: bool = isValidWVModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
             arguments (Input)
                 self WVGeometryDoublyPeriodic {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
             end
             arguments (Output)
                 bool (1,1) logical {mustBeMember(bool,[0 1])}
             end
             bool = any(self.kMode_wv == kMode & self.lMode_wv == lMode);
+        end
+
+        function index = linearWVIndexFromModeNumber(self,kMode,lMode)
+            % return the linear index into k_wv and l_wv from a mode number
+            %
+            % This function will return the linear index into the (k_wv,l_wv) arrays,
+            % given the mode numbers (kMode,lMode). Note that this will
+            % *not* normalize the mode to the primary mode number, but will
+            % throw an error.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: index = linearWVIndexFromModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns linearIndex: a non-negative integer number
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                index (:,1) double {mustBeInteger,mustBePositive}
+            end
+            if ~self.isValidWVModeNumber(kMode,lMode)
+                error('Invalid WV mode number!');
+            end
+            indices = 1:self.Nkl_wv;
+            index = indices(self.kMode_wv == kMode & self.lMode_wv == lMode);
+        end
+
+        function [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                linearIndex (1,1) double {mustBeInteger,mustBePositive}
+            end
+            arguments (Output)
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
+            end
+            kMode = self.kMode_wv(linearIndex);
+            lMode = self.lMode_wv(linearIndex);
         end
 
         function Azkl = transformFromDFTGridToWVGrid(self,Aklz)
@@ -188,7 +231,7 @@ classdef WVGeometryDoublyPeriodic
             % Now consider only primary numbers, that are not aliased
             indices = indices(sortedMultiIndex(:,1) == 0);
 
-            conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nk,self.Nl);
+            conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
             conjugateIndices = conjugateIndices(indices);
             k = K(indices);
             l = L(indices);

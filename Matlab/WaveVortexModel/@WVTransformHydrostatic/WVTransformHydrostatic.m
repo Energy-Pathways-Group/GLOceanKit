@@ -427,7 +427,7 @@ classdef WVTransformHydrostatic < WVTransform
           
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = self.transformFromFFTGridToLinearGrid(u_bar);
+            u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
@@ -503,7 +503,7 @@ classdef WVTransformHydrostatic < WVTransform
             end
             u_jkl = (self.P .* (options.Apm + options.A0));
             u_zkl = self.PFinv*u_jkl;
-            u_klz = self.transformFromLinearGridToFFTGrid(u_zkl);
+            u_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(u_zkl);
             u = self.transformToSpatialDomainWithFourier(u_klz);
         end
 
@@ -515,7 +515,7 @@ classdef WVTransformHydrostatic < WVTransform
             end
             w_jkl = (self.Q .* (options.Apm + options.A0));
             w_zkl = self.QGinv*w_jkl;
-            w_klz = self.transformFromLinearGridToFFTGrid(w_zkl);
+            w_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(w_zkl);
             w = self.transformToSpatialDomainWithFourier(w_klz);
         end
 

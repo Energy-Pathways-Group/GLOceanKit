@@ -31,11 +31,8 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
 
+            mask = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
-                case WVCoefficientMatrix.Ap
-                    mask = zeros(self.wvt.spectralMatrixSize);
-                case WVCoefficientMatrix.Am
-                    mask = zeros(self.wvt.spectralMatrixSize);
                 case WVCoefficientMatrix.A0
                     mask = ones(self.wvt.spectralMatrixSize);
                     mask(self.wvt.Kh == 0) = 0;
@@ -196,7 +193,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             solutions=WVOrthogonalSolution.empty(length(index),0);
             for iSolution = 1:length(index)
                 linearIndex = indicesForUniqueSolutions(index(iSolution));
-                [kMode,lMode,jMode] = self.modeNumberFromLinearIndex(linearIndex,WVCoefficientMatrix.A0);
+                [kMode,lMode,jMode] = self.wvt.modeNumberFromIndex(linearIndex);
                 if strcmp(options.amplitude,'random')
                     A = randn([1 1]);
                     phi = 2*pi*rand([1 1]) - pi;
@@ -313,15 +310,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
-            [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi);
-            [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            % [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi);
+            % [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;
             end
 
-            m = wvt.j(jIndex)*pi/wvt.Lz;
-            k = wvt.horizontalGeometry.k(kIndex);
-            l = wvt.horizontalGeometry.l(lIndex);
+            m = wvt.J(index)*pi/wvt.Lz;
+            k = wvt.K(index);
+            l = wvt.L(index);
             h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
@@ -346,10 +344,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
-            [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
-            solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
-            solution.conjugateCoefficientMatrixIndex = conjugateIndex;
-            solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
+            % [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            % solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
+            % solution.conjugateCoefficientMatrixIndex = conjugateIndex;
+            % solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             K2 = k*k+l*l;
             if jMode == 0
@@ -398,7 +396,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             f = self.wvt.f;
             g = self.wvt.g;
 
-            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.A0));
+            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
 
             UA0 = -sqrt(-1)*(g/f)*L .* mask;
             VA0 = sqrt(-1)*(g/f)*K .* mask;

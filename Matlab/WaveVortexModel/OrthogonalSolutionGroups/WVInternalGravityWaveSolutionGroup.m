@@ -30,22 +30,13 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            if self.wvt.shouldAntialias == 1
-                AA = self.wvt.maskForAliasedModes();
-            else
-                AA = zeros(self.spectralRectangularGridSize);
-            end
+
             switch(coefficientMatrix)
-                case WVCoefficientMatrix.Ap
-                    mask = ones(self.spectralRectangularGridSize) .* ~self.wvt.maskForNyquistModes() .* ~AA;
-                    mask(:,:,1) = 0; % no j=0 solution
-                    mask(1,1,:) = 0; % no inertial oscillations
-                case WVCoefficientMatrix.Am
-                    mask = ones(self.spectralRectangularGridSize) .* ~self.wvt.maskForNyquistModes() .* ~AA;
-                    mask(:,:,1) = 0; % no j=0 solution
-                    mask(1,1,:) = 0; % no inertial oscillations
+                case {WVCoefficientMatrix.Am,WVCoefficientMatrix.Ap}
+                    mask = ones(self.wvt.spectralMatrixSize);
+                    mask(self.wvt.Kh == 0 & self.wvt.J > 0) = 0; % no j=0 solution, no inertial oscillations
                 case WVCoefficientMatrix.A0
-                    mask = zeros(self.spectralRectangularGridSize);
+                    mask = zeros(self.wvt.spectralMatrixSize);
             end
         end
 
@@ -412,7 +403,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)
-            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap));
+            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
             ApmD = -sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm).* mask;
             ApmN = -(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm) .* mask;
         end
@@ -421,7 +412,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             [K,L,~] = self.wvt.kljGrid;
             alpha = atan2(L,K);
 
-            mask = self.wvt.transformFromRectangularGridToLinearGrid(self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap));
+            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
             UAp = (cos(alpha)-sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*sin(alpha)) .* mask;
             VAp = (sin(alpha)+sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*cos(alpha)) .* mask;
             WAp = -sqrt(-1)*self.wvt.Kh.*self.wvt.h_pm .* mask;

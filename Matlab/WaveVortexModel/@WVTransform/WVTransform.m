@@ -217,9 +217,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
 
-            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny]);
-            [self.primaryFFTindices,self.conjugateFFTindices,self.k,self.l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
-            self.Nkl = length(self.primaryFFTindices);
+            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias);
+            % [self.primaryFFTindices,self.conjugateFFTindices,self.k,self.l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
+            self.Nkl = self.horizontalGeometry.Nkl_wv;
+            self.k = self.horizontalGeometry.k_wv;
+            self.l = self.horizontalGeometry.l_wv;
 
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nj,self.Nkl);
@@ -240,6 +242,74 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
+        end
+
+        function bool = isValidModeNumber(self,kMode,lMode,jMode)
+            % returns a boolean indicating whether (k,l,j) is a valid mode number
+            %
+            % returns a boolean indicating whether (k,l,j) is a valid mode
+            % number
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: index = isValidModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Parameter jMode: non-negative integer
+            % - Returns index: a non-negative integer
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
+                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                bool (1,1) logical {mustBeMember(bool,[0 1])}
+            end
+            klCheck = self.horizontalGeometry.isValidWVModeNumber(kMode,lMode);
+            jCheck = jMode >= 0 & jMode <= self.Nj;
+            bool = klCheck & jCheck;
+        end
+
+        function index = indexFromModeNumber(self,kMode,lMode,jMode)
+            % return the linear index into a spectral matrix given (k,l,j)
+            %
+            % This function will return the linear index in a spectral
+            % matrix given a mode number.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: index = indexFromModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns index: a non-negative integer number
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
+                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                index (1,1) double {mustBeInteger,mustBePositive}
+            end
+            if ~self.isValidModeNumber(kMode,lMode,jMode)
+                error('Invalid WV mode number!');
+            end
+            klIndex = self.horizontalGeometry.linearWVIndexFromModeNumber(kMode,lMode);
+            index = sub2ind([self.Nj,self.Nkl],jMode+1,klIndex);
+        end
+
+        function [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                linearIndex (1,1) double {mustBeInteger,mustBePositive}
+            end
+            arguments (Output)
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
+                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            [jIndex,klIndex] = ind2sub([self.Nj self.Nkl],linearIndex);
+            [kMode,lMode] = self.horizontalGeometry.modeNumberFromWVIndex(klIndex);
+            jMode = jIndex - 1;
         end
 
         function Azkl = transformFromFFTGridToLinearGrid(self,Aklz)
@@ -611,7 +681,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function sz = spectralMatrixSize(self)
             % size of any spectral matrix, Ap, Am, A0
-            sz = [self.Nx self.Ny self.Nz];
+            sz = [self.Nj self.Nkl];
         end
 
         function [X,Y,Z] = xyzGrid(self)
