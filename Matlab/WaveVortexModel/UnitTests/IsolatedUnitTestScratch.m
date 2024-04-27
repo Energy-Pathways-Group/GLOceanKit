@@ -1,4 +1,5 @@
-wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5]);
 solutionGroup = WVInternalGravityWaveSolutionGroup(wvt);
 % solutionGroup = WVInertialOscillationSolutionGroup(wvt);
 

@@ -10,9 +10,9 @@
 %
 % April 12th, 2018      Version 1.0
 
-wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
-% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8, 8, 5]);
+wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [64 64 33]);
 wvt.initWithRandomFlow();
 
 % wvt.removeEnergyFromAliasedModes();
@@ -49,6 +49,7 @@ toc
 % 18:23 2024-02-04 remove squeeze: Elapsed time is 9.491209 s seconds.
 % 18:38 2024-02-04 precompute double MM: Elapsed time is 8.681165 seconds.
 % 08:09 2024-02-05 loop over kUnique: Elapsed time is 5.783941 seconds.
+% 10:00 2024-04-27 [Nj Nkl] and dealiasing refactor: Elapsed time is 2.961629 seconds.
 
 %%
 profile on
@@ -63,5 +64,6 @@ profile viewer
 % 18:23 2024-02-04 remove squeeze: Elapsed time is 2.725 s seconds.
 % 18:38 2024-02-04 precompute double MM: Elapsed time is 2.289  seconds.
 % 08:09 2024-02-05 loop over kUnique: Elapsed time is 1.649 seconds.
+% 13:23 2024-04-27 [Nj Nkl] and dealiasing refactor: Elapsed time is 0.886 seconds.
 % profile viewer
 

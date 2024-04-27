@@ -127,20 +127,20 @@ classdef WVTransformConstantStratification < WVTransform
         end
 
         function h = get.h_pm(self)
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
+            [K,L,J] = self.kljGrid;
             M = J*pi/self.Lz;
             if self.isHydrostatic == 1
                 h = (1/self.g)*(self.N0*self.N0)./(M.*M);
-                h(:,:,1) = 1; % prevent divide by zero
+                h(J==0) = 1; % prevent divide by zero
             else
                 K2 = K.*K + L.*L;
                 h = (1/self.g)*(self.N0*self.N0 - self.f*self.f)./(M.*M+K2);
-                h(:,:,1) = 1; % prevent divide by zero
+                h(J==0) = 1; % prevent divide by zero
             end
         end
 
         function h = get.h_0(self)
-            M = shiftdim(self.j,-2)*pi/self.Lz;
+            M = reshape(self.j,[],1)*pi/self.Lz;
             h = (1/self.g)*(self.N0*self.N0)./(M.*M);
             h(1) = self.Lz;
         end
@@ -148,7 +148,7 @@ classdef WVTransformConstantStratification < WVTransform
         function self = buildTransformationMatrices(self)
             % We renormalization the transformation matrices to directly
             % incorporate normalization of the modes and the DFT.          
-            [~,~,J] = ndgrid(self.k,self.l,self.j);
+            [~,~,J] = self.kljGrid;
             M = J*pi/self.Lz;
             N = self.N0;
             f = self.f; 
@@ -160,8 +160,8 @@ classdef WVTransformConstantStratification < WVTransform
             signNorm = -2*(mod(J,2) == 1)+1; % equivalent to (-1)^j
             self.F_g = signNorm .* ((self.h_0).*M)*sqrt(2*g_/(self.Lz*N*N));
             self.G_g = signNorm .* sqrt(2*g_/(self.Lz*N*N));
-            self.F_g(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
-            self.G_g(:,:,1) = 1; % j=0 mode doesn't exist for G
+            self.F_g(J==0) = 2; % j=0 mode is a factor of 2 too big in DCT-I
+            self.G_g(J==0) = 1; % j=0 mode doesn't exist for G
  
             if self.isHydrostatic == 1
                 F_w = self.F_g;
@@ -170,13 +170,13 @@ classdef WVTransformConstantStratification < WVTransform
                 F_w = signNorm .* ((self.h_pm).*M) * sqrt(2*g_/(self.Lz*(N*N-f*f)));
                 G_w = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
             end
-            F_w(:,:,1) = 2; % j=0 mode is a factor of 2 too big in DCT-I
-            G_w(:,:,1) = 1;
+            F_w(J==0) = 2; % j=0 mode is a factor of 2 too big in DCT-I
+            G_w(J==0) = 1;
             
             self.G_wg = self.G_g ./ G_w;
             self.F_wg = self.F_g ./ F_w;
 
-            buildTransformationMatrices@WVTransform(self);
+            % buildTransformationMatrices@WVTransform(self);
             self.buildTransformationMatricesNew;
         end
         
@@ -206,8 +206,7 @@ classdef WVTransformConstantStratification < WVTransform
             self.WAm = self.WAp;
             self.NAm = -self.NAp;
 
-            % This is not consistent with the new initialization model
-            self.iOmega = WVTransform.makeHermitian(sqrt(-1)*self.Omega);
+            self.iOmega = sqrt(-1)*self.Omega;
         end
   
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -343,7 +342,8 @@ classdef WVTransformConstantStratification < WVTransform
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            u = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
+            u_bar = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
+            u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
         end  
                 
         function w = transformToSpatialDomainWithG(self, options )
@@ -352,26 +352,51 @@ classdef WVTransformConstantStratification < WVTransform
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            w = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
+            w_bar = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
+            w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
         end
-        
+
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
+                options.Apm double = []
+                options.A0 double = []
             end
-            [u,ux,uy,uz] = self.transformToSpatialDomainWithFAllDerivatives_MM(options.Apm./self.F_wg + options.A0);
-        end  
-        
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options )
+            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
+            ux = self.diffX(u);
+            uy = self.diffY(u);
+            uz = self.diffZF(u);
+        end
+
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
+                options.Apm double = []
+                options.A0 double = []
             end
-            [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(options.Apm./self.G_wg + options.A0 );
+            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
+            wx = self.diffX(w);
+            wy = self.diffY(w);
+            wz = self.diffZG(w);
         end
+        
+        % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     [u,ux,uy,uz] = self.transformToSpatialDomainWithFAllDerivatives_MM(options.Apm./self.F_wg + options.A0);
+        % end  
+        % 
+        % function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options )
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     [w,wx,wy,wz] = self.transformToSpatialDomainWithGAllDerivatives_MM(options.Apm./self.G_wg + options.A0 );
+        % end
 
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
             % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
@@ -399,17 +424,20 @@ classdef WVTransformConstantStratification < WVTransform
             v_hat = self.transformFromSpatialDomainWithFourier(V);
             n_hat = self.transformFromSpatialDomainWithFourier(N);
 
+            iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
+            iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
+
             n_bar = self.transformFromSpatialDomainWithGg(n_hat);
-            zeta_bar = self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* v_hat - sqrt(-1)*shiftdim(self.l,-1) .* u_hat);
+            zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
             A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
             
-            delta_bar = self.G_wg.*self.h_0.*self.transformFromSpatialDomainWithFg(sqrt(-1)*self.k .* u_hat + sqrt(-1)*shiftdim(self.l,-1) .* v_hat);
+            delta_bar = self.G_wg.*self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat);
             nw_bar = self.G_wg.*(n_bar - A0);
             Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
             Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
 
-            Ap(1,1,:) = self.F_wg(1,1,:).*self.transformFromSpatialDomainWithFg1D(u_hat(1,1,:) - sqrt(-1)*v_hat(1,1,:))/2;
-            Am(1,1,:) = conj(Ap(1,1,:));
+            Ap(:,1) = self.F_wg(1,1,:).*self.transformFromSpatialDomainWithFg1D(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
+            Am(:,1) = conj(Ap(:,1));
 
             if nargin == 5
                 phase = exp(-self.iOmega*(t-self.t0));
@@ -427,6 +455,11 @@ classdef WVTransformConstantStratification < WVTransform
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
+        end
+
+        function u = transformToSpatialDomainWithFourier(self,u_bar)
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
         function u_bar = transformFromSpatialDomainWithFg1D(self,u)
@@ -442,67 +475,27 @@ classdef WVTransformConstantStratification < WVTransform
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self,u)
-            dims = size(u);
-            u = permute(u,[3 1 2]); % keep adjacent in memory
-            u = reshape(u,self.Nz,[]);
-            u_bar = self.DCT*u;
-            u_bar = reshape(u_bar,self.Nj,dims(1),dims(2));
-            u_bar = permute(u_bar,[2 3 1])./self.F_g;
+            u_bar = (self.DCT*u)./self.F_g;
         end
 
         function w_bar = transformFromSpatialDomainWithGg(self,w)
-            dims = size(w);
-            w = permute(w,[3 1 2]); % keep adjacent in memory
-            w = reshape(w,self.Nz,[]);
-            w_bar = self.DST*w;
-            w_bar = reshape(w_bar,self.Nj,dims(1),dims(2));
-            w_bar = permute(w_bar,[2 3 1])./self.G_g;
+            w_bar = (self.DST*w)./self.G_g;
         end
 
         function u_bar = transformFromSpatialDomainWithF_MM(self, u)
-            u = permute(u,[3 1 2]); % keep adjacent in memory
-            u = reshape(u,self.Nz,[]);
-            u_bar = self.DCT*u;
-            u_bar = reshape(u_bar,self.Nj,self.Nx,self.Ny);
-            u_bar = permute(u_bar,[2 3 1]);
-            u_bar = fft(fft(u_bar,self.Nx,1),self.Ny,2);
-            u_bar = (u_bar./self.F_g)/(self.Nx*self.Ny);
+            u_bar = (self.DCT*u)./self.F_g;
         end
         
         function w_bar = transformFromSpatialDomainWithG_MM(self, w)
-            % df = 1/(2*(Nz-1)*dz)
-            % nyquist = (Nz-2)*df
-            w = permute(w,[3 1 2]); % keep adjacent in memory
-            w = reshape(w,self.Nz,[]);
-            w_bar = self.DST*w;
-            w_bar = reshape(w_bar,self.Nj,self.Nx,self.Ny);
-            w_bar = permute(w_bar,[2 3 1]);
-            w_bar = fft(fft(w_bar,self.Nx,1),self.Ny,2);
-            w_bar = (w_bar./self.G_g)/(self.Nx*self.Ny);
+            w_bar = (self.DST*w)./self.G_g;
         end
         
         function u = transformToSpatialDomainWithF_MM(self, u_bar)
-            % All coefficients are subsumbed into the transform
-            % coefficients UAp,UAm,etc.
-            u_bar = self.F_g .* u_bar;
-            u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;    
-            u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
-            u_bar = reshape(u_bar,self.Nj,[]);
-            u = self.iDCT*u_bar;
-            u = reshape(u,self.Nz,self.Nx,self.Ny);
-            u = permute(u,[2 3 1]);
+            u = self.iDCT*(self.F_g .* u_bar);
         end  
                 
         function w = transformToSpatialDomainWithG_MM(self, w_bar )
-            % All coefficients are subsumbed into the transform
-            % coefficients NAp,NAm,etc.
-            w_bar = self.G_g .* w_bar;
-            w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric')*self.Nx*self.Ny;
-            w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
-            w_bar = reshape(w_bar,self.Nj,[]);
-            w = self.iDST*w_bar;
-            w = reshape(w,self.Nz,self.Nx,self.Ny);
-            w = permute(w,[2 3 1]);        
+            w = self.iDST*(self.G_g .* w_bar);      
         end
         
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives_MM(self, u_bar)
