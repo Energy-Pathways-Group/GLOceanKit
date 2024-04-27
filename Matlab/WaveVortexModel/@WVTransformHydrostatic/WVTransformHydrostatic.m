@@ -33,12 +33,6 @@ classdef WVTransformHydrostatic < WVTransform
         PFinvInterp, QGinvInterp
 
         A0Z, ApmD, ApmN
-        % Apm_TE_factor
-        % A0_HKE_factor
-        % A0_PE_factor
-        % A0_TE_factor
-        % A0_TZ_factor
-        % A0_QGPV_factor
     end
 
     properties (GetAccess=public)
@@ -46,8 +40,8 @@ classdef WVTransformHydrostatic < WVTransform
     end
 
     properties (Dependent)
-        h_0  % [Nk Nl Nj]
-        h_pm  % [Nk Nl Nj]
+        h_0  % [Nj 1]
+        h_pm  % [Nj 1]
         isHydrostatic
     end
         
@@ -296,8 +290,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.WAm = self.WAp;
             self.NAm = -self.NAp;
 
-            % This is not consistent with the new initialization model
-            self.iOmega = WVTransform.makeHermitian(sqrt(-1)*self.Omega);
+            self.iOmega = sqrt(-1)*self.Omega;
         end
 
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)

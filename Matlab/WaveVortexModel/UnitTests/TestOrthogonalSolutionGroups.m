@@ -10,7 +10,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         %transform = {'constant','hydrostatic','boussinesq'};
         transform = {'hydrostatic'};
         orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
-        % orthogonalSolutionGroup = {'WVMeanDensityAnomalySolutionGroup'}
+        % orthogonalSolutionGroup = {'WVInternalGravityWaveSolutionGroup'}
     end
 
     methods (TestClassSetup)
@@ -72,11 +72,15 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
     methods (Test)
         function testSolution(self,solutionIndex)
-            self.wvt.t =8426;
+            self.wvt.t=0;
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
             soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
 
+            % Advance forward in time to confirm that phases are correctly
+            % changing.
+            self.wvt.t = 86400;
+            args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
             self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
             self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
             self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');

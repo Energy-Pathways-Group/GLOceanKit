@@ -1295,7 +1295,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initFromNetCDFFile(self,ncfile,options)
 
         initWithUVRho(self,u,v,rho,t)
-        initWithUVEta(self,U,V,N,t)
+        initWithUVEta(self,U,V,N)
         addUVEta(self,U,V,N)
         initWithRandomFlow(self)
         

@@ -1,4 +1,4 @@
-function initWithUVEta(self,U,V,N,options)
+function initWithUVEta(self,U,V,N)
 % initialize with fluid variables $$(u,v,\eta)$$
 %
 % Replaces the variables Ap,Am,A0 with those computed from $$(u,v,\eta)$$.
@@ -15,18 +15,8 @@ arguments
     U (:,:,:) double {mustBeNonempty,mustBeReal}
     V (:,:,:) double {mustBeNonempty,mustBeReal}
     N (:,:,:) double {mustBeNonempty,mustBeReal}
-    options.t (1,1) double = 0
 end
 
-if isfield(options,'t')
-    self.t = options.t;
-    [Ap,Am,A0] = self.transformUVEtaToWaveVortex(U,V,N,options.t);
-else
-    [Ap,Am,A0] = self.transformUVEtaToWaveVortex(U,V,N,self.t);
-end
-
-self.Ap = Ap;
-self.Am = Am;
-self.A0 = A0;
+[self.Ap,self.Am,self.A0] = self.transformUVEtaToWaveVortex(U,V,N,self.t);
 
 end
