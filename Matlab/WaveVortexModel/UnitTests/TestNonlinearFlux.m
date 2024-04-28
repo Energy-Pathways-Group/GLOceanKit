@@ -30,6 +30,7 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
             spatialFlux = WVNonlinearFluxSpatial(self.wvt);
             standardFlux = WVNonlinearFlux(self.wvt,shouldAntialias=0);
 
+            self.wvt.t = 6000;
             [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(self.wvt);
             [StandardFp,StandardFm,StandardF0] = standardFlux.compute(self.wvt);
 
