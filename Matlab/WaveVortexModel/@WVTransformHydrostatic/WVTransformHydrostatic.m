@@ -31,8 +31,6 @@ classdef WVTransformHydrostatic < WVTransform
         
         zInterp
         PFinvInterp, QGinvInterp
-
-        A0Z, ApmD, ApmN
     end
 
     properties (GetAccess=public)
@@ -276,9 +274,6 @@ classdef WVTransformHydrostatic < WVTransform
             self.buildTransformationMatrices();
         end
                                 
-        u_z = diffZF(self,u,n);
-        w_z = diffZG(self,w,n);
-
         function h_0 = get.h_0(self)
             h_0 = self.h;
         end
@@ -294,92 +289,14 @@ classdef WVTransformHydrostatic < WVTransform
         Finv = FinvMatrix(self);
         Ginv = GinvMatrix(self);
 
-        function self = buildTransformationMatrices(self)
-            solutionGroup = WVGeostrophicSolutionGroup(self);
-            [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
-            [self.UA0,self.VA0,self.NA0,self.PA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
-
-            solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
-            A0N = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
-            NA0 = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
-            self.A0N = self.A0N + A0N;
-            self.NA0 = self.NA0 + NA0;
-            self.PA0 = self.PA0 + NA0;
-
-            solutionGroup = WVInternalGravityWaveSolutionGroup(self);
-            [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
-            [self.UAp,self.VAp,self.WAp,self.NAp] = solutionGroup.internalGravityWaveSpatialTransformCoefficients;
-
-            solutionGroup = WVInertialOscillationSolutionGroup(self);
-            [UAp,VAp] = solutionGroup.inertialOscillationSpatialTransformCoefficients;
-            self.UAp = self.UAp + UAp;
-            self.VAp = self.VAp + VAp;
-
-            self.UAm = conj(self.UAp);
-            self.VAm = conj(self.VAp);
-            self.WAm = self.WAp;
-            self.NAm = -self.NAp;
-
-            self.iOmega = sqrt(-1)*self.Omega;
-        end
-
-        function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
-            % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
-            %
-            % This function **is** the WVTransform. It is a [linear
-            % transformation](/mathematical-introduction/transformations.html)
-            % denoted $$\mathcal{L}$$.
-            %
-            % This function is not intended to be used directly (although
-            % you can), and is kept here to demonstrate a simple
-            % implementation of the transformation. Instead, you should
-            % initialize the WVTransform using one of the
-            % initialization functions.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
-            % - Parameter u: x-component of the fluid velocity
-            % - Parameter v: y-component of the fluid velocity
-            % - Parameter n: scaled density anomaly
-            % - Parameter t: (optional) time of observations
-            % - Returns Ap: positive wave coefficients at reference time t0
-            % - Returns Am: negative wave coefficients at reference time t0
-            % - Returns A0: geostrophic coefficients at reference time t0
-            u_hat = self.transformFromSpatialDomainWithFourier(U);
-            v_hat = self.transformFromSpatialDomainWithFourier(V);
-            n_hat = self.transformFromSpatialDomainWithFourier(N);
-
-            iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
-            iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
-
-            n_bar = self.transformFromSpatialDomainWithGg(n_hat);
-            zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
-            A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
-            
-            delta_bar = self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat);
-            nw_bar = (n_bar - A0);
-            Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
-            Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
-
-            Ap(:,1) = self.transformFromSpatialDomainWithFg(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
-            Am(:,1) = conj(Ap(:,1));
-
-            if nargin == 5
-                phase = exp(-self.iOmega*(t-self.t0));
-                Ap = Ap .* phase;
-                Am = Am .* conj(phase);
-            end
-        end
-   
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations TO0 the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function u_bar = transformFromSpatialDomainWithFourier(self,u)
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
+        function u_bar = transformFromSpatialDomainWithFio(self, u)
+            u_bar = (self.PF*u)./self.P;
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
@@ -390,15 +307,14 @@ classdef WVTransformHydrostatic < WVTransform
             w_bar = (self.QG*w)./self.Q;
         end
 
+        function w_bar = transformWithG_wg(~, w_bar )
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations FROM the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-
-        function u = transformToSpatialDomainWithFourier(self,u_bar)
-            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
-        end
 
         function u = transformToSpatialDomainWithF(self, options)
             arguments
@@ -422,30 +338,6 @@ classdef WVTransformHydrostatic < WVTransform
             w_zkl = self.QGinv*w_jkl;
             w_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(w_zkl);
             w = self.transformToSpatialDomainWithFourier(w_klz);
-        end
-
-        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double = []
-            end
-            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
-            ux = self.diffX(u);
-            uy = self.diffY(u);
-            uz = self.diffZF(u);
-        end  
-        
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double = []
-            end
-            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
-            wx = self.diffX(w);
-            wy = self.diffY(w);
-            wz = self.diffZG(w);
         end
 
         % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
@@ -571,8 +463,6 @@ classdef WVTransformHydrostatic < WVTransform
             w = reshape(w,length(self.zInterp),self.Nx,self.Ny);
             w = permute(w,[2 3 1]);
         end
-        
-        
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

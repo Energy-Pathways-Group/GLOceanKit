@@ -80,9 +80,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         ongridModes % This is a cached copy 
         version = 3.0;
 
-        ApU, ApV, ApN
-        AmU, AmV, AmN
-        A0U, A0V, A0N
+        A0Z, ApmD, ApmN, A0N
         
         UAp, UAm, UA0
         VAp, VAm, VA0
@@ -132,19 +130,22 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     properties (Abstract,GetAccess=public) 
-        h_0  % [Nk Nl Nj]
-        h_pm  % [Nk Nl Nj]
+        h_0  % [Nj Nkl]
+        h_pm  % [Nj Nkl]
         isHydrostatic
         iOmega
     end
     
     methods (Abstract)
-        % u_bar = transformFromSpatialDomainWithF(self, u)
-        % w_bar = transformFromSpatialDomainWithG(self, w)
+        % Required for transformUVEtaToWaveVortex 
+        u_bar = transformFromSpatialDomainWithFio(self,u)
+        u_bar = transformFromSpatialDomainWithFg(self, u)
+        w_bar = transformFromSpatialDomainWithGg(self, w)
+        w_bar = transformWithG_wg(self, w_bar )
+
+        % Required for transformWaveVortexToUVEta
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
-        [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
-        [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options )
 
         % Needed to add and remove internal waves from the model
         ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
@@ -772,6 +773,35 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             value=self.Ny;
         end
           
+        function self = buildTransformationMatrices(self)
+            solutionGroup = WVGeostrophicSolutionGroup(self);
+            [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
+            [self.UA0,self.VA0,self.NA0,self.PA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
+
+            solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
+            A0Nmda = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
+            NA0mda = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
+            self.A0N = self.A0N + A0Nmda;
+            self.NA0 = self.NA0 + NA0mda;
+            self.PA0 = self.PA0 + NA0mda;
+
+            solutionGroup = WVInternalGravityWaveSolutionGroup(self);
+            [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
+            [self.UAp,self.VAp,self.WAp,self.NAp] = solutionGroup.internalGravityWaveSpatialTransformCoefficients;
+
+            solutionGroup = WVInertialOscillationSolutionGroup(self);
+            [UAp_io,VAp_io] = solutionGroup.inertialOscillationSpatialTransformCoefficients;
+            self.UAp = self.UAp + UAp_io;
+            self.VAp = self.VAp + VAp_io;
+
+            self.UAm = conj(self.UAp);
+            self.VAm = conj(self.VAp);
+            self.WAm = self.WAp;
+            self.NAm = -self.NAp;
+
+            self.iOmega = sqrt(-1)*self.Omega;
+        end
+
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
             % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
             %
@@ -794,13 +824,24 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns Ap: positive wave coefficients at reference time t0
             % - Returns Am: negative wave coefficients at reference time t0
             % - Returns A0: geostrophic coefficients at reference time t0
-            u_hat = self.transformFromSpatialDomainWithF(U);
-            v_hat = self.transformFromSpatialDomainWithF(V);
-            n_hat = self.transformFromSpatialDomainWithG(N);
+            u_hat = self.transformFromSpatialDomainWithFourier(U);
+            v_hat = self.transformFromSpatialDomainWithFourier(V);
+            n_hat = self.transformFromSpatialDomainWithFourier(N);
+
+            iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
+            iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
+
+            n_bar = self.transformFromSpatialDomainWithGg(n_hat);
+            zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
+            A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
             
-            Ap = self.ApU.*u_hat + self.ApV.*v_hat + self.ApN.*n_hat;
-            Am = self.AmU.*u_hat + self.AmV.*v_hat + self.AmN.*n_hat;
-            A0 = self.A0U.*u_hat + self.A0V.*v_hat + self.A0N.*n_hat;
+            delta_bar = self.transformWithG_wg(self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat));
+            nw_bar = self.transformWithG_wg(n_bar - A0);
+            Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
+            Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
+
+            Ap(:,1) = self.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
+            Am(:,1) = conj(Ap(:,1));
 
             if nargin == 5
                 phase = exp(-self.iOmega*(t-self.t0));
@@ -847,6 +888,39 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             N = self.transformToSpatialDomainWithG(Apm=self.NAp.*Ap + self.NAm.*Am, A0=self.NA0.*A0);
         end
 
+        function u_bar = transformFromSpatialDomainWithFourier(self,u)
+            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
+        end
+
+        function u = transformToSpatialDomainWithFourier(self,u_bar)
+            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+        end
+
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
+            ux = self.diffX(u);
+            uy = self.diffY(u);
+            uz = self.diffZF(u);
+        end
+
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
+            wx = self.diffX(w);
+            wy = self.diffY(w);
+            wz = self.diffZG(w);
+        end
+
         function [Apt,Amt,A0t] = waveVortexCoefficientsAtTimeT(self)
             phase = exp(self.iOmega*(self.t-self.t0));
             Apt = self.Ap .* phase;
@@ -873,7 +947,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         u_z = diffZF(self,u,n);
-        u_z = diffZG(self,u,n);
+        w_z = diffZG(self,w,n);
         
 
         function set.nonlinearFluxOperation(self,value)
