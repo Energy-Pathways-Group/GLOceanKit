@@ -217,6 +217,7 @@ classdef WVTransformHydrostatic < WVTransform
             % Now go compute the appropriate number of modes at the
             % quadrature points.
             [Finv,Ginv,self.h] = self.internalModes.ModesAtFrequency(0);
+            nModes = size(Finv,2);
             
             % Make these matrices invertible by adding the barotropic mode
             % to F, and removing the boundaries of G.
@@ -247,11 +248,11 @@ classdef WVTransformHydrostatic < WVTransform
             
             % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
             % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.Nj-1),self.QGinv,zeros(1,self.Nj-1)));
+            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,nModes-1),self.QGinv,zeros(1,nModes-1)));
 
             % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
             % mode, but also need zeros for the boundary
-            self.QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(self.Nj,1));
+            self.QG = cat(2,zeros(nModes,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(nModes,1));
 
             % want size(h)=[Nj 1]
             self.h = cat(1,1,reshape(self.h(1:end-1),[],1)); % remove the extra mode at the end
@@ -259,17 +260,13 @@ classdef WVTransformHydrostatic < WVTransform
             self.P = reshape(self.P(1:end-1),[],1);
             self.Q = reshape(cat(2,1,self.Q),[],1);
 
-            self.buildTransformationMatrices();
-        end
-
-        function self = SetProjectionOperators(self, PFinv, QGinv, PF, QG, P, Q, h)
-             self.PFinv = PFinv;
-             self.QGInv = QGinv;
-             self.PF = PF;
-             self.QG = QG;
-             self.P = P;
-             self.Q = Q;
-             self.h = h;
+            self.PFinv = self.PFinv(:,1:self.Nj);
+            self.PF = self.PF(1:self.Nj,:);
+            self.P = self.P(1:self.Nj,1);
+            self.QGinv = self.QGinv(:,1:self.Nj);
+            self.QG = self.QG(1:self.Nj,:);
+            self.Q = self.Q(1:self.Nj,1);
+            self.h = self.h(1:self.Nj,1);
 
             self.buildTransformationMatrices();
         end

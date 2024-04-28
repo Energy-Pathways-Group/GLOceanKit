@@ -257,6 +257,8 @@ classdef WVTransformBoussinesq < WVTransform
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsWithRigidLid(self,Finv,Ginv,h)
+            nModes = size(Finv,2);
+
             % Make these matrices invertible by adding the barotropic mode
             % to F, and removing the boundaries of G.
             Finv = cat(2,ones(self.Nz,1),Finv);
@@ -286,17 +288,25 @@ classdef WVTransformBoussinesq < WVTransform
 
             % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
             % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,self.Nj-1),QGinv,zeros(1,self.Nj-1)));
+            QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,nModes-1),QGinv,zeros(1,nModes-1)));
 
             % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
             % mode, but also need zeros for the boundary
-            QG = cat(2,zeros(self.Nj,1), cat(1,zeros(1,self.Nz-2),QG),zeros(self.Nj,1));
+            QG = cat(2,zeros(nModes,1), cat(1,zeros(1,self.Nz-2),QG),zeros(nModes,1));
 
             % want size(h)=[Nj 1]
             h = cat(1,1,reshape(h(1:end-1),[],1)); % remove the extra mode at the end
 
             P = reshape(P(1:end-1),[],1);
             Q = reshape(cat(2,1,Q),[],1);
+
+            PFinv = PFinv(:,1:self.Nj);
+            PF = PF(1:self.Nj,:);
+            P = P(1:self.Nj,1);
+            QGinv = QGinv(:,1:self.Nj);
+            QG = QG(1:self.Nj,:);
+            Q = Q(1:self.Nj,1);
+            h = h(1:self.Nj,1);
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsWithFreeSurface(self,Finv,Ginv,h)
@@ -346,19 +356,6 @@ classdef WVTransformBoussinesq < WVTransform
 
             P = shiftdim(P(1:end-1),-1);
             Q = shiftdim(Q,-1);
-        end
-
-
-        function self = SetProjectionOperators(self, PFinv, QGinv, PF, QG, P, Q, h)
-             self.PF0inv = PFinv;
-             self.QGInv = QGinv;
-             self.PF0 = PF;
-             self.QG0 = QG;
-             self.P0 = P;
-             self.Q0 = Q;
-             self.h_0 = h;
-
-            self.buildTransformationMatrices();
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

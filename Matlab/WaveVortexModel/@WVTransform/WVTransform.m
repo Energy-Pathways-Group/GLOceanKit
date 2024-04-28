@@ -201,6 +201,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 options.Nj (1,1) double {mustBePositive} = length(z)
                 options.Nmax (1,1) double {mustBePositive} = Inf
                 options.shouldAntialias double = 1
+                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
             end
             
             % These first properties are directly set on initialization
@@ -214,12 +215,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.latitude = options.latitude;
             self.rho0 = options.rho0;
-            self.Nj = options.Nj;
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
+            if self.shouldAntialias == 1
+                self.Nj = floor(options.jAliasingFraction*options.Nj);
+            else
+                self.Nj = options.Nj;
+            end
 
             self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias);
-            % [self.primaryFFTindices,self.conjugateFFTindices,self.k,self.l] = self.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=options.shouldAntialias);
             self.Nkl = self.horizontalGeometry.Nkl_wv;
             self.k = self.horizontalGeometry.k_wv;
             self.l = self.horizontalGeometry.l_wv;
@@ -1185,6 +1189,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 dof = WVGeometryDoublyPeriodic.degreesOfFreedomForRealMatrix(self.Nx,self.Ny,self.conjugateDimension);
                 discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nz-1);
                 discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nz-3);
+
+                
+
+                % discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nj);
+                % discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nj-2);
+
+                % discardedDOFVertical = 2*(discardedDOFUV_Nz-discardedDOFUV) + discardedDOFEta_Nz-discardedDOFEta;
+
                 discardedDOF = 2*discardedDOFUV + discardedDOFEta;
                 fprintf('There are %d modes discarded to prevent quadradic aliasing.\n',discardedDOF);
                 fprintf('Active (%d) + aliased (%d) modes = %d modes\n',totalDOF,discardedDOF,discardedDOF+totalDOF);

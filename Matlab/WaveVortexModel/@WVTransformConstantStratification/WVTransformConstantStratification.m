@@ -89,13 +89,15 @@ classdef WVTransformConstantStratification < WVTransform
 
             if 1 == 1
                 self.DCT = CosineTransformForwardMatrix(self.Nz);
-                self.DCT = self.DCT(1:end-1,:); % dump the Nyquist mode
+                self.DCT = self.DCT(1:self.Nj,:); % dump the Nyquist mode
                 self.iDCT = CosineTransformBackMatrix(self.Nz);
-                self.iDCT = self.iDCT(:,1:end-1); % dump the Nyquist mode
+                self.iDCT = self.iDCT(:,1:self.Nj); % dump the Nyquist mode
                 self.DST = SineTransformForwardMatrix(self.Nz);
                 self.DST = cat(1,zeros(1,self.Nz),self.DST);
+                self.DST = self.DST(1:self.Nj,:);
                 self.iDST = SineTransformBackMatrix(self.Nz);
                 self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
+                self.iDST = self.iDST(:,1:self.Nj);
             end
 
             % 
