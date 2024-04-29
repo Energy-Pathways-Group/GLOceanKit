@@ -81,9 +81,9 @@ classdef WVTransformHydrostatic < WVTransform
                 options.QGinv
                 options.PF
                 options.QG
-                options.h (1,1,:) double
-                options.P (1,1,:) double
-                options.Q (1,1,:) double
+                options.h (:,1) double
+                options.P (:,1) double
+                options.Q (:,1) double
                 options.z (:,1) double
             end
                      
@@ -479,6 +479,21 @@ classdef WVTransformHydrostatic < WVTransform
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 
+        function flag = isequal(self,other)
+            arguments
+                self WVTransform
+                other WVTransform
+            end
+            flag = isequal@WVTransform(self,other);
+            flag = flag & isequal(self.dLnN2, other.dLnN2);
+            flag = flag & isequal(self.PFinv, other.PFinv);
+            flag = flag & isequal(self.QGinv, other.QGinv);
+            flag = flag & isequal(self.PF,other.PF);
+            flag = flag & isequal(self.QG,other.QG);
+            flag = flag & isequal(self.P, other.P);
+            flag = flag & isequal(self.Q, other.Q);
+            flag = flag & isequal(self.h, other.h);
+        end
     end
 
     methods (Static)

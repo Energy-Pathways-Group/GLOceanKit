@@ -67,8 +67,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         isBarotropic = 0
 
         horizontalGeometry
-        primaryFFTindices
-        conjugateFFTindices
 
         % maximum buoyancy frequency (radians/s)
         Nmax
@@ -103,6 +101,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (Dependent, SetAccess=private)
         x, y
         % k, l
+        kl
         dk, dl
         j
         kRadial
@@ -315,40 +314,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             [jIndex,klIndex] = ind2sub([self.Nj self.Nkl],linearIndex);
             [kMode,lMode] = self.horizontalGeometry.modeNumberFromWVIndex(klIndex);
             jMode = jIndex - 1;
-        end
-
-        function Azkl = transformFromFFTGridToLinearGrid(self,Aklz)
-            Aklz = reshape(Aklz,[self.Nx*self.Ny self.Nz]);
-            Azkl = zeros(self.Nz,self.Nkl);
-            for iK=1:self.Nkl
-                Azkl(:,iK) = Aklz(self.primaryFFTindices(iK),:);
-            end
-        end
-
-        function Aklz = transformFromLinearGridToFFTGrid(self,Azkl)
-            Aklz = zeros(self.Nx*self.Ny,self.Nz);
-            for iK=1:self.Nkl
-                Aklz(self.primaryFFTindices(iK),:) = Azkl(:,iK);
-                Aklz(self.conjugateFFTindices(iK),:) = conj(Azkl(:,iK));
-            end
-            Aklz = reshape(Aklz,[self.Nx self.Ny self.Nz]);
-        end
-
-        function Ajkl = transformFromRectangularGridToLinearGrid(self,Aklj)
-            Aklj = reshape(Aklj,[self.Nx*self.Ny self.Nj]);
-            Ajkl = zeros(self.Nj,self.Nkl);
-            for iK=1:self.Nkl
-                Ajkl(:,iK) = Aklj(self.primaryFFTindices(iK),:);
-            end
-        end
-
-        function Aklj = transformFromLinearGridToRectangularGrid(self,Ajkl)
-            Aklj = zeros(self.Nx*self.Ny,self.Nj);
-            for iK=1:self.Nkl
-                Aklj(self.primaryFFTindices(iK),:) = Ajkl(:,iK);
-                Aklj(self.conjugateFFTindices(iK),:) = conj(Ajkl(:,iK));
-            end
-            Aklj = reshape(Aklj,[self.Nx self.Ny self.Nj]);
         end
 
         function addDimensionAnnotations(self,dimensionAnnotation)
@@ -761,6 +726,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function j = get.j(self)
             j = (0:(self.Nj-1))';
+        end
+
+        function kl = get.kl(self)
+            kl = (0:(self.Nkl-1))';
         end
 
         function kRadial = get.kRadial(self)
@@ -1281,6 +1250,28 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
         
+        function flag = isequal(self,other)
+            arguments
+                self WVTransform
+                other WVTransform
+            end
+            flag = isequal(self.shouldAntialias, other.shouldAntialias);
+            flag = flag & isequal(class(self),class(other));
+            flag = flag & isequal(self.x, other.x);
+            flag = flag & isequal(self.y, other.y);
+            flag = flag & isequal(self.z,other.z);
+            flag = flag & isequal(self.j, other.j);
+            flag = flag & isequal(self.k, other.k);
+            flag = flag & isequal(self.l, other.l);
+            flag = flag & isequal(self.t, other.t);
+            flag = flag & isequal(self.t0, other.t0);
+            flag = flag & isequal(self.rho0, other.rho0);
+            flag = flag & isequal(self.Ap, other.Ap);
+            flag = flag & isequal(self.Am, other.Am);
+            flag = flag & isequal(self.A0, other.A0);
+            flag = flag & isequal(self.conjugateDimension, other.conjugateDimension);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Add and remove off-grid internal waves

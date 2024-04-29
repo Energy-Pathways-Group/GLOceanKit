@@ -24,7 +24,7 @@ phi=pi/3;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for iTransform=2
+for iTransform=3
     if iTransform==1
         wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0=N0,latitude=latitude);
 
@@ -43,9 +43,10 @@ for iTransform=2
         N2 = @(z) N0*N0*ones(size(z));
         wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=latitude);
 
-        U = .2;
-        omega = wvt.initWithWaveModes(10,0,1,phi,U,1);
-		period = 2*pi/omega;
+        wvt.initWithRandomFlow();
+        % U = .2;
+        % omega = wvt.initWithWaveModes(k=10,l=0,j=1,phi=phi,u=U,sign=1);
+		% period = 2*pi/omega;
     end
 
     wvt.writeToFile('test.nc',shouldOverwriteExisting=1);

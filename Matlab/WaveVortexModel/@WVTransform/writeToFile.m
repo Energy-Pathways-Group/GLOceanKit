@@ -49,7 +49,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end
     ncfile = NetCDFFile(path,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
-    dims = {'x','y','z','k','l','j'};
+    dims = {'x','y','z','kl','j'};
     for iDim=1:length(dims)
         dimAnnotation = wvt.dimensionAnnotationWithName(dims{iDim});
         dimAnnotation.attributes('units') = dimAnnotation.units;
@@ -64,7 +64,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     ncfile.addAttribute('references','Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995');
     ncfile.addAttribute('WVTransform',class(wvt));
 
-    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz'};
+    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz','k','l'};
     variables = union(variables,attributesToWrite);
 
     if options.shouldAddDefaultVariables == 1

@@ -25,9 +25,9 @@ dimensions(end).attributes('standard_name') = 'height_above_mean_sea_level';
 dimensions(end).attributes('positive') = 'up';
 dimensions(end).attributes('axis') = 'Z';
 
-dimensions(end+1) = WVDimensionAnnotation('kl', 'rad/m', 'interleaved wavenumber coordinate');
-dimensions(end+1) = WVDimensionAnnotation('k', 'rad/m', 'wavenumber coordinate in the x-direction');
-dimensions(end+1) = WVDimensionAnnotation('l', 'rad/m', 'wavenumber coordinate in the y-direction');
+dimensions(end+1) = WVDimensionAnnotation('kl', 'unitless', 'dimension of the interleaved k-l wavenumber coordinate');
+% dimensions(end+1) = WVDimensionAnnotation('k', 'rad/m', 'wavenumber coordinate in the x-direction');
+% dimensions(end+1) = WVDimensionAnnotation('l', 'rad/m', 'wavenumber coordinate in the y-direction');
 dimensions(end+1) = WVDimensionAnnotation('j', 'mode number', 'vertical mode number');
 dimensions(end+1) = WVDimensionAnnotation('kRadial', 'rad/m', 'isotropic wavenumber dimension');
 
