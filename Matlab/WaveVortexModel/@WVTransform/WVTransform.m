@@ -116,8 +116,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     properties %(Access=private)
-        halfK = 0;
-
         variableAnnotationNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
@@ -200,7 +198,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 options.Nj (1,1) double {mustBePositive} = length(z)
                 options.Nmax (1,1) double {mustBePositive} = Inf
                 options.shouldAntialias double = 1
-                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
             end
             
             % These first properties are directly set on initialization
@@ -216,12 +213,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.rho0 = options.rho0;
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
-            if self.shouldAntialias == 1
-                self.Nj = floor(options.jAliasingFraction*options.Nj);
-            else
-                self.Nj = options.Nj;
-            end
-
+            self.Nj = options.Nj;
             self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias);
             self.Nkl = self.horizontalGeometry.Nkl_wv;
             self.k = self.horizontalGeometry.k_wv;
@@ -1352,7 +1344,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
-        ncfile = writeToFile(self,netcdfFile,variables,options);
+        [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
 
     end
 

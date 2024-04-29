@@ -73,6 +73,7 @@ classdef WVTransformHydrostatic < WVTransform
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.shouldAntialias double = 1
+                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
 
                 % ALL of these must be set for direct initialization to
                 % avoid actually computing the modes.
@@ -87,18 +88,19 @@ classdef WVTransformHydrostatic < WVTransform
                 options.z (:,1) double
             end
                      
-            nModes = Nxyz(3)-1;
-            
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
             canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
 
             if canInitializeDirectly
+                fprintf('Initialize the WVTransformHydrostatic directly from matrices.\n');
                 % We already know the quadrature points
                 z = options.z;
                 N2 = options.N2(z);
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=Nxyz(3)-1);
+                Nj = size(options.PF,1);
             else
+                nModes = Nxyz(3)-1;
                 % Before initializing the superclass, we need to find the
                 % Gauss-quadrature points for this stratification profile.
                 Nz = Nxyz(3);
@@ -134,12 +136,18 @@ classdef WVTransformHydrostatic < WVTransform
                     N2func = im.N2_function;
                     rhoFunc = options.rho;
                 end
+
+                if options.shouldAntialias == 1
+                    Nj = floor(options.jAliasingFraction*nModes);
+                else
+                    Nj = nModes;
+                end
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
 
             % This is enough information to initialize the superclass
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)),shouldAntialias=options.shouldAntialias);
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,Nmax=sqrt(max(N2)),shouldAntialias=options.shouldAntialias);
 
             if canInitializeDirectly
                 self.rhoFunction = im.rho_function;
@@ -185,6 +193,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
             self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
             self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification'));
 
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
             outputVar.attributes('short_name') = 'ocean_relative_vorticity';

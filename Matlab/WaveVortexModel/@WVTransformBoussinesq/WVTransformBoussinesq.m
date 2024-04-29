@@ -25,7 +25,6 @@ classdef WVTransformBoussinesq < WVTransform
 
 
         K2unique     % unique squared-wavenumbers
-        nK2unique    % number of unique squared-wavenumbers
         iK2unique    % map from 2-dim K2, to 1-dim K2unique
         K2uniqueK2Map % cell array Nk in length. Each cell contains indices back to K2
 
@@ -38,6 +37,10 @@ classdef WVTransformBoussinesq < WVTransform
 
         zInterp
         PFinvInterp, QGinvInterp
+    end
+
+    properties (Dependent, SetAccess=private)
+        nK2unique    % number of unique squared-wavenumbers
     end
 
     properties (GetAccess=public)
@@ -58,32 +61,44 @@ classdef WVTransformBoussinesq < WVTransform
                 options.dLnN2func function_handle = @disp
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                options.shouldAntialias double = 1
+                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
 
                 % ALL of these must be set for direct initialization to
                 % avoid actually computing the modes.
                 options.dLnN2 (:,1) double
-                options.PFinv
-                options.QGinv
-                options.PF
-                options.QG
-                options.h (1,1,:) double
-                options.P (1,1,:) double
-                options.Q (1,1,:) double
-                options.z (:,1) double
+                options.PF0inv
+                options.QG0inv
+                options.PF0
+                options.QG0
+                options.h_0
+                options.P0
+                options.Q0
+                options.z 
+                options.PFpmInv
+                options.QGpmInv
+                options.PFpm
+                options.QGpm
+                options.h_pm
+                options.Ppm 
+                options.Qpm 
+                options.QGwg 
             end
-                     
-            nModes = Nxyz(3)-1;
-            
+
+
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
-            canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
+            canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PF0inv','QG0inv','PF0','QG0','h_0','P0','Q0','z','PFpmInv','QGpmInv','PFpm','QGpm','h_pm','Ppm','Qpm','QGwg'}));
 
             if canInitializeDirectly
+                fprintf('Initialize the WVTransformHydrostatic directly from matrices.\n');
                 % We already know the quadrature points
                 z = options.z;
                 N2 = options.N2(z);
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=Nxyz(3)-1);
+                Nj = size(options.PF0,1);
             else
+                nModes = Nxyz(3)-1;
                 % Before initializing the superclass, we need to find the
                 % Gauss-quadrature points for this stratification profile.
                 Nz = Nxyz(3);
@@ -119,12 +134,18 @@ classdef WVTransformBoussinesq < WVTransform
                     N2func = im.N2_function;
                     rhoFunc = options.rho;
                 end
+
+                if options.shouldAntialias == 1
+                    Nj = floor(options.jAliasingFraction*nModes);
+                else
+                    Nj = nModes;
+                end
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
 
             % This is enough information to initialize the superclass
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=sqrt(max(N2)));
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,Nmax=sqrt(max(N2)));
 
             if canInitializeDirectly
                 self.rhoFunction = im.rho_function;
@@ -135,13 +156,34 @@ classdef WVTransformBoussinesq < WVTransform
                 self.N2 = self.N2Function(self.z);
                 self.dLnN2 = options.dLnN2;
 
-                self.PF0inv = options.PFinv;
-                self.QG0inv = options.QGinv;
-                self.PF0 = options.PF;
-                self.QG0 = options.QG;
-                self.h_0 = options.h;
-                self.P0 = options.P;
-                self.Q0 = options.Q;
+                self.PF0inv = options.PF0inv;
+                self.QG0inv = options.QG0inv;
+                self.PF0 = options.PF0;
+                self.QG0 = options.QG0;
+                self.h_0 = options.h_0;
+                self.P0 = options.P0;
+                self.Q0 = options.Q0;
+
+                self.PFpmInv = options.PFpmInv;
+                self.QGpmInv = options.QGpmInv;
+                self.PFpm = options.PFpm;
+                self.QGpm = options.QGpm;
+                self.h_pm = options.h_pm;
+                self.Ppm = options.Ppm;
+                self.Qpm = options.Qpm;
+                self.QGwg = options.QGwg;
+
+                % K2unique are the unique wavenumbers (sorted)
+                % iK2unique is the same size as K2, but are the indices for
+                % the K2unique matrix to recreate/map back to K2unique.
+                Kh = self.Kh;
+                K2 = reshape((Kh(1,:)).^2,[],1);
+                [self.K2unique,~,self.iK2unique] = unique(K2);
+                self.iK2unique = reshape(self.iK2unique,size(K2));
+                self.K2uniqueK2Map = cell(length(self.K2unique),1);
+                for iK=1:length(self.K2unique)
+                    self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
+                end
 
                 self.buildTransformationMatrices();
             else
@@ -163,10 +205,9 @@ classdef WVTransformBoussinesq < WVTransform
                 % iK2unique is the same size as K2, but are the indices for
                 % the K2unique matrix to recreate/map back to K2unique.
                 Kh = self.Kh;
-                K2 = (Kh(1,:)).^2;
+                K2 = reshape((Kh(1,:)).^2,[],1);
                 [self.K2unique,~,self.iK2unique] = unique(K2);
                 self.iK2unique = reshape(self.iK2unique,size(K2));
-                self.nK2unique = length(self.K2unique);
                 self.K2uniqueK2Map = cell(length(self.K2unique),1);
                 for iK=1:length(self.K2unique)
                     self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
@@ -177,14 +218,32 @@ classdef WVTransformBoussinesq < WVTransform
 
             self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
-            self.addPropertyAnnotations(WVPropertyAnnotation('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PF0',{'j','z'},'','Preconditioned F-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QG0',{'j','z'},'','Preconditioned G-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification'));
+
+            self.addDimensionAnnotations(WVDimensionAnnotation('K2unique', 'rad/m', 'unique horizontal wavenumbers (sorted)'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('iK2unique',{'kl'},'index', 'index for the K2 unique matrix'));
+
+            self.addPropertyAnnotations(WVPropertyAnnotation('PFpmInv',{'z','j','K2unique'},'','Preconditioned F-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QGpmInv',{'z','j','K2unique'},'','Preconditioned G-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PFpm',{'j','z','K2unique'},'','Preconditioned F-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QGpm',{'j','z','K2unique'},'','Preconditioned G-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('Ppm',{'j','K2unique'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('Qpm',{'j','K2unique'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QGwg',{'j','j','K2unique'},'','Transformation from geostrophic to wave-modes'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('h_pm',{'j','kl'},'m', 'equivalent depth of each wave mode', detailedDescription='- topic: Domain Attributes — Stratification'));
+
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
+        end
+
+        function value = get.nK2unique(self)
+            value=length(self.K2unique);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)

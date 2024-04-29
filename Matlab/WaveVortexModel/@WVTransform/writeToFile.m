@@ -14,17 +14,22 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     % - Parameter variables: strings of variable names.
     % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0. 
     % - Parameter shouldAddDefaultVariables: (optional) boolean indicating whether or not add default variables `A0`,`Ap`,`Am`,`t`. Default 1.
-    arguments
+    arguments (Input)
         wvt WVTransform {mustBeNonempty}
         path char {mustBeNonempty}
     end
-    arguments (Repeating)
+    arguments (Input,Repeating)
         variables char
     end
-    arguments
+    arguments (Input)
         options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
         options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1 
         options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
+        options.dimensions = {}
+    end
+    arguments (Output)
+        ncfile NetCDFFile
+        matFilePath char
     end
     % Will not add 't' by default to allow for alternative definitions. Do
     % include 't' in the option input arguments if you want it written.
@@ -49,7 +54,17 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     end
     ncfile = NetCDFFile(path,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
-    dims = {'x','y','z','kl','j'};
+    if ~iscell(options.dimensions)
+        if isempty(options.dimensions)
+            dimensions = {};
+        else
+            dimensions = {options.dimensions};
+        end
+    else
+        dimensions = options.dimensions;
+    end
+
+    dims = union(dimensions,{'x','y','z','kl','j'});
     for iDim=1:length(dims)
         dimAnnotation = wvt.dimensionAnnotationWithName(dims{iDim});
         dimAnnotation.attributes('units') = dimAnnotation.units;
@@ -64,7 +79,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     ncfile.addAttribute('references','Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995');
     ncfile.addAttribute('WVTransform',class(wvt));
 
-    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz','k','l'};
+    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz','k','l','shouldAntialias'};
     variables = union(variables,attributesToWrite);
 
     if options.shouldAddDefaultVariables == 1

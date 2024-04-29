@@ -549,6 +549,15 @@ classdef WVTransformConstantStratification < WVTransform
         end  
         
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
+
+        function flag = isequal(self,other)
+            arguments
+                self WVTransform
+                other WVTransform
+            end
+            flag = isequal@WVTransform(self,other);
+            flag = flag & isequal(self.N0, other.N0);
+        end
     end
 
     methods (Static)
