@@ -37,6 +37,10 @@ classdef WVTransformBoussinesq < WVTransform
 
         zInterp
         PFinvInterp, QGinvInterp
+
+        Wzkl
+        Wklz
+        Aklz
     end
 
     properties (Dependent, SetAccess=private)
@@ -238,6 +242,9 @@ classdef WVTransformBoussinesq < WVTransform
             self.addPropertyAnnotations(WVPropertyAnnotation('QGwg',{'j','j','K2unique'},'','Transformation from geostrophic to wave-modes'));
             self.addPropertyAnnotations(WVPropertyAnnotation('h_pm',{'j','kl'},'m', 'equivalent depth of each wave mode', detailedDescription='- topic: Domain Attributes — Stratification'));
 
+            self.Aklz = zeros(self.Nx*self.Ny,self.Nz);
+            self.Wklz = complex(zeros(self.Nx*self.Ny,self.Nz));
+            self.Wzkl = complex(zeros(self.Nz,self.Nkl));
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
         end
@@ -466,35 +473,72 @@ classdef WVTransformBoussinesq < WVTransform
             u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
         end
 
-        function u = transformToSpatialDomainWithG(self, options)
+        function w = transformToSpatialDomainWithG(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = []
                 options.A0 double  = []
             end
-            u_bar = 0;
+            w_bar = 0;
             if ~isempty(options.Apm)
-                u_bar = u_bar + self.transformToSpatialDomainWithGw(options.Apm);
+                w_bar = w_bar + self.transformToSpatialDomainWithGw(options.Apm);
             end
             if ~isempty(options.A0)
-                u_bar = u_bar + self.transformToSpatialDomainWithGg(options.A0);
+                w_bar = w_bar + self.transformToSpatialDomainWithGg(options.A0);
             end
-            u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
+            w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
+        end
+
+        % https://www.mathworks.com/help/matlab/matlab_prog/avoid-unnecessary-copies-of-data.html
+        function w = transformToSpatialDomainWithGUnrolled(self, Apm, A0)
+            Uzkl = self.PF0inv*(self.P0 .* A0);
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                % Uzkl(:,indices) = self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* Apm(:,indices));
+                Uzkl(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* Apm(:,indices));
+            end
+            Nz = size(Uzkl,1);
+            Uklz = complex(zeros(self.Nx*self.Ny,Nz));
+            for iK=1:self.horizontalGeometry.Nkl_wv
+                Uklz(self.horizontalGeometry.primaryDFTindices(iK),:) = Uzkl(:,iK);
+                Uklz(self.horizontalGeometry.conjugateDFTindices(iK),:) = conj(Uzkl(:,iK));
+            end
+            Uklz = reshape(Uklz,[self.Nx self.Ny Nz]);
+            w = self.transformToSpatialDomainWithFourier(Uklz);
+        end
+
+        function w = transformToSpatialDomainWithGUnrolledCached(self, Apm, A0)
+            self.Wzkl = self.PF0inv*(self.P0 .* A0);
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                self.Wzkl(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* Apm(:,indices));
+            end
+
+            self.Wklz = reshape(self.Wklz,[self.Nx*self.Ny,self.Nz]);
+            for iK=1:self.horizontalGeometry.Nkl_wv
+                self.Wklz(self.horizontalGeometry.primaryDFTindices(iK),:) = self.Wzkl(:,iK);
+                self.Wklz(self.horizontalGeometry.conjugateDFTindices(iK),:) = conj(self.Wzkl(:,iK));
+            end
+            self.Wklz = reshape(self.Wklz,[self.Nx self.Ny self.Nz]);
+            w = self.transformToSpatialDomainWithFourier(self.Wklz);
         end
 
         function u = transformToSpatialDomainWithFg(self, u_bar)
-            arguments
-                self WVTransform {mustBeNonempty}
-                u_bar
-            end
+            % arguments
+            %     self WVTransform {mustBeNonempty}
+            %     u_bar
+            % end
             u = self.PF0inv*(self.P0 .* u_bar);
         end
 
         function w = transformToSpatialDomainWithGg(self, w_bar)
-            arguments
-                self WVTransform {mustBeNonempty}
-                w_bar
-            end
+            % arguments
+            %     self WVTransform {mustBeNonempty}
+            %     w_bar
+            % end
+            % simply changing QG0inv to PF0inv dramatically increases the
+            % speed of the downstream function transformFromWVGridToDFTGrid.
+            % Why?
             w = self.QG0inv*(self.Q0 .* w_bar);
         end
         
@@ -616,6 +660,29 @@ classdef WVTransformBoussinesq < WVTransform
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
 
+        function flag = isequal(self,other)
+            arguments
+                self WVTransform
+                other WVTransform
+            end
+            flag = isequal@WVTransform(self,other);
+            flag = flag & isequal(self.dLnN2, other.dLnN2);
+            flag = flag & isequal(self.PF0inv, other.PF0inv);
+            flag = flag & isequal(self.QG0inv, other.QG0inv);
+            flag = flag & isequal(self.PF0,other.PF0);
+            flag = flag & isequal(self.QG0,other.QG0);
+            flag = flag & isequal(self.P0, other.P0);
+            flag = flag & isequal(self.Q0, other.Q0);
+            flag = flag & isequal(self.h_0, other.h_0);
+            flag = flag & isequal(self.PFpmInv, other.PFpmInv);
+            flag = flag & isequal(self.QGpmInv, other.QGpmInv);
+            flag = flag & isequal(self.PFpm,other.PFpm);
+            flag = flag & isequal(self.QGpm,other.QGpm);
+            flag = flag & isequal(self.Ppm, other.Ppm);
+            flag = flag & isequal(self.Qpm, other.Qpm);
+            flag = flag & isequal(self.h_pm, other.h_pm);
+            flag = flag & isequal(self.QGwg, other.QGwg);
+        end
     end
 
     methods (Static)

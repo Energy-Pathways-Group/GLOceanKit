@@ -61,4 +61,9 @@ for iTransform=4
     wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
 
     wvt2 = WVTransform.waveVortexTransformFromFile('test.nc',iTime=243);
+    if isequal(wvt,wvt2)
+        fprintf('Success!');
+    else
+        fprintf('Failure!!!');
+    end
 end

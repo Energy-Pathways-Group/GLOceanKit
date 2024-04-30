@@ -200,6 +200,16 @@ classdef WVGeometryDoublyPeriodic
             Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
         end
 
+        function Aklz = transformFromWVGridToDFTGrid2(self,Aklz,Azkl)
+            Nz = size(Azkl,1);
+            Aklz = reshape(Aklz,[self.Nx*self.Ny,Nz]);
+            for iK=1:self.Nkl_wv
+                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
+                Aklz(self.conjugateDFTindices(iK),:) = conj(Azkl(:,iK));
+            end
+            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
+        end
+
         function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self)
             arguments (Input)
                 self (1,1) WVGeometryDoublyPeriodic
