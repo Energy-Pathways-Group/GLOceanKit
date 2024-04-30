@@ -15,15 +15,13 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     % This is most often used when initializing a model, e.g.,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
     % ```
     %
     % - Topic: Initializing
     % - Declaration: WVNonlinearFlux < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         wvt
-        shouldAntialias = 0
-        AA = 1
         nu_xy = 0
         nu_z = 0
         r
@@ -47,7 +45,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Parameter nu_z: (optional) coefficient for damping
-            % - Parameter shouldAntialias: (optional) a Boolean indicating whether or not to antialias (default 1)
             % - Returns nlFlux: a WVNonlinearFlux instance
             arguments
                 wvt WVTransform {mustBeNonempty}
@@ -56,7 +53,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
-                options.shouldAntialias double = 1
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
             end
             fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap');
@@ -65,18 +61,8 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
 
             self@WVNonlinearFluxOperation('WVNonlinearFlux',fluxVar);
             self.wvt = wvt;
-            self.shouldAntialias = options.shouldAntialias;
             self.r = options.r;
-            
-            % if self.shouldAntialias == 1
-            %     self.AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
-            %     wvt.Ap = self.AA .* wvt.Ap;
-            %     wvt.Am = self.AA .* wvt.Am;
-            %     wvt.A0 = self.AA .* wvt.A0;
-            % else
-            %     self.AA = 1;
-            % end
-            
+
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;
             elseif isa(wvt,'WVTransformHydrostatic')
@@ -92,11 +78,8 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.nu_xy = options.nu_xy;
             else
                 if isfield(options,'uv_damp')
-                    if self.shouldAntialias == 1
-                        self.nu_xy = (3/2)*(wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
-                    else
-                        self.nu_xy = (wvt.x(2)-wvt.x(1))*options.uv_damp/(pi^2);
-                    end
+                    effectiveGridResolution = pi/max(max(abs(wvt.l(:)),abs(wvt.k(:))));
+                    self.nu_xy = effectiveGridResolution*options.uv_damp/(pi^2);
                 else
                     self.nu_xy = 0;
                 end
@@ -129,7 +112,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             M = J*pi/wvt.Lz;
             self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
 
-            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=self.shouldAntialias);
+            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
             self.damp = Qkl.*self.damp;
         end
 
@@ -139,19 +122,13 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         end
 
         function set.uv_damp(self,uv_damp)
-            if self.shouldAntialias == 1
-                self.nu_xy = (3/2)*(self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
-            else
-                self.nu_xy = (self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
-            end
+            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+            self.nu_xy = effectiveGridResolution*uv_damp/(pi^2);
         end
 
         function val = get.uv_damp(self)
-            if self.shouldAntialias == 1
-                val = self.nu_xy*(pi^2)*(2/3)/(self.wvt.x(2)-self.wvt.x(1));
-            else
-                val = self.nu_xy*(pi^2)/(self.wvt.x(2)-self.wvt.x(1));
-            end
+            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+            val = self.nu_xy*(pi^2)/effectiveGridResolution;
         end
 
         function buildDampingOperator(self)
@@ -205,9 +182,9 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             [uNL,vNL,nNL,phase] = self.spatialFlux(wvt,varargin);
             [ApNL,AmNL,A0NL] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 
-            Fp = self.AA .* (self.damp .* wvt.Ap + ApNL .* conj(phase));
-            Fm = self.AA .* (self.damp .* wvt.Am + AmNL .* phase);
-            F0 = self.AA .* ((self.damp + self.betaA0) .* wvt.A0 + A0NL);
+            Fp = (self.damp .* wvt.Ap + ApNL .* conj(phase));
+            Fm = (self.damp .* wvt.Am + AmNL .* phase);
+            F0 = ((self.damp + self.betaA0) .* wvt.A0 + A0NL);
 
             varargout = {Fp,Fm,F0};
         end
@@ -225,7 +202,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
+            nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2);
         end
 
         function flag = isequal(self,other)
@@ -234,8 +211,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 other WVNonlinearFluxOperation
             end
             flag = isequal@WVNonlinearFluxOperation(self,other);
-            flag = flag & isequal(self.shouldAntialias, other.shouldAntialias);
-            flag = flag & isequal(self.AA, other.AA);
             flag = flag & isequal(self.nu_xy, other.nu_xy);
             flag = flag & isequal(self.nu_z,other.nu_z);
             flag = flag & isequal(self.r,other.r);
@@ -249,7 +224,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),r=ncfile.attributes('r'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),r=ncfile.attributes('r') );
         end
     end
 

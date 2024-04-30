@@ -935,17 +935,17 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             if self.nonlinearFluxOperation.doesFluxAp == 1
                 n=n+1;Fp = F{n};
             else
-                Fp = zeros(self.Nk,self.Nl,self.Nj);
+                Fp = zeros(self.spectralMatrixSize);
             end
             if self.nonlinearFluxOperation.doesFluxAm == 1
                 n=n+1;Fm = F{n};
             else
-                Fm = zeros(self.Nk,self.Nl,self.Nj);
+                Fm = zeros(self.spectralMatrixSize);
             end
             if self.nonlinearFluxOperation.doesFluxA0 == 1
                 n=n+1;F0 = F{n};
             else
-                F0 = zeros(self.Nk,self.Nl,self.Nj);
+                F0 = zeros(self.spectralMatrixSize);
             end
         end
         
@@ -962,16 +962,20 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function value = get.Apm_TE_factor(self)
-            value = self.h_pm; % factor of 2 larger than in the manuscript
-            value(:,:,1) = self.Lz;
+            if size(self.h_pm,2)==1
+                value = repmat(self.h_pm,1,self.Nkl);
+            else
+                value = self.h_pm;
+            end
+            value(self.J==0) = self.Lz;
         end
         
         function value = get.A0_HKE_factor(self)
             value = (self.g/2) * self.Kh .* self.Kh .* self.Lr2;
         end
         function value = get.A0_PE_factor(self)
-            value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
-            value(:,:,1) = 0;
+            value = self.g*ones(self.spectralMatrixSize)/2;
+            value(self.J==0) = 0;
         end
         function value = get.A0_TE_factor(self)
             value = self.A0_HKE_factor + self.A0_PE_factor;
@@ -979,18 +983,18 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function value = get.A0_QGPV_factor(self)
             Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2 = self.g*(self.h_0)/(self.f*self.f);
             Lr2(1) = self.g*self.Lz/(self.f*self.f);
             value = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
-            value(:,:,1) = -(self.g/self.f) * (Kh(:,:,1)).^2;
+            value(self.J==0) = -(self.g/self.f) * (Kh(self.J==0)).^2;
         end
 
         function value = get.A0_TZ_factor(self)
             Kh = self.Kh;
-            Lr2 = self.g*(self.h)/(self.f*self.f);
+            Lr2 = self.g*(self.h_0)/(self.f*self.f);
             Lr2(1) = self.g*self.Lz/(self.f*self.f);
             value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            value(:,:,1) = (self.g/2) * Lr2(1) .* (Kh(:,:,1)).^4;
+            value(self.J==0) = (self.g/2) * Lr2(1) .* (Kh(self.J==0)).^4;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

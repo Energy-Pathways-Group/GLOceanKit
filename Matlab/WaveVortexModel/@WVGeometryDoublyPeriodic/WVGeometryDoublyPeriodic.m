@@ -223,7 +223,7 @@ classdef WVGeometryDoublyPeriodic
 
             notPrimaryCoeffs = zeros(self.Nk_dft,self.Nl_dft);
             if self.shouldAntialias == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nk_dft,self.Nl_dft);
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.k_dft,self.l_dft);
             end
             if self.shouldExcludeNyquist == 1
                 notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk_dft,self.Nl_dft);
@@ -392,7 +392,7 @@ classdef WVGeometryDoublyPeriodic
             dof(logical(mask)) = 0;
         end
 
-        function antialiasMask = maskForAliasedModes(Nx,Ny,Nz)
+        function antialiasMask = maskForAliasedModes(k,l,Nz)
             % returns a mask with locations of modes that will alias with a quadratic multiplication.
             %
             % Returns a 'mask' (matrices with 1s or 0s) indicating where aliased wave
@@ -416,19 +416,17 @@ classdef WVGeometryDoublyPeriodic
             % - Parameter Nz: grid points in the z-direction (defuault 1)
             % - Returns antialiasMask: mask aliased mode
             arguments (Input)
-                Nx (1,1) double {mustBeInteger,mustBePositive}
-                Ny (1,1) double {mustBeInteger,mustBePositive}
+                k (:,1) double
+                l (:,1) double
                 Nz (1,1) double {mustBeInteger,mustBePositive} = 1
             end
             arguments (Output)
                 antialiasMask double {mustBeNonnegative}
             end
-            k = 2*pi*([0:ceil(Nx/2)-1 -floor(Nx/2):-1])';
-            l = 2*pi*([0:ceil(Ny/2)-1 -floor(Ny/2):-1])';
             [K,L,~] = ndgrid(k,l,1:Nz);
             Kh = sqrt(K.*K + L.*L);
 
-            antialiasMask = zeros(Nx,Ny,Nz);
+            antialiasMask = zeros(length(k),length(l),Nz);
             antialiasMask(Kh > 2*max(abs(k))/3) = 1;
         end
 

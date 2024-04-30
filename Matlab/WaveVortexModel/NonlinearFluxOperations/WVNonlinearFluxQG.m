@@ -47,7 +47,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
             end
-            fluxVar(1) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+            fluxVar(1) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0');
             fluxVar(2) = WVVariableAnnotation('u_g',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
             fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
             fluxVar(3) = WVVariableAnnotation('v_g',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
@@ -60,11 +60,10 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             self.doesFluxAm = 0;
             self.doesFluxA0 = 1;
             
-            AA = ~(wvt.maskForAliasedModes(jFraction=2/3));
             self.PVA0 = wvt.A0_QGPV_factor;
             self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
-            self.A0PV = AA./self.PVA0;
-            self.A0PV(1,1,1) = 0;
+            self.A0PV = 1./self.PVA0;
+            self.A0PV(wvt.Kh == 0 & wvt.J == 0) = 0;
             
             % Components to the damping operator (which will multiply A0):
             % 1. Convert A0 to a velocity streamfunction (g/f)
@@ -97,11 +96,13 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function set.uv_damp(self,uv_damp)
-            self.nu_xy = (3/2)*(self.wvt.x(2)-self.wvt.x(1))*uv_damp/(pi^2);
+            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+            self.nu_xy = effectiveGridResolution*uv_damp/(pi^2);
         end
 
         function val = get.uv_damp(self)
-            val = self.nu_xy*(pi^2)*(2/3)/(self.wvt.x(2)-self.wvt.x(1));
+            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+            val = self.nu_xy*(pi^2)/effectiveGridResolution;
         end
 
         function buildDampingOperator(self)
@@ -116,7 +117,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 % compute it yet.
                 friction = 0;
             end
-            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=1);
+            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
             self.damp = friction - self.nu_xy*Qkl.*(-(K.^2 +L.^2)).^2;
             self.damp = -(self.wvt.g/self.wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
         end
@@ -151,7 +152,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
             u_g = wvt.transformToSpatialDomainWithF(A0=Ubar);
             v_g = wvt.transformToSpatialDomainWithF(A0=Vbar);
-            PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*wvt.k.*PVbar);
+            PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.k,-1).*PVbar);
             PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
             if wvt.isBarotropic
@@ -162,7 +163,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 PVabs = self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
                 PVnl = u_g.*PVx + v_g.*(PVy+self.beta) + PVabs;
             end
-            F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithF(PVnl) + self.damp .* wvt.A0;
+            F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithFg(wvt.transformFromSpatialDomainWithFourier(PVnl)) + self.damp .* wvt.A0;
             varargout = {F0,u_g,v_g};
         end
 
@@ -179,7 +180,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             attributes = containers.Map();
             attributes('units') = '1/s';
             attributes('long_name') = 'Linear damping operator applied to A0 to produce damping flux.';
-            ncfile.initComplexVariable('L_damp',{'k','l','j'},attributes,'NC_DOUBLE');
+            ncfile.initComplexVariable('L_damp',{'j','kl'},attributes,'NC_DOUBLE');
             ncfile.setVariable('L_damp',self.damp);
         end
 
