@@ -31,6 +31,10 @@ classdef WVTransformHydrostatic < WVTransform
         
         zInterp
         PFinvInterp, QGinvInterp
+
+        w_klz
+        AklzIndex, AzklIndex
+        AklzConjIndex, AklzPrimaryIndex
     end
 
     properties (GetAccess=public)
@@ -201,6 +205,37 @@ classdef WVTransformHydrostatic < WVTransform
             self.addOperation(WVOperation('zeta_z',outputVar,f));
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
+
+
+            self.w_klz = zeros(self.Nx,self.Ny,self.Nz);
+            % self.QGinv(1,:) = 1;
+
+            self.AklzIndex = zeros(self.Nz*self.Nkl,1);
+            self.AzklIndex = zeros(self.Nz*self.Nkl,1);
+            index=1;
+            for iZ=1:self.Nz
+                for iK=1:self.Nkl
+                    self.AklzIndex(index) = sub2ind([self.Nx*self.Ny Nz],self.horizontalGeometry.primaryDFTindices(iK),iZ);
+                    self.AzklIndex(index) = sub2ind([self.Nz,self.Nkl],iZ,iK);
+                    index = index+1;
+                end
+            end
+            [self.AklzIndex,indices] = sort(self.AklzIndex);
+            self.AzklIndex = self.AzklIndex(indices);
+
+            self.AklzConjIndex = zeros(self.Nz,self.Nx/2-1);
+            self.AklzPrimaryIndex = zeros(self.Nz,self.Nx/2-1);
+            index=1;
+            for iZ=1:self.Nz
+                for iK=1:(self.Nx/2-1)
+                    self.AklzConjIndex(index) = sub2ind([self.Nx self.Ny Nz],mod(self.Nx-iK+1, self.Nx) + 1,1,iZ);
+                    self.AklzPrimaryIndex(index) = sub2ind([self.Nx self.Ny Nz],iK,1,iZ);
+                    index = index+1;
+                end
+            end
+            % for iK=1:(self.Nx/2-1)
+            %     self.w_klz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(self.w_klz(iK,1,:));
+            % end
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -334,7 +369,32 @@ classdef WVTransformHydrostatic < WVTransform
             u = self.transformToSpatialDomainWithFourier(u_klz);
         end
 
-        function w = transformToSpatialDomainWithG(self, options)
+        % function w = transformToSpatialDomainWithG(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     w_jkl = (self.Q .* (options.Apm + options.A0));
+        %     w_zkl = self.QGinv*w_jkl;
+        % 
+        %     self.w_klz = reshape(self.w_klz,[self.Nx*self.Ny,self.Nz]);
+        %     for iK=1:self.horizontalGeometry.Nkl_wv
+        %         self.w_klz(self.horizontalGeometry.primaryDFTindices(iK),:) = w_zkl(:,iK);
+        %         self.w_klz(self.horizontalGeometry.conjugateDFTindices(iK),:) = conj(w_zkl(:,iK));
+        %     end
+        %     % for iZ=1:self.Nz
+        %     %     for iK=1:self.horizontalGeometry.Nkl_wv
+        %     %         self.w_klz(self.horizontalGeometry.primaryDFTindices(iK),iZ) = w_zkl(iZ,iK);
+        %     %         self.w_klz(self.horizontalGeometry.conjugateDFTindices(iK),iZ) = conj(w_zkl(iZ,iK));
+        %     %     end
+        %     % end
+        %     self.w_klz = reshape(self.w_klz,[self.Nx self.Ny self.Nz]);
+        % 
+        %     w = self.transformToSpatialDomainWithFourier(self.w_klz);
+        % end
+
+        function w = transformToSpatialDomainWithG2(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
@@ -344,7 +404,42 @@ classdef WVTransformHydrostatic < WVTransform
             w_zkl = self.QGinv*w_jkl;
             w_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(w_zkl);
             w = self.transformToSpatialDomainWithFourier(w_klz);
+            % w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(self.QGinv*((self.Q .* (options.Apm + options.A0)))));
         end
+
+        function w = transformToSpatialDomainWithG(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w_jkl = (self.Q .* (options.Apm + options.A0));
+            w_zkl = self.QGinv*w_jkl;
+            self.w_klz(self.AklzIndex) = w_zkl(self.AzklIndex);
+            self.w_klz(self.AklzConjIndex) = conj(self.w_klz(self.AklzPrimaryIndex));
+            w = self.transformToSpatialDomainWithFourier(self.w_klz);
+        end
+
+        % function w = transformToSpatialDomainWithG(self, options)
+        %     arguments
+        %         self WVTransform {mustBeNonempty}
+        %         options.Apm double = 0
+        %         options.A0 double = 0
+        %     end
+        %     w_jkl = (self.Q .* (options.Apm + options.A0));
+        %     w_zkl = self.QGinv*w_jkl;
+        %     % w_klz = zeros(self.Nx*self.Ny,self.Nz);
+        %     self.w_klz(self.AklzIndex) = w_zkl(self.AzklIndex);
+        %     % self.w_klz(self.AklzConjIndex) = conj(self.w_klz(self.AklzPrimaryIndex));
+        %     self.w_klz = reshape(self.w_klz,[self.Nx self.Ny self.Nz]);
+        %     for iK=1:(self.Nx/2-1)
+        %         self.w_klz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(self.w_klz(iK,1,:));
+        %     end
+        %     w = self.transformToSpatialDomainWithFourier(self.w_klz);
+        %     % w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(self.QGinv*((self.Q .* (options.Apm + options.A0)))));
+        % end
+
+        
 
         % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
         %     arguments

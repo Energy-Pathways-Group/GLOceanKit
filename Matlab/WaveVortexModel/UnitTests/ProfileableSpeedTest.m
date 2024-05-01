@@ -10,8 +10,8 @@
 %
 % April 12th, 2018      Version 1.0
 
-% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
-wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [64 64 33]);
 wvt.initWithRandomFlow();
 
@@ -68,13 +68,25 @@ profile viewer
 % profile viewer
 
 %%
+% 2024-04-30 Finally got this down to something reasonable!!!
+% 
 A = randn(wvt.spectralMatrixSize) + sqrt(-1)*randn(wvt.spectralMatrixSize);
 A(wvt.Kh==0) = 0;
 
 profile on
 for i=1:100
-    % u = wvt.transformToSpatialDomainWithF(A0=A,Apm=A);
-    % w = wvt.transformToSpatialDomainWithG(A0=A,Apm=A);
-    w = wvt.transformToSpatialDomainWithGUnrolled(A,A);
+    u = wvt.transformToSpatialDomainWithF(A0=A,Apm=A);
+    w = wvt.transformToSpatialDomainWithG(A0=A,Apm=A);
+    % w = wvt.transformToSpatialDomainWithGUnrolled(A,A);
 end
 profile viewer
+
+%%
+A = randn(100,100);
+B = randn(100,1000) + sqrt(-1)*randn(100,1000);
+A(1,:)=0; A(:,1)=0;
+tic;
+for i=1:100
+    C = A*B;
+end
+toc

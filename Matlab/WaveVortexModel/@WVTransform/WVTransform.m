@@ -214,7 +214,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
             self.Nj = options.Nj;
-            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias);
+            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
             self.Nkl = self.horizontalGeometry.Nkl_wv;
             self.k = self.horizontalGeometry.k_wv;
             self.l = self.horizontalGeometry.l_wv;

@@ -19,9 +19,9 @@ classdef WVNonlinearFluxSpatial < WVNonlinearFluxOperation
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            fluxVar(1) = WVVariableAnnotation('Fp',{'k','l','j'},'m/s2', 'non-linear flux into Ap');
-            fluxVar(2) = WVVariableAnnotation('Fm',{'k','l','j'},'m/s2', 'non-linear flux into Am');
-            fluxVar(3) = WVVariableAnnotation('F0',{'k','l','j'},'m/s', 'non-linear flux into A0');
+            fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap');
+            fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am');
+            fluxVar(3) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0');
 
             self@WVNonlinearFluxOperation('WVNonlinearFluxSpatial',fluxVar);
 
