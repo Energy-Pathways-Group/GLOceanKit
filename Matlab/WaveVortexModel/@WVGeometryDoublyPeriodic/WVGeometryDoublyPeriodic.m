@@ -247,6 +247,75 @@ classdef WVGeometryDoublyPeriodic
             Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
         end
 
+        function [dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex] = indicesForWVGridToDFTGrid(self,Nz,options)
+            arguments (Input)
+                self (1,1) WVGeometryDoublyPeriodic
+                Nz (1,1) double {mustBeInteger,mustBePositive}
+                options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 1
+            end
+            arguments (Output)
+                dftPrimaryIndex (:,1) double
+                wvPrimaryIndex (:,1) double
+                dftConjugateIndex (:,1) double
+                wvConjugateIndex (:,1) double
+            end
+            dftPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
+            wvPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
+            dftConjugateIndex = zeros(Nz*self.Nkl_wv,1);
+            wvConjugateIndex = zeros(Nz*self.Nkl_wv,1);
+            index=1;
+            for iZ=1:Nz
+                for iK=1:self.Nkl_wv
+                    dftPrimaryIndex(index) = self.primaryDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    wvPrimaryIndex(index) = iZ + (iK-1)*Nz;
+                    index = index+1;
+                end
+            end
+            [dftPrimaryIndex,indices] = sort(dftPrimaryIndex);
+            wvPrimaryIndex = wvPrimaryIndex(indices);
+
+            if options.isHalfComplex == 0
+                index=1;
+                for iZ=1:Nz
+                    for iK=1:self.Nkl_wv
+                        dftConjugateIndex(index) = self.conjugateDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndex(index) = iZ + (iK-1)*Nz;
+                        index = index+1;
+                    end
+                end
+            else
+
+            end
+            [dftConjugateIndex,indices] = sort(dftConjugateIndex);
+            wvConjugateIndex = wvConjugateIndex(indices);
+        end
+
+        function [dftPrimaryIndex, wvPrimaryIndex, AklzConjIndex, AklzPrimaryIndex] = indicesForWVGridToDFTGridOld(self,Nz)
+            dftPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
+            wvPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
+            index=1;
+            for iZ=1:Nz
+                for iK=1:self.Nkl_wv
+                    dftPrimaryIndex(index) = self.primaryDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    wvPrimaryIndex(index) = iZ + (iK-1)*Nz;
+                    index = index+1;
+                end
+            end
+            [dftPrimaryIndex,indices] = sort(dftPrimaryIndex);
+            wvPrimaryIndex = wvPrimaryIndex(indices);
+
+            AklzConjIndex = zeros(Nz,self.Nx/2-1);
+            AklzPrimaryIndex = zeros(Nz,self.Nx/2-1);
+            index=1;
+            for iZ=1:Nz
+                for iK=1:(self.Nx/2-1)
+                    AklzConjIndex(index) = sub2ind([self.Nx self.Ny Nz],mod(self.Nx-iK+1, self.Nx) + 1,1,iZ);
+                    AklzPrimaryIndex(index) = sub2ind([self.Nx self.Ny Nz],iK,1,iZ);
+                    index = index+1;
+                end
+            end
+        end
+
         function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self)
             arguments (Input)
                 self (1,1) WVGeometryDoublyPeriodic
