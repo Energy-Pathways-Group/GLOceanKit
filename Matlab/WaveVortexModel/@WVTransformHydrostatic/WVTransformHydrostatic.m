@@ -32,9 +32,7 @@ classdef WVTransformHydrostatic < WVTransform
         zInterp
         PFinvInterp, QGinvInterp
 
-        w_klz
-        AklzIndex, AzklIndex
-        AklzConjIndex, AklzPrimaryIndex
+        dftBuffer, wvBuffer
         dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
@@ -207,9 +205,9 @@ classdef WVTransformHydrostatic < WVTransform
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
 
-            self.w_klz = zeros(self.Nx,self.Ny,self.Nz);
-            % [self.AklzIndex, self.AzklIndex, self.AklzConjIndex, self.AklzPrimaryIndex] = self.horizontalGeometry.indicesForWVGridToDFTGridOld(self.Nz);
-            [self.dftPrimaryIndex, self.wvPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesForWVGridToDFTGrid(self.Nz,isHalfComplex=0);
+            self.dftBuffer = zeros(self.spatialMatrixSize);
+            self.wvBuffer = zeros([self.Nz self.Nkl]);
+            [self.dftPrimaryIndex, self.wvPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesForWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -337,23 +335,15 @@ classdef WVTransformHydrostatic < WVTransform
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            u_jkl = (self.P .* (options.Apm + options.A0));
-            u_zkl = self.PFinv*u_jkl;
-            u_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(u_zkl);
-            u = self.transformToSpatialDomainWithFourier(u_klz);
-        end
+            % Perform the vertical mode matrix multiplication
+            self.wvBuffer = self.PFinv*(self.P .* (options.Apm + options.A0));
 
-        function w = transformToSpatialDomainWithG2(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
-            end
-            w_jkl = (self.Q .* (options.Apm + options.A0));
-            w_zkl = self.QGinv*w_jkl;
-            w_klz = self.horizontalGeometry.transformFromWVGridToDFTGrid(w_zkl);
-            w = self.transformToSpatialDomainWithFourier(w_klz);
-            % w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(self.QGinv*((self.Q .* (options.Apm + options.A0)))));
+            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+            % Perform a 2D DFT
+            u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
         function w = transformToSpatialDomainWithG(self, options)
@@ -363,15 +353,14 @@ classdef WVTransformHydrostatic < WVTransform
                 options.A0 double = 0
             end
             % Perform the vertical mode matrix multiplication
-            w_zkl = self.QGinv*(self.Q .* (options.Apm + options.A0));
-            % re-arrange the matrix to get ready for the 2D DFT
-            % self.w_klz(self.AklzIndex) = w_zkl(self.AzklIndex);
-            % self.w_klz(self.AklzConjIndex) = conj(self.w_klz(self.AklzPrimaryIndex));
+            self.wvBuffer = self.QGinv*(self.Q .* (options.Apm + options.A0));
 
-            self.w_klz(self.dftPrimaryIndex) = w_zkl(self.wvPrimaryIndex);
-            self.w_klz(self.dftConjugateIndex) = conj(w_zkl(self.wvConjugateIndex));
+            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
             % Perform a 2D DFT
-            w = self.transformToSpatialDomainWithFourier(self.w_klz);
+            w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end       
 
         % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)

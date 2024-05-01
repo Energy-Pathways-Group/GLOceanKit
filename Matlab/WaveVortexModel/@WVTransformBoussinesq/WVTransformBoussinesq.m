@@ -41,6 +41,9 @@ classdef WVTransformBoussinesq < WVTransform
         Wzkl
         Wklz
         Aklz
+
+        dftBuffer, wvBuffer
+        dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (Dependent, SetAccess=private)
@@ -247,6 +250,10 @@ classdef WVTransformBoussinesq < WVTransform
             self.Wzkl = complex(zeros(self.Nz,self.Nkl));
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
+
+            self.dftBuffer = zeros(self.spatialMatrixSize);
+            self.wvBuffer = zeros([self.Nz self.Nkl]);
+            [self.dftPrimaryIndex, self.wvPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesForWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function value = get.nK2unique(self)
@@ -463,14 +470,20 @@ classdef WVTransformBoussinesq < WVTransform
                 options.Apm double = []
                 options.A0 double = []
             end
-            u_bar = 0;
+            self.wvBuffer = 0*self.wvBuffer;
             if ~isempty(options.Apm)
-                u_bar = u_bar + self.transformToSpatialDomainWithFw(options.Apm);
+                self.wvBuffer = self.wvBuffer + self.transformToSpatialDomainWithFw(options.Apm);
             end
             if ~isempty(options.A0)
-                u_bar = u_bar + self.transformToSpatialDomainWithFg(options.A0);
+                self.wvBuffer = self.wvBuffer + self.transformToSpatialDomainWithFg(options.A0);
             end
-            u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
+
+            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+            % Perform a 2D DFT
+            u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
         function w = transformToSpatialDomainWithG(self, options)
@@ -479,32 +492,36 @@ classdef WVTransformBoussinesq < WVTransform
                 options.Apm double = []
                 options.A0 double  = []
             end
-            w_bar = 0;
+            self.wvBuffer = 0*self.wvBuffer;
             if ~isempty(options.Apm)
-                w_bar = w_bar + self.transformToSpatialDomainWithGw(options.Apm);
+                self.wvBuffer = self.wvBuffer + self.transformToSpatialDomainWithGw(options.Apm);
             end
             if ~isempty(options.A0)
-                w_bar = w_bar + self.transformToSpatialDomainWithGg(options.A0);
+                self.wvBuffer = self.wvBuffer + self.transformToSpatialDomainWithGg(options.A0);
             end
-            w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
+
+            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+            % Perform a 2D DFT
+            w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
         % https://www.mathworks.com/help/matlab/matlab_prog/avoid-unnecessary-copies-of-data.html
         function w = transformToSpatialDomainWithGUnrolled(self, Apm, A0)
-            Uzkl = self.PF0inv*(self.P0 .* A0);
+            self.wvBuffer = self.QG0inv*(self.Q0 .* A0);
             for iK=1:length(self.K2unique)
                 indices = self.K2uniqueK2Map{iK};
-                % Uzkl(:,indices) = self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* Apm(:,indices));
-                Uzkl(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* Apm(:,indices));
+                self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* Apm(:,indices));
             end
-            Nz = size(Uzkl,1);
-            Uklz = complex(zeros(self.Nx*self.Ny,Nz));
-            for iK=1:self.horizontalGeometry.Nkl_wv
-                Uklz(self.horizontalGeometry.primaryDFTindices(iK),:) = Uzkl(:,iK);
-                Uklz(self.horizontalGeometry.conjugateDFTindices(iK),:) = conj(Uzkl(:,iK));
-            end
-            Uklz = reshape(Uklz,[self.Nx self.Ny Nz]);
-            w = self.transformToSpatialDomainWithFourier(Uklz);
+
+            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+            % Perform a 2D DFT
+            w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
         function w = transformToSpatialDomainWithGUnrolledCached(self, Apm, A0)

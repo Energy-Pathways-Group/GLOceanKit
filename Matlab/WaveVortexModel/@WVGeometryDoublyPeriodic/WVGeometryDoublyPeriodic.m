@@ -259,10 +259,9 @@ classdef WVGeometryDoublyPeriodic
                 dftConjugateIndex (:,1) double
                 wvConjugateIndex (:,1) double
             end
+
             dftPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
             wvPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
-            dftConjugateIndex = zeros(Nz*self.Nkl_wv,1);
-            wvConjugateIndex = zeros(Nz*self.Nkl_wv,1);
             index=1;
             for iZ=1:Nz
                 for iK=1:self.Nkl_wv
@@ -274,8 +273,25 @@ classdef WVGeometryDoublyPeriodic
             [dftPrimaryIndex,indices] = sort(dftPrimaryIndex);
             wvPrimaryIndex = wvPrimaryIndex(indices);
 
-            if options.isHalfComplex == 0
-                index=1;
+            index=1;
+            if options.isHalfComplex == 1
+                wvConjugateIndices2D = find(self.lMode_wv == 0 & self.kMode_wv ~= 0);
+                dftConjugateIndices2D = self.conjugateDFTindices(wvConjugateIndices2D);
+                dftConjugateIndex = zeros(Nz*length(wvConjugateIndices2D),1);
+                wvConjugateIndex = zeros(Nz*length(wvConjugateIndices2D),1);
+
+                for iIndex=1:length(wvConjugateIndices2D)
+                    wvIndex = wvConjugateIndices2D(iIndex);
+                    dftIndex = dftConjugateIndices2D(iIndex);
+                    for iZ=1:Nz
+                        dftConjugateIndex(index) = dftIndex + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndex(index) = iZ + (wvIndex-1)*Nz;
+                        index = index+1;
+                    end
+                end
+            else
+                dftConjugateIndex = zeros(Nz*self.Nkl_wv,1);
+                wvConjugateIndex = zeros(Nz*self.Nkl_wv,1);
                 for iZ=1:Nz
                     for iK=1:self.Nkl_wv
                         dftConjugateIndex(index) = self.conjugateDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
@@ -283,8 +299,6 @@ classdef WVGeometryDoublyPeriodic
                         index = index+1;
                     end
                 end
-            else
-
             end
             [dftConjugateIndex,indices] = sort(dftConjugateIndex);
             wvConjugateIndex = wvConjugateIndex(indices);
