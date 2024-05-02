@@ -192,19 +192,7 @@ classdef WVGeometryDoublyPeriodic
             end
         end
 
-        function Aklz = transformFromWVGridToDFTGridNew(self,Azkl)
-            Nz = size(Azkl,1);
-            Aklz = zeros(self.Nx*self.Ny,Nz);
-            for iZ=1:Nz
-                for iK=1:self.Nkl_wv
-                    Aklz(self.primaryDFTindices(iK),iZ) = Azkl(iZ,iK);
-                    Aklz(self.conjugateDFTindices(iK),iZ) = conj(Azkl(iZ,iK));
-                end
-            end
-            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
-        end
-
-        function Aklz = transformFromWVGridToDFTGridOriginal(self,Azkl)
+        function Aklz = transformFromWVGridToDFTGrid(self,Azkl)
             Nz = size(Azkl,1);
             Aklz = zeros(self.Nx*self.Ny,Nz);
             for iK=1:self.Nkl_wv
@@ -214,7 +202,7 @@ classdef WVGeometryDoublyPeriodic
             Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
         end
 
-        function Aklz = transformFromWVGridToDFTGrid(self,Azkl)
+        function Aklz = transformFromWVGridToDFTGridHalfComplex(self,Azkl)
             % This only sets the conjugate along the l=0 line
             Nz = size(Azkl,1);
             Aklz = zeros(self.Nx*self.Ny,Nz);
@@ -225,26 +213,6 @@ classdef WVGeometryDoublyPeriodic
             for iK=1:(self.Nx/2-1)
                 Aklz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(Aklz(iK,1,:));
             end
-        end
-
-        function Aklz = transformFromWVGridToDFTGridG(self,Azkl)
-            Nz = size(Azkl,1);
-            Aklz = zeros(self.Nx*self.Ny,Nz);
-            for iK=1:self.Nkl_wv
-                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
-                Aklz(self.conjugateDFTindices(iK),:) = conj(Azkl(:,iK));
-            end
-            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
-        end
-
-        function Aklz = transformFromWVGridToDFTGrid2(self,Aklz,Azkl)
-            Nz = size(Azkl,1);
-            Aklz = reshape(Aklz,[self.Nx*self.Ny,Nz]);
-            for iK=1:self.Nkl_wv
-                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
-                Aklz(self.conjugateDFTindices(iK),:) = conj(Azkl(:,iK));
-            end
-            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
         end
 
         function [dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex] = indicesForWVGridToDFTGrid(self,Nz,options)

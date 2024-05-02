@@ -52,10 +52,11 @@ toc
 % 18:38 2024-02-04 precompute double MM: Elapsed time is 8.681165 seconds.
 % 08:09 2024-02-05 loop over kUnique: Elapsed time is 5.783941 seconds.
 % 10:00 2024-04-27 [Nj Nkl] and dealiasing refactor: Elapsed time is 2.961629 seconds.
+% 16:09 2024-05-01 Improved memory reshuffle: Elapsed time is 1.784329 seconds.
 
 %%
 profile on
-for i=1:10
+for i=1:200
     wvt.t = i;
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end
@@ -81,6 +82,20 @@ for i=1:500
     u = wvt.transformToSpatialDomainWithF(A0=A,Apm=A);
     w = wvt.transformToSpatialDomainWithG(A0=A,Apm=A);
     % w = wvt.transformToSpatialDomainWithGUnrolled(A,A);
+end
+toc
+% profile viewer
+% 2.486s
+
+%%
+% 2024-04-30 Finally got this down to something reasonable!!!
+% 
+A = randn(wvt.spatialMatrixSize);
+
+% profile on
+tic
+for i=1:5000
+    u = wvt.transformFromSpatialDomainWithFourier(A);
 end
 toc
 % profile viewer
