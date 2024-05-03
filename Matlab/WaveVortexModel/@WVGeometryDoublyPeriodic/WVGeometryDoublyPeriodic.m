@@ -110,7 +110,7 @@ classdef WVGeometryDoublyPeriodic
                 notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk_dft,self.Nl_dft);
             end
             if self.shouldExludeConjugates == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,self.conjugateDimension);
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,conjugateDimension=self.conjugateDimension);
             end
 
             [K,L] = ndgrid(self.k_dft,self.l_dft);
@@ -517,58 +517,13 @@ classdef WVGeometryDoublyPeriodic
             end
         end
 
-        function mask = maskForConjugateFourierCoefficients(Nx,Ny,conjugateDimension)
-            % a matrix of linear indices of the conjugate
-            %
-            % - Topic: Utility function
-            % - Declaration: matrix = WVGeometryDoublyPeriodic.indexOfFourierConjugate(Nx,Ny,Nz);
-            % - Parameter Nx: grid points in the x-direction
-            % - Parameter Ny: grid points in the y-direction
-            % - Parameter Nz: grid points in the z-direction (default 1)
-            % - Returns matrix: matrix containing linear indices
-            arguments (Input)
-                Nx (1,1) double {mustBeInteger,mustBePositive}
-                Ny (1,1) double {mustBeInteger,mustBePositive}
-                conjugateDimension (1,1) double {mustBeMember(conjugateDimension,[1 2])}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-
-            mask = zeros([Nx Ny]);
-            if conjugateDimension == 1
-                % The order of the for-loop is chosen carefully here.
-                for iK=1:(Nx/2+1)
-                    for iL=1:Ny
-                        if iK == 1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                            continue;
-                        elseif iK == Nx/2+1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                            continue;
-                        else
-                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
-                        end
-                    end
-                end
-            elseif conjugateDimension == 2
-                % The order of the for-loop is chosen carefully here.
-                for iL=1:(Ny/2+1)
-                    for iK=1:Nx
-                        if iL == 1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                            continue;
-                        elseif iL == Ny/2+1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                            continue;
-                        else
-                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
-                        end
-                    end
-                end
-            else
-                error('invalid conjugate dimension')
-            end
-        end
-
         function dof = degreesOfFreedomForComplexMatrix(Nx,Ny)
-            % a matrix of linear indices of the conjugate
+            % a matrix with the number of degrees-of-freedom at each entry
+            %
+            % A complex valued matrix A defined on a grid of size [Nx Ny]
+            % would has 2*Nx*Ny degrees-of-freedom at each grid point. In
+            % the Fourier domain, it also has 2*Nx*Ny degrees-of-freedom at
+            % each grid point.
             %
             % - Topic: Utility function
             % - Declaration: dof = WVGeometryDoublyPeriodic.degreesOfFreedomForComplexMatrix(Nx,Ny);
@@ -583,28 +538,41 @@ classdef WVGeometryDoublyPeriodic
             dof = 2*ones(Nx,Ny);
 
             % self-conjugates
+            
+        end
+
+        function dof = degreesOfFreedomForRealMatrix(Nx,Ny,options)
+            % a matrix with the number of degrees-of-freedom at each entry
+            %
+            % A real-valued matrix A defined on a grid of size [Nx Ny] has
+            % Nx*Ny degrees of freedom, one at each grid point. In the
+            % Fourier domain these degrees-of-freedom are more complicated,
+            % because some modes are strictly real-valued (k=l=0 and
+            % Nyquist), while others are complex, and there are redundant
+            % Hermitian conjugates.
+            %
+            % - Topic: Utility function
+            % - Declaration: matrix = WVGeometryDoublyPeriodic.degreesOfFreedomForFourierCoefficients(Nx,Ny,conjugateDimension);
+            % - Parameter Nx: grid points in the x-direction
+            % - Parameter Ny: grid points in the y-direction
+            % - Parameter conjugateDimension: (optional) set which dimension in the DFT grid is assumed to have the redundant conjugates (1 or 2), default is 2
+            % - Returns dof: matrix containing dof
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+                options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
+            end
+
+            dof = WVGeometryDoublyPeriodic.degreesOfFreedomForComplexMatrix(Nx,Ny);
+
+            % self-conjugate modes only have one degree-of-freedom
             dof(1,1) = 1;
             dof(Nx/2+1,1) = 1;
             dof(Nx/2+1,Ny/2+1) = 1;
             dof(1,Ny/2+1) = 1;
-        end
 
-        function dof = degreesOfFreedomForRealMatrix(Nx,Ny,conjugateDimension)
-            % a matrix of linear indices of the conjugate
-            %
-            % - Topic: Utility function
-            % - Declaration: matrix = WVGeometryDoublyPeriodic.degreesOfFreedomForFourierCoefficients(Nx,Ny);
-            % - Parameter Nx: grid points in the x-direction
-            % - Parameter Ny: grid points in the y-direction
-            % - Returns matrix: matrix containing linear indices
-            arguments (Input)
-                Nx (1,1) double {mustBeInteger,mustBePositive}
-                Ny (1,1) double {mustBeInteger,mustBePositive}
-                conjugateDimension (1,1) double {mustBeMember(conjugateDimension,[1 2])}
-            end
-
-            dof = WVGeometryDoublyPeriodic.degreesOfFreedomForComplexMatrix(Nx,Ny);
-            mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,conjugateDimension);
+            % and remove the conjugates.
+            mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,conjugateDimension=options.conjugateDimension);
             dof(logical(mask)) = 0;
         end
 
@@ -674,6 +642,56 @@ classdef WVGeometryDoublyPeriodic
             nyquistMask = zeros(Nx,Ny,Nz);
             nyquistMask(Nx/2+1,:,:) = 1;
             nyquistMask(:,Ny/2+1,:) = 1;
+        end
+
+        function mask = maskForConjugateFourierCoefficients(Nx,Ny,options)
+            % a mask indicate the components that are redundant conjugates
+            %
+            % - Topic: Masks
+            % - Declaration: mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,options);
+            % - Parameter Nx: grid points in the x-direction
+            % - Parameter Ny: grid points in the y-direction
+            % - Parameter conjugateDimension: (optional) set which dimension in the DFT grid is assumed to have the redundant conjugates (1 or 2), default is 2
+            % - Returns matrix: matrix containing linear indices
+            arguments (Input)
+                Nx (1,1) double {mustBeInteger,mustBePositive}
+                Ny (1,1) double {mustBeInteger,mustBePositive}
+                options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
+            end
+            arguments (Output)
+                mask double {mustBeNonnegative}
+            end
+
+            mask = zeros([Nx Ny]);
+            if options.conjugateDimension == 1
+                % The order of the for-loop is chosen carefully here.
+                for iK=1:(Nx/2+1)
+                    for iL=1:Ny
+                        if iK == 1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                            continue;
+                        elseif iK == Nx/2+1 && iL > Ny/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
+                            continue;
+                        else
+                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
+                        end
+                    end
+                end
+            elseif options.conjugateDimension == 2
+                % The order of the for-loop is chosen carefully here.
+                for iL=1:(Ny/2+1)
+                    for iK=1:Nx
+                        if iL == 1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                            continue;
+                        elseif iL == Ny/2+1 && iK > Nx/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
+                            continue;
+                        else
+                            mask = WVGeometryDoublyPeriodic.setConjugateToUnity(mask,iK,iL,Nx,Ny);
+                        end
+                    end
+                end
+            else
+                error('invalid conjugate dimension')
+            end
         end
 
         function flag = isHermitian(A,options)
