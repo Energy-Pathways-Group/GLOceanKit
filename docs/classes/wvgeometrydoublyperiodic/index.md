@@ -78,11 +78,10 @@ A domain periodic in both x and y.
 + Initialization
   + [`WVGeometryDoublyPeriodic`](/classes/wvgeometrydoublyperiodic/wvgeometrydoublyperiodic.html) create a geometry for a  doubly periodic domain
 + Utility function
-  + [`degreesOfFreedomForComplexMatrix`](/classes/wvgeometrydoublyperiodic/degreesoffreedomforcomplexmatrix.html) a matrix of linear indices of the conjugate
-  + [`degreesOfFreedomForRealMatrix`](/classes/wvgeometrydoublyperiodic/degreesoffreedomforrealmatrix.html) a matrix of linear indices of the conjugate
+  + [`degreesOfFreedomForComplexMatrix`](/classes/wvgeometrydoublyperiodic/degreesoffreedomforcomplexmatrix.html) a matrix with the number of degrees-of-freedom at each entry
+  + [`degreesOfFreedomForRealMatrix`](/classes/wvgeometrydoublyperiodic/degreesoffreedomforrealmatrix.html) a matrix with the number of degrees-of-freedom at each entry
   + [`indicesOfFourierConjugates`](/classes/wvgeometrydoublyperiodic/indicesoffourierconjugates.html) a matrix of linear indices of the conjugate
   + [`isHermitian`](/classes/wvgeometrydoublyperiodic/ishermitian.html) Check if the matrix is Hermitian. Report errors.
-  + [`maskForConjugateFourierCoefficients`](/classes/wvgeometrydoublyperiodic/maskforconjugatefouriercoefficients.html) a matrix of linear indices of the conjugate
   + [`setConjugateToUnity`](/classes/wvgeometrydoublyperiodic/setconjugatetounity.html) set the conjugate of the wavenumber (iK,iL) to 1
 + Operations
   + Differentiation
@@ -98,6 +97,7 @@ A domain periodic in both x and y.
   + [`transformFromWVGridToDFTGrid`](/classes/wvgeometrydoublyperiodic/transformfromwvgridtodftgrid.html) convert from a WV to DFT grid
 + Masks
   + [`maskForAliasedModes`](/classes/wvgeometrydoublyperiodic/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
+  + [`maskForConjugateFourierCoefficients`](/classes/wvgeometrydoublyperiodic/maskforconjugatefouriercoefficients.html) a mask indicate the components that are redundant conjugates
   + [`maskForNyquistModes`](/classes/wvgeometrydoublyperiodic/maskfornyquistmodes.html) returns a mask with locations of modes that are not fully resolved
 
 

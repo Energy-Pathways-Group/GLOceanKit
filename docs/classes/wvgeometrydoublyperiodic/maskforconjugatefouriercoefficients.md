@@ -9,19 +9,19 @@ mathjax: true
 
 #  maskForConjugateFourierCoefficients
 
-a matrix of linear indices of the conjugate
+a mask indicate the components that are redundant conjugates
 
 
 ---
 
 ## Declaration
 ```matlab
- matrix = WVGeometryDoublyPeriodic.indexOfFourierConjugate(Nx,Ny,Nz);
+ mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,options);
 ```
 ## Parameters
 + `Nx`  grid points in the x-direction
 + `Ny`  grid points in the y-direction
-+ `Nz`  grid points in the z-direction (default 1)
++ `conjugateDimension`  (optional) set which dimension in the DFT grid is assumed to have the redundant conjugates (1 or 2), default is 2
 
 ## Returns
 + `matrix`  matrix containing linear indices
