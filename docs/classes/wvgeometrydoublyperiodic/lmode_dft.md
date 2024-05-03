@@ -9,8 +9,11 @@ mathjax: true
 
 #  lMode_dft
 
-
+l mode-number on the DFT grid
 
 
 ---
 
+## Discussion
+
+  

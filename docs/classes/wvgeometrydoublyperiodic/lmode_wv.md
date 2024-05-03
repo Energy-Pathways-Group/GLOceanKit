@@ -9,8 +9,11 @@ mathjax: true
 
 #  lMode_wv
 
-
+l mode number on the WV grid
 
 
 ---
 
+## Discussion
+
+  

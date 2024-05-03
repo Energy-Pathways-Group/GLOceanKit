@@ -9,8 +9,11 @@ mathjax: true
 
 #  Nkl_wv
 
-
+length of the combined kl-wavenumber dimension on the WV grid
 
 
 ---
 
+## Discussion
+
+  

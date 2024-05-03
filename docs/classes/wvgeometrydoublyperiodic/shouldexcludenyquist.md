@@ -9,8 +9,11 @@ mathjax: true
 
 #  shouldExcludeNyquist
 
-
+whether the WV grid includes Nyquist wavenumbers
 
 
 ---
 
+## Discussion
+
+  

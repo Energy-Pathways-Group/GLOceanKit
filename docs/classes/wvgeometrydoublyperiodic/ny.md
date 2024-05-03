@@ -9,8 +9,11 @@ mathjax: true
 
 #  Ny
 
-
+number of grid points in the y-dimension
 
 
 ---
 
+## Discussion
+
+  

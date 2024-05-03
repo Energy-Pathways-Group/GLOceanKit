@@ -9,8 +9,11 @@ mathjax: true
 
 #  Lx
 
-
+length of the x-dimension
 
 
 ---
 
+## Discussion
+
+  

@@ -9,8 +9,11 @@ mathjax: true
 
 #  l_wv
 
-
+l-wavenumber dimension on the WV grid
 
 
 ---
 
+## Discussion
+
+  

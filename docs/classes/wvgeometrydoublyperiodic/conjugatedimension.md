@@ -9,8 +9,11 @@ mathjax: true
 
 #  conjugateDimension
 
-
+assumed conjugate dimension
 
 
 ---
 
+## Discussion
+
+  

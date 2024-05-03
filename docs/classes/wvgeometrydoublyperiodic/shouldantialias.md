@@ -9,8 +9,11 @@ mathjax: true
 
 #  shouldAntialias
 
-
+whether the WV grid includes quadratically aliased wavenumbers
 
 
 ---
 
+## Discussion
+
+  

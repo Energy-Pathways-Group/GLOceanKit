@@ -9,8 +9,11 @@ mathjax: true
 
 #  l_dft
 
-
+l wavenumber dimension on the DFT grid
 
 
 ---
 
+## Discussion
+
+  

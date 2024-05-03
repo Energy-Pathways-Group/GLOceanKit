@@ -9,8 +9,11 @@ mathjax: true
 
 #  kMode_wv
 
-
+k mode number on the WV grid
 
 
 ---
 
+## Discussion
+
+  

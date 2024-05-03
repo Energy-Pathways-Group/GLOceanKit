@@ -9,8 +9,11 @@ mathjax: true
 
 #  Nx
 
-
+number of grid points in the x-dimension
 
 
 ---
 
+## Discussion
+
+  

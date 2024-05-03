@@ -9,8 +9,11 @@ mathjax: true
 
 #  dftConjugateIndices
 
-
+index into the DFT grid of the conjugate of each WV mode
 
 
 ---
 
+## Discussion
+
+  

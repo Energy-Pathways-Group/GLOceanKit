@@ -9,8 +9,11 @@ mathjax: true
 
 #  k_dft
 
-
+k wavenumber dimension on the DFT grid
 
 
 ---
 
+## Discussion
+
+  

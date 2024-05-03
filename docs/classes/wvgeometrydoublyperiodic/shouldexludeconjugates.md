@@ -9,8 +9,11 @@ mathjax: true
 
 #  shouldExludeConjugates
 
-
+whether the WV grid includes wavenumbers that are Hermitian conjugates
 
 
 ---
 
+## Discussion
+
+  

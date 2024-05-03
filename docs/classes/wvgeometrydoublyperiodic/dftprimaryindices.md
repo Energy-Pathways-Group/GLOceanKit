@@ -9,8 +9,11 @@ mathjax: true
 
 #  dftPrimaryIndices
 
-
+index into the DFT grid of each WV mode
 
 
 ---
 
+## Discussion
+
+  

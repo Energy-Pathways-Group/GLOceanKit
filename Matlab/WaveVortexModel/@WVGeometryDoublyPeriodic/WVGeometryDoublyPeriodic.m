@@ -23,37 +23,150 @@ classdef WVGeometryDoublyPeriodic
     %
     % The basic usage of the indices is as follows:
     % assume wvMatrix and dftMatrix are shaped as
-    %   size(wvMatrix) = [Nkl_wv 1]
-    %   size(dftMatrix) = [Nk_dft Nl_dft] (equivalently [Nx Ny]
+    % ```matlab
+    %   size(wvMatrix) == [Nkl_wv 1]'
+    %   size(dftMatrix) == [Nk_dft Nl_dft]; % (equivalently [Nx Ny]
+    % ```
     % then to transform data from the DFT matrix to the WV matrix,
+    % ```matlab
     %   wvMatrix = dftMatrix(dftPrimaryIndices);
+    % ```
     % and the reverse is
+    % ```matlab
     %   dftMatrix(dftPrimaryIndices) = wvMatrix;
     %   dftMatrix(dftConjugateIndices) = conj(wvMatrix(wvConjugateIndex));
+    % ```
     %
+    % - Topic: Initialization
+    % - Topic: Domain attributes
+    % - Topic: Domain attributes — Spatial grid
+    % - Topic: Domain attributes — DFT grid
+    % - Topic: Domain attributes — WV grid
+    % - Topic: Operations
+    % - Topic: Operations — Grid transformation
+    % - Topic: Operations — Fourier transformation
+    % - Topic: Operations — Differentiation
+    % - Topic: Index gymnastics
+    % - Topic: Masks
+    % - Topic: Utility function
     properties (GetAccess=public, SetAccess=protected)
-        Lx, Ly
-        Nx, Ny
+        % length of the x-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Lx
+
+        % length of the y-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Ly
+
+        % number of grid points in the x-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Nx
+        
+        % number of grid points in the y-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Ny
+
+        % assumed conjugate dimension
+        %
+        % - Topic: Domain attributes — DFT grid
         conjugateDimension
+
+        % whether the WV grid includes quadratically aliased wavenumbers
+        %
+        % - Topic: Domain attributes — WV grid
         shouldAntialias 
+
+        % whether the WV grid includes Nyquist wavenumbers
+        %
+        % - Topic: Domain attributes — WV grid
         shouldExcludeNyquist
+
+        % whether the WV grid includes wavenumbers that are Hermitian conjugates
+        %
+        % - Topic: Domain attributes — WV grid  
         shouldExludeConjugates
 
+        % index into the DFT grid of each WV mode
+        %
+        % - Topic: Domain attributes — WV grid      
         dftPrimaryIndices
+    
+        % index into the DFT grid of the conjugate of each WV mode
+        %
+        % - Topic: Domain attributes — WV grid
         dftConjugateIndices
-
-        k_wv, l_wv
+ 
+        % k-wavenumber dimension on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
+        k_wv
+        
+        % l-wavenumber dimension on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
+        l_wv
     end
 
     properties (Dependent, SetAccess=private)
-        x, y
+        
+        % x-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        x
 
-        k_dft, l_dft
-        kMode_dft, lMode_dft
-        Nk_dft, Nl_dft
+        % y-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        y
 
+        % k wavenumber dimension on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        k_dft
+        
+        % l wavenumber dimension on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        l_dft
+
+        % k mode-number on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        kMode_dft
+        
+        % l mode-number on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        lMode_dft
+
+        % length of the k-wavenumber dimension on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        Nk_dft
+        
+        % length of the l-wavenumber dimension on the DFT grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        Nl_dft
+      
+        % length of the combined kl-wavenumber dimension on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
         Nkl_wv
-        kMode_wv, lMode_wv
+      
+        % k mode number on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
+        kMode_wv
+        
+        % l mode number on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
+        lMode_wv
     end
 
     methods
@@ -180,10 +293,28 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function u_bar = transformFromSpatialDomain(self,u)
+            % transform from $$(x,y,z)$$ to $$(k,l,z)$$ on the DFT grid
+            %
+            % Performs a Fourier transform in the x and y direction. The
+            % resulting matrix is on the DFT grid.
+            %
+            % - Topic: Operations — Fourier transformation
+            % - Declaration: u_bar = transformFromSpatialDomain(u)
+            % - Parameter u: a real-valued matrix of size [Nx Ny Nz]
+            % - Returns u_bar: a complex-valued matrix of size [Nk_dft Nl_dft Nz]
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
 
         function u = transformToSpatialDomain(self,u_bar)
+            % transform from $$(k,l,z)$$ on the DFT grid to $$(x,y,z)$$
+            %
+            % Performs an inverse Fourier transform to take a matrix from
+            % the DFT grid back to the spatial domain.
+            %
+            % - Topic: Operations — Fourier transformation
+            % - Declaration: u = transformToSpatialDomain(u_bar)  
+            % - Parameter u_bar: a complex-valued matrix of size [Nk_dft Nl_dft Nz]
+            % - Returns u: a real-valued matrix of size [Nx Ny Nz]
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
@@ -198,7 +329,7 @@ classdef WVGeometryDoublyPeriodic
             % it does not mean it is a valid WV mode number, e.g., it may
             % be removed due to aliasing.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Index gymnastics
             % - Declaration: bool = isValidWVModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
@@ -222,7 +353,7 @@ classdef WVGeometryDoublyPeriodic
             % *not* normalize the mode to the primary mode number, but will
             % throw an error.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Index gymnastics
             % - Declaration: index = linearWVIndexFromModeNumber(kMode,lMode,jMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
@@ -248,7 +379,7 @@ classdef WVGeometryDoublyPeriodic
             % This function will return the mode numbers (kMode,lMode)
             % given some linear index into a WV structured matrix.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Index gymnastics
             % - Declaration: [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
             % - Parameter linearIndex: a non-negative integer number
             % - Returns kMode: integer
@@ -277,7 +408,7 @@ classdef WVGeometryDoublyPeriodic
             % This function is not the fastest way to reformat your data.
             % If high performance is required, you should 
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Operations — Grid transformation
             % - Declaration: Azkl = transformFromDFTGridToWVGrid(self,Aklz)
             % - Parameter Aklz: DFT format matrix of size [Nk_dft Nl_dft Nz] (equivalently [Nx Ny Nz]) where Nz can be of any length
             % - Returns Azkl: WV format matrix of size [Nz Nkl_wv]
@@ -308,7 +439,7 @@ classdef WVGeometryDoublyPeriodic
             % This function is should generally be faster than the function
             % transformFromDFTGridToWVGrid if you cache these indices.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Index gymnastics
             % - Declaration: dftToWVIndices = indicesFromDFTGridToWVGrid(self,Nz)
             % - Parameter Nz: length of the outer dimension (default 1)
             % - Returns dftToWVIndices: indices into a DFT matrix
@@ -339,7 +470,7 @@ classdef WVGeometryDoublyPeriodic
             % isHalfComplex is selected, then it will not set values for
             % iL>Ny/2, which are ignored by a 'symmetric' fft.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Operations — Grid transformation
             % - Declaration: Aklz = transformFromWVGridToDFTGrid(self,Azkl)
             % - Parameter Azkl: WV format matrix of size [Nz Nkl_wv] where Nz can be of any length
             % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
@@ -382,7 +513,7 @@ classdef WVGeometryDoublyPeriodic
             % This function is should generally be faster than the function
             % transformFromWVGridToDFTGrid if you cache these indices.
             %
-            % - Topic: Index Gymnastics
+            % - Topic: Index gymnastics
             % - Declaration: [dftPrimaryIndices, wvPrimaryIndices, dftConjugateIndices, wvConjugateIndices] = indicesFromWVGridToDFTGrid(Nz,options)
             % - Parameter Nz: length of the outer dimension (default 1)
             % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
