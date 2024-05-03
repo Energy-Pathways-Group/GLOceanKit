@@ -20,7 +20,17 @@ classdef WVGeometryDoublyPeriodic
     % two dimensions, this means that 4/9ths of the available wavenumbers
     % are aliased. The WV layout thus does not include either the Hermitian
     % conjugates nor the aliased modes.
-
+    %
+    % The basic usage of the indices is as follows:
+    % assume wvMatrix and dftMatrix are shaped as
+    %   size(wvMatrix) = [Nkl_wv 1]
+    %   size(dftMatrix) = [Nk_dft Nl_dft] (equivalently [Nx Ny]
+    % then to transform data from the DFT matrix to the WV matrix,
+    %   wvMatrix = dftMatrix(dftPrimaryIndices);
+    % and the reverse is
+    %   dftMatrix(dftPrimaryIndices) = wvMatrix;
+    %   dftMatrix(dftConjugateIndices) = conj(wvMatrix(wvConjugateIndex));
+    %
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly
         Nx, Ny
@@ -119,6 +129,7 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function x = get.x(self)
+            % 
             dx = self.Lx/self.Nx;
             x = dx*(0:self.Nx-1)';
         end
@@ -663,6 +674,42 @@ classdef WVGeometryDoublyPeriodic
             nyquistMask = zeros(Nx,Ny,Nz);
             nyquistMask(Nx/2+1,:,:) = 1;
             nyquistMask(:,Ny/2+1,:) = 1;
+        end
+
+        function flag = isHermitian(A,options)
+            % Check if the matrix is Hermitian. Report errors.
+            %
+            %
+            % - Topic: Utility function
+            % - Declaration: checkHermitian( A )
+            arguments (Input)
+                A (:,:,:) double
+                options.shouldReportErrors (1,1) double {mustBeMember(options.shouldReportErrors,[0 1])} = 1
+            end
+            arguments (Output)
+                flag logical
+            end
+            M = size(A,1);
+            N = size(A,2);
+            K = size(A,3);
+
+            flag = 0;
+            for k=1:K
+                for i=M:-1:1
+                    for j=N:-1:1
+                        ii = mod(M-i+1, M) + 1;
+                        jj = mod(N-j+1, N) + 1;
+                        if A(i,j,k) ~= conj(A(ii,jj,k))
+                            flag = 1;
+                            if options.shouldReportErrors == 1
+                                fprintf('(i,j,k)=(%d,%d,%d) is not conjugate with (%d,%d,%d)\n',i,j,k,ii,jj,k)
+                            else
+                                return;
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
 
