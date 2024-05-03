@@ -11,7 +11,7 @@
 % April 12th, 2018      Version 1.0
 
 % profile on
-% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [64 64 33]);
 % profile viewer
@@ -25,6 +25,23 @@ wvt.initWithRandomFlow();
 % [StandardFp,StandardFm,StandardF0] = standardFlux.compute(wvt);
 
 % return
+
+%%
+% unsorted is fastest!!! DFT sorted is 2x slower, WV sorted is 10% slower
+tic
+for i=1:500
+    wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
+    wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+end
+toc
+
+%%
+% unsorted is 10% slower than sorting either dimension
+tic
+for i=1:500
+    wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
+end
+toc
 
 %%
 [Fp,Fm,F0] = wvt.nonlinearFlux();
@@ -85,7 +102,7 @@ for i=1:500
 end
 toc
 % profile viewer
-% 2.486s
+% 2.7, 2.8
 
 %%
 % 2024-04-30 Finally got this down to something reasonable!!!
@@ -99,7 +116,7 @@ for i=1:5000
 end
 toc
 % profile viewer
-% 2.486s
+% 2.9, 2.8
 
 %%
 A = randn(100,100);

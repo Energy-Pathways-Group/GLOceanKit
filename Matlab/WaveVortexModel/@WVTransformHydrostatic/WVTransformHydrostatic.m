@@ -15,7 +15,7 @@ classdef WVTransformHydrostatic < WVTransform
     % - Topic: Initialization
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
-    properties (GetAccess=public, SetAccess=protected)
+    properties %(GetAccess=public, SetAccess=protected)
         rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
         rhoFunction, N2Function, dLnN2Function % function handles
 
@@ -33,7 +33,7 @@ classdef WVTransformHydrostatic < WVTransform
         PFinvInterp, QGinvInterp
 
         dftBuffer, wvBuffer
-        dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
+        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (GetAccess=public)
@@ -207,7 +207,7 @@ classdef WVTransformHydrostatic < WVTransform
 
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.wvPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesForWVGridToDFTGrid(self.Nz,isHalfComplex=1);
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -339,7 +339,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.wvBuffer = self.PFinv*(self.P .* (options.Apm + options.A0));
 
             % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
             self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
             % Perform a 2D DFT
@@ -356,7 +356,7 @@ classdef WVTransformHydrostatic < WVTransform
             self.wvBuffer = self.QGinv*(self.Q .* (options.Apm + options.A0));
 
             % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
             self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
             % Perform a 2D DFT

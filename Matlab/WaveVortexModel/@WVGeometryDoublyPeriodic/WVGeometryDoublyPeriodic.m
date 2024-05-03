@@ -5,7 +5,21 @@ classdef WVGeometryDoublyPeriodic
     % logic necessary for computing Fourier transforms and spectral
     % derivatives in a doubly periodic domain.
     %
-    % The idea is that this class encapsulates all the index gymnastics 
+    % The class primarily converts between two different data structures
+    % for representing functions of (k,l): what we call the "DFT" grid, and
+    % the "WV" grid. The DFT grid is appropriate for many FFT algorithms,
+    % while the WV grid is ideal for the vertical mode matrix
+    % multiplications in the WaveVortexModel, as it contains no redundant
+    % coefficients.
+    %
+    % The DFT layout is the the matrix structure used by many modern FFT
+    % algorithms. For real-valued functions, this format contains twice as
+    % much information as necessary, due to Hermitian conjugacy.
+    % Additionally, we often want to restrict ourselves to wavenumbers that
+    % do not alias with quadratic multiplication (the two-thirds rule). In
+    % two dimensions, this means that 4/9ths of the available wavenumbers
+    % are aliased. The WV layout thus does not include either the Hermitian
+    % conjugates nor the aliased modes.
 
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly
@@ -15,8 +29,8 @@ classdef WVGeometryDoublyPeriodic
         shouldExcludeNyquist
         shouldExludeConjugates
 
-        primaryDFTindices
-        conjugateDFTindices
+        dftPrimaryIndices
+        dftConjugateIndices
 
         k_wv, l_wv
     end
@@ -34,6 +48,17 @@ classdef WVGeometryDoublyPeriodic
 
     methods
         function self = WVGeometryDoublyPeriodic(Lxy, Nxy, options)
+            % create a geometry for a  doubly periodic domain
+            %
+            % - Topic: Initialization
+            % - Declaration:  self = WVGeometryDoublyPeriodic(Lxy, Nxy, options)
+            % - Parameter Lxy: length of the domain (in meters) in the two periodic coordinate directions, e.g. [Lx Ly]
+            % - Parameter Nxy: number of grid points in the two coordinate directions, e.g. [Nx Ny]
+            % - Parameter conjugateDimension: (optional) set which dimension in the DFT grid is assumed to have the redundant conjugates (1 or 2), default is 2
+            % - Parameter shouldAntialias: (optional) set whether the WV grid excludes the quadratically aliased modes [0 1] (default 1)
+            % - Parameter shouldExcludeNyquist: (optional) set whether the WV grid excludes Nyquist modes[0 1] (default 1)
+            % - Parameter shouldExludeConjugates: (optional) set whether the WV grid excludes conjugate modes [0 1] (default 1)
+            % - Returns geom: a new WVGeometryDoublyPeriodic instance
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
@@ -52,9 +77,45 @@ classdef WVGeometryDoublyPeriodic
             self.shouldExcludeNyquist = options.shouldExcludeNyquist;
             self.shouldExludeConjugates = options.shouldExludeConjugates;
 
-            [self.primaryDFTindices,self.conjugateDFTindices,self.k_wv,self.l_wv] = self.indicesOfPrimaryCoefficients;
-
+            % indices to convert between DFT to WV grid (2D only)
+            %
+            % This function helps establish the primary WV grid, and
+            % provides indices to convert between the DFT and WV grid.
+            %
+            % All four returned values will be of size [Nkl 1], the
+            % dimension of the 2D WV grid. dftPrimaryIndices contain
+            % indices into a 2D DFT formatted array, ordered specifically
+            % for the WV grid. dftConjugateIndices is the same, but points
+            % to the conjugates of the primary indices. (k_wv,l_wv) are
+            % also of size [Nkl 1] and contain the wavenumber on the WV
+            % grid.
             
+            % First establish which coefficients NOT to include in the WV
+            % grid
+            notPrimaryCoeffs = zeros(self.Nk_dft,self.Nl_dft);
+            if self.shouldAntialias == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.k_dft,self.l_dft);
+            end
+            if self.shouldExcludeNyquist == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk_dft,self.Nl_dft);
+            end
+            if self.shouldExludeConjugates == 1
+                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,self.conjugateDimension);
+            end
+
+            [K,L] = ndgrid(self.k_dft,self.l_dft);
+            Kh = sqrt(K.*K + L.*L);
+
+            multiIndex = cat(2,notPrimaryCoeffs(:),Kh(:),K(:),L(:));
+            [sortedMultiIndex,self.dftPrimaryIndices] = sortrows(multiIndex);
+
+            % Now remove all the coefficients that we didn't want
+            self.dftPrimaryIndices = self.dftPrimaryIndices(sortedMultiIndex(:,1) == 0);
+
+            self.dftConjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
+            self.dftConjugateIndices = self.dftConjugateIndices(self.dftPrimaryIndices);
+            self.k_wv = K(self.dftPrimaryIndices);
+            self.l_wv = L(self.dftPrimaryIndices);
         end
 
         function x = get.x(self)
@@ -95,12 +156,12 @@ classdef WVGeometryDoublyPeriodic
 
         function k = get.kMode_wv(self)
             [K,~] = ndgrid(self.kMode_dft,self.lMode_dft);
-            k = K(self.primaryDFTindices);
+            k = K(self.dftPrimaryIndices);
         end
 
         function l = get.lMode_wv(self)
             [~,L] = ndgrid(self.kMode_dft,self.lMode_dft);
-            l = L(self.primaryDFTindices);
+            l = L(self.dftPrimaryIndices);
         end
 
         function N = get.Nkl_wv(self)
@@ -171,6 +232,16 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
+            % return mode number from a linear index into a WV matrix
+            %
+            % This function will return the mode numbers (kMode,lMode)
+            % given some linear index into a WV structured matrix.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
+            % - Parameter linearIndex: a non-negative integer number
+            % - Returns kMode: integer
+            % - Returns lMode: integer
             arguments (Input)
                 self WVGeometryDoublyPeriodic {mustBeNonempty}
                 linearIndex (1,1) double {mustBeInteger,mustBePositive}
@@ -184,155 +255,201 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function Azkl = transformFromDFTGridToWVGrid(self,Aklz)
+            % convert from DFT to WV grid
+            %
+            % This function will reformat the memory layout of a data
+            % structure on a DFT grid to one on a WV grid. The WV grid will
+            % respect the conditions set when this class was initialized
+            % (shouldAntialias, shouldExcludeNyquist,
+            % shouldExcludeConjugates).
+            %
+            % This function is not the fastest way to reformat your data.
+            % If high performance is required, you should 
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: Azkl = transformFromDFTGridToWVGrid(self,Aklz)
+            % - Parameter Aklz: DFT format matrix of size [Nk_dft Nl_dft Nz] (equivalently [Nx Ny Nz]) where Nz can be of any length
+            % - Returns Azkl: WV format matrix of size [Nz Nkl_wv]
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                Aklz (:,:,:) double
+            end
+            arguments (Output)
+                Azkl (:,:,:) double
+            end
             Nz = size(Aklz,3);
             Aklz = reshape(Aklz,[self.Nx*self.Ny Nz]);
             Azkl = zeros(Nz,self.Nkl_wv);
             for iK=1:self.Nkl_wv
-                Azkl(:,iK) = Aklz(self.primaryDFTindices(iK),:);
+                Azkl(:,iK) = Aklz(self.dftPrimaryIndices(iK),:);
             end
         end
 
-        function Aklz = transformFromWVGridToDFTGrid(self,Azkl)
+        function dftToWVIndices = indicesFromDFTGridToWVGrid(self,Nz)
+            % indices to convert from DFT to WV grid
+            %
+            % This function returns indices to quickly reformat the memory
+            % layout of a data structure on a DFT grid to one on a WV grid.
+            % The resulting WV grid will respect the conditions set when
+            % this class was initialized (shouldAntialias,
+            % shouldExcludeNyquist, shouldExcludeConjugates).
+            %
+            % This function is should generally be faster than the function
+            % transformFromDFTGridToWVGrid if you cache these indices.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: dftToWVIndices = indicesFromDFTGridToWVGrid(self,Nz)
+            % - Parameter Nz: length of the outer dimension (default 1)
+            % - Returns dftToWVIndices: indices into a DFT matrix
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                Nz (1,1) double {mustBeInteger,mustBePositive} = 1
+            end
+            arguments (Output)
+                dftToWVIndices (:,1) double
+            end
+            dftToWVIndices = zeros(Nz*self.Nkl_wv,1);
+            index=1;
+            % the loop ordering is important here: Nz is the fastest moving
+            % dimension in the WV grid, hence it is the inner-loop.
+            for iK=1:self.Nkl_wv
+                for iZ=1:Nz
+                    dftToWVIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    index = index+1;
+                end
+            end
+        end
+
+        function Aklz = transformFromWVGridToDFTGrid(self,Azkl,options)
+            % convert from a WV to DFT grid
+            %
+            % This function will reformat the memory layout of a data
+            % structure on a WV grid to one on a DFT grid. If the option
+            % isHalfComplex is selected, then it will not set values for
+            % iL>Ny/2, which are ignored by a 'symmetric' fft.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: Aklz = transformFromWVGridToDFTGrid(self,Azkl)
+            % - Parameter Azkl: WV format matrix of size [Nz Nkl_wv] where Nz can be of any length
+            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
+            % - Returns Aklz: DFT format matrix of size [Nk_dft Nl_dft Nz] (equivalently [Nx Ny Nz])
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                Azkl (:,:,:) double
+                options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 1
+            end
+            arguments (Output)
+                Aklz (:,:,:) double
+            end
             Nz = size(Azkl,1);
             Aklz = zeros(self.Nx*self.Ny,Nz);
-            for iK=1:self.Nkl_wv
-                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
-                Aklz(self.conjugateDFTindices(iK),:) = conj(Azkl(:,iK));
+
+            if options.isHalfComplex == 1
+                for iK=1:self.Nkl_wv
+                    Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
+                end
+                Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
+                for iK=1:(self.Nx/2-1)
+                    Aklz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(Aklz(iK,1,:));
+                end
+            else
+                for iK=1:self.Nkl_wv
+                    Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
+                    Aklz(self.dftConjugateIndices(iK),:) = conj(Azkl(:,iK));
+                end
+                Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
             end
-            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
         end
 
-        function Aklz = transformFromWVGridToDFTGridHalfComplex(self,Azkl)
-            % This only sets the conjugate along the l=0 line
-            Nz = size(Azkl,1);
-            Aklz = zeros(self.Nx*self.Ny,Nz);
-            for iK=1:self.Nkl_wv
-                Aklz(self.primaryDFTindices(iK),:) = Azkl(:,iK);
-            end
-            Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
-            for iK=1:(self.Nx/2-1)
-                Aklz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(Aklz(iK,1,:));
-            end
-        end
 
-        function [dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex] = indicesForWVGridToDFTGrid(self,Nz,options)
+        function [dftPrimaryIndices, dftConjugateIndices, wvConjugateIndices] = indicesFromWVGridToDFTGrid(self,Nz,options)
+            % indices to convert from WV to DFT grid
+            %
+            % This function returns indices to quickly reformat the memory
+            % layout of a data structure on a WV grid to one on a DFT grid.
+            %
+            % This function is should generally be faster than the function
+            % transformFromWVGridToDFTGrid if you cache these indices.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: [dftPrimaryIndices, wvPrimaryIndices, dftConjugateIndices, wvConjugateIndices] = indicesFromWVGridToDFTGrid(Nz,options)
+            % - Parameter Nz: length of the outer dimension (default 1)
+            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
+            % - Returns dftPrimaryIndices: indices into a DFT matrix, matches wvPrimaryIndices
+            % - Returns wvPrimaryIndices: indices into a WV matrix, matches dftPrimaryIndices
+            % - Returns dftConjugateIndices: indices into a DFT matrix, matches wvConjugateIndices
+            % - Returns wvConjugateIndices: indices into a WV matrix, matches dftConjugateIndices
             arguments (Input)
                 self (1,1) WVGeometryDoublyPeriodic
                 Nz (1,1) double {mustBeInteger,mustBePositive}
                 options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 1
             end
             arguments (Output)
-                dftPrimaryIndex (:,1) double
-                wvPrimaryIndex (:,1) double
-                dftConjugateIndex (:,1) double
-                wvConjugateIndex (:,1) double
+                dftPrimaryIndices (:,1) double
+                dftConjugateIndices (:,1) double
+                wvConjugateIndices (:,1) double
             end
 
-            dftPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
-            wvPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
+            dftPrimaryIndices = zeros(Nz*self.Nkl_wv,1);
+            wvPrimaryIndices = zeros(Nz*self.Nkl_wv,1);
             index=1;
             for iZ=1:Nz
                 for iK=1:self.Nkl_wv
-                    dftPrimaryIndex(index) = self.primaryDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                    wvPrimaryIndex(index) = iZ + (iK-1)*Nz;
+                    dftPrimaryIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    wvPrimaryIndices(index) = iZ + (iK-1)*Nz;
                     index = index+1;
                 end
             end
-            [dftPrimaryIndex,indices] = sort(dftPrimaryIndex);
-            wvPrimaryIndex = wvPrimaryIndex(indices);
+
+            % Considered unsorted, dft-sorted, and wv-sorted indices.
+            % The code:
+            %   wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
+            %   wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+            % runs about 10% faster when dft-sorted, than the other two
+            % options.
+            % The code:
+            %   wvt.wvBuffer(wvt.wvPrimaryIndex) = wvt.dftBuffer(wvt.dftPrimaryIndex);
+            % runs about the same when wv or dft-sorted. But importantly
+            %   wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
+            % is almost twice as fast and can be used when wv-sorted.
+            % Ha ha, but even better is that when wv-sorted,
+            %   wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer;
+            %   wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+            % runs the absolute fastest. So, that's a no-brainer!
+
+            [~,indices] = sort(wvPrimaryIndices);
+            dftPrimaryIndices = dftPrimaryIndices(indices);
 
             index=1;
             if options.isHalfComplex == 1
                 wvConjugateIndices2D = find(self.lMode_wv == 0 & self.kMode_wv ~= 0);
-                dftConjugateIndices2D = self.conjugateDFTindices(wvConjugateIndices2D);
-                dftConjugateIndex = zeros(Nz*length(wvConjugateIndices2D),1);
-                wvConjugateIndex = zeros(Nz*length(wvConjugateIndices2D),1);
+                dftConjugateIndices2D = self.dftConjugateIndices(wvConjugateIndices2D);
+                dftConjugateIndices = zeros(Nz*length(wvConjugateIndices2D),1);
+                wvConjugateIndices = zeros(Nz*length(wvConjugateIndices2D),1);
 
                 for iIndex=1:length(wvConjugateIndices2D)
                     wvIndex = wvConjugateIndices2D(iIndex);
                     dftIndex = dftConjugateIndices2D(iIndex);
                     for iZ=1:Nz
-                        dftConjugateIndex(index) = dftIndex + (iZ-1)*(self.Nx*self.Ny);
-                        wvConjugateIndex(index) = iZ + (wvIndex-1)*Nz;
+                        dftConjugateIndices(index) = dftIndex + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndices(index) = iZ + (wvIndex-1)*Nz;
                         index = index+1;
                     end
                 end
             else
-                dftConjugateIndex = zeros(Nz*self.Nkl_wv,1);
-                wvConjugateIndex = zeros(Nz*self.Nkl_wv,1);
+                dftConjugateIndices = zeros(Nz*self.Nkl_wv,1);
+                wvConjugateIndices = zeros(Nz*self.Nkl_wv,1);
                 for iZ=1:Nz
                     for iK=1:self.Nkl_wv
-                        dftConjugateIndex(index) = self.conjugateDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                        wvConjugateIndex(index) = iZ + (iK-1)*Nz;
+                        dftConjugateIndices(index) = self.dftConjugateIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndices(index) = iZ + (iK-1)*Nz;
                         index = index+1;
                     end
                 end
             end
-            [dftConjugateIndex,indices] = sort(dftConjugateIndex);
-            wvConjugateIndex = wvConjugateIndex(indices);
-        end
 
-        function [dftPrimaryIndex, wvPrimaryIndex, AklzConjIndex, AklzPrimaryIndex] = indicesForWVGridToDFTGridOld(self,Nz)
-            dftPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
-            wvPrimaryIndex = zeros(Nz*self.Nkl_wv,1);
-            index=1;
-            for iZ=1:Nz
-                for iK=1:self.Nkl_wv
-                    dftPrimaryIndex(index) = self.primaryDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                    wvPrimaryIndex(index) = iZ + (iK-1)*Nz;
-                    index = index+1;
-                end
-            end
-            [dftPrimaryIndex,indices] = sort(dftPrimaryIndex);
-            wvPrimaryIndex = wvPrimaryIndex(indices);
-
-            AklzConjIndex = zeros(Nz,self.Nx/2-1);
-            AklzPrimaryIndex = zeros(Nz,self.Nx/2-1);
-            index=1;
-            for iZ=1:Nz
-                for iK=1:(self.Nx/2-1)
-                    AklzConjIndex(index) = sub2ind([self.Nx self.Ny Nz],mod(self.Nx-iK+1, self.Nx) + 1,1,iZ);
-                    AklzPrimaryIndex(index) = sub2ind([self.Nx self.Ny Nz],iK,1,iZ);
-                    index = index+1;
-                end
-            end
-        end
-
-        function [indices,conjugateIndices,k,l] = indicesOfPrimaryCoefficients(self)
-            arguments (Input)
-                self (1,1) WVGeometryDoublyPeriodic
-            end
-            arguments (Output)
-                indices (:,1) double
-                conjugateIndices (:,1) double
-                k (:,1) double
-                l (:,1) double
-            end
-
-            notPrimaryCoeffs = zeros(self.Nk_dft,self.Nl_dft);
-            if self.shouldAntialias == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForAliasedModes(self.k_dft,self.l_dft);
-            end
-            if self.shouldExcludeNyquist == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nk_dft,self.Nl_dft);
-            end
-            if self.shouldExludeConjugates == 1
-                notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,self.conjugateDimension);
-            end
-
-            [K,L] = ndgrid(self.k_dft,self.l_dft);
-            Kh = sqrt(K.*K + L.*L);
-
-            multiIndex = cat(2,notPrimaryCoeffs(:),Kh(:),K(:),L(:));
-            [sortedMultiIndex,indices] = sortrows(multiIndex);
-
-            % Now consider only primary numbers, that are not aliased
-            indices = indices(sortedMultiIndex(:,1) == 0);
-
-            conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
-            conjugateIndices = conjugateIndices(indices);
-            k = K(indices);
-            l = L(indices);
+            [wvConjugateIndices,indices] = sort(wvConjugateIndices);
+            dftConjugateIndices = dftConjugateIndices(indices);
         end
         
     end

@@ -43,8 +43,7 @@ classdef WVTransformBoussinesq < WVTransform
         Aklz
 
         dftBuffer, wvBuffer
-        dftPrimaryIndex, wvPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
-        dftPrimaryIndexAllZ
+        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (Dependent, SetAccess=private)
@@ -254,17 +253,7 @@ classdef WVTransformBoussinesq < WVTransform
 
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.wvPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesForWVGridToDFTGrid(self.Nz,isHalfComplex=1);
-
-            self.dftPrimaryIndexAllZ = zeros(Nz*self.Nkl,1);
-            index=1;
-            
-            for iK=1:self.Nkl
-                for iZ=1:Nz
-                    self.dftPrimaryIndexAllZ(index) = self.horizontalGeometry.primaryDFTindices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                    index = index+1;
-                end
-            end
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function value = get.nK2unique(self)
@@ -469,9 +458,16 @@ classdef WVTransformBoussinesq < WVTransform
         end
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
+            % self.dftBuffer = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            % u_bar(self.wvPrimaryIndex) = self.dftBuffer(self.dftPrimaryIndex);
+            % u_bar=reshape(u_bar,[self.Nz self.Nkl]);
+
+            % u_bar1 = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            % u_bar(self.wvPrimaryIndex) = u_bar1(self.dftPrimaryIndex);
+            % u_bar = reshape(u_bar,[self.Nz self.Nkl]);
+
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            %u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
-            u_bar = reshape(u_bar(self.dftPrimaryIndexAllZ),[self.Nz self.Nkl]);
+            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -502,7 +498,7 @@ classdef WVTransformBoussinesq < WVTransform
             end
 
             % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
             self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
             % Perform a 2D DFT
@@ -531,7 +527,7 @@ classdef WVTransformBoussinesq < WVTransform
             end
 
             % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer(self.wvPrimaryIndex);
+            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
             self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
             % Perform a 2D DFT
