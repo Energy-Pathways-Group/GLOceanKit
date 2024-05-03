@@ -3,7 +3,7 @@ layout: default
 title: A0_QGPV_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 7
+nav_order: 8
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potent
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m^{-1} s^{-1}$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$m^{-1} s^{-1}$$.
 
 ## Discussion
 

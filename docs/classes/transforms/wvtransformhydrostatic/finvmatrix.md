@@ -3,7 +3,7 @@ layout: default
 title: FinvMatrix
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 9
+nav_order: 3
 mathjax: true
 ---
 

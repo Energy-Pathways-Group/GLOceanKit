@@ -3,7 +3,7 @@ layout: default
 title: addGeostrophicModes
 parent: WVTransform
 grand_parent: Classes
-nav_order: 61
+nav_order: 68
 mathjax: true
 ---
 
@@ -16,14 +16,14 @@ add amplitudes of the given geostrophic modes
 
 ## Declaration
 ```matlab
- [k,l] = addGeostrophicModes(self)
+ [k,l] = addGeostrophicModes(self,options)
 ```
 ## Parameters
-+ `k`  integer index, (k0 > -Nx/2 && k0 < Nx/2)
-+ `l`  integer index, (l0 > -Ny/2 && l0 < Ny/2)
-+ `j`  integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
-+ `phi`  phase in radians, (0 <= phi <= 2*pi)
-+ `u`  fluid velocity u (m/s)
++ `k`  (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
++ `l`  (optional) integer index, (l0 > -Ny/2 && l0 < Ny/2)
++ `j`  (optional) integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
++ `phi`  (optional) phase in radians, (0 <= phi <= 2*pi)
++ `u`  (optional) fluid velocity u (m/s)
 
 ## Returns
 + `k`  wavenumber k of the waves (radians/m)

@@ -61,7 +61,7 @@ Computes the nonlinear flux for a WVTransform
 + Initialization
   + [`WVNonlinearFluxOperation`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/wvnonlinearfluxoperation.html) create a new nonlinear flux operation
   + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
 + Properties
   + [`doesFluxA0`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/doesfluxa0.html) boolean indicating whether or not this operation returns F0
   + [`doesFluxAm`](/classes/nonlinear-fluxes/wvnonlinearfluxoperation/doesfluxam.html) boolean indicating whether or not this operation returns Fm

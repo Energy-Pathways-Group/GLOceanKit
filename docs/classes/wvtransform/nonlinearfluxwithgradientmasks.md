@@ -3,7 +3,7 @@ layout: default
 title: nonlinearFluxWithGradientMasks
 parent: WVTransform
 grand_parent: Classes
-nav_order: 138
+nav_order: 161
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: Apm_TE_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 20
+nav_order: 23
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$m$$.
 
 ## Discussion
 

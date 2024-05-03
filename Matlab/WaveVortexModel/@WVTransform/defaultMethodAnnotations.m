@@ -9,8 +9,9 @@ function methodAnnotations = defaultMethodAnnotations()
 % - Returns methodAnnotations: array of WVAnnotations instances
 methodAnnotations = WVAnnotation.empty(0,0);
 
-methodAnnotations(end+1) = WVAnnotation('transformFromSpatialDomainWithF', 'transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the F-modes');
-methodAnnotations(end+1) = WVAnnotation('transformFromSpatialDomainWithG', 'transforms from the spatial domain (x,y,z) to the spectral domain (k,l,j) using the G-modes');
+methodAnnotations(end+1) = WVAnnotation('transformFromSpatialDomainWithFio', 'transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes');
+methodAnnotations(end+1) = WVAnnotation('transformFromSpatialDomainWithFg', 'transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic F-modes');
+methodAnnotations(end+1) = WVAnnotation('transformFromSpatialDomainWithGg', 'transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic G-modes');
 methodAnnotations(end+1) = WVAnnotation('transformToSpatialDomainWithF', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes');
 methodAnnotations(end+1) = WVAnnotation('transformToSpatialDomainWithG', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes');
 methodAnnotations(end+1) = WVAnnotation('transformToSpatialDomainWithFAllDerivatives', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.');

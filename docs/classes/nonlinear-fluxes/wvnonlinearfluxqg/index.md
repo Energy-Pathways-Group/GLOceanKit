@@ -55,7 +55,7 @@ nav_order: 4
   + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/isequal.html) check for equality with another nonlinear flux operation
 + Initialization
   + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
 + Write to file
   + [`writeToFile`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/writetofile.html) write information about the nonlinear flux operation to file
 

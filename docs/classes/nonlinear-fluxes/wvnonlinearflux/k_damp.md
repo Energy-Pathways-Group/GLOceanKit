@@ -3,7 +3,7 @@ layout: default
 title: k_damp
 parent: WVNonlinearFlux
 grand_parent: Classes
-nav_order: 11
+nav_order: 10
 mathjax: true
 ---
 

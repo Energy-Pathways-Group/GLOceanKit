@@ -3,7 +3,7 @@ layout: default
 title: A0t
 parent: WVTransform
 grand_parent: Classes
-nav_order: 10
+nav_order: 11
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ geostrophic coefficients at time t
 ---
 
 ## Description
-Complex valued state variable with dimensions $$(k,l,j)$$ and units of $$m$$.
+Complex valued state variable with dimensions $$(j,kl)$$ and units of $$m$$.
 
 ## Discussion
 

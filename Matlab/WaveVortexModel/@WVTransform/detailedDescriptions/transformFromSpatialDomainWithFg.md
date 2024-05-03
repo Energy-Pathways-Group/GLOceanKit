@@ -1,14 +1,15 @@
 - Topic: Operations — Transformations
-- Declaration: w_bar = transformFromSpatialDomainWithG(w)
-- Parameter w: variable with dimensions $$(x,y,z)$$
+- Declaration: u_bar = transformFromSpatialDomainWithFg(u)
+- Parameter u: variable with dimensions $$(z,:,:)$$
+- Returns u_bar: variable with dimensions $$(j,:,:)$$
 
-This is the component of the [discrete transformation](/mathematical-introduction/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the G-modes. Mathematically we write,
+This is the component of the [discrete transformation](/mathematical-introduction/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the F-modes. Mathematically we write,
 
 $$
-\tilde{f}_{klj} =  \mathcal{G} \cdot \mathcal{DFT}_y \cdot \mathcal{DFT}_x \left[ f(x,y,z) \right]
+\tilde{f}_{klj} =  \mathcal{F} \cdot \mathcal{DFT}_y \cdot \mathcal{DFT}_x \left[ f(x,y,z) \right]
 $$
 
-The $$G$$ mode projection is applicable to dynamical variables $$\eta$$, $$w$$.
+The $$F$$ mode projection is applicable to dynamical variables $$u$$, $$v$$, $$p$$.
 
 As noted in [Early, et al. (2021)](https://doi.org/10.1017/jfm.2020.995), the vertical transforms $\mathcal{F}$ and $\mathcal{G}$ require a matrix multiplication and thus have a computational cost of,
 

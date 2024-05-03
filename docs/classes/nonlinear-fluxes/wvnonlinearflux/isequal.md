@@ -3,7 +3,7 @@ layout: default
 title: isequal
 parent: WVNonlinearFlux
 grand_parent: Classes
-nav_order: 10
+nav_order: 9
 mathjax: true
 ---
 

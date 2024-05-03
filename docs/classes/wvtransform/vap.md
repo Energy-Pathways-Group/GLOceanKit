@@ -3,7 +3,7 @@ layout: default
 title: VAp
 parent: WVTransform
 grand_parent: Classes
-nav_order: 51
+nav_order: 58
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
+Complex valued transform property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

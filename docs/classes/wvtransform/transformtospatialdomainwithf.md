@@ -3,7 +3,7 @@ layout: default
 title: transformToSpatialDomainWithF
 parent: WVTransform
 grand_parent: Classes
-nav_order: 192
+nav_order: 220
 mathjax: true
 ---
 
@@ -16,10 +16,11 @@ transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using 
 
 ## Declaration
 ```matlab
- u = transformToSpatialDomainWithF(u_bar)
+ u = transformToSpatialDomainWithF(options)
 ```
 ## Parameters
-+ `u_bar`  variable with dimensions $$(k,l,j)$$
++ `Apm`  (optional) variable with dimensions $$(k,l,j)$$ to be transformed with the wave modes
++ `A0`  (optional) variable with dimensions $$(k,l,j)$$ to be transformed with the geostrophic modes
 
 ## Discussion
 

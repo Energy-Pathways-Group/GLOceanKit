@@ -13,9 +13,10 @@ BuildDocumentationForClass(name='WVModel',buildFolder=buildFolder,websiteFolder=
 parentName = 'Transforms';
 websiteFolder = 'classes/transforms';
 
+BuildDocumentationForClass(name='WVTransformBoussinesq',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
 BuildDocumentationForClass(name='WVTransformHydrostatic',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
 BuildDocumentationForClass(name='WVTransformConstantStratification',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
-BuildDocumentationForClass(name='WVTransformSingleMode',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+% BuildDocumentationForClass(name='WVTransformSingleMode',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
 
 parentName = 'Nonlinear fluxes';
 websiteFolder = 'classes/nonlinear-fluxes';
@@ -44,3 +45,4 @@ BuildDocumentationForClass(name='WVVariableAnnotation',buildFolder=buildFolder,w
 
 
 BuildDocumentationForClass(name='NetCDFFile',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=6);
+BuildDocumentationForClass(name='WVGeometryDoublyPeriodic',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=7);

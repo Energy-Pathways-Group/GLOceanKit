@@ -3,7 +3,7 @@ layout: default
 title: generateHermitianRandomMatrix
 parent: WVTransform
 grand_parent: Classes
-nav_order: 97
+nav_order: 111
 mathjax: true
 ---
 

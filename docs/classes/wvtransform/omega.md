@@ -3,7 +3,7 @@ layout: default
 title: Omega
 parent: WVTransform
 grand_parent: Classes
-nav_order: 45
+nav_order: 51
 mathjax: true
 ---
 

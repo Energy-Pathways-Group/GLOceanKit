@@ -3,7 +3,7 @@ layout: default
 title: fillOutWaveSpectrum
 parent: WVTransform
 grand_parent: Classes
-nav_order: 95
+nav_order: 109
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: NAp
 parent: WVTransform
 grand_parent: Classes
-nav_order: 37
+nav_order: 42
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$s$$.
 
 ## Discussion
 

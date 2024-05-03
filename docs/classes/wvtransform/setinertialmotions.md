@@ -3,7 +3,7 @@ layout: default
 title: setInertialMotions
 parent: WVTransform
 grand_parent: Classes
-nav_order: 174
+nav_order: 196
 mathjax: true
 ---
 

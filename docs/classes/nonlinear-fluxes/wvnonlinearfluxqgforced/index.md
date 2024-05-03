@@ -52,7 +52,7 @@ nav_order: 5
   + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/isequal.html) check for equality with another nonlinear flux operation
 + Initialization
   + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
 + Computation
   + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
 + Write to file

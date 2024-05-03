@@ -3,7 +3,7 @@ layout: default
 title: AmU
 parent: WVTransform
 grand_parent: Classes
-nav_order: 13
+nav_order: 14
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
+Complex valued transform property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

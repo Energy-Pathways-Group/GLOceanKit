@@ -3,7 +3,7 @@ layout: default
 title: spectralVariableWithResolution
 parent: WVTransform
 grand_parent: Classes
-nav_order: 177
+nav_order: 202
 mathjax: true
 ---
 

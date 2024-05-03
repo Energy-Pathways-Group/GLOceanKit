@@ -41,17 +41,13 @@ Wave-vortex transformation that assumes constant stratification
   + [`waveVortexTransformFromFile`](/classes/transforms/wvtransformconstantstratification/wavevortextransformfromfile.html) Initialize a WVTransformConstantStratification instance from an existing file
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformconstantstratification/wavevortextransformwithresolution.html) create a new WVTransform with increased resolution
 + Other
-  + [`A0_HKE_factor`](/classes/transforms/wvtransformconstantstratification/a0_hke_factor.html) 
-  + [`A0_PE_factor`](/classes/transforms/wvtransformconstantstratification/a0_pe_factor.html) 
-  + [`A0_QGPV_factor`](/classes/transforms/wvtransformconstantstratification/a0_qgpv_factor.html) 
-  + [`A0_TE_factor`](/classes/transforms/wvtransformconstantstratification/a0_te_factor.html) 
-  + [`A0_TZ_factor`](/classes/transforms/wvtransformconstantstratification/a0_tz_factor.html) 
-  + [`Apm_TE_factor`](/classes/transforms/wvtransformconstantstratification/apm_te_factor.html) These convert the coefficients to their depth integrated energies
   + [`DCT`](/classes/transforms/wvtransformconstantstratification/dct.html) 
   + [`DFT`](/classes/transforms/wvtransformconstantstratification/dft.html) 
   + [`DST`](/classes/transforms/wvtransformconstantstratification/dst.html) 
-  + [`F`](/classes/transforms/wvtransformconstantstratification/f.html) 
-  + [`G`](/classes/transforms/wvtransformconstantstratification/g.html) 
+  + [`F_g`](/classes/transforms/wvtransformconstantstratification/f_g.html) 
+  + [`F_wg`](/classes/transforms/wvtransformconstantstratification/f_wg.html) 
+  + [`G_g`](/classes/transforms/wvtransformconstantstratification/g_g.html) 
+  + [`G_wg`](/classes/transforms/wvtransformconstantstratification/g_wg.html) 
   + [`N0`](/classes/transforms/wvtransformconstantstratification/n0.html) 
   + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) 
   + [`N2AtDepth`](/classes/transforms/wvtransformconstantstratification/n2atdepth.html) 
@@ -64,30 +60,35 @@ Wave-vortex transformation that assumes constant stratification
   + [`cg_z`](/classes/transforms/wvtransformconstantstratification/cg_z.html) 
   + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) 
   + [`diffZG`](/classes/transforms/wvtransformconstantstratification/diffzg.html) 
-  + [`h`](/classes/transforms/wvtransformconstantstratification/h.html) all subclasses need to have a function that returns the eigendepths
+  + [`h_0`](/classes/transforms/wvtransformconstantstratification/h_0.html) [Nj Nkl]
+  + [`h_pm`](/classes/transforms/wvtransformconstantstratification/h_pm.html) [Nj Nkl]
   + [`iDCT`](/classes/transforms/wvtransformconstantstratification/idct.html) 
   + [`iDFT`](/classes/transforms/wvtransformconstantstratification/idft.html) 
   + [`iDST`](/classes/transforms/wvtransformconstantstratification/idst.html) 
+  + [`iOmega`](/classes/transforms/wvtransformconstantstratification/iomega.html) 
   + [`isHydrostatic`](/classes/transforms/wvtransformconstantstratification/ishydrostatic.html) 
+  + [`isequal`](/classes/transforms/wvtransformconstantstratification/isequal.html) 
   + [`rhobar`](/classes/transforms/wvtransformconstantstratification/rhobar.html) 
   + [`transformFromSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf.html) 
   + [`transformFromSpatialDomainWithF_FFT`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf_fft.html) 
   + [`transformFromSpatialDomainWithF_MM`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf_mm.html) 
+  + [`transformFromSpatialDomainWithFg`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithfg.html) 
+  + [`transformFromSpatialDomainWithFio`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithfio.html) Required for transformUVEtaToWaveVortex
   + [`transformFromSpatialDomainWithG`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithg.html) 
   + [`transformFromSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithg_fft.html) df = 1/(2*(Nz-1)*dz)
-  + [`transformFromSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithg_mm.html) df = 1/(2*(Nz-1)*dz)
-  + [`transformToSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithf.html) 
-  + [`transformToSpatialDomainWithFAllDerivatives`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithfallderivatives.html) 
+  + [`transformFromSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithg_mm.html) 
+  + [`transformFromSpatialDomainWithGg`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithgg.html) 
+  + [`transformToSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithf.html) Required for transformWaveVortexToUVEta
   + [`transformToSpatialDomainWithFAllDerivatives_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithfallderivatives_fft.html) 
   + [`transformToSpatialDomainWithFAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithfallderivatives_mm.html) 
   + [`transformToSpatialDomainWithF_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithf_fft.html) 
-  + [`transformToSpatialDomainWithF_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithf_mm.html) All coefficients are subsumbed into the transform
+  + [`transformToSpatialDomainWithF_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithf_mm.html) 
   + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg.html) 
-  + [`transformToSpatialDomainWithGAllDerivatives`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives.html) 
   + [`transformToSpatialDomainWithGAllDerivatives_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_fft.html) 
   + [`transformToSpatialDomainWithGAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_mm.html) 
   + [`transformToSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_fft.html) 
-  + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) All coefficients are subsumbed into the transform
+  + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) 
+  + [`transformWithG_wg`](/classes/transforms/wvtransformconstantstratification/transformwithg_wg.html) 
   + [`uMaxA0`](/classes/transforms/wvtransformconstantstratification/umaxa0.html) 
   + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformconstantstratification/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
 + Internal

@@ -3,7 +3,7 @@ layout: default
 title: UA0
 parent: WVTransform
 grand_parent: Classes
-nav_order: 46
+nav_order: 53
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and units of $$s^{-1}$$.
+Complex valued transform property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
 
 ## Discussion
 

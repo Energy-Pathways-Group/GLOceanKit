@@ -36,7 +36,7 @@ nav_order: 2
   This is most often used when initializing a model, e.g.,
  
   ```matlab
-  model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+  model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
   ```
  
     
@@ -45,7 +45,6 @@ nav_order: 2
 ## Topics
 + Initializing
 + Other
-  + [`AA`](/classes/nonlinear-fluxes/wvnonlinearflux/aa.html) 
   + [`WVNonlinearFlux`](/classes/nonlinear-fluxes/wvnonlinearflux/wvnonlinearflux.html) initialize the WVNonlinearFlux nonlinear flux
   + [`beta`](/classes/nonlinear-fluxes/wvnonlinearflux/beta.html) 
   + [`betaA0`](/classes/nonlinear-fluxes/wvnonlinearflux/betaa0.html) 
@@ -57,7 +56,6 @@ nav_order: 2
   + [`nu_xy`](/classes/nonlinear-fluxes/wvnonlinearflux/nu_xy.html) 
   + [`nu_z`](/classes/nonlinear-fluxes/wvnonlinearflux/nu_z.html) 
   + [`r`](/classes/nonlinear-fluxes/wvnonlinearflux/r.html) 
-  + [`shouldAntialias`](/classes/nonlinear-fluxes/wvnonlinearflux/shouldantialias.html) 
   + [`spatialFlux`](/classes/nonlinear-fluxes/wvnonlinearflux/spatialflux.html) a subclass can override this, and then modify the spatial
   + [`uv_damp`](/classes/nonlinear-fluxes/wvnonlinearflux/uv_damp.html) 
   + [`wvt`](/classes/nonlinear-fluxes/wvnonlinearflux/wvt.html) 
@@ -67,7 +65,7 @@ nav_order: 2
   + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearflux/isequal.html) check for equality with another nonlinear flux operation
 + Initialization
   + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearflux/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/wvnonlinearflux/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearflux/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
 + Write to file
   + [`writeToFile`](/classes/nonlinear-fluxes/wvnonlinearflux/writetofile.html) write information about the nonlinear flux operation to file
 

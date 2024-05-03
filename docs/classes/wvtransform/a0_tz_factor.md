@@ -3,7 +3,7 @@ layout: default
 title: A0_TZ_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 9
+nav_order: 10
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enst
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m^{-1} s^{-2}$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$m^{-1} s^{-2}$$.
 
 ## Discussion
 

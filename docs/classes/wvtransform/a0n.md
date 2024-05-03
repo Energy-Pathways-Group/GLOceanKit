@@ -15,7 +15,7 @@ matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and no units.
+Real valued transform property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

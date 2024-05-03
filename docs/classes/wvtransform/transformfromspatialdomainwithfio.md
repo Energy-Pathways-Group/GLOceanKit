@@ -1,6 +1,30 @@
-- Topic: Operations — Transformations
-- Declaration: u_bar = transformFromSpatialDomainWithF(u)
-- Parameter u: variable with dimensions $$(x,y,z)$$
+---
+layout: default
+title: transformFromSpatialDomainWithFio
+parent: WVTransform
+grand_parent: Classes
+nav_order: 216
+mathjax: true
+---
+
+#  transformFromSpatialDomainWithFio
+
+transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes
+
+
+---
+
+## Declaration
+```matlab
+ u_bar = transformFromSpatialDomainWithFio(u)
+```
+## Parameters
++ `u`  variable with dimensions $$(z,:,:)$$
+
+## Returns
++ `u_bar`  variable with dimensions $$(j,:,:)$$
+
+## Discussion
 
 This is the component of the [discrete transformation](/mathematical-introduction/transformations.html) $$D$$ that transforms $$(x,y) \mapsto (k,l)$$ with a discrete Fourier transform, followed by a projection onto the F-modes. Mathematically we write,
 
@@ -23,3 +47,4 @@ $$
 $$
 
 Assuming that $$N_x = N_y$$, the total computational cost of the horizontal and vertical transforms are approximately equal when $$10 log_2 N_x = N_z$$ , or $$13 log_2 N_x = N_z$$ for the hydrostatic case. This means that for a horizontal resolution of $$256^2$$ the horizontal transformations dominate the computation time until approximately $$80-100$$ vertical modes are used.
+

@@ -3,7 +3,7 @@ layout: default
 title: WAm
 parent: WVTransform
 grand_parent: Classes
-nav_order: 52
+nav_order: 59
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(k,l,j)$$ and no units.
+Complex valued transform property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

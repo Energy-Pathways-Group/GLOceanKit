@@ -3,7 +3,7 @@ layout: default
 title: NA0
 parent: WVTransform
 grand_parent: Classes
-nav_order: 35
+nav_order: 40
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and no units.
+Real valued transform property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

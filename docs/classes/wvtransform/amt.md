@@ -3,7 +3,7 @@ layout: default
 title: Amt
 parent: WVTransform
 grand_parent: Classes
-nav_order: 15
+nav_order: 16
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ negative wave coefficients at time t
 ---
 
 ## Description
-Complex valued state variable with dimensions $$(k,l,j)$$ and units of $$m/s$$.
+Complex valued state variable with dimensions $$(j,kl)$$ and units of $$m/s$$.
 
 ## Discussion
 

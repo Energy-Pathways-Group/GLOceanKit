@@ -3,7 +3,7 @@ layout: default
 title: A0_PE_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 6
+nav_order: 7
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$m s^{-2}$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$m s^{-2}$$.
 
 ## Discussion
 

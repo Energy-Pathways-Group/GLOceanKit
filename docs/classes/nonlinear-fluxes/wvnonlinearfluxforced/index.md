@@ -68,7 +68,7 @@ nav_order: 3
 + Initialization
   + [`WVNonlinearFluxForced`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/wvnonlinearfluxforced.html) initialize WVNonlinearFluxForced
   + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
-  + [`nonlinearFluxWithDoubleResolution`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/nonlinearfluxwithdoubleresolution.html) create a new nonlinear flux operation with double the resolution
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
 + Computation
   + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/compute.html) the promised variable
 + Equality

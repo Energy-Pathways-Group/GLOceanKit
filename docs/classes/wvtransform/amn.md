@@ -3,7 +3,7 @@ layout: default
 title: AmN
 parent: WVTransform
 grand_parent: Classes
-nav_order: 12
+nav_order: 13
 mathjax: true
 ---
 
@@ -15,7 +15,7 @@ matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(k,l,j)$$ and units of $$s^{-1}$$.
+Real valued transform property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
 
 ## Discussion
 

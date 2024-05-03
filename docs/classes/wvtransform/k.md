@@ -3,7 +3,7 @@ layout: default
 title: k
 parent: WVTransform
 grand_parent: Classes
-nav_order: 125
+nav_order: 144
 mathjax: true
 ---
 
@@ -14,7 +14,8 @@ wavenumber coordinate in the x-direction
 
 ---
 
-## Discussion
+## Description
+Real valued transform property with dimension ## Discussion
 
 This is the usual definition of wavenumbers (or frequencies) for the Fourier transform,
 ```matlab

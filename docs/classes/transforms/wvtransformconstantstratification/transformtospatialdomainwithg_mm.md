@@ -9,10 +9,8 @@ mathjax: true
 
 #  transformToSpatialDomainWithG_MM
 
-All coefficients are subsumbed into the transform
+
 
 
 ---
 
-## Discussion
-coefficients NAp,NAm,etc.
