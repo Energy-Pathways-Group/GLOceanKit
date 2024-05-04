@@ -3,7 +3,7 @@ layout: default
 title: kMode_dft
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 21
+nav_order: 23
 mathjax: true
 ---
 

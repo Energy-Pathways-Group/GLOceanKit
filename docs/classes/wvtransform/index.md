@@ -323,7 +323,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`nonlinearFluxWithMask`](/classes/wvtransform/nonlinearfluxwithmask.html) returns the flux of each coefficient as determined by the nonlinear flux
 + Index Gymnastics
   + [`indexFromModeNumber`](/classes/wvtransform/indexfrommodenumber.html) return the linear index into a spectral matrix given (k,l,j)
+  + [`isValidConjugateModeNumber`](/classes/wvtransform/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
   + [`isValidModeNumber`](/classes/wvtransform/isvalidmodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
+  + [`isValidPrimaryModeNumber`](/classes/wvtransform/isvalidprimarymodenumber.html) returns a boolean indicating whether (k,l,j) is a valid primary (non-conjugate) mode number
 + Masks
   + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
   + [`maskForNyquistModes`](/classes/wvtransform/maskfornyquistmodes.html) returns a mask with locations of modes that are not fully resolved

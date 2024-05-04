@@ -3,7 +3,7 @@ layout: default
 title: modeNumberFromWVIndex
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 33
+nav_order: 34
 mathjax: true
 ---
 

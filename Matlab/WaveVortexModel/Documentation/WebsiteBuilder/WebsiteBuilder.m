@@ -39,6 +39,14 @@ BuildDocumentationForClass(name='WVDimensionAnnotation',buildFolder=buildFolder,
 BuildDocumentationForClass(name='WVPropertyAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
 BuildDocumentationForClass(name='WVVariableAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
 
+parentName = 'Solution groups';
+websiteFolder = 'classes/solution-groups';
+
+BuildDocumentationForClass(name='WVOrthogonalSolutionGroup',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
+BuildDocumentationForClass(name='WVGeostrophicSolutionGroup',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='WVInternalGravityWaveSolutionGroup',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
+BuildDocumentationForClass(name='WVInertialOscillationSolutionGroup',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
+BuildDocumentationForClass(name='WVMeanDensityAnomalySolutionGroup',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
 
 % ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 

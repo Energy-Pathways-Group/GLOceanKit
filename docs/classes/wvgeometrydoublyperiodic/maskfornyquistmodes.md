@@ -3,7 +3,7 @@ layout: default
 title: maskForNyquistModes
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 32
+nav_order: 33
 mathjax: true
 ---
 
@@ -32,7 +32,9 @@ returns a mask with locations of modes that are not fully resolved
   modes are located a standard FFT matrix.
  
   Basic usage,
-  NyquistMask = wvm.maskForNyquistModes();
+  ```matlab
+  NyquistMask = wvm.maskForNyquistModes(8,8);
+  ```
   will return a mask that contains 1 at the locations of modes that will
   are at the Nyquist frequency of the Fourier transforms.
  

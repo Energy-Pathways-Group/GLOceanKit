@@ -3,7 +3,7 @@ layout: default
 title: waveVortexTransformWithResolution
 parent: WVTransform
 grand_parent: Classes
-nav_order: 250
+nav_order: 252
 mathjax: true
 ---
 

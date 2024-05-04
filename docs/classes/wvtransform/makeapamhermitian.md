@@ -3,7 +3,7 @@ layout: default
 title: makeApAmHermitian
 parent: WVTransform
 grand_parent: Classes
-nav_order: 150
+nav_order: 152
 mathjax: true
 ---
 

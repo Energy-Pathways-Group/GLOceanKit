@@ -3,7 +3,7 @@ layout: default
 title: transformToSpatialDomain
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 41
+nav_order: 43
 mathjax: true
 ---
 

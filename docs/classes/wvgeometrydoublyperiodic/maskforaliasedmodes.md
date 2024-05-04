@@ -3,7 +3,7 @@ layout: default
 title: maskForAliasedModes
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 30
+nav_order: 31
 mathjax: true
 ---
 
@@ -38,7 +38,9 @@ returns a mask with locations of modes that will alias with a quadratic multipli
   circle.
  
   Basic usage,
-  antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(Nx,Ny,Nz);
+  ```matlab
+  antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(8,8);
+  ```
   will return a mask that contains 1 at the locations of modes that will
   alias with a quadratic multiplication.
  

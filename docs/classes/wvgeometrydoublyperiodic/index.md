@@ -40,7 +40,7 @@ A domain periodic in both x and y.
   The basic usage of the indices is as follows:
   assume wvMatrix and dftMatrix are shaped as
   ```matlab
-    size(wvMatrix) == [Nkl_wv 1]'
+    size(wvMatrix) == [Nkl_wv 1];
     size(dftMatrix) == [Nk_dft Nl_dft]; % (equivalently [Nx Ny]
   ```
   then to transform data from the DFT matrix to the WV matrix,
@@ -99,9 +99,12 @@ A domain periodic in both x and y.
 + Index gymnastics
   + [`indicesFromDFTGridToWVGrid`](/classes/wvgeometrydoublyperiodic/indicesfromdftgridtowvgrid.html) indices to convert from DFT to WV grid
   + [`indicesFromWVGridToDFTGrid`](/classes/wvgeometrydoublyperiodic/indicesfromwvgridtodftgrid.html) indices to convert from WV to DFT grid
+  + [`isValidConjugateWVModeNumber`](/classes/wvgeometrydoublyperiodic/isvalidconjugatewvmodenumber.html) return a boolean indicating whether (k,l) is a valid conjugate WV mode number
+  + [`isValidPrimaryWVModeNumber`](/classes/wvgeometrydoublyperiodic/isvalidprimarywvmodenumber.html) return a boolean indicating whether (k,l) is a valid primary (non-conjugate) WV mode number
   + [`isValidWVModeNumber`](/classes/wvgeometrydoublyperiodic/isvalidwvmodenumber.html) return a boolean indicating whether (k,l) is a valid WV mode number
-  + [`linearWVIndexFromModeNumber`](/classes/wvgeometrydoublyperiodic/linearwvindexfrommodenumber.html) return the linear index into k_wv and l_wv from a mode number
   + [`modeNumberFromWVIndex`](/classes/wvgeometrydoublyperiodic/modenumberfromwvindex.html) return mode number from a linear index into a WV matrix
+  + [`primaryModeNumberFromWVModeNumber`](/classes/wvgeometrydoublyperiodic/primarymodenumberfromwvmodenumber.html) takes any valid WV mode number and returns the primary mode number
+  + [`wvIndexFromModeNumber`](/classes/wvgeometrydoublyperiodic/wvindexfrommodenumber.html) return the linear index into k_wv and l_wv from a mode number
 + Masks
   + [`maskForAliasedModes`](/classes/wvgeometrydoublyperiodic/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
   + [`maskForConjugateFourierCoefficients`](/classes/wvgeometrydoublyperiodic/maskforconjugatefouriercoefficients.html) a mask indicate the components that are redundant conjugates
