@@ -3,7 +3,7 @@ layout: default
 title: spatialFlux
 parent: WVNonlinearFlux
 grand_parent: Classes
-nav_order: 16
+nav_order: 12
 mathjax: true
 ---
 

@@ -65,42 +65,24 @@ grand_parent: Class documentation
   + [`dftBuffer`](/classes/transforms/wvtransformboussinesq/dftbuffer.html) 
   + [`dftConjugateIndex`](/classes/transforms/wvtransformboussinesq/dftconjugateindex.html) 
   + [`dftPrimaryIndex`](/classes/transforms/wvtransformboussinesq/dftprimaryindex.html) 
-  + [`diffZF`](/classes/transforms/wvtransformboussinesq/diffzf.html) 
-  + [`diffZG`](/classes/transforms/wvtransformboussinesq/diffzg.html) 
   + [`h_0`](/classes/transforms/wvtransformboussinesq/h_0.html) [Nj 1]
   + [`h_pm`](/classes/transforms/wvtransformboussinesq/h_pm.html) [Nj Nkl]
   + [`iK2unique`](/classes/transforms/wvtransformboussinesq/ik2unique.html) map from 2-dim K2, to 1-dim K2unique
   + [`iOmega`](/classes/transforms/wvtransformboussinesq/iomega.html) 
   + [`internalModes`](/classes/transforms/wvtransformboussinesq/internalmodes.html) 
   + [`isHydrostatic`](/classes/transforms/wvtransformboussinesq/ishydrostatic.html) 
-  + [`isequal`](/classes/transforms/wvtransformboussinesq/isequal.html) 
   + [`nK2unique`](/classes/transforms/wvtransformboussinesq/nk2unique.html) number of unique squared-wavenumbers
   + [`rhoFunction`](/classes/transforms/wvtransformboussinesq/rhofunction.html) function handles
   + [`rhobar`](/classes/transforms/wvtransformboussinesq/rhobar.html) on the z-grid, size(N2) = [length(z) 1];
-  + [`transformFromSpatialDomainWithFg`](/classes/transforms/wvtransformboussinesq/transformfromspatialdomainwithfg.html) 
-  + [`transformFromSpatialDomainWithFio`](/classes/transforms/wvtransformboussinesq/transformfromspatialdomainwithfio.html) Required for transformUVEtaToWaveVortex
-  + [`transformFromSpatialDomainWithFourier`](/classes/transforms/wvtransformboussinesq/transformfromspatialdomainwithfourier.html) self.dftBuffer = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-  + [`transformFromSpatialDomainWithGg`](/classes/transforms/wvtransformboussinesq/transformfromspatialdomainwithgg.html) 
-  + [`transformToSpatialDomainWithF`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithf.html) Required for transformWaveVortexToUVEta
   + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithfinterp.html) 
   + [`transformToSpatialDomainWithFg`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithfg.html) arguments
   + [`transformToSpatialDomainWithFw`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithfw.html) 
-  + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithg.html) 
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithginterp.html) 
   + [`transformToSpatialDomainWithGg`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgg.html) arguments
   + [`transformToSpatialDomainWithGw`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgw.html) 
-  + [`transformWithG_wg`](/classes/transforms/wvtransformboussinesq/transformwithg_wg.html) 
-  + [`uMaxA0`](/classes/transforms/wvtransformboussinesq/umaxa0.html) 
-  + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformboussinesq/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`wvBuffer`](/classes/transforms/wvtransformboussinesq/wvbuffer.html) 
   + [`wvConjugateIndex`](/classes/transforms/wvtransformboussinesq/wvconjugateindex.html) 
   + [`zInterp`](/classes/transforms/wvtransformboussinesq/zinterp.html) 
-+ Initialization (Static)
-  + [`waveVortexTransformFromFile`](/classes/transforms/wvtransformboussinesq/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
-+ Initialization
-  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformboussinesq/wavevortextransformwithresolution.html) create a new WVTransform with increased resolution
-+ Write to file
-  + [`writeToFile`](/classes/transforms/wvtransformboussinesq/writetofile.html) Output the `WVTransform` to file.
 
 
 ---

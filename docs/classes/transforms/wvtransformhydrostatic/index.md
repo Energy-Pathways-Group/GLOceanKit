@@ -39,7 +39,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 ## Topics
 + Initialization
   + [`WVTransformHydrostatic`](/classes/transforms/wvtransformhydrostatic/wvtransformhydrostatic.html) create a wave-vortex transform for variable stratification
-  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) create a new WVTransform with increased resolution
 + Other
   + [`BuildProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildprojectionoperators.html) Now go compute the appropriate number of modes at the
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 
@@ -59,27 +58,16 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`dftBuffer`](/classes/transforms/wvtransformhydrostatic/dftbuffer.html) 
   + [`dftConjugateIndex`](/classes/transforms/wvtransformhydrostatic/dftconjugateindex.html) 
   + [`dftPrimaryIndex`](/classes/transforms/wvtransformhydrostatic/dftprimaryindex.html) 
-  + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) 
-  + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) 
   + [`h`](/classes/transforms/wvtransformhydrostatic/h.html) [Nj 1]
   + [`h_0`](/classes/transforms/wvtransformhydrostatic/h_0.html) [Nj 1]
   + [`h_pm`](/classes/transforms/wvtransformhydrostatic/h_pm.html) [Nj 1]
   + [`iOmega`](/classes/transforms/wvtransformhydrostatic/iomega.html) 
   + [`internalModes`](/classes/transforms/wvtransformhydrostatic/internalmodes.html) 
   + [`isHydrostatic`](/classes/transforms/wvtransformhydrostatic/ishydrostatic.html) 
-  + [`isequal`](/classes/transforms/wvtransformhydrostatic/isequal.html) 
   + [`rhoFunction`](/classes/transforms/wvtransformhydrostatic/rhofunction.html) function handles
   + [`rhobar`](/classes/transforms/wvtransformhydrostatic/rhobar.html) on the z-grid, size(N2) = [length(z) 1];
-  + [`transformFromSpatialDomainWithFg`](/classes/transforms/wvtransformhydrostatic/transformfromspatialdomainwithfg.html) 
-  + [`transformFromSpatialDomainWithFio`](/classes/transforms/wvtransformhydrostatic/transformfromspatialdomainwithfio.html) Required for transformUVEtaToWaveVortex
-  + [`transformFromSpatialDomainWithGg`](/classes/transforms/wvtransformhydrostatic/transformfromspatialdomainwithgg.html) 
-  + [`transformToSpatialDomainWithF`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithf.html) Perform the vertical mode matrix multiplication
   + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithfinterp.html) 
-  + [`transformToSpatialDomainWithG`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithg.html) Perform the vertical mode matrix multiplication
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
-  + [`transformWithG_wg`](/classes/transforms/wvtransformhydrostatic/transformwithg_wg.html) 
-  + [`uMaxA0`](/classes/transforms/wvtransformhydrostatic/umaxa0.html) uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
-  + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformhydrostatic/umaxgnormratioforwave.html) Needed to add and remove internal waves from the model
   + [`wvBuffer`](/classes/transforms/wvtransformhydrostatic/wvbuffer.html) 
   + [`wvConjugateIndex`](/classes/transforms/wvtransformhydrostatic/wvconjugateindex.html) 
   + [`zInterp`](/classes/transforms/wvtransformhydrostatic/zinterp.html) 
@@ -89,10 +77,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
     + [`GMatrix`](/classes/transforms/wvtransformhydrostatic/gmatrix.html) transformation matrix $$G$$
     + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
-+ Initialization (Static)
-  + [`waveVortexTransformFromFile`](/classes/transforms/wvtransformhydrostatic/wavevortextransformfromfile.html) Initialize a WVTransformHydrostatic instance from an existing file
-+ Write to file
-  + [`writeToFile`](/classes/transforms/wvtransformhydrostatic/writetofile.html) Output the `WVTransform` to file.
 
 
 ---

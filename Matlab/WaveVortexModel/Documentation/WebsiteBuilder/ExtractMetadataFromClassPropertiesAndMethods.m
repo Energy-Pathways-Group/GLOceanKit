@@ -53,6 +53,9 @@ metadata = [];
 if ~strcmp(mp.DefiningClass.Name,className)
     return;
 end
+if isMethodDefinedInSuperclass(mp)
+    return;
+end
 
 % First check if we even want to create documentation for this particular
 % property or method.
@@ -71,4 +74,17 @@ metadata.name = mp.Name;
 metadata.className = mp.DefiningClass.Name;
 metadata.shortDescription = mp.Description;
 
+end
+
+function bool = isMethodDefinedInSuperclass(mp)
+bool = 0;
+if isempty(mp.DefiningClass.SuperclassList)
+    return;
+end
+for i=1:length(mp.DefiningClass.SuperclassList(1).MethodList)
+    if strcmp(mp.DefiningClass.SuperclassList(1).MethodList(i).Name,mp.Name)
+        bool = 1;
+        return;
+    end
+end
 end

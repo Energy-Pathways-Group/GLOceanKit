@@ -3,7 +3,7 @@ layout: default
 title: uv_damp
 parent: WVNonlinearFluxQG
 grand_parent: Classes
-nav_order: 16
+nav_order: 12
 mathjax: true
 ---
 

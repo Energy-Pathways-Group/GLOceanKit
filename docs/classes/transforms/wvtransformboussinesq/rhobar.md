@@ -3,7 +3,7 @@ layout: default
 title: rhobar
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 47
+nav_order: 44
 mathjax: true
 ---
 

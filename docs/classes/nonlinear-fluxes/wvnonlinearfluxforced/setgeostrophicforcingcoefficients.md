@@ -3,7 +3,7 @@ layout: default
 title: setGeostrophicForcingCoefficients
 parent: WVNonlinearFluxForced
 grand_parent: Classes
-nav_order: 13
+nav_order: 9
 mathjax: true
 ---
 
