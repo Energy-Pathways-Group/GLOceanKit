@@ -240,6 +240,62 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addOperation(WVTransform.defaultOperations);
         end
 
+        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
+            % returns a boolean indicating whether (k,l,j) is a valid primary (non-conjugate) mode number
+            %
+            % returns a boolean indicating whether (k,l,j) is a valid
+            % non-conjugate mode number according to how the property
+            % conjugateDimension is set.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: index = isValidPrimaryModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Parameter jMode: non-negative integer
+            % - Returns index: a non-negative integer
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            klCheck = self.horizontalGeometry.isValidPrimaryWVModeNumber(kMode,lMode);
+            jCheck = jMode >= 0 & jMode <= self.Nj;
+            bool = klCheck & jCheck;
+        end
+
+        function bool = isValidConjugateModeNumber(self,kMode,lMode,jMode)
+            % returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
+            %
+            % returns a boolean indicating whether (k,l,j) is a valid
+            % non-conjugate mode number according to how the property
+            % conjugateDimension is set.
+            %
+            % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
+            %
+            % - Topic: Index Gymnastics
+            % - Declaration: index = isValidConjugateModeNumber(kMode,lMode,jMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Parameter jMode: non-negative integer
+            % - Returns index: a non-negative integer
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            klCheck = self.horizontalGeometry.isValidConjugateWVModeNumber(kMode,lMode);
+            jCheck = jMode >= 0 & jMode <= self.Nj;
+            bool = klCheck & jCheck;
+        end
+
         function bool = isValidModeNumber(self,kMode,lMode,jMode)
             % returns a boolean indicating whether (k,l,j) is a valid mode number
             %
@@ -254,12 +310,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns index: a non-negative integer
             arguments (Input)
                 self WVTransform {mustBeNonempty}
-                kMode (1,1) double {mustBeInteger}
-                lMode (1,1) double {mustBeInteger}
-                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
             klCheck = self.horizontalGeometry.isValidWVModeNumber(kMode,lMode);
             jCheck = jMode >= 0 & jMode <= self.Nj;
@@ -279,31 +335,31 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns index: a non-negative integer number
             arguments (Input)
                 self WVTransform {mustBeNonempty}
-                kMode (1,1) double {mustBeInteger}
-                lMode (1,1) double {mustBeInteger}
-                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
             end
             arguments (Output)
-                index (1,1) double {mustBeInteger,mustBePositive}
+                index (:,1) double {mustBeInteger,mustBePositive}
             end
             if ~self.isValidModeNumber(kMode,lMode,jMode)
                 error('Invalid WV mode number!');
             end
-            klIndex = self.horizontalGeometry.linearWVIndexFromModeNumber(kMode,lMode);
-            index = sub2ind([self.Nj,self.Nkl],jMode+1,klIndex);
+            klIndex = self.horizontalGeometry.wvIndexFromModeNumber(kMode,lMode);
+            index = sub2ind(self.spectralMatrixSize,jMode+1,klIndex);
         end
 
         function [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
             arguments (Input)
                 self WVTransform {mustBeNonempty}
-                linearIndex (1,1) double {mustBeInteger,mustBePositive}
+                linearIndex (:,1) double {mustBeInteger,mustBePositive}
             end
             arguments (Output)
-                kMode (1,1) double {mustBeInteger}
-                lMode (1,1) double {mustBeInteger}
-                jMode (1,1) double {mustBeInteger,mustBeNonnegative}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
             end
-            [jIndex,klIndex] = ind2sub([self.Nj self.Nkl],linearIndex);
+            [jIndex,klIndex] = ind2sub(self.spectralMatrixSize,linearIndex);
             [kMode,lMode] = self.horizontalGeometry.modeNumberFromWVIndex(klIndex);
             jMode = jIndex - 1;
         end

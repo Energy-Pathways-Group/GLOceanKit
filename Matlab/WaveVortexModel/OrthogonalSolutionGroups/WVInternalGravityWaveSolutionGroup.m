@@ -40,26 +40,6 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
-            arguments (Input)
-                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-            mask = zeros(self.wvt.spectralMatrixSize);
-        end
-
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
@@ -78,8 +58,6 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
             mask = self.maskForCoefficientMatrix(coefficientMatrix);
-            maskr = self.maskForConjugateCoefficients(coefficientMatrix);
-            mask = mask .* ~maskr;
         end
         
         function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
@@ -91,15 +69,14 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
-            kCheck = kMode > -self.wvt.Nx/2 & kMode < self.wvt.Nx/2;
-            lCheck = lMode > -self.wvt.Ny/2 & lMode < self.wvt.Ny/2;
-            jCheck = jMode >= 1 & jMode <= self.wvt.Nj;
+            standardModeCheck = self.wvt.isValidModeNumber(kMode,lMode,jMode);
+            jCheck = jMode >= 1;
             ioCheck = ~(lMode == 0 & kMode == 0);
             coeffCheck = coefficientMatrix ~= WVCoefficientMatrix.A0;
 
-            bool = all( kCheck & lCheck & jCheck & ioCheck & coeffCheck);
+            bool = standardModeCheck & jCheck & ioCheck & coeffCheck;
         end
 
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
@@ -111,15 +88,33 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
-            if self.wvt.conjugateDimension == 1
-                isConjugate = (lMode < 0 & kMode == 0) | kMode < 0;
-            elseif self.wvt.conjugateDimension == 2
-                isConjugate = (kMode < 0 & lMode == 0) | lMode < 0;
-            end
+            standardModeCheck = self.wvt.isValidPrimaryModeNumber(kMode,lMode,jMode);
+            jCheck = jMode >= 1;
+            ioCheck = ~(lMode == 0 & kMode == 0);
+            coeffCheck = coefficientMatrix ~= WVCoefficientMatrix.A0;
 
-            bool = self.isValidModeNumber(kMode,lMode,jMode,coefficientMatrix) & ~any(isConjugate);
+            bool = standardModeCheck & jCheck & ioCheck & coeffCheck;
+        end
+
+        function bool = isValidConjugateModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+            arguments (Input)
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            standardModeCheck = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
+            jCheck = jMode >= 1;
+            ioCheck = ~(lMode == 0 & kMode == 0);
+            coeffCheck = coefficientMatrix ~= WVCoefficientMatrix.A0;
+
+            bool = standardModeCheck & jCheck & ioCheck & coeffCheck;
         end
 
         function n = nUniqueSolutions(self)
@@ -195,6 +190,20 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
+        function bool = isValidInternalGravityWaveModeNumber(self,kMode,lMode,jMode)
+            arguments (Input)
+                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+
+            bool = self.isValidModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
+        end
+
         function [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign)
             % returns properties of a internal gravity wave solutions relative to the primary mode number
             %
@@ -233,52 +242,17 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 phi (:,1) double
                 omegasign (:,1) double {mustBeMember(omegasign,[-1 1])}
             end
-            if any(kMode <= -self.wvt.Nx/2 | kMode >= self.wvt.Nx/2)
-                error('Invalid choice for k0. Must be an integer %d < k0 < %d',-self.wvt.Nx/2+1,self.wvt.Nx/2-1);
+            if ~all(self.isValidInternalGravityWaveModeNumber(kMode,lMode,jMode))
+                error('One or more mode numbers are not valid internal gravity wave mode numbers.');
             end
-            if any(lMode <= -self.wvt.Ny/2 | lMode >= self.wvt.Ny/2)
-                error('Invalid choice for l0. Must be an integer %d < l0 < %d',-self.wvt.Ny/2+1,self.wvt.Ny/2+1);
-            end
-            if any(jMode == 0 | jMode > self.wvt.Nj)
-                error('Invalid choice. j must be between 1 and Nj');
-            end
-
-            if self.wvt.conjugateDimension == 1
-                indices = lMode < 0 & kMode == 0;
-                if any(indices)
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-
-                indices = kMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-            elseif self.wvt.conjugateDimension == 2
-                indices = kMode < 0 & lMode == 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-
-                indices = lMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                    omegasign(indices) = -omegasign(indices);
-                end
-            end
-
+            isValidConjugate = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
+            
+            % Geostrophic modes have the following symmetry for conjugates:
+            kMode(isValidConjugate) = -kMode(isValidConjugate);
+            lMode(isValidConjugate) = -lMode(isValidConjugate);
+            A(isValidConjugate) = -A(isValidConjugate);
+            phi(isValidConjugate) = -phi(isValidConjugate);
+            omegasign(isValidConjugate) = -omegasign(isValidConjugate);
         end
 
         function solution = internalGravityWaveSolution(self,kMode,lMode,jMode,A,phi,omegasign,options)
@@ -320,8 +294,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix = WVCoefficientMatrix.Am;
             end
 
-            % [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign);
-            % [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            [kMode,lMode,jMode,A,phi,omegasign] = self.normalizeWaveModeProperties(kMode,lMode,jMode,A,phi,omegasign);
             index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;

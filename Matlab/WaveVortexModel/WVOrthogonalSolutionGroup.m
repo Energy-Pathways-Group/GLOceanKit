@@ -46,10 +46,6 @@ classdef WVOrthogonalSolutionGroup
             self.wvt = wvt;
         end
 
-        function sz = spectralRectangularGridSize(self)
-            sz = [self.wvt.Nx self.wvt.Ny self.wvt.Nj];
-        end
-
         function mask = maskForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where solutions live in the requested coefficient matrix.
             %
@@ -67,7 +63,7 @@ classdef WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.wvt.spectralMatrixSize);
         end
 
         function mask = maskForConjugateCoefficients(self,coefficientMatrix)
@@ -87,7 +83,7 @@ classdef WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.wvt.spectralMatrixSize);
         end
 
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
@@ -107,7 +103,7 @@ classdef WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
+            mask = zeros(self.wvt.spectralMatrixSize);
         end
 
         function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
@@ -366,151 +362,8 @@ classdef WVOrthogonalSolutionGroup
             solution=0;
         end
 
-        function A0 = makeA0Hermitian(self,A0)
-            % Forces the A0 matrix to have the correct symmetries
-            %
-            % This function is NOT a true "Make Hermitian" function because it
-            % the Ap/Am matrices do not require k=l=0 to be real.
-            %
-            % If conjugateDimension == 2, then the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
-            % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
-            % conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
-            % numbers are set to zero to avoid complications.
-            %
-            % - Topic: Utility function
-            % - Declaration: A0 = makeA0Hermitian(self,A0)
-            % - Parameter A0: matrix
-            % - Returns A0: matrix the same size as the input matrix
-
-            K = size(A0,1);
-            L = size(A0,2);
-            if self.wvt.conjugateDimension == 1
-                % The order of the for-loop is chosen carefully here.
-                for iK=1:(K/2+1)
-                    for iL=1:L
-                        if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                            continue;
-                        else
-                            A0 = WVOrthogonalSolutionGroup.setA0Conjugate(A0,iK,iL,K,L);
-                        end
-                    end
-                end
-            elseif self.wvt.conjugateDimension == 2
-                % The order of the for-loop is chosen carefully here.
-                for iL=1:(L/2+1)
-                    for iK=1:K
-                        if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                            continue;
-                        else
-                            A0 = WVOrthogonalSolutionGroup.setA0Conjugate(A0,iK,iL,K,L);
-                        end
-                    end
-                end
-            else
-                error('invalid conjugate dimension')
-            end
-        end
-
-        function bool = contains(self,otherFlowConstituent)
-            if isa(otherFlowConstituent,"numeric")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent));
-            elseif isa(otherFlowConstituent,"WVFlowConstituent")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent.bitmask));
-            end
-        end
 
     end
-    methods (Static)
-        function A0 = setA0Conjugate(A0,iK,iL,K,L)
-            icK = mod(K-iK+1, K) + 1;
-            icL = mod(L-iL+1, L) + 1;
-            if iK == icK && iL == icL % self-conjugate terms
-                A0(iK,iL,:) = 0;
-            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
-                A0(iK,iL,:) = 0;
-            else
-                A0(icK,icL,:) = conj(A0(iK,iL,:));
-            end
-        end
-        function A0 = setConjugateToUnity(A0,iK,iL,K,L)
-            icK = mod(K-iK+1, K) + 1;
-            icL = mod(L-iL+1, L) + 1;
-            if iK == icK && iL == icL % self-conjugate terms
-                A0(iK,iL,:) = 0;
-            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
-                A0(iK,iL,:) = 0;
-            else
-                A0(icK,icL,:) = 1;
-            end
-        end
-        function [Ap,Am] = setApAmConjugate(Ap,Am,iK,iL,K,L)
-            icK = mod(K-iK+1, K) + 1;
-            icL = mod(L-iL+1, L) + 1;
-            if iK == icK && iL == icL % self-conjugate terms
-                % This is not normally what you'd do for an FFT matrix, but
-                % we're being Ap/Am are slightly different
-                if iK == 1 && iL == 1
-                    Am(iK,iL,:) = conj(Ap(iK,iL,:));
-                else
-                    Ap(iK,iL,:) = 0;
-                    Am(iK,iL,:) = 0;
-                end
-            elseif iL == L/2+1 % Kill the Nyquist, because its never resolved
-                Ap(iK,iL,:) = 0;
-                Am(iK,iL,:) = 0;
-            else
-                Ap(icK,icL,:) = conj(Ap(iK,iL,:));
-                Am(icK,icL,:) = conj(Am(iK,iL,:));
-            end
-        end
-        function mask = maskForConjugateFourierCoefficients(sz,conjugateDimension)
-            K = sz(1);
-            L = sz(2);
-            mask = zeros(sz);
-            if conjugateDimension == 1
-                % The order of the for-loop is chosen carefully here.
-                for iK=1:(K/2+1)
-                    for iL=1:L
-                        if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                            continue;
-                        else
-                            mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                        end
-                    end
-                end
-            elseif conjugateDimension == 2
-                % The order of the for-loop is chosen carefully here.
-                for iL=1:(L/2+1)
-                    for iK=1:K
-                        if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                            continue;
-                        else
-                            mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                        end
-                    end
-                end
-            else
-                error('invalid conjugate dimension')
-            end
-        end
-        function matrix = indexOfFourierConjugate(sz)
-            K = sz(1);
-            L = sz(2);
-            J = sz(3);
-            matrix = zeros(sz);
-
-            for iJ=1:J
-                for iK=1:K
-                    for iL=1:L
-                        icK = mod(K-iK+1, K) + 1;
-                        icL = mod(L-iL+1, L) + 1;
-                        icJ = J;
-                        matrix(iK,iL,iJ) = sub2ind(sz,icK,icL,icJ);
-                    end
-                end
-            end
-
-        end
-    end
+    
 end
 

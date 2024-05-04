@@ -39,57 +39,6 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-            mask = zeros(self.wvt.Nk,self.wvt.Nl,self.wvt.Nj);
-            switch(coefficientMatrix)
-                case WVCoefficientMatrix.A0
-                    K = size(mask,1);
-                    L = size(mask,2);
-                    if self.wvt.conjugateDimension == 1
-                        % The order of the for-loop is chosen carefully here.
-                        for iK=1:(K/2+1)
-                            for iL=1:L
-                                if iK == 1 && iL > L/2 % avoid letting k=0, l=Ny/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    elseif self.wvt.conjugateDimension == 2
-                        % The order of the for-loop is chosen carefully here.
-                        for iL=1:(L/2+1)
-                            for iK=1:K
-                                if iL == 1 && iK > K/2 % avoid letting l=0, k=Nx/2+1 terms set themselves again
-                                    continue;
-                                else
-                                    mask = WVOrthogonalSolutionGroup.setConjugateToUnity(mask,iK,iL,K,L);
-                                end
-                            end
-                        end
-                    else
-                        error('invalid conjugate dimension')
-                    end
-            end
-            mask = mask .* self.maskForCoefficientMatrix(coefficientMatrix);
-        end
-
         function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
@@ -108,8 +57,6 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
             mask = self.maskForCoefficientMatrix(coefficientMatrix);
-            % maskr = self.maskForConjugateCoefficients(coefficientMatrix);
-            % mask = mask .* ~maskr;
         end
 
         function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
@@ -121,15 +68,14 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
-            kCheck = kMode > -self.wvt.Nx/2 & kMode < self.wvt.Nx/2;
-            lCheck = lMode > -self.wvt.Ny/2 & lMode < self.wvt.Ny/2;
-            jCheck = jMode >= 0 & jMode <= self.wvt.Nj;
-            zeroCheck = ~(jMode == 0 & lMode == 0 & kMode == 0);
+            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
+            standardModeCheck = self.wvt.isValidModeNumber(kMode,lMode,jMode);
+            zeroCheck = ~(lMode == 0 & kMode == 0);
             coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
 
-            bool = all( kCheck & lCheck & jCheck & zeroCheck & coeffCheck);
+            bool = standardModeCheck & zeroCheck & coeffCheck;
         end
 
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
@@ -141,15 +87,33 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
-            if self.wvt.conjugateDimension == 1
-                isConjugate = (lMode < 0 & kMode == 0) | kMode < 0;
-            elseif self.wvt.conjugateDimension == 2
-                isConjugate = (kMode < 0 & lMode == 0) | lMode < 0;
-            end
+            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
+            standardModeCheck = self.wvt.isValidPrimaryModeNumber(kMode,lMode,jMode);
+            zeroCheck = ~(lMode == 0 & kMode == 0);
+            coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
 
-            bool = self.isValidModeNumber(kMode,lMode,jMode,coefficientMatrix) & ~any(isConjugate);
+            bool = standardModeCheck & zeroCheck & coeffCheck;
+        end
+
+        function bool = isValidConjugateModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
+            standardModeCheck = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
+            zeroCheck = ~(lMode == 0 & kMode == 0);
+            coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
+
+            bool = standardModeCheck & zeroCheck & coeffCheck;
         end
 
         function n = nUniqueSolutions(self)
@@ -205,6 +169,20 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
+        function bool = isValidGeostrophicModeNumber(self,kMode,lMode,jMode)
+            arguments (Input)
+                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+            end
+            arguments (Output)
+                bool (1,1) logical {mustBeMember(bool,[0 1])}
+            end
+
+            bool = self.isValidModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+        end
+
         function [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
             % returns properties of a geostrophic solution relative to the primary mode number
             %
@@ -235,48 +213,16 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 A (:,1) double
                 phi (:,1) double
             end
-            if any(kMode <= -self.wvt.Nx/2 | kMode >= self.wvt.Nx/2)
-                error('Invalid choice for k0. Must be an integer %d < k0 < %d',-self.wvt.Nx/2+1,self.wvt.Nx/2-1);
+            if ~all(self.isValidGeostrophicModeNumber(kMode,lMode,jMode))
+                error('One or more mode numbers are not valid geostrophic mode numbers.');
             end
-            if any(lMode <= -self.wvt.Ny/2 | lMode >= self.wvt.Ny/2)
-                error('Invalid choice for l0. Must be an integer %d < l0 < %d',-self.wvt.Ny/2+1,self.wvt.Ny/2+1);
-            end
-            if any(jMode == 0 & lMode == 0 & kMode == 0)
-                error('Invalid choice. There is no k=0, l=0, j=0 geostrophic mode.');
-            end
-
-            if self.wvt.conjugateDimension == 1
-                indices = lMode < 0 & kMode == 0;
-                if any(indices)
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                end
-
-                indices = kMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                end
-            elseif self.wvt.conjugateDimension == 2
-                indices = kMode < 0 & lMode == 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                end
-
-                indices = lMode < 0;
-                if any(indices)
-                    kMode(indices) = -kMode(indices);
-                    lMode(indices) = -lMode(indices);
-                    A(indices) = -A(indices);
-                    phi(indices) = -phi(indices);
-                end
-            end
-
+            isValidConjugate = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
+            
+            % Geostrophic modes have the following symmetry for conjugates:
+            kMode(isValidConjugate) = -kMode(isValidConjugate);
+            lMode(isValidConjugate) = -lMode(isValidConjugate);
+            A(isValidConjugate) = -A(isValidConjugate);
+            phi(isValidConjugate) = -phi(isValidConjugate);
         end
 
         function solution = geostrophicSolution(self,kMode,lMode,jMode,A,phi,options)
@@ -310,8 +256,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
-            % [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi);
-            % [kIndex,lIndex,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            [kMode,lMode,jMode,A,phi] = self.normalizeGeostrophicModeProperties(kMode,lMode,jMode,A,phi);
             index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;

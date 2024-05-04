@@ -24,7 +24,7 @@ classdef WVGeometryDoublyPeriodic
     % The basic usage of the indices is as follows:
     % assume wvMatrix and dftMatrix are shaped as
     % ```matlab
-    %   size(wvMatrix) == [Nkl_wv 1]'
+    %   size(wvMatrix) == [Nkl_wv 1];
     %   size(dftMatrix) == [Nk_dft Nl_dft]; % (equivalently [Nx Ny]
     % ```
     % then to transform data from the DFT matrix to the WV matrix,
@@ -321,6 +321,69 @@ classdef WVGeometryDoublyPeriodic
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
 
+        function bool = isValidPrimaryWVModeNumber(self,kMode,lMode)
+            % return a boolean indicating whether (k,l) is a valid primary (non-conjugate) WV mode number
+            %
+            % returns a boolean indicating whether (k,l) is a valid
+            % *primary* WV mode number. Even if a mode number is available
+            % in the DFT matrix, it does not mean it is a valid WV mode
+            % number, e.g., it may be removed due to aliasing.
+            %
+            % The result is affected by the chosen conjugateDimension.
+            %
+            % - Topic: Index gymnastics
+            % - Declaration: bool = isValidPrimaryWVModeNumber(kMode,lMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns bool: [0 1]
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            bool = zeros(size(kMode));
+            for iMode=1:length(kMode)
+                bool(iMode) = any(self.kMode_wv == kMode(iMode) & self.lMode_wv == lMode(iMode));
+            end
+        end
+
+        function bool = isValidConjugateWVModeNumber(self,kMode,lMode)
+            % return a boolean indicating whether (k,l) is a valid conjugate WV mode number
+            %
+            % returns a boolean indicating whether (k,l) is a valid
+            % *conjugate* WV mode number. Even if a mode number is
+            % available in the DFT matrix, it does not mean it is a valid
+            % WV mode number, e.g., it may be removed due to aliasing.
+            %
+            % The result is affected by the chosen conjugateDimension.
+            %
+            % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
+            %
+            % - Topic: Index gymnastics
+            % - Declaration: bool = isValidConjugateWVModeNumber(kMode,lMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns bool: [0 1]
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            [K,L] = ndgrid(self.kMode_dft,self.lMode_dft);
+            k = K(self.dftConjugateIndices);
+            l = L(self.dftConjugateIndices);
+            bool = zeros(size(kMode));
+            for iMode=1:length(kMode)
+                bool(iMode) = any(k == kMode(iMode) & l == lMode(iMode));
+            end
+        end
+
         function bool = isValidWVModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid WV mode number
             %
@@ -329,6 +392,10 @@ classdef WVGeometryDoublyPeriodic
             % it does not mean it is a valid WV mode number, e.g., it may
             % be removed due to aliasing.
             %
+            % A valid mode number can be either primary or conjugate, and
+            % thus the result is not affected by the chosen
+            % conjugateDimension.
+            %
             % - Topic: Index gymnastics
             % - Declaration: bool = isValidWVModeNumber(kMode,lMode)
             % - Parameter kMode: integer
@@ -336,16 +403,51 @@ classdef WVGeometryDoublyPeriodic
             % - Returns bool: [0 1]
             arguments (Input)
                 self WVGeometryDoublyPeriodic {mustBeNonempty}
-                kMode (1,1) double {mustBeInteger}
-                lMode (1,1) double {mustBeInteger}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
-            bool = any(self.kMode_wv == kMode & self.lMode_wv == lMode);
+
+            bool = self.isValidPrimaryWVModeNumber(kMode,lMode) | self.isValidConjugateWVModeNumber(kMode,lMode);
         end
 
-        function index = linearWVIndexFromModeNumber(self,kMode,lMode)
+        function [kMode,lMode] = primaryModeNumberFromWVModeNumber(self,kMode,lMode)
+            % takes any valid WV mode number and returns the primary mode number
+            %
+            % The function first confirms that the mode numbers are valid,
+            % and then converts any conjugate mode numbers to primary mode
+            % numbers.
+            %
+            % The result is affected by the chosen conjugateDimension.
+            %
+            % - Topic: Index gymnastics
+            % - Declaration: [kMode,lMode] = primaryModeNumberFromWVModeNumber(kMode,lMode)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Returns kMode: integer
+            % - Returns lMode: integer
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+            end
+
+            isValidPrimary = self.isValidPrimaryWVModeNumber(kMode,lMode);
+            isValidConjugate = self.isValidConjugateWVModeNumber(kMode,lMode);
+            if ~all(isValidConjugate | isValidPrimary)
+                error('One or more mode numbers are not valid WV mode numbers.');
+            end
+            kMode(isValidConjugate) = -kMode(isValidConjugate);
+            lMode(isValidConjugate) = -lMode(isValidConjugate);
+        end
+
+        function index = wvIndexFromModeNumber(self,kMode,lMode)
             % return the linear index into k_wv and l_wv from a mode number
             %
             % This function will return the linear index into the (k_wv,l_wv) arrays,
@@ -354,7 +456,7 @@ classdef WVGeometryDoublyPeriodic
             % throw an error.
             %
             % - Topic: Index gymnastics
-            % - Declaration: index = linearWVIndexFromModeNumber(kMode,lMode,jMode)
+            % - Declaration: index = wvIndexFromModeNumber(kMode,lMode,jMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns linearIndex: a non-negative integer number
@@ -720,7 +822,9 @@ classdef WVGeometryDoublyPeriodic
             % circle.
             %
             % Basic usage,
-            % antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(Nx,Ny,Nz);
+            % ```matlab
+            % antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(8,8);
+            % ```
             % will return a mask that contains 1 at the locations of modes that will
             % alias with a quadratic multiplication.
             %
@@ -752,7 +856,9 @@ classdef WVGeometryDoublyPeriodic
             % modes are located a standard FFT matrix.
             %
             % Basic usage,
-            % NyquistMask = wvm.maskForNyquistModes();
+            % ```matlab
+            % NyquistMask = wvm.maskForNyquistModes(8,8);
+            % ```
             % will return a mask that contains 1 at the locations of modes that will
             % are at the Nyquist frequency of the Fourier transforms.
             %
@@ -777,6 +883,17 @@ classdef WVGeometryDoublyPeriodic
 
         function mask = maskForConjugateFourierCoefficients(Nx,Ny,options)
             % a mask indicate the components that are redundant conjugates
+            %
+            % Returns a 'mask' (matrices with 1s or 0s) indicating where
+            % the non-primary Hermitian conjugates are located in the DFT
+            % matrix.
+            %
+            % Basic usage,
+            % ```matlab
+            % NyquistMask = wvm.maskForConjugateFourierCoefficients(8,8,conjugateDimension=2);
+            % ```
+            % will return a mask that contains 1 at the locations of the
+            % modes assumed conjugate.
             %
             % - Topic: Masks
             % - Declaration: mask = WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(Nx,Ny,options);
