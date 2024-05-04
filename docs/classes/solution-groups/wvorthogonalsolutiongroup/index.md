@@ -40,7 +40,6 @@ Orthogonal solution group
 ## Topics
 + Other
   + [`WVOrthogonalSolutionGroup`](/classes/solution-groups/wvorthogonalsolutiongroup/wvorthogonalsolutiongroup.html) Orthogonal solution group
-  + [`modeNumberFromLinearIndex`](/classes/solution-groups/wvorthogonalsolutiongroup/modenumberfromlinearindex.html) 
   + [`wvt`](/classes/solution-groups/wvorthogonalsolutiongroup/wvt.html) 
 + Properties
   + [`abbreviatedName`](/classes/solution-groups/wvorthogonalsolutiongroup/abbreviatedname.html) abbreviated name
@@ -49,14 +48,10 @@ Orthogonal solution group
 + Analytical solutions
   + [`isValidModeNumber`](/classes/solution-groups/wvorthogonalsolutiongroup/isvalidmodenumber.html) return a boolean indicating whether (k,l,j) is a valid mode for the given coefficientMatrix
   + [`isValidPrimaryModeNumber`](/classes/solution-groups/wvorthogonalsolutiongroup/isvalidprimarymodenumber.html) return a boolean indicating whether (k,l,j) is a primary mode for the given coefficientMatrix
-  + [`linearIndexFromModeNumber`](/classes/solution-groups/wvorthogonalsolutiongroup/linearindexfrommodenumber.html) return the linear index from the primary mode number
-  + [`linearIndexOfConjugateFromModeNumber`](/classes/solution-groups/wvorthogonalsolutiongroup/linearindexofconjugatefrommodenumber.html) return the linear index of the conjugate from the primary mode number
   + [`maskForCoefficientMatrix`](/classes/solution-groups/wvorthogonalsolutiongroup/maskforcoefficientmatrix.html) returns a mask indicating where solutions live in the requested coefficient matrix.
   + [`maskForConjugateCoefficients`](/classes/solution-groups/wvorthogonalsolutiongroup/maskforconjugatecoefficients.html) returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
   + [`maskForPrimaryCoefficients`](/classes/solution-groups/wvorthogonalsolutiongroup/maskforprimarycoefficients.html) returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
-  + [`modeNumberFromSubscriptIndices`](/classes/solution-groups/wvorthogonalsolutiongroup/modenumberfromsubscriptindices.html) return the primary mode number from subscript indices
   + [`nUniqueSolutions`](/classes/solution-groups/wvorthogonalsolutiongroup/nuniquesolutions.html) return the number of unique solutions of this type
-  + [`subscriptIndicesFromPrimaryModeNumber`](/classes/solution-groups/wvorthogonalsolutiongroup/subscriptindicesfromprimarymodenumber.html) return subscript indices for a given mode number
   + [`uniqueSolutionAtIndex`](/classes/solution-groups/wvorthogonalsolutiongroup/uniquesolutionatindex.html) return the analytical solution at this index
 
 

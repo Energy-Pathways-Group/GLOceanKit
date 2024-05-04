@@ -3,7 +3,7 @@ layout: default
 title: uniqueSolutionAtIndex
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
-nav_order: 16
+nav_order: 11
 mathjax: true
 ---
 

@@ -205,7 +205,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p);
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
-            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A;
 
             Lr2 = wvt.g*h/wvt.f/wvt.f;

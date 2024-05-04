@@ -286,7 +286,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
-            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
             % [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);

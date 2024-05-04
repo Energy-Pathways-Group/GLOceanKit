@@ -331,13 +331,13 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
             solution.coefficientMatrix = coefficientMatrix;
-            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
-            [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
-            solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
-            solution.conjugateCoefficientMatrixIndex = conjugateIndex;
-            solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
+            % [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            % solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
+            % solution.conjugateCoefficientMatrixIndex = conjugateIndex;
+            % solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             % K2 = k*k+l*l;
             % Lr2 = wvt.g*h/wvt.f/wvt.f;

@@ -3,8 +3,9 @@ wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [16 16 5], N2=@(z) (5.2e-3)*(5.2
 % wvt = WVTransformHydrostatic([1 10 4], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 %%
+solutionGroup = WVMeanDensityAnomalySolutionGroup(wvt);
 % solutionGroup = WVInternalGravityWaveSolutionGroup(wvt);
-solutionGroup = WVInertialOscillationSolutionGroup(wvt);
+% solutionGroup = WVInertialOscillationSolutionGroup(wvt);
 % solutionGroup = WVGeostrophicSolutionGroup(wvt);
 
 

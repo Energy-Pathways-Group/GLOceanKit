@@ -203,16 +203,16 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
-            [~,~,jIndex] = self.subscriptIndicesFromPrimaryModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
+            index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;
             end
 
-            if jIndex == 1
+            if wvt.J(index) == 0
                 G = @(z) zeros(size(z));
                 F = @(z) ones(size(z));
             else
-                m = wvt.j(jIndex)*pi/wvt.Lz;
+                m = wvt.J(index)*pi/wvt.Lz;
                 sign = -2*(mod(jMode,2) == 1)+1;
                 if wvt.isHydrostatic
                     h = N0^2/(wvt.g*m^2);
@@ -232,15 +232,13 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             eta = @(x,y,z,t) G(z);
             p = @(x,y,z,t) G(z);
 
-            coefficientMatrix = WVCoefficientMatrix.Ap;
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
-            solution.coefficientMatrix = coefficientMatrix;
-            solution.coefficientMatrixIndex = self.linearIndexFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            solution.coefficientMatrix = WVCoefficientMatrix.Ap;
+            solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
 
-            [conjugateIndex,conjugateCoefficientMatrix] = self.linearIndexOfConjugateFromModeNumber(kMode,lMode,jMode,coefficientMatrix);
-            solution.conjugateCoefficientMatrix = conjugateCoefficientMatrix;
-            solution.conjugateCoefficientMatrixIndex = conjugateIndex;
+            solution.conjugateCoefficientMatrix = WVCoefficientMatrix.Am;
+            solution.conjugateCoefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             % K2 = k*k+l*l;
