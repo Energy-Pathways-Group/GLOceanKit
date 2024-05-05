@@ -61,7 +61,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
                 case 'WVGeostrophicSolutionGroup'
                     solnGroup = WVGeostrophicSolutionGroup(tmpwvt);
             end
-            for iSoln = 1:solnGroup.nUniqueSolutions
+            for iSoln = 1:solnGroup.nModes
                 solutionIndex.(sprintf('solution_%d',iSoln)) = iSoln;
             end
         end
@@ -75,7 +75,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         function testSolution(self,solutionIndex)
             self.wvt.t=0;
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
-            soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+            soln = self.solutionGroup.solutionForModeAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
 
             % Advance forward in time to confirm that phases are correctly
@@ -91,7 +91,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
         function testFTransformAllDerivatives(self,solutionIndex)
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
-            soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+            soln = self.solutionGroup.solutionForModeAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
             [U,Ux,Uy,Uz] = self.wvt.transformToSpatialDomainWithFAllDerivatives(Apm=self.wvt.UAp.*self.wvt.Apt + self.wvt.UAm.*self.wvt.Amt,A0=self.wvt.UA0.*self.wvt.A0t);
 
@@ -103,7 +103,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
 
         function testGTransformAllDerivatives(self,solutionIndex)
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
-            soln = self.solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+            soln = self.solutionGroup.solutionForModeAtIndex(solutionIndex,amplitude='random');
             self.wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
             [ETA,ETAx,ETAy,ETAz] = self.wvt.transformToSpatialDomainWithGAllDerivatives(Apm=self.wvt.NAp.*self.wvt.Apt + self.wvt.NAm.*self.wvt.Amt,A0=self.wvt.NA0.*self.wvt.A0t);
 

@@ -13,33 +13,6 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "mda";
         end
 
-        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
-            arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-
-            mask = zeros(self.wvt.spectralMatrixSize);
-            switch(coefficientMatrix)
-                case WVCoefficientMatrix.A0
-                    mask(self.wvt.Kh == 0 & self.wvt.J > 0) = 1;
-            end
-        end
-
-        function mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
-            arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-            mask = zeros(self.wvt.spectralMatrixSize);
-        end
-
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
@@ -48,63 +21,20 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
-        end
-        
-        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBePositive}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            mask = zeros(self.wvt.spectralMatrixSize);
+            switch(coefficientMatrix)
+                case WVCoefficientMatrix.A0
+                    mask(self.wvt.Kh == 0 & self.wvt.J > 0) = 1;
             end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-            bool = all( kMode == 0 & lMode == 0 & jMode >0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.A0 );
         end
 
-        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-            bool = self.isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix);
-        end
-
-        function n = nUniqueSolutions(self)
-            % return the number of unique solutions of this type
-            %
-            % Returns the number of unique solutions of this type for the
-            % transform in its current configuration.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: n = nUniqueSolutions(self)
-            % - Returns n: a non-negative integer number
-            arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
-            end
-            arguments (Output)
-                n double {mustBeNonnegative}
-            end
-            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-            n=sum(mask(:));
-        end
-
-        function solutions = uniqueSolutionAtIndex(self,solutionIndex,options)
+        function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
             %
             % - Topic: Analytical solutions
-            % - Declaration: solution = uniqueSolutionAtIndex(index)
+            % - Declaration: solution = solutionForModeAtIndex(index)
             % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
@@ -192,14 +122,6 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
 
         function NA0 = meanDensityAnomalySpatialTransformCoefficients(self)
             NA0 = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
-
-        function bool = contains(self,otherFlowConstituent)
-            if isa(otherFlowConstituent,"numeric")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent));
-            elseif isa(otherFlowConstituent,"WVGeostrophicSolutionGroup")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent.bitmask));
-            end
         end
 
     end 

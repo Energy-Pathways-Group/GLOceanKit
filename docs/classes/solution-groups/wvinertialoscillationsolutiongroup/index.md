@@ -28,7 +28,6 @@ Inertial oscillation solution group
 ## Topics
 + Other
   + [`WVInertialOscillationSolutionGroup`](/classes/solution-groups/wvinertialoscillationsolutiongroup/wvinertialoscillationsolutiongroup.html) Inertial oscillation solution group
-  + [`contains`](/classes/solution-groups/wvinertialoscillationsolutiongroup/contains.html) 
   + [`inertialOscillationSpatialTransformCoefficients`](/classes/solution-groups/wvinertialoscillationsolutiongroup/inertialoscillationspatialtransformcoefficients.html) 
 + Analytical solutions
   + [`inertialOscillationSolution`](/classes/solution-groups/wvinertialoscillationsolutiongroup/inertialoscillationsolution.html) return a real-valued analytical solution of the internal gravity wave mode

@@ -13,33 +13,6 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "io";
         end
 
-        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
-            % returns a mask indicating where solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-            
-            mask = zeros(self.wvt.spectralMatrixSize);
-            switch(coefficientMatrix)
-                case WVCoefficientMatrix.Ap
-                    mask(self.wvt.Kh == 0) = 1;
-                case WVCoefficientMatrix.Am
-                    mask(self.wvt.Kh == 0) = 1;
-            end
-        end
-
         function mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
             %
@@ -87,76 +60,14 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                     mask(self.wvt.Kh == 0) = 1;
             end
         end
-        
-        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-            bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix ~= WVCoefficientMatrix.A0 );
-        end
 
-        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-            bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.Ap );
-        end
-
-        function bool = isValidConjugateModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-            bool = all( kMode == 0 & lMode == 0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.Am );
-        end
-
-        function n = nUniqueSolutions(self)
-            % return the number of unique solutions of this type
-            %
-            % Returns the number of unique solutions of this type for the
-            % transform in its current configuration.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: n = nUniqueSolutions(self)
-            % - Returns n: a non-negative integer number
-            arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
-            end
-            arguments (Output)
-                n double {mustBeNonnegative}
-            end
-            maskP = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            maskM = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-            n=sum(maskP(:)) + sum(maskM(:));
-        end
-
-        function solutions = uniqueSolutionAtIndex(self,solutionIndex,options)
+        function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
             %
             % - Topic: Analytical solutions
-            % - Declaration: solution = uniqueSolutionAtIndex(index)
+            % - Declaration: solution = solutionForModeAtIndex(index)
             % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
@@ -168,7 +79,6 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
                 solutions (:,1) WVOrthogonalSolution
             end
             maskP = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            nUniqueAp = sum(maskP(:));
             indicesForUniqueApSolutions = find(maskP==1);
             solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
             for iSolution = 1:length(solutionIndex)
@@ -275,14 +185,6 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             UAp(self.wvt.Kh == 0) = 1;
             VAp = zeros(self.wvt.spectralMatrixSize);
             VAp(self.wvt.Kh == 0) = sqrt(-1);
-        end
-
-        function bool = contains(self,otherFlowConstituent)
-            if isa(otherFlowConstituent,"numeric")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent));
-            elseif isa(otherFlowConstituent,"WVGeostrophicSolutionGroup")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent.bitmask));
-            end
         end
 
     end 

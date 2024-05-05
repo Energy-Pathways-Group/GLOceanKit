@@ -28,7 +28,6 @@ Inertial oscillation solution group
 ## Topics
 + Other
   + [`WVMeanDensityAnomalySolutionGroup`](/classes/solution-groups/wvmeandensityanomalysolutiongroup/wvmeandensityanomalysolutiongroup.html) Inertial oscillation solution group
-  + [`contains`](/classes/solution-groups/wvmeandensityanomalysolutiongroup/contains.html) 
   + [`meanDensityAnomalySpatialTransformCoefficients`](/classes/solution-groups/wvmeandensityanomalysolutiongroup/meandensityanomalyspatialtransformcoefficients.html) 
   + [`meanDensityAnomalySpectralTransformCoefficients`](/classes/solution-groups/wvmeandensityanomalysolutiongroup/meandensityanomalyspectraltransformcoefficients.html) 
 + Analytical solutions

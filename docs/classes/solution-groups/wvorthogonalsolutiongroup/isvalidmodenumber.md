@@ -1,22 +1,22 @@
 ---
 layout: default
-title: isValidModeNumberForCoefficientMatrix
+title: isValidModeNumber
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
 nav_order: 5
 mathjax: true
 ---
 
-#  isValidModeNumberForCoefficientMatrix
+#  isValidModeNumber
 
-return a boolean indicating whether (k,l,j) is a valid mode for the given coefficientMatrix
+returns a boolean indicating whether (k,l,j) is a valid mode number
 
 
 ---
 
 ## Declaration
 ```matlab
- bool = isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix)
+ index = isValidModeNumber(kMode,lMode,jMode)
 ```
 ## Parameters
 + `kMode`  integer
@@ -24,11 +24,11 @@ return a boolean indicating whether (k,l,j) is a valid mode for the given coeffi
 + `jMode`  non-negative integer
 
 ## Returns
-+ `bool`  [0 1]
++ `index`  a non-negative integer
 
 ## Discussion
 
   returns a boolean indicating whether (k,l,j) is a valid mode
-  for the given coefficientMatrix
+  number
  
             

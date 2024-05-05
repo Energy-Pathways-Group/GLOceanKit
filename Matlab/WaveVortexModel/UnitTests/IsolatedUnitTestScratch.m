@@ -4,13 +4,13 @@ wvt = WVTransformHydrostatic([1 10 4], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(s
 
 %%
 % solutionGroup = WVMeanDensityAnomalySolutionGroup(wvt);
-% solutionGroup = WVInternalGravityWaveSolutionGroup(wvt);
+solutionGroup = WVInternalGravityWaveSolutionGroup(wvt);
 % solutionGroup = WVInertialOscillationSolutionGroup(wvt);
-solutionGroup = WVGeostrophicSolutionGroup(wvt);
+% solutionGroup = WVGeostrophicSolutionGroup(wvt);
 
 
 solutionIndex = 1; %% 2, 6, 14, 24, 40, 46, 58, 68, lMode=0!!!
-soln = solutionGroup.uniqueSolutionAtIndex(solutionIndex,amplitude='random');
+soln = solutionGroup.solutionForModeAtIndex(solutionIndex,amplitude='random');
 
 wvt.t = 6000;
 args = {wvt.X,wvt.Y,wvt.Z,wvt.t};

@@ -1,25 +1,25 @@
 ---
 layout: default
-title: uniqueSolutionAtIndex
+title: solutionForModeAtIndex
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
 nav_order: 12
 mathjax: true
 ---
 
-#  uniqueSolutionAtIndex
+#  solutionForModeAtIndex
 
-return the analytical solution at this solution index
+return the analytical solution for the mode at this index
 
 
 ---
 
 ## Declaration
 ```matlab
- solution = uniqueSolutionAtIndex(index)
+ solution = solutionForModeAtIndex(index)
 ```
 ## Parameters
-+ `index`  non-negative integer less than nUniqueSolutions
++ `index`  non-negative integer less than nModes
 + `amplitude`  (optional) 'wvt' or 'random' (default)
 
 ## Returns
@@ -27,8 +27,8 @@ return the analytical solution at this solution index
 
 ## Discussion
 
-  Returns WVAnalyticalSolution object for this solution index.
-  The solution indices run from 1:nUniqueSolutions.
+  Returns WVAnalyticalSolution object for this index.
+  The solution indices run from 1:nModes.
  
   The solution amplitude can be set to either 'wvt' or
   'random'. Setting the amplitude='wvt' will use the amplitude

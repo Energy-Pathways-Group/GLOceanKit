@@ -13,14 +13,14 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "g";
         end
 
-        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
-            % returns a mask indicating where solutions live in the requested coefficient matrix.
+        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
+            % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
+            % - Declaration: mask = maskOfPrimaryModesForCoefficientMatrix(coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -39,109 +39,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
-            % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskOfPrimaryModesForCoefficientMatrix(coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                mask double {mustBeNonnegative}
-            end
-            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
-        end
-
-        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
-            standardModeCheck = self.wvt.isValidModeNumber(kMode,lMode,jMode);
-            zeroCheck = ~(lMode == 0 & kMode == 0);
-            coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
-
-            bool = standardModeCheck & zeroCheck & coeffCheck;
-        end
-
-        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
-            standardModeCheck = self.wvt.isValidPrimaryModeNumber(kMode,lMode,jMode);
-            zeroCheck = ~(lMode == 0 & kMode == 0);
-            coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
-
-            bool = standardModeCheck & zeroCheck & coeffCheck;
-        end
-
-        function bool = isValidConjugateModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            % Geostrophic modes are valid at all Fourier modes, except k=l=0. 
-            standardModeCheck = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
-            zeroCheck = ~(lMode == 0 & kMode == 0);
-            coeffCheck = coefficientMatrix == WVCoefficientMatrix.A0;
-
-            bool = standardModeCheck & zeroCheck & coeffCheck;
-        end
-
-        function n = nUniqueSolutions(self)
-            % return the number of unique solutions of this type
-            %
-            % Returns the number of unique solutions of this type for the
-            % transform in its current configuration.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: n = nUniqueSolutions(self)
-            % - Returns n: a non-negative integer number
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-            end
-            arguments (Output)
-                n double {mustBeNonnegative}
-            end
-            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-            n=sum(mask(:));
-        end
-
-        function solutions = uniqueSolutionAtIndex(self,index,options)
+        function solutions = solutionForModeAtIndex(self,index,options)
             % return the analytical solution at this index
             %
             % Returns WVAnalyticalSolution object for this index
             %
             % - Topic: Analytical solutions
-            % - Declaration: solution = uniqueSolutionAtIndex(index)
+            % - Declaration: solution = solutionForModeAtIndex(index)
             % - Parameter index: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
@@ -167,20 +71,6 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 end
                 solutions(iSolution) = self.geostrophicSolution(kMode,lMode,jMode,A,phi);
             end
-        end
-
-        function bool = isValidGeostrophicModeNumber(self,kMode,lMode,jMode)
-            arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
-            end
-
-            bool = self.isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,WVCoefficientMatrix.A0);
         end
 
         function [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
@@ -217,10 +107,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 A (:,1) double {mustBeReal}
                 phi (:,1) double {mustBeReal}
             end
-            if ~all(self.isValidGeostrophicModeNumber(kMode,lMode,jMode))
+            if ~all(self.isValidModeNumber(kMode,lMode,jMode))
                 error('One or more mode numbers are not valid geostrophic mode numbers.');
             end
-            isValidConjugate = self.wvt.isValidConjugateModeNumber(kMode,lMode,jMode);
+            isValidConjugate = self.isValidConjugateModeNumber(kMode,lMode,jMode);
             
             % Geostrophic modes have the following symmetry for conjugates:
             kMode(isValidConjugate) = -kMode(isValidConjugate);

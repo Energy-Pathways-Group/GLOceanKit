@@ -36,8 +36,8 @@ for iGroup = 1:length(solutionGroups)
     solnGroup = solutionGroups{iGroup};
     fprintf('\n***************************************************\n');
     fprintf('Testing %s solution group:\n',solnGroup.name);
-    for iSoln = 1:solnGroup.nUniqueSolutions
-        soln = solnGroup.uniqueSolutionAtIndex(iSoln,amplitude='random');
+    for iSoln = 1:solnGroup.nModes
+        soln = solnGroup.solutionForModeAtIndex(iSoln,amplitude='random');
         wvt.initWithUVEta(soln.u(wvt.X,wvt.Y,wvt.Z,wvt.t), soln.v(wvt.X,wvt.Y,wvt.Z,wvt.t),soln.eta(wvt.X,wvt.Y,wvt.Z,wvt.t));
         [totalTests,totalErrors,log_spatial_error,log_spectral_error] = recordAndReportErrorsFromSolution(totalTests,totalErrors, wvt, soln);
         if log_spatial_error > log_max_spatial_error

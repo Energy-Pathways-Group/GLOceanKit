@@ -1,29 +1,29 @@
 ---
 layout: default
-title: nUniqueSolutions
+title: nModes
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
 nav_order: 10
 mathjax: true
 ---
 
-#  nUniqueSolutions
+#  nModes
 
-return the number of unique solutions of this type
+return the number of unique modes of this type
 
 
 ---
 
 ## Declaration
 ```matlab
- n = nUniqueSolutions(self)
+ n = nModes(self)
 ```
 ## Returns
 + `n`  a non-negative integer number
 
 ## Discussion
 
-  Returns the number of unique solutions of this type for the
+  Returns the number of unique modes of this type for the
   transform in its current configuration.
  
       

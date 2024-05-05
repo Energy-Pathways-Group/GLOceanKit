@@ -3,7 +3,7 @@ layout: default
 title: normalizeWaveModeProperties
 parent: WVInternalGravityWaveSolutionGroup
 grand_parent: Classes
-nav_order: 8
+nav_order: 5
 mathjax: true
 ---
 

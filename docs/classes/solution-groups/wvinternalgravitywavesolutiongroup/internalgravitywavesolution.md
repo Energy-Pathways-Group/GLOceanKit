@@ -3,7 +3,7 @@ layout: default
 title: internalGravityWaveSolution
 parent: WVInternalGravityWaveSolutionGroup
 grand_parent: Classes
-nav_order: 3
+nav_order: 2
 mathjax: true
 ---
 

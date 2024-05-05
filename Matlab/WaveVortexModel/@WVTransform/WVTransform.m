@@ -271,7 +271,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
             %
             % returns a boolean indicating whether (k,l,j) is a valid
-            % non-conjugate mode number according to how the property
+            % conjugate mode number according to how the property
             % conjugateDimension is set.
             %
             % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
@@ -345,6 +345,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             if ~self.isValidModeNumber(kMode,lMode,jMode)
                 error('Invalid WV mode number!');
             end
+            [kMode,lMode] = self.horizontalGeometry.primaryModeNumberFromWVModeNumber(kMode,lMode);
             klIndex = self.horizontalGeometry.wvIndexFromModeNumber(kMode,lMode);
             index = sub2ind(self.spectralMatrixSize,jMode+1,klIndex);
         end
@@ -1187,20 +1188,20 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             totalDOF = 0;
 
             solutionGroup = WVGeostrophicSolutionGroup(self);
-            totalDOF = totalDOF + 2*solutionGroup.nUniqueSolutions;
-            fprintf('\tGeostrophic: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nUniqueSolutions);
+            totalDOF = totalDOF + 2*solutionGroup.nModes;
+            fprintf('\tGeostrophic: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
             solutionGroup = WVInternalGravityWaveSolutionGroup(self);
-            totalDOF = totalDOF + 2*solutionGroup.nUniqueSolutions;
-            fprintf('\tInternal gravity wave: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nUniqueSolutions);
+            totalDOF = totalDOF + 2*solutionGroup.nModes;
+            fprintf('\tInternal gravity wave: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
             solutionGroup = WVInertialOscillationSolutionGroup(self);
-            totalDOF = totalDOF + 2*solutionGroup.nUniqueSolutions;
-            fprintf('\tInertial oscillations: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nUniqueSolutions);
+            totalDOF = totalDOF + 2*solutionGroup.nModes;
+            fprintf('\tInertial oscillations: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
             solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
-            totalDOF = totalDOF + solutionGroup.nUniqueSolutions; 
-            fprintf('\tMean density anomaly: %d unique solutions, each with 1 degree-of-freedom.\n',solutionGroup.nUniqueSolutions);
+            totalDOF = totalDOF + solutionGroup.nModes; 
+            fprintf('\tMean density anomaly: %d unique solutions, each with 1 degree-of-freedom.\n',solutionGroup.nModes);
 
             fprintf('This results in a total of %d active degrees-of-freedom.\n',totalDOF);
 
