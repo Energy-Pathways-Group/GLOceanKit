@@ -1,13 +1,13 @@
 ---
 layout: default
-title: isValidPrimaryModeNumber
+title: isValidPrimaryModeNumberForCoefficientMatrix
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
-nav_order: 5
+nav_order: 6
 mathjax: true
 ---
 
-#  isValidPrimaryModeNumber
+#  isValidPrimaryModeNumberForCoefficientMatrix
 
 return a boolean indicating whether (k,l,j) is a primary mode for the given coefficientMatrix
 
@@ -16,7 +16,7 @@ return a boolean indicating whether (k,l,j) is a primary mode for the given coef
 
 ## Declaration
 ```matlab
- bool = isValidPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix)
+ bool = isValidPrimaryModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix)
 ```
 ## Parameters
 + `kMode`  integer

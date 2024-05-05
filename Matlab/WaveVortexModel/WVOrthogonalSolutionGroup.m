@@ -13,47 +13,60 @@ classdef WVOrthogonalSolutionGroup
     % which will have a primary and conjugate part, each of which might be
     % in two different matrices.
     %
-    % - Declaration: classdef WVOrthogonalSolutionGroup
+    % - Topic: Initialization
+    % - Topic: Mode indices
+    % - Topic: Masks
+    % - Topic: Analytical solutions
     properties (Access=private)
         bitmask = 0
     end
     properties
         % name of the flow feature
         %
-        % name, e.g., "internal gravity wave"
+        % long-form version of the feature name, e.g., "internal gravity wave"
         % - Topic: Properties
         name
 
         % name of the flow feature
         %
-        % name, e.g., "internalGravityWave"
+        % camel-case version of the feature name, e.g., "internalGravityWave"
         % - Topic: Properties
         camelCaseName
 
         % abbreviated name
         %
-        % abreviated name, e.g., "igw" for internal gravity waves.
+        % abreviated feature name, e.g., "igw" for internal gravity waves.
         % - Topic: Properties
         abbreviatedName
 
+        % reference to the wave vortex transform
+        %
+        % reference to the WVTransform instance
+        % - Topic: Properties
         wvt
     end
     methods
         function self = WVOrthogonalSolutionGroup(wvt)
+            % create a new orthogonal solution group
+            %
+            % - Topic: Initialization
+            % - Declaration:  solnGroup = WVOrthogonalSolutionGroup(wvt)
+            % - Parameter wvt: instance of a WVTransform
+            % - Returns solnGroup: a new orthogonal solution group instance
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
             self.wvt = wvt;
         end
 
-        function mask = maskForCoefficientMatrix(self,coefficientMatrix)
+        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForCoefficientMatrix(self,coefficientMatrix)
+            % - Topic: Masks
+            % - Declaration: mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -66,14 +79,14 @@ classdef WVOrthogonalSolutionGroup
             mask = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
+        function mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
+            % - Topic: Masks
+            % - Declaration: mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -86,14 +99,14 @@ classdef WVOrthogonalSolutionGroup
             mask = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
+        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
+            % - Topic: Masks
+            % - Declaration: mask = maskOfPrimaryModesForCoefficientMatrix(coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -106,14 +119,14 @@ classdef WVOrthogonalSolutionGroup
             mask = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             % return a boolean indicating whether (k,l,j) is a valid mode for the given coefficientMatrix
             %
             % returns a boolean indicating whether (k,l,j) is a valid mode
             % for the given coefficientMatrix
             %
-            % - Topic: Analytical solutions
-            % - Declaration: bool = isValidModeNumber(kMode,lMode,jMode,coefficientMatrix)
+            % - Topic: Mode indices
+            % - Declaration: bool = isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Parameter jMode: non-negative integer
@@ -126,19 +139,19 @@ classdef WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
             bool = 0;
         end
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             % return a boolean indicating whether (k,l,j) is a primary mode for the given coefficientMatrix
             %
             % returns a boolean indicating whether (k,l,j) is a primary mode
             % for the given coefficientMatrix
             %
-            % - Topic: Analytical solutions
-            % - Declaration: bool = isValidPrimaryModeNumber(kMode,lMode,jMode,coefficientMatrix)
+            % - Topic: Mode indices
+            % - Declaration: bool = isValidPrimaryModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Parameter jMode: non-negative integer
@@ -151,7 +164,32 @@ classdef WVOrthogonalSolutionGroup
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
-                bool (1,1) logical {mustBeMember(bool,[0 1])}
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
+            end
+            bool = 0;
+        end
+
+        function bool = isValidConjugateModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
+            % return a boolean indicating whether (k,l,j) is a conjugate mode for the given coefficientMatrix
+            %
+            % returns a boolean indicating whether (k,l,j) is a conjugate mode
+            % for the given coefficientMatrix
+            %
+            % - Topic: Mode indices
+            % - Declaration: bool = isValidConjugateModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix)
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
+            % - Parameter jMode: non-negative integer
+            % - Returns bool: [0 1]
+            arguments (Input)
+                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
             bool = 0;
         end
@@ -175,21 +213,29 @@ classdef WVOrthogonalSolutionGroup
             n=0;
         end
 
-        function solution = uniqueSolutionAtIndex(self,index)
-            % return the analytical solution at this index
+        function solution = uniqueSolutionAtIndex(self,index,options)
+            % return the analytical solution at this solution index
             %
-            % Returns WVAnalyticalSolution object for this index
+            % Returns WVAnalyticalSolution object for this solution index.
+            % The solution indices run from 1:nUniqueSolutions.
+            %
+            % The solution amplitude can be set to either 'wvt' or
+            % 'random'. Setting the amplitude='wvt' will use the amplitude
+            % currently set in the wvt to initialize this solution.
+            % Otherwise an appropriate random amplitude will be created.
             %
             % - Topic: Analytical solutions
             % - Declaration: solution = uniqueSolutionAtIndex(index)
-            % - Parameter index: non-negative integer
+            % - Parameter index: non-negative integer less than nUniqueSolutions
+            % - Parameter amplitude: (optional) 'wvt' or 'random' (default)
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
                 self WVOrthogonalSolutionGroup {mustBeNonempty}
-                index double {mustBeNonnegative}
+                index (:,1) double {mustBeNonnegative}
+                options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
             arguments (Output)
-                solution WVAnalyticalSolution
+                solution (:,1) WVOrthogonalSolution
             end
             solution=0;
         end

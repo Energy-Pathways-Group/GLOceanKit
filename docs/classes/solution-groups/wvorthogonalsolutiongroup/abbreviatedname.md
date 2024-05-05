@@ -16,5 +16,5 @@ abbreviated name
 
 ## Discussion
 
-  abreviated name, e.g., "igw" for internal gravity waves.
+  abreviated feature name, e.g., "igw" for internal gravity waves.
   

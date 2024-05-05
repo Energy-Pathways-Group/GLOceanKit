@@ -28,10 +28,8 @@ Geostrophic solution group
 ## Topics
 + Other
   + [`WVGeostrophicSolutionGroup`](/classes/solution-groups/wvgeostrophicsolutiongroup/wvgeostrophicsolutiongroup.html) Geostrophic solution group
-  + [`contains`](/classes/solution-groups/wvgeostrophicsolutiongroup/contains.html) 
   + [`geostrophicSpatialTransformCoefficients`](/classes/solution-groups/wvgeostrophicsolutiongroup/geostrophicspatialtransformcoefficients.html) 
   + [`geostrophicSpectralTransformCoefficients`](/classes/solution-groups/wvgeostrophicsolutiongroup/geostrophicspectraltransformcoefficients.html) 
-  + [`isValidConjugateModeNumber`](/classes/solution-groups/wvgeostrophicsolutiongroup/isvalidconjugatemodenumber.html) Geostrophic modes are valid at all Fourier modes, except k=l=0.
   + [`isValidGeostrophicModeNumber`](/classes/solution-groups/wvgeostrophicsolutiongroup/isvalidgeostrophicmodenumber.html) 
 + Analytical solutions
   + [`geostrophicSolution`](/classes/solution-groups/wvgeostrophicsolutiongroup/geostrophicsolution.html) return a real-valued analytical solution of the geostrophic mode

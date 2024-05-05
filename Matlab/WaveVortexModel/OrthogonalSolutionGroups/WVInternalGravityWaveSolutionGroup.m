@@ -13,14 +13,14 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "igw";
         end
 
-        function mask = maskForCoefficientMatrix(self,coefficientMatrix)
+        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskForCoefficientMatrix(self,coefficientMatrix)
+            % - Declaration: mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -40,14 +40,14 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
+        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
+            % - Declaration: mask = maskOfPrimaryModesForCoefficientMatrix(coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -57,10 +57,10 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = self.maskForCoefficientMatrix(coefficientMatrix);
+            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
         end
         
-        function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -79,7 +79,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             bool = standardModeCheck & jCheck & ioCheck & coeffCheck;
         end
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -132,8 +132,8 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 n double {mustBeNonnegative}
             end
-            maskP = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            maskM = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Am);
+            maskP = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            maskM = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
             n=sum(maskP(:)) + sum(maskM(:));
         end
 
@@ -154,8 +154,8 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 solutions (:,1) WVOrthogonalSolution
             end
-            maskP = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Ap);
-            maskM = self.maskForPrimaryCoefficients(WVCoefficientMatrix.Am);
+            maskP = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            maskM = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
             nUniqueAp = sum(maskP(:));
             nUniqueAm = sum(maskM(:));
             indicesForUniqueApSolutions = find(maskP==1);
@@ -201,7 +201,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
                 bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
 
-            bool = self.isValidModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
+            bool = self.isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,WVCoefficientMatrix.Ap);
         end
 
         function [kMode,lMode,jMode,A,phi,omegasign] = normalizeWaveModeProperties(self,kMode,lMode,jMode,A,phi,omegasign)
@@ -346,7 +346,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)
-            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
             ApmD = -sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm).* mask;
             ApmN = -(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm) .* mask;
         end
@@ -355,7 +355,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             [K,L,~] = self.wvt.kljGrid;
             alpha = atan2(L,K);
 
-            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
             UAp = (cos(alpha)-sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*sin(alpha)) .* mask;
             VAp = (sin(alpha)+sqrt(-1)*(self.wvt.f ./ self.wvt.Omega).*cos(alpha)) .* mask;
             WAp = -sqrt(-1)*self.wvt.Kh.*self.wvt.h_pm .* mask;

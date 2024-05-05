@@ -1,22 +1,22 @@
 ---
 layout: default
-title: maskForCoefficientMatrix
+title: maskOfConjugateModesForCoefficientMatrix
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
-nav_order: 6
+nav_order: 7
 mathjax: true
 ---
 
-#  maskForCoefficientMatrix
+#  maskOfConjugateModesForCoefficientMatrix
 
-returns a mask indicating where solutions live in the requested coefficient matrix.
+returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
 
 
 ---
 
 ## Declaration
 ```matlab
- mask = maskForCoefficientMatrix(self,coefficientMatrix)
+ mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
 ```
 ## Parameters
 + `coefficientMatrix`  a WVCoefficientMatrix type

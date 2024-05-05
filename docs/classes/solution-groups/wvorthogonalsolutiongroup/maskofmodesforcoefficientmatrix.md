@@ -1,22 +1,22 @@
 ---
 layout: default
-title: maskForPrimaryCoefficients
+title: maskOfModesForCoefficientMatrix
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
 nav_order: 8
 mathjax: true
 ---
 
-#  maskForPrimaryCoefficients
+#  maskOfModesForCoefficientMatrix
 
-returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
+returns a mask indicating where solutions live in the requested coefficient matrix.
 
 
 ---
 
 ## Declaration
 ```matlab
- mask = maskForPrimaryCoefficients(coefficientMatrix)
+ mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
 ```
 ## Parameters
 + `coefficientMatrix`  a WVCoefficientMatrix type

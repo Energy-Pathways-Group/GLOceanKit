@@ -13,14 +13,14 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "g";
         end
 
-        function mask = maskForCoefficientMatrix(self,coefficientMatrix)
+        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskForCoefficientMatrix(self,coefficientMatrix)
+            % - Declaration: mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -39,14 +39,14 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
+        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
             % Returns a 'mask' (matrix with 1s or 0s) indicating where
             % different solution types live in the Ap, Am, A0 matrices.
             %
             % - Topic: Analytical solutions
-            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
+            % - Declaration: mask = maskOfPrimaryModesForCoefficientMatrix(coefficientMatrix)
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
@@ -56,10 +56,10 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = self.maskForCoefficientMatrix(coefficientMatrix);
+            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
         end
 
-        function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -78,7 +78,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             bool = standardModeCheck & zeroCheck & coeffCheck;
         end
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -97,7 +97,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             bool = standardModeCheck & zeroCheck & coeffCheck;
         end
 
-        function bool = isValidConjugateModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidConjugateModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -131,7 +131,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 n double {mustBeNonnegative}
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             n=sum(mask(:));
         end
 
@@ -152,7 +152,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 solutions (:,1) WVOrthogonalSolution
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             indicesForUniqueSolutions = find(mask==1);
             solutions=WVOrthogonalSolution.empty(length(index),0);
             for iSolution = 1:length(index)
@@ -180,7 +180,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 bool (1,1) logical {mustBeMember(bool,[0 1])}
             end
 
-            bool = self.isValidModeNumber(kMode,lMode,jMode,WVCoefficientMatrix.A0);
+            bool = self.isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,WVCoefficientMatrix.A0);
         end
 
         function [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
@@ -192,26 +192,30 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             %
             % - Topic: Analytical solutions
             % - Declaration: [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
-            % - Parameter kMode: non-negative integer
-            % - Parameter lMode: non-negative integer
+            % - Parameter kMode: integer
+            % - Parameter lMode: integer
             % - Parameter jMode: non-negative integer
-            % - Returns kIndex: a positive integer
-            % - Returns lIndex: a positive integer
-            % - Returns jIndex: a positive integer
+            % - Parameter A: real-valued amplitude (m)
+            % - Parameter phi: real-valued phase (radians)
+            % - Returns kMode: integer
+            % - Returns lMode: integer
+            % - Returns jMode: non-negative integer
+            % - Returns A: real-valued amplitude (m)
+            % - Returns phi: real-valued phase (radians)
             arguments (Input)
                 self WVGeostrophicSolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                A (:,1) double
-                phi (:,1) double
+                A (:,1) double {mustBeReal}
+                phi (:,1) double {mustBeReal}
             end
             arguments (Output)
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-                A (:,1) double
-                phi (:,1) double
+                A (:,1) double {mustBeReal}
+                phi (:,1) double {mustBeReal}
             end
             if ~all(self.isValidGeostrophicModeNumber(kMode,lMode,jMode))
                 error('One or more mode numbers are not valid geostrophic mode numbers.');
@@ -316,7 +320,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             A0N = (Lr2inv./(K2 + Lr2inv));
             A0Z = - (f/g)./(K2 + Lr2inv);
 
-            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             A0N(~mask) = 0;
             A0Z(~mask) = 0;
         end
@@ -326,21 +330,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             f = self.wvt.f;
             g = self.wvt.g;
 
-            mask = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
 
             UA0 = -sqrt(-1)*(g/f)*L .* mask;
             VA0 = sqrt(-1)*(g/f)*K .* mask;
             PA0 = mask;
             NA0 = mask;
             NA0(1,:) = 0;
-        end
-
-        function bool = contains(self,otherFlowConstituent)
-            if isa(otherFlowConstituent,"numeric")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent));
-            elseif isa(otherFlowConstituent,"WVGeostrophicSolutionGroup")
-                bool = logical(bitand(self.bitmask,otherFlowConstituent.bitmask));
-            end
         end
 
     end 

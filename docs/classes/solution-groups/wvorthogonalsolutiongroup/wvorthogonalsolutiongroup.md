@@ -9,27 +9,21 @@ mathjax: true
 
 #  WVOrthogonalSolutionGroup
 
-Orthogonal solution group
+create a new orthogonal solution group
 
 
 ---
 
 ## Declaration
 ```matlab
- classdef WVOrthogonalSolutionGroup
+  solnGroup = WVOrthogonalSolutionGroup(wvt)
 ```
+## Parameters
++ `wvt`  instance of a WVTransform
+
+## Returns
++ `solnGroup`  a new orthogonal solution group instance
+
 ## Discussion
 
-  Each degree-of-freedom in the model is associated with an analytical
-  solution to the equations of motion. This class groups together
-  solutions of a particular type and provides a mapping between their
-  analytical solutions and their numerical representation.
- 
-  Perhaps the most complicate part of the numerical implementation is
-  the indexing---finding where each solution is represented
-  numerically. In general, a solution will have some properties, e.g.,
-    (kMode,lMode,jMode,phi,A,omegasign) 
-  which will have a primary and conjugate part, each of which might be
-  in two different matrices.
- 
-  
+        

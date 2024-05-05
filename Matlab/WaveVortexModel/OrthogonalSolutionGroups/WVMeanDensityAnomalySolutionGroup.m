@@ -13,16 +13,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             self.abbreviatedName = "mda";
         end
 
-        function mask = maskForCoefficientMatrix(self,coefficientMatrix)
-            % returns a mask indicating where solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForCoefficientMatrix(self,coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+        function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
@@ -38,16 +29,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
-        function mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % returns a mask indicating where the redundant (conjugate )solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForConjugateCoefficients(self,coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+        function mask = maskOfConjugateModesForCoefficientMatrix(self,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
@@ -55,19 +37,10 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = zeros(self.spectralRectangularGridSize);
+            mask = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function mask = maskForPrimaryCoefficients(self,coefficientMatrix)
-            % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % different solution types live in the Ap, Am, A0 matrices.
-            %
-            % - Topic: Analytical solutions
-            % - Declaration: mask = maskForPrimaryCoefficients(coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
+        function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
@@ -75,10 +48,10 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 mask double {mustBeNonnegative}
             end
-            mask = self.maskForCoefficientMatrix(coefficientMatrix);
+            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
         end
         
-        function bool = isValidModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -92,7 +65,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             bool = all( kMode == 0 & lMode == 0 & jMode >0 & jMode <= self.wvt.Nj & coefficientMatrix == WVCoefficientMatrix.A0 );
         end
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode,coefficientMatrix)
+        function bool = isValidPrimaryModeNumberForCoefficientMatrix(self,kMode,lMode,jMode,coefficientMatrix)
             arguments (Input)
                 self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
@@ -103,7 +76,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 bool (1,1) logical {mustBeMember(bool,[0 1])}
             end
-            bool = self.isValidModeNumber(kMode,lMode,jMode,coefficientMatrix);
+            bool = self.isValidModeNumberForCoefficientMatrix(kMode,lMode,jMode,coefficientMatrix);
         end
 
         function n = nUniqueSolutions(self)
@@ -121,7 +94,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 n double {mustBeNonnegative}
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             n=sum(mask(:));
         end
 
@@ -142,7 +115,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             arguments (Output)
                 solutions (:,1) WVOrthogonalSolution
             end
-            mask = self.maskForPrimaryCoefficients(WVCoefficientMatrix.A0);
+            mask = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             indicesForUniqueSolutions = find(mask==1);
             solutions=WVOrthogonalSolution.empty(length(solutionIndex),0);
             for iSolution = 1:length(solutionIndex)
@@ -214,11 +187,11 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
         end
 
         function A0N = meanDensityAnomalySpectralTransformCoefficients(self)
-            A0N = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            A0N = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function NA0 = meanDensityAnomalySpatialTransformCoefficients(self)
-            NA0 = self.maskForCoefficientMatrix(WVCoefficientMatrix.A0);
+            NA0 = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function bool = contains(self,otherFlowConstituent)

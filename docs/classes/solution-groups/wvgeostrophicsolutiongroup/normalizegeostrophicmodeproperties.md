@@ -3,7 +3,7 @@ layout: default
 title: normalizeGeostrophicModeProperties
 parent: WVGeostrophicSolutionGroup
 grand_parent: Classes
-nav_order: 8
+nav_order: 6
 mathjax: true
 ---
 
@@ -19,14 +19,18 @@ returns properties of a geostrophic solution relative to the primary mode number
  [kMode,lMode,jMode,A,phi] = normalizeGeostrophicModeProperties(self,kMode,lMode,jMode,A,phi)
 ```
 ## Parameters
-+ `kMode`  non-negative integer
-+ `lMode`  non-negative integer
++ `kMode`  integer
++ `lMode`  integer
 + `jMode`  non-negative integer
++ `A`  real-valued amplitude (m)
++ `phi`  real-valued phase (radians)
 
 ## Returns
-+ `kIndex`  a positive integer
-+ `lIndex`  a positive integer
-+ `jIndex`  a positive integer
++ `kMode`  integer
++ `lMode`  integer
++ `jMode`  non-negative integer
++ `A`  real-valued amplitude (m)
++ `phi`  real-valued phase (radians)
 
 ## Discussion
 
@@ -34,4 +38,4 @@ returns properties of a geostrophic solution relative to the primary mode number
   given the any valid mode numbers (k,l,j) and adjust the
   amplitude (A) and phase (phi), if necessary.
  
-                
+                        

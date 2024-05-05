@@ -3,7 +3,7 @@ layout: default
 title: name
 parent: WVOrthogonalSolutionGroup
 grand_parent: Classes
-nav_order: 10
+nav_order: 11
 mathjax: true
 ---
 
@@ -16,5 +16,5 @@ of the flow feature
 
 ## Discussion
 
-  name, e.g., "internal gravity wave"
+  long-form version of the feature name, e.g., "internal gravity wave"
   

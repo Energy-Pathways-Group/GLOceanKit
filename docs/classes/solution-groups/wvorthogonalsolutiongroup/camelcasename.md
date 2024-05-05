@@ -16,5 +16,5 @@ name of the flow feature
 
 ## Discussion
 
-  name, e.g., "internalGravityWave"
+  camel-case version of the feature name, e.g., "internalGravityWave"
   
