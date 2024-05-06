@@ -22,10 +22,10 @@ isHydrostatic = 1;
 % wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [4, 8, 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
-solutionGroups{1} = WVGeostrophicSolutionGroup(wvt);
-solutionGroups{2} = WVInternalGravityWaveSolutionGroup(wvt);
-solutionGroups{3} = WVMeanDensityAnomalySolutionGroup(wvt);
-solutionGroups{4} = WVInertialOscillationSolutionGroup(wvt);
+solutionGroups{1} = WVGeostrophicComponent(wvt);
+solutionGroups{2} = WVInternalGravityWaveComponent(wvt);
+solutionGroups{3} = WVMeanDensityAnomalyComponent(wvt);
+solutionGroups{4} = WVInertialOscillationComponent(wvt);
 
 for iGroup = 1:length(solutionGroups)
     totalErrors = 0;

@@ -1,13 +1,13 @@
-classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
+classdef WVInternalGravityWaveComponent < WVFlowComponent
     %Geostrophic solution group
     %
-    % - Declaration: classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
+    % - Declaration: classdef WVGeostrophicComponent < WVFlowComponent
     methods
-        function self = WVInternalGravityWaveSolutionGroup(wvt)
+        function self = WVInternalGravityWaveComponent(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVOrthogonalSolutionGroup(wvt);
+            self@WVFlowComponent(wvt);
             self.name = "internal gravity wave";
             self.camelCaseName = "internalGravityWave";
             self.abbreviatedName = "igw";
@@ -24,7 +24,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -51,7 +51,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nj Nkl]
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -77,7 +77,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveComponent {mustBeNonempty}
                 solutionIndex (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
@@ -146,7 +146,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns phi: phase in radians
             % - Returns omegasign: sign of omega, [-1 1]
             arguments (Input)
-                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveComponent {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBePositive}
@@ -195,7 +195,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVInternalGravityWaveSolutionGroup {mustBeNonempty}
+                self WVInternalGravityWaveComponent {mustBeNonempty}
                 kMode (1,1) double
                 lMode (1,1) double
                 jMode (1,1) double

@@ -1,4 +1,4 @@
-classdef WVOrthogonalSolutionGroup
+classdef WVFlowComponent
     %Orthogonal solution group
     %
     % Each degree-of-freedom in the model is associated with an analytical
@@ -48,11 +48,11 @@ classdef WVOrthogonalSolutionGroup
         wvt
     end
     methods
-        function self = WVOrthogonalSolutionGroup(wvt)
+        function self = WVFlowComponent(wvt)
             % create a new orthogonal solution group
             %
             % - Topic: Initialization
-            % - Declaration:  solnGroup = WVOrthogonalSolutionGroup(wvt)
+            % - Declaration:  solnGroup = WVFlowComponent(wvt)
             % - Parameter wvt: instance of a WVTransform
             % - Returns solnGroup: a new orthogonal solution group instance
             arguments
@@ -72,7 +72,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -92,7 +92,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -112,7 +112,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -133,7 +133,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nj Nkl]
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -155,7 +155,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter jMode: non-negative integer
             % - Returns index: a non-negative integer
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -185,7 +185,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter jMode: non-negative integer
             % - Returns index: a non-negative integer
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -215,7 +215,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter jMode: non-negative integer
             % - Returns index: a non-negative integer
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -238,7 +238,7 @@ classdef WVOrthogonalSolutionGroup
             % - Declaration: n = nModes(self)
             % - Returns n: a non-negative integer number
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
             end
             arguments (Output)
                 n double {mustBeNonnegative}
@@ -266,7 +266,7 @@ classdef WVOrthogonalSolutionGroup
             % - Parameter amplitude: (optional) 'wvt' or 'random' (default)
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 index (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end

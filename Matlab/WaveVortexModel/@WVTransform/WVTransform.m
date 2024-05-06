@@ -798,22 +798,22 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
           
         function self = buildTransformationMatrices(self)
-            solutionGroup = WVGeostrophicSolutionGroup(self);
+            solutionGroup = WVGeostrophicComponent(self);
             [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
             [self.UA0,self.VA0,self.NA0,self.PA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
 
-            solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
+            solutionGroup = WVMeanDensityAnomalyComponent(self);
             A0Nmda = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
             NA0mda = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
             self.A0N = self.A0N + A0Nmda;
             self.NA0 = self.NA0 + NA0mda;
             self.PA0 = self.PA0 + NA0mda;
 
-            solutionGroup = WVInternalGravityWaveSolutionGroup(self);
+            solutionGroup = WVInternalGravityWaveComponent(self);
             [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
             [self.UAp,self.VAp,self.WAp,self.NAp] = solutionGroup.internalGravityWaveSpatialTransformCoefficients;
 
-            solutionGroup = WVInertialOscillationSolutionGroup(self);
+            solutionGroup = WVInertialOscillationComponent(self);
             [UAp_io,VAp_io] = solutionGroup.inertialOscillationSpatialTransformCoefficients;
             self.UAp = self.UAp + UAp_io;
             self.VAp = self.VAp + VAp_io;
@@ -1189,19 +1189,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             fprintf('The four major solutions groups have the following degrees-of-freedom:\n')
             totalDOF = 0;
 
-            solutionGroup = WVGeostrophicSolutionGroup(self);
+            solutionGroup = WVGeostrophicComponent(self);
             totalDOF = totalDOF + 2*solutionGroup.nModes;
             fprintf('\tGeostrophic: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
-            solutionGroup = WVInternalGravityWaveSolutionGroup(self);
+            solutionGroup = WVInternalGravityWaveComponent(self);
             totalDOF = totalDOF + 2*solutionGroup.nModes;
             fprintf('\tInternal gravity wave: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
-            solutionGroup = WVInertialOscillationSolutionGroup(self);
+            solutionGroup = WVInertialOscillationComponent(self);
             totalDOF = totalDOF + 2*solutionGroup.nModes;
             fprintf('\tInertial oscillations: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
 
-            solutionGroup = WVMeanDensityAnomalySolutionGroup(self);
+            solutionGroup = WVMeanDensityAnomalyComponent(self);
             totalDOF = totalDOF + solutionGroup.nModes; 
             fprintf('\tMean density anomaly: %d unique solutions, each with 1 degree-of-freedom.\n',solutionGroup.nModes);
 

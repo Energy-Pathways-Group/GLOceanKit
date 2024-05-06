@@ -1,13 +1,13 @@
-classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
+classdef WVMeanDensityAnomalyComponent < WVFlowComponent
     %Inertial oscillation solution group
     %
-    % - Declaration: classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
+    % - Declaration: classdef WVInertialOscillationComponent < WVFlowComponent
     methods
-        function self = WVMeanDensityAnomalySolutionGroup(wvt)
+        function self = WVMeanDensityAnomalyComponent(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVOrthogonalSolutionGroup(wvt);
+            self@WVFlowComponent(wvt);
             self.name = "mean density anomaly";
             self.camelCaseName = "meanDensityAnomaly";
             self.abbreviatedName = "mda";
@@ -15,7 +15,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
 
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
+                self WVMeanDensityAnomalyComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -41,7 +41,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nj Nkl]
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -62,7 +62,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
+                self WVMeanDensityAnomalyComponent {mustBeNonempty}
                 solutionIndex (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
@@ -100,7 +100,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVMeanDensityAnomalySolutionGroup {mustBeNonempty}
+                self WVMeanDensityAnomalyComponent {mustBeNonempty}
                 jMode (1,1) double
                 A (1,1) double
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1

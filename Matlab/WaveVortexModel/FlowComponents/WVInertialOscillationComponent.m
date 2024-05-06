@@ -1,13 +1,13 @@
-classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
+classdef WVInertialOscillationComponent < WVFlowComponent
     %Inertial oscillation solution group
     %
-    % - Declaration: classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
+    % - Declaration: classdef WVInertialOscillationComponent < WVFlowComponent
     methods
-        function self = WVInertialOscillationSolutionGroup(wvt)
+        function self = WVInertialOscillationComponent(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVOrthogonalSolutionGroup(wvt);
+            self@WVFlowComponent(wvt);
             self.name = "inertial oscillation";
             self.camelCaseName = "inertialOscillation";
             self.abbreviatedName = "io";
@@ -24,7 +24,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
+                self WVInertialOscillationComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -48,7 +48,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
+                self WVInertialOscillationComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -73,7 +73,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nj Nkl]
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -97,7 +97,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter solutionIndex: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
+                self WVInertialOscillationComponent {mustBeNonempty}
                 solutionIndex (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
@@ -141,7 +141,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVInertialOscillationSolutionGroup {mustBeNonempty}
+                self WVInertialOscillationComponent {mustBeNonempty}
                 kMode (1,1) double
                 lMode (1,1) double
                 jMode (1,1) double

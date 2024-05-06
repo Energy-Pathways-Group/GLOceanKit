@@ -10,8 +10,8 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
         transform = {'hydrostatic'};
-        orthogonalSolutionGroup = {'WVInertialOscillationSolutionGroup','WVMeanDensityAnomalySolutionGroup','WVInternalGravityWaveSolutionGroup','WVGeostrophicSolutionGroup'}
-        % orthogonalSolutionGroup = {'WVInternalGravityWaveSolutionGroup'}
+        orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
+        % orthogonalSolutionGroup = {'WVInternalGravityWaveComponent'}
     end
 
     methods (TestClassSetup)
@@ -25,14 +25,14 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
                     testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
             end
             switch orthogonalSolutionGroup
-                case 'WVInertialOscillationSolutionGroup'
-                    testCase.solutionGroup = WVInertialOscillationSolutionGroup(testCase.wvt);
-                case 'WVMeanDensityAnomalySolutionGroup'
-                    testCase.solutionGroup = WVMeanDensityAnomalySolutionGroup(testCase.wvt);
-                case 'WVInternalGravityWaveSolutionGroup'
-                    testCase.solutionGroup = WVInternalGravityWaveSolutionGroup(testCase.wvt);
-                case 'WVGeostrophicSolutionGroup'
-                    testCase.solutionGroup = WVGeostrophicSolutionGroup(testCase.wvt);
+                case 'WVInertialOscillationComponent'
+                    testCase.solutionGroup = WVInertialOscillationComponent(testCase.wvt);
+                case 'WVMeanDensityAnomalyComponent'
+                    testCase.solutionGroup = WVMeanDensityAnomalyComponent(testCase.wvt);
+                case 'WVInternalGravityWaveComponent'
+                    testCase.solutionGroup = WVInternalGravityWaveComponent(testCase.wvt);
+                case 'WVGeostrophicComponent'
+                    testCase.solutionGroup = WVGeostrophicComponent(testCase.wvt);
             end
         end
     end
@@ -52,14 +52,14 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             % ideally we re-write the initialization to only depend
             % on Lxyz and Nyxz
             switch orthogonalSolutionGroup
-                case 'WVInertialOscillationSolutionGroup'   
-                    solnGroup = WVInertialOscillationSolutionGroup(tmpwvt);
-                case 'WVMeanDensityAnomalySolutionGroup'
-                    solnGroup = WVMeanDensityAnomalySolutionGroup(tmpwvt);
-                case 'WVInternalGravityWaveSolutionGroup'
-                    solnGroup = WVInternalGravityWaveSolutionGroup(tmpwvt);
-                case 'WVGeostrophicSolutionGroup'
-                    solnGroup = WVGeostrophicSolutionGroup(tmpwvt);
+                case 'WVInertialOscillationComponent'   
+                    solnGroup = WVInertialOscillationComponent(tmpwvt);
+                case 'WVMeanDensityAnomalyComponent'
+                    solnGroup = WVMeanDensityAnomalyComponent(tmpwvt);
+                case 'WVInternalGravityWaveComponent'
+                    solnGroup = WVInternalGravityWaveComponent(tmpwvt);
+                case 'WVGeostrophicComponent'
+                    solnGroup = WVGeostrophicComponent(tmpwvt);
             end
             for iSoln = 1:solnGroup.nModes
                 solutionIndex.(sprintf('solution_%d',iSoln)) = iSoln;

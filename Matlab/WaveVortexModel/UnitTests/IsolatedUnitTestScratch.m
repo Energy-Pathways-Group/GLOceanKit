@@ -3,10 +3,10 @@
 wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 %%
-% solutionGroup = WVMeanDensityAnomalySolutionGroup(wvt);
-% solutionGroup = WVInternalGravityWaveSolutionGroup(wvt);
-% solutionGroup = WVInertialOscillationSolutionGroup(wvt);
-solutionGroup = WVGeostrophicSolutionGroup(wvt);
+% solutionGroup = WVMeanDensityAnomalyComponent(wvt);
+% solutionGroup = WVInternalGravityWaveComponent(wvt);
+% solutionGroup = WVInertialOscillationComponent(wvt);
+solutionGroup = WVGeostrophicComponent(wvt);
 
 
 solutionIndex = 1; %% 2, 6, 14, 24, 40, 46, 58, 68, lMode=0!!!

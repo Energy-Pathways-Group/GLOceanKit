@@ -1,16 +1,16 @@
-classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
+classdef WVGeostrophicComponent < WVFlowComponent
     %Geostrophic solution group
     % FlowConstituentGroup WVGeostrophicFlowGroup
     % WVInternalGravityWaveFlowGroup
     % WVRigidLidFlowGroup
     % OrthogonalSolutionGroup
-    % - Declaration: classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
+    % - Declaration: classdef WVGeostrophicComponent < WVFlowComponent
     methods
-        function self = WVGeostrophicSolutionGroup(wvt)
+        function self = WVGeostrophicComponent(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVOrthogonalSolutionGroup(wvt);
+            self@WVFlowComponent(wvt);
             self.name = "geostrophic";
             self.camelCaseName = "geostrophic";
             self.abbreviatedName = "g";
@@ -27,7 +27,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nk Nl Nj] with 1s and 0s
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVGeostrophicComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -54,7 +54,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter coefficientMatrix: a WVCoefficientMatrix type
             % - Returns mask: matrix of size [Nj Nkl]
             arguments (Input)
-                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                self WVFlowComponent {mustBeNonempty}
                 coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
             arguments (Output)
@@ -90,7 +90,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Parameter index: non-negative integer
             % - Returns solution: an instance of WVAnalyticalSolution
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVGeostrophicComponent {mustBeNonempty}
                 index (:,1) double {mustBeNonnegative}
                 options.amplitude {mustBeMember(options.amplitude,['wvt' 'random'])} = 'random'
             end
@@ -134,7 +134,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns A: real-valued amplitude (m)
             % - Returns phi: real-valued phase (radians)
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVGeostrophicComponent {mustBeNonempty}
                 kMode (:,1) double {mustBeInteger}
                 lMode (:,1) double {mustBeInteger}
                 jMode (:,1) double {mustBeInteger,mustBeNonnegative}
@@ -179,7 +179,7 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             % - Returns eta: isopycnal displacement, eta = @(x,y,z,t)
             % - Returns p: pressure, p = @(x,y,z,t)
             arguments (Input)
-                self WVGeostrophicSolutionGroup {mustBeNonempty}
+                self WVGeostrophicComponent {mustBeNonempty}
                 kMode (1,1) double
                 lMode (1,1) double
                 jMode (1,1) double
