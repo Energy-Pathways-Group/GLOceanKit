@@ -1,4 +1,4 @@
-classdef WVFlowComponent
+classdef WVFlowComponent < handle
     %Orthogonal solution group
     %
     % Each degree-of-freedom in the model is associated with an analytical
@@ -46,9 +46,11 @@ classdef WVFlowComponent
         % reference to the WVTransform instance
         % - Topic: Properties
         wvt
+
+        subcomponentNameMap
     end
     methods
-        function self = WVFlowComponent(wvt)
+        function self = WVFlowComponent(wvt,options)
             % create a new orthogonal solution group
             %
             % - Topic: Initialization
@@ -57,8 +59,22 @@ classdef WVFlowComponent
             % - Returns solnGroup: a new orthogonal solution group instance
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.subcomponents = []
             end
             self.wvt = wvt;
+            if ~isempty(options.subcomponents)
+                self.subcomponentNameMap = containers.Map();
+
+                for iComponent=1:length(options.subcomponents)
+                    component = options.subcomponents{iComponent};
+                    if isKey(self.subcomponentNameMap, component.name)
+                        error('A flow component with the name %s has already been added.',component.name);
+                    end
+                    % Need to add additional check, e.g., is this really
+                    % exclusive
+                    self.subcomponentNameMap(component.name) = component;
+                end
+            end
         end
 
         function mask = maskOfModesForCoefficientMatrix(self,coefficientMatrix)
