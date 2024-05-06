@@ -174,11 +174,11 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
             theta = @(x,y,t) k*x + l*y + phi;
             u = @(x,y,z,t) A*(wvt.g*l/wvt.f)*sin( theta(x,y,t) ).*F(z);
             v = @(x,y,z,t) -A*(wvt.g*k/wvt.f)*sin( theta(x,y,t) ).*F(z);
-            w = @(x,y,z,t) zeros(wvt.Nx,wvt.Ny,wvt.Nz);
+            w = @(x,y,z,t) zeros(size(x));
             eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*cos( theta(x,y,t) ).*F(z);
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
@@ -197,6 +197,13 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 Lr2 = wvt.g*h/wvt.f/wvt.f;
                 solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
                 solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            end
+
+            % These are half-complex solutions, so we need to double these
+            % factors
+            if ~(kMode == 0 && lMode == 0)
+                solution.energyFactor = 2*solution.energyFactor;
+                solution.enstrophyFactor = 2*solution.enstrophyFactor;
             end
         end
 

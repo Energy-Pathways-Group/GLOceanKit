@@ -156,7 +156,7 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             eta = @(x,y,z,t) G(z);
             p = @(x,y,z,t) G(z);
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.Ap;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
@@ -165,10 +165,8 @@ classdef WVInertialOscillationSolutionGroup < WVOrthogonalSolutionGroup
             solution.conjugateCoefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
-            % K2 = k*k+l*l;
-            % Lr2 = wvt.g*h/wvt.f/wvt.f;
-            % solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
-            % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            solution.energyFactor = wvt.Lz;
+            solution.enstrophyFactor = 0;
         end
 
         % function [UAp,VAp] = inertialOscillationSpatialTransformCoefficients(self)

@@ -1,6 +1,6 @@
 % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [16 16 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5]);
-wvt = WVTransformHydrostatic([1 10 4], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 %%
 % solutionGroup = WVMeanDensityAnomalySolutionGroup(wvt);
@@ -28,3 +28,6 @@ w = wvt.w;
 w2 = soln.w(args{:});
 eta = wvt.eta;
 eta2 = soln.eta(args{:});
+
+soln.depthIntegratedTotalEnergy(isHydrostatic=wvt.isHydrostatic)
+soln.energyFactor*(abs(soln.coefficientMatrixAmplitude).^2 + abs(soln.conjugateCoefficientMatrixAmplitude).^2)

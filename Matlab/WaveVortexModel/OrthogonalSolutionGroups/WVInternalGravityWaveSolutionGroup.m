@@ -221,7 +221,7 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             p = @(x,y,z,t) -wvt.rho0*wvt.g*A*h*kOverOmega * cos( theta(x,y,t) ).*F(z);
 
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p);
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = coefficientMatrix;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;
@@ -231,10 +231,10 @@ classdef WVInternalGravityWaveSolutionGroup < WVOrthogonalSolutionGroup
             % solution.conjugateCoefficientMatrixIndex = conjugateIndex;
             % solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
-            % K2 = k*k+l*l;
-            % Lr2 = wvt.g*h/wvt.f/wvt.f;
-            % solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
-            % solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+            % This is doubled from the definition because the solutions not
+            % include the conjugate side
+            solution.energyFactor = 2*h;
+            solution.enstrophyFactor = 0;
         end
 
         function [ApmD,ApmN] = internalGravityWaveSpectralTransformCoefficients(self)

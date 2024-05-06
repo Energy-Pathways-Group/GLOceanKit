@@ -945,12 +945,24 @@ classdef WVGeometryDoublyPeriodic
         function flag = isHermitian(A,options)
             % Check if the matrix is Hermitian. Report errors.
             %
+            % This algorithm checks whether any 2 or 3 dimensional matrix
+            % is Hermitian in the first two dimensions, following the data
+            % structure of a 2D DFT algorithm. The third dimension can be
+            % any length, including length 1.
+            %
+            % Errors can be reported indicating which entries are not
+            % conjugate.
+            %
+            % This algorithm is not fast.
             %
             % - Topic: Utility function
-            % - Declaration: checkHermitian( A )
+            % - Declaration: isHermitian( A )
+            % - Parameter A: matrix of size [K L Z]
+            % - Parameter shouldReportErrors: flag indicating whether or not error should be reported
+            % - Returns bool: flag indicating whether or not the matrix is Hermitian
             arguments (Input)
                 A (:,:,:) double
-                options.shouldReportErrors (1,1) double {mustBeMember(options.shouldReportErrors,[0 1])} = 1
+                options.shouldReportErrors (1,1) double {mustBeMember(options.shouldReportErrors,[0 1])} = 0
             end
             arguments (Output)
                 flag logical

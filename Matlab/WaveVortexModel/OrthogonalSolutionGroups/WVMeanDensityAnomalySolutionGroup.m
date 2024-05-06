@@ -106,7 +106,7 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             eta = @(x,y,z,t) A*G(z);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*F(z);
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p);
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A;
