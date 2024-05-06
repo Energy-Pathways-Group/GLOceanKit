@@ -1,6 +1,9 @@
 classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
     %Geostrophic solution group
-    %
+    % FlowConstituentGroup WVGeostrophicFlowGroup
+    % WVInternalGravityWaveFlowGroup
+    % WVRigidLidFlowGroup
+    % OrthogonalSolutionGroup
     % - Declaration: classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
     methods
         function self = WVGeostrophicSolutionGroup(wvt)
@@ -36,6 +39,44 @@ classdef WVGeostrophicSolutionGroup < WVOrthogonalSolutionGroup
                 case WVCoefficientMatrix.A0
                     mask = ones(self.wvt.spectralMatrixSize);
                     mask(self.wvt.Kh == 0) = 0;
+            end
+        end
+
+        function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
+            % returns the total energy multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                totalEnergyFactor double {mustBeNonnegative}
+            end
+
+            totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
+            switch(coefficientMatrix)
+                case WVCoefficientMatrix.A0
+                    % energy factor for most modes...
+                    totalEnergyFactor = (self.wvt.g/2)*(self.wvt.K2 .* self.wvt.Lr2 + 1);
+
+                    %...which is slightly different for the j=0 mode
+                    Lr0 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
+                    totalEnergyFactor(self.wvt.J == 0) = (self.wvt.g/2)*(self.wvt.K2(self.wvt.J == 0)*Lr0);
+
+                    % then zero out the entries where there are no solutions
+                    totalEnergyFactor = totalEnergyFactor .* self.maskOfModesForCoefficientMatrix(coefficientMatrix);
+
+                    % We do not have any of the conjugates in the matrix, so we
+                    % need to double the total energy
+                    totalEnergyFactor = totalEnergyFactor*2;
             end
         end
 

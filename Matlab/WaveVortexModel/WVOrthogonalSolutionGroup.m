@@ -15,8 +15,9 @@ classdef WVOrthogonalSolutionGroup
     %
     % - Topic: Initialization
     % - Topic: Properties
-    % - Topic: Valid mode indices
     % - Topic: Masks
+    % - Topic: Quadratic quantities
+    % - Topic: Valid mode indices
     % - Topic: Analytical solutions
     properties (Access=private)
         bitmask = 0
@@ -118,6 +119,27 @@ classdef WVOrthogonalSolutionGroup
                 mask double {mustBeNonnegative}
             end
             mask = zeros(self.wvt.spectralMatrixSize);
+        end
+
+        function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
+            % returns the total energy multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                totalEnergyFactor double {mustBeNonnegative}
+            end
+            totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
         end
 
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)

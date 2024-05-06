@@ -28,6 +28,30 @@ classdef WVMeanDensityAnomalySolutionGroup < WVOrthogonalSolutionGroup
             end
         end
 
+
+        function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
+            % returns the total energy multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVOrthogonalSolutionGroup {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
+            end
+            arguments (Output)
+                totalEnergyFactor double {mustBeNonnegative}
+            end
+
+            % energy factor fo of the mda modes is just 1!!!
+            totalEnergyFactor = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
+        end
+
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %
