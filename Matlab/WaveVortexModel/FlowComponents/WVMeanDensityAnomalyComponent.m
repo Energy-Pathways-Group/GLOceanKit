@@ -52,6 +52,27 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             totalEnergyFactor = (self.wvt.g/2)*self.maskOfModesForCoefficientMatrix(coefficientMatrix);
         end
 
+        function qgpvFactor = qgpvFactorForA0(self)
+            % returns the qgpv multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                qgpvFactor double
+            end
+            qgpvFactor = -self.wvt.f ./ self.wvt.h_0;
+            qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
+
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %
@@ -129,7 +150,7 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             w = @(x,y,z,t) zeros(size(z));
             eta = @(x,y,z,t) A*G(z);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*F(z);
-            qgpv = @(x,y,z,t) -(wvt.f/h)*F(z);
+            qgpv = @(x,y,z,t) -A*(wvt.f/h)*F(z);
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;

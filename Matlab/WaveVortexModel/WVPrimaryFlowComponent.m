@@ -121,6 +121,26 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
         end
 
+        function qgpvFactor = qgpvFactorForA0(self)
+            % returns the qgpv multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                qgpvFactor double
+            end
+            qgpvFactor = zeros(self.wvt.spectralMatrixSize);
+        end
+
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
             % returns a boolean indicating whether (k,l,j) is a valid mode number
             %

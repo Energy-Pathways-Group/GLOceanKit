@@ -80,6 +80,28 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
         end
 
+        function qgpvFactor = qgpvFactorForA0(self)
+            % returns the qgpv multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the squared absolute value of this matrix to
+            % produce the total energy.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                qgpvFactor double
+            end
+            qgpvFactor = -(self.wvt.g/self.wvt.f)*(self.wvt.K2 + 1./self.wvt.Lr2);
+            qgpvFactor(self.wvt.J == 0) = -(self.wvt.g/self.wvt.f)*self.wvt.K2(self.wvt.J == 0);
+            qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
+
         function solutions = solutionForModeAtIndex(self,index,options)
             % return the analytical solution at this index
             %

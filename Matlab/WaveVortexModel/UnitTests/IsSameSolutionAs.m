@@ -48,7 +48,7 @@ classdef IsSameSolutionAs < matlab.unittest.constraints.Constraint
                 if isnan(maxError)
                     diagnostic = StringDiagnostic("IsSameSolutionAs failed. Solution is NaN.");
                 else
-                diagnostic = StringDiagnostic("IsSameSolutionAs failed with error 1 part in " + round((log10(maxError))) + ".");
+                    diagnostic = StringDiagnostic("IsSameSolutionAs failed with error 1 part in " + round((log10(maxError))) + ".");
                 end
             end
         end

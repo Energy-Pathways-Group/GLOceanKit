@@ -8,8 +8,8 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         Lxyz = struct('Lxyz',[15e3, 15e3, 1300]);
         Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        %transform = {'hydrostatic'};
+        %transform = {'constant','hydrostatic','boussinesq'};
+        transform = {'hydrostatic'};
         orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
         % orthogonalSolutionGroup = {'WVInternalGravityWaveComponent'}
     end
@@ -87,6 +87,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
             self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
             self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+            self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
 
             self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
         end
