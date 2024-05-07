@@ -90,6 +90,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
 
             self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
         end
 
         function testFTransformAllDerivatives(self,solutionIndex)

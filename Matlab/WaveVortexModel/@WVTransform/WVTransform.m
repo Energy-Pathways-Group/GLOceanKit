@@ -890,11 +890,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Apm_TE_factor = zeros(self.spectralMatrixSize);
             self.A0_TE_factor = zeros(self.spectralMatrixSize);
             self.A0_QGPV_factor = zeros(self.spectralMatrixSize);
+            self.A0_TZ_factor = zeros(self.spectralMatrixSize);
             for name = keys(self.primaryFlowComponentNameMap)
                 flowComponent = self.primaryFlowComponentNameMap(name{1});
                 self.Apm_TE_factor = self.Apm_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap);
                 self.A0_TE_factor = self.A0_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0);
                 self.A0_QGPV_factor = self.A0_QGPV_factor + flowComponent.qgpvFactorForA0;
+                self.A0_TZ_factor = self.A0_TZ_factor + flowComponent.enstrophyFactorForA0;
             end
         end
 
@@ -1100,14 +1102,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.spectralMatrixSize)/2;
             value(self.J==0) = 0;
-        end
-
-        function value = get.A0_TZ_factor(self)
-            Kh = self.Kh;
-            Lr2 = self.g*(self.h_0)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            value = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
-            value(self.J==0) = (self.g/2) * Lr2(1) .* (Kh(self.J==0)).^4;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

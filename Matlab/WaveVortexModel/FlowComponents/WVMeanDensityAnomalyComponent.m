@@ -28,7 +28,6 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             end
         end
 
-
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
             % returns the total energy multiplier for the coefficient matrix.
             %
@@ -71,6 +70,25 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             end
             qgpvFactor = -self.wvt.f ./ self.wvt.h_0;
             qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
+
+        function enstrophyFactor = enstrophyFactorForA0(self)
+            % returns the qgpv multiplier for the A0 coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the A0 matrix so that when transformed with the Fg
+            % modes will return QGPV.
+            %
+            % - Topic: Properties
+            % - Declaration: qgpvFactor = qgpvFactorForA0()
+            % - Returns qgpvFactor: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                enstrophyFactor double
+            end
+            enstrophyFactor = (self.wvt.g./(2*self.wvt.Lr2)).*self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)

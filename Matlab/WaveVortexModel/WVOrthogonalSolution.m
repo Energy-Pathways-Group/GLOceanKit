@@ -92,6 +92,16 @@ classdef WVOrthogonalSolution < handle
             end
             energy = integral3(energyDensity,0,self.Lx,0,self.Ly,-self.Lz,0,AbsTol=1e-12)/self.Lx/self.Ly/2;
         end
+
+        function enstrophy = depthIntegratedTotalEnstrophy(self)
+            arguments (Input)
+                self WVOrthogonalSolution {mustBeNonempty}
+            end
+            arguments (Output)
+                enstrophy (1,1) double
+            end
+            enstrophy = integral3(@(x,y,z) self.qgpv(x,y,z,0).*self.qgpv(x,y,z,0),0,self.Lx,0,self.Ly,-self.Lz,0,AbsTol=1e-12)/self.Lx/self.Ly/2;
+        end
     end
 
 end

@@ -102,6 +102,36 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
+        function enstrophyFactor = enstrophyFactorForA0(self)
+            % returns the qgpv multiplier for the A0 coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the A0 matrix so that when transformed with the Fg
+            % modes will return QGPV.
+            %
+            % - Topic: Properties
+            % - Declaration: qgpvFactor = qgpvFactorForA0()
+            % - Returns qgpvFactor: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                enstrophyFactor double
+            end
+            enstrophyFactor = (self.wvt.g/2)*self.wvt.Lr2.*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+
+            %...which is slightly different for the j=0 mode
+            Lr20 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
+            enstrophyFactor(self.wvt.J == 0) = (self.wvt.g/2)*Lr20*(self.wvt.K2(self.wvt.J == 0).^2);
+
+            % then zero out the entries where there are no solutions
+            enstrophyFactor = enstrophyFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+
+            % We do not have any of the conjugates in the matrix, so we
+            % need to double the total energy
+            enstrophyFactor = enstrophyFactor*2;
+        end
+
         function solutions = solutionForModeAtIndex(self,index,options)
             % return the analytical solution at this index
             %
