@@ -1,4 +1,4 @@
-classdef WVMeanDensityAnomalyComponent < WVFlowComponent
+classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
     %Inertial oscillation solution group
     %
     % - Declaration: classdef WVInertialOscillationComponent < WVFlowComponent
@@ -7,7 +7,7 @@ classdef WVMeanDensityAnomalyComponent < WVFlowComponent
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVFlowComponent(wvt);
+            self@WVPrimaryFlowComponent(wvt);
             self.name = "mean density anomaly";
             self.camelCaseName = "meanDensityAnomaly";
             self.abbreviatedName = "mda";
@@ -49,7 +49,7 @@ classdef WVMeanDensityAnomalyComponent < WVFlowComponent
             end
 
             % energy factor fo of the mda modes is just 1!!!
-            totalEnergyFactor = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
+            totalEnergyFactor = (self.wvt.g/2)*self.maskOfModesForCoefficientMatrix(coefficientMatrix);
         end
 
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)

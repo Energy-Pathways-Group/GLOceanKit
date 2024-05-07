@@ -1,4 +1,4 @@
-classdef WVInertialOscillationComponent < WVFlowComponent
+classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
     %Inertial oscillation solution group
     %
     % - Declaration: classdef WVInertialOscillationComponent < WVFlowComponent
@@ -7,7 +7,7 @@ classdef WVInertialOscillationComponent < WVFlowComponent
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVFlowComponent(wvt);
+            self@WVPrimaryFlowComponent(wvt);
             self.name = "inertial oscillation";
             self.camelCaseName = "inertialOscillation";
             self.abbreviatedName = "io";
@@ -83,7 +83,8 @@ classdef WVInertialOscillationComponent < WVFlowComponent
             totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case {WVCoefficientMatrix.Ap,WVCoefficientMatrix.Am}
-                    totalEnergyFactor(self.wvt.Kh == 0) = self.wvt.Lz;
+                    totalEnergyFactor(self.wvt.Kh == 0) = self.wvt.h_pm(self.wvt.Kh == 0);
+                    totalEnergyFactor(self.wvt.Kh == 0 & self.wvt.J == 0) = self.wvt.Lz;
             end
         end
 

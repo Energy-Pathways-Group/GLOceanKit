@@ -1,4 +1,4 @@
-classdef WVInternalGravityWaveComponent < WVFlowComponent
+classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
     %Geostrophic solution group
     %
     % - Declaration: classdef WVGeostrophicComponent < WVFlowComponent
@@ -7,7 +7,7 @@ classdef WVInternalGravityWaveComponent < WVFlowComponent
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVFlowComponent(wvt);
+            self@WVPrimaryFlowComponent(wvt);
             self.name = "internal gravity wave";
             self.camelCaseName = "internalGravityWave";
             self.abbreviatedName = "igw";

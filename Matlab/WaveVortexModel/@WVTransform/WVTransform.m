@@ -87,10 +87,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         PA0
 
         % These convert the coefficients to their depth integrated energies
-        Apm_TE_factor % [Nk Nl Nj]
-        A0_HKE_factor % [Nk Nl Nj]
-        A0_PE_factor % [Nk Nl Nj]
-        A0_TE_factor % [Nk Nl Nj]
+        Apm_TE_factor
+        A0_HKE_factor
+        A0_PE_factor 
+        A0_TE_factor 
         A0_TZ_factor
         A0_QGPV_factor
 
@@ -126,6 +126,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         operationVariableNameMap
         timeDependentVariablesNameMap
         variableCache
+
+        primaryFlowComponentNameMap
     end
 
     properties (Abstract,GetAccess=public) 
@@ -240,6 +242,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
+
+            self.primaryFlowComponentNameMap = containers.Map();
         end
 
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
@@ -389,6 +393,32 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 name char {mustBeNonempty}
             end
             val = self.dimensionAnnotationNameMap(name);
+        end
+
+
+
+        function addPrimaryFlowComponent(self,primaryFlowComponent)
+            % add a primary flow component
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                primaryFlowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
+            end
+            for i=1:length(primaryFlowComponent)
+                self.primaryFlowComponentNameMap(primaryFlowComponent(i).name) = primaryFlowComponent(i);
+            end
+        end
+
+        function val = primaryFlowComponentWithName(self,name)
+            % retrieve a WVPrimaryFlowComponent by name
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                name char {mustBeNonempty}
+            end
+            val = self.primaryFlowComponentNameMap(name);
         end
 
         function addPropertyAnnotations(self,propertyAnnotation)
@@ -798,23 +828,27 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
           
         function self = buildTransformationMatrices(self)
-            solutionGroup = WVGeostrophicComponent(self);
-            [self.A0Z,self.A0N] = solutionGroup.geostrophicSpectralTransformCoefficients;
-            [self.UA0,self.VA0,self.NA0,self.PA0] = solutionGroup.geostrophicSpatialTransformCoefficients;
+            flowComponent = WVGeostrophicComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+            [self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;
+            [self.UA0,self.VA0,self.NA0,self.PA0] = flowComponent.geostrophicSpatialTransformCoefficients;
 
-            solutionGroup = WVMeanDensityAnomalyComponent(self);
-            A0Nmda = solutionGroup.meanDensityAnomalySpectralTransformCoefficients;
-            NA0mda = solutionGroup.meanDensityAnomalySpatialTransformCoefficients;
+            flowComponent = WVMeanDensityAnomalyComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+            A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
+            NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
             self.A0N = self.A0N + A0Nmda;
             self.NA0 = self.NA0 + NA0mda;
             self.PA0 = self.PA0 + NA0mda;
 
-            solutionGroup = WVInternalGravityWaveComponent(self);
-            [self.ApmD,self.ApmN] = solutionGroup.internalGravityWaveSpectralTransformCoefficients;
-            [self.UAp,self.VAp,self.WAp,self.NAp] = solutionGroup.internalGravityWaveSpatialTransformCoefficients;
+            flowComponent = WVInternalGravityWaveComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+            [self.ApmD,self.ApmN] = flowComponent.internalGravityWaveSpectralTransformCoefficients;
+            [self.UAp,self.VAp,self.WAp,self.NAp] = flowComponent.internalGravityWaveSpatialTransformCoefficients;
 
-            solutionGroup = WVInertialOscillationComponent(self);
-            [UAp_io,VAp_io] = solutionGroup.inertialOscillationSpatialTransformCoefficients;
+            flowComponent = WVInertialOscillationComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+            [UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
             self.UAp = self.UAp + UAp_io;
             self.VAp = self.VAp + VAp_io;
 
@@ -824,6 +858,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.NAm = -self.NAp;
 
             self.iOmega = sqrt(-1)*self.Omega;
+
+            self.Apm_TE_factor = zeros(self.spectralMatrixSize);
+            self.A0_TE_factor = zeros(self.spectralMatrixSize);
+            for name = keys(self.primaryFlowComponentNameMap)
+                flowComponent = self.primaryFlowComponentNameMap(name{1});
+                self.Apm_TE_factor = self.Apm_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap);
+                self.A0_TE_factor = self.A0_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0);
+            end
         end
 
         function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
@@ -1020,14 +1062,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function value = get.Apm_TE_factor(self)
-            if size(self.h_pm,2)==1
-                value = repmat(self.h_pm,1,self.Nkl);
-            else
-                value = self.h_pm;
-            end
-            value(self.J==0) = self.Lz;
-        end
         
         function value = get.A0_HKE_factor(self)
             value = (self.g/2) * self.Kh .* self.Kh .* self.Lr2;
@@ -1035,9 +1069,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function value = get.A0_PE_factor(self)
             value = self.g*ones(self.spectralMatrixSize)/2;
             value(self.J==0) = 0;
-        end
-        function value = get.A0_TE_factor(self)
-            value = self.A0_HKE_factor + self.A0_PE_factor;
         end
 
         function value = get.A0_QGPV_factor(self)
@@ -1091,8 +1122,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         function energy = totalEnergy(self)
-            App = self.Ap; Amm = self.Am; A00 = self.A0;
-            energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
+            energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
+            % App = self.Ap; Amm = self.Am; A00 = self.A0;
+            % energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
         end
         
         function energy = totalHydrostaticEnergy(self)

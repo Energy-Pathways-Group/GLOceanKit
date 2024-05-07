@@ -5,11 +5,11 @@ wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e
 %%
 % solutionGroup = WVMeanDensityAnomalyComponent(wvt);
 % solutionGroup = WVInternalGravityWaveComponent(wvt);
-% solutionGroup = WVInertialOscillationComponent(wvt);
-solutionGroup = WVGeostrophicComponent(wvt);
+solutionGroup = WVInertialOscillationComponent(wvt);
+% solutionGroup = WVGeostrophicComponent(wvt);
 
 
-solutionIndex = 1; %% 2, 6, 14, 24, 40, 46, 58, 68, lMode=0!!!
+solutionIndex = 2; %% 2, 6, 14, 24, 40, 46, 58, 68, lMode=0!!!
 soln = solutionGroup.solutionForModeAtIndex(solutionIndex,amplitude='random');
 
 wvt.t = 6000;
@@ -29,5 +29,5 @@ w2 = soln.w(args{:});
 eta = wvt.eta;
 eta2 = soln.eta(args{:});
 
-soln.depthIntegratedTotalEnergy(isHydrostatic=wvt.isHydrostatic)
-soln.energyFactor*(abs(soln.coefficientMatrixAmplitude).^2 + abs(soln.conjugateCoefficientMatrixAmplitude).^2)
+a = soln.depthIntegratedTotalEnergy(isHydrostatic=wvt.isHydrostatic);
+b = soln.energyFactor*(abs(soln.coefficientMatrixAmplitude).^2 + abs(soln.conjugateCoefficientMatrixAmplitude).^2);
