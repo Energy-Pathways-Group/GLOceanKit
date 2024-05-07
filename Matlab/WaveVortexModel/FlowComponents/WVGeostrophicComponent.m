@@ -12,7 +12,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "geostrophic";
-            self.camelCaseName = "geostrophic";
+            self.shortName = "geostrophic";
             self.abbreviatedName = "g";
         end
 
@@ -218,8 +218,13 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             w = @(x,y,z,t) zeros(size(x));
             eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*cos( theta(x,y,t) ).*F(z);
+            if jMode == 0
+                qgpv = @(x,y,z,t) -A*(wvt.g/wvt.f)*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
+            else
+                qgpv = @(x,y,z,t) -A*(wvt.g/wvt.f)*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
+            end
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;

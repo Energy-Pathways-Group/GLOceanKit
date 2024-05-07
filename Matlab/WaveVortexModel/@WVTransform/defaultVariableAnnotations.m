@@ -44,42 +44,12 @@ annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('internalWaveEnergyPlus',{},'m3/s2', 'total energy, internal waves, positive');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
-annotation = WVVariableAnnotation('internalWaveEnergyMinus',{},'m3/s2', 'total energy, internal waves, minus');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
 annotation = WVVariableAnnotation('waveEnergy',{},'m3/s2', 'total energy, waves');
 annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('inertialEnergyBaroclinic',{},'m3/s2', 'total energy, inertial oscillations, baroclinic');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
-annotation = WVVariableAnnotation('inertialEnergyBarotropic',{},'m3/s2', 'total energy, inertial oscillations, barotropic');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
 annotation = WVVariableAnnotation('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
-annotation = WVVariableAnnotation('geostrophicEnergyBaroclinic',{},'m3/s2', 'total energy, geostrophic, baroclinic');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
-annotation = WVVariableAnnotation('geostrophicEnergyBarotropic',{},'m3/s2', 'total energy, geostrophic, barotropic');
 annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;

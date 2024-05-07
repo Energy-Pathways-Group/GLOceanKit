@@ -9,7 +9,7 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "mean density anomaly";
-            self.camelCaseName = "meanDensityAnomaly";
+            self.shortName = "mda";
             self.abbreviatedName = "mda";
         end
 
@@ -129,8 +129,9 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             w = @(x,y,z,t) zeros(size(z));
             eta = @(x,y,z,t) A*G(z);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*F(z);
+            qgpv = @(x,y,z,t) -(wvt.f/h)*F(z);
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A;

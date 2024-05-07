@@ -9,8 +9,8 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "internal gravity wave";
-            self.camelCaseName = "internalGravityWave";
-            self.abbreviatedName = "igw";
+            self.shortName = "wave";
+            self.abbreviatedName = "w";
         end
 
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
@@ -247,9 +247,9 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             w = @(x,y,z,t) A*K*h*sin( theta(x,y,t) ).*G(z);
             eta = @(x,y,z,t) -A*h*kOverOmega * cos( theta(x,y,t)  ).*G(z);
             p = @(x,y,z,t) -wvt.rho0*wvt.g*A*h*kOverOmega * cos( theta(x,y,t) ).*F(z);
+            qgpv = @(x,y,z,t) zeros(size(x));
 
-
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = coefficientMatrix;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;

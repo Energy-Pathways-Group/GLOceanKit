@@ -28,7 +28,7 @@ classdef WVFlowComponent < handle
         %
         % camel-case version of the feature name, e.g., "internalGravityWave"
         % - Topic: Properties
-        camelCaseName
+        shortName
 
         % abbreviated name
         %

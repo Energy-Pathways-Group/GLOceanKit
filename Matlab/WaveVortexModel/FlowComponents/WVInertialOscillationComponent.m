@@ -9,7 +9,7 @@ classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "inertial oscillation";
-            self.camelCaseName = "inertialOscillation";
+            self.shortName = "inertial";
             self.abbreviatedName = "io";
         end
 
@@ -182,8 +182,9 @@ classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
             w = @(x,y,z,t) G(z);
             eta = @(x,y,z,t) G(z);
             p = @(x,y,z,t) G(z);
+            qgpv = @(x,y,z,t) zeros(size(x));
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.Ap;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;

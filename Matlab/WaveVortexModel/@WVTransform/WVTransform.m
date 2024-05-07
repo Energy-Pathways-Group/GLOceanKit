@@ -128,6 +128,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         variableCache
 
         primaryFlowComponentNameMap
+        flowComponentNameMap
     end
 
     properties (Abstract,GetAccess=public) 
@@ -244,6 +245,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addOperation(WVTransform.defaultOperations);
 
             self.primaryFlowComponentNameMap = containers.Map();
+            self.flowComponentNameMap = containers.Map();
         end
 
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
@@ -398,7 +400,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
 
         function addPrimaryFlowComponent(self,primaryFlowComponent)
-            % add a primary flow component
+            % add a primary flow component, automatically added to the flow
+            % components
             %
             % - Topic: Utility function — Metadata
             arguments
@@ -406,7 +409,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 primaryFlowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
             end
             for i=1:length(primaryFlowComponent)
-                self.primaryFlowComponentNameMap(primaryFlowComponent(i).name) = primaryFlowComponent(i);
+                self.primaryFlowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
+                self.flowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
             end
         end
 
@@ -419,6 +423,30 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 name char {mustBeNonempty}
             end
             val = self.primaryFlowComponentNameMap(name);
+        end
+
+        function addFlowComponent(self,flowComponent)
+            % add a flow component
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                flowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
+            end
+            for i=1:length(flowComponent)
+                self.flowComponentNameMap(flowComponent(i).name) = flowComponent(i);
+            end
+        end
+
+        function val = flowComponentWithName(self,name)
+            % retrieve a WVFlowComponent by name
+            %
+            % - Topic: Utility function — Metadata
+            arguments
+                self WVTransform {mustBeNonempty}
+                name char {mustBeNonempty}
+            end
+            val = self.flowComponentNameMap(name);
         end
 
         function addPropertyAnnotations(self,propertyAnnotation)
@@ -1123,8 +1151,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         function energy = totalEnergy(self)
             energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
-            % App = self.Ap; Amm = self.Am; A00 = self.A0;
-            % energy = sum(sum(sum( self.Apm_TE_factor.*( App.*conj(App) + Amm.*conj(Amm) ) + self.A0_TE_factor.*( A00.*conj(A00) ) )));
         end
         
         function energy = totalHydrostaticEnergy(self)
@@ -1132,68 +1158,47 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
+        function energy = totalEnergyOfFlowComponentWithName(self,flowComponentName)
+            arguments (Input)
+                self WVTransform
+                flowComponentName char
+            end
+            arguments (Output)
+                energy (1,1) double
+            end
+            flowComponent=self.flowComponentWithName(flowComponentName);
+            energy = self.totalEnergyOfFlowComponent(flowComponent);
+        end
+
+        function energy = totalEnergyOfFlowComponent(self,flowComponent)
+            arguments (Input)
+                self WVTransform
+                flowComponent WVFlowComponent
+            end
+            arguments (Output)
+                energy (1,1) double
+            end
+            energy = sum( self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2) );
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = inertialEnergy(self)
-            energy = self.inertialEnergyBarotropic + self.inertialEnergyBaroclinic;
+            energy = self.totalEnergyOfFlowComponentWithName('inertial');
         end
         
         function energy = waveEnergy(self)
-            energy = self.internalWaveEnergyPlus + self.internalWaveEnergyMinus;
+            energy = self.totalEnergyOfFlowComponentWithName('wave');
         end
         
         function energy = geostrophicEnergy(self)
-            energy = self.geostrophicEnergyBarotropic + self.geostrophicEnergyBaroclinic;
+            energy = self.totalEnergyOfFlowComponentWithName('geostrophic');
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Geostrophic constituents
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = geostrophicEnergyBarotropic(self)
-            C = self.A0_TE_factor;
-            B = self.A0;
-            energy = sum(sum(sum( C(:,:,1) .* (B(:,:,1).*conj(B(:,:,1))) )));
-        end
-        
-        function energy = geostrophicEnergyBaroclinic(self)
-            C = self.A0_TE_factor;
-            B = self.A0;
-            energy = sum(sum(sum( C(:,:,2:end) .* (B(:,:,2:end).*conj(B(:,:,2:end))) )));
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Inertia-gravity wave constituents
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = inertialEnergyBarotropic(self)
-            App = self.Ap;
-            Amm = self.Am;
-            C = self.Apm_TE_factor;
-            energy = C(1,1,1)*( App(1,1,1).*conj(App(1,1,1)) + Amm(1,1,1).*conj(Amm(1,1,1)) );
-        end
-        
-        function energy = inertialEnergyBaroclinic(self)
-            App = self.Ap;
-            Amm = self.Am;
-            C = self.Apm_TE_factor;
-            energy = sum(sum(sum( C(1,1,2:end).* (abs(App(1,1,2:end)).^2 + abs(Amm(1,1,2:end)).^2) )));
-        end
-        
-        function energy = internalWaveEnergyPlus(self)
-            A = self.Ap;
-            A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
-        end
-        
-        function energy = internalWaveEnergyMinus(self)
-            A = self.Am;
-            A(1,1,:) = 0;
-            C = self.Apm_TE_factor;
-            energy = sum( C(:).* (A(:).*conj(A(:)))  );
+        function energy = mdaEnergy(self)
+            energy = self.totalEnergyOfFlowComponentWithName('mda');
         end
         
         function summarizeEnergyContent(self)
@@ -1204,10 +1209,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             ioPct = 100*self.inertialEnergy/total;
             wavePct = 100*self.waveEnergy/total;
             gPct = 100*self.geostrophicEnergy/total;
-            wavePlusPct = 100*self.internalWaveEnergyPlus/self.waveEnergy;
-            waveMinusPct = 100*self.internalWaveEnergyMinus/self.waveEnergy;
+            mdaPct = 100*self.mdaEnergy/total;
             
-            fprintf('%.2g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f) between (inertial,wave,geostrophic) with wave energy split %.1f/%.1f +/-\n',total,ioPct,wavePct,gPct,wavePlusPct,waveMinusPct);
+            fprintf('%.2g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f,%.1f) between (inertial,wave,geostrophic,mda)\n',total,ioPct,wavePct,gPct,mdaPct);
         end
 
         function summarizeDegreesOfFreedom(self)
