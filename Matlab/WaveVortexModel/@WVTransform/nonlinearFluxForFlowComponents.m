@@ -1,4 +1,4 @@
-function [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUconstituent)
+function [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)
 % returns the flux of each coefficient as determined by the nonlinear flux operation
 %
 % This computes the nonlinear flux that results from a subset of flow
@@ -15,18 +15,9 @@ function [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUco
 % - Returns F0: flux into the A0 coefficients
 arguments
     self WVTransform {mustBeNonempty}
-    Uconstituent WVFlowConstituent
-    gradUconstituent WVFlowConstituent
+    uFlowComponent WVFlowComponent
+    gradUFlowComponent WVFlowComponent
 end
 
-[ApmUMask,A0UMask] = self.masksForFlowConstituents(Uconstituent);
-[ApmUxMask,A0UxMask] = self.masksForFlowConstituents(gradUconstituent);
-
-AA = ~(self.maskForAliasedModes(jFraction=2/3));
-ApmUMask = AA.*ApmUMask;
-A0UMask = AA.*A0UMask;
-ApmUxMask = AA.*ApmUxMask;
-A0UxMask = AA.*A0UxMask;
-
-[Fp,Fm,F0] = self.nonlinearFluxWithGradientMasks(ApmUMask,A0UMask,ApmUxMask,A0UxMask);
+[Fp,Fm,F0] = self.nonlinearFluxWithGradientMasks(uFlowComponent.maskAp,uFlowComponent.maskAm,uFlowComponent.maskA0,gradUFlowComponent.maskAp,gradUFlowComponent.maskAm,gradUFlowComponent.maskA0);
 end

@@ -88,8 +88,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % These convert the coefficients to their depth integrated energies
         Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor 
         A0_TE_factor 
         A0_TZ_factor
         A0_QGPV_factor
@@ -438,7 +436,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
         end
 
-        function val = flowComponentWithName(self,name)
+        function val = flowComponent(self,name)
             % retrieve a WVFlowComponent by name
             %
             % - Topic: Utility function — Metadata
@@ -1083,27 +1081,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
-        [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApmUMask,A0UMask,ApmUxMask,A0UxMask)
-        [Fp,Fm,F0] = nonlinearFluxForFlowConstituents(self,Uconstituent,gradUconstituent)
+        [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
+        [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)
 
         [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
  
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Energetics and enstrophy
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        
-        function value = get.A0_HKE_factor(self)
-            value = (self.g/2) * self.Kh .* self.Kh .* self.Lr2;
-        end
-        
-        function value = get.A0_PE_factor(self)
-            value = self.g*ones(self.spectralMatrixSize)/2;
-            value(self.J==0) = 0;
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Enstrophy
@@ -1147,18 +1129,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
-        function energy = totalEnergyOfFlowComponentWithName(self,flowComponentName)
-            arguments (Input)
-                self WVTransform
-                flowComponentName char
-            end
-            arguments (Output)
-                energy (1,1) double
-            end
-            flowComponent=self.flowComponentWithName(flowComponentName);
-            energy = self.totalEnergyOfFlowComponent(flowComponent);
-        end
-
         function energy = totalEnergyOfFlowComponent(self,flowComponent)
             arguments (Input)
                 self WVTransform
@@ -1175,19 +1145,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = inertialEnergy(self)
-            energy = self.totalEnergyOfFlowComponentWithName('inertial');
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('inertial'));
         end
         
         function energy = waveEnergy(self)
-            energy = self.totalEnergyOfFlowComponentWithName('wave');
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
         end
         
         function energy = geostrophicEnergy(self)
-            energy = self.totalEnergyOfFlowComponentWithName('geostrophic');
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('geostrophic'));
         end
 
         function energy = mdaEnergy(self)
-            energy = self.totalEnergyOfFlowComponentWithName('mda');
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
         end
         
         function summarizeEnergyContent(self)

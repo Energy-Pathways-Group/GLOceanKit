@@ -16,7 +16,7 @@ function [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
 % - Returns F0: flux into the A0 coefficients
 arguments
     self WVTransform {mustBeNonempty}
-    mask (:,:,:) double {mustBeNonempty,mustBeReal}
+    mask (:,:) double {mustBeNonempty,mustBeReal}
 end
 
 % Apply operator T_\omega---defined in (C2) in the manuscript
@@ -49,12 +49,9 @@ else
     warning('WVTransform not recognized.')
 end
 
-% Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = self.transformFromSpatialDomainWithF(uNL);
-vNLbar = self.transformFromSpatialDomainWithF(vNL);
-nNLbar = self.transformFromSpatialDomainWithG(nNL);
+[ApNL,AmNL,A0NL] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 
-Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+Fp = ApNL .* conj(phase);
+Fm = AmNL .* phase;
+F0 = A0NL;
 end

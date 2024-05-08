@@ -64,20 +64,42 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
             switch(coefficientMatrix)
                 case WVCoefficientMatrix.A0
-                    % energy factor for most modes...
-                    totalEnergyFactor = (self.wvt.g/2)*(self.wvt.K2 .* self.wvt.Lr2 + 1);
-
-                    %...which is slightly different for the j=0 mode
-                    Lr0 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
-                    totalEnergyFactor(self.wvt.J == 0) = (self.wvt.g/2)*(self.wvt.K2(self.wvt.J == 0)*Lr0);
-
-                    % then zero out the entries where there are no solutions
-                    totalEnergyFactor = totalEnergyFactor .* self.maskOfModesForCoefficientMatrix(coefficientMatrix);
-
-                    % We do not have any of the conjugates in the matrix, so we
-                    % need to double the total energy
-                    totalEnergyFactor = totalEnergyFactor*2;
+                    totalEnergyFactor = self.hkeFactorForA0 + self.peFactorForA0;
             end
+        end
+
+        function hkeFactor = hkeFactorForA0(self)
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                hkeFactor double {mustBeNonnegative}
+            end
+            % energy factor for most modes...
+            hkeFactor = (self.wvt.g/2)*self.wvt.K2 .* self.wvt.Lr2;
+
+            %...which is slightly different for the j=0 mode
+            Lr0 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
+            hkeFactor(self.wvt.J == 0) = (self.wvt.g/2)*(self.wvt.K2(self.wvt.J == 0)*Lr0);
+
+            % then zero out the entries where there are no solutions and
+            % double because we are using half-complex format
+            hkeFactor = 2* hkeFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
+
+        function peFactor = peFactorForA0(self)
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                peFactor double {mustBeNonnegative}
+            end
+            peFactor = (self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
+            peFactor(self.wvt.J == 0) = 0;
+
+            % then zero out the entries where there are no solutions and
+            % double because we are using half-complex format
+            peFactor = 2* peFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function qgpvFactor = qgpvFactorForA0(self)

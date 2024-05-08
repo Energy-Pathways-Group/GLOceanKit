@@ -21,9 +21,9 @@ function [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
 % - Returns E0: energy flux into the A0 coefficients
 arguments
     self WVTransform {mustBeNonempty}
-    Fp (:,:,:) double
-    Fm (:,:,:) double
-    F0 (:,:,:) double
+    Fp (:,:) double
+    Fm (:,:) double
+    F0 (:,:) double
     options.deltaT (1,1) double = 0
 end
 

@@ -1,4 +1,4 @@
-function [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApmUMask,A0UMask,ApmUxMask,A0UxMask)
+function [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
 % returns the flux of each coefficient as determined by the nonlinear flux operation
 %
 % The masks are applied to the coefficients Ap,Am,A0 before computing the
@@ -18,10 +18,12 @@ function [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApmUMask,A0UMask,ApmUx
 % - Returns F0: flux into the A0 coefficients
 arguments
     self WVTransform {mustBeNonempty}
-    ApmUMask (:,:,:) double {mustBeNonempty,mustBeReal}
-    A0UMask (:,:,:) double {mustBeNonempty,mustBeReal}
-    ApmUxMask (:,:,:) double {mustBeNonempty,mustBeReal}
-    A0UxMask (:,:,:) double {mustBeNonempty,mustBeReal}
+    ApUMask (:,:) double {mustBeNonempty,mustBeReal}
+    AmUMask (:,:) double {mustBeNonempty,mustBeReal}
+    A0UMask (:,:) double {mustBeNonempty,mustBeReal}
+    ApUxMask (:,:) double {mustBeNonempty,mustBeReal}
+    AmUxMask (:,:) double {mustBeNonempty,mustBeReal}
+    A0UxMask (:,:) double {mustBeNonempty,mustBeReal}
 end
 
 % Apply operator T_\omega---defined in (C2) in the manuscript
@@ -33,15 +35,15 @@ A0t = self.A0;
 % Apply operator S---defined in (C4) in the manuscript
 % Finishing applying S, but also compute derivatives at the
 % same time
-U = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.UAp.*Apt + self.UAm.*Amt), A0=A0UMask.*self.UA0.*A0t);
-V = self.transformToSpatialDomainWithF(Apm=ApmUMask.*(self.VAp.*Apt + self.VAm.*Amt), A0=A0UMask.*self.VA0.*A0t);
-W = self.transformToSpatialDomainWithG(Apm=ApmUMask.*(self.WAp.*Apt + self.WAm.*Amt));
+U = self.transformToSpatialDomainWithF(Apm=(ApUMask.*self.UAp.*Apt + AmUMask.*self.UAm.*Amt), A0=A0UMask.*self.UA0.*A0t);
+V = self.transformToSpatialDomainWithF(Apm=(ApUMask.*self.VAp.*Apt + AmUMask.*self.VAm.*Amt), A0=A0UMask.*self.VA0.*A0t);
+W = self.transformToSpatialDomainWithG(Apm=(ApUMask.*self.WAp.*Apt + AmUMask.*self.WAm.*Amt));
 
 % Finishing applying S, but also compute derivatives at the
 % same time
-[~,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(Apm=ApmUxMask.*(self.UAp.*Apt + self.UAm.*Amt),A0=A0UxMask.*self.UA0.*A0t);
-[~,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(Apm=ApmUxMask.*(self.VAp.*Apt + self.VAm.*Amt),A0=A0UxMask.*self.VA0.*A0t);
-[ETA,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Apm=ApmUxMask.*(self.NAp.*Apt + self.NAm.*Amt),A0=A0UxMask.*self.NA0.*A0t);
+[~,Ux,Uy,Uz] = self.transformToSpatialDomainWithFAllDerivatives(        Apm=(ApUxMask.*self.UAp.*Apt + AmUxMask.*self.UAm.*Amt),A0=A0UxMask.*self.UA0.*A0t);
+[~,Vx,Vy,Vz] = self.transformToSpatialDomainWithFAllDerivatives(        Apm=(ApUxMask.*self.VAp.*Apt + AmUxMask.*self.VAm.*Amt),A0=A0UxMask.*self.VA0.*A0t);
+[ETA,ETAx,ETAy,ETAz] = self.transformToSpatialDomainWithGAllDerivatives(Apm=(ApUxMask.*self.NAp.*Apt + AmUxMask.*self.NAm.*Amt),A0=A0UxMask.*self.NA0.*A0t);
 
 % Compute the nonlinear terms in the spatial domain
 % (pseudospectral!)
@@ -56,12 +58,9 @@ else
     warning('WVTransform not recognized.')
 end
 
-% Now apply the operator S^{-1} and then T_\omega^{-1}
-uNLbar = self.transformFromSpatialDomainWithF(uNL);
-vNLbar = self.transformFromSpatialDomainWithF(vNL);
-nNLbar = self.transformFromSpatialDomainWithG(nNL);
+[ApNL,AmNL,A0NL] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 
-Fp = (self.ApU.*uNLbar + self.ApV.*vNLbar + self.ApN.*nNLbar) .* conj(phase);
-Fm = (self.AmU.*uNLbar + self.AmV.*vNLbar + self.AmN.*nNLbar) .* phase;
-F0 = self.A0U.*uNLbar + self.A0V.*vNLbar + self.A0N.*nNLbar;
+Fp = ApNL .* conj(phase);
+Fm = AmNL .* phase;
+F0 = A0NL;
 end

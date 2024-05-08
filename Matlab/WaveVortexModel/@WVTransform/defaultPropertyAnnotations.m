@@ -71,9 +71,6 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('NA0',{'j','kl'},'', 'matrix c
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('Apm_TE_factor',{'j','kl'},'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
 propertyAnnotations(end+1) = WVPropertyAnnotation('A0_TE_factor',{'j','kl'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
-propertyAnnotations(end+1) = WVPropertyAnnotation('A0_HKE_factor',{'j','kl'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute horizontal kinetic energy.',isComplex=0);
-propertyAnnotations(end+1) = WVPropertyAnnotation('A0_PE_factor',{'j','kl'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.',isComplex=0);
-
 propertyAnnotations(end+1) = WVPropertyAnnotation('A0_QGPV_factor',{'j','kl'},'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
 propertyAnnotations(end+1) = WVPropertyAnnotation('A0_TZ_factor',{'j','kl'},'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
 end
