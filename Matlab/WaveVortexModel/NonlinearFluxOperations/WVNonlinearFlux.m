@@ -198,7 +198,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             ncfile.addAttribute('nu_xy',self.nu_xy)
             ncfile.addAttribute('nu_z',self.nu_z)
             ncfile.addAttribute('r',self.r)
-            ncfile.addAttribute('shouldAntialias',self.shouldAntialias)
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)

@@ -37,6 +37,20 @@ classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
             end
         end
 
+        function [Ap,Am,A0] = randomAmplitudes(self)
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                Ap double
+                Am double
+                A0 double
+            end
+            Ap = (randn(self.spectralMatrixSize) + sqrt(-1)*randn(self.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            Am = conj(Ap);
+            A0 = zeros(self.wvt.spectralMatrixSize);
+        end
+
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %

@@ -64,7 +64,6 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
-                options.shouldAntialias double = 1
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
             end
             
@@ -206,9 +205,9 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
 
         function addVariableOfType(self,ncfile,wvt,name,var,type)
             if isempty(var)
-                ncfile.addVariable(name,type(zeros(wvt.Nk,wvt.Nl,wvt.Nj)),{'k','l','j'});
+                ncfile.addVariable(name,type(zeros(wvt.Nj,wvt.Nkl)),{'j','kl'});
             else
-                ncfile.addVariable(name,type(var),{'k','l','j'});
+                ncfile.addVariable(name,type(var),{'j','kl'});
             end
         end
 

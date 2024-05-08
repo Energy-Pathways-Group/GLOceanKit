@@ -100,6 +100,31 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             mask = zeros(self.wvt.spectralMatrixSize);
         end
 
+        function [Ap,Am,A0] = randomAmplitudes(self)
+            % returns random amplitude for a valid flow state
+            %
+            % Returns Ap, Am, A0 matrices initialized with random amplitude
+            % for this flow component. These resulting matrices will have
+            % the correct symmetries for a valid flow state. 
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: Ap,Am,A0] = randomAmplitudes()
+            % - Returns Ap: matrix of size [Nj Nkl]
+            % - Returns Am: matrix of size [Nj Nkl]
+            % - Returns A0: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                Ap double
+                Am double
+                A0 double
+            end
+            Ap = zeros(self.wvt.spectralMatrixSize);
+            Am = zeros(self.wvt.spectralMatrixSize);
+            A0 = zeros(self.wvt.spectralMatrixSize);
+        end
+
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
             % returns the total energy multiplier for the coefficient matrix.
             %
