@@ -1,5 +1,5 @@
 function [varargout] = transformToRadialWavenumber(self,varargin)     
-% transforms in the spectral domain from (k,l,j) to (kRadial,j)
+% transforms in the spectral domain from (j,kl) to (j,kRadial)
 %
 % Sums all the variance/energy in radial bins `kRadial`.
 %
@@ -13,58 +13,37 @@ function [varargout] = transformToRadialWavenumber(self,varargin)
 % figure
 % tiledlayout('flow')
 % Ekj = wvt.transformToRadialWavenumber( wvt.A0_TE_factor .* abs(wvt.A0).^2 );
-% nexttile, pcolor(wvt.j,wvt.kRadial,Ekj), shading flat
-% nexttile, plot(wvt.j,sum(Ekj,1))
+% nexttile, pcolor(wvt.kRadial,wvt.j,Ekj), shading flat
+% nexttile, plot(wvt.j,sum(Ekj,2))
 % ```
 %
 % - Topic: Operations — Transformations
 % - Declaration: [varargout] = transformToRadialWavenumber(varargin) 
-% - Parameter varargin: variables with dimensions $$(k,l)$$ or $$(k,l,j)$$
+% - Parameter varargin: variables with dimensions $$(j,kl)$$
 % - Returns varargout: variables with dimensions $$(kRadial)$$ or $$(kRadial,j)$$
-Kh = self.Kh;
 
 % Thi is the final output axis for wavenumber
 k = self.kRadial;
 dk = k(2)-k(1);
 
-RedundantCoefficients = WVTransform.redundantHermitianCoefficients(Kh);
-OmNyquist = self.maskForNyquistModes();
 nK = length(k);
 
 varargout = cell(size(varargin));
 for iVar=1:length(varargin)
-    thesize = size(varargin{iVar});
-    if length(thesize) == 2
-        newsize = [nK 1];
-    else
-        newsize = cat(2,nK,thesize(3:end));
+    if size(varargin{iVar}) ~= self.spectralMatrixSize
+        error('The input matrix must be of size [Nj Nkl]');
     end
-    varargout{iVar} = zeros(newsize);
+    
+    varargout{iVar} = zeros([self.Nj nK]);
 end
 
 for iK = 1:1:nK
-    indicesForK = find( k(iK)-dk/2 <= squeeze(Kh(:,:,1)) & squeeze(Kh(:,:,1)) < k(iK)+dk/2  & ~squeeze(OmNyquist(:,:,1)) & ~squeeze(RedundantCoefficients(:,:,1))  );
-    for iIndex = 1:length(indicesForK)
-        [i,m] = ind2sub([size(Kh,1) size(Kh,2)],indicesForK(iIndex));
-        if i+m==2
-            prefactor = 1;
-        else
-            prefactor = 2;
-        end
-        for iMode = 1:length(self.j)
-            for iVar=1:length(varargin)
-                if ismatrix(varargin{iVar})
-                    continue;
-                end
-                varargout{iVar}(iK,iMode) = varargout{iVar}(iK,iMode) + prefactor*varargin{iVar}(i,m,iMode);
-            end
-        end
+    indicesForK = k(iK)-dk/2 <= self.Kh(1,:) & self.Kh(1,:) < k(iK)+dk/2;
+    for iMode = 1:self.Nj
         for iVar=1:length(varargin)
-            if ~ismatrix(varargin{iVar})
-                continue;
-            end
-            varargout{iVar}(iK) = varargout{iVar}(iK) + prefactor*varargin{iVar}(i,m);
+            varargout{iVar}(iMode,iK) =  sum(varargin{iVar}(iMode,indicesForK));
         end
     end
 end
+
 end

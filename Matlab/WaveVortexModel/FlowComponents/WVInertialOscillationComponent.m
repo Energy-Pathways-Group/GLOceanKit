@@ -46,7 +46,7 @@ classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
                 Am double
                 A0 double
             end
-            Ap = (randn(self.spectralMatrixSize) + sqrt(-1)*randn(self.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            Ap = (randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
             Am = conj(Ap);
             A0 = zeros(self.wvt.spectralMatrixSize);
         end

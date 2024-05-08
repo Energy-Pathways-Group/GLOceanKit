@@ -840,7 +840,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         function kRadial = get.kRadial(self)
-            kRadial = self.radialWavenumberAxis;
+            allKs = unique(reshape(abs(self.Kh),[],1),'sorted');
+            deltaK = max(diff(allKs));
+            kAxis = 0:deltaK:(max(allKs)+deltaK/2);
+
+            % Thi is the final output axis for wavenumber
+            kRadial = reshape(kAxis,[],1);
         end
 
         function value = get.Nz(self)

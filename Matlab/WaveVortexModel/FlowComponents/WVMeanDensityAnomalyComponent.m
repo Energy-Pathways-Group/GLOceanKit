@@ -39,7 +39,7 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             end
             Ap = zeros(self.wvt.spectralMatrixSize);
             Am = zeros(self.wvt.spectralMatrixSize);
-            A0 = randn(self.spectralMatrixSize).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            A0 = randn(self.wvt.spectralMatrixSize).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
