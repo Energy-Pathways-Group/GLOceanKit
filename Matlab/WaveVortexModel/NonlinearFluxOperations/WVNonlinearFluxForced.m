@@ -262,7 +262,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFluxForced(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),shouldAntialias=ncfile.attributes('shouldAntialias') );
+            nlFlux = WVNonlinearFluxForced(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z') );
 
             nlFlux.MAp = logical(ncfile.readVariables('MAp'));
             nlFlux.Apbar = ncfile.readVariables('Apbar');
