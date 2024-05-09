@@ -48,10 +48,18 @@ for iOp = 1:length(variableName)
                 case 'all'
                     varAnnotation = WVVariableAnnotation(name,{'x','y','z'},'m/s', 'x-component of the fluid velocity');
                     varAnnotation.attributes('standard_name') = 'eastward_sea_water_velocity';
-                    f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt,A0=wvt.UA0.*wvt.A0t);
-                case 'geostrophic'
+                case {'geostrophic','wave','geostrophic-wave'}
                     varAnnotation = WVVariableAnnotation(strcat(name,'_',flowComponent.abbreviatedName),{'x','y','z'},'m/s', strcat('x-component of the fluid velocity, ',flowComponent.name,' component'));
+            end
+            switch maskCase
+                case 'all'
+                    f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.Apt + wvt.UAm.*wvt.Amt,A0=wvt.UA0.*wvt.A0t);
+                case {'geostrophic'}
                     f = @(wvt) wvt.transformToSpatialDomainWithF(A0=flowComponent.maskA0.*wvt.UA0.*wvt.A0t);
+                case 'wave'
+                    f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=flowComponent.maskAp.*wvt.UAp.*wvt.Apt + flowComponent.maskAm.*wvt.UAm.*wvt.Amt);
+                case 'geostrophic-wave'
+                    f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=flowComponent.maskAp.*wvt.UAp.*wvt.Apt + flowComponent.maskAm.*wvt.UAm.*wvt.Amt,A0=flowComponent.maskA0.*wvt.UA0.*wvt.A0t);
             end
             
     end

@@ -4,11 +4,11 @@
 
 wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [32 32 17]);
 
-try
-    wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5],latitude=90);
-catch ME
-    disp(ME)
-end
+% try
+%     wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5],latitude=90);
+% catch ME
+%     disp(ME)
+% end
 
 %%
 % flowComponent = WVMeanDensityAnomalyComponent(wvt);
