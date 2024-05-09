@@ -3,7 +3,7 @@ layout: default
 title: Nmax
 parent: WVTransform
 grand_parent: Classes
-nav_order: 47
+nav_order: 45
 mathjax: true
 ---
 

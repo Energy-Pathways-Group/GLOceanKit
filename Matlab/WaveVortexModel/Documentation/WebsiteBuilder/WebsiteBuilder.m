@@ -39,14 +39,15 @@ BuildDocumentationForClass(name='WVDimensionAnnotation',buildFolder=buildFolder,
 BuildDocumentationForClass(name='WVPropertyAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
 BuildDocumentationForClass(name='WVVariableAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
 
-parentName = 'Solution groups';
-websiteFolder = 'classes/solution-groups';
+parentName = 'Flow components';
+websiteFolder = 'classes/flow-components';
 
 BuildDocumentationForClass(name='WVFlowComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='WVGeostrophicComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
-BuildDocumentationForClass(name='WVInternalGravityWaveComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
-BuildDocumentationForClass(name='WVInertialOscillationComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
-BuildDocumentationForClass(name='WVMeanDensityAnomalyComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
+BuildDocumentationForClass(name='WVPrimaryFlowComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
+BuildDocumentationForClass(name='WVGeostrophicComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
+BuildDocumentationForClass(name='WVInternalGravityWaveComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
+BuildDocumentationForClass(name='WVInertialOscillationComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
+BuildDocumentationForClass(name='WVMeanDensityAnomalyComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=6);
 
 % ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
 

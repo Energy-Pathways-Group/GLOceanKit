@@ -3,7 +3,7 @@ layout: default
 title: setExternalWavesWithWavenumbers
 parent: WVTransform
 grand_parent: Classes
-nav_order: 195
+nav_order: 193
 mathjax: true
 ---
 

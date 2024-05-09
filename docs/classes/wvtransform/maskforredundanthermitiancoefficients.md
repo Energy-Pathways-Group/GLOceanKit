@@ -3,7 +3,7 @@ layout: default
 title: maskForRedundantHermitianCoefficients
 parent: WVTransform
 grand_parent: Classes
-nav_order: 156
+nav_order: 152
 mathjax: true
 ---
 

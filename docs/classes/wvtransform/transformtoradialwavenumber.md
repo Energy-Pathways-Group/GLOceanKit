@@ -3,13 +3,13 @@ layout: default
 title: transformToRadialWavenumber
 parent: WVTransform
 grand_parent: Classes
-nav_order: 221
+nav_order: 220
 mathjax: true
 ---
 
 #  transformToRadialWavenumber
 
-transforms in the spectral domain from (k,l,j) to (kRadial,j)
+transforms in the spectral domain from (j,kl) to (j,kRadial)
 
 
 ---
@@ -19,7 +19,7 @@ transforms in the spectral domain from (k,l,j) to (kRadial,j)
  [varargout] = transformToRadialWavenumber(varargin) 
 ```
 ## Parameters
-+ `varargin`  variables with dimensions $$(k,l)$$ or $$(k,l,j)$$
++ `varargin`  variables with dimensions $$(j,kl)$$
 
 ## Returns
 + `varargout`  variables with dimensions $$(kRadial)$$ or $$(kRadial,j)$$
@@ -38,8 +38,8 @@ transforms in the spectral domain from (k,l,j) to (kRadial,j)
   figure
   tiledlayout('flow')
   Ekj = wvt.transformToRadialWavenumber( wvt.A0_TE_factor .* abs(wvt.A0).^2 );
-  nexttile, pcolor(wvt.j,wvt.kRadial,Ekj), shading flat
-  nexttile, plot(wvt.j,sum(Ekj,1))
+  nexttile, pcolor(wvt.kRadial,wvt.j,Ekj), shading flat
+  nexttile, plot(wvt.j,sum(Ekj,2))
   ```
  
         

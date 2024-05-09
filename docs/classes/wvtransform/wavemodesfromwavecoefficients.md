@@ -3,7 +3,7 @@ layout: default
 title: waveModesFromWaveCoefficients
 parent: WVTransform
 grand_parent: Classes
-nav_order: 248
+nav_order: 247
 mathjax: true
 ---
 

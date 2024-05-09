@@ -135,8 +135,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Geostrophic Constituents
   + Inertia-Gravity Wave Constituents
   + Multiplicative factors
-    + [`A0_HKE_factor`](/classes/wvtransform/a0_hke_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute horizontal kinetic energy.
-    + [`A0_PE_factor`](/classes/wvtransform/a0_pe_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.
     + [`A0_TE_factor`](/classes/wvtransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute total energy.
     + [`Apm_TE_factor`](/classes/wvtransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 + Other
@@ -157,33 +155,30 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`dk`](/classes/wvtransform/dk.html) 
   + [`dl`](/classes/wvtransform/dl.html) 
   + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
+  + [`flowComponentNameMap`](/classes/wvtransform/flowcomponentnamemap.html) 
   + [`geostrophicEnergy`](/classes/wvtransform/geostrophicenergy.html) 
-  + [`geostrophicEnergyBaroclinic`](/classes/wvtransform/geostrophicenergybaroclinic.html) 
-  + [`geostrophicEnergyBarotropic`](/classes/wvtransform/geostrophicenergybarotropic.html) 
   + [`h_0`](/classes/wvtransform/h_0.html) [Nj Nkl]
   + [`h_pm`](/classes/wvtransform/h_pm.html) [Nj Nkl]
   + [`horizontalGeometry`](/classes/wvtransform/horizontalgeometry.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
   + [`inertialEnergy`](/classes/wvtransform/inertialenergy.html) 
-  + [`inertialEnergyBaroclinic`](/classes/wvtransform/inertialenergybaroclinic.html) 
-  + [`inertialEnergyBarotropic`](/classes/wvtransform/inertialenergybarotropic.html) 
-  + [`internalWaveEnergyMinus`](/classes/wvtransform/internalwaveenergyminus.html) 
-  + [`internalWaveEnergyPlus`](/classes/wvtransform/internalwaveenergyplus.html) 
   + [`isHydrostatic`](/classes/wvtransform/ishydrostatic.html) 
   + [`isequal`](/classes/wvtransform/isequal.html) 
   + [`kl`](/classes/wvtransform/kl.html) dimension of the interleaved k-l wavenumber coordinate
+  + [`mdaEnergy`](/classes/wvtransform/mdaenergy.html) 
   + [`modeNumberFromIndex`](/classes/wvtransform/modenumberfromindex.html) 
   + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize
   + [`ongridModes`](/classes/wvtransform/ongridmodes.html) This is a cached copy
   + [`operationNameMap`](/classes/wvtransform/operationnamemap.html) 
   + [`operationVariableNameMap`](/classes/wvtransform/operationvariablenamemap.html) 
+  + [`primaryFlowComponentNameMap`](/classes/wvtransform/primaryflowcomponentnamemap.html) 
   + [`propertyAnnotationNameMap`](/classes/wvtransform/propertyannotationnamemap.html) 
   + [`qgpvFluxFromF0`](/classes/wvtransform/qgpvfluxfromf0.html) 
-  + [`radialWavenumberAxis`](/classes/wvtransform/radialwavenumberaxis.html) Create a reasonable wavenumber axis
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
   + [`summarizeDegreesOfFreedom`](/classes/wvtransform/summarizedegreesoffreedom.html) 
   + [`timeDependentVariablesNameMap`](/classes/wvtransform/timedependentvariablesnamemap.html) 
   + [`totalEnergy`](/classes/wvtransform/totalenergy.html) 
+  + [`totalEnergyOfFlowComponent`](/classes/wvtransform/totalenergyofflowcomponent.html) 
   + [`totalEnergySpatiallyIntegrated`](/classes/wvtransform/totalenergyspatiallyintegrated.html) 
   + [`totalEnstrophy`](/classes/wvtransform/totalenstrophy.html) 
   + [`totalEnstrophySpatiallyIntegrated`](/classes/wvtransform/totalenstrophyspatiallyintegrated.html) 
@@ -272,11 +267,15 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`spectralVariableWithResolution`](/classes/wvtransform/spectralvariablewithresolution.html) create a new variable with increased resolution
   + Metadata
     + [`addDimensionAnnotations`](/classes/wvtransform/adddimensionannotations.html) add one or more WVDimensions
+    + [`addFlowComponent`](/classes/wvtransform/addflowcomponent.html) add a flow component
     + [`addOperation`](/classes/wvtransform/addoperation.html) add a WVOperation
+    + [`addPrimaryFlowComponent`](/classes/wvtransform/addprimaryflowcomponent.html) add a primary flow component, automatically added to the flow
     + [`addPropertyAnnotations`](/classes/wvtransform/addpropertyannotations.html) add a property annotation
     + [`addVariableAnnotations`](/classes/wvtransform/addvariableannotations.html) add a variable annotation
     + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
+    + [`flowComponent`](/classes/wvtransform/flowcomponent.html) retrieve a WVFlowComponent by name
     + [`operationWithName`](/classes/wvtransform/operationwithname.html) retrieve a WVOperation by name
+    + [`primaryFlowComponentWithName`](/classes/wvtransform/primaryflowcomponentwithname.html) retrieve a WVPrimaryFlowComponent by name
     + [`propertyAnnotationWithName`](/classes/wvtransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
     + [`removeOperation`](/classes/wvtransform/removeoperation.html) remove an existing WVOperation
     + [`removeVariableAnnotations`](/classes/wvtransform/removevariableannotations.html) add a variable annotation
@@ -304,7 +303,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformFromSpatialDomainWithFg`](/classes/wvtransform/transformfromspatialdomainwithfg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic F-modes
     + [`transformFromSpatialDomainWithFio`](/classes/wvtransform/transformfromspatialdomainwithfio.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes
     + [`transformFromSpatialDomainWithGg`](/classes/wvtransform/transformfromspatialdomainwithgg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic G-modes
-    + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (k,l,j) to (kRadial,j)
+    + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (j,kl) to (j,kRadial)
     + [`transformToSpatialDomainWithF`](/classes/wvtransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
     + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithfallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.
     + [`transformToSpatialDomainWithG`](/classes/wvtransform/transformtospatialdomainwithg.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes
@@ -317,7 +316,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Nonlinear flux and energy transfers
   + [`energyFluxFromNonlinearFlux`](/classes/wvtransform/energyfluxfromnonlinearflux.html) converts nonlinear flux into energy flux
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation
-  + [`nonlinearFluxForFlowConstituents`](/classes/wvtransform/nonlinearfluxforflowconstituents.html) returns the flux of each coefficient as determined by the nonlinear flux operation
+  + [`nonlinearFluxForFlowComponents`](/classes/wvtransform/nonlinearfluxforflowcomponents.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
   + [`nonlinearFluxWithGradientMasks`](/classes/wvtransform/nonlinearfluxwithgradientmasks.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxWithMask`](/classes/wvtransform/nonlinearfluxwithmask.html) returns the flux of each coefficient as determined by the nonlinear flux

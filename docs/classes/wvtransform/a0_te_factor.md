@@ -3,7 +3,7 @@ layout: default
 title: A0_TE_factor
 parent: WVTransform
 grand_parent: Classes
-nav_order: 9
+nav_order: 7
 mathjax: true
 ---
 
