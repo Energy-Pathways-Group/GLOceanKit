@@ -1,13 +1,13 @@
 ---
 layout: default
-title: QGpm
+title: buildVerticalModeProjectionOperators
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 21
+nav_order: 30
 mathjax: true
 ---
 
-#  QGpm
+#  buildVerticalModeProjectionOperators
 
 
 

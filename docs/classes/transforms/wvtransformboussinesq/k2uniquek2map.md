@@ -3,7 +3,7 @@ layout: default
 title: K2uniqueK2Map
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 8
+nav_order: 7
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: initWithUVEta
 parent: WVTransform
 grand_parent: Classes
-nav_order: 132
+nav_order: 130
 mathjax: true
 ---
 

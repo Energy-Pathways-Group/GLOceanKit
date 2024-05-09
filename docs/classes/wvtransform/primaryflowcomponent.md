@@ -1,13 +1,13 @@
 ---
 layout: default
-title: primaryFlowComponentWithName
+title: primaryFlowComponent
 parent: WVTransform
 grand_parent: Classes
-nav_order: 171
+nav_order: 161
 mathjax: true
 ---
 
-#  primaryFlowComponentWithName
+#  primaryFlowComponent
 
 retrieve a WVPrimaryFlowComponent by name
 

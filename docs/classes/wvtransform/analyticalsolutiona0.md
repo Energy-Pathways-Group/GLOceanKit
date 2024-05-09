@@ -3,7 +3,7 @@ layout: default
 title: analyticalSolutionA0
 parent: WVTransform
 grand_parent: Classes
-nav_order: 77
+nav_order: 78
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: removeAllExternalWaves
 parent: WVTransform
 grand_parent: Classes
-nav_order: 179
+nav_order: 170
 mathjax: true
 ---
 

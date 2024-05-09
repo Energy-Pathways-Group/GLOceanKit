@@ -31,7 +31,6 @@ grand_parent: Class documentation
 ## Topics
 + Other
   + [`Aklz`](/classes/transforms/wvtransformboussinesq/aklz.html) 
-  + [`BuildProjectionOperators`](/classes/transforms/wvtransformboussinesq/buildprojectionoperators.html) 
   + [`BuildProjectionOperatorsForGeostrophicModes`](/classes/transforms/wvtransformboussinesq/buildprojectionoperatorsforgeostrophicmodes.html) Now go compute the appropriate number of modes at the
   + [`BuildProjectionOperatorsForIGWModes`](/classes/transforms/wvtransformboussinesq/buildprojectionoperatorsforigwmodes.html) Now go compute the appropriate number of modes at the
   + [`BuildProjectionOperatorsWithFreeSurface`](/classes/transforms/wvtransformboussinesq/buildprojectionoperatorswithfreesurface.html) Make these matrices invertible by adding the barotropic mode
@@ -60,6 +59,7 @@ grand_parent: Class documentation
   + [`Wzkl`](/classes/transforms/wvtransformboussinesq/wzkl.html) 
   + [`buildInterpolationProjectionOperators`](/classes/transforms/wvtransformboussinesq/buildinterpolationprojectionoperators.html) 
   + [`buildInterpolationProjectionOperatorsForGrid`](/classes/transforms/wvtransformboussinesq/buildinterpolationprojectionoperatorsforgrid.html) 
+  + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformboussinesq/buildverticalmodeprojectionoperators.html) 
   + [`dLnN2`](/classes/transforms/wvtransformboussinesq/dlnn2.html) 
   + [`dLnN2Function`](/classes/transforms/wvtransformboussinesq/dlnn2function.html) 
   + [`dftBuffer`](/classes/transforms/wvtransformboussinesq/dftbuffer.html) 
@@ -80,6 +80,7 @@ grand_parent: Class documentation
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithginterp.html) 
   + [`transformToSpatialDomainWithGg`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgg.html) arguments
   + [`transformToSpatialDomainWithGw`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgw.html) 
+  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformboussinesq/wavevortextransformwithresolution.html) 
   + [`wvBuffer`](/classes/transforms/wvtransformboussinesq/wvbuffer.html) 
   + [`wvConjugateIndex`](/classes/transforms/wvtransformboussinesq/wvconjugateindex.html) 
   + [`zInterp`](/classes/transforms/wvtransformboussinesq/zinterp.html) 

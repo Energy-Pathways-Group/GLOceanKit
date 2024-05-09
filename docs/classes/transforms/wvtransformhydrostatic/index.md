@@ -68,6 +68,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`rhobar`](/classes/transforms/wvtransformhydrostatic/rhobar.html) on the z-grid, size(N2) = [length(z) 1];
   + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithfinterp.html) 
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
+  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) 
   + [`wvBuffer`](/classes/transforms/wvtransformhydrostatic/wvbuffer.html) 
   + [`wvConjugateIndex`](/classes/transforms/wvtransformhydrostatic/wvconjugateindex.html) 
   + [`zInterp`](/classes/transforms/wvtransformhydrostatic/zinterp.html) 

@@ -3,7 +3,7 @@ layout: default
 title: latitude
 parent: WVTransform
 grand_parent: Classes
-nav_order: 147
+nav_order: 145
 mathjax: true
 ---
 

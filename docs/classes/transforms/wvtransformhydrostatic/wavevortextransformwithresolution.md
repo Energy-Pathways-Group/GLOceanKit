@@ -1,19 +1,16 @@
 ---
 layout: default
 title: waveVortexTransformWithResolution
-parent: WVTransform
+parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 251
+nav_order: 34
 mathjax: true
 ---
 
 #  waveVortexTransformWithResolution
 
-create a new WVTransform with increased resolution
+
 
 
 ---
 
-## Discussion
-
-  

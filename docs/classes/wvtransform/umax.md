@@ -3,7 +3,7 @@ layout: default
 title: uMax
 parent: WVTransform
 grand_parent: Classes
-nav_order: 230
+nav_order: 221
 mathjax: true
 ---
 

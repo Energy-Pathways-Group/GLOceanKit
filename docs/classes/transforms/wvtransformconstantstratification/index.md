@@ -52,6 +52,7 @@ Wave-vortex transformation that assumes constant stratification
   + [`PlaceParticlesOnIsopycnal`](/classes/transforms/wvtransformconstantstratification/placeparticlesonisopycnal.html) MAS 1/10/18 - added intext ('int' or 'both') to give option of using int vs. int+ext fields for rho_prime
   + [`ProfileTransforms`](/classes/transforms/wvtransformconstantstratification/profiletransforms.html) 
   + [`RhoBarAtDepth`](/classes/transforms/wvtransformconstantstratification/rhobaratdepth.html) 
+  + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformconstantstratification/buildverticalmodeprojectionoperators.html) We renormalization the transformation matrices to directly
   + [`cg_x`](/classes/transforms/wvtransformconstantstratification/cg_x.html) 
   + [`cg_y`](/classes/transforms/wvtransformconstantstratification/cg_y.html) 
   + [`cg_z`](/classes/transforms/wvtransformconstantstratification/cg_z.html) 
@@ -77,6 +78,7 @@ Wave-vortex transformation that assumes constant stratification
   + [`transformToSpatialDomainWithGAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_mm.html) 
   + [`transformToSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_fft.html) 
   + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) 
+  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformconstantstratification/wavevortextransformwithresolution.html) 
 
 
 ---

@@ -1,13 +1,13 @@
 ---
 layout: default
-title: cg_y
+title: waveVortexTransformWithResolution
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 17
+nav_order: 41
 mathjax: true
 ---
 
-#  cg_y
+#  waveVortexTransformWithResolution
 
 
 

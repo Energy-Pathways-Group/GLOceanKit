@@ -45,7 +45,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Initialization
   + [`waveVortexTransformFromFile`](/classes/wvtransform/wavevortextransformfromfile.html) Initialize a WVTransform instance from an existing file
   + [`waveVortexTransformWithDoubleResolution`](/classes/wvtransform/wavevortextransformwithdoubleresolution.html) create a new WVTransform with double resolution
-  + [`waveVortexTransformWithResolution`](/classes/wvtransform/wavevortextransformwithresolution.html) create a new WVTransform with increased resolution
 + Domain attributes
   + [`Omega`](/classes/wvtransform/omega.html) frequency of oscillation of the linear waves
   + [`f`](/classes/wvtransform/f.html) Coriolis parameter
@@ -100,7 +99,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Initial Conditions
   + [`addUVEta`](/classes/wvtransform/adduveta.html) add $$(u,v,\eta)$$ to the existing values
   + [`initFromNetCDFFile`](/classes/wvtransform/initfromnetcdffile.html) initialize the flow from a NetCDF file
-  + [`initWithRandomFlow`](/classes/wvtransform/initwithrandomflow.html) initialize with a randomized flow
+  + [`initWithRandomFlow`](/classes/wvtransform/initwithrandomflow.html) initialize with a random flow state
   + [`initWithUVEta`](/classes/wvtransform/initwithuveta.html) initialize with fluid variables $$(u,v,\eta)$$
   + [`initWithUVRho`](/classes/wvtransform/initwithuvrho.html) initialize with fluid variables $$(u,v,\rho)$$
   + Waves
@@ -147,7 +146,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`EnergeticsByWavenumberAndMode`](/classes/wvtransform/energeticsbywavenumberandmode.html) 
   + [`K2`](/classes/wvtransform/k2.html) 
   + [`PA0`](/classes/wvtransform/pa0.html) 
-  + [`buildTransformationMatrices`](/classes/wvtransform/buildtransformationmatrices.html) 
+  + [`addPrimaryFlowComponents`](/classes/wvtransform/addprimaryflowcomponents.html) 
   + [`conjugateDimension`](/classes/wvtransform/conjugatedimension.html) 
   + [`diffX`](/classes/wvtransform/diffx.html) 
   + [`diffY`](/classes/wvtransform/diffy.html) 
@@ -259,10 +258,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
 + Utility function
   + [`checkHermitian`](/classes/wvtransform/checkhermitian.html) Check if the matrix is Hermitian. Report errors.
   + [`extractNonzeroWaveProperties`](/classes/wvtransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
-  + [`generateHermitianRandomMatrix`](/classes/wvtransform/generatehermitianrandommatrix.html) Generate a 3D matrix to be Hermitian, except at k=l=0
-  + [`generateRandomFlowState`](/classes/wvtransform/generaterandomflowstate.html) Random flow state, separated out by solution type.
-  + [`makeApAmHermitian`](/classes/wvtransform/makeapamhermitian.html) Forces the Ap/Am matrices to have the correct symmetries
-  + [`makeHermitian`](/classes/wvtransform/makehermitian.html) Forces a 3D matrix to be Hermitian
   + [`redundantHermitianCoefficients`](/classes/wvtransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
   + [`spectralVariableWithResolution`](/classes/wvtransform/spectralvariablewithresolution.html) create a new variable with increased resolution
   + Metadata
@@ -275,7 +270,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
     + [`flowComponent`](/classes/wvtransform/flowcomponent.html) retrieve a WVFlowComponent by name
     + [`operationWithName`](/classes/wvtransform/operationwithname.html) retrieve a WVOperation by name
-    + [`primaryFlowComponentWithName`](/classes/wvtransform/primaryflowcomponentwithname.html) retrieve a WVPrimaryFlowComponent by name
+    + [`primaryFlowComponent`](/classes/wvtransform/primaryflowcomponent.html) retrieve a WVPrimaryFlowComponent by name
     + [`propertyAnnotationWithName`](/classes/wvtransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
     + [`removeOperation`](/classes/wvtransform/removeoperation.html) remove an existing WVOperation
     + [`removeVariableAnnotations`](/classes/wvtransform/removevariableannotations.html) add a variable annotation
@@ -325,14 +320,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`isValidConjugateModeNumber`](/classes/wvtransform/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
   + [`isValidModeNumber`](/classes/wvtransform/isvalidmodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidPrimaryModeNumber`](/classes/wvtransform/isvalidprimarymodenumber.html) returns a boolean indicating whether (k,l,j) is a valid primary (non-conjugate) mode number
-+ Masks
-  + [`maskForAliasedModes`](/classes/wvtransform/maskforaliasedmodes.html) returns a mask with locations of modes that will alias with a quadratic multiplication.
-  + [`maskForNyquistModes`](/classes/wvtransform/maskfornyquistmodes.html) returns a mask with locations of modes that are not fully resolved
-  + [`maskForRedundantHermitianCoefficients`](/classes/wvtransform/maskforredundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
-  + [`masksForAllFlowConstituents`](/classes/wvtransform/masksforallflowconstituents.html) Returns six 'masks' (matrices with 1s or 0s) indicating where the six
-  + [`masksForFlowConstituents`](/classes/wvtransform/masksforflowconstituents.html) Returns a sets of 'masks' indicating where different solution types live in the Ap, Am, A0 matrices.
-+ Validation and internal unit testing
-  + [`validateTransformationMatrices`](/classes/wvtransform/validatetransformationmatrices.html) used to confirm if $$S$$ and $$S^{-1}$$ are inverses
 
 
 ---

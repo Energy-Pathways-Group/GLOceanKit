@@ -3,7 +3,7 @@ layout: default
 title: spectralVanishingViscosityFilter
 parent: WVTransform
 grand_parent: Classes
-nav_order: 201
+nav_order: 192
 mathjax: true
 ---
 
