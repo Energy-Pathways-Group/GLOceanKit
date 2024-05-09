@@ -191,8 +191,6 @@ classdef WVTransformBoussinesq < WVTransform
                 for iK=1:length(self.K2unique)
                     self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
                 end
-
-                self.buildTransformationMatrices();
             else
                 if isequal(options.dLnN2func,@disp)
                     dLnN2 = im.rho_zz./im.rho_z;
@@ -220,8 +218,9 @@ classdef WVTransformBoussinesq < WVTransform
                     self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
                 end
 
-                self.BuildProjectionOperators();
+                self.buildVerticalModeProjectionOperators();
             end
+            self.addPrimaryFlowComponents();
 
             self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
@@ -279,7 +278,7 @@ classdef WVTransformBoussinesq < WVTransform
             end
         end
 
-        function self = BuildProjectionOperators(self)
+        function self = buildVerticalModeProjectionOperators(self)
             self.PF0inv = zeros(self.Nz,self.Nj,1);
             self.QG0inv = zeros(self.Nz,self.Nj,1);
             self.PF0 =    zeros(self.Nj,self.Nz,1);
@@ -307,8 +306,6 @@ classdef WVTransformBoussinesq < WVTransform
             for iK=1:size(self.h_pm,2)
                 self.h_pm(:,iK) = h(:,self.iK2unique(iK));
             end
-
-            self.buildTransformationMatrices();
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForGeostrophicModes(self)

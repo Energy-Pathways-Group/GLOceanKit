@@ -168,8 +168,6 @@ classdef WVTransformHydrostatic < WVTransform
                 self.h = options.h;
                 self.P = options.P;
                 self.Q = options.Q;
-
-                self.buildTransformationMatrices();
             else
                 if isequal(options.dLnN2func,@disp)
                     dLnN2 = im.rho_zz./im.rho_z;
@@ -185,8 +183,9 @@ classdef WVTransformHydrostatic < WVTransform
                 self.N2 = N2;
                 self.dLnN2 = dLnN2;
 
-                self.BuildProjectionOperators();
+                self.BuildProjectionOperators(); 
             end
+            self.addPrimaryFlowComponents();
 
             self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
@@ -283,8 +282,6 @@ classdef WVTransformHydrostatic < WVTransform
             self.QG = self.QG(1:self.Nj,:);
             self.Q = self.Q(1:self.Nj,1);
             self.h = self.h(1:self.Nj,1);
-
-            self.buildTransformationMatrices();
         end
                                 
         function h_0 = get.h_0(self)

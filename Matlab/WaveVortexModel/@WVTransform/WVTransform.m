@@ -245,512 +245,90 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.primaryFlowComponentNameMap = containers.Map();
             self.flowComponentNameMap = containers.Map();
         end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
-            % returns a boolean indicating whether (k,l,j) is a valid primary (non-conjugate) mode number
-            %
-            % returns a boolean indicating whether (k,l,j) is a valid
-            % non-conjugate mode number according to how the property
-            % conjugateDimension is set.
-            %
-            % - Topic: Index Gymnastics
-            % - Declaration: index = isValidPrimaryModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: integer
-            % - Parameter lMode: integer
-            % - Parameter jMode: non-negative integer
-            % - Returns index: a non-negative integer
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            klCheck = self.horizontalGeometry.isValidPrimaryWVModeNumber(kMode,lMode);
-            jCheck = jMode >= 0 & jMode <= self.Nj;
-            bool = klCheck & jCheck;
-        end
+        wvtX2 = waveVortexTransformWithDoubleResolution(self)
 
-        function bool = isValidConjugateModeNumber(self,kMode,lMode,jMode)
-            % returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
-            %
-            % returns a boolean indicating whether (k,l,j) is a valid
-            % conjugate mode number according to how the property
-            % conjugateDimension is set.
-            %
-            % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
-            %
-            % - Topic: Index Gymnastics
-            % - Declaration: index = isValidConjugateModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: integer
-            % - Parameter lMode: integer
-            % - Parameter jMode: non-negative integer
-            % - Returns index: a non-negative integer
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            klCheck = self.horizontalGeometry.isValidConjugateWVModeNumber(kMode,lMode);
-            jCheck = jMode >= 0 & jMode <= self.Nj;
-            bool = klCheck & jCheck;
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Mode numbers and indices
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function bool = isValidModeNumber(self,kMode,lMode,jMode)
-            % returns a boolean indicating whether (k,l,j) is a valid mode number
-            %
-            % returns a boolean indicating whether (k,l,j) is a valid mode
-            % number
-            %
-            % - Topic: Index Gymnastics
-            % - Declaration: index = isValidModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: integer
-            % - Parameter lMode: integer
-            % - Parameter jMode: non-negative integer
-            % - Returns index: a non-negative integer
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                bool (:,1) logical {mustBeMember(bool,[0 1])}
-            end
-            klCheck = self.horizontalGeometry.isValidWVModeNumber(kMode,lMode);
-            jCheck = jMode >= 0 & jMode <= self.Nj;
-            bool = klCheck & jCheck;
-        end
+        bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
+        bool = isValidConjugateModeNumber(self,kMode,lMode,jMode)
+        bool = isValidModeNumber(self,kMode,lMode,jMode)
+        index = indexFromModeNumber(self,kMode,lMode,jMode)
+        [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
 
-        function index = indexFromModeNumber(self,kMode,lMode,jMode)
-            % return the linear index into a spectral matrix given (k,l,j)
-            %
-            % This function will return the linear index in a spectral
-            % matrix given a mode number.
-            %
-            % - Topic: Index Gymnastics
-            % - Declaration: index = indexFromModeNumber(kMode,lMode,jMode)
-            % - Parameter kMode: integer
-            % - Parameter lMode: integer
-            % - Returns index: a non-negative integer number
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            arguments (Output)
-                index (:,1) double {mustBeInteger,mustBePositive}
-            end
-            if ~self.isValidModeNumber(kMode,lMode,jMode)
-                error('Invalid WV mode number!');
-            end
-            [kMode,lMode] = self.horizontalGeometry.primaryModeNumberFromWVModeNumber(kMode,lMode);
-            klIndex = self.horizontalGeometry.wvIndexFromModeNumber(kMode,lMode);
-            index = sub2ind(self.spectralMatrixSize,jMode+1,klIndex);
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Flow components
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                linearIndex (:,1) double {mustBeInteger,mustBePositive}
-            end
-            arguments (Output)
-                kMode (:,1) double {mustBeInteger}
-                lMode (:,1) double {mustBeInteger}
-                jMode (:,1) double {mustBeInteger,mustBeNonnegative}
-            end
-            [jIndex,klIndex] = ind2sub(self.spectralMatrixSize,linearIndex);
-            [kMode,lMode] = self.horizontalGeometry.modeNumberFromWVIndex(klIndex);
-            jMode = jIndex - 1;
-        end
+        addPrimaryFlowComponent(self,primaryFlowComponent)
+        val = primaryFlowComponent(self,name)
+        addFlowComponent(self,flowComponent)
+        val = flowComponent(self,name)
 
-        function addDimensionAnnotations(self,dimensionAnnotation)
-            % add one or more WVDimensions
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                dimensionAnnotation (1,:) WVDimensionAnnotation {mustBeNonempty}
-            end
-            for i=1:length(dimensionAnnotation)
-                self.dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
-            end
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Metadata
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function val = dimensionAnnotationWithName(self,name)
-            % retrieve a WVDimension by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.dimensionAnnotationNameMap(name);
-        end
+        addDimensionAnnotations(self,dimensionAnnotation)
+        val = dimensionAnnotationWithName(self,name)
 
+        addPropertyAnnotations(self,propertyAnnotation)
+        val = propertyAnnotationWithName(self,name)
 
+        addVariableAnnotations(self,variableAnnotation)
+        removeVariableAnnotations(self,variableAnnotation)
+        val = variableAnnotationWithName(self,name)
+        names = variableNames(self)
 
-        function addPrimaryFlowComponent(self,primaryFlowComponent)
-            % add a primary flow component, automatically added to the flow
-            % components
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                primaryFlowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
-            end
-            for i=1:length(primaryFlowComponent)
-                self.primaryFlowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
-                self.flowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
-            end
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Operations
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function val = primaryFlowComponentWithName(self,name)
-            % retrieve a WVPrimaryFlowComponent by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.primaryFlowComponentNameMap(name);
-        end
+        addOperation(self,transformOperation,options)
+        removeOperation(self,transformOperation)
+        val = operationWithName(self,name)
 
-        function addFlowComponent(self,flowComponent)
-            % add a flow component
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                flowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
-            end
-            for i=1:length(flowComponent)
-                self.flowComponentNameMap(flowComponent(i).name) = flowComponent(i);
-            end
-        end
+        [varargout] = stateVariables(self, varargin)
+        varargout = performOperation(self,modelOp,varargin)
+        varargout = performOperationWithName(self,opName,varargin)
 
-        function val = flowComponent(self,name)
-            % retrieve a WVFlowComponent by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.flowComponentNameMap(name);
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Variable cache
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function addPropertyAnnotations(self,propertyAnnotation)
-            % add a property annotation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                propertyAnnotation (1,:) WVPropertyAnnotation {mustBeNonempty}
-            end
-            for i=1:length(propertyAnnotation)
-                self.propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
-            end
-        end
+        addToVariableCache(self,name,var)
+        clearVariableCache(self)
+        clearVariableCacheOfTimeDependentVariables(self)
+        varargout = fetchFromVariableCache(self,varargin)
 
-        function val = propertyAnnotationWithName(self,name)
-            % retrieve a WVPropertyAnnotation by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.propertyAnnotationNameMap(name);
-        end
-
-        function addVariableAnnotations(self,variableAnnotation)
-            % add a variable annotation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
-            end
-            for i=1:length(variableAnnotation)
-                self.variableAnnotationNameMap(variableAnnotation(i).name) = variableAnnotation(i);
-                if variableAnnotation(i).isVariableWithLinearTimeStep == 1 && ~isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
-                    self.timeDependentVariablesNameMap(variableAnnotation(i).name) = variableAnnotation(i);
-                end
-            end
-        end
-
-        function removeVariableAnnotations(self,variableAnnotation)
-            % add a variable annotation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
-            end
-            for i=1:length(variableAnnotation)
-                remove(self.variableAnnotationNameMap,variableAnnotation(i).name);
-                if isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
-                    remove(self.timeDependentVariablesNameMap,variableAnnotation(i).name);
-                end
-            end
-        end
-
-        function val = variableAnnotationWithName(self,name)
-            % retrieve a WVVariableAnnotation by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.variableAnnotationNameMap(name);
-        end
-
-        function names = variableNames(self)
-            % retrieve the names of all available variables
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-            end
-            names = self.variableAnnotationNameMap.keys;
-        end
-
-        function addOperation(self,transformOperation,options)
-            % add a WVOperation
-            %
-            % Several things happen when adding an operation.
-            % 1. We check that dimensions exist for all output variables
-            % produced by this operation.
-            % 2. We see if there are any existing output variables with the
-            % same name.
-            %   2a. We remove the operation that produced the existing
-            %   variables, if it exists.
-            % 3. We map each new variable to this operation variableAnnotationNameMap
-            % 4. Map each operation name to the operation
-            %
-            % In our revision,
-            %   - The variableAnnotationNameMap will map the name to the
-            %   variable annotation
-            %   - The operationVariableNameMap will map the name to the
-            %   operation
-            % 
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                transformOperation (1,:) WVOperation {mustBeNonempty}
-                options.overwriteExisting double = 0
-            end
-            for iOp=1:length(transformOperation)
-                isExisting = 0;
-                for iVar=1:length(transformOperation(iOp).outputVariables)
-                    if any(~isKey(self.dimensionAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).dimensions))
-                        error("Unable to find at least one of the dimensions for variable %s",transformOperation(iOp).outputVariables(iVar).name);
-                    end
-
-                    if isKey(self.variableAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).name)
-                        isExisting = 1;
-                        existingVar = self.variableAnnotationWithName(transformOperation(iOp).outputVariables(iVar).name);
-                    end
-                end
-
-                if isExisting == 1
-                    message1 = strcat(existingVar.modelOp.name,' with variables {');
-                    for jVar=1:existingVar.modelOp.nVarOut
-                        message1 = strcat(message1,existingVar.modelOp.outputVariables(jVar).name,',');
-                    end
-                    message1 = strcat(message1,'}');
-
-                    message2 = strcat(transformOperation(iOp).name,' with variables {');
-                    for jVar=1:transformOperation(iOp).nVarOut
-                        message2 = strcat(message2,transformOperation(iOp).outputVariables(jVar).name,',');
-                    end
-                    message2 = strcat(message2,'}');
-                    if options.overwriteExisting == 0
-                        error('A variable with the same name already exists! You attempted to replace the operation %s with the operation %s. If you are sure you want to do this, call wvt.addOperation(newOp,overwriteExisting=1).', message1,message2);
-                    else
-                        self.removeOperation(existingVar.modelOp);
-                        fprintf('The operation %s has been removed and the operation %s has been added.\n',message1,message2);
-                    end
-                end
-
-                % Now go ahead and actually add the operation and its variables
-                self.addVariableAnnotations(transformOperation(iOp).outputVariables);
-                for iVar=1:length(transformOperation(iOp).outputVariables)
-                    self.operationVariableNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
-                end
-                self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
-
-            end
-        end
-
-        function removeOperation(self,transformOperation)
-            % remove an existing WVOperation
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                transformOperation (1,1) WVOperation {mustBeNonempty}
-            end
-            self.removeVariableAnnotations(transformOperation.outputVariables);
-            for iVar=1:transformOperation.nVarOut
-                remove(self.operationVariableNameMap,transformOperation.outputVariables(iVar).name);
-            end
-            remove(self.operationNameMap,transformOperation.name);
-            self.clearVariableCache();
-        end
-
-        function val = operationWithName(self,name)
-            % retrieve a WVOperation by name
-            %
-            % - Topic: Utility function — Metadata
-            arguments
-                self WVTransform {mustBeNonempty}
-                name char {mustBeNonempty}
-            end
-            val = self.operationNameMap(name);
-        end
-
-        function [varargout] = stateVariables(self, varargin)
-            % retrieve variables either from cache or by computation
-            %
-            % - Topic: Internal
-            varargout = cell(size(varargin));
-
-            didFetchAll = 0;
-            while didFetchAll ~= 1
-                [varargout{:}] = self.fetchFromVariableCache(varargin{:});
-
-                for iVar=1:length(varargout)
-                    if isempty(varargout{iVar})
-                        % now go compute it, and then try fetching from
-                        % cach
-                        modelVar = self.variableAnnotationNameMap(varargin{iVar});
-                        self.performOperationWithName(modelVar.modelOp.name);
-                        didFetchAll = 0;
-                        break;
-                    else
-                        didFetchAll = 1;
-                    end
-                end
-            end
-        end
-
-        function varargout = performOperation(self,modelOp,varargin)
-            % computes (runs) the operation
-            %
-            % - Topic: Internal
-            varNames = cell(1,modelOp.nVarOut);
-            varargout = cell(1,modelOp.nVarOut);
-            for iVar=1:length(modelOp.outputVariables)
-                varNames{iVar} = modelOp.outputVariables(iVar).name;
-            end
-
-            if all(isKey(self.variableCache,varNames))
-                [varargout{:}] = self.fetchFromVariableCache(varNames{:});
-            else
-                [varargout{:}] = modelOp.compute(self,varargin{:});
-                for iOpOut=1:length(varargout)
-                    self.addToVariableCache(varNames{iOpOut},varargout{iOpOut})
-                end
-            end
-        end
-
-        function varargout = performOperationWithName(self,opName,varargin)
-            % computes (runs) the operation
-            %
-            % - Topic: Internal
-            modelOp = self.operationNameMap(opName);
-            varargout = cell(1,modelOp.nVarOut);
-            [varargout{:}] = self.performOperation(modelOp,varargin{:});
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Domain attributes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function set.t(self,value)
             self.t = value;
             self.clearVariableCacheOfTimeDependentVariables();
         end
 
-        function set.Ap(self,value)
-            self.Ap = value;
-            self.clearVariableCache();
-        end
-
-        function set.Am(self,value)
-            self.Am = value;
-            self.clearVariableCache();
-        end
-
-        function set.A0(self,value)
-            self.A0 = value;
-            self.clearVariableCache();
-        end
-
-        function addToVariableCache(self,name,var)
-            % add variable to internal cache, in case it is needed again
-            %
-            % - Topic: Internal
-            self.variableCache(name) = var;
-        end
-        function clearVariableCache(self)
-            % clear the internal cache
-            %
-            % - Topic: Internal
-            self.variableCache = containers.Map();
-        end
-        function clearVariableCacheOfTimeDependentVariables(self)
-            % clear the internal cache of variables that claim to be time dependent
-            %
-            % - Topic: Internal
-            remove(self.variableCache,intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys));
-        end
-        function varargout = fetchFromVariableCache(self,varargin)
-            % retrieve a set of variables from the internal cache
-            %
-            % - Topic: Internal
-            varargout = cell(size(varargin));
-            for iVar=1:length(varargin)
-                if isKey(self.variableCache,varargin{iVar})
-                    varargout{iVar} = self.variableCache(varargin{iVar});
-                else
-                    varargout{iVar} = [];
-                end
-            end
-        end
-
-        function wvtX2 = waveVortexTransformWithDoubleResolution(self)
-            % create a new WVTransform with double resolution
-            %
-            % - Topic: Initialization
-            wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny self.Nz]);
-        end
-
-        function wvtX2 = waveVortexTransformWithResolution(self,m)
-            % create a new WVTransform with increased resolution
-            %
-            % - Topic: Initialization
-            wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.latitude, self.rhoFunction, 'N2func', self.N2Function, 'dLnN2func', self.dLnN2Function, 'rho0', self.rho0);
-            wvtX2.t0 = self.t0;
-            wvtX2.t = self.t;
-            if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
-                kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
-                lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
-                wvtX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
-                wvtX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
-                wvtX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
-            else
-                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
-            end
-            wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
-        end
-        
         function sz = spatialMatrixSize(self)
             % size of any real-valued field variable
             sz = [self.Nx self.Ny self.Nz];
@@ -858,136 +436,26 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             value=self.Ny;
         end
           
-        function self = buildTransformationMatrices(self)
-            flowComponent = WVGeostrophicComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;
-            [self.UA0,self.VA0,self.NA0,self.PA0] = flowComponent.geostrophicSpatialTransformCoefficients;
 
-            flowComponent = WVMeanDensityAnomalyComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
-            NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
-            self.A0N = self.A0N + A0Nmda;
-            self.NA0 = self.NA0 + NA0mda;
-            self.PA0 = self.PA0 + NA0mda;
-
-            flowComponent = WVInternalGravityWaveComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [self.ApmD,self.ApmN] = flowComponent.internalGravityWaveSpectralTransformCoefficients;
-            [self.UAp,self.VAp,self.WAp,self.NAp] = flowComponent.internalGravityWaveSpatialTransformCoefficients;
-
-            flowComponent = WVInertialOscillationComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
-            self.UAp = self.UAp + UAp_io;
-            self.VAp = self.VAp + VAp_io;
-
-            self.UAm = conj(self.UAp);
-            self.VAm = conj(self.VAp);
-            self.WAm = self.WAp;
-            self.NAm = -self.NAp;
-
-            self.iOmega = sqrt(-1)*self.Omega;
-
-            self.Apm_TE_factor = zeros(self.spectralMatrixSize);
-            self.A0_TE_factor = zeros(self.spectralMatrixSize);
-            self.A0_QGPV_factor = zeros(self.spectralMatrixSize);
-            self.A0_TZ_factor = zeros(self.spectralMatrixSize);
-            for name = keys(self.primaryFlowComponentNameMap)
-                flowComponent = self.primaryFlowComponentNameMap(name{1});
-                self.Apm_TE_factor = self.Apm_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                self.A0_TE_factor = self.A0_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0);
-                self.A0_QGPV_factor = self.A0_QGPV_factor + flowComponent.qgpvFactorForA0;
-                self.A0_TZ_factor = self.A0_TZ_factor + flowComponent.enstrophyFactorForA0;
-            end
+        function set.Ap(self,value)
+            self.Ap = value;
+            self.clearVariableCache();
         end
 
-        function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
-            % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
-            %
-            % This function **is** the WVTransform. It is a [linear
-            % transformation](/mathematical-introduction/transformations.html)
-            % denoted $$\mathcal{L}$$.
-            %
-            % This function is not intended to be used directly (although
-            % you can), and is kept here to demonstrate a simple
-            % implementation of the transformation. Instead, you should
-            % initialize the WVTransform using one of the
-            % initialization functions.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
-            % - Parameter u: x-component of the fluid velocity
-            % - Parameter v: y-component of the fluid velocity
-            % - Parameter n: scaled density anomaly
-            % - Parameter t: (optional) time of observations
-            % - Returns Ap: positive wave coefficients at reference time t0
-            % - Returns Am: negative wave coefficients at reference time t0
-            % - Returns A0: geostrophic coefficients at reference time t0
-            u_hat = self.transformFromSpatialDomainWithFourier(U);
-            v_hat = self.transformFromSpatialDomainWithFourier(V);
-            n_hat = self.transformFromSpatialDomainWithFourier(N);
-
-            iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
-            iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
-
-            n_bar = self.transformFromSpatialDomainWithGg(n_hat);
-            zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
-            A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
-            
-            delta_bar = self.transformWithG_wg(self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat));
-            nw_bar = self.transformWithG_wg(n_bar - A0);
-            Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
-            Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
-
-            Ap(:,1) = self.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
-            Am(:,1) = conj(Ap(:,1));
-
-            if nargin == 5
-                phase = exp(-self.iOmega*(t-self.t0));
-                Ap = Ap .* phase;
-                Am = Am .* conj(phase);
-            end
+        function set.Am(self,value)
+            self.Am = value;
+            self.clearVariableCache();
         end
-        
-        function [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
-            % transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
-            %
-            % This function is the inverse WVTransform. It is a
-            % [linear
-            % transformation](/mathematical-introduction/transformations.html)
-            % denoted $$\mathcal{L}$$.
-            %
-            % This function is not intended to be used directly (although
-            % you can), and is kept here to demonstrate a simple
-            % implementation of the transformation. Instead, you should
-            % initialize the WVTransform using one of the
-            % initialization functions.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: [u,v,w,n] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
-            % - Parameter Ap: positive wave coefficients at reference time t0
-            % - Parameter Am: negative wave coefficients at reference time t0
-            % - Parameter A0: geostrophic coefficients at reference time t0
-            % - Parameter t: (optional) time of observations
-            % - Returns u: x-component of the fluid velocity
-            % - Returns v: y-component of the fluid velocity
-            % - Returns w: z-component of the fluid velocity
-            % - Returns n: scaled density anomaly
 
-            if nargin == 5
-                phase = exp(self.iOmega*(t-self.t0));
-                Ap = Ap .* phase;
-                Am = Am .* conj(phase);
-            end
-
-            % This is the 'S' operator (C4) in the manuscript
-            U = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap + self.UAm.*Am, A0=self.UA0.*A0);
-            V = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap + self.VAm.*Am, A0=self.VA0.*A0);
-            W = self.transformToSpatialDomainWithG(Apm=self.WAp.*Ap + self.WAm.*Am);
-            N = self.transformToSpatialDomainWithG(Apm=self.NAp.*Ap + self.NAm.*Am, A0=self.NA0.*A0);
+        function set.A0(self,value)
+            self.A0 = value;
+            self.clearVariableCache();
         end
+
+
+        self = addPrimaryFlowComponents(self)
+        [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
+        [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
@@ -1056,35 +524,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addOperation(value,overwriteExisting=1);
         end
         
-        function [Fp,Fm,F0] = nonlinearFlux(self)
-            % returns the flux of each coefficient as determined by the nonlinear flux operation
-            %
-            % - Topic: Nonlinear flux and energy transfers
-            % - Declaration: [Fp,Fm,F0] = nonlinearFlux()
-            % - Returns Fp: flux into the Ap coefficients
-            % - Returns Fm: flux into the Am coefficients
-            % - Returns F0: flux into the A0 coefficients
-            F = cell(self.nonlinearFluxOperation.nVarOut,1);
-            [F{:}] = self.performOperation(self.nonlinearFluxOperation);
-            
-            n = 0;
-            if self.nonlinearFluxOperation.doesFluxAp == 1
-                n=n+1;Fp = F{n};
-            else
-                Fp = zeros(self.spectralMatrixSize);
-            end
-            if self.nonlinearFluxOperation.doesFluxAm == 1
-                n=n+1;Fm = F{n};
-            else
-                Fm = zeros(self.spectralMatrixSize);
-            end
-            if self.nonlinearFluxOperation.doesFluxA0 == 1
-                n=n+1;F0 = F{n};
-            else
-                F0 = zeros(self.spectralMatrixSize);
-            end
-        end
-        
+
+        [Fp,Fm,F0] = nonlinearFlux(self)
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
         [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
         [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)
@@ -1165,70 +606,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
         end
         
-        function summarizeEnergyContent(self)
-            % displays a summary of the energy content of the fluid
-            %
-            % - Topic: Energetics
-            total = self.totalEnergy;
-            ioPct = 100*self.inertialEnergy/total;
-            wavePct = 100*self.waveEnergy/total;
-            gPct = 100*self.geostrophicEnergy/total;
-            mdaPct = 100*self.mdaEnergy/total;
-            
-            fprintf('%.2g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f,%.1f) between (inertial,wave,geostrophic,mda)\n',total,ioPct,wavePct,gPct,mdaPct);
-        end
 
-        function summarizeDegreesOfFreedom(self)
-            fprintf('----------Spatial domain----------\n');
-            fprintf('The spatial domain has a grid of (Nx, Ny, Nz)=(%d, %d, %d).\n',self.Nx,self.Ny,self.Nz);
-            fprintf('The variables (u,v) each have (Nx-1)*(Ny-1)*(Nz-1)=%d degrees-of-freedom after removing the unresolved Nyquist mode.\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-1));
-            fprintf('The variable eta has (Nx-1)*(Ny-1)*(Nz-3)=%d degrees-of-freedom after losing two additional degrees-of-freedom due to vanishing boundaries\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-3))
-            fprintf('In total, this system has %d degrees-of-freedom.\n',2*(self.Nx-1)*(self.Ny-1)*(self.Nz-1) + (self.Nx-1)*(self.Ny-1)*(self.Nz-3));
 
-            fprintf('\n----------Spectral domain----------\n');
-            fprintf('The four major solutions groups have the following degrees-of-freedom:\n')
-            totalDOF = 0;
-
-            solutionGroup = WVGeostrophicComponent(self);
-            totalDOF = totalDOF + 2*solutionGroup.nModes;
-            fprintf('\tGeostrophic: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
-
-            solutionGroup = WVInternalGravityWaveComponent(self);
-            totalDOF = totalDOF + 2*solutionGroup.nModes;
-            fprintf('\tInternal gravity wave: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
-
-            solutionGroup = WVInertialOscillationComponent(self);
-            totalDOF = totalDOF + 2*solutionGroup.nModes;
-            fprintf('\tInertial oscillations: %d unique solutions, each with 2 degrees-of-freedom.\n',solutionGroup.nModes);
-
-            solutionGroup = WVMeanDensityAnomalyComponent(self);
-            totalDOF = totalDOF + solutionGroup.nModes; 
-            fprintf('\tMean density anomaly: %d unique solutions, each with 1 degree-of-freedom.\n',solutionGroup.nModes);
-
-            fprintf('This results in a total of %d active degrees-of-freedom.\n',totalDOF);
-
-            if self.shouldAntialias == 1
-                discardedModes = WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nx,self.Ny);
-                discardedModes = discardedModes & ~WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nx,self.Ny);
-                dof = WVGeometryDoublyPeriodic.degreesOfFreedomForRealMatrix(self.Nx,self.Ny,self.conjugateDimension);
-                discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nz-1);
-                discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nz-3);
-
-                
-
-                % discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nj);
-                % discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nj-2);
-
-                % discardedDOFVertical = 2*(discardedDOFUV_Nz-discardedDOFUV) + discardedDOFEta_Nz-discardedDOFEta;
-
-                discardedDOF = 2*discardedDOFUV + discardedDOFEta;
-                fprintf('There are %d modes discarded to prevent quadradic aliasing.\n',discardedDOF);
-                fprintf('Active (%d) + aliased (%d) modes = %d modes\n',totalDOF,discardedDOF,discardedDOF+totalDOF);
-            end
-
-            fprintf('The extra degree-of-freedom is because there is an additional constraint on the MDA modes imposed by the requirement that int N^2 eta dV=0.\n');
-        end
-
+        summarizeEnergyContent(self)
+        summarizeDegreesOfFreedom(self)
         summarizeModeEnergy(self)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1247,7 +628,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initWithUVRho(self,u,v,rho,t)
         initWithUVEta(self,U,V,N)
         addUVEta(self,U,V,N)
-        initWithRandomFlow(self)
+        initWithRandomFlow(self,flowComponentNames)
         
         removeAll(self)
         
@@ -1305,27 +686,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % - Topic: Lagrangian
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
         
-        function flag = isequal(self,other)
-            arguments
-                self WVTransform
-                other WVTransform
-            end
-            flag = isequal(self.shouldAntialias, other.shouldAntialias);
-            flag = flag & isequal(class(self),class(other));
-            flag = flag & isequal(self.x, other.x);
-            flag = flag & isequal(self.y, other.y);
-            flag = flag & isequal(self.z,other.z);
-            flag = flag & isequal(self.j, other.j);
-            flag = flag & isequal(self.k, other.k);
-            flag = flag & isequal(self.l, other.l);
-            flag = flag & isequal(self.t, other.t);
-            flag = flag & isequal(self.t0, other.t0);
-            flag = flag & isequal(self.rho0, other.rho0);
-            flag = flag & isequal(self.Ap, other.Ap);
-            flag = flag & isequal(self.Am, other.Am);
-            flag = flag & isequal(self.A0, other.A0);
-            flag = flag & isequal(self.conjugateDimension, other.conjugateDimension);
-        end
+        flag = isequal(self,other)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -1390,20 +751,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
         
-        [C11,C21,C31,C12,C22,C32,C13,C23,C33] = validateTransformationMatrices(self)
-        
-        [ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = generateRandomFlowState(self)  
-
-        
-        [ApmMask,A0Mask] = masksForFlowConstituents(self,flowConstituents);
-        [IO,SGW,IGW,MDA,SG,IG] = masksForAllFlowConstituents(self);
-        AntiAliasMask= maskForAliasedModes(self,options);
-        NyquistMask = maskForNyquistModes(self);
-        A = maskForRedundantHermitianCoefficients(self);
-
         [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options);
         
-        A = generateHermitianRandomMatrix( self, options );
 
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
@@ -1425,16 +774,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % Initialize the a transform from file
         wvt = waveVortexTransformFromFile(path,iTime)
-
-        % Check if the matrix is Hermitian. Report errors.
-        A = checkHermitian(A)        
-
-        % Forces a 3D matrix to be Hermitian, except at k=l=0
-        A = makeHermitian(A)
-
-        % Returns a matrix the same size as A with 1s at the 'redundant'
-        % hermiation indices.
-        A = redundantHermitianCoefficients(A)
         
         [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
         

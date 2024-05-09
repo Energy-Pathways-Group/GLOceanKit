@@ -4,18 +4,16 @@ classdef TestRadialTransformation < matlab.unittest.TestCase
     % wavenumber domain
     properties
         wvt
-        flowComponent
     end
 
     properties (ClassSetupParameter)
         Lxyz = struct('Lxyz',[15e3 15e3 1300]);
         Nxyz = struct('Nx32Ny32Nz17',[32 32 17]);
         transform = {'constant'};
-        flowComponentType = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
     end
 
     methods (TestClassSetup)
-        function classSetup(testCase,Lxyz,Nxyz,transform,flowComponentType)
+        function classSetup(testCase,Lxyz,Nxyz,transform)
             switch transform
                 case 'constant'
                     testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
@@ -24,21 +22,16 @@ classdef TestRadialTransformation < matlab.unittest.TestCase
                 case 'boussinesq'
                     testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
             end
-            switch flowComponentType
-                case 'WVInertialOscillationComponent'
-                    testCase.flowComponent = WVInertialOscillationComponent(testCase.wvt);
-                case 'WVMeanDensityAnomalyComponent'
-                    testCase.flowComponent = WVMeanDensityAnomalyComponent(testCase.wvt);
-                case 'WVInternalGravityWaveComponent'
-                    testCase.flowComponent = WVInternalGravityWaveComponent(testCase.wvt);
-                case 'WVGeostrophicComponent'
-                    testCase.flowComponent = WVGeostrophicComponent(testCase.wvt);
-            end
         end
     end
 
+    properties (TestParameter)
+        flowComponent = {'geostrophic','mda','wave','inertial'}
+    end
+
     methods (Test)
-        function testRadialWavenumberVariance(self)
+        function testRadialWavenumberVariance(self,flowComponent)
+            self.wvt.initWithRandomFlow(flowComponent);
             varianceMatrix = abs(self.wvt.Ap).^2 + abs(self.wvt.Am).^2 + abs(self.wvt.A0).^2;
             radialVarianceMatrix = self.wvt.transformToRadialWavenumber(varianceMatrix);
 
