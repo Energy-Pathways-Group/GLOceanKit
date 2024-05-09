@@ -276,6 +276,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         addFlowComponent(self,flowComponent)
         val = flowComponent(self,name)
 
+        operations = operationForDynamicalVariable(self,variableName,options)
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Metadata
