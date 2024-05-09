@@ -9,12 +9,12 @@ function initFromNetCDFFile(wvt,ncfile,options)
 % e.g.,
 %
 % ```matlab
-%   [wvt,ncfile] = WVTransform.waveVortexTransformFromFile('cyprus-eddy.nc');
-%   t = ncfile.readVariables('t');
-%   for iTime=1:length(t)
-%       wvt.initFromNetCDFFile(ncfile,iTime=iTime)
-%       // some analysis
-%   end
+% [wvt,ncfile] = WVTransform.waveVortexTransformFromFile('cyprus-eddy.nc');
+% t = ncfile.readVariables('t');
+% for iTime=1:length(t)
+%     wvt.initFromNetCDFFile(ncfile,iTime=iTime)
+%     // some analysis
+% end
 % ```
 %
 % Note that this method only lightly checks that you are reading from a

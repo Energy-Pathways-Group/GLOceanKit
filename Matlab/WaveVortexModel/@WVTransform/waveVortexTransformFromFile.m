@@ -5,11 +5,14 @@ function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 % sidecar file if the default variables were save to file. For example,
 %
 % ```matlab
-%   wvt = WVTransform.waveVortexTransformFromFile('cyprus-eddy.nc',iTime=Inf);
+% wvt = WVTransform.waveVortexTransformFromFile('cyprus-eddy.nc',iTime=Inf);
 % ```
 %
 % will create a WVTransform instance populated with values from the last
-% time point of the file.
+% time point of the file. Note that this is a static function---it is a
+% function defined on the class, not an instance variable---so requires we
+% prepend `WVTransform.` The result of this function call is an instance
+% variable.
 %
 % If you intend to read more than one time point from the save file, hold
 % onto the NetCDFFile instance that is returned, and then call
@@ -21,9 +24,11 @@ function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 % file](/users-guide/reading-and-writing-to-file.html).
 %
 % - Topic: Initialization
-% - Declaration: wvt = waveVortexTransformFromFile(path,options)
+% - Declaration: [wvt,ncfile] = WVTransform.waveVortexTransformFromFile(path,options)
 % - Parameter path: path to a NetCDF file
 % - Parameter iTime: (optional) time index to initialize from (default 1).
+% - Returns wvt: an instance of a WVTransform subclass
+% - Returns ncfile: a NetCDFFile instance pointing to the file
 arguments (Input)
     path char {mustBeFile}
     options.iTime (1,1) double {mustBePositive} = 1
