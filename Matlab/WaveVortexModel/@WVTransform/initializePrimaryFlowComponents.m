@@ -1,4 +1,4 @@
-function self = addPrimaryFlowComponents(self)
+function self = initializePrimaryFlowComponents(self)
 flowComponent = WVGeostrophicComponent(self);
 self.addPrimaryFlowComponent(flowComponent);
 [self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;

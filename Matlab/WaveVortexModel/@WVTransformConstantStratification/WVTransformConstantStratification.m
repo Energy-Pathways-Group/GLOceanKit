@@ -78,7 +78,7 @@ classdef WVTransformConstantStratification < WVTransform
             self.rhobar = rhoFunction(z);
 
             self.buildVerticalModeProjectionOperators();
-            self.addPrimaryFlowComponents();
+            self.initializePrimaryFlowComponents();
 %             internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
             internalModes = InternalModesConstantStratification(N0=N0, rho0=self.rho0, zIn=[-Lxyz(3) 0], zOut=z, latitude=self.latitude);
             self.offgridModes = WVOffGridTransform(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);

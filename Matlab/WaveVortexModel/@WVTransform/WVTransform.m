@@ -277,7 +277,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         val = flowComponent(self,name)
 
         operations = operationForDynamicalVariable(self,variableName,options)
-        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Metadata
@@ -455,7 +455,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
 
-        self = addPrimaryFlowComponents(self)
+        self = initializePrimaryFlowComponents(self)
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 

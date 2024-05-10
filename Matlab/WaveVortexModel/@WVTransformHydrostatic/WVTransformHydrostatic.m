@@ -185,7 +185,7 @@ classdef WVTransformHydrostatic < WVTransform
 
                 self.BuildProjectionOperators(); 
             end
-            self.addPrimaryFlowComponents();
+            self.initializePrimaryFlowComponents();
 
             self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
