@@ -8,6 +8,7 @@ function metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc)
 % Builds a struct that may have the following keys:
 % - topic
 % - subtopic
+% - subsubtopic
 % - declaration
 % - shortDescription
 % - detailedDescription

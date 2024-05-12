@@ -39,7 +39,8 @@ nav_order: 5
 
 
 ## Topics
-+ Initializing
++ Computation
+  + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
 + Other
   + [`A0bar`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/a0bar.html) A0 'mean' value to relax to
   + [`MA0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/ma0.html) Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
@@ -47,8 +48,6 @@ nav_order: 5
   + [`nonlinearFluxWithResolutionForTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/nonlinearfluxwithresolutionfortransform.html) 
   + [`setNarrowBandForcing`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setnarrowbandforcing.html) 
   + [`tau0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/tau0.html) relaxation time
-+ Computation
-  + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
 
 
 ---

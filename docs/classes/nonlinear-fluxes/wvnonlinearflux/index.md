@@ -43,7 +43,6 @@ nav_order: 2
 
 
 ## Topics
-+ Initializing
 + Other
   + [`WVNonlinearFlux`](/classes/nonlinear-fluxes/wvnonlinearflux/wvnonlinearflux.html) initialize the WVNonlinearFlux nonlinear flux
   + [`beta`](/classes/nonlinear-fluxes/wvnonlinearflux/beta.html) 

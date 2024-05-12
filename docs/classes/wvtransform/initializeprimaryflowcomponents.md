@@ -1,13 +1,13 @@
 ---
 layout: default
-title: addPrimaryFlowComponents
+title: initializePrimaryFlowComponents
 parent: WVTransform
 grand_parent: Classes
-nav_order: 72
+nav_order: 132
 mathjax: true
 ---
 
-#  addPrimaryFlowComponents
+#  initializePrimaryFlowComponents
 
 
 

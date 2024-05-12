@@ -65,41 +65,29 @@ if ~isempty(mc.DetailedDescription)
 end
 fprintf(fileID,'\n\n## Topics\n');
 
-for topicIndex = 1:length(classDefinedTopics)
-    % If the 'Other' subtopic isn't there, it means no methods actually
-    % used this topic.
-%     if ~isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower('Other'))
-%         continue;
-%     end
-
-    fprintf(fileID,'+ %s\n',classDefinedTopics(topicIndex).topicName);
-
-    % First do the 'other' subtopics immediately below
-    if isKey(classDefinedTopics(topicIndex).subtopicsIndex,lower('Other'))
-        otherSubtopicIndex = classDefinedTopics(topicIndex).subtopicsIndex(lower('Other'));
-
-        subtopic = classDefinedTopics(topicIndex).subtopics(otherSubtopicIndex);
-        for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'  + [`%s`](/%s/%s.html) ',subtopic.methodNames{methodIndex},options.websiteFolder,lower(subtopic.methodNames{methodIndex}));
-            fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
-        end
-    else
-        otherSubtopicIndex = 0;
-    end
-    for subtopicIndex = 1:length(classDefinedTopics(topicIndex).subtopics)
-        if subtopicIndex == otherSubtopicIndex
-            continue;
-        end
-        subtopic = classDefinedTopics(topicIndex).subtopics(subtopicIndex);
-        fprintf(fileID,'  + %s\n',subtopic.subtopicName);
-        for methodIndex = 1:length(subtopic.methodNames)
-            fprintf(fileID,'    + [`%s`](/%s/%s.html) ',subtopic.methodNames{methodIndex},options.websiteFolder,lower(subtopic.methodNames{methodIndex}));
-            fprintf(fileID,'%s\n',metadataNameMap(subtopic.methodNames{methodIndex}).shortDescription);
-        end
-    end
+% do not call the method directly, because we do not want to print the Root
+% category name
+for iSubtopic = 1:length(classDefinedTopics.subtopics)
+    writeMarkdownForTopic(classDefinedTopics.subtopics(iSubtopic),fileID,metadataNameMap,'',options.websiteFolder);
 end
 
 fprintf(fileID,'\n\n---');
 
 fclose(fileID);
+end
+
+function writeMarkdownForTopic(topic,fileID,metadataNameMap,indentLevel,websiteFolder)
+
+if isempty(topic.methodNames) && isempty(topic.subtopics)
+    return
+end
+fprintf(fileID,'%s+ %s\n',indentLevel,topic.name);
+for methodIndex = 1:length(topic.methodNames)
+    fprintf(fileID,'%s  + [`%s`](/%s/%s.html) ',indentLevel,topic.methodNames{methodIndex},websiteFolder,lower(topic.methodNames{methodIndex}));
+    fprintf(fileID,'%s\n',metadataNameMap(topic.methodNames{methodIndex}).shortDescription);
+end
+for iSubtopic = 1:length(topic.subtopics)
+    writeMarkdownForTopic(topic.subtopics(iSubtopic),fileID,metadataNameMap,strcat(indentLevel,'  '),websiteFolder);
+end
+
 end

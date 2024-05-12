@@ -53,7 +53,11 @@ nav_order: 3
 
 
 ## Topics
-+ Initializing
++ Initialization
+  + [`WVNonlinearFluxForced`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/wvnonlinearfluxforced.html) initialize WVNonlinearFluxForced
++ Set forcing
+  + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
+  + [`setWaveForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setwaveforcingcoefficients.html) set forcing values for the wave part of the flow
 + Other
   + [`A0bar`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/a0bar.html) A0 'mean' value to relax to
   + [`Ambar`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/ambar.html) Am 'mean' value to relax to
@@ -65,11 +69,6 @@ nav_order: 3
   + [`tau0`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/tau0.html) A0 relaxation time
   + [`tauM`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/taum.html) Am relaxation time
   + [`tauP`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/taup.html) Ap relaxation time
-+ Initialization
-  + [`WVNonlinearFluxForced`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/wvnonlinearfluxforced.html) initialize WVNonlinearFluxForced
-+ Set forcing
-  + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
-  + [`setWaveForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setwaveforcingcoefficients.html) set forcing values for the wave part of the flow
 
 
 ---

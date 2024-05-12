@@ -26,12 +26,12 @@ Inertial oscillation solution group
 
 
 ## Topics
++ Analytical solutions
+  + [`meanDensityAnomalySolution`](/classes/flow-components/wvmeandensityanomalycomponent/meandensityanomalysolution.html) return a real-valued analytical solution of the mean density anomaly mode
 + Other
   + [`WVMeanDensityAnomalyComponent`](/classes/flow-components/wvmeandensityanomalycomponent/wvmeandensityanomalycomponent.html) Inertial oscillation solution group
   + [`meanDensityAnomalySpatialTransformCoefficients`](/classes/flow-components/wvmeandensityanomalycomponent/meandensityanomalyspatialtransformcoefficients.html) 
   + [`meanDensityAnomalySpectralTransformCoefficients`](/classes/flow-components/wvmeandensityanomalycomponent/meandensityanomalyspectraltransformcoefficients.html) 
-+ Analytical solutions
-  + [`meanDensityAnomalySolution`](/classes/flow-components/wvmeandensityanomalycomponent/meandensityanomalysolution.html) return a real-valued analytical solution of the mean density anomaly mode
 
 
 ---

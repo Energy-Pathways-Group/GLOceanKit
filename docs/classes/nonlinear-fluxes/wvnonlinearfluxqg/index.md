@@ -35,7 +35,6 @@ nav_order: 4
 
 
 ## Topics
-+ Initializing
 + Other
   + [`A0PV`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/a0pv.html) conversion from PV to A0
   + [`PVA0`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/pva0.html) conversion from A0 to PV

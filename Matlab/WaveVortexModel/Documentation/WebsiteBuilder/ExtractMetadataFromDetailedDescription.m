@@ -16,10 +16,20 @@ end
 % Check out https://regexr.com for testing these regex.
 topicExpression = '- topic:([ \t]*)(?<topic>[^\r\n]+)(?:$|\n)';
 subtopicExpression = '- topic:([ \t]*)(?<topic>[^—\r\n]+)—([ \t]*)(?<subtopic>[^\r\n]+)(?:$|\n)';
+subsubtopicExpression = '- topic:([ \t]*)(?<topic>[^—\r\n]+)—([ \t]*)(?<subtopic>[^\r\n]+)—([ \t]*)(?<subsubtopic>[^\r\n]+)(?:$|\n)';
 declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
 parameterExpression = '- parameter (?<name>[^:]+):(?<description>[^\r\n]+)(?:$|\n)';
 returnsExpression = '- returns (?<name>[^:]+):(?<description>[^\r\n]+)(?:$|\n)';
 leadingWhitespaceExpression = '^[ \t]+';
+
+% Capture the subsubtopic annotation, then remove it
+matchStr = regexpi(detailedDescription,subsubtopicExpression,'names');
+detailedDescription = regexprep(detailedDescription,subsubtopicExpression,'','ignorecase');
+if ~isempty(matchStr)
+    metadata.subsubtopic = strtrim(matchStr.subsubtopic);
+    metadata.subtopic = strtrim(matchStr.subtopic);
+    metadata.topic = strtrim(matchStr.topic);
+end
 
 % Capture the subtopic annotation, then remove it
 matchStr = regexpi(detailedDescription,subtopicExpression,'names');
@@ -35,7 +45,7 @@ detailedDescription = regexprep(detailedDescription,topicExpression,'','ignoreca
 if ~isempty(matchStr)
     topicName = strtrim(matchStr.topic);
 else
-    topicName = 'Other';
+    topicName = [];
 end
 if ~isfield(metadata,'topic') || isempty(metadata.topic)
     metadata.topic = topicName;

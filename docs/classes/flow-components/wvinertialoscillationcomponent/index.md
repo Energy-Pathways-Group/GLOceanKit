@@ -26,11 +26,11 @@ Inertial oscillation solution group
 
 
 ## Topics
++ Analytical solutions
+  + [`inertialOscillationSolution`](/classes/flow-components/wvinertialoscillationcomponent/inertialoscillationsolution.html) return a real-valued analytical solution of the internal gravity wave mode
 + Other
   + [`WVInertialOscillationComponent`](/classes/flow-components/wvinertialoscillationcomponent/wvinertialoscillationcomponent.html) Inertial oscillation solution group
   + [`inertialOscillationSpatialTransformCoefficients`](/classes/flow-components/wvinertialoscillationcomponent/inertialoscillationspatialtransformcoefficients.html) 
-+ Analytical solutions
-  + [`inertialOscillationSolution`](/classes/flow-components/wvinertialoscillationcomponent/inertialoscillationsolution.html) return a real-valued analytical solution of the internal gravity wave mode
 
 
 ---

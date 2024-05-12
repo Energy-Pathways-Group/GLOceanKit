@@ -47,7 +47,6 @@ Orthogonal solution group
   + [`enstrophyFactorForA0`](/classes/flow-components/wvprimaryflowcomponent/enstrophyfactorfora0.html) returns the enstrophy multiplier for the A0 coefficient matrix.
   + [`randomAmplitudes`](/classes/flow-components/wvprimaryflowcomponent/randomamplitudes.html) returns random amplitude for a valid flow state
   + [`totalEnergyFactorForCoefficientMatrix`](/classes/flow-components/wvprimaryflowcomponent/totalenergyfactorforcoefficientmatrix.html) returns the total energy multiplier for the coefficient matrix.
-+ Valid mode indices
 + Analytical solutions
   + [`solutionForModeAtIndex`](/classes/flow-components/wvprimaryflowcomponent/solutionformodeatindex.html) return the analytical solution for the mode at this index
 + Index Gymnastics

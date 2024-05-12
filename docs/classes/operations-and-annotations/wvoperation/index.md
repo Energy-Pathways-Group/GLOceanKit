@@ -54,13 +54,13 @@ Perform an operation and return a variable using a WVTransform
   + [`WVOperation`](/classes/operations-and-annotations/wvoperation/wvoperation.html) create a new WVOperation for computing a new variable
 + Computation
   + [`compute`](/classes/operations-and-annotations/wvoperation/compute.html) the promised variable
-+ Other
-  + [`detailedDescription`](/classes/operations-and-annotations/wvoperation/detaileddescription.html) 
 + Properties
   + [`f`](/classes/operations-and-annotations/wvoperation/f.html) function handle to be called when computing the operation
   + [`nVarOut`](/classes/operations-and-annotations/wvoperation/nvarout.html) number of variables returned by the computation
   + [`name`](/classes/operations-and-annotations/wvoperation/name.html) of the operation
   + [`outputVariables`](/classes/operations-and-annotations/wvoperation/outputvariables.html) array of WVVariableAnnotations describing the outputs of the computation
++ Other
+  + [`detailedDescription`](/classes/operations-and-annotations/wvoperation/detaileddescription.html) 
 
 
 ---
