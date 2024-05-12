@@ -87,7 +87,7 @@ for methodIndex = 1:length(topic.methodNames)
     fprintf(fileID,'%s\n',metadataNameMap(topic.methodNames{methodIndex}).shortDescription);
 end
 for iSubtopic = 1:length(topic.subtopics)
-    writeMarkdownForTopic(topic.subtopics(iSubtopic),fileID,metadataNameMap,strcat(indentLevel,'  '),websiteFolder);
+    writeMarkdownForTopic(topic.subtopics(iSubtopic),fileID,metadataNameMap,[indentLevel,'  '],websiteFolder);
 end
 
 end

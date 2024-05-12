@@ -74,24 +74,24 @@ A class for reading and writing to NetCDF files
   + [`attributes`](/classes/netcdffile/attributes.html) key-value Map of global attributes
 + Schema keys
   + [`GLNetCDFSchemaUnitsKey`](/classes/netcdffile/glnetcdfschemaunitskey.html) Units of the variable or dimension
-+ Dimensions
-  + [`GLNetCDFSchemaBasisFunctionKey`](/classes/netcdffile/glnetcdfschemabasisfunctionkey.html) What basis function describe this dimension
-  + [`GLNetCDFSchemaDomainLengthKey`](/classes/netcdffile/glnetcdfschemadomainlengthkey.html) The length of the domain
-  + [`GLNetCDFSchemaDomainMinimumKey`](/classes/netcdffile/glnetcdfschemadomainminimumkey.html) The minimum value of the domain
-  + [`GLNetCDFSchemaGridTypeKey`](/classes/netcdffile/glnetcdfschemagridtypekey.html) type of grid
-  + [`GLNetCDFSchemaIsCoordinateVariableKey`](/classes/netcdffile/glnetcdfschemaiscoordinatevariablekey.html) A Boolean value that indicates whether the dimension is associated with a coordinate variable
-  + [`GLNetCDFSchemaIsEvenlySampledKey`](/classes/netcdffile/glnetcdfschemaisevenlysampledkey.html) A Boolean value that indicates whether the dimension has even sampling
-  + [`GLNetCDFSchemaIsFrequencyDomainKey`](/classes/netcdffile/glnetcdfschemaisfrequencydomainkey.html) A Boolean value that indicates whether the dimension is considered in the frequency (spectral) domain
-  + [`GLNetCDFSchemaIsPeridiocKey`](/classes/netcdffile/glnetcdfschemaisperidiockey.html) A Boolean value that indicates whether the dimension is periodic
-  + [`GLNetCDFSchemaMutableKey`](/classes/netcdffile/glnetcdfschemamutablekey.html) A Boolean value that indicates whether the dimension is mutable
-  + [`GLNetCDFSchemaSampleIntervalKey`](/classes/netcdffile/glnetcdfschemasampleintervalkey.html) sample interval of the domain, if it is evenly sampled
-+ Variables
-  + [`GLNetCDFSchemaIsComplexKey`](/classes/netcdffile/glnetcdfschemaiscomplexkey.html) A Boolean value that indicates whether the variable is complex valued
-  + [`GLNetCDFSchemaIsImaginaryPartKey`](/classes/netcdffile/glnetcdfschemaisimaginarypartkey.html) A Boolean value that indicates whether this is the complex part of the variable
-  + [`GLNetCDFSchemaIsRealPartKey`](/classes/netcdffile/glnetcdfschemaisrealpartkey.html) A Boolean value that indicates whether this is the real part of the variable
-  + [`GLNetCDFSchemaIsRowVectorKey`](/classes/netcdffile/glnetcdfschemaisrowvectorkey.html) A Boolean value that indicates whether the variable was defined as a row vector
-  + [`GLNetCDFSchemaProperNameKey`](/classes/netcdffile/glnetcdfschemapropernamekey.html) Human readable name of the variable
-  + [`GLNetCDFSchemaUniqueVariableIDKey`](/classes/netcdffile/glnetcdfschemauniquevariableidkey.html) A custom unique variable ID
+  + Dimensions
+    + [`GLNetCDFSchemaBasisFunctionKey`](/classes/netcdffile/glnetcdfschemabasisfunctionkey.html) What basis function describe this dimension
+    + [`GLNetCDFSchemaDomainLengthKey`](/classes/netcdffile/glnetcdfschemadomainlengthkey.html) The length of the domain
+    + [`GLNetCDFSchemaDomainMinimumKey`](/classes/netcdffile/glnetcdfschemadomainminimumkey.html) The minimum value of the domain
+    + [`GLNetCDFSchemaGridTypeKey`](/classes/netcdffile/glnetcdfschemagridtypekey.html) type of grid
+    + [`GLNetCDFSchemaIsCoordinateVariableKey`](/classes/netcdffile/glnetcdfschemaiscoordinatevariablekey.html) A Boolean value that indicates whether the dimension is associated with a coordinate variable
+    + [`GLNetCDFSchemaIsEvenlySampledKey`](/classes/netcdffile/glnetcdfschemaisevenlysampledkey.html) A Boolean value that indicates whether the dimension has even sampling
+    + [`GLNetCDFSchemaIsFrequencyDomainKey`](/classes/netcdffile/glnetcdfschemaisfrequencydomainkey.html) A Boolean value that indicates whether the dimension is considered in the frequency (spectral) domain
+    + [`GLNetCDFSchemaIsPeridiocKey`](/classes/netcdffile/glnetcdfschemaisperidiockey.html) A Boolean value that indicates whether the dimension is periodic
+    + [`GLNetCDFSchemaMutableKey`](/classes/netcdffile/glnetcdfschemamutablekey.html) A Boolean value that indicates whether the dimension is mutable
+    + [`GLNetCDFSchemaSampleIntervalKey`](/classes/netcdffile/glnetcdfschemasampleintervalkey.html) sample interval of the domain, if it is evenly sampled
+  + Variables
+    + [`GLNetCDFSchemaIsComplexKey`](/classes/netcdffile/glnetcdfschemaiscomplexkey.html) A Boolean value that indicates whether the variable is complex valued
+    + [`GLNetCDFSchemaIsImaginaryPartKey`](/classes/netcdffile/glnetcdfschemaisimaginarypartkey.html) A Boolean value that indicates whether this is the complex part of the variable
+    + [`GLNetCDFSchemaIsRealPartKey`](/classes/netcdffile/glnetcdfschemaisrealpartkey.html) A Boolean value that indicates whether this is the real part of the variable
+    + [`GLNetCDFSchemaIsRowVectorKey`](/classes/netcdffile/glnetcdfschemaisrowvectorkey.html) A Boolean value that indicates whether the variable was defined as a row vector
+    + [`GLNetCDFSchemaProperNameKey`](/classes/netcdffile/glnetcdfschemapropernamekey.html) Human readable name of the variable
+    + [`GLNetCDFSchemaUniqueVariableIDKey`](/classes/netcdffile/glnetcdfschemauniquevariableidkey.html) A custom unique variable ID
 + Other
   + [`GLNetCDFSchemaVersionKey`](/classes/netcdffile/glnetcdfschemaversionkey.html) - Topic: Schema keys
   + [`InitializeFromExistingFile`](/classes/netcdffile/initializefromexistingfile.html) 

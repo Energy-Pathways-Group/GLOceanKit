@@ -40,11 +40,11 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 + Initialization
   + [`WVTransformHydrostatic`](/classes/transforms/wvtransformhydrostatic/wvtransformhydrostatic.html) create a wave-vortex transform for variable stratification
 + Operations
-+ Transformations
-  + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F$$
-  + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
-  + [`GMatrix`](/classes/transforms/wvtransformhydrostatic/gmatrix.html) transformation matrix $$G$$
-  + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
+  + Transformations
+    + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F$$
+    + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
+    + [`GMatrix`](/classes/transforms/wvtransformhydrostatic/gmatrix.html) transformation matrix $$G$$
+    + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
 + Other
   + [`BuildProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildprojectionoperators.html) Now go compute the appropriate number of modes at the
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 

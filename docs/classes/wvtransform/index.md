@@ -55,112 +55,112 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`latitude`](/classes/wvtransform/latitude.html) central latitude of the simulation
   + [`t`](/classes/wvtransform/t.html) time coordinate
   + [`t0`](/classes/wvtransform/t0.html) reference time of Ap, Am, A0
-+ Grid
-  + [`J`](/classes/wvtransform/j.html) j-coordinate matrix
-  + [`K`](/classes/wvtransform/k.html) k-coordinate matrix
-  + [`Kh`](/classes/wvtransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
-  + [`L`](/classes/wvtransform/l.html) l-coordinate matrix
-  + [`Lx`](/classes/wvtransform/lx.html) domain size in the x-direction
-  + [`Ly`](/classes/wvtransform/ly.html) domain size in the y-direction
-  + [`Lz`](/classes/wvtransform/lz.html) domain size in the z-direction
-  + [`Nj`](/classes/wvtransform/nj.html) points in the j-coordinate, `length(z)`
-  + [`Nk`](/classes/wvtransform/nk.html) points in the k-coordinate, `length(k)`
-  + [`Nkl`](/classes/wvtransform/nkl.html) points in the kl-coordinate, `length(k)`
-  + [`Nl`](/classes/wvtransform/nl.html) points in the l-coordinate, `length(l)`
-  + [`Nx`](/classes/wvtransform/nx.html) points in the x-coordinate, `length(x)`
-  + [`Ny`](/classes/wvtransform/ny.html) points in the y-coordinate, `length(y)`
-  + [`Nz`](/classes/wvtransform/nz.html) points in the z-coordinate, `length(z)`
-  + [`X`](/classes/wvtransform/x.html) x-coordinate matrix
-  + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
-  + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
-  + [`j`](/classes/wvtransform/j.html) vertical mode number
-  + [`k`](/classes/wvtransform/k.html) wavenumber coordinate in the x-direction
-  + [`kljGrid`](/classes/wvtransform/kljgrid.html) returns the K, L, J coordinate matrices
-  + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
-  + [`shouldAntialias`](/classes/wvtransform/shouldantialias.html) whether antialiasing is enabled
-  + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
-  + [`spectralMatrixSize`](/classes/wvtransform/spectralmatrixsize.html) returns the size of any spectral matrix, Ap, Am, A0
-  + [`x`](/classes/wvtransform/x.html) x coordinate
-  + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
-  + [`y`](/classes/wvtransform/y.html) y coordinate
-  + [`z`](/classes/wvtransform/z.html) z coordinate
-+ Stratification
-  + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
-  + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density
-  + [`Nmax`](/classes/wvtransform/nmax.html) maximum buoyancy frequency
-  + [`dLnN2`](/classes/wvtransform/dlnn2.html) d/dz ln N2
-  + [`rho0`](/classes/wvtransform/rho0.html) mean density at the surface (z=0)
-  + [`rhobar`](/classes/wvtransform/rhobar.html) mean density
+  + Grid
+    + [`J`](/classes/wvtransform/j.html) j-coordinate matrix
+    + [`K`](/classes/wvtransform/k.html) k-coordinate matrix
+    + [`Kh`](/classes/wvtransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
+    + [`L`](/classes/wvtransform/l.html) l-coordinate matrix
+    + [`Lx`](/classes/wvtransform/lx.html) domain size in the x-direction
+    + [`Ly`](/classes/wvtransform/ly.html) domain size in the y-direction
+    + [`Lz`](/classes/wvtransform/lz.html) domain size in the z-direction
+    + [`Nj`](/classes/wvtransform/nj.html) points in the j-coordinate, `length(z)`
+    + [`Nk`](/classes/wvtransform/nk.html) points in the k-coordinate, `length(k)`
+    + [`Nkl`](/classes/wvtransform/nkl.html) points in the kl-coordinate, `length(k)`
+    + [`Nl`](/classes/wvtransform/nl.html) points in the l-coordinate, `length(l)`
+    + [`Nx`](/classes/wvtransform/nx.html) points in the x-coordinate, `length(x)`
+    + [`Ny`](/classes/wvtransform/ny.html) points in the y-coordinate, `length(y)`
+    + [`Nz`](/classes/wvtransform/nz.html) points in the z-coordinate, `length(z)`
+    + [`X`](/classes/wvtransform/x.html) x-coordinate matrix
+    + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
+    + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
+    + [`j`](/classes/wvtransform/j.html) vertical mode number
+    + [`k`](/classes/wvtransform/k.html) wavenumber coordinate in the x-direction
+    + [`kljGrid`](/classes/wvtransform/kljgrid.html) returns the K, L, J coordinate matrices
+    + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
+    + [`shouldAntialias`](/classes/wvtransform/shouldantialias.html) whether antialiasing is enabled
+    + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
+    + [`spectralMatrixSize`](/classes/wvtransform/spectralmatrixsize.html) returns the size of any spectral matrix, Ap, Am, A0
+    + [`x`](/classes/wvtransform/x.html) x coordinate
+    + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
+    + [`y`](/classes/wvtransform/y.html) y coordinate
+    + [`z`](/classes/wvtransform/z.html) z coordinate
+  + Stratification
+    + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
+    + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density
+    + [`Nmax`](/classes/wvtransform/nmax.html) maximum buoyancy frequency
+    + [`dLnN2`](/classes/wvtransform/dlnn2.html) d/dz ln N2
+    + [`rho0`](/classes/wvtransform/rho0.html) mean density at the surface (z=0)
+    + [`rhobar`](/classes/wvtransform/rhobar.html) mean density
 + Wave-vortex coefficients
-+ at time $$t$$
-  + [`A0t`](/classes/wvtransform/a0t.html) geostrophic coefficients at time t
-  + [`Amt`](/classes/wvtransform/amt.html) negative wave coefficients at time t
-  + [`Apt`](/classes/wvtransform/apt.html) positive wave coefficients at time t
+  + at time $$t$$
+    + [`A0t`](/classes/wvtransform/a0t.html) geostrophic coefficients at time t
+    + [`Amt`](/classes/wvtransform/amt.html) negative wave coefficients at time t
+    + [`Apt`](/classes/wvtransform/apt.html) positive wave coefficients at time t
 + Initial Conditions
   + [`addUVEta`](/classes/wvtransform/adduveta.html) add $$(u,v,\eta)$$ to the existing values
   + [`initFromNetCDFFile`](/classes/wvtransform/initfromnetcdffile.html) initialize the flow from a NetCDF file
   + [`initWithRandomFlow`](/classes/wvtransform/initwithrandomflow.html) initialize with a random flow state
   + [`initWithUVEta`](/classes/wvtransform/initwithuveta.html) initialize with fluid variables $$(u,v,\eta)$$
   + [`initWithUVRho`](/classes/wvtransform/initwithuvrho.html) initialize with fluid variables $$(u,v,\rho)$$
-+ Waves
-  + [`addWaveModes`](/classes/wvtransform/addwavemodes.html) add amplitudes of the given wave modes
-  + [`initWithGMSpectrum`](/classes/wvtransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
-  + [`initWithHorizontalWaveNUmberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
-  + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
-  + [`initWithSpectralFunction`](/classes/wvtransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
-  + [`initWithWaveModes`](/classes/wvtransform/initwithwavemodes.html) initialize with the given wave modes
-  + [`removeAll`](/classes/wvtransform/removeall.html) removes all energy from the model
-  + [`removeAllWaves`](/classes/wvtransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
-  + [`setWaveModes`](/classes/wvtransform/setwavemodes.html) set amplitudes of the given wave modes
-  + [`waveCoefficientsFromWaveModes`](/classes/wvtransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
-  + [`waveModesFromWaveCoefficients`](/classes/wvtransform/wavemodesfromwavecoefficients.html) Returns normalized amplitudes and phases of all waves
-+ Inertial Oscillations
-  + [`addInertialMotions`](/classes/wvtransform/addinertialmotions.html) add inertial motions to existing inertial motions
-  + [`initWithInertialMotions`](/classes/wvtransform/initwithinertialmotions.html) initialize with inertial motions
-  + [`removeAllInertialMotions`](/classes/wvtransform/removeallinertialmotions.html) remove all inertial motions
-  + [`setInertialMotions`](/classes/wvtransform/setinertialmotions.html) set inertial motions
-+ Geostrophic Motions
-  + [`addGeostrophicModes`](/classes/wvtransform/addgeostrophicmodes.html) add amplitudes of the given geostrophic modes
-  + [`addGeostrophicStreamfunction`](/classes/wvtransform/addgeostrophicstreamfunction.html) add a geostrophic streamfunction to existing geostrophic motions
-  + [`geostrophicCoefficientsFromGeostrophicModes`](/classes/wvtransform/geostrophiccoefficientsfromgeostrophicmodes.html) Returns the indices (and re-normalized values) of the geostropic mode appropriate for the A0 matrix.
-  + [`initWithGeostrophicStreamfunction`](/classes/wvtransform/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
-  + [`removeAllGeostrophicMotions`](/classes/wvtransform/removeallgeostrophicmotions.html) remove all geostrophic motions
-  + [`setGeostrophicModes`](/classes/wvtransform/setgeostrophicmodes.html) set amplitudes of the given geostrophic modes
-  + [`setGeostrophicStreamfunction`](/classes/wvtransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
+  + Waves
+    + [`addWaveModes`](/classes/wvtransform/addwavemodes.html) add amplitudes of the given wave modes
+    + [`initWithGMSpectrum`](/classes/wvtransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
+    + [`initWithHorizontalWaveNUmberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
+    + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
+    + [`initWithSpectralFunction`](/classes/wvtransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
+    + [`initWithWaveModes`](/classes/wvtransform/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAll`](/classes/wvtransform/removeall.html) removes all energy from the model
+    + [`removeAllWaves`](/classes/wvtransform/removeallwaves.html) removes all wave from the model, including inertial oscillations
+    + [`setWaveModes`](/classes/wvtransform/setwavemodes.html) set amplitudes of the given wave modes
+    + [`waveCoefficientsFromWaveModes`](/classes/wvtransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
+    + [`waveModesFromWaveCoefficients`](/classes/wvtransform/wavemodesfromwavecoefficients.html) Returns normalized amplitudes and phases of all waves
+  + Inertial Oscillations
+    + [`addInertialMotions`](/classes/wvtransform/addinertialmotions.html) add inertial motions to existing inertial motions
+    + [`initWithInertialMotions`](/classes/wvtransform/initwithinertialmotions.html) initialize with inertial motions
+    + [`removeAllInertialMotions`](/classes/wvtransform/removeallinertialmotions.html) remove all inertial motions
+    + [`setInertialMotions`](/classes/wvtransform/setinertialmotions.html) set inertial motions
+  + Geostrophic Motions
+    + [`addGeostrophicModes`](/classes/wvtransform/addgeostrophicmodes.html) add amplitudes of the given geostrophic modes
+    + [`addGeostrophicStreamfunction`](/classes/wvtransform/addgeostrophicstreamfunction.html) add a geostrophic streamfunction to existing geostrophic motions
+    + [`geostrophicCoefficientsFromGeostrophicModes`](/classes/wvtransform/geostrophiccoefficientsfromgeostrophicmodes.html) Returns the indices (and re-normalized values) of the geostropic mode appropriate for the A0 matrix.
+    + [`initWithGeostrophicStreamfunction`](/classes/wvtransform/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
+    + [`removeAllGeostrophicMotions`](/classes/wvtransform/removeallgeostrophicmotions.html) remove all geostrophic motions
+    + [`setGeostrophicModes`](/classes/wvtransform/setgeostrophicmodes.html) set amplitudes of the given geostrophic modes
+    + [`setGeostrophicStreamfunction`](/classes/wvtransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
 + Energetics
   + [`summarizeEnergyContent`](/classes/wvtransform/summarizeenergycontent.html) displays a summary of the energy content of the fluid
   + [`summarizeModeEnergy`](/classes/wvtransform/summarizemodeenergy.html) List the most energetic modes
-+ Multiplicative factors
-  + [`A0_TE_factor`](/classes/wvtransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute total energy.
-  + [`Apm_TE_factor`](/classes/wvtransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
+  + Multiplicative factors
+    + [`A0_TE_factor`](/classes/wvtransform/a0_te_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute total energy.
+    + [`Apm_TE_factor`](/classes/wvtransform/apm_te_factor.html) multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 + Wave-vortex sorting matrix
-+ inverse components ($$S^{-1}$$)
-  + [`A0N`](/classes/wvtransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
-  + [`A0U`](/classes/wvtransform/a0u.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.
-  + [`A0V`](/classes/wvtransform/a0v.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.
-  + [`AmN`](/classes/wvtransform/amn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
-  + [`AmU`](/classes/wvtransform/amu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.
-  + [`AmV`](/classes/wvtransform/amv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_m$$.
-  + [`ApN`](/classes/wvtransform/apn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
-  + [`ApU`](/classes/wvtransform/apu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.
-  + [`ApV`](/classes/wvtransform/apv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.
-+ components of $$S$$
-  + [`NA0`](/classes/wvtransform/na0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
-  + [`NAm`](/classes/wvtransform/nam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
-  + [`NAp`](/classes/wvtransform/nap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
-  + [`UA0`](/classes/wvtransform/ua0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.
-  + [`UAm`](/classes/wvtransform/uam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{u}$$.
-  + [`UAp`](/classes/wvtransform/uap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{u}$$.
-  + [`VA0`](/classes/wvtransform/va0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.
-  + [`VAm`](/classes/wvtransform/vam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{v}$$.
-  + [`VAp`](/classes/wvtransform/vap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
-  + [`WAm`](/classes/wvtransform/wam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
-  + [`WAp`](/classes/wvtransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
+  + inverse components ($$S^{-1}$$)
+    + [`A0N`](/classes/wvtransform/a0n.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.
+    + [`A0U`](/classes/wvtransform/a0u.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.
+    + [`A0V`](/classes/wvtransform/a0v.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.
+    + [`AmN`](/classes/wvtransform/amn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.
+    + [`AmU`](/classes/wvtransform/amu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.
+    + [`AmV`](/classes/wvtransform/amv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_m$$.
+    + [`ApN`](/classes/wvtransform/apn.html) matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
+    + [`ApU`](/classes/wvtransform/apu.html) matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.
+    + [`ApV`](/classes/wvtransform/apv.html) matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.
+  + components of $$S$$
+    + [`NA0`](/classes/wvtransform/na0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.
+    + [`NAm`](/classes/wvtransform/nam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
+    + [`NAp`](/classes/wvtransform/nap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.
+    + [`UA0`](/classes/wvtransform/ua0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.
+    + [`UAm`](/classes/wvtransform/uam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{u}$$.
+    + [`UAp`](/classes/wvtransform/uap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{u}$$.
+    + [`VA0`](/classes/wvtransform/va0.html) matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.
+    + [`VAm`](/classes/wvtransform/vam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{v}$$.
+    + [`VAp`](/classes/wvtransform/vap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.
+    + [`WAm`](/classes/wvtransform/wam.html) matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
+    + [`WAp`](/classes/wvtransform/wap.html) matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.
 + Potential Vorticity & Enstrophy
   + [`qgpv`](/classes/wvtransform/qgpv.html) quasigeostrophic potential vorticity
-+ Multiplicative factors
-  + [`A0_QGPV_factor`](/classes/wvtransform/a0_qgpv_factor.html) multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).
-  + [`A0_TZ_factor`](/classes/wvtransform/a0_tz_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.
+  + Multiplicative factors
+    + [`A0_QGPV_factor`](/classes/wvtransform/a0_qgpv_factor.html) multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).
+    + [`A0_TZ_factor`](/classes/wvtransform/a0_tz_factor.html) multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.
 + State Variables
   + [`F0`](/classes/wvtransform/f0.html) non-linear flux into A0
   + [`Fm`](/classes/wvtransform/fm.html) non-linear flux into Am
@@ -198,22 +198,22 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`extractNonzeroWaveProperties`](/classes/wvtransform/extractnonzerowaveproperties.html) Takes a Hermitian matrix and returns the amplitude and phase of nonzero components
   + [`redundantHermitianCoefficients`](/classes/wvtransform/redundanthermitiancoefficients.html) Returns a matrix with 1s at the 'redundant' hermiation indices.
   + [`spectralVariableWithResolution`](/classes/wvtransform/spectralvariablewithresolution.html) create a new variable with increased resolution
-+ Metadata
-  + [`addDimensionAnnotations`](/classes/wvtransform/adddimensionannotations.html) add one or more WVDimensions
-  + [`addFlowComponent`](/classes/wvtransform/addflowcomponent.html) add a flow component
-  + [`addOperation`](/classes/wvtransform/addoperation.html) add a WVOperation
-  + [`addPrimaryFlowComponent`](/classes/wvtransform/addprimaryflowcomponent.html) add a primary flow component, automatically added to the flow
-  + [`addPropertyAnnotations`](/classes/wvtransform/addpropertyannotations.html) add a property annotation
-  + [`addVariableAnnotations`](/classes/wvtransform/addvariableannotations.html) add a variable annotation
-  + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
-  + [`flowComponent`](/classes/wvtransform/flowcomponent.html) retrieve a WVFlowComponent by name
-  + [`operationWithName`](/classes/wvtransform/operationwithname.html) retrieve a WVOperation by name
-  + [`primaryFlowComponent`](/classes/wvtransform/primaryflowcomponent.html) retrieve a WVPrimaryFlowComponent by name
-  + [`propertyAnnotationWithName`](/classes/wvtransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
-  + [`removeOperation`](/classes/wvtransform/removeoperation.html) remove an existing WVOperation
-  + [`removeVariableAnnotations`](/classes/wvtransform/removevariableannotations.html) add a variable annotation
-  + [`variableAnnotationWithName`](/classes/wvtransform/variableannotationwithname.html) retrieve a WVVariableAnnotation by name
-  + [`variableNames`](/classes/wvtransform/variablenames.html) retrieve the names of all available variables
+  + Metadata
+    + [`addDimensionAnnotations`](/classes/wvtransform/adddimensionannotations.html) add one or more WVDimensions
+    + [`addFlowComponent`](/classes/wvtransform/addflowcomponent.html) add a flow component
+    + [`addOperation`](/classes/wvtransform/addoperation.html) add a WVOperation
+    + [`addPrimaryFlowComponent`](/classes/wvtransform/addprimaryflowcomponent.html) add a primary flow component, automatically added to the flow
+    + [`addPropertyAnnotations`](/classes/wvtransform/addpropertyannotations.html) add a property annotation
+    + [`addVariableAnnotations`](/classes/wvtransform/addvariableannotations.html) add a variable annotation
+    + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
+    + [`flowComponent`](/classes/wvtransform/flowcomponent.html) retrieve a WVFlowComponent by name
+    + [`operationWithName`](/classes/wvtransform/operationwithname.html) retrieve a WVOperation by name
+    + [`primaryFlowComponent`](/classes/wvtransform/primaryflowcomponent.html) retrieve a WVPrimaryFlowComponent by name
+    + [`propertyAnnotationWithName`](/classes/wvtransform/propertyannotationwithname.html) retrieve a WVPropertyAnnotation by name
+    + [`removeOperation`](/classes/wvtransform/removeoperation.html) remove an existing WVOperation
+    + [`removeVariableAnnotations`](/classes/wvtransform/removevariableannotations.html) add a variable annotation
+    + [`variableAnnotationWithName`](/classes/wvtransform/variableannotationwithname.html) retrieve a WVVariableAnnotation by name
+    + [`variableNames`](/classes/wvtransform/variablenames.html) retrieve the names of all available variables
 + External (non-gridded) modes
   + [`addExternalWavesWithFrequencies`](/classes/wvtransform/addexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given wavenumber
   + [`addExternalWavesWithWavenumbers`](/classes/wvtransform/addexternalwaveswithwavenumbers.html) add external (non-gridded) waves with a given wavenumber
@@ -231,21 +231,21 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`createNetCDFFileForTimeStepOutput`](/classes/wvtransform/createnetcdffilefortimestepoutput.html) Output the `WVTransform` to file with variable time dimension
   + [`writeToFile`](/classes/wvtransform/writetofile.html) Output the `WVTransform` to file.
 + Operations
-+ Transformations
-  + [`convertFromWavenumberToFrequency`](/classes/wvtransform/convertfromwavenumbertofrequency.html) Summary
-  + [`transformFromSpatialDomainWithFg`](/classes/wvtransform/transformfromspatialdomainwithfg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic F-modes
-  + [`transformFromSpatialDomainWithFio`](/classes/wvtransform/transformfromspatialdomainwithfio.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes
-  + [`transformFromSpatialDomainWithGg`](/classes/wvtransform/transformfromspatialdomainwithgg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic G-modes
-  + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (j,kl) to (j,kRadial)
-  + [`transformToSpatialDomainWithF`](/classes/wvtransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
-  + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithfallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.
-  + [`transformToSpatialDomainWithG`](/classes/wvtransform/transformtospatialdomainwithg.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes
-  + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithgallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.
-  + [`transformUVEtaToWaveVortex`](/classes/wvtransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
-  + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
-+ Differentiation
-  + [`diffZF`](/classes/wvtransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
-  + [`diffZG`](/classes/wvtransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
+  + Transformations
+    + [`convertFromWavenumberToFrequency`](/classes/wvtransform/convertfromwavenumbertofrequency.html) Summary
+    + [`transformFromSpatialDomainWithFg`](/classes/wvtransform/transformfromspatialdomainwithfg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic F-modes
+    + [`transformFromSpatialDomainWithFio`](/classes/wvtransform/transformfromspatialdomainwithfio.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes
+    + [`transformFromSpatialDomainWithGg`](/classes/wvtransform/transformfromspatialdomainwithgg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic G-modes
+    + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (j,kl) to (j,kRadial)
+    + [`transformToSpatialDomainWithF`](/classes/wvtransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
+    + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithfallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.
+    + [`transformToSpatialDomainWithG`](/classes/wvtransform/transformtospatialdomainwithg.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes
+    + [`transformToSpatialDomainWithGAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithgallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.
+    + [`transformUVEtaToWaveVortex`](/classes/wvtransform/transformuvetatowavevortex.html) transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
+    + [`transformWaveVortexToUVWEta`](/classes/wvtransform/transformwavevortextouvweta.html) transform wave-vortex coefficients $$(A_+,A_-,A_0)$$ to fluid variables $$(u,v,\eta)$$.
+  + Differentiation
+    + [`diffZF`](/classes/wvtransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
+    + [`diffZG`](/classes/wvtransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
 + Nonlinear flux and energy transfers
   + [`energyFluxFromNonlinearFlux`](/classes/wvtransform/energyfluxfromnonlinearflux.html) converts nonlinear flux into energy flux
   + [`nonlinearFlux`](/classes/wvtransform/nonlinearflux.html) returns the flux of each coefficient as determined by the nonlinear flux operation

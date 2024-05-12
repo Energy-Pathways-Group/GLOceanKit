@@ -60,42 +60,42 @@ A domain periodic in both x and y.
 + Initialization
   + [`WVGeometryDoublyPeriodic`](/classes/wvgeometrydoublyperiodic/wvgeometrydoublyperiodic.html) create a geometry for a  doubly periodic domain
 + Domain attributes
-+ Spatial grid
-  + [`Lx`](/classes/wvgeometrydoublyperiodic/lx.html) length of the x-dimension
-  + [`Ly`](/classes/wvgeometrydoublyperiodic/ly.html) length of the y-dimension
-  + [`Nx`](/classes/wvgeometrydoublyperiodic/nx.html) number of grid points in the x-dimension
-  + [`Ny`](/classes/wvgeometrydoublyperiodic/ny.html) number of grid points in the y-dimension
-  + [`x`](/classes/wvgeometrydoublyperiodic/x.html) dimension
-  + [`y`](/classes/wvgeometrydoublyperiodic/y.html) dimension
-+ DFT grid
-  + [`Nk_dft`](/classes/wvgeometrydoublyperiodic/nk_dft.html) length of the k-wavenumber dimension on the DFT grid
-  + [`Nl_dft`](/classes/wvgeometrydoublyperiodic/nl_dft.html) length of the l-wavenumber dimension on the DFT grid
-  + [`conjugateDimension`](/classes/wvgeometrydoublyperiodic/conjugatedimension.html) assumed conjugate dimension
-  + [`kMode_dft`](/classes/wvgeometrydoublyperiodic/kmode_dft.html) k mode-number on the DFT grid
-  + [`k_dft`](/classes/wvgeometrydoublyperiodic/k_dft.html) k wavenumber dimension on the DFT grid
-  + [`lMode_dft`](/classes/wvgeometrydoublyperiodic/lmode_dft.html) l mode-number on the DFT grid
-  + [`l_dft`](/classes/wvgeometrydoublyperiodic/l_dft.html) l wavenumber dimension on the DFT grid
-+ WV grid
-  + [`Nkl_wv`](/classes/wvgeometrydoublyperiodic/nkl_wv.html) length of the combined kl-wavenumber dimension on the WV grid
-  + [`dftConjugateIndices`](/classes/wvgeometrydoublyperiodic/dftconjugateindices.html) index into the DFT grid of the conjugate of each WV mode
-  + [`dftPrimaryIndices`](/classes/wvgeometrydoublyperiodic/dftprimaryindices.html) index into the DFT grid of each WV mode
-  + [`kMode_wv`](/classes/wvgeometrydoublyperiodic/kmode_wv.html) k mode number on the WV grid
-  + [`k_wv`](/classes/wvgeometrydoublyperiodic/k_wv.html) k-wavenumber dimension on the WV grid
-  + [`lMode_wv`](/classes/wvgeometrydoublyperiodic/lmode_wv.html) l mode number on the WV grid
-  + [`l_wv`](/classes/wvgeometrydoublyperiodic/l_wv.html) l-wavenumber dimension on the WV grid
-  + [`shouldAntialias`](/classes/wvgeometrydoublyperiodic/shouldantialias.html) whether the WV grid includes quadratically aliased wavenumbers
-  + [`shouldExcludeNyquist`](/classes/wvgeometrydoublyperiodic/shouldexcludenyquist.html) whether the WV grid includes Nyquist wavenumbers
-  + [`shouldExludeConjugates`](/classes/wvgeometrydoublyperiodic/shouldexludeconjugates.html) whether the WV grid includes wavenumbers that are Hermitian conjugates
+  + Spatial grid
+    + [`Lx`](/classes/wvgeometrydoublyperiodic/lx.html) length of the x-dimension
+    + [`Ly`](/classes/wvgeometrydoublyperiodic/ly.html) length of the y-dimension
+    + [`Nx`](/classes/wvgeometrydoublyperiodic/nx.html) number of grid points in the x-dimension
+    + [`Ny`](/classes/wvgeometrydoublyperiodic/ny.html) number of grid points in the y-dimension
+    + [`x`](/classes/wvgeometrydoublyperiodic/x.html) dimension
+    + [`y`](/classes/wvgeometrydoublyperiodic/y.html) dimension
+  + DFT grid
+    + [`Nk_dft`](/classes/wvgeometrydoublyperiodic/nk_dft.html) length of the k-wavenumber dimension on the DFT grid
+    + [`Nl_dft`](/classes/wvgeometrydoublyperiodic/nl_dft.html) length of the l-wavenumber dimension on the DFT grid
+    + [`conjugateDimension`](/classes/wvgeometrydoublyperiodic/conjugatedimension.html) assumed conjugate dimension
+    + [`kMode_dft`](/classes/wvgeometrydoublyperiodic/kmode_dft.html) k mode-number on the DFT grid
+    + [`k_dft`](/classes/wvgeometrydoublyperiodic/k_dft.html) k wavenumber dimension on the DFT grid
+    + [`lMode_dft`](/classes/wvgeometrydoublyperiodic/lmode_dft.html) l mode-number on the DFT grid
+    + [`l_dft`](/classes/wvgeometrydoublyperiodic/l_dft.html) l wavenumber dimension on the DFT grid
+  + WV grid
+    + [`Nkl_wv`](/classes/wvgeometrydoublyperiodic/nkl_wv.html) length of the combined kl-wavenumber dimension on the WV grid
+    + [`dftConjugateIndices`](/classes/wvgeometrydoublyperiodic/dftconjugateindices.html) index into the DFT grid of the conjugate of each WV mode
+    + [`dftPrimaryIndices`](/classes/wvgeometrydoublyperiodic/dftprimaryindices.html) index into the DFT grid of each WV mode
+    + [`kMode_wv`](/classes/wvgeometrydoublyperiodic/kmode_wv.html) k mode number on the WV grid
+    + [`k_wv`](/classes/wvgeometrydoublyperiodic/k_wv.html) k-wavenumber dimension on the WV grid
+    + [`lMode_wv`](/classes/wvgeometrydoublyperiodic/lmode_wv.html) l mode number on the WV grid
+    + [`l_wv`](/classes/wvgeometrydoublyperiodic/l_wv.html) l-wavenumber dimension on the WV grid
+    + [`shouldAntialias`](/classes/wvgeometrydoublyperiodic/shouldantialias.html) whether the WV grid includes quadratically aliased wavenumbers
+    + [`shouldExcludeNyquist`](/classes/wvgeometrydoublyperiodic/shouldexcludenyquist.html) whether the WV grid includes Nyquist wavenumbers
+    + [`shouldExludeConjugates`](/classes/wvgeometrydoublyperiodic/shouldexludeconjugates.html) whether the WV grid includes wavenumbers that are Hermitian conjugates
 + Operations
-+ Grid transformation
-  + [`transformFromDFTGridToWVGrid`](/classes/wvgeometrydoublyperiodic/transformfromdftgridtowvgrid.html) convert from DFT to WV grid
-  + [`transformFromWVGridToDFTGrid`](/classes/wvgeometrydoublyperiodic/transformfromwvgridtodftgrid.html) convert from a WV to DFT grid
-+ Fourier transformation
-  + [`transformFromSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformfromspatialdomain.html) transform from $$(x,y,z)$$ to $$(k,l,z)$$ on the DFT grid
-  + [`transformToSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformtospatialdomain.html) transform from $$(k,l,z)$$ on the DFT grid to $$(x,y,z)$$
-+ Differentiation
-  + [`diffX`](/classes/wvgeometrydoublyperiodic/diffx.html) differentiate a spatial variable in the x-direction
-  + [`diffY`](/classes/wvgeometrydoublyperiodic/diffy.html) differentiate a spatial variable in the y-direction
+  + Grid transformation
+    + [`transformFromDFTGridToWVGrid`](/classes/wvgeometrydoublyperiodic/transformfromdftgridtowvgrid.html) convert from DFT to WV grid
+    + [`transformFromWVGridToDFTGrid`](/classes/wvgeometrydoublyperiodic/transformfromwvgridtodftgrid.html) convert from a WV to DFT grid
+  + Fourier transformation
+    + [`transformFromSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformfromspatialdomain.html) transform from $$(x,y,z)$$ to $$(k,l,z)$$ on the DFT grid
+    + [`transformToSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformtospatialdomain.html) transform from $$(k,l,z)$$ on the DFT grid to $$(x,y,z)$$
+  + Differentiation
+    + [`diffX`](/classes/wvgeometrydoublyperiodic/diffx.html) differentiate a spatial variable in the x-direction
+    + [`diffY`](/classes/wvgeometrydoublyperiodic/diffy.html) differentiate a spatial variable in the y-direction
 + Index gymnastics
   + [`indicesFromDFTGridToWVGrid`](/classes/wvgeometrydoublyperiodic/indicesfromdftgridtowvgrid.html) indices to convert from DFT to WV grid
   + [`indicesFromWVGridToDFTGrid`](/classes/wvgeometrydoublyperiodic/indicesfromwvgridtodftgrid.html) indices to convert from WV to DFT grid
