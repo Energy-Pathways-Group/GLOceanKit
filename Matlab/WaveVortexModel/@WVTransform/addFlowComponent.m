@@ -1,7 +1,7 @@
 function addFlowComponent(self,flowComponent)
 % add a flow component
 %
-% - Topic: Utility function — Metadata
+% - Topic: Flow components
 arguments
     self WVTransform {mustBeNonempty}
     flowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}

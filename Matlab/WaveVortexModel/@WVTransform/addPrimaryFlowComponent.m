@@ -2,7 +2,9 @@ function addPrimaryFlowComponent(self,primaryFlowComponent)
 % add a primary flow component, automatically added to the flow
 % components
 %
-% - Topic: Utility function — Metadata
+% - Topic: Flow components
+% - Declaration: addPrimaryFlowComponent(primaryFlowComponent)
+% - Parameter primaryFlowComponent: one or more WVPrimaryFlowComponent objects
 arguments
     self WVTransform {mustBeNonempty}
     primaryFlowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}

@@ -1,7 +1,7 @@
 function val = flowComponent(self,name)
 % retrieve a WVFlowComponent by name
 %
-% - Topic: Utility function — Metadata
+% - Topic: Flow components
 arguments
     self WVTransform {mustBeNonempty}
     name char {mustBeNonempty}
