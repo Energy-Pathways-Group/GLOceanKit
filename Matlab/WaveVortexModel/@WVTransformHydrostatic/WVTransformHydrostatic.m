@@ -332,15 +332,19 @@ classdef WVTransformHydrostatic < WVTransform
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            % Perform the vertical mode matrix multiplication
-            self.wvBuffer = self.PFinv*(self.P .* (options.Apm + options.A0));
+            if isscalar(options.Apm) && isscalar(options.A0)
+                u = zeros(self.spatialMatrixSize);
+            else
+                % Perform the vertical mode matrix multiplication
+                self.wvBuffer = self.PFinv*(self.P .* (options.Apm + options.A0));
 
-            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
-            % Perform a 2D DFT
-            u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+                % Perform a 2D DFT
+                u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+            end
         end
 
         function w = transformToSpatialDomainWithG(self, options)
@@ -349,15 +353,19 @@ classdef WVTransformHydrostatic < WVTransform
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            % Perform the vertical mode matrix multiplication
-            self.wvBuffer = self.QGinv*(self.Q .* (options.Apm + options.A0));
+            if isscalar(options.Apm) && isscalar(options.A0)
+                w = zeros(self.spatialMatrixSize);
+            else
+                % Perform the vertical mode matrix multiplication
+                self.wvBuffer = self.QGinv*(self.Q .* (options.Apm + options.A0));
 
-            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
 
-            % Perform a 2D DFT
-            w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+                % Perform a 2D DFT
+                w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+            end
         end       
 
         % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)

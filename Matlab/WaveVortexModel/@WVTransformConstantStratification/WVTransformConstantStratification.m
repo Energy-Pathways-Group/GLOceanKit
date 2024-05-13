@@ -304,25 +304,33 @@ classdef WVTransformConstantStratification < WVTransform
         function w_bar = transformFromSpatialDomainWithG(self, w)
             w_bar = self.transformFromSpatialDomainWithG_MM(w);
         end
-        
+
         function u = transformToSpatialDomainWithF(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            u_bar = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
-            u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
-        end  
-                
+            if isscalar(options.Apm) && isscalar(options.A0)
+                u = zeros(self.spatialMatrixSize);
+            else
+                u_bar = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
+                u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
+            end
+        end
+
         function w = transformToSpatialDomainWithG(self, options )
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            w_bar = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
-            w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
+            if isscalar(options.Apm) && isscalar(options.A0)
+                w = zeros(self.spatialMatrixSize);
+            else
+                w_bar = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
+                w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
+            end
         end
 
         

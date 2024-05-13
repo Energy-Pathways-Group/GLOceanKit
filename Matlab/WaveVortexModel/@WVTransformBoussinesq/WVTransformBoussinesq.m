@@ -476,59 +476,69 @@ classdef WVTransformBoussinesq < WVTransform
         function u = transformToSpatialDomainWithF(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double = []
+                options.Apm double = 0
+                options.A0 double = 0
             end
-            if ~isempty(options.Apm) && ~isempty(options.A0)
-                self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
-                for iK=1:length(self.K2unique)
-                    indices = self.K2uniqueK2Map{iK};
-                    self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
-                end
-            elseif ~isempty(options.Apm)
-                for iK=1:length(self.K2unique)
-                    indices = self.K2uniqueK2Map{iK};
-                    self.wvBuffer(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
-                end
+
+            if isscalar(options.Apm) && isscalar(options.A0)
+                u = zeros(self.spatialMatrixSize);
             else
-                self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
+                    end
+                elseif ~isscalar(options.Apm)
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
+                    end
+                else
+                    self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
+                end
+
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+                % Perform a 2D DFT
+                u = self.transformToSpatialDomainWithFourier(self.dftBuffer);  
             end
-
-            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-            % Perform a 2D DFT
-            u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
         function w = transformToSpatialDomainWithG(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double  = []
+                options.Apm double = 0
+                options.A0 double = 0
             end
-            if ~isempty(options.Apm) && ~isempty(options.A0)
-                self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
-                for iK=1:length(self.K2unique)
-                    indices = self.K2uniqueK2Map{iK};
-                    self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
-                end
-            elseif ~isempty(options.Apm)
-                for iK=1:length(self.K2unique)
-                    indices = self.K2uniqueK2Map{iK};
-                    self.wvBuffer(:,indices) = self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
-                end
+
+            if isscalar(options.Apm) && isscalar(options.A0)
+                w = zeros(self.spatialMatrixSize);
             else
-                self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
+                    end
+                elseif ~isscalar(options.Apm)
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
+                    end
+                else
+                    self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
+                end
+
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+                % Perform a 2D DFT
+                w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
             end
-
-            % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-            self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-            self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-            % Perform a 2D DFT
-            w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
         end
 
 
