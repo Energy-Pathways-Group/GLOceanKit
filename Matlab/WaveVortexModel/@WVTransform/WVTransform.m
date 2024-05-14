@@ -127,6 +127,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         primaryFlowComponentNameMap
         flowComponentNameMap
+        knownDynamicalVariables
     end
 
     properties (Abstract,GetAccess=public) 
@@ -241,9 +242,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
+            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p'));
 
             self.primaryFlowComponentNameMap = containers.Map();
             self.flowComponentNameMap = containers.Map();
+
+            % must use double quotes, and these need to match the cases in operationForDynamicalVariable
+            self.knownDynamicalVariables = ["u","v","w","eta","p","psi","qgpv"];
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -492,11 +497,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wz = self.diffZG(w);
         end
 
-        function [Apt,Amt,A0t] = waveVortexCoefficientsAtTimeT(self)
+        function [Apt,Amt] = waveCoefficientsAtTimeT(self)
             phase = exp(self.iOmega*(self.t-self.t0));
             Apt = self.Ap .* phase;
             Amt = self.Am .* conj(phase);
-            A0t = self.A0;
         end
         
         function u_x = diffX(self,u,n)
@@ -586,6 +590,30 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 energy (1,1) double
             end
             energy = sum( self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2) );
+        end
+
+
+        function variable = dynamicalVariable(self,variableName,options)
+            arguments(Input)
+                self WVTransform {mustBeNonempty}
+            end
+            arguments (Input,Repeating)
+                variableName char
+            end
+            arguments (Input)
+                options.flowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
+            end
+            arguments (Output)
+                variable (:,1) cell
+            end
+            variable = cell(size(variableName));
+            if ~isempty(options.flowComponent)
+                for iVar=1:length(variableName)
+                    variableName{iVar} = append(variableName{iVar},'_',options.flowComponent.abbreviatedName);
+                end
+            end
+
+            % energy = sum( self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2) );
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

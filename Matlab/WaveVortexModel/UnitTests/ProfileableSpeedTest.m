@@ -73,7 +73,7 @@ toc
 
 %%
 profile on
-for i=1:200
+for i=1:50
     wvt.t = i;
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end
