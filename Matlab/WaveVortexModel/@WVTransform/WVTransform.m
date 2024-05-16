@@ -242,7 +242,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
-            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p'));
+            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p','psi','qgpv'));
 
             self.primaryFlowComponentNameMap = containers.Map();
             self.flowComponentNameMap = containers.Map();
@@ -641,6 +641,31 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)
         summarizeModeEnergy(self)
+
+        function summarizeDynamicalVariables(self)
+            Name = cell(self.variableAnnotationNameMap.length,1);
+            Dimension = cell(self.variableAnnotationNameMap.length,1);
+            Units = cell(self.variableAnnotationNameMap.length,1);
+            Description = cell(self.variableAnnotationNameMap.length,1);
+            iVar = 0;
+            for name = keys(self.variableAnnotationNameMap)
+                iVar = iVar+1;
+                Name{iVar} = name{1};
+                if isempty(self.variableAnnotationNameMap(name{1}).dimensions)
+                    Dimension{iVar} = "()";
+                else
+                Dimension{iVar} = join(["(",join(string(self.variableAnnotationNameMap(name{1}).dimensions),', '),")"]) ;
+                end
+                Units{iVar} = self.variableAnnotationNameMap(name{1}).units;
+                Description{iVar} = self.variableAnnotationNameMap(name{1}).description;
+            end
+            Name = string(Name);
+            Dimension = string(Dimension);
+            Units = string(Units);
+            Description = string(Description);
+            T = table(Name,Dimension,Units,Description);
+            disp(T);
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
