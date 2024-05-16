@@ -667,6 +667,27 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & WVInertialO
             disp(T);
         end
 
+        function summarizeFlowComponents(self)
+            Name = cell(self.flowComponentNameMap.length,1);
+            isPrimary = cell(self.flowComponentNameMap.length,1);
+            FullName = cell(self.flowComponentNameMap.length,1);
+            AbbreviatedName = cell(self.flowComponentNameMap.length,1);
+            iVar = 0;
+            for name = keys(self.flowComponentNameMap)
+                iVar = iVar+1;
+                Name{iVar} = name{1};
+                isPrimary{iVar} = isKey(self.primaryFlowComponentNameMap,name{1});
+                FullName{iVar} = self.flowComponentNameMap(name{1}).name;
+                AbbreviatedName{iVar} = self.flowComponentNameMap(name{1}).abbreviatedName;
+            end
+            Name = string(Name);
+            isPrimary = string(isPrimary);
+            FullName = string(FullName);
+            AbbreviatedName = string(AbbreviatedName);
+            T = table(Name,isPrimary,FullName,AbbreviatedName);
+            disp(T);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initializing, adding and removing dynamical features
