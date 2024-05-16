@@ -1,4 +1,4 @@
-classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
+classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & WVInertialOscillationMethods
     % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
     %
     %
@@ -721,10 +721,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Add and remove inertial features from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        initWithInertialMotions(self,u,v);
-        setInertialMotions(self,u,v);
-        addInertialMotions(self,u,v);
-        removeAllInertialMotions(self);
+        % initWithInertialMotions(self,u,v);
+        % setInertialMotions(self,u,v);
+        % addInertialMotions(self,u,v);
+        % removeAllInertialMotions(self);
         
         % Primary method for accessing the dynamical variables
         [varargout] = variables(self, varargin);
