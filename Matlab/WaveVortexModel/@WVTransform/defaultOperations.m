@@ -72,10 +72,10 @@ operations(end+1) = WVOperation('rho_total',outputVar,f);
 % outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
 % f = @(wvt) wvt.transformToSpatialDomainWithF( A0=wvt.A0_QGPV_factor .*wvt.A0t);
 % operations(end+1) = WVOperation('qgpv',outputVar,f);
-
-outputVar = WVVariableAnnotation('Lr2',{'j'},'m^2', 'squared Rossby radius');
-f = @(wvt) wvt.g*wvt.h_0/(wvt.f*wvt.f);
-operations(end+1) = WVOperation('Lr2',outputVar,f);
+% 
+% outputVar = WVVariableAnnotation('Lr2',{'j'},'m^2', 'squared Rossby radius');
+% f = @(wvt) wvt.g*wvt.h_0/(wvt.f*wvt.f);
+% operations(end+1) = WVOperation('Lr2',outputVar,f);
 
 outputVar = WVVariableAnnotation('seaSurfaceU',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
 operations(end+1) = WVOperation('seaSurfaceU', outputVar,@(wvt) wvt.u(:,:,end));

@@ -3,7 +3,7 @@ layout: default
 title: Nx
 parent: WVTransform
 grand_parent: Classes
-nav_order: 46
+nav_order: 45
 mathjax: true
 ---
 

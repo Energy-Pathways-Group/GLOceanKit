@@ -104,7 +104,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         j
         kRadial
         K2, Kh
+
         Omega
+        Lr2
 
         f, inertialPeriod
 
@@ -378,6 +380,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         function Omega = get.Omega(self)
             Omega = sqrt(self.g*self.h_pm.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
+        end
+
+        function Lr2 = get.Lr2(self)
+            Lr2 = self.g*self.h_0/(self.f*self.f);
         end
 
         function value = get.inertialPeriod(self)

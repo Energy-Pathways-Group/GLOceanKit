@@ -1,4 +1,5 @@
 - Topic: Domain attributes — Grid
+- nav_order: 1
 
 The values `Lx` and `Nx` are set during initialization from which the `x` coordinate is derived.
 

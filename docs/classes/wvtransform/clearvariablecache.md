@@ -3,7 +3,7 @@ layout: default
 title: clearVariableCache
 parent: WVTransform
 grand_parent: Classes
-nav_order: 80
+nav_order: 75
 mathjax: true
 ---
 

@@ -5,6 +5,7 @@ classdef Topic < handle
     properties
         name char
         methodNames
+        methodOrder
         subtopics
     end
 
@@ -13,14 +14,22 @@ classdef Topic < handle
             self.name = name;
             self.subtopics = Topic.empty(0,0);
             self.methodNames = cell(0);
+            self.methodOrder = cell(0);
         end
 
-        function addMethod(self,methodName)
+        function addMethod(self,metadata)
             arguments
                 self Topic
-                methodName char {mustBeNonempty} 
+                metadata {mustBeNonempty}
             end
-            self.methodNames{end+1} = methodName;
+            self.methodNames{end+1} = metadata.name;
+            if isfield(metadata,'nav_order')
+                self.methodOrder{end+1} = metadata.nav_order;
+            else
+                self.methodOrder{end+1} = Inf;
+            end
+            [self.methodOrder,indices] = sortrows(self.methodOrder);
+            self.methodNames = self.methodNames(indices,:);
         end
 
         function addSubtopic(self,subtopic)

@@ -3,7 +3,7 @@ layout: default
 title: diffX
 parent: WVTransform
 grand_parent: Classes
-nav_order: 92
+nav_order: 87
 mathjax: true
 ---
 

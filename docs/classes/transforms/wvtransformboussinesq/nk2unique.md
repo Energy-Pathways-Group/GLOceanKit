@@ -3,7 +3,7 @@ layout: default
 title: nK2unique
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 42
+nav_order: 41
 mathjax: true
 ---
 

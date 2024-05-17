@@ -3,7 +3,7 @@ layout: default
 title: extractNonzeroWaveProperties
 parent: WVTransform
 grand_parent: Classes
-nav_order: 105
+nav_order: 100
 mathjax: true
 ---
 

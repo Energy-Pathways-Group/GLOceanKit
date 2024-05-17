@@ -20,6 +20,7 @@ subsubtopicExpression = '- topic:([ \t]*)(?<topic>[^—\r\n]+)—([ \t]*)(?<subt
 declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
 parameterExpression = '- parameter (?<name>[^:]+):(?<description>[^\r\n]+)(?:$|\n)';
 returnsExpression = '- returns (?<name>[^:]+):(?<description>[^\r\n]+)(?:$|\n)';
+navOrderExpression = '- nav_order:([ \t]*)(?<nav_order>[^\r\n]+)(?:$|\n)';
 leadingWhitespaceExpression = '^[ \t]+';
 
 % Capture the subsubtopic annotation, then remove it
@@ -59,6 +60,7 @@ detailedDescription = regexprep(detailedDescription,parameterExpression,'','igno
 metadata.returns = regexpi(detailedDescription,returnsExpression,'names');
 detailedDescription = regexprep(detailedDescription,returnsExpression,'','ignorecase');
 
+
 % Capture any declarations made, then remove the annotation
 matchStr = regexpi(detailedDescription,declarationExpression,'names');
 detailedDescription = regexprep(detailedDescription,declarationExpression,'','ignorecase');
@@ -66,6 +68,14 @@ if ~isempty(matchStr)
     metadata.declaration = matchStr.declaration;
 else
     metadata.declaration = [];
+end
+
+matchStr = regexpi(detailedDescription,navOrderExpression,'names');
+detailedDescription = regexprep(detailedDescription,navOrderExpression,'','ignorecase');
+if ~isempty(matchStr)
+    metadata.nav_order = double(strtrim(matchStr.nav_order));
+else
+    metadata.nav_order = Inf;
 end
 
 

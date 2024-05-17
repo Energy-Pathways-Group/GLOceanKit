@@ -3,7 +3,7 @@ layout: default
 title: spatialMatrixSize
 parent: WVTransform
 grand_parent: Classes
-nav_order: 191
+nav_order: 180
 mathjax: true
 ---
 

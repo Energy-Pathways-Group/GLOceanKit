@@ -60,7 +60,7 @@ for i=1:length(methodNames)
 
     % if the method has no topic, assign it to the 'other' topic we created
     if ~isfield(metadata,'topic') || isempty(metadata.topic)
-        otherTopic.addMethod(metadata.name);
+        otherTopic.addMethod(metadata);
         continue;
     end
 
@@ -72,7 +72,7 @@ for i=1:length(methodNames)
 
     % if there is no subtopic, assign to the topic, and then exit
     if ~isfield(metadata,'subtopic') || isempty(metadata.subtopic)
-        topic.addMethod(metadata.name);
+        topic.addMethod(metadata);
         continue;
     end
 
@@ -84,7 +84,7 @@ for i=1:length(methodNames)
 
     % if there is no subsubtopic, assign to the subtopic, and then exit
     if ~isfield(metadata,'subsubtopic') || isempty(metadata.subsubtopic)
-        subtopic.addMethod(metadata.name);
+        subtopic.addMethod(metadata);
         continue;
     end
     
@@ -93,7 +93,7 @@ for i=1:length(methodNames)
         subtopic.addSubtopic(Topic(metadata.subsubtopic));
     end
     subsubtopic = subtopic.subtopicWithName(metadata.subsubtopic);
-    subsubtopic.addMethod(metadata.name);
+    subsubtopic.addMethod(metadata);
 end
 
 % Make the 'Other' topic go at the end

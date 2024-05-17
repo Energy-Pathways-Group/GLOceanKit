@@ -69,7 +69,6 @@ grand_parent: Class documentation
   + [`h_pm`](/classes/transforms/wvtransformboussinesq/h_pm.html) [Nj Nkl]
   + [`iK2unique`](/classes/transforms/wvtransformboussinesq/ik2unique.html) map from 2-dim K2, to 1-dim K2unique
   + [`iOmega`](/classes/transforms/wvtransformboussinesq/iomega.html) 
-  + [`internalModes`](/classes/transforms/wvtransformboussinesq/internalmodes.html) 
   + [`isHydrostatic`](/classes/transforms/wvtransformboussinesq/ishydrostatic.html) 
   + [`nK2unique`](/classes/transforms/wvtransformboussinesq/nk2unique.html) number of unique squared-wavenumbers
   + [`rhoFunction`](/classes/transforms/wvtransformboussinesq/rhofunction.html) function handles
@@ -80,6 +79,7 @@ grand_parent: Class documentation
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithginterp.html) 
   + [`transformToSpatialDomainWithGg`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgg.html) arguments
   + [`transformToSpatialDomainWithGw`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithgw.html) 
+  + [`verticalModes`](/classes/transforms/wvtransformboussinesq/verticalmodes.html) 
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformboussinesq/wavevortextransformwithresolution.html) 
   + [`wvBuffer`](/classes/transforms/wvtransformboussinesq/wvbuffer.html) 
   + [`wvConjugateIndex`](/classes/transforms/wvtransformboussinesq/wvconjugateindex.html) 

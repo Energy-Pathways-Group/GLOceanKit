@@ -3,7 +3,7 @@ layout: default
 title: initWithHorizontalWaveNumberSpectrum
 parent: WVTransform
 grand_parent: Classes
-nav_order: 125
+nav_order: 120
 mathjax: true
 ---
 
