@@ -51,6 +51,9 @@ function metadata = ExtractMethodMetadata(mp,className)
 metadata = [];
 
 % Don't create documentation if this is a method defined in the superclass
+% This initial check does not work, because if the subclass re-defines a
+% method, then it counts the subclass as the "DefiningClass". But, for
+% documentation purposes, we really don't want that.
 if ~strcmp(mp.DefiningClass.Name,className)
     return;
 end

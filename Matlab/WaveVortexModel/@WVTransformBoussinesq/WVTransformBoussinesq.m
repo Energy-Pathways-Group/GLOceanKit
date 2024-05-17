@@ -131,12 +131,12 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
                 % This should make sense because there are nModes-1 internal
                 % modes, but the boundaries.
                 if isfield(options,'N2')
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=128);
+                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                     N2 = options.N2(z);
                     N2func = options.N2;
                     rhoFunc = im.rho_function;
                 elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=128);
+                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                     N2 = im.N2;
                     N2func = im.N2_function;
                     rhoFunc = options.rho;
