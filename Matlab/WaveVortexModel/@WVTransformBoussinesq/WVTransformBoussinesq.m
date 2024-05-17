@@ -1,4 +1,4 @@
-classdef WVTransformBoussinesq < WVTransform
+classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %

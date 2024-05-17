@@ -1,4 +1,4 @@
-classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & WVInertialOscillationMethods
+classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
     %
     %
