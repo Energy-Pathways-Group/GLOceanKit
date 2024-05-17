@@ -22,7 +22,7 @@ end
 arguments (Output)
     bool (:,1) logical {mustBeMember(bool,[0 1])}
 end
-klCheck = self.horizontalGeometry.isValidConjugateWVModeNumber(kMode,lMode);
+klCheck = self.horizontalModes.isValidConjugateWVModeNumber(kMode,lMode);
 jCheck = jMode >= 0 & jMode <= self.Nj;
 bool = klCheck & jCheck;
 end

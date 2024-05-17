@@ -21,7 +21,7 @@ end
 if ~self.isValidModeNumber(kMode,lMode,jMode)
     error('Invalid WV mode number!');
 end
-[kMode,lMode] = self.horizontalGeometry.primaryModeNumberFromWVModeNumber(kMode,lMode);
-klIndex = self.horizontalGeometry.wvIndexFromModeNumber(kMode,lMode);
+[kMode,lMode] = self.horizontalModes.primaryModeNumberFromWVModeNumber(kMode,lMode);
+klIndex = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
 index = sub2ind(self.spectralMatrixSize,jMode+1,klIndex);
 end

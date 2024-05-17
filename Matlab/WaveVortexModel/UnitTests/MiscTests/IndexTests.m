@@ -4,7 +4,7 @@ wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.
 u = randn([wvt.Nx wvt.Ny wvt.Nz]);
 aliasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(wvt.Nk,wvt.Nl);
 nyquistMask = WVGeometryDoublyPeriodic.maskForNyquistModes(wvt.Nk,wvt.Nl);
-ubar = (~aliasMask) .* (~nyquistMask) .* wvt.horizontalGeometry.transformFromSpatialDomain(u);
+ubar = (~aliasMask) .* (~nyquistMask) .* wvt.horizontalModes.transformFromSpatialDomain(u);
 % Aklz = wvt.generateHermitianRandomMatrix( shouldExcludeNyquist=1, allowMeanPhase=0 );
 % Aklz = cat(3,Aklz,Aklz(:,:,end));
 % ubar = (~aliasMask) .* Aklz;
@@ -47,7 +47,7 @@ shouldAntialias = 1;
 % conjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(wvt.Nk,wvt.Nl);
 % reducedConjugateIndices = conjugateIndices(reducedIndices);
 
-[reducedIndices,reducedConjugateIndices,k,l] = wvt.horizontalGeometry.indicesOfPrimaryCoefficients(shouldAntialias=shouldAntialias);
+[reducedIndices,reducedConjugateIndices,k,l] = wvt.horizontalModes.indicesOfPrimaryCoefficients(shouldAntialias=shouldAntialias);
 
 Nkl = length(reducedIndices);
 

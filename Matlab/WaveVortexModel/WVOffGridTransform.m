@@ -4,7 +4,7 @@ classdef WVOffGridTransform < handle
     
     properties
         f, rho0, latitude
-        internalModes
+        verticalModes
         Lz
         z
         N2Function
@@ -25,13 +25,13 @@ classdef WVOffGridTransform < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = WVOffGridTransform(internalModes, latitude,N2Function,hydrostatic)
-            self.internalModes = internalModes;
+        function self = WVOffGridTransform(verticalModes, latitude,N2Function,hydrostatic)
+            self.verticalModes = verticalModes;
             self.latitude = latitude;
             self.f = 2 * 7.2921E-5 * sin( latitude*pi/180 );
-            self.Lz = self.internalModes.Lz;
-            self.z = self.internalModes.z;
-            self.rho0 = self.internalModes.rho0;
+            self.Lz = self.verticalModes.Lz;
+            self.z = self.verticalModes.z;
+            self.rho0 = self.verticalModes.rho0;
             self.N2Function = N2Function;
             self.isHydrostatic = hydrostatic;
         end
@@ -177,7 +177,7 @@ classdef WVOffGridTransform < handle
                     error('Invalid norm. You must use Normalization.kConstant or Normalization.uMax.');
             end
             
-            self.internalModes.normalization = self.norm_ext;
+            self.verticalModes.normalization = self.norm_ext;
             numValidIndices = 0;
             for iWave=1:length(kOrOmega)
                 if j(iWave) == 0
@@ -194,9 +194,9 @@ classdef WVOffGridTransform < handle
                     self.U_ext = cat(2,self.U_ext,A(iWave));
                 else
                     if self.isHydrostatic == 1
-                        [FExt,GExt,hExt] = self.internalModes.ModesAtFrequency(0);
+                        [FExt,GExt,hExt] = self.verticalModes.ModesAtFrequency(0);
                     else
-                        [FExt,GExt,hExt] = self.internalModes.(methodName)(abs(kOrOmega(iWave)));
+                        [FExt,GExt,hExt] = self.verticalModes.(methodName)(abs(kOrOmega(iWave)));
                     end
                     if (hExt(j(iWave)) <= 0)
                         warning('You attempted to add a wave that returned an invalid eigenvalue! It will be skipped. You tried to add the j=%d mode computed with %s=%f which returned eigenvalue h=%f.\n', j(iWave), methodName, kOrOmega(iWave), hExt(j(iWave)));

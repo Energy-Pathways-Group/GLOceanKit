@@ -19,7 +19,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
         rhoFunction, N2Function, dLnN2Function % function handles
 
-        internalModes
+        verticalModes
         
         % Transformation matrices
         PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nj]
@@ -155,7 +155,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             if canInitializeDirectly
                 self.rhoFunction = im.rho_function;
                 self.N2Function = options.N2;
-                self.internalModes = im;
+                self.verticalModes = im;
 
                 self.rhobar = self.rhoFunction(self.z);
                 self.N2 = self.N2Function(self.z);
@@ -177,7 +177,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
 
                 self.rhoFunction = rhoFunc;
                 self.N2Function = N2func;
-                self.internalModes = im;
+                self.verticalModes = im;
 
                 self.rhobar = rhoFunc(self.z);
                 self.N2 = N2;
@@ -206,7 +206,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
 
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalGeometry.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -231,7 +231,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         function self = BuildProjectionOperators(self)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
-            [Finv,Ginv,self.h] = self.internalModes.ModesAtFrequency(0);
+            [Finv,Ginv,self.h] = self.verticalModes.ModesAtFrequency(0);
             nModes = size(Finv,2);
             
             % Make these matrices invertible by adding the barotropic mode
@@ -429,7 +429,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
 
         function self = buildInterpolationProjectionOperatorsForGrid(self,zInterp)
             self.zInterp = zInterp;
-            im = InternalModesWKBSpectral(N2=self.N2Function,zIn=[-self.Lz 0],zOut=self.zInterp,latitude=self.latitude,nModes=self.internalModes.nModes);
+            im = InternalModesWKBSpectral(N2=self.N2Function,zIn=[-self.Lz 0],zOut=self.zInterp,latitude=self.latitude,nModes=self.verticalModes.nModes);
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv] = im.ModesAtFrequency(0);

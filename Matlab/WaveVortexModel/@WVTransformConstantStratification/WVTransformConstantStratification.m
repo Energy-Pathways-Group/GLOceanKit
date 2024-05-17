@@ -79,9 +79,9 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
 
             self.buildVerticalModeProjectionOperators();
             self.initializePrimaryFlowComponents();
-%             internalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
-            internalModes = InternalModesConstantStratification(N0=N0, rho0=self.rho0, zIn=[-Lxyz(3) 0], zOut=z, latitude=self.latitude);
-            self.offgridModes = WVOffGridTransform(internalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
+%             verticalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
+            verticalModes = InternalModesConstantStratification(N0=N0, rho0=self.rho0, zIn=[-Lxyz(3) 0], zOut=z, latitude=self.latitude);
+            self.offgridModes = WVOffGridTransform(verticalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
@@ -315,7 +315,7 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
                 u = zeros(self.spatialMatrixSize);
             else
                 u_bar = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
-                u = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(u_bar));
+                u = self.transformToSpatialDomainWithFourier(self.horizontalModes.transformFromWVGridToDFTGrid(u_bar));
             end
         end
 
@@ -329,7 +329,7 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
                 w = zeros(self.spatialMatrixSize);
             else
                 w_bar = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
-                w = self.transformToSpatialDomainWithFourier(self.horizontalGeometry.transformFromWVGridToDFTGrid(w_bar));
+                w = self.transformToSpatialDomainWithFourier(self.horizontalModes.transformFromWVGridToDFTGrid(w_bar));
             end
         end
 

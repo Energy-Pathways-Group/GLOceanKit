@@ -66,7 +66,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % This indicates that the simulation is 2D.
         isBarotropic = 0
 
-        horizontalGeometry
+        horizontalModes
 
         % maximum buoyancy frequency (radians/s)
         Nmax
@@ -218,10 +218,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nmax = options.Nmax;
             self.shouldAntialias = options.shouldAntialias;
             self.Nj = options.Nj;
-            self.horizontalGeometry = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
-            self.Nkl = self.horizontalGeometry.Nkl_wv;
-            self.k = self.horizontalGeometry.k_wv;
-            self.l = self.horizontalGeometry.l_wv;
+            self.horizontalModes = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
+            self.Nkl = self.horizontalModes.Nkl_wv;
+            self.k = self.horizontalModes.k_wv;
+            self.l = self.horizontalModes.l_wv;
 
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nj,self.Nkl);
@@ -466,7 +466,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = self.horizontalGeometry.transformFromDFTGridToWVGrid(u_bar);
+            u_bar = self.horizontalModes.transformFromDFTGridToWVGrid(u_bar);
         end
 
         function u = transformToSpatialDomainWithFourier(self,u_bar)
@@ -509,7 +509,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 u (:,:,:)   double
                 n (1,1)     double = 1
             end
-            u_x = self.horizontalGeometry.diffX(u,n);
+            u_x = self.horizontalModes.diffX(u,n);
         end
 
         function u_y = diffY(self,u,n)
@@ -518,7 +518,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 u (:,:,:)   double
                 n (1,1)     double = 1
             end
-            u_y = self.horizontalGeometry.diffY(u,n);
+            u_y = self.horizontalModes.diffY(u,n);
         end
 
         u_z = diffZF(self,u,n);

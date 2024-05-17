@@ -9,6 +9,6 @@ arguments (Output)
     jMode (:,1) double {mustBeInteger,mustBeNonnegative}
 end
 [jIndex,klIndex] = ind2sub(self.spectralMatrixSize,linearIndex);
-[kMode,lMode] = self.horizontalGeometry.modeNumberFromWVIndex(klIndex);
+[kMode,lMode] = self.horizontalModes.modeNumberFromWVIndex(klIndex);
 jMode = jIndex - 1;
 end
