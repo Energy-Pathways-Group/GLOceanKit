@@ -1,10 +1,8 @@
 function addPropertyAndMethodsToTopics(rootTopic,metadataNameMap)
-% Extracts topics and subtopic from a detailedDescription and creates a structure useful creating an ordered topic index
+% Adds methods and property metadata to the topic list
 %
-% - Parameter mc: the detailed description 
+% - Parameter rootTopic: the rootTopic returned by topicsFromClass
 % - Parameter metadataNameMap: map with keys of method names and values of normalized metadata structs. 
-% - Returns detailedDescription: the detailed description without the topic/subtopic metadata
-% - Returns classDefinedTopics: a structure array with field "topicName" (char), "subtopics" (struct('subtopicName',[],'methodNames',{})), and "subtopicsIndex" (containers.Map with subtopic name mapping to an order index).
 arguments
     rootTopic Topic
     metadataNameMap containers.Map
@@ -23,7 +21,7 @@ for i=1:length(methodNames)
     metadata = metadataNameMap(methodNames{i});
 
     % if the method has no topic, assign it to the 'other' topic we created
-    if ~isfield(metadata,'topic') || isempty(metadata.topic)
+    if isempty(metadata.topic)
         otherTopic.addMethod(metadata);
         continue;
     end
@@ -35,7 +33,7 @@ for i=1:length(methodNames)
     topic = rootTopic.subtopicWithName(metadata.topic);
 
     % if there is no subtopic, assign to the topic, and then exit
-    if ~isfield(metadata,'subtopic') || isempty(metadata.subtopic)
+    if isempty(metadata.subtopic)
         topic.addMethod(metadata);
         continue;
     end
@@ -47,7 +45,7 @@ for i=1:length(methodNames)
     subtopic = topic.subtopicWithName(metadata.subtopic);
 
     % if there is no subsubtopic, assign to the subtopic, and then exit
-    if ~isfield(metadata,'subsubtopic') || isempty(metadata.subsubtopic)
+    if isempty(metadata.subsubtopic)
         subtopic.addMethod(metadata);
         continue;
     end

@@ -48,12 +48,12 @@ end
 
 
 
-if isfield(metadata,'declaration') && ~isempty(metadata.declaration)
+if ~isempty(metadata.declaration)
     fprintf(fileID,'## Declaration\n');
     fprintf(fileID,'```matlab\n%s\n```\n',metadata.declaration);
 end
 
-if isfield(metadata,'parameters') && ~isempty(metadata.parameters)
+if ~isempty(metadata.parameters)
     fprintf(fileID,'## Parameters\n');
     for iParameter=1:length(metadata.parameters)
         fprintf(fileID,'+ `%s` %s\n',metadata.parameters(iParameter).name,metadata.parameters(iParameter).description);
@@ -61,7 +61,7 @@ if isfield(metadata,'parameters') && ~isempty(metadata.parameters)
     fprintf(fileID,'\n');
 end
 
-if isfield(metadata,'returns') && ~isempty(metadata.returns)
+if ~isempty(metadata.returns)
     fprintf(fileID,'## Returns\n');
     for iReturn=1:length(metadata.returns)
         fprintf(fileID,'+ `%s` %s\n',metadata.returns(iReturn).name,metadata.returns(iReturn).description);
@@ -69,7 +69,7 @@ if isfield(metadata,'returns') && ~isempty(metadata.returns)
     fprintf(fileID,'\n');
 end
 
-if isfield(metadata,'detailedDescription') && ~isempty(metadata.detailedDescription)
+if ~isempty(metadata.detailedDescription)
     fprintf(fileID,'## Discussion\n%s\n',metadata.detailedDescription);
 end
 

@@ -70,9 +70,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
       + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
       + [`spectralMatrixSize`](/classes/wvtransform/spectralmatrixsize.html) returns the size of any spectral matrix, e.g., Ap, Am, A0
     + Spatial
-      + [`x`](/classes/wvtransform/x.html) x coordinate
-      + [`y`](/classes/wvtransform/y.html) y coordinate
-      + [`z`](/classes/wvtransform/z.html) z coordinate
       + [`Lx`](/classes/wvtransform/lx.html) domain size in the x-direction
       + [`Ly`](/classes/wvtransform/ly.html) domain size in the y-direction
       + [`Lz`](/classes/wvtransform/lz.html) domain size in the z-direction
@@ -83,7 +80,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
       + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
       + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
       + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
+      + [`x`](/classes/wvtransform/x.html) x coordinate
       + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
+      + [`y`](/classes/wvtransform/y.html) y coordinate
+      + [`z`](/classes/wvtransform/z.html) z coordinate
   + Stratification
     + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density

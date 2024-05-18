@@ -2,9 +2,8 @@ function [detailedDescription,rootTopic] = topicsFromClass(mc)
 % Extracts topics and subtopic from a detailedDescription and creates a structure useful creating an ordered topic index
 %
 % - Parameter mc: the detailed description 
-% - Parameter metadataNameMap: map with keys of method names and values of normalized metadata structs. 
 % - Returns detailedDescription: the detailed description without the topic/subtopic metadata
-% - Returns classDefinedTopics: a structure array with field "topicName" (char), "subtopics" (struct('subtopicName',[],'methodNames',{})), and "subtopicsIndex" (containers.Map with subtopic name mapping to an order index).
+% - Returns rootTopic: a Topic instance containing the topics and subtopics defined by the class
 arguments
     mc meta.class
 end

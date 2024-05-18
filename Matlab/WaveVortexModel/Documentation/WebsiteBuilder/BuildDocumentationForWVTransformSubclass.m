@@ -15,8 +15,8 @@ metadataNameMap = metadataFromClassPropertiesAndMethods(mc);
 % Overwrite the automatically extracted metadata, with our version
 dims = WVTransform.defaultDimensionAnnotations();
 for iDim=1:length(dims)
-    metadata = ExtractMetadataFromDetailedDescription(dims(iDim).detailedDescription);
-    metadata.name = dims(iDim).name;
+    metadata = MethodAnnotation(dims(iDim).name);
+    metadata.addMetadataFromDetailedDescription(dims(iDim).detailedDescription);
     metadata.className = className;
     metadata.shortDescription = dims(iDim).description;
     metadata.units = dims(iDim).units;
@@ -28,8 +28,8 @@ end
 % Overwrite the automatically extracted metadata, with our version
 props = WVTransform.defaultPropertyAnnotations();
 for iDim=1:length(props)
-    metadata = ExtractMetadataFromDetailedDescription(props(iDim).detailedDescription);
-    metadata.name = props(iDim).name;
+    metadata = MethodAnnotation(props(iDim).name);
+    metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
     metadata.className = className;
     metadata.shortDescription = props(iDim).description;
     metadata.units = props(iDim).units;
@@ -44,8 +44,9 @@ ops = WVTransform.defaultOperations();
 for iOp=1:length(ops)
     for iVar=1:length(ops(iOp).outputVariables)
         stateVar = ops(iOp).outputVariables(iVar);
-        metadata = ExtractMetadataFromDetailedDescription(stateVar.detailedDescription);
-        metadata.name = stateVar.name;
+
+        metadata = MethodAnnotation(stateVar.name);
+        metadata.addMetadataFromDetailedDescription(stateVar.detailedDescription);
         metadata.className = className;
         metadata.shortDescription = stateVar.description;
         metadata.units = stateVar.units;
@@ -58,8 +59,8 @@ end
 
 methods = WVTransform.defaultMethodAnnotations;
 for iMethod=1:length(methods)
-    metadata = ExtractMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
-    metadata.name = methods(iMethod).name;
+    metadata = MethodAnnotation(methods(iMethod).name);
+    metadata.addMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
     metadata.shortDescription = methods(iMethod).description;
     additionalMetadata = metadataNameMap(methods(iMethod).name);
     metadata.className = additionalMetadata.className;
