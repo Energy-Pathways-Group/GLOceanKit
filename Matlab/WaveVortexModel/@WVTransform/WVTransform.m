@@ -20,6 +20,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % - Topic: Initialization
     % - Topic: Domain attributes
     % - Topic: Domain attributes — Grid
+    % - Topic: Domain attributes — Grid – Spatial
+    % - Topic: Domain attributes — Grid – Spectral
     % - Topic: Wave-vortex coefficients
     % - Topic: Initial Conditions
     % - Topic: Initial Conditions — Waves

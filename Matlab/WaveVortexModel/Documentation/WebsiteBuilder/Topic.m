@@ -22,11 +22,11 @@ classdef Topic < handle
                 self Topic
                 metadata {mustBeNonempty}
             end
-            self.methodNames{end+1} = metadata.name;
+            self.methodNames{end+1,1} = metadata.name;
             if isfield(metadata,'nav_order')
-                self.methodOrder{end+1} = metadata.nav_order;
+                self.methodOrder{end+1,1} = metadata.nav_order;
             else
-                self.methodOrder{end+1} = Inf;
+                self.methodOrder{end+1,1} = Inf;
             end
             [self.methodOrder,indices] = sortrows(self.methodOrder);
             self.methodNames = self.methodNames(indices,:);

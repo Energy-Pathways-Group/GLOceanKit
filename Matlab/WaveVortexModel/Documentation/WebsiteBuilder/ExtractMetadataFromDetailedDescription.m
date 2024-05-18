@@ -73,9 +73,7 @@ end
 matchStr = regexpi(detailedDescription,navOrderExpression,'names');
 detailedDescription = regexprep(detailedDescription,navOrderExpression,'','ignorecase');
 if ~isempty(matchStr)
-    metadata.nav_order = double(strtrim(matchStr.nav_order));
-else
-    metadata.nav_order = Inf;
+    metadata.nav_order = str2double(matchStr.nav_order);
 end
 
 
