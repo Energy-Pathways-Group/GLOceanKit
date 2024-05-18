@@ -1,4 +1,4 @@
-- Topic: Domain Attributes — Grid – Spectral
+- Topic: Domain Attributes — Grid — Spectral
 
 Creates a radial wavenumber axis,
 

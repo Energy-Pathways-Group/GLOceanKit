@@ -9,7 +9,7 @@ mathjax: true
 
 #  spectralMatrixSize
 
-returns the size of any spectral matrix, Ap, Am, A0
+returns the size of any spectral matrix, e.g., Ap, Am, A0
 
 
 ---

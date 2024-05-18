@@ -55,36 +55,35 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`t`](/classes/wvtransform/t.html) time coordinate
   + [`t0`](/classes/wvtransform/t0.html) reference time of Ap, Am, A0
   + Grid
-    + [`kljGrid`](/classes/wvtransform/kljgrid.html) returns the K, L, J coordinate matrices
     + [`shouldAntialias`](/classes/wvtransform/shouldantialias.html) whether antialiasing is enabled
-    + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
-    + [`spectralMatrixSize`](/classes/wvtransform/spectralmatrixsize.html) returns the size of any spectral matrix, Ap, Am, A0
-    + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
+    + Spectral
+      + [`J`](/classes/wvtransform/j.html) j-coordinate matrix
+      + [`K`](/classes/wvtransform/k.html) k-coordinate matrix
+      + [`Kh`](/classes/wvtransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
+      + [`L`](/classes/wvtransform/l.html) l-coordinate matrix
+      + [`Nj`](/classes/wvtransform/nj.html) points in the j-coordinate, `length(z)`
+      + [`Nkl`](/classes/wvtransform/nkl.html) points in the kl-coordinate, `length(k)`
+      + [`j`](/classes/wvtransform/j.html) vertical mode number
+      + [`k`](/classes/wvtransform/k.html) wavenumber coordinate in the x-direction
+      + [`kRadial`](/classes/wvtransform/kradial.html) isotropic wavenumber dimension
+      + [`kljGrid`](/classes/wvtransform/kljgrid.html) returns the K, L, J coordinate matrices
+      + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
+      + [`spectralMatrixSize`](/classes/wvtransform/spectralmatrixsize.html) returns the size of any spectral matrix, e.g., Ap, Am, A0
     + Spatial
       + [`x`](/classes/wvtransform/x.html) x coordinate
       + [`y`](/classes/wvtransform/y.html) y coordinate
       + [`z`](/classes/wvtransform/z.html) z coordinate
-  + Grid – Spatial
-    + [`Lx`](/classes/wvtransform/lx.html) domain size in the x-direction
-    + [`Ly`](/classes/wvtransform/ly.html) domain size in the y-direction
-    + [`Lz`](/classes/wvtransform/lz.html) domain size in the z-direction
-    + [`Nx`](/classes/wvtransform/nx.html) points in the x-coordinate, `length(x)`
-    + [`Ny`](/classes/wvtransform/ny.html) points in the y-coordinate, `length(y)`
-    + [`Nz`](/classes/wvtransform/nz.html) points in the z-coordinate, `length(z)`
-    + [`X`](/classes/wvtransform/x.html) x-coordinate matrix
-    + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
-    + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
-  + Grid – Spectral
-    + [`J`](/classes/wvtransform/j.html) j-coordinate matrix
-    + [`K`](/classes/wvtransform/k.html) k-coordinate matrix
-    + [`Kh`](/classes/wvtransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
-    + [`L`](/classes/wvtransform/l.html) l-coordinate matrix
-    + [`Nj`](/classes/wvtransform/nj.html) points in the j-coordinate, `length(z)`
-    + [`Nkl`](/classes/wvtransform/nkl.html) points in the kl-coordinate, `length(k)`
-    + [`j`](/classes/wvtransform/j.html) vertical mode number
-    + [`k`](/classes/wvtransform/k.html) wavenumber coordinate in the x-direction
-    + [`kRadial`](/classes/wvtransform/kradial.html) isotropic wavenumber dimension
-    + [`l`](/classes/wvtransform/l.html) wavenumber coordinate in the y-direction
+      + [`Lx`](/classes/wvtransform/lx.html) domain size in the x-direction
+      + [`Ly`](/classes/wvtransform/ly.html) domain size in the y-direction
+      + [`Lz`](/classes/wvtransform/lz.html) domain size in the z-direction
+      + [`Nx`](/classes/wvtransform/nx.html) points in the x-coordinate, `length(x)`
+      + [`Ny`](/classes/wvtransform/ny.html) points in the y-coordinate, `length(y)`
+      + [`Nz`](/classes/wvtransform/nz.html) points in the z-coordinate, `length(z)`
+      + [`X`](/classes/wvtransform/x.html) x-coordinate matrix
+      + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
+      + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
+      + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
+      + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
   + Stratification
     + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
     + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density

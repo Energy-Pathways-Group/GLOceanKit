@@ -18,10 +18,10 @@ methodAnnotations(end+1) = WVAnnotation('transformToSpatialDomainWithFAllDerivat
 methodAnnotations(end+1) = WVAnnotation('transformToSpatialDomainWithGAllDerivatives', 'transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the G-modes, returning the transformed variable an its derivatives.');
 methodAnnotations(end+1) = WVAnnotation('diffZF', 'differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)');
 methodAnnotations(end+1) = WVAnnotation('diffZG', 'differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)');
-methodAnnotations(end+1) = WVAnnotation('xyzGrid', 'returns the X, Y, Z coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid');
-methodAnnotations(end+1) = WVAnnotation('kljGrid', 'returns the K, L, J coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid');
-methodAnnotations(end+1) = WVAnnotation('spatialMatrixSize', 'returns the size of all real-valued field variables',detailedDescription='- topic: Domain Attributes — Grid');
-methodAnnotations(end+1) = WVAnnotation('spectralMatrixSize', 'returns the size of any spectral matrix, Ap, Am, A0',detailedDescription='- topic: Domain Attributes — Grid');
+methodAnnotations(end+1) = WVAnnotation('xyzGrid', 'returns the X, Y, Z coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+methodAnnotations(end+1) = WVAnnotation('kljGrid', 'returns the K, L, J coordinate matrices',detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+methodAnnotations(end+1) = WVAnnotation('spatialMatrixSize', 'returns the size of all real-valued field variables',detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+methodAnnotations(end+1) = WVAnnotation('spectralMatrixSize', 'returns the size of any spectral matrix, e.g., Ap, Am, A0',detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 methodAnnotations(end+1) = WVAnnotation('variables', 'access the dynamical variables');
 methodAnnotations(end+1) = WVAnnotation('variablesAtPosition', 'access the dynamical variables at any position in the domain');
 end

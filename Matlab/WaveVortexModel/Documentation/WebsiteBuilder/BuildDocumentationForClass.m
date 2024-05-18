@@ -20,10 +20,9 @@ end
 
 mc = meta.class.fromName(options.name);
 
-metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
-
-[classDetailedDescription,classDefinedTopics] = ExtractTopicsFromClassAndSortMetadata(mc,metadataNameMap);
-
+metadataNameMap = metadataFromClassPropertiesAndMethods(mc);
+[classDetailedDescription,rootTopic] = topicsFromClass(mc);
+addPropertyAndMethodsToTopics(rootTopic,metadataNameMap);
 
 % Make a folder for all the class contents
 targetFolder = sprintf('%s/%s/%s',options.buildFolder,options.websiteFolder,lower(options.name));
@@ -33,7 +32,7 @@ end
 path = sprintf('%s/index.md',targetFolder);
 
 websiteFolder = sprintf('%s/%s',options.websiteFolder,lower(options.name));
-MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=options.name,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,grandparent=options.grandparent,nav_order=options.nav_order);
+MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=options.name,classDetailedDescription=classDetailedDescription,classDefinedTopics=rootTopic,metadataNameMap=metadataNameMap,parent=options.parent,grandparent=options.grandparent,nav_order=options.nav_order);
 
 
 iPageNumber = 0;

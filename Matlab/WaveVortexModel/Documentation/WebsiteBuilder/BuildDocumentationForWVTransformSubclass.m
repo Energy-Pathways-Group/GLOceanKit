@@ -10,7 +10,7 @@ className = 'WVTransform';
 targetFolder = sprintf('%s/%s/%s',options.buildFolder,options.websiteFolder,lower(className));
 mc = meta.class.fromName(className);
 
-metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc);
+metadataNameMap = metadataFromClassPropertiesAndMethods(mc);
 
 % Overwrite the automatically extracted metadata, with our version
 dims = WVTransform.defaultDimensionAnnotations();
@@ -67,7 +67,8 @@ for iMethod=1:length(methods)
     metadataNameMap(metadata.name) = metadata;
 end
 
-[classDetailedDescription,classDefinedTopics] = ExtractTopicsFromClassAndSortMetadata(mc,metadataNameMap);
+[classDetailedDescription,rootTopic] = topicsFromClass(mc);
+addPropertyAndMethodsToTopics(rootTopic,metadataNameMap);
 
 % Make a folder for all the class contents
 if ~exist(targetFolder,'dir')
@@ -81,7 +82,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 path = sprintf('%s/index.md',targetFolder);
 websiteFolder = sprintf('%s/%s',options.websiteFolder,lower(className));
-MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=className,classDetailedDescription=classDetailedDescription,classDefinedTopics=classDefinedTopics,metadataNameMap=metadataNameMap,parent=options.parent,nav_order=options.nav_order);
+MakeMarkdownFileForClass(path=path,websiteFolder=websiteFolder,className=className,classDetailedDescription=classDetailedDescription,classDefinedTopics=rootTopic,metadataNameMap=metadataNameMap,parent=options.parent,nav_order=options.nav_order);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

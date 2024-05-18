@@ -1,4 +1,4 @@
-function metadataNameMap = ExtractMetadataFromClassPropertiesAndMethods(mc)
+function metadataNameMap = metadataFromClassPropertiesAndMethods(mc)
 % Capture metadata from all the public methods and properties of a class
 %
 % This function ultimately calls -ExtractMetadataFromDetailedDescription,
