@@ -68,7 +68,7 @@ fprintf(fileID,'\n\n## Topics\n');
 % do not call the method directly, because we do not want to print the Root
 % category name
 for iSubtopic = 1:length(classDefinedTopics.subtopics)
-    writeMarkdownForTopic(classDefinedTopics.subtopics(iSubtopic),fileID,metadataNameMap,'',options.websiteFolder);
+    writeMarkdownForTopic(classDefinedTopics.subtopics(iSubtopic),fileID,'',options.websiteFolder);
 end
 
 fprintf(fileID,'\n\n---');
@@ -76,18 +76,18 @@ fprintf(fileID,'\n\n---');
 fclose(fileID);
 end
 
-function writeMarkdownForTopic(topic,fileID,metadataNameMap,indentLevel,websiteFolder)
+function writeMarkdownForTopic(topic,fileID,indentLevel,websiteFolder)
 
-if isempty(topic.methodNames) && isempty(topic.subtopics)
+if isempty(topic.methodAnnotations) && isempty(topic.subtopics)
     return
 end
 fprintf(fileID,'%s+ %s\n',indentLevel,topic.name);
-for methodIndex = 1:length(topic.methodNames)
-    fprintf(fileID,'%s  + [`%s`](/%s/%s.html) ',indentLevel,topic.methodNames{methodIndex},websiteFolder,lower(topic.methodNames{methodIndex}));
-    fprintf(fileID,'%s\n',metadataNameMap(topic.methodNames{methodIndex}).shortDescription);
+for methodIndex = 1:length(topic.methodAnnotations)
+    fprintf(fileID,'%s  + [`%s`](/%s/%s.html) ',indentLevel,topic.methodAnnotations(methodIndex).name,websiteFolder,lower(topic.methodAnnotations(methodIndex).name));
+    fprintf(fileID,'%s\n',topic.methodAnnotations(methodIndex).shortDescription);
 end
 for iSubtopic = 1:length(topic.subtopics)
-    writeMarkdownForTopic(topic.subtopics(iSubtopic),fileID,metadataNameMap,[indentLevel,'  '],websiteFolder);
+    writeMarkdownForTopic(topic.subtopics(iSubtopic),fileID,[indentLevel,'  '],websiteFolder);
 end
 
 end

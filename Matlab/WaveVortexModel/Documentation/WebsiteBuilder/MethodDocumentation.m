@@ -1,4 +1,4 @@
-classdef MethodAnnotation < handle
+classdef MethodDocumentation < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -22,7 +22,7 @@ classdef MethodAnnotation < handle
     end
 
     methods
-        function self = MethodAnnotation(name)
+        function self = MethodDocumentation(name)
             self.name = name;
         end
 
@@ -89,6 +89,84 @@ classdef MethodAnnotation < handle
 
 
             self.detailedDescription = regexprep(detailedDescription,leadingWhitespaceExpression,'');
+        end
+
+        function writeToFile(self,path,pageNumber)
+            fileID = fopen(path,'w');
+
+            fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,self.className,pageNumber);
+
+            fprintf(fileID,'#  %s\n',self.name);
+            fprintf(fileID,'\n%s\n',self.shortDescription);
+
+            fprintf(fileID,'\n\n---\n\n');
+
+            if (self.functionType == FunctionType.transformProperty || self.functionType == FunctionType.stateVariable)
+                fprintf(fileID,'## Description\n');
+                if self.isComplex == 1
+                    str = 'Complex valued ';
+                else
+                    str = 'Real valued ';
+                end
+
+                if self.functionType == FunctionType.transformProperty
+                    str = strcat(str,' transform property ');
+                else
+                    str = strcat(str,' state variable ');
+                end
+
+                if isempty(self.dimensions)
+                    str = strcat(str,' with no dimensions and ');
+                elseif length(self.dimensions) == 1
+                    str = strcat(str,' with dimension %s and ',self.dimensions{1});
+                else
+                    str = strcat(str,' with dimensions $$(');
+                    for iDim=1:(length(self.dimensions)-1)
+                        str = strcat(str,self.dimensions{iDim},',');
+                    end
+                    str = strcat(str,self.dimensions{end},')$$ and');
+                end
+
+                if isempty(self.units)
+                    str = strcat(str,' no units.\n\n');
+                else
+                    str = strcat(str,' units of $$',self.units,'$$.\n\n');
+                end
+                fprintf(fileID,str);
+            end
+
+            % ## Description
+            % (Real/Complex) valued (transform property/state variable) with (no
+            % dimensions/dimension {x,y,z}) and (no units/units of xxx).
+
+
+
+            if ~isempty(self.declaration)
+                fprintf(fileID,'## Declaration\n');
+                fprintf(fileID,'```matlab\n%s\n```\n',self.declaration);
+            end
+
+            if ~isempty(self.parameters)
+                fprintf(fileID,'## Parameters\n');
+                for iParameter=1:length(self.parameters)
+                    fprintf(fileID,'+ `%s` %s\n',self.parameters(iParameter).name,self.parameters(iParameter).description);
+                end
+                fprintf(fileID,'\n');
+            end
+
+            if ~isempty(self.returns)
+                fprintf(fileID,'## Returns\n');
+                for iReturn=1:length(self.returns)
+                    fprintf(fileID,'+ `%s` %s\n',self.returns(iReturn).name,self.returns(iReturn).description);
+                end
+                fprintf(fileID,'\n');
+            end
+
+            if ~isempty(self.detailedDescription)
+                fprintf(fileID,'## Discussion\n%s\n',self.detailedDescription);
+            end
+
+            fclose(fileID);
         end
     end
 end

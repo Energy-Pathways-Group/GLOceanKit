@@ -15,7 +15,7 @@ metadataNameMap = metadataFromClassPropertiesAndMethods(mc);
 % Overwrite the automatically extracted metadata, with our version
 dims = WVTransform.defaultDimensionAnnotations();
 for iDim=1:length(dims)
-    metadata = MethodAnnotation(dims(iDim).name);
+    metadata = MethodDocumentation(dims(iDim).name);
     metadata.addMetadataFromDetailedDescription(dims(iDim).detailedDescription);
     metadata.className = className;
     metadata.shortDescription = dims(iDim).description;
@@ -28,7 +28,7 @@ end
 % Overwrite the automatically extracted metadata, with our version
 props = WVTransform.defaultPropertyAnnotations();
 for iDim=1:length(props)
-    metadata = MethodAnnotation(props(iDim).name);
+    metadata = MethodDocumentation(props(iDim).name);
     metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
     metadata.className = className;
     metadata.shortDescription = props(iDim).description;
@@ -45,7 +45,7 @@ for iOp=1:length(ops)
     for iVar=1:length(ops(iOp).outputVariables)
         stateVar = ops(iOp).outputVariables(iVar);
 
-        metadata = MethodAnnotation(stateVar.name);
+        metadata = MethodDocumentation(stateVar.name);
         metadata.addMetadataFromDetailedDescription(stateVar.detailedDescription);
         metadata.className = className;
         metadata.shortDescription = stateVar.description;
@@ -59,7 +59,7 @@ end
 
 methods = WVTransform.defaultMethodAnnotations;
 for iMethod=1:length(methods)
-    metadata = MethodAnnotation(methods(iMethod).name);
+    metadata = MethodDocumentation(methods(iMethod).name);
     metadata.addMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
     metadata.shortDescription = methods(iMethod).description;
     additionalMetadata = metadataNameMap(methods(iMethod).name);

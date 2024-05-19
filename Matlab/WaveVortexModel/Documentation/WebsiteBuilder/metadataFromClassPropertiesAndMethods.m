@@ -73,7 +73,7 @@ elseif isa(mp,'meta.property')
     end
 end
 
-metadata = MethodAnnotation(mp.Name);
+metadata = MethodDocumentation(mp.Name);
 metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
 metadata.className = mp.DefiningClass.Name;
 metadata.shortDescription = mp.Description;

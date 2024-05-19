@@ -8,50 +8,43 @@ copyfile(sourceFolder,buildFolder);
 classFolderName = 'Class documentation';
 websiteFolder = 'classes';
 BuildDocumentationForWVTransformSubclass(buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='WVModel',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=2);
 
+classDoc = ClassDocumentation('WVModel',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=2);
+classDoc.writeToFile();
+
+%%
 parentName = 'Transforms';
 websiteFolder = 'classes/transforms';
+classes = {'WVTransformBoussinesq','WVTransformHydrostatic','WVTransformConstantStratification'}; % 'WVTransformSingleMode'
+classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+arrayfun(@(a) a.writeToFile(),classDocumentation)
 
-BuildDocumentationForClass(name='WVTransformBoussinesq',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
-BuildDocumentationForClass(name='WVTransformHydrostatic',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
-BuildDocumentationForClass(name='WVTransformConstantStratification',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
-% BuildDocumentationForClass(name='WVTransformSingleMode',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
-
+%%
 parentName = 'Nonlinear fluxes';
 websiteFolder = 'classes/nonlinear-fluxes';
+classes = {'WVNonlinearFluxOperation','WVNonlinearFlux','WVNonlinearFluxForced','WVNonlinearFluxQG','WVNonlinearFluxQGForced','WVNonlinearFluxWindForced','WVNonlinearFluxSpatial'};
 
-BuildDocumentationForClass(name='WVNonlinearFluxOperation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='WVNonlinearFlux',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
-BuildDocumentationForClass(name='WVNonlinearFluxForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
-BuildDocumentationForClass(name='WVNonlinearFluxQG',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
-BuildDocumentationForClass(name='WVNonlinearFluxQGForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
-BuildDocumentationForClass(name='WVNonlinearFluxWindForced',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=6);
-BuildDocumentationForClass(name='WVNonlinearFluxSpatial',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=7);
+classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+arrayfun(@(a) a.writeToFile(),classDocumentation);
 
-
+%%
 parentName = 'Operations & annotations';
 websiteFolder = 'classes/operations-and-annotations';
+classes = {'WVOperation','WVAnnotation','WVDimensionAnnotation','WVPropertyAnnotation','WVVariableAnnotation'};
 
-BuildDocumentationForClass(name='WVOperation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='WVAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
-BuildDocumentationForClass(name='WVDimensionAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
-BuildDocumentationForClass(name='WVPropertyAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
-BuildDocumentationForClass(name='WVVariableAnnotation',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
+classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+arrayfun(@(a) a.writeToFile(),classDocumentation);
+
 
 parentName = 'Flow components';
 websiteFolder = 'classes/flow-components';
+classes = {'WVFlowComponent','WVPrimaryFlowComponent','WVGeostrophicComponent','WVInternalGravityWaveComponent','WVInertialOscillationComponent','WVMeanDensityAnomalyComponent'};
 
-BuildDocumentationForClass(name='WVFlowComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=1);
-BuildDocumentationForClass(name='WVPrimaryFlowComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=2);
-BuildDocumentationForClass(name='WVGeostrophicComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=3);
-BuildDocumentationForClass(name='WVInternalGravityWaveComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=4);
-BuildDocumentationForClass(name='WVInertialOscillationComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=5);
-BuildDocumentationForClass(name='WVMeanDensityAnomalyComponent',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,nav_order=6);
+classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+arrayfun(@(a) a.writeToFile(),classDocumentation);
 
-% ClassDocGenerator('WVFlowConstituent',classDocumentationFolder);
+classDoc = ClassDocumentation('NetCDFFile',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=6);
+classDoc.writeToFile();
 
-
-
-BuildDocumentationForClass(name='NetCDFFile',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=6);
-BuildDocumentationForClass(name='WVGeometryDoublyPeriodic',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=7);
+classDoc = ClassDocumentation('WVGeometryDoublyPeriodic',buildFolder=buildFolder,websiteFolder='classes',parent=classFolderName,nav_order=7);
+classDoc.writeToFile();
