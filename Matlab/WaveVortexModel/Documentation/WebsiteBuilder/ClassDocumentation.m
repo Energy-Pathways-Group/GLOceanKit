@@ -62,12 +62,66 @@ classdef ClassDocumentation < handle
             % Use the detailed description to build the topic list
             [self.rootTopic,self.detailedDescription] = Topic.topicsFromDetailedDescription(self.detailedDescription);
 
-            self.methodDocumentationNameMap = ClassDocumentation.metadataFromClassPropertiesAndMethods(mc);
+            self.initializeMethodDocumentation();
             ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,self.methodDocumentationNameMap);
         end
 
+        function initializeMethodDocumentation(self)
+            % Capture metadata from all the public methods and properties of a class
+            %
+            % This function ultimately calls -ExtractMetadataFromDetailedDescription,
+            % but first sorts through the available methods and properties to find the
+            % right ones.
+            %
+            % Builds a struct that may have the following keys:
+            % - topic
+            % - subtopic
+            % - subsubtopic
+            % - declaration
+            % - shortDescription
+            % - detailedDescription
+            % - parameters
+            % - returns
+            % - className
+            % - name
+            %
+            % - Parameter mc: the detailed description
+            % - Returns metadataNameMap: containers.Map with method names as keys and metadata structures as values.
+            arguments (Input)
+                self ClassDocumentation
+            end
+
+            mc = meta.class.fromName(self.name);
+
+            self.methodDocumentationNameMap = containers.Map;
+            for i=1:length(mc.MethodList)
+                metadata = ClassDocumentation.extractMethodMetadata(mc.MethodList(i),mc.Name);
+                if ~isempty(metadata)
+                    if mc.MethodList(i).Static == 1
+                        metadata.functionType = FunctionType.staticMethod;
+                    elseif mc.MethodList(i).Abstract == 1
+                        metadata.functionType = FunctionType.abstractMethod;
+                    else
+                        metadata.functionType = FunctionType.instanceMethod;
+                    end
+                    self.methodDocumentationNameMap(metadata.name) = metadata;
+                end
+            end
+            for i=1:length(mc.PropertyList)
+                metadata = ClassDocumentation.extractMethodMetadata(mc.PropertyList(i),mc.Name);
+                if ~isempty(metadata)
+                    metadata.functionType = FunctionType.instanceProperty;
+                    self.methodDocumentationNameMap(metadata.name) = metadata;
+                end
+            end
+        end
+
         function writeToFile(self)
-            self.writeMarkdownForClass();
+            if ~exist(self.pathOfClassFolderAbsolute,'dir')
+                mkdir(self.pathOfClassFolderAbsolute);
+            end
+
+            self.writeMarkdownForClassIndex();
 
             iPageNumber = 0;
             methodNames = keys(self.methodDocumentationNameMap);
@@ -78,14 +132,11 @@ classdef ClassDocumentation < handle
             end
         end
 
-        function writeMarkdownForClass(self)
+        function writeMarkdownForClassIndex(self)
             arguments
                 self
             end
 
-            if ~exist(self.pathOfClassFolderAbsolute,'dir')
-                mkdir(self.pathOfClassFolderAbsolute);
-            end
             pathOfIndexFile = sprintf('%s/index.md',self.pathOfClassFolderAbsolute);
 
             fileID = fopen(pathOfIndexFile,'w');
@@ -239,56 +290,7 @@ classdef ClassDocumentation < handle
             rootTopic.addSubtopic(otherTopic);
         end
 
-        function metadataNameMap = metadataFromClassPropertiesAndMethods(mc)
-            % Capture metadata from all the public methods and properties of a class
-            %
-            % This function ultimately calls -ExtractMetadataFromDetailedDescription,
-            % but first sorts through the available methods and properties to find the
-            % right ones.
-            %
-            % Builds a struct that may have the following keys:
-            % - topic
-            % - subtopic
-            % - subsubtopic
-            % - declaration
-            % - shortDescription
-            % - detailedDescription
-            % - parameters
-            % - returns
-            % - className
-            % - name
-            %
-            % - Parameter mc: the detailed description
-            % - Returns metadataNameMap: containers.Map with method names as keys and metadata structures as values.
-            arguments (Input)
-                mc meta.class
-            end
-            arguments (Output)
-                metadataNameMap containers.Map
-            end
 
-            metadataNameMap = containers.Map;
-            for i=1:length(mc.MethodList)
-                metadata = ClassDocumentation.extractMethodMetadata(mc.MethodList(i),mc.Name);
-                if ~isempty(metadata)
-                    if mc.MethodList(i).Static == 1
-                        metadata.functionType = FunctionType.staticMethod;
-                    elseif mc.MethodList(i).Abstract == 1
-                        metadata.functionType = FunctionType.abstractMethod;
-                    else
-                        metadata.functionType = FunctionType.instanceMethod;
-                    end
-                    metadataNameMap(metadata.name) = metadata;
-                end
-            end
-            for i=1:length(mc.PropertyList)
-                metadata = ClassDocumentation.extractMethodMetadata(mc.PropertyList(i),mc.Name);
-                if ~isempty(metadata)
-                    metadata.functionType = FunctionType.instanceProperty;
-                    metadataNameMap(metadata.name) = metadata;
-                end
-            end
-        end
 
         function metadata = extractMethodMetadata(mp,className)
             % Extract documentation from method or property (mp) metadata.

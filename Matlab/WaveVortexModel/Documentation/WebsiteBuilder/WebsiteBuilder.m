@@ -7,7 +7,8 @@ copyfile(sourceFolder,buildFolder);
 
 classFolderName = 'Class documentation';
 websiteFolder = 'classes';
-BuildDocumentationForWVTransformSubclass(buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=1);
+classDoc = WVTransformDocumentation('WVTransform',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=1);
+classDoc.writeToFile();
 
 classDoc = ClassDocumentation('WVModel',buildFolder=buildFolder,websiteFolder=websiteFolder,parent=classFolderName,nav_order=2);
 classDoc.writeToFile();
