@@ -66,10 +66,21 @@ classdef ClassDocumentation < handle
             ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,self.methodDocumentationNameMap);
         end
 
+        function addMethodDocumentation(self,methodDocumentation)
+            if isKey(self.methodDocumentationNameMap,methodDocumentation.name)
+                methodDocumentation.pathOfOutputFile = self.methodDocumentationNameMap(methodDocumentation.name).pathOfOutputFile;
+            elseif ismember(lower(methodDocumentation.name),lower(keys(self.methodDocumentationNameMap))) && ~isKey(self.methodDocumentationNameMap,methodDocumentation.name)
+                methodDocumentation.pathOfOutputFile = sprintf('%s/%s_.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
+            else
+                methodDocumentation.pathOfOutputFile = sprintf('%s/%s.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
+            end
+            self.methodDocumentationNameMap(methodDocumentation.name) = methodDocumentation;
+        end
+
         function initializeMethodDocumentation(self)
             % Capture metadata from all the public methods and properties of a class
             %
-            % This function ultimately calls -ExtractMetadataFromDetailedDescription,
+            % This function ultimately calls methodDocumentation.addMetadataFromDetailedDescription,
             % but first sorts through the available methods and properties to find the
             % right ones.
             %
@@ -95,23 +106,24 @@ classdef ClassDocumentation < handle
 
             self.methodDocumentationNameMap = containers.Map;
             for i=1:length(mc.MethodList)
-                metadata = ClassDocumentation.extractMethodMetadata(mc.MethodList(i),mc.Name);
-                if ~isempty(metadata)
+                methodDocumentation = ClassDocumentation.extractMethodMetadata(mc.MethodList(i),mc.Name);
+                if ~isempty(methodDocumentation)
                     if mc.MethodList(i).Static == 1
-                        metadata.functionType = FunctionType.staticMethod;
+                        methodDocumentation.functionType = FunctionType.staticMethod;
                     elseif mc.MethodList(i).Abstract == 1
-                        metadata.functionType = FunctionType.abstractMethod;
+                        methodDocumentation.functionType = FunctionType.abstractMethod;
                     else
-                        metadata.functionType = FunctionType.instanceMethod;
+                        methodDocumentation.functionType = FunctionType.instanceMethod;
                     end
-                    self.methodDocumentationNameMap(metadata.name) = metadata;
+                    self.addMethodDocumentation(methodDocumentation);
+                    
                 end
             end
             for i=1:length(mc.PropertyList)
-                metadata = ClassDocumentation.extractMethodMetadata(mc.PropertyList(i),mc.Name);
-                if ~isempty(metadata)
-                    metadata.functionType = FunctionType.instanceProperty;
-                    self.methodDocumentationNameMap(metadata.name) = metadata;
+                methodDocumentation = ClassDocumentation.extractMethodMetadata(mc.PropertyList(i),mc.Name);
+                if ~isempty(methodDocumentation)
+                    methodDocumentation.functionType = FunctionType.instanceProperty;
+                    self.addMethodDocumentation(methodDocumentation);
                 end
             end
         end
@@ -128,7 +140,7 @@ classdef ClassDocumentation < handle
             for i=1:length(methodNames)
                 iPageNumber = iPageNumber+1;
                 methodDocumentation = self.methodDocumentationNameMap(methodNames{i});
-                methodDocumentation.writeToFile(sprintf('%s/%s.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name)),iPageNumber)
+                methodDocumentation.writeToFile(iPageNumber)
             end
         end
 

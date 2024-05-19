@@ -16,6 +16,8 @@ classdef MethodDocumentation < handle
         nav_order = Inf
         functionType
 
+        pathOfOutputFile = []
+
         dimensions
         units
         isComplex
@@ -91,8 +93,11 @@ classdef MethodDocumentation < handle
             self.detailedDescription = regexprep(detailedDescription,leadingWhitespaceExpression,'');
         end
 
-        function writeToFile(self,path,pageNumber)
-            fileID = fopen(path,'w');
+        function writeToFile(self,pageNumber)
+            if isempty(self.pathOfOutputFile)
+                error('Path not set!');
+            end
+            fileID = fopen(self.pathOfOutputFile,'w');
 
             fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,self.className,pageNumber);
 

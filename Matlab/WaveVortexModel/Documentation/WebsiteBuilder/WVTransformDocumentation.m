@@ -17,7 +17,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata.units = dims(iDim).units;
                 metadata.isComplex = 0;
                 metadata.functionType = FunctionType.transformDimension;
-                self.methodDocumentationNameMap(metadata.name) = metadata;
+                self.addMethodDocumentation(metadata);
             end
 
             % Overwrite the automatically extracted metadata, with our version
@@ -31,7 +31,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata.dimensions = props(iDim).dimensions;
                 metadata.isComplex = props(iDim).isComplex;
                 metadata.functionType = FunctionType.transformProperty;
-                self.methodDocumentationNameMap(metadata.name) = metadata;
+                self.addMethodDocumentation(metadata);
             end
 
             % Overwrite the automatically extracted metadata, with our version
@@ -48,7 +48,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                     metadata.dimensions = stateVar.dimensions;
                     metadata.isComplex = stateVar.isComplex;
                     metadata.functionType = FunctionType.stateVariable;
-                    self.methodDocumentationNameMap(metadata.name) = metadata;
+                    self.addMethodDocumentation(metadata);
                 end
             end
 
@@ -59,7 +59,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata.shortDescription = methods(iMethod).description;
                 metadata.className = self.name;
                 metadata.functionType = FunctionType.instanceMethod;
-                self.methodDocumentationNameMap(metadata.name) = metadata;
+                self.addMethodDocumentation(metadata);
             end
         end
     end
