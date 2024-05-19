@@ -57,10 +57,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Grid
     + [`shouldAntialias`](/classes/wvtransform/shouldantialias.html) whether antialiasing is enabled
     + Spectral
-      + [`J`](/classes/wvtransform/j.html) j-coordinate matrix
-      + [`K`](/classes/wvtransform/k.html) k-coordinate matrix
+      + [`J`](/classes/wvtransform/j_.html) j-coordinate matrix
+      + [`K`](/classes/wvtransform/k_.html) k-coordinate matrix
       + [`Kh`](/classes/wvtransform/kh.html) horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
-      + [`L`](/classes/wvtransform/l.html) l-coordinate matrix
+      + [`L`](/classes/wvtransform/l_.html) l-coordinate matrix
       + [`Nj`](/classes/wvtransform/nj.html) points in the j-coordinate, `length(z)`
       + [`Nkl`](/classes/wvtransform/nkl.html) points in the kl-coordinate, `length(k)`
       + [`j`](/classes/wvtransform/j.html) vertical mode number
@@ -79,9 +79,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
       + [`Nx`](/classes/wvtransform/nx.html) points in the x-coordinate, `length(x)`
       + [`Ny`](/classes/wvtransform/ny.html) points in the y-coordinate, `length(y)`
       + [`Nz`](/classes/wvtransform/nz.html) points in the z-coordinate, `length(z)`
-      + [`X`](/classes/wvtransform/x.html) x-coordinate matrix
-      + [`Y`](/classes/wvtransform/y.html) y-coordinate matrix
-      + [`Z`](/classes/wvtransform/z.html) z-coordinate matrix
+      + [`X`](/classes/wvtransform/x_.html) x-coordinate matrix
+      + [`Y`](/classes/wvtransform/y_.html) y-coordinate matrix
+      + [`Z`](/classes/wvtransform/z_.html) z-coordinate matrix
       + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
       + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
   + Stratification
@@ -106,7 +106,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`addWaveModes`](/classes/wvtransform/addwavemodes.html) add amplitudes of the given wave modes
     + [`initWithGMSpectrum`](/classes/wvtransform/initwithgmspectrum.html) initialize with a Garrett-Munk spectrum
     + [`initWithHorizontalWaveNUmberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
-    + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in 
+    + [`initWithHorizontalWaveNumberSpectrum`](/classes/wvtransform/initwithhorizontalwavenumberspectrum_.html) initialize with a Alternative Interal Wave Spectrum in 
     + [`initWithSpectralFunction`](/classes/wvtransform/initwithspectralfunction.html) initialize the wave spectrum with a given function
     + [`initWithWaveModes`](/classes/wvtransform/initwithwavemodes.html) initialize with the given wave modes
     + [`removeAll`](/classes/wvtransform/removeall.html) removes all energy from the model

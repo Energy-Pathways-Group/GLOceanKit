@@ -16,7 +16,8 @@ classdef MethodDocumentation < handle
         nav_order = Inf
         functionType
 
-        pathOfOutputFile = []
+        pathOfOutputFile = [] % path on the local hard drive
+        pathOfFileOnWebsite = []
 
         dimensions
         units

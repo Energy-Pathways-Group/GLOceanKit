@@ -69,10 +69,13 @@ classdef ClassDocumentation < handle
         function addMethodDocumentation(self,methodDocumentation)
             if isKey(self.methodDocumentationNameMap,methodDocumentation.name)
                 methodDocumentation.pathOfOutputFile = self.methodDocumentationNameMap(methodDocumentation.name).pathOfOutputFile;
+                methodDocumentation.pathOfFileOnWebsite = self.methodDocumentationNameMap(methodDocumentation.name).pathOfFileOnWebsite;
             elseif ismember(lower(methodDocumentation.name),lower(keys(self.methodDocumentationNameMap))) && ~isKey(self.methodDocumentationNameMap,methodDocumentation.name)
                 methodDocumentation.pathOfOutputFile = sprintf('%s/%s_.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
+                methodDocumentation.pathOfFileOnWebsite = sprintf('/%s/%s_.html',self.pathOfClassFolderRelative,lower(methodDocumentation.name));
             else
                 methodDocumentation.pathOfOutputFile = sprintf('%s/%s.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
+                methodDocumentation.pathOfFileOnWebsite = sprintf('/%s/%s.html',self.pathOfClassFolderRelative,lower(methodDocumentation.name));
             end
             self.methodDocumentationNameMap(methodDocumentation.name) = methodDocumentation;
         end
@@ -229,7 +232,7 @@ classdef ClassDocumentation < handle
             end
             fprintf(fileID,'%s+ %s\n',indentLevel,topic.name);
             for methodIndex = 1:length(topic.methodAnnotations)
-                fprintf(fileID,'%s  + [`%s`](/%s/%s.html) ',indentLevel,topic.methodAnnotations(methodIndex).name,websiteFolder,lower(topic.methodAnnotations(methodIndex).name));
+                fprintf(fileID,'%s  + [`%s`](%s) ',indentLevel,topic.methodAnnotations(methodIndex).name,topic.methodAnnotations(methodIndex).pathOfFileOnWebsite);
                 fprintf(fileID,'%s\n',topic.methodAnnotations(methodIndex).shortDescription);
             end
             for iSubtopic = 1:length(topic.subtopics)
