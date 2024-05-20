@@ -443,14 +443,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function value = get.Nz(self)
             value=length(self.z);
-        end
-        function value = get.Nk(self)
-            value=self.Nx;
-        end
-        function value = get.Nl(self)
-            value=self.Ny;
-        end
-          
+        end        
 
         function set.Ap(self,value)
             self.Ap = value;
