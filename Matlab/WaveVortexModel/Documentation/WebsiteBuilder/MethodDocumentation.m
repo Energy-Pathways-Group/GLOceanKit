@@ -4,7 +4,8 @@ classdef MethodDocumentation < handle
 
     properties
         name string
-        className
+        definingClassName
+        declaringClassName
         parameters
         returns
         detailedDescription =[]
@@ -15,6 +16,8 @@ classdef MethodDocumentation < handle
         subsubtopic = []
         nav_order = Inf
         functionType
+        access
+        isHidden
 
         pathOfOutputFile = [] % path on the local hard drive
         pathOfFileOnWebsite = []
@@ -27,6 +30,36 @@ classdef MethodDocumentation < handle
     methods
         function self = MethodDocumentation(name)
             self.name = name;
+        end
+
+        function addMetadataFromMethodMetadata(self,mp)
+            arguments
+                self MethodDocumentation
+                mp meta.method
+            end
+            self.access = mp.Access;
+            self.isHidden = mp.Hidden;
+            self.definingClassName = mp.DefiningClass.Name;
+            self.shortDescription = mp.Description;
+            if mp.Static == 1
+                self.functionType = FunctionType.staticMethod;
+            elseif mp.Abstract == 1
+                self.functionType = FunctionType.abstractMethod;
+            else
+                self.functionType = FunctionType.instanceMethod;
+            end
+        end
+
+        function addMetadataFromPropertyMetadata(self,mp)
+            arguments
+                self MethodDocumentation
+                mp meta.property
+            end
+            self.access = mp.GetAccess;
+            self.isHidden = mp.Hidden;
+            self.definingClassName = mp.DefiningClass.Name;
+            self.shortDescription = mp.Description;
+            self.functionType = FunctionType.instanceProperty;
         end
 
         function self = addMetadataFromDetailedDescription(self,detailedDescription)
@@ -100,7 +133,7 @@ classdef MethodDocumentation < handle
             end
             fileID = fopen(self.pathOfOutputFile,'w');
 
-            fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,self.className,pageNumber);
+            fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,self.definingClassName,pageNumber);
 
             fprintf(fileID,'#  %s\n',self.name);
             fprintf(fileID,'\n%s\n',self.shortDescription);

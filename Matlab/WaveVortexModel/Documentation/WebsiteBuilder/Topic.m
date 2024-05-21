@@ -62,7 +62,21 @@ classdef Topic < handle
     end
 
     methods (Static)
-        function [rootTopic,detailedDescription] = topicsFromDetailedDescription(detailedDescription)
+        function detailedDescription = trimTopicsFromString(detailedDescription)
+            % Remove any topic metadata from a string
+            arguments
+                detailedDescription
+            end
+            % extract topics and the detailed description (minus those topics)
+            subsubtopicExpression = '- topic:([ \t]*)(?<topicName>[^—\r\n]+)—([ \t]*)(?<subtopicName>[^\r\n]+)—([ \t]*)(?<subsubtopicName>[^\r\n]+)(?:$|\n)';
+            detailedDescription = regexprep(detailedDescription,subsubtopicExpression,'','ignorecase');
+            subtopicExpression = '- topic:([ \t]*)(?<topicName>[^—\r\n]+)—([ \t]*)(?<subtopicName>[^\r\n]+)(?:$|\n)';
+            detailedDescription = regexprep(detailedDescription,subtopicExpression,'','ignorecase');
+            topicExpression = '- topic:([ \t]*)(?<topicName>[^\r\n]+)(?:$|\n)';
+            detailedDescription = regexprep(detailedDescription,topicExpression,'','ignorecase');
+        end
+
+        function rootTopic = topicsFromString(detailedDescription)
             % Extracts topics and subtopic from a detailedDescription and creates a structure useful creating an ordered topic index
             %
             % - Parameter mc: the detailed description
@@ -88,7 +102,6 @@ classdef Topic < handle
             detailedDescription = regexprep(detailedDescription,subtopicExpression,'','ignorecase');
             topicExpression = '- topic:([ \t]*)(?<topicName>[^\r\n]+)(?:$|\n)';
             classDefinedTopics = regexpi(detailedDescription,topicExpression,'names');
-            detailedDescription = regexprep(detailedDescription,topicExpression,'','ignorecase');
 
             rootTopic = Topic('Root');
             for iTopic=1:length(classDefinedTopics)

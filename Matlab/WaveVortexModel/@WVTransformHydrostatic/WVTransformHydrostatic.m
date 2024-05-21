@@ -20,7 +20,8 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         rhoFunction, N2Function, dLnN2Function % function handles
 
         verticalModes
-        
+    end
+    properties (Access=private)
         % Transformation matrices
         PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nj]
         PF, QG % size(PF,PG)=[Nj x Nz]

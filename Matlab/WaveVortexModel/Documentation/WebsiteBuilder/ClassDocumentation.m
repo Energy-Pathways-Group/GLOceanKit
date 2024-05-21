@@ -19,11 +19,17 @@ classdef ClassDocumentation < handle
         nav_order
         rootTopic
 
+        allMethodDocumentation
         methodDocumentationNameMap
+        shouldExcludeAllSuperclasses = 1;
 
         shortDescription
         detailedDescription
         declaration = []
+    end
+
+    properties (SetObservable, AbortSet, Access = public)
+        excludedSuperclasses = {'handle'};
     end
 
     methods
@@ -49,21 +55,20 @@ classdef ClassDocumentation < handle
 
 
             mc = meta.class.fromName(self.name);
-            self.detailedDescription = mc.DetailedDescription;
+            
             self.shortDescription = mc.Description;
+            self.declaration = ClassDocumentation.declarationFromString(mc.DetailedDescription);
 
-            declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
-            matchStr = regexpi(self.detailedDescription,declarationExpression,'names');
-            if ~isempty(matchStr)
-                self.declaration = matchStr.declaration;
-            end
-            self.detailedDescription  = regexprep(self.detailedDescription,declarationExpression,'','ignorecase');
-     
-            % Use the detailed description to build the topic list
-            [self.rootTopic,self.detailedDescription] = Topic.topicsFromDetailedDescription(self.detailedDescription);
+            self.detailedDescription = mc.DetailedDescription;
+            self.detailedDescription = ClassDocumentation.trimDeclarationFromString(self.detailedDescription);
+            self.detailedDescription = Topic.trimTopicsFromString(self.detailedDescription);
 
-            self.initializeMethodDocumentation();
-            ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,self.methodDocumentationNameMap);
+            self.allMethodDocumentation = ClassDocumentation.methodDocumentationFromClass(self.name);
+            addlistener(self,'excludedSuperclasses','PostSet',@self.excludedSuperclassesDidChange); 
+        end
+
+        function excludedSuperclassesDidChange(self,~,~)
+            self.shouldExcludeAllSuperclasses = 0;
         end
 
         function addMethodDocumentation(self,methodDocumentation)
@@ -105,33 +110,29 @@ classdef ClassDocumentation < handle
                 self ClassDocumentation
             end
 
-            mc = meta.class.fromName(self.name);
+            validMethods = [self.allMethodDocumentation(:).isHidden] == 0 & strcmp(string({self.allMethodDocumentation(:).access}),'public');
+            if self.shouldExcludeAllSuperclasses == 1
+                validMethods = validMethods & strcmp(string({self.allMethodDocumentation(:).declaringClassName}),self.name);
+            else
+                for iExcluded = 1:length(self.excludedSuperclasses)
+                    validMethods = validMethods & ~strcmp(string({self.allMethodDocumentation(:).declaringClassName}),self.excludedSuperclasses{iExcluded});
+                end
+            end
 
             self.methodDocumentationNameMap = containers.Map;
-            for i=1:length(mc.MethodList)
-                methodDocumentation = ClassDocumentation.extractMethodMetadata(mc.MethodList(i),mc.Name);
-                if ~isempty(methodDocumentation)
-                    if mc.MethodList(i).Static == 1
-                        methodDocumentation.functionType = FunctionType.staticMethod;
-                    elseif mc.MethodList(i).Abstract == 1
-                        methodDocumentation.functionType = FunctionType.abstractMethod;
-                    else
-                        methodDocumentation.functionType = FunctionType.instanceMethod;
-                    end
-                    self.addMethodDocumentation(methodDocumentation);
-                    
-                end
+            for index = find(validMethods)
+                self.addMethodDocumentation(self.allMethodDocumentation(index));
             end
-            for i=1:length(mc.PropertyList)
-                methodDocumentation = ClassDocumentation.extractMethodMetadata(mc.PropertyList(i),mc.Name);
-                if ~isempty(methodDocumentation)
-                    methodDocumentation.functionType = FunctionType.instanceProperty;
-                    self.addMethodDocumentation(methodDocumentation);
-                end
-            end
+
+            % Use the detailed description to build the topic list
+            mc = meta.class.fromName(self.name);
+            self.rootTopic = Topic.topicsFromString(mc.DetailedDescription);
+            ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,self.methodDocumentationNameMap);
         end
 
         function writeToFile(self)
+            self.initializeMethodDocumentation();
+
             if ~exist(self.pathOfClassFolderAbsolute,'dir')
                 mkdir(self.pathOfClassFolderAbsolute);
             end
@@ -209,6 +210,20 @@ classdef ClassDocumentation < handle
     end
 
     methods (Static)
+        function declaration = declarationFromString(string)
+            declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
+            matchStr = regexpi(string,declarationExpression,'names');
+            if ~isempty(matchStr)
+                declaration = matchStr.declaration;
+            else
+                declaration = [];
+            end
+        end
+
+        function trimmedString = trimDeclarationFromString(string)
+            declarationExpression = '- declaration:(?<declaration>[^\r\n]+)(?:$|\n)';
+            trimmedString  = regexprep(string,declarationExpression,'','ignorecase');
+        end
 
         function classDocumentation = classDocumentationFromClassNames(nameArray,options)
             arguments
@@ -305,52 +320,43 @@ classdef ClassDocumentation < handle
             rootTopic.addSubtopic(otherTopic);
         end
 
-
-
-        function metadata = extractMethodMetadata(mp,className)
-            % Extract documentation from method or property (mp) metadata.
-            metadata = [];
-
-            % Don't create documentation if this is a method defined in the superclass
-            % This initial check does not work, because if the subclass re-defines a
-            % method, then it counts the subclass as the "DefiningClass". But, for
-            % documentation purposes, we really don't want that.
-            if ~strcmp(mp.DefiningClass.Name,className)
-                return;
+        function methodDocumentation = methodDocumentationFromClass(className)
+            methodDocumentation = MethodDocumentation.empty(0,0);
+            classMetadata = meta.class.fromName(className);
+            
+            % add all the methods and properties
+            for i=1:length(classMetadata.MethodList)
+                mp = classMetadata.MethodList(i);
+                metadata = MethodDocumentation(mp.Name);
+                metadata.addMetadataFromMethodMetadata(mp);
+                metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
+                metadata.declaringClassName = classMetadata.Name;
+                methodDocumentation(end+1) = metadata;
             end
-            if ClassDocumentation.isMethodDefinedInSuperclass(mp)
-                return;
-            end
-
-            % First check if we even want to create documentation for this particular
-            % property or method.
-            if isa(mp,'meta.method')
-                if strcmp(mp.DefiningClass.Name,'handle') || ~strcmp(mp.Access,'public') || (mp.Hidden == true)
-                    return;
-                end
-            elseif isa(mp,'meta.property')
-                if strcmp(mp.DefiningClass.Name,'handle') || ~strcmp(mp.GetAccess,'public')
-                    return;
-                end
+            for i=1:length(classMetadata.PropertyList)
+                mp = classMetadata.PropertyList(i);
+                metadata = MethodDocumentation(mp.Name);
+                metadata.addMetadataFromPropertyMetadata(mp);
+                metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
+                metadata.declaringClassName = classMetadata.Name;
+                methodDocumentation(end+1) = metadata;
             end
 
-            metadata = MethodDocumentation(mp.Name);
-            metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
-            metadata.className = mp.DefiningClass.Name;
-            metadata.shortDescription = mp.Description;
-
+            for iClass=1:length(classMetadata.SuperclassList)
+                methodDocumentation = ClassDocumentation.annotateMethodDocumentationFromClassMetadata(methodDocumentation,classMetadata.SuperclassList(iClass));
+            end
         end
 
-        function bool = isMethodDefinedInSuperclass(mp)
-            bool = 0;
-            if isempty(mp.DefiningClass.SuperclassList)
-                return;
+        function methodDocumentation = annotateMethodDocumentationFromClassMetadata(methodDocumentation,classMetadata)
+            subclassMethodNames = string({methodDocumentation(:).name});
+            superclassMethodNames = string(cat(2,{classMetadata.MethodList(:).Name},{classMetadata.PropertyList(:).Name}));
+            subclassIndices = ismember(subclassMethodNames,superclassMethodNames);
+            for index = find(subclassIndices)
+                methodDocumentation(index).declaringClassName = classMetadata.Name;
             end
-            for i=1:length(mp.DefiningClass.SuperclassList(1).MethodList)
-                if strcmp(mp.DefiningClass.SuperclassList(1).MethodList(i).Name,mp.Name)
-                    bool = 1;
-                    return;
-                end
+
+            for iClass=1:length(classMetadata.SuperclassList)
+                methodDocumentation = ClassDocumentation.annotateMethodDocumentationFromClassMetadata(methodDocumentation,classMetadata.SuperclassList(iClass));
             end
         end
 

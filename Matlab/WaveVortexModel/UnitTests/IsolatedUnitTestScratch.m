@@ -1,8 +1,8 @@
 % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [16 16 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5]);
-% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
-wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [32 32 17]);
+% wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [32 32 17]);
 
 % try
 %     wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5],latitude=90);

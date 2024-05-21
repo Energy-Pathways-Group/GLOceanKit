@@ -141,14 +141,20 @@ for iOp = 1:length(variableName)
 
         case 'psi'
             varAnnotation =  WVVariableAnnotation(name,{'x','y','z'},'m^2/s', 'geostrophic streamfunction');
+            varAnnotation.isVariableWithLinearTimeStep = 0;
+            varAnnotation.isVariableWithNonlinearTimeStep = 1;
             f = @(wvt) (wvt.g/wvt.f) *transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.PA0.*wvt.A0t);
 
         case 'qgpv'
             varAnnotation =  WVVariableAnnotation(name,{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
+            varAnnotation.isVariableWithLinearTimeStep = 0;
+            varAnnotation.isVariableWithNonlinearTimeStep = 1;
             f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.A0_QGPV_factor .*wvt.A0t);
 
         case 'energy'
             varAnnotation = WVVariableAnnotation('energy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
+            varAnnotation.isVariableWithLinearTimeStep = 0;
+            varAnnotation.isVariableWithNonlinearTimeStep = 1;
             f = @(wvt) sum( wvt.Apm_TE_factor(:).*( maskAp(:).*abs(wvt.Ap(:)).^2 + maskAm(:).*abs(wvt.Am(:)).^2 ) + wvt.A0_TE_factor(:).*( maskA0(:).*abs(wvt.A0(:)).^2) );
 
         otherwise

@@ -50,35 +50,16 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`BuildProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildprojectionoperators.html) Now go compute the appropriate number of modes at the
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 
   + [`N2Function`](/classes/transforms/wvtransformhydrostatic/n2function.html) 
-  + [`P`](/classes/transforms/wvtransformhydrostatic/p.html) Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
-  + [`PF`](/classes/transforms/wvtransformhydrostatic/pf.html) size(PF,PG)=[Nj x Nz]
-  + [`PFinv`](/classes/transforms/wvtransformhydrostatic/pfinv.html) Transformation matrices
-  + [`PFinvInterp`](/classes/transforms/wvtransformhydrostatic/pfinvinterp.html) 
-  + [`Q`](/classes/transforms/wvtransformhydrostatic/q.html) Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
-  + [`QG`](/classes/transforms/wvtransformhydrostatic/qg.html) 
-  + [`QGinv`](/classes/transforms/wvtransformhydrostatic/qginv.html) 
-  + [`QGinvInterp`](/classes/transforms/wvtransformhydrostatic/qginvinterp.html) 
   + [`buildInterpolationProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildinterpolationprojectionoperators.html) 
   + [`buildInterpolationProjectionOperatorsForGrid`](/classes/transforms/wvtransformhydrostatic/buildinterpolationprojectionoperatorsforgrid.html) 
   + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) 
   + [`dLnN2Function`](/classes/transforms/wvtransformhydrostatic/dlnn2function.html) 
-  + [`dftBuffer`](/classes/transforms/wvtransformhydrostatic/dftbuffer.html) 
-  + [`dftConjugateIndex`](/classes/transforms/wvtransformhydrostatic/dftconjugateindex.html) 
-  + [`dftPrimaryIndex`](/classes/transforms/wvtransformhydrostatic/dftprimaryindex.html) 
-  + [`h`](/classes/transforms/wvtransformhydrostatic/h.html) [Nj 1]
-  + [`h_0`](/classes/transforms/wvtransformhydrostatic/h_0.html) [Nj 1]
-  + [`h_pm`](/classes/transforms/wvtransformhydrostatic/h_pm.html) [Nj 1]
-  + [`iOmega`](/classes/transforms/wvtransformhydrostatic/iomega.html) 
-  + [`isHydrostatic`](/classes/transforms/wvtransformhydrostatic/ishydrostatic.html) 
   + [`rhoFunction`](/classes/transforms/wvtransformhydrostatic/rhofunction.html) function handles
   + [`rhobar`](/classes/transforms/wvtransformhydrostatic/rhobar.html) on the z-grid, size(N2) = [length(z) 1];
   + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithfinterp.html) 
   + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
   + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) 
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) 
-  + [`wvBuffer`](/classes/transforms/wvtransformhydrostatic/wvbuffer.html) 
-  + [`wvConjugateIndex`](/classes/transforms/wvtransformhydrostatic/wvconjugateindex.html) 
-  + [`zInterp`](/classes/transforms/wvtransformhydrostatic/zinterp.html) 
 
 
 ---
