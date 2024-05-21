@@ -17,7 +17,8 @@ classDoc.writeToFile();
 parentName = 'Transforms';
 websiteFolder = 'classes/transforms';
 classes = {'WVTransformBoussinesq','WVTransformHydrostatic','WVTransformConstantStratification'}; % 'WVTransformSingleMode'
-classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName);
+excludedSuperclasses = {'handle','WVTransform'};
+classDocumentation = ClassDocumentation.classDocumentationFromClassNames(classes,buildFolder=buildFolder,websiteFolder=websiteFolder,parent=parentName,grandparent=classFolderName,excludedSuperclasses=excludedSuperclasses);
 arrayfun(@(a) a.writeToFile(),classDocumentation)
 
 %%

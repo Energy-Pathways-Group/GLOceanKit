@@ -12,15 +12,14 @@ classdef ClassDocumentation < handle
 
     properties
         name string
-        pathOfClassFolderRelative
-        pathOfClassFolderAbsolute
+        pathOfClassFolderOnWebsite
+        pathOfClassFolderOnHardDrive
         parent
         grandparent
         nav_order
         rootTopic
 
         allMethodDocumentation
-        methodDocumentationNameMap
         shouldExcludeAllSuperclasses = 1;
 
         shortDescription
@@ -41,18 +40,24 @@ classdef ClassDocumentation < handle
                 options.parent = []
                 options.grandparent = []
                 options.nav_order = []
+                options.excludedSuperclasses = {'handle'};
             end
             self.name = name;
             self.parent = options.parent;
             self.grandparent = options.grandparent;
             self.nav_order = options.nav_order;
+            self.excludedSuperclasses = options.excludedSuperclasses;
+            if isequal(options.excludedSuperclasses,{'handle'})
+                self.shouldExcludeAllSuperclasses = 1;
+            else
+                self.shouldExcludeAllSuperclasses = 0;
+            end
 
             % relative path to a folder for all the class contents
-            self.pathOfClassFolderRelative = sprintf('%s/%s',options.websiteFolder,lower(self.name));
+            self.pathOfClassFolderOnWebsite = fullfile(options.websiteFolder,lower(self.name));
 
             % Make a folder for all the class contents
-            self.pathOfClassFolderAbsolute = sprintf('%s/',options.buildFolder,self.pathOfClassFolderRelative);
-
+            self.pathOfClassFolderOnHardDrive = fullfile(options.buildFolder,self.pathOfClassFolderOnWebsite);
 
             mc = meta.class.fromName(self.name);
             
@@ -72,44 +77,20 @@ classdef ClassDocumentation < handle
         end
 
         function addMethodDocumentation(self,methodDocumentation)
-            if isKey(self.methodDocumentationNameMap,methodDocumentation.name)
-                methodDocumentation.pathOfOutputFile = self.methodDocumentationNameMap(methodDocumentation.name).pathOfOutputFile;
-                methodDocumentation.pathOfFileOnWebsite = self.methodDocumentationNameMap(methodDocumentation.name).pathOfFileOnWebsite;
-            elseif ismember(lower(methodDocumentation.name),lower(keys(self.methodDocumentationNameMap))) && ~isKey(self.methodDocumentationNameMap,methodDocumentation.name)
-                methodDocumentation.pathOfOutputFile = sprintf('%s/%s_.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
-                methodDocumentation.pathOfFileOnWebsite = sprintf('/%s/%s_.html',self.pathOfClassFolderRelative,lower(methodDocumentation.name));
+            % Add new method documentation beyond what was automatically
+            % extracted from the class metadata---overwriting any existing
+            % documentation with the same (case-sensitive) name.
+            existsAtIndex = strcmp(string({self.allMethodDocumentation(:).name}),methodDocumentation.name);
+            if any(existsAtIndex)
+                index = find(existsAtIndex);
+                self.allMethodDocumentation(index) = methodDocumentation;
             else
-                methodDocumentation.pathOfOutputFile = sprintf('%s/%s.md',self.pathOfClassFolderAbsolute,lower(methodDocumentation.name));
-                methodDocumentation.pathOfFileOnWebsite = sprintf('/%s/%s.html',self.pathOfClassFolderRelative,lower(methodDocumentation.name));
+                self.allMethodDocumentation(end+1) = methodDocumentation;
             end
-            self.methodDocumentationNameMap(methodDocumentation.name) = methodDocumentation;
         end
 
-        function initializeMethodDocumentation(self)
-            % Capture metadata from all the public methods and properties of a class
-            %
-            % This function ultimately calls methodDocumentation.addMetadataFromDetailedDescription,
-            % but first sorts through the available methods and properties to find the
-            % right ones.
-            %
-            % Builds a struct that may have the following keys:
-            % - topic
-            % - subtopic
-            % - subsubtopic
-            % - declaration
-            % - shortDescription
-            % - detailedDescription
-            % - parameters
-            % - returns
-            % - className
-            % - name
-            %
-            % - Parameter mc: the detailed description
-            % - Returns metadataNameMap: containers.Map with method names as keys and metadata structures as values.
-            arguments (Input)
-                self ClassDocumentation
-            end
-
+        function writeToFile(self)
+            % First identify which methods we want to include
             validMethods = [self.allMethodDocumentation(:).isHidden] == 0 & strcmp(string({self.allMethodDocumentation(:).access}),'public');
             if self.shouldExcludeAllSuperclasses == 1
                 validMethods = validMethods & strcmp(string({self.allMethodDocumentation(:).declaringClassName}),self.name);
@@ -119,31 +100,38 @@ classdef ClassDocumentation < handle
                 end
             end
 
-            self.methodDocumentationNameMap = containers.Map;
+            % Extract those methods and assign a path to write.
+            methodDocumentationNameMap = containers.Map;
             for index = find(validMethods)
-                self.addMethodDocumentation(self.allMethodDocumentation(index));
+                methodDocumentation = self.allMethodDocumentation(index);
+                if ismember(lower(methodDocumentation.name),lower(keys(methodDocumentationNameMap))) && ~isKey(methodDocumentationNameMap,methodDocumentation.name)
+                    methodDocumentation.pathOfOutputFile = fullfile(self.pathOfClassFolderOnHardDrive,sprintf('%s_.md',lower(methodDocumentation.name)));
+                    methodDocumentation.pathOfFileOnWebsite = fullfile("/",self.pathOfClassFolderOnWebsite,sprintf('%s_.html',lower(methodDocumentation.name)));
+                else
+                    methodDocumentation.pathOfOutputFile = fullfile(self.pathOfClassFolderOnHardDrive,sprintf('%s.md',lower(methodDocumentation.name)));
+                    methodDocumentation.pathOfFileOnWebsite = fullfile("/",self.pathOfClassFolderOnWebsite,sprintf('%s.html',lower(methodDocumentation.name)));
+                end
+                methodDocumentationNameMap(methodDocumentation.name) = methodDocumentation;
             end
 
-            % Use the detailed description to build the topic list
+            % Use the *class* detailed description to build the topic list
             mc = meta.class.fromName(self.name);
             self.rootTopic = Topic.topicsFromString(mc.DetailedDescription);
-            ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,self.methodDocumentationNameMap);
-        end
+            % Then use the *method* information to add new topics and
+            % assign methods to existing topics.
+            ClassDocumentation.addPropertyAndMethodsToTopics(self.rootTopic,methodDocumentationNameMap);
 
-        function writeToFile(self)
-            self.initializeMethodDocumentation();
-
-            if ~exist(self.pathOfClassFolderAbsolute,'dir')
-                mkdir(self.pathOfClassFolderAbsolute);
+            if ~exist(self.pathOfClassFolderOnHardDrive,'dir')
+                mkdir(self.pathOfClassFolderOnHardDrive);
             end
 
             self.writeMarkdownForClassIndex();
 
             iPageNumber = 0;
-            methodNames = keys(self.methodDocumentationNameMap);
+            methodNames = keys(methodDocumentationNameMap);
             for i=1:length(methodNames)
                 iPageNumber = iPageNumber+1;
-                methodDocumentation = self.methodDocumentationNameMap(methodNames{i});
+                methodDocumentation = methodDocumentationNameMap(methodNames{i});
                 methodDocumentation.writeToFile(iPageNumber)
             end
         end
@@ -153,7 +141,7 @@ classdef ClassDocumentation < handle
                 self
             end
 
-            pathOfIndexFile = sprintf('%s/index.md',self.pathOfClassFolderAbsolute);
+            pathOfIndexFile = sprintf('%s/index.md',self.pathOfClassFolderOnHardDrive);
 
             fileID = fopen(pathOfIndexFile,'w');
             fprintf(fileID,'---\nlayout: default\ntitle: %s\nhas_children: false\nhas_toc: false\nmathjax: true\n',self.name);
@@ -198,7 +186,7 @@ classdef ClassDocumentation < handle
             % do not call the method directly, because we do not want to print the Root
             % category name
             for iSubtopic = 1:length(self.rootTopic.subtopics)
-                ClassDocumentation.writeMarkdownForTopic(self.rootTopic.subtopics(iSubtopic),fileID,'',self.pathOfClassFolderRelative);
+                ClassDocumentation.writeMarkdownForTopic(self.rootTopic.subtopics(iSubtopic),fileID,'',self.pathOfClassFolderOnWebsite);
             end
 
             fprintf(fileID,'\n\n---');
@@ -226,17 +214,22 @@ classdef ClassDocumentation < handle
         end
 
         function classDocumentation = classDocumentationFromClassNames(nameArray,options)
+            % initialize several ClassDocumentations at the same time. This
+            % is useful when the documentation is at the same level
+            % (sharing the same parent and grandparent). The documentation
+            % will be assigned a nav_order.
             arguments
                 nameArray 
                 options.buildFolder % the folder where we are dumping everything on the local hard drive. This will become the *root* website folder
                 options.websiteFolder % the folder relative to the root website folder
                 options.parent = []
                 options.grandparent = []
+                options.excludedSuperclasses = {'handle'};
             end
 
             classDocumentation = ClassDocumentation.empty(length(nameArray),0);
             for iName=1:length(nameArray)
-                classDocumentation(iName) = ClassDocumentation(nameArray{iName},buildFolder=options.buildFolder,websiteFolder=options.websiteFolder,parent=options.parent,grandparent=options.grandparent,nav_order=iName);
+                classDocumentation(iName) = ClassDocumentation(nameArray{iName},buildFolder=options.buildFolder,websiteFolder=options.websiteFolder,parent=options.parent,grandparent=options.grandparent,nav_order=iName,excludedSuperclasses = options.excludedSuperclasses);
             end
         end
 

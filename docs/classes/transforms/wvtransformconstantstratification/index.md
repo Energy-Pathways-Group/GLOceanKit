@@ -39,6 +39,12 @@ Wave-vortex transformation that assumes constant stratification
 ## Topics
 + Initialization
   + [`WVTransformConstantStratification`](/classes/transforms/wvtransformconstantstratification/wvtransformconstantstratification.html) initialze a wave-vortex transform with constant stratification
++ Initial conditions
+  + Inertial Oscillations
+    + [`addInertialMotions`](/classes/transforms/wvtransformconstantstratification/addinertialmotions.html) add inertial motions to existing inertial motions
+    + [`initWithInertialMotions`](/classes/transforms/wvtransformconstantstratification/initwithinertialmotions.html) initialize with inertial motions
+    + [`removeAllInertialMotions`](/classes/transforms/wvtransformconstantstratification/removeallinertialmotions.html) remove all inertial motions
+    + [`setInertialMotions`](/classes/transforms/wvtransformconstantstratification/setinertialmotions.html) set inertial motions
 + Other
   + [`DCT`](/classes/transforms/wvtransformconstantstratification/dct.html) 
   + [`DFT`](/classes/transforms/wvtransformconstantstratification/dft.html) 
@@ -57,13 +63,9 @@ Wave-vortex transformation that assumes constant stratification
   + [`cg_x`](/classes/transforms/wvtransformconstantstratification/cg_x.html) 
   + [`cg_y`](/classes/transforms/wvtransformconstantstratification/cg_y.html) 
   + [`cg_z`](/classes/transforms/wvtransformconstantstratification/cg_z.html) 
-  + [`h_0`](/classes/transforms/wvtransformconstantstratification/h_0.html) [Nj Nkl]
-  + [`h_pm`](/classes/transforms/wvtransformconstantstratification/h_pm.html) [Nj Nkl]
   + [`iDCT`](/classes/transforms/wvtransformconstantstratification/idct.html) 
   + [`iDFT`](/classes/transforms/wvtransformconstantstratification/idft.html) 
   + [`iDST`](/classes/transforms/wvtransformconstantstratification/idst.html) 
-  + [`iOmega`](/classes/transforms/wvtransformconstantstratification/iomega.html) 
-  + [`isHydrostatic`](/classes/transforms/wvtransformconstantstratification/ishydrostatic.html) 
   + [`rhobar`](/classes/transforms/wvtransformconstantstratification/rhobar.html) 
   + [`transformFromSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf.html) 
   + [`transformFromSpatialDomainWithF_FFT`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf_fft.html) 

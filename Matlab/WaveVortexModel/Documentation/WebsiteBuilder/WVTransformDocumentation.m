@@ -4,15 +4,25 @@ classdef WVTransformDocumentation < ClassDocumentation
 
     methods
 
-        function initializeMethodDocumentation(self)
-            initializeMethodDocumentation@ClassDocumentation(self);
+        function self = WVTransformDocumentation(name,options)
+            arguments
+                name
+                options.buildFolder % the folder where we are dumping everything on the local hard drive. This will become the *root* website folder
+                options.websiteFolder % the folder relative to the root website folder
+                options.parent = []
+                options.grandparent = []
+                options.nav_order = []
+            end
+            superClassOptions = namedargs2cell(options);
+            self@ClassDocumentation(name,superClassOptions{:});
 
             % Overwrite the automatically extracted metadata, with our version
             dims = WVTransform.defaultDimensionAnnotations();
             for iDim=1:length(dims)
                 metadata = MethodDocumentation(dims(iDim).name);
                 metadata.addMetadataFromDetailedDescription(dims(iDim).detailedDescription);
-                metadata.className = self.name;
+                metadata.definingClassName = self.name;
+                metadata.declaringClassName = self.name;
                 metadata.shortDescription = dims(iDim).description;
                 metadata.units = dims(iDim).units;
                 metadata.isComplex = 0;
@@ -25,7 +35,8 @@ classdef WVTransformDocumentation < ClassDocumentation
             for iDim=1:length(props)
                 metadata = MethodDocumentation(props(iDim).name);
                 metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
-                metadata.className = self.name;
+                metadata.definingClassName = self.name;
+                metadata.declaringClassName = self.name;
                 metadata.shortDescription = props(iDim).description;
                 metadata.units = props(iDim).units;
                 metadata.dimensions = props(iDim).dimensions;
@@ -42,7 +53,8 @@ classdef WVTransformDocumentation < ClassDocumentation
 
                     metadata = MethodDocumentation(stateVar.name);
                     metadata.addMetadataFromDetailedDescription(stateVar.detailedDescription);
-                    metadata.className = self.name;
+                metadata.definingClassName = self.name;
+                metadata.declaringClassName = self.name;
                     metadata.shortDescription = stateVar.description;
                     metadata.units = stateVar.units;
                     metadata.dimensions = stateVar.dimensions;
@@ -57,7 +69,8 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata = MethodDocumentation(methods(iMethod).name);
                 metadata.addMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
                 metadata.shortDescription = methods(iMethod).description;
-                metadata.className = self.name;
+                metadata.definingClassName = self.name;
+                metadata.declaringClassName = self.name;
                 metadata.functionType = FunctionType.instanceMethod;
                 self.addMethodDocumentation(metadata);
             end

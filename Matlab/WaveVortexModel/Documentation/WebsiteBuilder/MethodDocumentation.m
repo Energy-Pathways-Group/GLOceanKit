@@ -16,8 +16,8 @@ classdef MethodDocumentation < handle
         subsubtopic = []
         nav_order = Inf
         functionType
-        access
-        isHidden
+        access = 'public'
+        isHidden = 0
 
         pathOfOutputFile = [] % path on the local hard drive
         pathOfFileOnWebsite = []

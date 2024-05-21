@@ -3,7 +3,7 @@ layout: default
 title: buildVerticalModeProjectionOperators
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 30
+nav_order: 31
 mathjax: true
 ---
 

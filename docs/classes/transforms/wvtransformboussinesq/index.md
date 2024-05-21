@@ -30,6 +30,12 @@ nav_order: 1
 
 
 ## Topics
++ Initial conditions
+  + Inertial Oscillations
+    + [`addInertialMotions`](/classes/transforms/wvtransformboussinesq/addinertialmotions.html) add inertial motions to existing inertial motions
+    + [`initWithInertialMotions`](/classes/transforms/wvtransformboussinesq/initwithinertialmotions.html) initialize with inertial motions
+    + [`removeAllInertialMotions`](/classes/transforms/wvtransformboussinesq/removeallinertialmotions.html) remove all inertial motions
+    + [`setInertialMotions`](/classes/transforms/wvtransformboussinesq/setinertialmotions.html) set inertial motions
 + Other
   + [`Aklz`](/classes/transforms/wvtransformboussinesq/aklz.html) 
   + [`BuildProjectionOperatorsForGeostrophicModes`](/classes/transforms/wvtransformboussinesq/buildprojectionoperatorsforgeostrophicmodes.html) Now go compute the appropriate number of modes at the
@@ -66,11 +72,7 @@ nav_order: 1
   + [`dftBuffer`](/classes/transforms/wvtransformboussinesq/dftbuffer.html) 
   + [`dftConjugateIndex`](/classes/transforms/wvtransformboussinesq/dftconjugateindex.html) 
   + [`dftPrimaryIndex`](/classes/transforms/wvtransformboussinesq/dftprimaryindex.html) 
-  + [`h_0`](/classes/transforms/wvtransformboussinesq/h_0.html) [Nj 1]
-  + [`h_pm`](/classes/transforms/wvtransformboussinesq/h_pm.html) [Nj Nkl]
   + [`iK2unique`](/classes/transforms/wvtransformboussinesq/ik2unique.html) map from 2-dim K2, to 1-dim K2unique
-  + [`iOmega`](/classes/transforms/wvtransformboussinesq/iomega.html) 
-  + [`isHydrostatic`](/classes/transforms/wvtransformboussinesq/ishydrostatic.html) 
   + [`nK2unique`](/classes/transforms/wvtransformboussinesq/nk2unique.html) number of unique squared-wavenumbers
   + [`rhoFunction`](/classes/transforms/wvtransformboussinesq/rhofunction.html) function handles
   + [`rhobar`](/classes/transforms/wvtransformboussinesq/rhobar.html) on the z-grid, size(N2) = [length(z) 1];

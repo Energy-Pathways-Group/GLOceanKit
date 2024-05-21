@@ -3,7 +3,7 @@ layout: default
 title: cg_x
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 16
+nav_order: 17
 mathjax: true
 ---
 
