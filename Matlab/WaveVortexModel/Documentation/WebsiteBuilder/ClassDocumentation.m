@@ -20,7 +20,7 @@ classdef ClassDocumentation < handle
         rootTopic
 
         allMethodDocumentation
-        shouldExcludeAllSuperclasses = 1;
+        shouldExcludeAllSuperclasses
 
         shortDescription
         detailedDescription
@@ -28,7 +28,7 @@ classdef ClassDocumentation < handle
     end
 
     properties (SetObservable, AbortSet, Access = public)
-        excludedSuperclasses = {'handle'};
+        excludedSuperclasses
     end
 
     methods

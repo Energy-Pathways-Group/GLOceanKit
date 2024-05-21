@@ -1,4 +1,4 @@
-classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
+classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WVStratifiedFlow
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %
@@ -287,7 +287,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
             self.P0 =     zeros(self.Nj,1);
             self.Q0 =     zeros(self.Nj,1);
 
-            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.BuildProjectionOperatorsForGeostrophicModes();
+            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.projectionOperatorsForGeostrophicModes();
 
             self.PFpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
             self.QGpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
@@ -298,7 +298,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
             self.Qpm =     zeros(self.Nj,self.nK2unique);
             self.QGwg =    zeros(self.Nj,self.Nj,self.nK2unique);
             for iK=1:self.nK2unique
-                [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.BuildProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
+                [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.projectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
                 self.QGwg(:,:,iK ) = self.QGpm(:,:,iK )*self.QG0inv;
             end
 
@@ -306,126 +306,6 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods
             for iK=1:size(self.h_pm,2)
                 self.h_pm(:,iK) = h(:,self.iK2unique(iK));
             end
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForGeostrophicModes(self)
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
-            self.verticalModes.normalization = Normalization.kConstant;
-            self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
-            [Finv,Ginv,h] = self.verticalModes.ModesAtFrequency(0);
-            [P,Q,PFinv,PF,QGinv,QG,h] = self.BuildProjectionOperatorsWithRigidLid(Finv,Ginv,h);
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsForIGWModes(self,k)
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
-            self.verticalModes.normalization = Normalization.kConstant;
-            self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
-            [Finv,Ginv,h] = self.verticalModes.ModesAtWavenumber(k);
-            [P,Q,PFinv,PF,QGinv,QG,h] = self.BuildProjectionOperatorsWithRigidLid(Finv,Ginv,h);
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsWithRigidLid(self,Finv,Ginv,h)
-            nModes = size(Finv,2);
-
-            % Make these matrices invertible by adding the barotropic mode
-            % to F, and removing the boundaries of G.
-            Finv = cat(2,ones(self.Nz,1),Finv);
-            Ginv = Ginv(2:end-1,1:end-1);
-
-            % Compute the precondition matrices (really, diagonals)
-            P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
-
-            % Now create the actual transformation matrices
-            PFinv = Finv./P;
-            QGinv = Ginv./Q;
-            PF = inv(PFinv);
-            QG = inv(QGinv);
-
-            maxCond = max([cond(PFinv), cond(QGinv), cond(PF), cond(QG)],[],2);
-            if maxCond > 1000
-                warning('Condition number is %f the vertical transformations.',maxCond);
-            end
-            % size(F)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
-            % but, we will only multiply by vectors [Nj 1], so dump the
-            % last column. Now size(Fp) = [Nz x Nj].
-            PFinv = PFinv(:,1:end-1);
-
-            % size(Finv)=[Nj+1, Nz], but we don't care about the last mode
-            PF = PF(1:end-1,:);
-
-            % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
-            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,nModes-1),QGinv,zeros(1,nModes-1)));
-
-            % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
-            % mode, but also need zeros for the boundary
-            QG = cat(2,zeros(nModes,1), cat(1,zeros(1,self.Nz-2),QG),zeros(nModes,1));
-
-            % want size(h)=[Nj 1]
-            h = cat(1,1,reshape(h(1:end-1),[],1)); % remove the extra mode at the end
-
-            P = reshape(P(1:end-1),[],1);
-            Q = reshape(cat(2,1,Q),[],1);
-
-            PFinv = PFinv(:,1:self.Nj);
-            PF = PF(1:self.Nj,:);
-            P = P(1:self.Nj,1);
-            QGinv = QGinv(:,1:self.Nj);
-            QG = QG(1:self.Nj,:);
-            Q = Q(1:self.Nj,1);
-            h = h(1:self.Nj,1);
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = BuildProjectionOperatorsWithFreeSurface(self,Finv,Ginv,h)
-            % Make these matrices invertible by adding the barotropic mode
-            % to F, and removing the lower boundary of G.
-            Finv = cat(2,ones(self.Nz,1),Finv); % [Nz Nj+1]
-            Ginv = Ginv(2:end,:);  % [Nz-1 Nj]
-
-            % Compute the precondition matrices (really, diagonals)
-            P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
-
-            % Now create the actual transformation matrices
-            PFinv = Finv./P;
-            QGinv = Ginv./Q;
-            PF = inv(PFinv); % [Nj+1 Nz]
-            QG = inv(QGinv); % [Nj Nz-1]
-
-            maxCond = max([cond(PFinv), cond(QGinv), cond(PF), cond(QG)],[],2);
-            if maxCond > 1000
-                warning('Condition number is %f the vertical transformations.',maxCond);
-            end
-            % size(PFinv)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
-            % but, we will only multiply by vectors [Nj 1], so dump the
-            % last column. Now size(PFinv) = [Nz x Nj].
-            PFinv = PFinv(:,1:end-1);
-
-            % size(PF)=[Nj+1, Nz], but we don't care about the last mode
-            PF = PF(1:end-1,:);
-
-            % size(QGinv) = [Nz-1, Nj], need zeros for the lower boundaries
-            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = QGinv(:,1:end-1); % dump Nyquist  
-            QGinv = cat(2,zeros(self.Nz-1,1),QGinv); % add barotropic mode
-            QGinv = cat(1,zeros(1,self.Nj),QGinv); % add zeros at along the bottom
-
-            % Now have to do the same thing to the condition matrix
-            Q = cat(2,0,Q(1:end-1));
-
-            % size(QG) = [Nj, Nz-1], need a zero for the barotropic
-            % mode, but also need zeros for the boundary
-            QG = cat(1,zeros(1,self.Nz-1),QG(1:end-1,:)); % dump the Nyquist mode, add a barotropic mode (all zeros)
-            QG = cat(2,zeros(self.Nj,1), QG); % add the bottom boundary
-
-            % want size(h)=[1 1 Nj]
-            h = shiftdim(h,-1);
-
-            P = shiftdim(P(1:end-1),-1);
-            Q = shiftdim(Q,-1);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

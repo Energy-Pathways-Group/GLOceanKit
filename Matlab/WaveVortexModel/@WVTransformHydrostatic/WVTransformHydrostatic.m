@@ -91,7 +91,14 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
                 options.Q (:,1) double
                 options.z (:,1) double
             end
-                     
+            
+            % First we need to initialize the WVStratifiedFlow.
+            if isfield(options,'z')
+                z=options.z;
+            else
+                z = [];
+            end
+            WVStratifiedFlow(Lxyz(3),Nxyz(3),)
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
             canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));

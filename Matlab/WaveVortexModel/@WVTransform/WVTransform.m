@@ -70,9 +70,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         horizontalModes
 
-        % maximum buoyancy frequency (radians/s)
-        Nmax
-        
         % mean density at the surface, z=0. (kg/m3)
         rho0
         
@@ -204,7 +201,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.Nj (1,1) double {mustBePositive} = length(z)
-                options.Nmax (1,1) double {mustBePositive} = Inf
                 options.shouldAntialias double = 1
             end
             
@@ -219,7 +215,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.latitude = options.latitude;
             self.rho0 = options.rho0;
-            self.Nmax = options.Nmax;
+            
             self.shouldAntialias = options.shouldAntialias;
             self.Nj = options.Nj;
             self.horizontalModes = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
@@ -521,10 +517,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             u_y = self.horizontalModes.diffY(u,n);
         end
-
-        u_z = diffZF(self,u,n);
-        w_z = diffZG(self,w,n);
-        
 
         function set.nonlinearFluxOperation(self,value)
             self.nonlinearFluxOperation = value;
