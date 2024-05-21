@@ -11,6 +11,6 @@ arguments
     wvt         WVTransform
 end
 
-Ginv = shiftdim(wvt.Q0,1) .* wvt.QG0inv;
+Ginv = shiftdim(wvt.G_g(:,1),1) .* wvt.iDST;
 
 end

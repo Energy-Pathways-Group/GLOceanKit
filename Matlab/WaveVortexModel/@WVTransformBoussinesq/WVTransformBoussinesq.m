@@ -12,11 +12,6 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
     %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho, 'zgrid', z)
 
     properties (GetAccess=public, SetAccess=protected)
-        rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
-        rhoFunction, N2Function, dLnN2Function % function handles
-
-        verticalModes
-
         % Geostrophic transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj x 1]
         PF0, QG0 % size(PF,PG)=[Nj x Nz x 1]
@@ -63,9 +58,9 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
-                options.rho function_handle
-                options.N2 function_handle
-                options.dLnN2func function_handle = @disp
+                options.rho function_handle = @isempty
+                options.N2 function_handle = @isempty
+                options.dLnN2func function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.shouldAntialias double = 1
@@ -92,77 +87,34 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
                 options.QGwg 
             end
 
+            % First we need to initialize the WVStratifiedFlow.
+            if isfield(options,'z')
+                z=options.z;
+            else
+                z = [];
+            end
+            self@WVStratifiedFlow(Lxyz(3),Nxyz(3),rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude,z=z)
 
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
             canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PF0inv','QG0inv','PF0','QG0','h_0','P0','Q0','z','PFpmInv','QGpmInv','PFpm','QGpm','h_pm','Ppm','Qpm','QGwg'}));
 
             if canInitializeDirectly
-                fprintf('Initialize the WVTransformHydrostatic directly from matrices.\n');
-                % We already know the quadrature points
-                z = options.z;
-                N2 = options.N2(z);
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=Nxyz(3)-1);
+                fprintf('Initialize the WVTransformBoussinesq directly from matrices.\n');
                 Nj = size(options.PF0,1);
             else
                 nModes = Nxyz(3)-1;
-                % Before initializing the superclass, we need to find the
-                % Gauss-quadrature points for this stratification profile.
-                Nz = Nxyz(3);
-                z = linspace(-Lxyz(3),0,Nz*10)';
-                if isfield(options,'N2')
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-                elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);
-                else
-                    error('You must specify either rho or N2.');
-                end
-                im.normalization = Normalization.kConstant;
-                im.upperBoundary = UpperBoundary.rigidLid;
-                z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,im.f0);
-
-                % If the user requests nModes---we will have that many fully
-                % resolved modes. It works as follows for rigid lid:
-                % - There is one barotropic mode that appears in F
-                % - There are nModes-1 *internal modes* for G and F.
-                % - We compute the nModes+1 internal mode for F, to make it
-                % complete.
-                % This is nModes+1 grid points necessary to make this happen.
-                % This should make sense because there are nModes-1 internal
-                % modes, but the boundaries.
-                if isfield(options,'N2')
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
-                    N2 = options.N2(z);
-                    N2func = options.N2;
-                    rhoFunc = im.rho_function;
-                elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
-                    N2 = im.N2;
-                    N2func = im.N2_function;
-                    rhoFunc = options.rho;
-                end
-
                 if options.shouldAntialias == 1
                     Nj = floor(options.jAliasingFraction*nModes);
                 else
                     Nj = nModes;
                 end
             end
-            im.normalization = Normalization.kConstant;
-            im.upperBoundary = UpperBoundary.rigidLid;
 
-            % This is enough information to initialize the superclass
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,Nmax=sqrt(max(N2)));
+            self@WVTransform(Lxyz, Nxyz(1:2), latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
+            self.z = self.verticalModes.z;
 
             if canInitializeDirectly
-                self.rhoFunction = im.rho_function;
-                self.N2Function = options.N2;
-                self.verticalModes = im;
-
-                self.rhobar = self.rhoFunction(self.z);
-                self.N2 = self.N2Function(self.z);
-                self.dLnN2 = options.dLnN2;
-
                 self.PF0inv = options.PF0inv;
                 self.QG0inv = options.QG0inv;
                 self.PF0 = options.PF0;
@@ -192,20 +144,6 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
                     self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
                 end
             else
-                if isequal(options.dLnN2func,@disp)
-                    dLnN2 = im.rho_zz./im.rho_z;
-                else
-                    dLnN2 = options.dLnN2func(z);
-                end
-
-                self.rhoFunction = rhoFunc;
-                self.N2Function = N2func;
-                self.verticalModes = im;
-
-                self.rhobar = rhoFunc(self.z);
-                self.N2 = N2;
-                self.dLnN2 = dLnN2;
-                
                 % K2unique are the unique wavenumbers (sorted)
                 % iK2unique is the same size as K2, but are the indices for
                 % the K2unique matrix to recreate/map back to K2unique.
@@ -222,7 +160,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
             end
             self.initializePrimaryFlowComponents();
 
-            self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
+            % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
             self.addPropertyAnnotations(WVPropertyAnnotation('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
             self.addPropertyAnnotations(WVPropertyAnnotation('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
@@ -279,15 +217,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
         end
 
         function self = buildVerticalModeProjectionOperators(self)
-            self.PF0inv = zeros(self.Nz,self.Nj,1);
-            self.QG0inv = zeros(self.Nz,self.Nj,1);
-            self.PF0 =    zeros(self.Nj,self.Nz,1);
-            self.QG0 =    zeros(self.Nj,self.Nz,1);
-            self.h_0 =    zeros(self.Nj,1);
-            self.P0 =     zeros(self.Nj,1);
-            self.Q0 =     zeros(self.Nj,1);
-
-            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.projectionOperatorsForGeostrophicModes();
+            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
 
             self.PFpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
             self.QGpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
@@ -298,7 +228,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
             self.Qpm =     zeros(self.Nj,self.nK2unique);
             self.QGwg =    zeros(self.Nj,self.Nj,self.nK2unique);
             for iK=1:self.nK2unique
-                [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.projectionOperatorsForIGWModes(sqrt(self.K2unique(iK)));
+                [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.verticalProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)),self.Nj);
                 self.QGwg(:,:,iK ) = self.QGpm(:,:,iK )*self.QG0inv;
             end
 

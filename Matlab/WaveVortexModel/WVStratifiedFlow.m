@@ -14,6 +14,12 @@ classdef WVStratifiedFlow < handle
     methods (Abstract)
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
+
+        Finv = FinvMatrix(self);
+        Ginv = GinvMatrix(self);
+
+        F = FMatrix(self);
+        G = GMatrix(self);
     end
 
     methods
@@ -24,9 +30,9 @@ classdef WVStratifiedFlow < handle
             arguments
                 Lz (1,1) double {mustBePositive}
                 Nz (1,1) double {mustBePositive}
-                options.rho function_handle = []
-                options.N2 function_handle = []
-                options.dLnN2func function_handle = @disp
+                options.rho function_handle = @isempty
+                options.N2 function_handle = @isempty
+                options.dLnN2 function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.verticalModes = []
                 
@@ -34,18 +40,16 @@ classdef WVStratifiedFlow < handle
                 options.Nj;
             end
             
-            if ~isempty(options,'verticalModes')
+            if ~isempty(options.verticalModes)
                 z = options.verticalModes.z;
             elseif isempty(options.z)
                 % if z wasn't given, then we need to compute quadrature
                 % points.
                 z = linspace(-Lz,0,Nz*10)';
-                if isfield(options,'N2')
+                if ~isequal(options.N2,@isempty)
                     im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-                elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude);
-                else
-                    error('You must specify either rho or N2.');
+                elseif ~isequal(options.rho,@isempty)
+                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude); 
                 end
                 im.normalization = Normalization.kConstant;
                 im.upperBoundary = UpperBoundary.rigidLid;
@@ -64,56 +68,58 @@ classdef WVStratifiedFlow < handle
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
 
-            if ~isempty(options,'verticalModes')
+            if ~isempty(options.verticalModes)
                 self.verticalModes = options.verticalModes;
                 self.N2Function = options.N2;
                 self.rhoFunction = options.rho;
                 self.rho_nm = self.rhoFunction(z);
-                self.N2 = self.N2Function.N2(z);
-            elseif isfield(options,'N2')
+                self.N2 = self.N2Function(z);
+            elseif ~isequal(options.N2,@isempty)
                 self.verticalModes = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = options.N2(z);
                 self.N2Function = options.N2;
                 self.rhoFunction = im.rho_function;
                 self.rho_nm = self.rhoFunction(z);
-            elseif isfield(options,'rho')
+            elseif ~isequal(options.rho,@isempty)
                 self.verticalModes = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = im.N2;
                 self.N2Function = im.N2_function;
                 self.rhoFunction = options.rho;
                 self.rho_nm = self.rhoFunction(z);
+            else
+                error('You must specify either rho or N2.');
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
             
-            if isequal(options.dLnN2func,@disp)
+            if isequal(options.dLnN2,@isempty)
                 self.dLnN2 = im.rho_zz./im.rho_z;
             else
-                self.dLnN2 = options.dLnN2func(z);
-                self.dLnN2Function = options.dLnN2func;
+                self.dLnN2 = options.dLnN2(z);
+                self.dLnN2Function = options.dLnN2;
             end
                 
         end
 
-        function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsForGeostrophicModes(self)
+        function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
             self.verticalModes.normalization = Normalization.kConstant;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv,h] = self.verticalModes.ModesAtFrequency(0);
-            [P,Q,PFinv,PF,QGinv,QG,h] = self.BuildProjectionOperatorsWithRigidLid(Finv,Ginv,h);
+            [P,Q,PFinv,PF,QGinv,QG,h] = self.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj);
         end
 
-        function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsForIGWModes(self,k)
+        function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForIGWModes(self,k,Nj)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
             self.verticalModes.normalization = Normalization.kConstant;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv,h] = self.verticalModes.ModesAtWavenumber(k);
-            [P,Q,PFinv,PF,QGinv,QG,h] = self.BuildProjectionOperatorsWithRigidLid(Finv,Ginv,h);
+            [P,Q,PFinv,PF,QGinv,QG,h] = self.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj);
         end
 
-        function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsWithRigidLid(self,Finv,Ginv,h)
+        function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsWithRigidLid(self,Finv,Ginv,h,Nj)
             nModes = size(Finv,2);
 
             % Make these matrices invertible by adding the barotropic mode
@@ -157,13 +163,13 @@ classdef WVStratifiedFlow < handle
             P = reshape(P(1:end-1),[],1);
             Q = reshape(cat(2,1,Q),[],1);
 
-            PFinv = PFinv(:,1:self.Nj);
-            PF = PF(1:self.Nj,:);
-            P = P(1:self.Nj,1);
-            QGinv = QGinv(:,1:self.Nj);
-            QG = QG(1:self.Nj,:);
-            Q = Q(1:self.Nj,1);
-            h = h(1:self.Nj,1);
+            PFinv = PFinv(:,1:Nj);
+            PF = PF(1:Nj,:);
+            P = P(1:Nj,1);
+            QGinv = QGinv(:,1:Nj);
+            QG = QG(1:Nj,:);
+            Q = Q(1:Nj,1);
+            h = h(1:Nj,1);
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsWithFreeSurface(self,Finv,Ginv,h)
@@ -198,7 +204,7 @@ classdef WVStratifiedFlow < handle
             % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
             QGinv = QGinv(:,1:end-1); % dump Nyquist  
             QGinv = cat(2,zeros(self.Nz-1,1),QGinv); % add barotropic mode
-            QGinv = cat(1,zeros(1,self.Nj),QGinv); % add zeros at along the bottom
+            QGinv = cat(1,zeros(1,Nj),QGinv); % add zeros at along the bottom
 
             % Now have to do the same thing to the condition matrix
             Q = cat(2,0,Q(1:end-1));
@@ -206,7 +212,7 @@ classdef WVStratifiedFlow < handle
             % size(QG) = [Nj, Nz-1], need a zero for the barotropic
             % mode, but also need zeros for the boundary
             QG = cat(1,zeros(1,self.Nz-1),QG(1:end-1,:)); % dump the Nyquist mode, add a barotropic mode (all zeros)
-            QG = cat(2,zeros(self.Nj,1), QG); % add the bottom boundary
+            QG = cat(2,zeros(Nj,1), QG); % add the bottom boundary
 
             % want size(h)=[1 1 Nj]
             h = shiftdim(h,-1);
@@ -217,7 +223,7 @@ classdef WVStratifiedFlow < handle
     end
 
     methods (Static)
-        function propertyAnnotations = defaultPropertyAnnotations()
+        function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function lets us efficiently annotate all the wave vortex transform
@@ -233,7 +239,7 @@ classdef WVStratifiedFlow < handle
             propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');
         end
 
-        function methodAnnotations = defaultMethodAnnotations()
+        function methodAnnotations = methodAnnotationsForStratifiedFlow()
             % return array of WVAnnotations to annotate the methods
             %
             % This function lets us efficiently annotate all the wave vortex transform

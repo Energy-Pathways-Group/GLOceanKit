@@ -11,6 +11,6 @@ arguments
     wvt         WVTransform
 end
 
-F = wvt.PF0 ./ shiftdim(wvt.P0,2);
+F = wvt.DCT ./ wvt.F_g(:,1);
 
 end

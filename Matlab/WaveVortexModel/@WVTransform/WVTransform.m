@@ -189,7 +189,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods
-        function self = WVTransform(Lxyz, Nxy, z, options)
+        function self = WVTransform(Lxyz, Nxy, options)
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
@@ -197,7 +197,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
-                z (:,1) double
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.Nj (1,1) double {mustBePositive} = length(z)
@@ -211,7 +210,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
-            self.z = z;
 
             self.latitude = options.latitude;
             self.rho0 = options.rho0;

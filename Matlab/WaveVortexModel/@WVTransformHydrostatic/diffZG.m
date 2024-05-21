@@ -12,7 +12,7 @@ end
 u = permute(u,[3 1 2]); % keep adjacent in memory
 u = reshape(u,self.Nz,[]);
 
-D = self.PFinv*(squeeze(self.P./(self.Q .* self.h_0)).*self.QG);
+D = self.PF0inv*(squeeze(self.P0./(self.Q0 .* self.h_0)).*self.QG0);
 du =  D*u;
 
 du = reshape(du,self.Nz,self.Nx,self.Ny);

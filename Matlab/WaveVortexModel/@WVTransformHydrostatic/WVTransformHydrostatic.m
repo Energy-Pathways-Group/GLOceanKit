@@ -1,4 +1,4 @@
-classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
+classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & WVStratifiedFlow
     % A class for disentangling hydrostatic waves and vortices in variable stratification
     %
     % To initialization an instance of the WVTransformHydrostatic class you
@@ -15,20 +15,15 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
     % - Topic: Initialization
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
-    properties %(GetAccess=public, SetAccess=protected)
-        rhobar, N2, dLnN2 % on the z-grid, size(N2) = [length(z) 1];
-        rhoFunction, N2Function, dLnN2Function % function handles
 
-        verticalModes
-    end
-    properties (Access=private)
+    properties (GetAccess=public, SetAccess=protected) %(Access=private)
         % Transformation matrices
-        PFinv, QGinv % size(PFinv,PGinv)=[Nz x Nj]
-        PF, QG % size(PF,PG)=[Nj x Nz]
+        PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
+        PF0, QG0 % size(PF,PG)=[Nj x Nz]
         h % [Nj 1]
         
-        P % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
-        Q % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
+        P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
+        Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
         
         zInterp
         PFinvInterp, QGinvInterp
@@ -71,9 +66,9 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxyz (1,3) double {mustBePositive}
-                options.rho function_handle
-                options.N2 function_handle
-                options.dLnN2func function_handle = @disp
+                options.rho function_handle = @isempty
+                options.N2 function_handle = @isempty
+                options.dLnN2func function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.shouldAntialias double = 1
@@ -98,111 +93,48 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             else
                 z = [];
             end
-            WVStratifiedFlow(Lxyz(3),Nxyz(3),)
+            self@WVStratifiedFlow(Lxyz(3),Nxyz(3),rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude,z=z)
+            
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
             canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
 
             if canInitializeDirectly
                 fprintf('Initialize the WVTransformHydrostatic directly from matrices.\n');
-                % We already know the quadrature points
-                z = options.z;
-                N2 = options.N2(z);
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=Nxyz(3)-1);
                 Nj = size(options.PF,1);
             else
                 nModes = Nxyz(3)-1;
-                % Before initializing the superclass, we need to find the
-                % Gauss-quadrature points for this stratification profile.
-                Nz = Nxyz(3);
-                z = linspace(-Lxyz(3),0,Nz*10)';
-                if isfield(options,'N2')
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-                elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude);
-                else
-                    error('You must specify either rho or N2.');
-                end
-                im.normalization = Normalization.kConstant;
-                im.upperBoundary = UpperBoundary.rigidLid;
-                z = im.GaussQuadraturePointsForModesAtFrequency(nModes+1,0);
-
-                % If the user requests nModes---we will have that many fully
-                % resolved modes. It works as follows for rigid lid:
-                % - There is one barotropic mode that appears in F
-                % - There are nModes-1 *internal modes* for G and F.
-                % - We compute the nModes+1 internal mode for F, to make it
-                % complete.
-                % This is nModes+1 grid points necessary to make this happen.
-                % This should make sense because there are nModes-1 internal
-                % modes, but the boundaries.
-                if isfield(options,'N2')
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
-                    N2 = options.N2(z);
-                    N2func = options.N2;
-                    rhoFunc = im.rho_function;
-                elseif isfield(options,'rho')
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lxyz(3) 0],zOut=z,latitude=options.latitude,nModes=nModes);
-                    N2 = im.N2;
-                    N2func = im.N2_function;
-                    rhoFunc = options.rho;
-                end
-
                 if options.shouldAntialias == 1
                     Nj = floor(options.jAliasingFraction*nModes);
                 else
                     Nj = nModes;
                 end
             end
-            im.normalization = Normalization.kConstant;
-            im.upperBoundary = UpperBoundary.rigidLid;
 
-            % This is enough information to initialize the superclass
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,Nmax=sqrt(max(N2)),shouldAntialias=options.shouldAntialias);
+            self@WVTransform(Lxyz, Nxyz(1:2), latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
+            self.z = self.verticalModes.z;
 
             if canInitializeDirectly
-                self.rhoFunction = im.rho_function;
-                self.N2Function = options.N2;
-                self.verticalModes = im;
-
-                self.rhobar = self.rhoFunction(self.z);
-                self.N2 = self.N2Function(self.z);
-                self.dLnN2 = options.dLnN2;
-
-                self.PFinv = options.PFinv;
-                self.QGinv = options.QGinv;
-                self.PF = options.PF;
-                self.QG = options.QG;
+                self.PF0inv = options.PFinv;
+                self.QG0inv = options.QGinv;
+                self.PF0 = options.PF;
+                self.QG0 = options.QG;
                 self.h = options.h;
-                self.P = options.P;
-                self.Q = options.Q;
+                self.P0 = options.P;
+                self.Q0 = options.Q;
             else
-                if isequal(options.dLnN2func,@disp)
-                    dLnN2 = im.rho_zz./im.rho_z;
-                else
-                    dLnN2 = options.dLnN2func(z);
-                end
-
-                self.rhoFunction = rhoFunc;
-                self.N2Function = N2func;
-                self.verticalModes = im;
-
-                self.rhobar = rhoFunc(self.z);
-                self.N2 = N2;
-                self.dLnN2 = dLnN2;
-
-                self.BuildProjectionOperators(); 
+                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
             self.initializePrimaryFlowComponents();
 
-            self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
+            % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 
-            self.addPropertyAnnotations(WVPropertyAnnotation('PFinv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('QGinv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('PF',{'j','z'},'','Preconditioned F-mode forward transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('QG',{'j','z'},'','Preconditioned G-mode forward transformation'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('P',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
-            self.addPropertyAnnotations(WVPropertyAnnotation('Q',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('PF0',{'j','z'},'','Preconditioned F-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('QG0',{'j','z'},'','Preconditioned G-mode forward transformation'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat'));
+            self.addPropertyAnnotations(WVPropertyAnnotation('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
             self.addPropertyAnnotations(WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification'));
 
             outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
@@ -236,61 +168,6 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             end
         end
 
-        function self = BuildProjectionOperators(self)
-            % Now go compute the appropriate number of modes at the
-            % quadrature points.
-            [Finv,Ginv,self.h] = self.verticalModes.ModesAtFrequency(0);
-            nModes = size(Finv,2);
-            
-            % Make these matrices invertible by adding the barotropic mode
-            % to F, and removing the boundaries of G.
-            Finv = cat(2,ones(self.Nz,1),Finv);
-            Ginv = Ginv(2:end-1,1:end-1);
-
-            % Compute the precondition matrices (really, diagonals)
-            self.P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            self.Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
-
-            % Now create the actual transformation matrices
-            self.PFinv = Finv./self.P;
-            self.QGinv = Ginv./self.Q;
-            self.PF = inv(self.PFinv);
-            self.QG = inv(self.QGinv);
-            
-            maxCond = max([cond(self.PFinv), cond(self.QGinv), cond(self.PF), cond(self.QG)],[],2);
-            if maxCond > 1000
-                warning('Condition number is %f the vertical transformations.',maxCond);
-            end
-            % size(F)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
-            % but, we will only multiply by vectors [Nj 1], so dump the
-            % last column. Now size(Fp) = [Nz x Nj].
-            self.PFinv = self.PFinv(:,1:end-1);
-
-            % size(Finv)=[Nj+1, Nz], but we don't care about the last mode
-            self.PF = self.PF(1:end-1,:);
-            
-            % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
-            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            self.QGinv = cat(2,zeros(self.Nz,1),cat(1,zeros(1,nModes-1),self.QGinv,zeros(1,nModes-1)));
-
-            % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
-            % mode, but also need zeros for the boundary
-            self.QG = cat(2,zeros(nModes,1), cat(1,zeros(1,self.Nz-2),self.QG),zeros(nModes,1));
-
-            % want size(h)=[Nj 1]
-            self.h = cat(1,1,reshape(self.h(1:end-1),[],1)); % remove the extra mode at the end
-
-            self.P = reshape(self.P(1:end-1),[],1);
-            self.Q = reshape(cat(2,1,self.Q),[],1);
-
-            self.PFinv = self.PFinv(:,1:self.Nj);
-            self.PF = self.PF(1:self.Nj,:);
-            self.P = self.P(1:self.Nj,1);
-            self.QGinv = self.QGinv(:,1:self.Nj);
-            self.QG = self.QG(1:self.Nj,:);
-            self.Q = self.Q(1:self.Nj,1);
-            self.h = self.h(1:self.Nj,1);
-        end
                                 
         function h_0 = get.h_0(self)
             h_0 = self.h;
@@ -304,8 +181,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             bool = 1;
         end
 
-        Finv = FinvMatrix(self);
-        Ginv = GinvMatrix(self);
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -314,15 +190,15 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function u_bar = transformFromSpatialDomainWithFio(self, u)
-            u_bar = (self.PF*u)./self.P;
+            u_bar = (self.PF0*u)./self.P0;
         end
 
         function u_bar = transformFromSpatialDomainWithFg(self, u)
-            u_bar = (self.PF*u)./self.P;
+            u_bar = (self.PF0*u)./self.P0;
         end
 
         function w_bar = transformFromSpatialDomainWithGg(self, w)
-            w_bar = (self.QG*w)./self.Q;
+            w_bar = (self.QG0*w)./self.Q0;
         end
 
         function w_bar = transformWithG_wg(~, w_bar )
@@ -344,7 +220,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
                 u = zeros(self.spatialMatrixSize);
             else
                 % Perform the vertical mode matrix multiplication
-                self.wvBuffer = self.PFinv*(self.P .* (options.Apm + options.A0));
+                self.wvBuffer = self.PF0inv*(self.P0 .* (options.Apm + options.A0));
 
                 % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
                 self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
@@ -365,7 +241,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
                 w = zeros(self.spatialMatrixSize);
             else
                 % Perform the vertical mode matrix multiplication
-                self.wvBuffer = self.QGinv*(self.Q .* (options.Apm + options.A0));
+                self.wvBuffer = self.QG0inv*(self.Q0 .* (options.Apm + options.A0));
 
                 % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
                 self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
@@ -451,8 +327,8 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             Finv = cat(2,ones(N,1),Finv);
             Ginv = cat(2,zeros(N,1),Ginv);
 
-            self.PFinvInterp = Finv./shiftdim(self.P,1);
-            self.QGinvInterp = Ginv./shiftdim(self.Q,1);
+            self.PFinvInterp = Finv./shiftdim(self.P0,1);
+            self.QGinvInterp = Ginv./shiftdim(self.Q0,1);
 
             self.addDimensionAnnotations(WVDimensionAnnotation('z-interp', 'm', 'z-coordinate dimension for interpolation'));
 
@@ -478,7 +354,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         end
 
         function u = transformToSpatialDomainWithFInterp(self, u_bar)
-            u_bar = (self.P .* u_bar)*(self.Nx*self.Ny);
+            u_bar = (self.P0 .* u_bar)*(self.Nx*self.Ny);
             % hydrostatic modes commute with the DFT
             u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
             u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
@@ -489,7 +365,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         end
 
         function w = transformToSpatialDomainWithGInterp(self, w_bar )
-            w_bar = (self.Q .* w_bar)*(self.Nx*self.Ny);
+            w_bar = (self.Q0 .* w_bar)*(self.Nx*self.Ny);
             % hydrostatic modes commute with the DFT
             w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
 
@@ -507,13 +383,13 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            ratio = 1/self.P(j0+1);
+            ratio = 1/self.P0(j0+1);
         end 
 
         function ratio = uMaxA0(self,k0, l0, j0)
             % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
             Kh = self.Kh;
-            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P(j0);
+            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P0(j0);
         end 
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
@@ -525,12 +401,12 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods
             end
             flag = isequal@WVTransform(self,other);
             flag = flag & isequal(self.dLnN2, other.dLnN2);
-            flag = flag & isequal(self.PFinv, other.PFinv);
-            flag = flag & isequal(self.QGinv, other.QGinv);
-            flag = flag & isequal(self.PF,other.PF);
-            flag = flag & isequal(self.QG,other.QG);
-            flag = flag & isequal(self.P, other.P);
-            flag = flag & isequal(self.Q, other.Q);
+            flag = flag & isequal(self.PF0inv, other.PFinv);
+            flag = flag & isequal(self.QG0inv, other.QGinv);
+            flag = flag & isequal(self.PF0,other.PF);
+            flag = flag & isequal(self.QG0,other.QG);
+            flag = flag & isequal(self.P0, other.P);
+            flag = flag & isequal(self.Q0, other.Q);
             flag = flag & isequal(self.h, other.h);
         end
     end

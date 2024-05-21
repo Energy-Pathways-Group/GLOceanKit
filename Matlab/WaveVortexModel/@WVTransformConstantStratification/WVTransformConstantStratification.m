@@ -1,4 +1,4 @@
-classdef WVTransformConstantStratification < WVTransform & WVInertialOscillationMethods
+classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods
     % Wave-vortex transformation that assumes constant stratification
     %
     % To initialization an instance of the
@@ -15,7 +15,7 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
     %
     % - Declaration: classdef WVTransformConstantStratification < [WVTransform](/classes/wvtransform/)
     properties (GetAccess=public, SetAccess=protected)
-        N0, N2, rhobar
+        N0
         F_g,G_g
         F_wg, G_wg
 
@@ -68,38 +68,39 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
             z = dz*(0:(Nz-1))' - Lz; % Cosine basis for DCT-I and DST-I
             nModes = Nz-1;
             N0 = options.N0;
-            
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes,Nmax=N0);
-            
+            rho0 = options.rho0;
+            rho = @(z) -(N0*N0*rho0/9.81)*z + rho0;
+            N2 = @(z) N0*N0*ones(size(z));
+            dLnN2 = @(z) zeros(size(z));
+            verticalModes = InternalModesConstantStratification(N0=N0, rho0=rho0, zIn=[-Lz 0], zOut=z, latitude=options.latitude);
+
+            self@WVStratifiedFlow(Lz,Nz,rho=rho,N2=N2,dLnN2=dLnN2,latitude=options.latitude,verticalModes=verticalModes,z=z)
+
+            self@WVTransform(Lxyz, Nxyz(1:2), latitude=options.latitude,rho0=options.rho0,Nj=nModes);
+            self.z = z;
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
-            self.N2 = N0*N0;
-            rhoFunction = @(z) -(N0*N0*self.rho0/9.81)*z + self.rho0;
-            self.rhobar = rhoFunction(z);
 
             self.buildVerticalModeProjectionOperators();
             self.initializePrimaryFlowComponents();
-%             verticalModes = InternalModesConstantStratification([N0 self.rho0], [-Lxyz(3) 0],z,self.latitude);
-            verticalModes = InternalModesConstantStratification(N0=N0, rho0=self.rho0, zIn=[-Lxyz(3) 0], zOut=z, latitude=self.latitude);
-            self.offgridModes = WVOffGridTransform(verticalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
+
+            % self.offgridModes = WVOffGridTransform(verticalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             
             % Preallocate this array for a faster dct
             self.realScratch = zeros(self.Nx,self.Ny,(2*self.Nz-1));
             self.complexScratch = complex(zeros(self.Nx,self.Ny,2*(self.Nz-1)));
             % warning('Need to check 2*(Nz-1), it gets extended to 2*Nz-1 during simulation');
 
-            if 1 == 1
-                self.DCT = CosineTransformForwardMatrix(self.Nz);
-                self.DCT = self.DCT(1:self.Nj,:); % dump the Nyquist mode
-                self.iDCT = CosineTransformBackMatrix(self.Nz);
-                self.iDCT = self.iDCT(:,1:self.Nj); % dump the Nyquist mode
-                self.DST = SineTransformForwardMatrix(self.Nz);
-                self.DST = cat(1,zeros(1,self.Nz),self.DST);
-                self.DST = self.DST(1:self.Nj,:);
-                self.iDST = SineTransformBackMatrix(self.Nz);
-                self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
-                self.iDST = self.iDST(:,1:self.Nj);
-            end
+            self.DCT = WVTransformConstantStratification.CosineTransformForwardMatrix(self.Nz);
+            self.DCT = self.DCT(1:self.Nj,:); % dump the Nyquist mode
+            self.iDCT = WVTransformConstantStratification.CosineTransformBackMatrix(self.Nz);
+            self.iDCT = self.iDCT(:,1:self.Nj); % dump the Nyquist mode
+            self.DST = WVTransformConstantStratification.SineTransformForwardMatrix(self.Nz);
+            self.DST = cat(1,zeros(1,self.Nz),self.DST);
+            self.DST = self.DST(1:self.Nj,:);
+            self.iDST = WVTransformConstantStratification.SineTransformBackMatrix(self.Nz);
+            self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
+            self.iDST = self.iDST(:,1:self.Nj);
 
             % 
             % outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
@@ -569,6 +570,11 @@ classdef WVTransformConstantStratification < WVTransform & WVInertialOscillation
 
     methods (Static)
         wvt = waveVortexTransformFromFile(path,options)
+
+        matrix = CosineTransformForwardMatrix(N)
+        matrix = CosineTransformBackMatrix(n)
+        matrix = SineTransformForwardMatrix(N)
+        matrix = SineTransformBackMatrix(N)
     end
         
 end 
