@@ -1,9 +1,15 @@
 function summarizeDegreesOfFreedom(self)
 fprintf('----------Spatial domain----------\n');
 fprintf('The spatial domain has a grid of (Nx, Ny, Nz)=(%d, %d, %d).\n',self.Nx,self.Ny,self.Nz);
-fprintf('The variables (u,v) each have (Nx-1)*(Ny-1)*(Nz-1)=%d degrees-of-freedom after removing the unresolved Nyquist mode.\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-1));
-fprintf('The variable eta has (Nx-1)*(Ny-1)*(Nz-3)=%d degrees-of-freedom after losing two additional degrees-of-freedom due to vanishing boundaries\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-3))
-fprintf('In total, this system has %d degrees-of-freedom.\n',2*(self.Nx-1)*(self.Ny-1)*(self.Nz-1) + (self.Nx-1)*(self.Ny-1)*(self.Nz-3));
+if self.isBarotropic == 1
+    fprintf('The variables (u,v) each have (Nx-1)*(Ny-1)=%d degrees-of-freedom after removing the unresolved Nyquist mode.\n',(self.Nx-1)*(self.Ny-1));
+    fprintf('The variable eta has (Nx-1)*(Ny-1)-1=%d degrees-of-freedom after losing one degrees-of-freedom due to lack of mean eta\n',(self.Nx-1)*(self.Ny-1)-1)
+    fprintf('In total, this system has %d degrees-of-freedom.\n',3*(self.Nx-1)*(self.Ny-1) - 1);
+else
+    fprintf('The variables (u,v) each have (Nx-1)*(Ny-1)*(Nz-1)=%d degrees-of-freedom after removing the unresolved Nyquist mode.\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-1));
+    fprintf('The variable eta has (Nx-1)*(Ny-1)*(Nz-3)=%d degrees-of-freedom after losing two additional degrees-of-freedom due to vanishing boundaries\n',(self.Nx-1)*(self.Ny-1)*(self.Nz-3))
+    fprintf('In total, this system has %d degrees-of-freedom.\n',2*(self.Nx-1)*(self.Ny-1)*(self.Nz-1) + (self.Nx-1)*(self.Ny-1)*(self.Nz-3));
+end
 
 fprintf('\n----------Spectral domain----------\n');
 fprintf('The four major solutions groups have the following degrees-of-freedom:\n')
@@ -28,7 +34,7 @@ fprintf('\tMean density anomaly: %d unique solutions, each with 1 degree-of-free
 fprintf('This results in a total of %d active degrees-of-freedom.\n',totalDOF);
 
 if self.shouldAntialias == 1
-    discardedModes = WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nx,self.Ny);
+    discardedModes = WVGeometryDoublyPeriodic.maskForAliasedModes(self.horizontalModes.k_dft,self.horizontalModes.l_dft);
     discardedModes = discardedModes & ~WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nx,self.Ny);
     dof = WVGeometryDoublyPeriodic.degreesOfFreedomForRealMatrix(self.Nx,self.Ny,conjugateDimension=self.conjugateDimension);
     if self.isBarotropic == 1

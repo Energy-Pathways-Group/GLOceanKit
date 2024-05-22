@@ -23,42 +23,22 @@ classdef WVStratifiedFlow < handle
     end
 
     methods
-        function self = WVStratifiedFlow(Lz,Nz,options)
+        function self = WVStratifiedFlow(Lz,z,options)
             % If you pass verticalModes directly, this is the most
             % efficient. If you pass z, then it is assumed you're passing
             % z-quadrature. Otherwise it all gets built from scratch.
             arguments
                 Lz (1,1) double {mustBePositive}
-                Nz (1,1) double {mustBePositive}
+                z (:,1) double {mustBeNonempty} % quadrature points!
                 options.rho function_handle = @isempty
                 options.N2 function_handle = @isempty
                 options.dLnN2 function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.verticalModes = []
-                
-                options.z double = []
+
                 options.Nj;
             end
-            
-            if ~isempty(options.verticalModes)
-                z = options.verticalModes.z;
-            elseif isempty(options.z)
-                % if z wasn't given, then we need to compute quadrature
-                % points.
-                z = linspace(-Lz,0,Nz*10)';
-                if ~isequal(options.N2,@isempty)
-                    im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-                elseif ~isequal(options.rho,@isempty)
-                    im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude); 
-                end
-                im.normalization = Normalization.kConstant;
-                im.upperBoundary = UpperBoundary.rigidLid;
-                z = im.GaussQuadraturePointsForModesAtFrequency(Nz,im.f0);
-            else
-                z = options.z;
-            end
 
-            nModes = Nz-1;
             % For rigid lid:
             % - There is one barotropic mode that appears in F
             % - There are nModes-1 *internal modes* for G and F.
@@ -67,7 +47,8 @@ classdef WVStratifiedFlow < handle
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
-
+            Nz = length(z);
+            nModes = Nz-1;
             if ~isempty(options.verticalModes)
                 self.verticalModes = options.verticalModes;
                 self.N2Function = options.N2;
@@ -78,27 +59,27 @@ classdef WVStratifiedFlow < handle
                 self.verticalModes = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = options.N2(z);
                 self.N2Function = options.N2;
-                self.rhoFunction = im.rho_function;
+                self.rhoFunction = self.verticalModes.rho_function;
                 self.rho_nm = self.rhoFunction(z);
             elseif ~isequal(options.rho,@isempty)
                 self.verticalModes = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
-                self.N2 = im.N2;
-                self.N2Function = im.N2_function;
+                self.N2 = self.verticalModes.N2;
+                self.N2Function = self.verticalModes.N2_function;
                 self.rhoFunction = options.rho;
                 self.rho_nm = self.rhoFunction(z);
             else
                 error('You must specify either rho or N2.');
             end
-            im.normalization = Normalization.kConstant;
-            im.upperBoundary = UpperBoundary.rigidLid;
-            
+            self.verticalModes.normalization = Normalization.kConstant;
+            self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
+
             if isequal(options.dLnN2,@isempty)
-                self.dLnN2 = im.rho_zz./im.rho_z;
+                self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
             else
                 self.dLnN2 = options.dLnN2(z);
                 self.dLnN2Function = options.dLnN2;
             end
-                
+
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
@@ -202,7 +183,7 @@ classdef WVStratifiedFlow < handle
 
             % size(QGinv) = [Nz-1, Nj], need zeros for the lower boundaries
             % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = QGinv(:,1:end-1); % dump Nyquist  
+            QGinv = QGinv(:,1:end-1); % dump Nyquist
             QGinv = cat(2,zeros(self.Nz-1,1),QGinv); % add barotropic mode
             QGinv = cat(1,zeros(1,Nj),QGinv); % add zeros at along the bottom
 
@@ -223,6 +204,28 @@ classdef WVStratifiedFlow < handle
     end
 
     methods (Static)
+        function z = quadraturePointsForStratifiedFlow(Lz,Nz,options)
+            % If you pass verticalModes directly, this is the most
+            % efficient. If you pass z, then it is assumed you're passing
+            % z-quadrature. Otherwise it all gets built from scratch.
+            arguments
+                Lz (1,1) double {mustBePositive}
+                Nz (1,1) double {mustBePositive}
+                options.rho function_handle = @isempty
+                options.N2 function_handle = @isempty
+                options.latitude (1,1) double = 33
+            end
+            
+            z = linspace(-Lz,0,Nz*10)';
+            if ~isequal(options.N2,@isempty)
+                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
+            elseif ~isequal(options.rho,@isempty)
+                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude);
+            end
+            im.normalization = Normalization.kConstant;
+            im.upperBoundary = UpperBoundary.rigidLid;
+            z = im.GaussQuadraturePointsForModesAtFrequency(Nz,im.f0);
+        end
         function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
             % return array of WVPropertyAnnotation initialized by default
             %

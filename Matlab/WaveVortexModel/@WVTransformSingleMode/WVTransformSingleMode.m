@@ -66,7 +66,7 @@ classdef WVTransformSingleMode < WVTransform
             end
 
             % This is enough information to initialize
-            self@WVTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)],latitude=options.latitude,Nj=1,shouldAntialias=options.shouldAntialias);
+            self@WVTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)],0,latitude=options.latitude,Nj=1,shouldAntialias=options.shouldAntialias);
             
             self.h = options.h;
             self.isBarotropic = 1;

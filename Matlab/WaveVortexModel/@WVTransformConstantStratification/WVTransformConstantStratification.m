@@ -74,10 +74,9 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             dLnN2 = @(z) zeros(size(z));
             verticalModes = InternalModesConstantStratification(N0=N0, rho0=rho0, zIn=[-Lz 0], zOut=z, latitude=options.latitude);
 
-            self@WVStratifiedFlow(Lz,Nz,rho=rho,N2=N2,dLnN2=dLnN2,latitude=options.latitude,verticalModes=verticalModes,z=z)
+            self@WVStratifiedFlow(Lz,z,rho=rho,N2=N2,dLnN2=dLnN2,latitude=options.latitude,verticalModes=verticalModes)
 
-            self@WVTransform(Lxyz, Nxyz(1:2), latitude=options.latitude,rho0=options.rho0,Nj=nModes);
-            self.z = z;
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes);
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
 

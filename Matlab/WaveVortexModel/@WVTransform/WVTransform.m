@@ -60,7 +60,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly, Lz
         Nx, Ny, Nj, Nkl
-        k, l, z = 0
+        k, l, j, z = 0
         latitude
 
         % Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -98,7 +98,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % k, l
         kl
         dk, dl
-        j
         kRadial
         K2, Kh
 
@@ -187,7 +186,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods
-        function self = WVTransform(Lxyz, Nxy, options)
+        function self = WVTransform(Lxyz, Nxy, z, options)
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
@@ -195,6 +194,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             arguments
                 Lxyz (1,3) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
+                z (:,1) double
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.Nj (1,1) double {mustBePositive} = length(z)
@@ -208,6 +208,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
+            self.z = z;
+            if length(z)>1
+                self.j = (0:(self.Nj-1))';
+            else
+                self.j=1;
+            end
 
             self.latitude = options.latitude;
             self.rho0 = options.rho0;
@@ -218,6 +224,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nkl = self.horizontalModes.Nkl_wv;
             self.k = self.horizontalModes.k_wv;
             self.l = self.horizontalModes.l_wv;
+            
 
             % Now set the initial conditions to zero
             self.Ap = zeros(self.Nj,self.Nkl);
@@ -414,10 +421,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
         function dl = get.dl(self)
             dl = 2*pi/self.Ly;
-        end
-
-        function j = get.j(self)
-            j = (0:(self.Nj-1))';
         end
 
         function kl = get.kl(self)

@@ -91,9 +91,9 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
             if isfield(options,'z')
                 z=options.z;
             else
-                z = [];
+                z = WVStratifiedFlow.quadraturePointsForStratifiedFlow(Lxyz(3),Nxyz(3),rho=options.rho,N2=options.N2,latitude=options.latitude);
             end
-            self@WVStratifiedFlow(Lxyz(3),Nxyz(3),rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude,z=z)
+            self@WVStratifiedFlow(Lxyz(3),z,rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude)
 
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
@@ -111,8 +111,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
                 end
             end
 
-            self@WVTransform(Lxyz, Nxyz(1:2), latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
-            self.z = self.verticalModes.z;
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
 
             if canInitializeDirectly
                 self.PF0inv = options.PF0inv;
