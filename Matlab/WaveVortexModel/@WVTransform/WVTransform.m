@@ -208,6 +208,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
+            self.Nj = options.Nj;
             self.z = z;
             if length(z)>1
                 self.j = (0:(self.Nj-1))';
@@ -217,9 +218,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             self.latitude = options.latitude;
             self.rho0 = options.rho0;
-            
             self.shouldAntialias = options.shouldAntialias;
-            self.Nj = options.Nj;
+            
             self.horizontalModes = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
             self.Nkl = self.horizontalModes.Nkl_wv;
             self.k = self.horizontalModes.k_wv;

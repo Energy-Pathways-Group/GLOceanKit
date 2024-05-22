@@ -57,7 +57,6 @@ wvt.setGeostrophicStreamfunction(psi);
 ssh = wvt.seaSurfaceHeight;
 figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
 max(ssh(:))
-
 % figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
