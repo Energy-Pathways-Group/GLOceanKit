@@ -2,8 +2,23 @@ classdef WVInertialOscillationMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
+    properties (Abstract,GetAccess=public, SetAccess=public)
+        Ap,Am,A0
+    end
+    properties (Abstract,GetAccess=public, SetAccess=protected)
+        z
+        UAp,VAp
+        UAm,VAm
+    end
+    methods (Abstract)
+        addPrimaryFlowComponent(self,primaryFlowComponent)
+        u_bar = transformFromSpatialDomainWithFio(self,u)
+    end
 
     methods
+        % function WVInertialOscilationMethods()
+        %     self.addPrimaryFlowComponent(flowComponent);
+        % end
         function addInertialMotions(self,u,v)
             % add inertial motions to existing inertial motions
             %

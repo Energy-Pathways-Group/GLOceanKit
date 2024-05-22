@@ -18,12 +18,23 @@ classdef WVTransformSingleMode < WVTransform
     properties (GetAccess=public, SetAccess=protected)
         h % [1 x 1]
 
-        Apm_TE_factor
-        A0_HKE_factor
-        A0_PE_factor
-        A0_TE_factor
-        A0_TZ_factor
-        A0_QGPV_factor
+        % Apm_TE_factor
+        % A0_HKE_factor
+        % A0_PE_factor
+        % A0_TE_factor
+        % A0_TZ_factor
+        % A0_QGPV_factor
+
+        dftBuffer, wvBuffer
+        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
+    end
+    properties (GetAccess=public)
+        iOmega
+    end
+    properties (Dependent)
+        h_0  % [Nj 1]
+        h_pm  % [Nj 1]
+        isHydrostatic
     end
         
     methods
@@ -55,31 +66,34 @@ classdef WVTransformSingleMode < WVTransform
             end
 
             % This is enough information to initialize
-            self@WVTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)], 0,latitude=options.latitude,Nj=1,shouldAntialias=options.shouldAntialias);
+            self@WVTransform([Lxy(1) Lxy(2) options.h], [Nxy(1) Nxy(2)],latitude=options.latitude,Nj=1,shouldAntialias=options.shouldAntialias);
             
             self.h = options.h;
             self.isBarotropic = 1;
             
-            % Includes the extra factors from the FFTs.
-            self.buildTransformationMatrices();
+            self.initializePrimaryFlowComponents();
 
-            Lr2 = self.g*(self.h)/(self.f*self.f);
-            Lr2(1) = self.g*self.Lz/(self.f*self.f);
-            self.A0_QGPV_factor = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
-            self.A0_TZ_factor = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
+            % Lr2 = self.g*(self.h)/(self.f*self.f);
+            % Lr2(1) = self.g*self.Lz/(self.f*self.f);
+            % self.A0_QGPV_factor = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
+            % self.A0_TZ_factor = (self.g/2) * Lr2 .* ( (self.Kh).^2 + Lr2.^(-1) ).^2;
 
-            outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface height anomaly');
-            outputVar.attributes('short_name') = 'sea_surface_height_above_mean_sea_level';
-            f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt,A0=wvt.NA0.*wvt.A0t);
-            self.addOperation(WVOperation('ssh',outputVar,f));
+            % outputVar = WVVariableAnnotation('ssh',{'x','y','z'},'m', 'sea-surface height anomaly');
+            % outputVar.attributes('short_name') = 'sea_surface_height_above_mean_sea_level';
+            % f = @(wvt) wvt.transformToSpatialDomainWithF(Apm=wvt.NAp.*wvt.Apt + wvt.NAm.*wvt.Amt,A0=wvt.NA0.*wvt.A0t);
+            % self.addOperation(WVOperation('ssh',outputVar,f));
+            % 
+            % [K,L] = ndgrid(self.k,self.l);
+            % outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            % outputVar.attributes('short_name') = 'ocean_relative_vorticity';
+            % f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
+            % self.addOperation(WVOperation('zeta_z',outputVar,f));
 
-            [K,L] = ndgrid(self.k,self.l);
-            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
-            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
-            f = @(wvt) wvt.transformToSpatialDomainWithF(A0=-(wvt.g/wvt.f) * (K.^2 +L.^2) .* wvt.A0t);
-            self.addOperation(WVOperation('zeta_z',outputVar,f));
+            % self.nonlinearFluxOperation = SingleMode();
 
-            self.nonlinearFluxOperation = SingleMode();
+            self.dftBuffer = zeros(self.spatialMatrixSize);
+            self.wvBuffer = zeros([self.Nz self.Nkl]);
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function self = initializePrimaryFlowComponents(self)
@@ -87,14 +101,6 @@ classdef WVTransformSingleMode < WVTransform
             self.addPrimaryFlowComponent(flowComponent);
             [self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;
             [self.UA0,self.VA0,self.NA0,self.PA0] = flowComponent.geostrophicSpatialTransformCoefficients;
-
-            flowComponent = WVMeanDensityAnomalyComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
-            NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
-            self.A0N = self.A0N + A0Nmda;
-            self.NA0 = self.NA0 + NA0mda;
-            self.PA0 = self.PA0 + NA0mda;
 
             flowComponent = WVInternalGravityWaveComponent(self);
             self.addPrimaryFlowComponent(flowComponent);
@@ -151,116 +157,18 @@ classdef WVTransformSingleMode < WVTransform
             self.setGeostrophicStreamfunction(psi);
         end
 
-        function self = buildTransformationMatrices(self)
-            % Build wavenumbers
-            [K,L,J] = ndgrid(self.k,self.l,self.j);
-            alpha = atan2(L,K);
-            K2 = K.*K + L.*L;
-            Kh = sqrt(K2);      % Total horizontal wavenumber
-            
-            f = self.f;
-            g_ = 9.81;
-            
-            omega = self.Omega;
-            if abs(self.f) < 1e-14 % This handles the f=0 case.
-                omega(omega == 0) = 1;
-            end
-            fOmega = f./omega;
-            
-            makeHermitian = @(f) WVTransform.makeHermitian(f);
-            
-            self.iOmega = makeHermitian(sqrt(-1)*omega);
-
-% 2022-06-04 We are just copying the j=1 matrices into the j=0 spot. In the
-% future, this can happen automatically if we use the free surface.
-% Although we still may need to check to see if the deformation radius is
-% much larger than the domain, and handle the divide by zero.
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (U,V,N) -> (Ap,Am,A0)
-            % This comes from equations B13 and B14 in the manuscript
-            % or equation 5.5 without the factor of h.
-            self.ApU = (1/2)*(cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.ApV = (1/2)*(sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.ApN = -g_*Kh./(2*omega);
-            
-            self.AmU = (1/2)*(cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.AmV = (1/2)*(sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.AmN = g_*Kh./(2*omega);
-                        
-            % Now set the inertial stuff (this is just a limit of above)
-            self.ApU(1,1,:) = 1/2;
-            self.ApV(1,1,:) = -sqrt(-1)/2;
-            self.AmU(1,1,:) = 1/2;
-            self.AmV(1,1,:) = sqrt(-1)/2;
-            
-            % Equation B14
-            self.A0U = sqrt(-1)*self.h.*(fOmega./omega) .* L;
-            self.A0V = -sqrt(-1)*self.h.*(fOmega./omega) .* K;
-            self.A0N = fOmega.^2;
-            
-            
-            % The k=l=0, j>=0 geostrophic solutions are a simple density anomaly
-            self.A0U(1,1,:) = 0;
-            self.A0V(1,1,:) = 0;
-            self.A0N(1,1,:) = 1;
-            
-            % Now make the Hermitian conjugate match.
-            self.ApU = makeHermitian(self.ApU);
-            self.ApV = makeHermitian(self.ApV);
-            self.ApN = makeHermitian(self.ApN);
-          
-            self.AmU = makeHermitian(self.AmU);
-            self.AmV = makeHermitian(self.AmV);
-            self.AmN = makeHermitian(self.AmN);
-          
-            self.A0U = makeHermitian(self.A0U);
-            self.A0V = makeHermitian(self.A0V);
-            self.A0N = makeHermitian(self.A0N);
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Transform matrices (Ap,Am,A0) -> (U,V,W,N)
-            % These can be pulled from equation C4 in the manuscript
-            self.UAp = (cos(alpha)-sqrt(-1)*fOmega.*sin(alpha));
-            self.UAm = (cos(alpha)+sqrt(-1)*fOmega.*sin(alpha));
-            self.UA0 = -sqrt(-1)*(g_/f)*L;
-            
-            self.VAp = (sin(alpha)+sqrt(-1)*fOmega.*cos(alpha));
-            self.VAm = (sin(alpha)-sqrt(-1)*fOmega.*cos(alpha));
-            self.VA0 = sqrt(-1)*(g_/f)*K;
-                
-            self.WAp = -sqrt(-1)*Kh.*self.h;
-            self.WAm = -sqrt(-1)*Kh.*self.h;
-            
-            self.NAp = -Kh.*self.h./omega;
-            self.NAm = Kh.*self.h./omega;
-            self.NA0 = ones(size(Kh));       
-            
-            % Only the inertial solution exists at k=l=j=0 as a negative
-            % wave.
-            self.UAp(1,1,:) = 1;
-            self.VAp(1,1,:) = sqrt(-1);
-            self.UAm(1,1,:) = 1;
-            self.VAm(1,1,:) = -sqrt(-1);
-  
-            % Now make the Hermitian conjugate match AND pre-multiply the
-            % coefficients for the transformations.
-            self.UAp = makeHermitian(self.UAp);
-            self.UAm = makeHermitian(self.UAm);
-            self.UA0 = makeHermitian(self.UA0);
-           
-            self.VAp = makeHermitian(self.VAp);
-            self.VAm = makeHermitian(self.VAm);
-            self.VA0 = makeHermitian(self.VA0);
-           
-            self.WAp = makeHermitian(self.WAp);
-            self.WAm = makeHermitian(self.WAm);
-           
-            self.NAp = makeHermitian(self.NAp);
-            self.NAm = makeHermitian(self.NAm);
-            self.NA0 = makeHermitian(self.NA0);
+        function h_0 = get.h_0(self)
+            h_0 = self.h;
         end
-          
+
+        function h_pm = get.h_pm(self)
+            h_pm = self.h;
+        end
+
+        function bool = get.isHydrostatic(~)
+            bool = 1;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Nonlinear Flux
@@ -320,57 +228,88 @@ classdef WVTransformSingleMode < WVTransform
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function value = get.Apm_TE_factor(self)
-            value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
-%             value(:,:,1) = self.Lz;
-        end
-        
-        function value = get.A0_HKE_factor(self)
-            [K,L,~] = ndgrid(self.k,self.l,self.j);
-            K2 = K.*K + L.*L;
+%         function value = get.Apm_TE_factor(self)
+%             value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
+% %             value(:,:,1) = self.Lz;
+%         end
+% 
+%         function value = get.A0_HKE_factor(self)
+%             [K,L,~] = ndgrid(self.k,self.l,self.j);
+%             K2 = K.*K + L.*L;
+% 
+%             value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
+%         end
+%         function value = get.A0_PE_factor(self)
+%             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
+%         end
+% 
+%         function value = get.A0_TE_factor(self)
+%             value = self.A0_HKE_factor + self.A0_PE_factor;
+%         end
 
-            value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations TO0 the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function u = transformFromSpatialDomainWithFio(~, u)
         end
-        function value = get.A0_PE_factor(self)
-            value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
+
+        function u = transformFromSpatialDomainWithFg(~, u)
         end
-        
-        function value = get.A0_TE_factor(self)
-            value = self.A0_HKE_factor + self.A0_PE_factor;
+
+        function w = transformFromSpatialDomainWithGg(~, w)
+        end
+
+        function w_bar = transformWithG_wg(~, w_bar )
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Transformations to and from the spatial domain
+        % Transformations FROM the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
-        function u_bar = transformFromSpatialDomainWithF(self, u)
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-        end
-        
-        function w_bar = transformFromSpatialDomainWithG(self, w)
-            w_bar = fft(fft(w,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);            
-        end
-        
         function u = transformToSpatialDomainWithF(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            u_bar = (options.Apm + options.A0)*(self.Nx*self.Ny);
-            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
+            if isscalar(options.Apm) && isscalar(options.A0)
+                u = zeros(self.spatialMatrixSize);
+            else
+                % Perform the vertical mode matrix multiplication
+                self.wvBuffer = options.Apm + options.A0;
+
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+                % Perform a 2D DFT
+                u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+            end
         end
-                
+
         function w = transformToSpatialDomainWithG(self, options)
             arguments
                 self WVTransform {mustBeNonempty}
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            w_bar = (options.Apm + options.A0)*(self.Nx*self.Ny);
-            w = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-        end
+            if isscalar(options.Apm) && isscalar(options.A0)
+                w = zeros(self.spatialMatrixSize);
+            else
+                self.wvBuffer = options.Apm + options.A0;
+
+                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
+                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
+                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
+
+                % Perform a 2D DFT
+                w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+            end
+        end  
         
         function [u,ux,uy] = transformToSpatialDomainWithFAllDerivatives(self, u_bar)
             u_bar = u_bar*(self.Nx*self.Ny);

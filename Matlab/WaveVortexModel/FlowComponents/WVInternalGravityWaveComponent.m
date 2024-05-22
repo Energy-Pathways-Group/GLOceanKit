@@ -283,6 +283,8 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
             ApmD = -sqrt(-1)./(2*self.wvt.Kh.*self.wvt.h_pm).* mask;
             ApmN = -(self.wvt.Omega)./(2*self.wvt.Kh.*self.wvt.h_pm) .* mask;
+            ApmD(isnan(ApmD)) = 0;
+            ApmN(isnan(ApmN)) = 0;
         end
 
         function [UAp,VAp,WAp,NAp] = internalGravityWaveSpatialTransformCoefficients(self)

@@ -1,6 +1,12 @@
 classdef WVOffGridTransform < handle
-    %UNTITLED9 Summary of this class goes here
-    %   Detailed explanation goes here
+    % This class support geostrophic and wave modes that are not on the
+    % discretized grid of the discrete Fourier transform.
+    %
+    % 2024-05-21: I ripped out the functions in the WVTransform that
+    % connected to this class. I think I'd rather re-implement this as a
+    % class that can be made a superclass of WVTransformHydrostatic (or
+    % similar).
+    
     
     properties
         f, rho0, latitude

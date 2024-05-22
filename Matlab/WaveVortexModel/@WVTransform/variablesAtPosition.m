@@ -31,6 +31,7 @@ end
 
 varargout = cell(size(variableNames));
 if strcmp(options.interpolationMethod,"exact")
+    error('I ripped this out.')
     if isempty(self.ongridModes)
         self.ongridModes = WVOffGridTransform(self.offgridModes.verticalModes,self.offgridModes.latitude,self.offgridModes.N2Function);
         [omega, alpha, ~, ~, mode, phi, A, norm] = self.waveModesFromWaveCoefficients();
@@ -42,11 +43,11 @@ else
     [varargout{:}] = self.interpolatedFieldAtPosition(x,y,z,options.interpolationMethod,varargout{:});
 end
 
-if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)
-    varargoutExt = cell(size(variableNames));
-    [varargoutExt{:}] = self.externalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
-    for iArg=1:length(varargout)
-        varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
-    end
-end
+% if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)
+%     varargoutExt = cell(size(variableNames));
+%     [varargoutExt{:}] = self.externalVariablesAtTimePosition(self.t,x,y,z,variableNames{:});
+%     for iArg=1:length(varargout)
+%         varargout{iArg} = varargout{iArg} + varargoutExt{iArg};
+%     end
+% end
 end

@@ -30,9 +30,14 @@ fprintf('This results in a total of %d active degrees-of-freedom.\n',totalDOF);
 if self.shouldAntialias == 1
     discardedModes = WVGeometryDoublyPeriodic.maskForAliasedModes(self.Nx,self.Ny);
     discardedModes = discardedModes & ~WVGeometryDoublyPeriodic.maskForNyquistModes(self.Nx,self.Ny);
-    dof = WVGeometryDoublyPeriodic.degreesOfFreedomForRealMatrix(self.Nx,self.Ny,self.conjugateDimension);
-    discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nz-1);
-    discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nz-3);
+    dof = WVGeometryDoublyPeriodic.degreesOfFreedomForRealMatrix(self.Nx,self.Ny,conjugateDimension=self.conjugateDimension);
+    if self.isBarotropic == 1
+        discardedDOFUV = sum(discardedModes(:).*dof(:));
+        discardedDOFEta = sum(discardedModes(:).*dof(:));
+    else
+        discardedDOFUV = sum(discardedModes(:).*dof(:))*(self.Nz-1);
+        discardedDOFEta = sum(discardedModes(:).*dof(:))*(self.Nz-3);
+    end
 
 
 
