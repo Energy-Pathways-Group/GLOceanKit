@@ -15,4 +15,5 @@ squared Rossby radius
 ---
 
 ## Description
-Real valued property with dimension 
+Real valued property with dimension $$j$$ and units of $$m^2$$.
+

@@ -33,7 +33,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   wvt = WVTransformHydrostatic([100e3, 100e3, 4000],[64, 64, 65], N2=N2,latitude=30);
   ```
  
-   
+           
   
 
 
@@ -41,9 +41,9 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 + Initialization
   + [`WVTransformHydrostatic`](/classes/transforms/wvtransformhydrostatic/wvtransformhydrostatic.html) create a wave-vortex transform for variable stratification
 + Stratification
-  + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) buoyancy frequency of the no-motion density
-  + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) d/dz ln N2
-  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) no-motion density
+  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) $$\rho_\textrm{nm}$$, no-motion density
+  + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) $$N^2$$ buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
+  + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the buoyancy frequency
   + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) instance of the InternalModes class
   + Vertical modes
     + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F_g$$

@@ -13,6 +13,10 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
     % ```
     %
     % - Topic: Initialization
+    % - Topic: Stratification
+    % - Topic: Stratification — Vertical modes
+    % - Topic: Initial conditions
+    % - Topic: Operations
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
 

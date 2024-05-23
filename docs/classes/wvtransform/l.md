@@ -15,4 +15,5 @@ wavenumber coordinate in the y-direction
 ---
 
 ## Description
-Real valued property with dimension 
+Real valued property with dimension $$kl$$ and units of $$rad/m$$.
+

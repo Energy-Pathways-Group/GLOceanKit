@@ -173,7 +173,7 @@ classdef MethodDocumentation < handle
                 if isempty(self.dimensions)
                     str = strcat(str,' with no dimensions and ');
                 elseif length(self.dimensions) == 1
-                    str = strcat(str,' with dimension %s and ',self.dimensions{1});
+                    str = strcat(str,' with dimension $$',self.dimensions{1},'$$ and ');
                 else
                     str = strcat(str,' with dimensions $$(');
                     for iDim=1:(length(self.dimensions)-1)

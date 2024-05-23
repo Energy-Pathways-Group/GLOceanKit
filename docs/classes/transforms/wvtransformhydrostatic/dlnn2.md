@@ -9,10 +9,15 @@ mathjax: true
 
 #  dLnN2
 
-d/dz ln N2
+$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the buoyancy frequency
 
 
 ---
 
 ## Description
-Real valued property with dimension 
+Real valued property with dimension $$z$$ and no units.
+
+## Discussion
+
+The quantity $$\frac{\partial \ln N^2}{\partial z}$$ is an inertial term in the nonlinear flux.
+
