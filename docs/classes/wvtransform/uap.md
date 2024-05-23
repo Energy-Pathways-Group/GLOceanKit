@@ -15,7 +15,7 @@ matrix component that multiplies $$A_p$$ to compute $$\tilde{u}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(j,kl)$$ and no units.
+Complex valued property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

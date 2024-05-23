@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$m$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$m$$.
 
 ## Discussion
 

@@ -15,7 +15,7 @@ matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$s$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$s$$.
 
 ## Discussion
 

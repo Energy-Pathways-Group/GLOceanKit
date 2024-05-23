@@ -9,21 +9,15 @@ mathjax: true
 
 #  GMatrix
 
-transformation matrix $$G$$
+transformation matrix $$G_g$$
 
 
 ---
 
-## Declaration
-```matlab
- G = GMatrix(wvt)
-```
-## Returns
-+ `Ginv`  A matrix with dimensions [Nz Nj]
+## Description
+Real valued property with dimensions $$(j,z)$$ and no units.
 
 ## Discussion
 
-  A matrix that transforms a vector from physical
-  space to vertical mode space.
- 
-      
+This is the geostrophic transformation matrix $$G_g$$ that transforms a vector from physical space to vertical mode space. Typically applied to variables $$\eta$$ and possibly $$w$$.
+

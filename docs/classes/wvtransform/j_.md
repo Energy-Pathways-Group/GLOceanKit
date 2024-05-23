@@ -15,5 +15,5 @@ j-coordinate matrix
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$rad/m$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$rad/m$$.
 

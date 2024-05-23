@@ -15,5 +15,5 @@ gravity of Earth
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$m s^{-2}$$.
+Real valued property with no dimensions and units of $$m s^{-2}$$.
 

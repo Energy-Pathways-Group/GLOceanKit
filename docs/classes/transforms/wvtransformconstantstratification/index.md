@@ -39,27 +39,26 @@ Wave-vortex transformation that assumes constant stratification
 ## Topics
 + Initialization
   + [`WVTransformConstantStratification`](/classes/transforms/wvtransformconstantstratification/wvtransformconstantstratification.html) initialze a wave-vortex transform with constant stratification
-+ Operations
-  + Transformations
-    + [`FMatrix`](/classes/transforms/wvtransformconstantstratification/fmatrix.html) transformation matrix $$F$$
-    + [`FinvMatrix`](/classes/transforms/wvtransformconstantstratification/finvmatrix.html) transformation matrix $$F^{-1}$$
-    + [`GMatrix`](/classes/transforms/wvtransformconstantstratification/gmatrix.html) transformation matrix $$G$$
-    + [`GinvMatrix`](/classes/transforms/wvtransformconstantstratification/ginvmatrix.html) transformation matrix $$G^{-1}$$
-  + Differentiation
-    + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
-    + [`diffZG`](/classes/transforms/wvtransformconstantstratification/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
-+ Domain Attributes
-  + Stratification
-    + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) buoyancy frequency of the mean density
-    + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) d/dz ln N2
-    + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) no-motion density
-    + [`verticalModes`](/classes/transforms/wvtransformconstantstratification/verticalmodes.html) instance of the InternalModes class
++ Stratification
+  + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) buoyancy frequency of the no-motion density
+  + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) d/dz ln N2
+  + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) no-motion density
+  + [`verticalModes`](/classes/transforms/wvtransformconstantstratification/verticalmodes.html) instance of the InternalModes class
+  + Vertical modes
+    + [`FMatrix`](/classes/transforms/wvtransformconstantstratification/fmatrix.html) transformation matrix $$F_g$$
+    + [`FinvMatrix`](/classes/transforms/wvtransformconstantstratification/finvmatrix.html) transformation matrix $$F_g^{-1}$$
+    + [`GMatrix`](/classes/transforms/wvtransformconstantstratification/gmatrix.html) transformation matrix $$G_g$$
+    + [`GinvMatrix`](/classes/transforms/wvtransformconstantstratification/ginvmatrix.html) transformation matrix $$G_g^{-1}$$
 + Initial conditions
   + Inertial Oscillations
     + [`addInertialMotions`](/classes/transforms/wvtransformconstantstratification/addinertialmotions.html) add inertial motions to existing inertial motions
     + [`initWithInertialMotions`](/classes/transforms/wvtransformconstantstratification/initwithinertialmotions.html) initialize with inertial motions
     + [`removeAllInertialMotions`](/classes/transforms/wvtransformconstantstratification/removeallinertialmotions.html) remove all inertial motions
     + [`setInertialMotions`](/classes/transforms/wvtransformconstantstratification/setinertialmotions.html) set inertial motions
++ Operations
+  + Differentiation
+    + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
+    + [`diffZG`](/classes/transforms/wvtransformconstantstratification/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
 + Other
   + [`CosineTransformBackMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformbackmatrix.html) Discrete Cosine Transform (DCT-I) matrix
   + [`CosineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformforwardmatrix.html) Discrete Cosine Transform (DCT-I) matrix

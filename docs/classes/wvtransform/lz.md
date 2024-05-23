@@ -15,5 +15,5 @@ domain size in the z-direction
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$m$$.
+Real valued property with no dimensions and units of $$m$$.
 

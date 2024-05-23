@@ -15,7 +15,7 @@ multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potent
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$m^{-1} s^{-1}$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$m^{-1} s^{-1}$$.
 
 ## Discussion
 

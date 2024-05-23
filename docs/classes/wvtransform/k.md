@@ -15,4 +15,4 @@ wavenumber coordinate in the x-direction
 ---
 
 ## Description
-Real valued transform property with dimension 
+Real valued property with dimension 

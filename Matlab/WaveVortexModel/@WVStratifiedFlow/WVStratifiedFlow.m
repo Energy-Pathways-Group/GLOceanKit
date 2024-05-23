@@ -15,14 +15,6 @@ classdef WVStratifiedFlow < handle
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
 
-        % transformation matrix $$F^{-1}$$
-        %
-        % A matrix that transforms a vector from vertical mode space to physical
-        % space. Inline
-        %
-        % - Topic: Operations — Transformations
-        % - Declaration: Finv = FinvMatrix(wvt)
-        % - Returns Finv: A matrix with dimensions [Nz Nj]
         Finv = FinvMatrix(self);
 
 
@@ -246,10 +238,14 @@ classdef WVStratifiedFlow < handle
             % - Declaration: propertyAnnotations = defaultPropertyAnnotations()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVPropertyAnnotation.empty(0,0);
-            propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class', detailedDescription='- topic: Domain Attributes — Stratification');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', 'no-motion density', detailedDescription='- topic: Domain Attributes — Stratification');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class', detailedDescription='- topic: Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', 'no-motion density', detailedDescription='- topic: Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the no-motion density', detailedDescription='- topic: Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
         end
 
         function methodAnnotations = methodAnnotationsForStratifiedFlow()

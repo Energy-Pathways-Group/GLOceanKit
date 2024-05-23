@@ -15,5 +15,5 @@ horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$rad/m$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$rad/m$$.
 

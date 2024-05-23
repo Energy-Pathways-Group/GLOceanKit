@@ -9,21 +9,15 @@ mathjax: true
 
 #  GinvMatrix
 
-transformation matrix $$G^{-1}$$
+transformation matrix $$G_g^{-1}$$
 
 
 ---
 
-## Declaration
-```matlab
- Ginv = GinvMatrix(wvt)
-```
-## Returns
-+ `Finv`  A matrix with dimensions [Nz Nj]
+## Description
+Real valued property with dimensions $$(z,j)$$ and no units.
 
 ## Discussion
 
-  A matrix that transforms a vector from vertical mode space to physical
-  space.
- 
-      
+This is the geostrophic transformation matrix $$G_g^{-1}$$ that transforms a vector from vertical mode space to physical space. Thus the columns are the vertical modes. Typically applied to variables $$\eta$$ and possibly $$w$$.
+

@@ -15,4 +15,4 @@ no-motion density
 ---
 
 ## Description
-Real valued transform property with dimension 
+Real valued property with dimension 

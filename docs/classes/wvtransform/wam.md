@@ -15,7 +15,7 @@ matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(j,kl)$$ and no units.
+Complex valued property with dimensions $$(j,kl)$$ and no units.
 
 ## Discussion
 

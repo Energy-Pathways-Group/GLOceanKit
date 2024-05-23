@@ -9,21 +9,15 @@ mathjax: true
 
 #  FMatrix
 
-transformation matrix $$F$$
+transformation matrix $$F_g$$
 
 
 ---
 
-## Declaration
-```matlab
- F = FMatrix(wvt)
-```
-## Returns
-+ `Finv`  A matrix with dimensions [Nz Nj]
+## Description
+Real valued property with dimensions $$(j,z)$$ and no units.
 
 ## Discussion
 
-  A matrix that transforms a vector from physical
-  space to vertical mode space.
- 
-      
+This is the geostrophic transformation matrix $$F_g$$ that transforms a vector from physical space to vertical mode space. Typically applied to variables $$u$$, $$v$$, $$p$$.
+

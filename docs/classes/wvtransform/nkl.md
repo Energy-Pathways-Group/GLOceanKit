@@ -15,5 +15,5 @@ points in the kl-coordinate, `length(k)`
 ---
 
 ## Description
-Real valued transform property with no dimensions and no units.
+Real valued property with no dimensions and no units.
 

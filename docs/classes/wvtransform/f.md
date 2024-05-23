@@ -15,5 +15,5 @@ Coriolis parameter
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$rad/s$$.
+Real valued property with no dimensions and units of $$rad/s$$.
 

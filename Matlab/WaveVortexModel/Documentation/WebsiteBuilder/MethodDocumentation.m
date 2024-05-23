@@ -165,7 +165,7 @@ classdef MethodDocumentation < handle
                 end
 
                 if self.functionType == FunctionType.transformProperty
-                    str = strcat(str,' transform property ');
+                    str = strcat(str,' property ');
                 else
                     str = strcat(str,' state variable ');
                 end

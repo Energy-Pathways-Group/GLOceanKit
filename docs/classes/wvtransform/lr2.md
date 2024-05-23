@@ -15,4 +15,4 @@ squared Rossby radius
 ---
 
 ## Description
-Real valued transform property with dimension 
+Real valued property with dimension 

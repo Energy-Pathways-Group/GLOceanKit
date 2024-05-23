@@ -15,7 +15,7 @@ matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.
 ---
 
 ## Description
-Complex valued transform property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
+Complex valued property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
 
 ## Discussion
 

@@ -15,7 +15,7 @@ matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.
 ---
 
 ## Description
-Real valued transform property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
+Real valued property with dimensions $$(j,kl)$$ and units of $$s^{-1}$$.
 
 ## Discussion
 

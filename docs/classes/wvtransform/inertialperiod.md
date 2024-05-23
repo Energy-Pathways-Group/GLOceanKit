@@ -15,7 +15,7 @@ inertial period
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$s$$.
+Real valued property with no dimensions and units of $$s$$.
 
 ## Discussion
 

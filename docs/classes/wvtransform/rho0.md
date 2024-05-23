@@ -15,5 +15,5 @@ mean density at the surface (z=0)
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$kg m^{-3}$$.
+Real valued property with no dimensions and units of $$kg m^{-3}$$.
 

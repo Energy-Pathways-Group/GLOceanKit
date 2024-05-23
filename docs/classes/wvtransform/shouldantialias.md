@@ -15,5 +15,5 @@ whether antialiasing is enabled
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$bool$$.
+Real valued property with no dimensions and units of $$bool$$.
 

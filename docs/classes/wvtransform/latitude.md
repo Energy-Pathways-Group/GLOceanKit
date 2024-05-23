@@ -15,5 +15,5 @@ central latitude of the simulation
 ---
 
 ## Description
-Real valued transform property with no dimensions and units of $$degrees_north$$.
+Real valued property with no dimensions and units of $$degrees_north$$.
 
