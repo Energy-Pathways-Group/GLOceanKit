@@ -56,12 +56,12 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0 
             end
-                        
-            if mod(log2(Nxyz(3)-1),1) == 0
-                Nz = Nxyz(3);
-            else
-                error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
-            end
+            Nz = Nxyz(3);                        
+            % if mod(log2(Nxyz(3)-1),1) == 0
+            %     Nz = Nxyz(3);
+            % else
+            %     error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
+            % end
 
             Lz = Lxyz(3);  
             dz = Lz/(Nz-1);

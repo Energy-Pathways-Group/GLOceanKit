@@ -136,6 +136,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
     
     methods (Abstract)
+        wvtX2 = waveVortexTransformWithResolution(self,m)
+        
         % Required for transformUVEtaToWaveVortex 
         u_bar = transformFromSpatialDomainWithFio(self,u)
         u_bar = transformFromSpatialDomainWithFg(self, u)

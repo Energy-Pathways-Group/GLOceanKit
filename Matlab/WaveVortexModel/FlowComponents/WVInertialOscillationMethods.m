@@ -36,7 +36,7 @@ classdef WVInertialOscillationMethods < handle
             % - Declaration: addInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)
             % - Parameter v: function handle that takes a single argument, v(Z)
-            self.Ap(:,1) = self.transformFromSpatialDomainWithFio(u(self.z) - sqrt(-1)*v(self.z))/2;
+            self.Ap(:,1) = self.Ap(:,1) + self.transformFromSpatialDomainWithFio(u(self.z) - sqrt(-1)*v(self.z))/2;
             self.Am(:,1) = conj(self.Ap(:,1));
         end
 
@@ -46,7 +46,7 @@ classdef WVInertialOscillationMethods < handle
             % ```matlab
             % U_io = 0.2;
             % Ld = wvt.Lz/5;
-            % u_NIO = @(z) U_io*exp(-(z/Ld));
+            % u_NIO = @(z) U_io*exp((z/Ld));
             % v_NIO = @(z) zeros(size(z));
             %
             % wvt.initWithInertialMotions(u_NIO,v_NIO);
@@ -69,7 +69,7 @@ classdef WVInertialOscillationMethods < handle
             % ```matlab
             % U_io = 0.2;
             % Ld = wvt.Lz/5;
-            % u_NIO = @(z) U_io*exp(-(z/Ld));
+            % u_NIO = @(z) U_io*exp((z/Ld));
             % v_NIO = @(z) zeros(size(z));
             %
             % wvt.setInertialMotions(u_NIO,v_NIO);
@@ -80,14 +80,8 @@ classdef WVInertialOscillationMethods < handle
             % - Declaration: setInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)
             % - Parameter v: function handle that takes a single argument, v(Z)
-            [~,~,Z] = self.xyzGrid;
-
-            Ubar = self.transformFromSpatialDomainWithF( u(Z) );
-            Vbar = self.transformFromSpatialDomainWithF( v(Z) );
-            Ap_ = self.ApU.*Ubar + self.ApV.*Vbar;
-            Am_ = self.AmU.*Ubar + self.AmV.*Vbar;
-            self.Ap(1,1,:) = Ap_(1,1,:);
-            self.Am(1,1,:) = Am_(1,1,:);
+            self.Ap(:,1) = self.transformFromSpatialDomainWithFio(u(self.z) - sqrt(-1)*v(self.z))/2;
+            self.Am(:,1) = conj(self.Ap(:,1));
         end
 
         function removeAllInertialMotions(self)
@@ -96,8 +90,8 @@ classdef WVInertialOscillationMethods < handle
             % All inertial motions are removed
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: removeAllInertialMotions()
-            self.Ap(1,1,:) = 0;
-            self.Am(1,1,:) = 0;
+            self.Ap(:,1) = 0;
+            self.Am(:,1) = 0;
         end
     end
 
