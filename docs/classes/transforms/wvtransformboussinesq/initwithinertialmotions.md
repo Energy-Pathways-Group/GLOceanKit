@@ -1,9 +1,9 @@
 ---
 layout: default
 title: initWithInertialMotions
-parent: WVInertialOscillationMethods
+parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 38
+nav_order: 14
 mathjax: true
 ---
 

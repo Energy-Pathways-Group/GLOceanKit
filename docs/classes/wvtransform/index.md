@@ -85,12 +85,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
       + [`spatialMatrixSize`](/classes/wvtransform/spatialmatrixsize.html) returns the size of all real-valued field variables
       + [`xyzGrid`](/classes/wvtransform/xyzgrid.html) returns the X, Y, Z coordinate matrices
   + Stratification
-    + [`N0`](/classes/wvtransform/n0.html) interior buoyancy frequency at the surface (z=0)
-    + [`N2`](/classes/wvtransform/n2.html) buoyancy frequency of the mean density
-    + [`Nmax`](/classes/wvtransform/nmax.html) maximum buoyancy frequency
-    + [`dLnN2`](/classes/wvtransform/dlnn2.html) d/dz ln N2
     + [`rho0`](/classes/wvtransform/rho0.html) mean density at the surface (z=0)
-    + [`rhobar`](/classes/wvtransform/rhobar.html) mean density
 + Wave-vortex coefficients
   + at time $$t$$
     + [`A0t`](/classes/wvtransform/a0t.html) geostrophic coefficients at time t
@@ -184,15 +179,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + Dimensions
     + [`addDimensionAnnotations`](/classes/wvtransform/adddimensionannotations.html) add one or more WVDimensions
     + [`dimensionAnnotationWithName`](/classes/wvtransform/dimensionannotationwithname.html) retrieve a WVDimension by name
-+ External (non-gridded) modes
-  + [`addExternalWavesWithFrequencies`](/classes/wvtransform/addexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given wavenumber
-  + [`addExternalWavesWithWavenumbers`](/classes/wvtransform/addexternalwaveswithwavenumbers.html) add external (non-gridded) waves with a given wavenumber
-  + [`externalVariableFieldsAtTime`](/classes/wvtransform/externalvariablefieldsattime.html) Returns the external wave modes at the grid points.
-  + [`externalVariablesAtTimePosition`](/classes/wvtransform/externalvariablesattimeposition.html) Returns the external wave modes at the grid points.
-  + [`fillOutWaveSpectrum`](/classes/wvtransform/filloutwavespectrum.html) Add external waves to the model to fill out the spectrum
-  + [`removeAllExternalWaves`](/classes/wvtransform/removeallexternalwaves.html) remove all external (non-gridded) waves
-  + [`setExternalWavesWithFrequencies`](/classes/wvtransform/setexternalwaveswithfrequencies.html) set external (non-gridded) waves with a given frequency
-  + [`setExternalWavesWithWavenumbers`](/classes/wvtransform/setexternalwaveswithwavenumbers.html) set external (non-gridded) waves with a given wavenumber
 + Flow components
   + [`addFlowComponent`](/classes/wvtransform/addflowcomponent.html) add a flow component
   + [`addPrimaryFlowComponent`](/classes/wvtransform/addprimaryflowcomponent.html) add a primary flow component, automatically added to the flow
@@ -238,6 +224,8 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`nonlinearFluxOperation`](/classes/wvtransform/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux
   + [`nonlinearFluxWithGradientMasks`](/classes/wvtransform/nonlinearfluxwithgradientmasks.html) returns the flux of each coefficient as determined by the nonlinear flux operation
   + [`nonlinearFluxWithMask`](/classes/wvtransform/nonlinearfluxwithmask.html) returns the flux of each coefficient as determined by the nonlinear flux
++ External (non-gridded) modes
+  + [`fillOutWaveSpectrum`](/classes/wvtransform/filloutwavespectrum.html) Add external waves to the model to fill out the spectrum
 + Index Gymnastics
   + [`indexFromModeNumber`](/classes/wvtransform/indexfrommodenumber.html) return the linear index into a spectral matrix given (k,l,j)
   + [`isValidConjugateModeNumber`](/classes/wvtransform/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
@@ -277,8 +265,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`knownDynamicalVariables`](/classes/wvtransform/knowndynamicalvariables.html) 
   + [`mdaEnergy`](/classes/wvtransform/mdaenergy.html) 
   + [`modeNumberFromIndex`](/classes/wvtransform/modenumberfromindex.html) 
-  + [`offgridModes`](/classes/wvtransform/offgridmodes.html) subclass should initialize
-  + [`ongridModes`](/classes/wvtransform/ongridmodes.html) This is a cached copy
   + [`operationForDynamicalVariable`](/classes/wvtransform/operationfordynamicalvariable.html) This function is designed with the following goals:
   + [`operationNameMap`](/classes/wvtransform/operationnamemap.html) 
   + [`operationVariableNameMap`](/classes/wvtransform/operationvariablenamemap.html) 

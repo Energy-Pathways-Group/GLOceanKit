@@ -93,10 +93,10 @@ classdef ClassDocumentation < handle
             % First identify which methods we want to include
             validMethods = [self.allMethodDocumentation(:).isHidden] == 0 & strcmp(string({self.allMethodDocumentation(:).access}),'public');
             if self.shouldExcludeAllSuperclasses == 1
-                validMethods = validMethods & strcmp(string({self.allMethodDocumentation(:).declaringClassName}),self.name);
+                validMethods = validMethods & arrayfun(@(a) a.isDeclaredInClass(self.name),self.allMethodDocumentation);
             else
                 for iExcluded = 1:length(self.excludedSuperclasses)
-                    validMethods = validMethods & ~strcmp(string({self.allMethodDocumentation(:).declaringClassName}),self.excludedSuperclasses{iExcluded});
+                    validMethods = validMethods & ~arrayfun(@(a) a.isDeclaredInClass(self.excludedSuperclasses{iExcluded}),self.allMethodDocumentation);
                 end
             end
 
@@ -132,7 +132,7 @@ classdef ClassDocumentation < handle
             for i=1:length(methodNames)
                 iPageNumber = iPageNumber+1;
                 methodDocumentation = methodDocumentationNameMap(methodNames{i});
-                methodDocumentation.writeToFile(iPageNumber)
+                methodDocumentation.writeToFile(self.name,iPageNumber)
             end
         end
 
@@ -323,7 +323,9 @@ classdef ClassDocumentation < handle
                 metadata = MethodDocumentation(mp.Name);
                 metadata.addMetadataFromMethodMetadata(mp);
                 metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
-                metadata.declaringClassName = classMetadata.Name;
+                if isequal(mp.DefiningClass.Name,classMetadata.Name)
+                    metadata.addDeclaringClass(classMetadata.Name);
+                end
                 methodDocumentation(end+1) = metadata;
             end
             for i=1:length(classMetadata.PropertyList)
@@ -331,7 +333,9 @@ classdef ClassDocumentation < handle
                 metadata = MethodDocumentation(mp.Name);
                 metadata.addMetadataFromPropertyMetadata(mp);
                 metadata.addMetadataFromDetailedDescription(mp.DetailedDescription);
-                metadata.declaringClassName = classMetadata.Name;
+                if isequal(mp.DefiningClass.Name,classMetadata.Name)
+                    metadata.addDeclaringClass(classMetadata.Name);
+                end
                 methodDocumentation(end+1) = metadata;
             end
 
@@ -342,10 +346,16 @@ classdef ClassDocumentation < handle
 
         function methodDocumentation = annotateMethodDocumentationFromClassMetadata(methodDocumentation,classMetadata)
             subclassMethodNames = string({methodDocumentation(:).name});
+
+            % Which superclass methods have a defining class that is this
+            % class
             superclassMethodNames = string(cat(2,{classMetadata.MethodList(:).Name},{classMetadata.PropertyList(:).Name}));
+            a=cat(2,[classMetadata.MethodList(:).DefiningClass],[classMetadata.PropertyList(:).DefiningClass]);
+            definingClassNames = string({a.Name});
+            superclassMethodNames=superclassMethodNames(ismember(definingClassNames,classMetadata.Name));
             subclassIndices = ismember(subclassMethodNames,superclassMethodNames);
             for index = find(subclassIndices)
-                methodDocumentation(index).declaringClassName = classMetadata.Name;
+                methodDocumentation(index).addDeclaringClass(classMetadata.Name);
             end
 
             for iClass=1:length(classMetadata.SuperclassList)

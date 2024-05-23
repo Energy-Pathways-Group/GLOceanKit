@@ -25,7 +25,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   To initialization an instance of the WVTransformHydrostatic class you
   must specific the domain size, the number of grid points and *either*
   the density profile or the stratification profile.
-  
+ 
   ```matlab
   N0 = 3*2*pi/3600;
   L_gm = 1300;
@@ -53,17 +53,11 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`removeAllInertialMotions`](/classes/transforms/wvtransformhydrostatic/removeallinertialmotions.html) remove all inertial motions
     + [`setInertialMotions`](/classes/transforms/wvtransformhydrostatic/setinertialmotions.html) set inertial motions
 + Other
-  + [`BuildProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildprojectionoperators.html) Now go compute the appropriate number of modes at the
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 
-  + [`N2Function`](/classes/transforms/wvtransformhydrostatic/n2function.html) 
-  + [`buildInterpolationProjectionOperators`](/classes/transforms/wvtransformhydrostatic/buildinterpolationprojectionoperators.html) 
-  + [`buildInterpolationProjectionOperatorsForGrid`](/classes/transforms/wvtransformhydrostatic/buildinterpolationprojectionoperatorsforgrid.html) 
   + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) 
-  + [`dLnN2Function`](/classes/transforms/wvtransformhydrostatic/dlnn2function.html) 
-  + [`rhoFunction`](/classes/transforms/wvtransformhydrostatic/rhofunction.html) function handles
-  + [`rhobar`](/classes/transforms/wvtransformhydrostatic/rhobar.html) on the z-grid, size(N2) = [length(z) 1];
-  + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithfinterp.html) 
-  + [`transformToSpatialDomainWithGInterp`](/classes/transforms/wvtransformhydrostatic/transformtospatialdomainwithginterp.html) 
+  + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) 
+  + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) 
+  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) 
   + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) 
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) 
 

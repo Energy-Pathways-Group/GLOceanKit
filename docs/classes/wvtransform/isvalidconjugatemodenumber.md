@@ -3,7 +3,7 @@ layout: default
 title: isValidConjugateModeNumber
 parent: WVTransform
 grand_parent: Classes
-nav_order: 129
+nav_order: 121
 mathjax: true
 ---
 

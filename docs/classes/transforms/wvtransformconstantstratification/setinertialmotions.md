@@ -1,9 +1,9 @@
 ---
 layout: default
 title: setInertialMotions
-parent: WVInertialOscillationMethods
+parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 26
+nav_order: 23
 mathjax: true
 ---
 

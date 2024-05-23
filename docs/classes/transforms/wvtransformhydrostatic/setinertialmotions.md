@@ -1,9 +1,9 @@
 ---
 layout: default
 title: setInertialMotions
-parent: WVInertialOscillationMethods
+parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 18
+nav_order: 14
 mathjax: true
 ---
 

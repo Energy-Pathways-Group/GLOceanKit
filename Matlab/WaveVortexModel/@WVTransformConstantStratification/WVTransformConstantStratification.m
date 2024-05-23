@@ -14,7 +14,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
     % - Topic: Initialization
     %
     % - Declaration: classdef WVTransformConstantStratification < [WVTransform](/classes/wvtransform/)
-    properties (GetAccess=public, SetAccess=protected)
+    properties (Access=protected) %(GetAccess=public, SetAccess=protected)
         N0
         F_g,G_g
         F_wg, G_wg

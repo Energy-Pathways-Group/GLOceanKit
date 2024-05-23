@@ -35,6 +35,13 @@ nav_order: 4
 
 
 ## Topics
++ Equality
+  + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/isequal.html) check for equality with another nonlinear flux operation
++ Initialization
+  + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
++ Write to file
+  + [`writeToFile`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/writetofile.html) write information about the nonlinear flux operation to file
 + Other
   + [`A0PV`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/a0pv.html) conversion from PV to A0
   + [`PVA0`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/pva0.html) conversion from A0 to PV
@@ -42,6 +49,7 @@ nav_order: 4
   + [`WVNonlinearFluxQG`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/wvnonlinearfluxqg.html) initialize 3D quasigeostrophic potential vorticity flux
   + [`beta`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/beta.html) 
   + [`buildDampingOperator`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/builddampingoperator.html) 
+  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/compute.html) Apply operator S---defined in (C4) in the manuscript
   + [`damp`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/damp.html) 
   + [`dampingOperator`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/dampingoperator.html) 
   + [`dampingTimeScale`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/dampingtimescale.html) 

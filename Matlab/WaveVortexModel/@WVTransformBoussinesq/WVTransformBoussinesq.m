@@ -11,7 +11,7 @@ classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WV
     %    to specify the depths and modes yourself
     %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho, 'zgrid', z)
 
-    properties (GetAccess=public, SetAccess=protected)
+    properties (Access=protected) %(GetAccess=public, SetAccess=protected)
         % Geostrophic transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj x 1]
         PF0, QG0 % size(PF,PG)=[Nj x Nz x 1]

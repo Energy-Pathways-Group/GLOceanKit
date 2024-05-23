@@ -3,16 +3,14 @@ layout: default
 title: WVTransformBoussinesq
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 25
+nav_order: 6
 mathjax: true
 ---
 
 #  WVTransformBoussinesq
 
-if all of these things are set initially (presumably read
+First we need to initialize the WVStratifiedFlow.
 
 
 ---
 
-## Discussion
-from file), then we can initialize without computing modes.

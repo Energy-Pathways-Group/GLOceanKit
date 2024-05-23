@@ -36,6 +36,8 @@ nav_order: 7
 ## Topics
 + Initializing
   + [`WVNonlinearFluxSpatial`](/classes/nonlinear-fluxes/wvnonlinearfluxspatial/wvnonlinearfluxspatial.html) 3D nonlinear flux for Boussinesq flow, computed in the spatial domain
++ Computation
+  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxspatial/compute.html) the promised variable
 + Other
   + [`dLnN2`](/classes/nonlinear-fluxes/wvnonlinearfluxspatial/dlnn2.html) 
 

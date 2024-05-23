@@ -4,7 +4,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
     % To initialization an instance of the WVTransformHydrostatic class you
     % must specific the domain size, the number of grid points and *either*
     % the density profile or the stratification profile.
-    % 
+    %
     % ```matlab
     % N0 = 3*2*pi/3600;
     % L_gm = 1300;
@@ -16,15 +16,15 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
 
-    properties (GetAccess=public, SetAccess=protected) %(Access=private)
+    properties (Access=protected) %(GetAccess=public, SetAccess=protected) %(Access=private)
         % Transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
         PF0, QG0 % size(PF,PG)=[Nj x Nz]
         h % [Nj 1]
-        
-        P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat 
-        Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. 
-        
+
+        P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
+        Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
+
         zInterp
         PFinvInterp, QGinvInterp
 
@@ -41,9 +41,9 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
         h_pm  % [Nj 1]
         isHydrostatic
     end
-        
+
     methods
-         
+
         function self = WVTransformHydrostatic(Lxyz, Nxyz, options)
             % create a wave-vortex transform for variable stratification
             %
@@ -86,7 +86,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
                 options.Q (:,1) double
                 options.z (:,1) double
             end
-            
+
             % First we need to initialize the WVStratifiedFlow.
             if isfield(options,'z')
                 z=options.z;
@@ -94,7 +94,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
                 z = WVStratifiedFlow.quadraturePointsForStratifiedFlow(Lxyz(3),Nxyz(3),rho=options.rho,N2=options.N2,latitude=options.latitude);
             end
             self@WVStratifiedFlow(Lxyz(3),z,rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude)
-            
+
             % if all of these things are set initially (presumably read
             % from file), then we can initialize without computing modes.
             canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
@@ -167,7 +167,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
             end
         end
 
-                                
+
         function h_0 = get.h_0(self)
             h_0 = self.h;
         end
@@ -207,7 +207,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
         %
         % Transformations FROM the spatial domain
         %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function u = transformToSpatialDomainWithF(self, options)
             arguments
@@ -249,7 +249,7 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
                 % Perform a 2D DFT
                 w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
             end
-        end       
+        end
 
         % function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
         %     arguments
@@ -259,22 +259,22 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
         %     end
         %     u_bar = (self.P .* (options.Apm + options.A0))*(self.Nx*self.Ny);
         %     u_bar = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric');
-        % 
+        %
         %     u_bar = permute(u_bar,[3 1 2]); % keep adjacent in memory
         %     u_bar = reshape(u_bar,self.Nj,[]);
         %     u = self.PFinv*u_bar;
         %     u = reshape(u,self.Nz,self.Nx,self.Ny);
         %     u = permute(u,[2 3 1]);
-        % 
+        %
         %     ux = ifft( sqrt(-1)*self.k.*fft(u,self.Nx,1), self.Nx, 1,'symmetric');
         %     uy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(u,self.Ny,2), self.Ny, 2,'symmetric');
-        % 
+        %
         %     uz = self.QGinv*( squeeze(self.Q./self.P).*u_bar );
         %     uz = reshape(uz,self.Nz,self.Nx,self.Ny);
         %     uz = permute(uz,[2 3 1]);
         %     uz = (-shiftdim(self.N2,-2)/self.g).*uz;
-        % end  
-        % 
+        % end
+        %
         % function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
         %     arguments
         %         self WVTransform {mustBeNonempty}
@@ -283,21 +283,59 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
         %     end
         %     w_bar = (self.Q .* (options.Apm + options.A0))*(self.Nx*self.Ny);
         %     w_bar = ifft(ifft(w_bar,self.Nx,1),self.Ny,2,'symmetric');
-        % 
+        %
         %     w_bar = permute(w_bar,[3 1 2]); % keep adjacent in memory
         %     w_bar = reshape(w_bar,self.Nj,[]);
         %     w = self.QGinv*w_bar;
         %     w = reshape(w,self.Nz,self.Nx,self.Ny);
         %     w = permute(w,[2 3 1]);
-        % 
+        %
         %     wx = ifft( sqrt(-1)*self.k.*fft(w,self.Nx,1), self.Nx, 1,'symmetric');
         %     wy = ifft( sqrt(-1)*shiftdim(self.l,-1).*fft(w,self.Ny,2), self.Ny, 2,'symmetric');
-        % 
+        %
         %     wz = self.PFinv* ( squeeze(self.P./(self.Q .* self.h)) .* w_bar);
         %     wz = reshape(wz,self.Nz,self.Nx,self.Ny);
         %     wz = permute(wz,[2 3 1]);
         % end
-   
+
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Needed to add and remove internal waves from the model
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
+            ratio = 1/self.P0(j0+1);
+        end
+
+        function ratio = uMaxA0(self,k0, l0, j0)
+            % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
+            Kh = self.Kh;
+            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P0(j0);
+        end
+
+        [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
+
+        function flag = isequal(self,other)
+            arguments
+                self WVTransform
+                other WVTransform
+            end
+            flag = isequal@WVTransform(self,other);
+            flag = flag & isequal(self.dLnN2, other.dLnN2);
+            flag = flag & isequal(self.PF0inv, other.PFinv);
+            flag = flag & isequal(self.QG0inv, other.QGinv);
+            flag = flag & isequal(self.PF0,other.PF);
+            flag = flag & isequal(self.QG0,other.QG);
+            flag = flag & isequal(self.P0, other.P);
+            flag = flag & isequal(self.Q0, other.Q);
+            flag = flag & isequal(self.h, other.h);
+        end
+    end
+
+    methods (Access=protected)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Higher resolution vertical grid for interpolation
@@ -374,49 +412,13 @@ classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & W
             w = reshape(w,length(self.zInterp),self.Nx,self.Ny);
             w = permute(w,[2 3 1]);
         end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Needed to add and remove internal waves from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            ratio = 1/self.P0(j0+1);
-        end 
-
-        function ratio = uMaxA0(self,k0, l0, j0)
-            % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
-            Kh = self.Kh;
-            ratio = (self.g/self.f)*Kh(k0,l0,j0)*self.P0(j0);
-        end 
-
-        [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
-
-        function flag = isequal(self,other)
-            arguments
-                self WVTransform
-                other WVTransform
-            end
-            flag = isequal@WVTransform(self,other);
-            flag = flag & isequal(self.dLnN2, other.dLnN2);
-            flag = flag & isequal(self.PF0inv, other.PFinv);
-            flag = flag & isequal(self.QG0inv, other.QGinv);
-            flag = flag & isequal(self.PF0,other.PF);
-            flag = flag & isequal(self.QG0,other.QG);
-            flag = flag & isequal(self.P0, other.P);
-            flag = flag & isequal(self.Q0, other.Q);
-            flag = flag & isequal(self.h, other.h);
-        end
     end
 
     methods (Static)
         wvt = waveVortexTransformFromFile(path,options)
     end
-   
-        
-        
-end 
+
+end
 
 
 

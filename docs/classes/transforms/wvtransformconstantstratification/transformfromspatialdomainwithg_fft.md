@@ -3,7 +3,7 @@ layout: default
 title: transformFromSpatialDomainWithG_FFT
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 31
+nav_order: 28
 mathjax: true
 ---
 

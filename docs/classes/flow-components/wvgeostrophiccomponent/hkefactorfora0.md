@@ -3,7 +3,7 @@ layout: default
 title: hkeFactorForA0
 parent: WVGeostrophicComponent
 grand_parent: Classes
-nav_order: 5
+nav_order: 6
 mathjax: true
 ---
 

@@ -43,6 +43,15 @@ nav_order: 2
 
 
 ## Topics
++ Computation
+  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearflux/compute.html) the promised variable
++ Equality
+  + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearflux/isequal.html) check for equality with another nonlinear flux operation
++ Initialization
+  + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearflux/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearflux/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
++ Write to file
+  + [`writeToFile`](/classes/nonlinear-fluxes/wvnonlinearflux/writetofile.html) write information about the nonlinear flux operation to file
 + Other
   + [`WVNonlinearFlux`](/classes/nonlinear-fluxes/wvnonlinearflux/wvnonlinearflux.html) initialize the WVNonlinearFlux nonlinear flux
   + [`beta`](/classes/nonlinear-fluxes/wvnonlinearflux/beta.html) 

@@ -5,7 +5,7 @@ classdef MethodDocumentation < handle
     properties
         name string
         definingClassName
-        declaringClassName
+        declaringClassName = string.empty(0,0)
         parameters
         returns
         detailedDescription =[]
@@ -30,6 +30,22 @@ classdef MethodDocumentation < handle
     methods
         function self = MethodDocumentation(name)
             self.name = name;
+        end
+
+        function addDeclaringClass(self,name)
+            arguments
+                self MethodDocumentation
+                name string
+            end
+            self.declaringClassName(end+1) = name;
+        end
+
+        function flag = isDeclaredInClass(self,name)
+            arguments
+                self MethodDocumentation
+                name string
+            end
+            flag = ismember(name,self.declaringClassName);
         end
 
         function addMetadataFromMethodMetadata(self,mp)
@@ -127,13 +143,13 @@ classdef MethodDocumentation < handle
             self.detailedDescription = regexprep(detailedDescription,leadingWhitespaceExpression,'');
         end
 
-        function writeToFile(self,pageNumber)
+        function writeToFile(self,parentName,pageNumber)
             if isempty(self.pathOfOutputFile)
                 error('Path not set!');
             end
             fileID = fopen(self.pathOfOutputFile,'w');
 
-            fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,self.definingClassName,pageNumber);
+            fprintf(fileID,'---\nlayout: default\ntitle: %s\nparent: %s\ngrand_parent: Classes\nnav_order: %d\nmathjax: true\n---\n\n',self.name,parentName,pageNumber);
 
             fprintf(fileID,'#  %s\n',self.name);
             fprintf(fileID,'\n%s\n',self.shortDescription);

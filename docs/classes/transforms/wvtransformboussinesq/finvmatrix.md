@@ -1,0 +1,29 @@
+---
+layout: default
+title: FinvMatrix
+parent: WVTransformBoussinesq
+grand_parent: Classes
+nav_order: 2
+mathjax: true
+---
+
+#  FinvMatrix
+
+transformation matrix $$F^{-1}$$
+
+
+---
+
+## Declaration
+```matlab
+ Finv = FinvMatrix(wvt)
+```
+## Returns
++ `Finv`  A matrix with dimensions [Nz Nj]
+
+## Discussion
+
+  A matrix that transforms a vector from vertical mode space to physical
+  space.
+ 
+      

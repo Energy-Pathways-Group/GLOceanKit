@@ -7,7 +7,7 @@ classdef WVStratifiedFlow < handle
     end
 
 
-    properties (GetAccess=private)
+    properties (GetAccess=protected)
         rhoFunction, N2Function, dLnN2Function = [] % function handles
     end
 
@@ -22,7 +22,7 @@ classdef WVStratifiedFlow < handle
         G = GMatrix(self);
     end
 
-    methods
+    methods (Access=protected)
         function self = WVStratifiedFlow(Lz,z,options)
             % If you pass verticalModes directly, this is the most
             % efficient. If you pass z, then it is assumed you're passing
@@ -35,8 +35,6 @@ classdef WVStratifiedFlow < handle
                 options.dLnN2 function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.verticalModes = []
-
-                options.Nj;
             end
 
             % For rigid lid:
@@ -203,7 +201,7 @@ classdef WVStratifiedFlow < handle
         end
     end
 
-    methods (Static)
+    methods (Static, Access=protected)
         function z = quadraturePointsForStratifiedFlow(Lz,Nz,options)
             % If you pass verticalModes directly, this is the most
             % efficient. If you pass z, then it is assumed you're passing
@@ -236,7 +234,7 @@ classdef WVStratifiedFlow < handle
             % - Declaration: propertyAnnotations = defaultPropertyAnnotations()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVPropertyAnnotation.empty(0,0);
-            propertyAnnotations(end+1) = WVPropertyAnnotation('Nmax',{},'rad s^{-1}', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class', detailedDescription='- topic: Domain Attributes — Stratification');
             propertyAnnotations(end+1) = WVPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', 'no-motion density', detailedDescription='- topic: Domain Attributes — Stratification');
             propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
             propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');

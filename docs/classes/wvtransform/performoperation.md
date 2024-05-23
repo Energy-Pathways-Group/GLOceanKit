@@ -3,7 +3,7 @@ layout: default
 title: performOperation
 parent: WVTransform
 grand_parent: Classes
-nav_order: 154
+nav_order: 144
 mathjax: true
 ---
 

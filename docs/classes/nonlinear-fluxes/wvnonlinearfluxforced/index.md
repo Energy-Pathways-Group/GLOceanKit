@@ -55,9 +55,17 @@ nav_order: 3
 ## Topics
 + Initialization
   + [`WVNonlinearFluxForced`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/wvnonlinearfluxforced.html) initialize WVNonlinearFluxForced
+  + [`nonlinearFluxFromFile`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/nonlinearfluxfromfile.html) initialize a nonlinear flux operation from NetCDF file
+  + [`nonlinearFluxWithResolutionOfTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/nonlinearfluxwithresolutionoftransform.html) create a new nonlinear flux operation with double the resolution
++ Computation
+  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/compute.html) the promised variable
++ Equality
+  + [`isequal`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/isequal.html) check for equality with another nonlinear flux operation
 + Set forcing
   + [`setGeostrophicForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setgeostrophicforcingcoefficients.html) set forcing values for the geostrophic part of the flow
   + [`setWaveForcingCoefficients`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/setwaveforcingcoefficients.html) set forcing values for the wave part of the flow
++ Write to file
+  + [`writeToFile`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/writetofile.html) write information about the nonlinear flux operation to file
 + Other
   + [`A0bar`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/a0bar.html) A0 'mean' value to relax to
   + [`Ambar`](/classes/nonlinear-fluxes/wvnonlinearfluxforced/ambar.html) Am 'mean' value to relax to
