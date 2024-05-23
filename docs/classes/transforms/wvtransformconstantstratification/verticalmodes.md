@@ -9,8 +9,11 @@ mathjax: true
 
 #  verticalModes
 
-
+instance of the InternalModes class
 
 
 ---
+
+## Description
+Real valued transform property with no dimensions and no units.
 

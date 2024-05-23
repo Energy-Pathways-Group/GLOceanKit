@@ -46,6 +46,15 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F^{-1}$$
     + [`GMatrix`](/classes/transforms/wvtransformhydrostatic/gmatrix.html) transformation matrix $$G$$
     + [`GinvMatrix`](/classes/transforms/wvtransformhydrostatic/ginvmatrix.html) transformation matrix $$G^{-1}$$
+  + Differentiation
+    + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
+    + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
++ Domain Attributes
+  + Stratification
+    + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) buoyancy frequency of the mean density
+    + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) d/dz ln N2
+    + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) no-motion density
+    + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) instance of the InternalModes class
 + Initial conditions
   + Inertial Oscillations
     + [`addInertialMotions`](/classes/transforms/wvtransformhydrostatic/addinertialmotions.html) add inertial motions to existing inertial motions
@@ -53,12 +62,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`removeAllInertialMotions`](/classes/transforms/wvtransformhydrostatic/removeallinertialmotions.html) remove all inertial motions
     + [`setInertialMotions`](/classes/transforms/wvtransformhydrostatic/setinertialmotions.html) set inertial motions
 + Other
-  + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) 
-  + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) 
-  + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) 
-  + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) 
-  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) 
-  + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) 
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) 
 
 

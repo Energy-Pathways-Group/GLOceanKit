@@ -45,6 +45,15 @@ Wave-vortex transformation that assumes constant stratification
     + [`FinvMatrix`](/classes/transforms/wvtransformconstantstratification/finvmatrix.html) transformation matrix $$F^{-1}$$
     + [`GMatrix`](/classes/transforms/wvtransformconstantstratification/gmatrix.html) transformation matrix $$G$$
     + [`GinvMatrix`](/classes/transforms/wvtransformconstantstratification/ginvmatrix.html) transformation matrix $$G^{-1}$$
+  + Differentiation
+    + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
+    + [`diffZG`](/classes/transforms/wvtransformconstantstratification/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
++ Domain Attributes
+  + Stratification
+    + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) buoyancy frequency of the mean density
+    + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) d/dz ln N2
+    + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) no-motion density
+    + [`verticalModes`](/classes/transforms/wvtransformconstantstratification/verticalmodes.html) instance of the InternalModes class
 + Initial conditions
   + Inertial Oscillations
     + [`addInertialMotions`](/classes/transforms/wvtransformconstantstratification/addinertialmotions.html) add inertial motions to existing inertial motions
@@ -54,7 +63,6 @@ Wave-vortex transformation that assumes constant stratification
 + Other
   + [`CosineTransformBackMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformbackmatrix.html) Discrete Cosine Transform (DCT-I) matrix
   + [`CosineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformforwardmatrix.html) Discrete Cosine Transform (DCT-I) matrix
-  + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) 
   + [`N2AtDepth`](/classes/transforms/wvtransformconstantstratification/n2atdepth.html) 
   + [`PlaceParticlesOnIsopycnal`](/classes/transforms/wvtransformconstantstratification/placeparticlesonisopycnal.html) MAS 1/10/18 - added intext ('int' or 'both') to give option of using int vs. int+ext fields for rho_prime
   + [`ProfileTransforms`](/classes/transforms/wvtransformconstantstratification/profiletransforms.html) 
@@ -62,10 +70,6 @@ Wave-vortex transformation that assumes constant stratification
   + [`SineTransformBackMatrix`](/classes/transforms/wvtransformconstantstratification/sinetransformbackmatrix.html) CosineTransformBackMatrix  Discrete Cosine Transform (DCT-I) matrix
   + [`SineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/sinetransformforwardmatrix.html) CosineTransformForwardMatrix  Discrete Cosine Transform (DCT-I) matrix
   + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformconstantstratification/buildverticalmodeprojectionoperators.html) We renormalization the transformation matrices to directly
-  + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) 
-  + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) 
-  + [`diffZG`](/classes/transforms/wvtransformconstantstratification/diffzg.html) 
-  + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) 
   + [`transformFromSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf.html) 
   + [`transformFromSpatialDomainWithF_FFT`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf_fft.html) 
   + [`transformFromSpatialDomainWithF_MM`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf_mm.html) 
@@ -80,7 +84,6 @@ Wave-vortex transformation that assumes constant stratification
   + [`transformToSpatialDomainWithGAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_mm.html) 
   + [`transformToSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_fft.html) 
   + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) 
-  + [`verticalModes`](/classes/transforms/wvtransformconstantstratification/verticalmodes.html) 
   + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformconstantstratification/wavevortextransformwithresolution.html) 
 
 

@@ -22,7 +22,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata = MethodDocumentation(dims(iDim).name);
                 metadata.addMetadataFromDetailedDescription(dims(iDim).detailedDescription);
                 metadata.definingClassName = self.name;
-                metadata.declaringClassName = self.name;
+                metadata.addDeclaringClass(self.name);
                 metadata.shortDescription = dims(iDim).description;
                 metadata.units = dims(iDim).units;
                 metadata.isComplex = 0;
@@ -36,7 +36,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata = MethodDocumentation(props(iDim).name);
                 metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
                 metadata.definingClassName = self.name;
-                metadata.declaringClassName = self.name;
+                metadata.addDeclaringClass(self.name);
                 metadata.shortDescription = props(iDim).description;
                 metadata.units = props(iDim).units;
                 metadata.dimensions = props(iDim).dimensions;
@@ -53,8 +53,8 @@ classdef WVTransformDocumentation < ClassDocumentation
 
                     metadata = MethodDocumentation(stateVar.name);
                     metadata.addMetadataFromDetailedDescription(stateVar.detailedDescription);
-                metadata.definingClassName = self.name;
-                metadata.declaringClassName = self.name;
+                    metadata.definingClassName = self.name;
+                    metadata.addDeclaringClass(self.name);
                     metadata.shortDescription = stateVar.description;
                     metadata.units = stateVar.units;
                     metadata.dimensions = stateVar.dimensions;
@@ -70,7 +70,7 @@ classdef WVTransformDocumentation < ClassDocumentation
                 metadata.addMetadataFromDetailedDescription(methods(iMethod).detailedDescription);
                 metadata.shortDescription = methods(iMethod).description;
                 metadata.definingClassName = self.name;
-                metadata.declaringClassName = self.name;
+                metadata.addDeclaringClass(self.name);
                 metadata.functionType = FunctionType.instanceMethod;
                 self.addMethodDocumentation(metadata);
             end

@@ -15,7 +15,17 @@ classdef WVStratifiedFlow < handle
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
 
+        % transformation matrix $$F^{-1}$$
+        %
+        % A matrix that transforms a vector from vertical mode space to physical
+        % space. Inline
+        %
+        % - Topic: Operations — Transformations
+        % - Declaration: Finv = FinvMatrix(wvt)
+        % - Returns Finv: A matrix with dimensions [Nz Nj]
         Finv = FinvMatrix(self);
+
+
         Ginv = GinvMatrix(self);
 
         F = FMatrix(self);
@@ -224,6 +234,8 @@ classdef WVStratifiedFlow < handle
             im.upperBoundary = UpperBoundary.rigidLid;
             z = im.GaussQuadraturePointsForModesAtFrequency(Nz,im.f0);
         end
+    end
+    methods (Static, Hidden=true)
         function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
             % return array of WVPropertyAnnotation initialized by default
             %
