@@ -41,9 +41,9 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 + Initialization
   + [`WVTransformHydrostatic`](/classes/transforms/wvtransformhydrostatic/wvtransformhydrostatic.html) create a wave-vortex transform for variable stratification
 + Stratification
-  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) $$\rho_\textrm{nm}$$, no-motion density
-  + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) $$N^2$$ buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
-  + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the buoyancy frequency
+  + [`rho_nm`](/classes/transforms/wvtransformhydrostatic/rho_nm.html) $$\rho_\textrm{nm}(z)$$, no-motion density
+  + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) $$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
+  + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency
   + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) instance of the InternalModes class
   + Vertical modes
     + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F_g$$
@@ -60,8 +60,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + Differentiation
     + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
     + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
-+ Other
-  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformhydrostatic/wavevortextransformwithresolution.html) 
 
 
 ---

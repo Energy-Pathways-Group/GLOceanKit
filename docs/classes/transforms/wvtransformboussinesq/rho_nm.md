@@ -9,7 +9,7 @@ mathjax: true
 
 #  rho_nm
 
-$$\rho_\textrm{nm}$$, no-motion density
+$$\rho_\textrm{nm}(z)$$, no-motion density
 
 
 ---

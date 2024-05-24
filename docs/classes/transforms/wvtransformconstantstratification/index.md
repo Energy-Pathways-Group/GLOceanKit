@@ -40,9 +40,9 @@ Wave-vortex transformation that assumes constant stratification
 + Initialization
   + [`WVTransformConstantStratification`](/classes/transforms/wvtransformconstantstratification/wvtransformconstantstratification.html) initialze a wave-vortex transform with constant stratification
 + Stratification
-  + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) $$\rho_\textrm{nm}$$, no-motion density
-  + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) $$N^2$$ buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
-  + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the buoyancy frequency
+  + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) $$\rho_\textrm{nm}(z)$$, no-motion density
+  + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) $$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
+  + [`dLnN2`](/classes/transforms/wvtransformconstantstratification/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency
   + [`verticalModes`](/classes/transforms/wvtransformconstantstratification/verticalmodes.html) instance of the InternalModes class
   + Vertical modes
     + [`FMatrix`](/classes/transforms/wvtransformconstantstratification/fmatrix.html) transformation matrix $$F_g$$
@@ -83,7 +83,6 @@ Wave-vortex transformation that assumes constant stratification
   + [`transformToSpatialDomainWithGAllDerivatives_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithgallderivatives_mm.html) 
   + [`transformToSpatialDomainWithG_FFT`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_fft.html) 
   + [`transformToSpatialDomainWithG_MM`](/classes/transforms/wvtransformconstantstratification/transformtospatialdomainwithg_mm.html) 
-  + [`waveVortexTransformWithResolution`](/classes/transforms/wvtransformconstantstratification/wavevortextransformwithresolution.html) 
 
 
 ---

@@ -294,6 +294,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`version`](/classes/wvtransform/version.html) 
   + [`waveCoefficientsAtTimeT`](/classes/wvtransform/wavecoefficientsattimet.html) 
   + [`waveEnergy`](/classes/wvtransform/waveenergy.html) 
+  + [`waveVortexTransformWithResolution`](/classes/wvtransform/wavevortextransformwithresolution.html) 
 
 
 ---

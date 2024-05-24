@@ -9,7 +9,7 @@ mathjax: true
 
 #  dLnN2
 
-$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the buoyancy frequency
+$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency
 
 
 ---

@@ -31,6 +31,11 @@ classdef WVInertialOscillationMethods < handle
             % wvt.addInertialMotions(u_NIO,v_NIO);
             % ```
             %
+            % It is important to note that because the WVTransform
+            % de-aliases by default, you will not likely get exactly the
+            % same function out that you put in. The high-modes are
+            % removed.
+            %
             % The new inertial motions are added to the existing inertial motions
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: addInertialMotions(self,u,v)
@@ -51,6 +56,11 @@ classdef WVInertialOscillationMethods < handle
             %
             % wvt.initWithInertialMotions(u_NIO,v_NIO);
             % ```
+            %
+            % It is important to note that because the WVTransform
+            % de-aliases by default, you will not likely get exactly the
+            % same function out that you put in. The high-modes are
+            % removed.
             %
             % Clears variables Ap,Am,A0 and then sets inertial motions
             % - Topic: Initial conditions — Inertial Oscillations
@@ -74,6 +84,11 @@ classdef WVInertialOscillationMethods < handle
             %
             % wvt.setInertialMotions(u_NIO,v_NIO);
             % ```
+            %
+            % It is important to note that because the WVTransform
+            % de-aliases by default, you will not likely get exactly the
+            % same function out that you put in. The high-modes are
+            % removed.
             %
             % Overwrites existing inertial motions with the new values
             % - Topic: Initial conditions — Inertial Oscillations
