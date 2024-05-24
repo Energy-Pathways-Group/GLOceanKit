@@ -61,12 +61,12 @@ operations(end+1) = WVOperation('wMax',outputVar,f);
 % f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
 % operations(end+1) = WVOperation('rho_e',outputVar,f);
 
-outputVar = WVVariableAnnotation('rho_prime',{'x','y','z'},'kg/m3', 'density anomaly');
+outputVar = WVVariableAnnotation('rho_e',{'x','y','z'},'kg/m3', 'excess density');
 f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
-operations(end+1) = WVOperation('rho_prime',outputVar,f);
+operations(end+1) = WVOperation('rho_e',outputVar,f);
 
 outputVar = WVVariableAnnotation('rho_total',{'x','y','z'},'kg/m3', 'total potential density');
-f = @(wvt) reshape(wvt.rho_nm,1,1,[]) + wvt.rho_prime;
+f = @(wvt) reshape(wvt.rho_nm,1,1,[]) + wvt.rho_e;
 operations(end+1) = WVOperation('rho_total',outputVar,f);
 
 % outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');
