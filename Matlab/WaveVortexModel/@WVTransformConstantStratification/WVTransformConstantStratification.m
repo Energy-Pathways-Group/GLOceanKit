@@ -1,4 +1,4 @@
-classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods
+classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
     % Wave-vortex transformation that assumes constant stratification
     %
     % To initialization an instance of the

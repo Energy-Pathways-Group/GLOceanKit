@@ -24,6 +24,19 @@ classdef WVStratifiedFlow < handle
         G = GMatrix(self);
     end
 
+    methods
+        function flag = isDensityInValidRange(self)
+            % checks if the density field is a valid adiabatic re-arrangement of the base state
+            %
+            % This is probably best re-defined as a dynamical variable.
+            %
+            % - Declaration: flag = isDensityInValidRange()
+            % - Returns flag: a boolean
+            rho_total = self.rho_total;
+            flag = ~(any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm)));
+        end
+    end
+
     methods (Access=protected)
         function self = WVStratifiedFlow(Lz,z,options)
             % If you pass verticalModes directly, this is the most

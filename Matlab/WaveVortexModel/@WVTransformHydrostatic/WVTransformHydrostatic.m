@@ -1,4 +1,4 @@
-classdef WVTransformHydrostatic < WVTransform & WVInertialOscillationMethods & WVStratifiedFlow
+classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
     % A class for disentangling hydrostatic waves and vortices in variable stratification
     %
     % To initialization an instance of the WVTransformHydrostatic class you

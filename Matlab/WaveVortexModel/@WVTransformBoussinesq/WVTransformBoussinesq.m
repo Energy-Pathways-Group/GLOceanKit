@@ -1,4 +1,4 @@
-classdef WVTransformBoussinesq < WVTransform & WVInertialOscillationMethods & WVStratifiedFlow
+classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %

@@ -718,28 +718,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
         
         initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Add and remove geostrophic features from the model
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        [k,l] = setGeostrophicModes(self, vortexproperties);
-        [k,l] = addGeostrophicModes(self, vortexproperties);
-        [kIndex,lIndex,jIndex,A0Amp,phiNorm,uNorm] = geostrophicCoefficientsFromGeostrophicModes(self, kMode, lMode, jMode, phi, u);
-
-        initWithGeostrophicStreamfunction(self,psi);
-        setGeostrophicStreamfunction(self,psi);
-        addGeostrophicStreamfunction(self,psi);
-        removeAllGeostrophicMotions(self);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Add and remove inertial features from the model
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        % initWithInertialMotions(self,u,v);
-        % setInertialMotions(self,u,v);
-        % addInertialMotions(self,u,v);
-        % removeAllInertialMotions(self);
         
         % Primary method for accessing the dynamical variables
         [varargout] = variables(self, varargin);
@@ -765,6 +743,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
 
+        function flag = hasMeanPressureDifference(self)
+            % checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
+            %
+            % This is probably best re-defined as a dynamical variable.
+            %
+            % - Declaration: flag = hasMeanPressureDifference()
+            % - Returns flag: a boolean
+            error('Not yet implemented');
+        end
     end
 
     methods (Access=protected)

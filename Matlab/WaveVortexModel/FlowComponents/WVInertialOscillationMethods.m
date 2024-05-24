@@ -22,6 +22,9 @@ classdef WVInertialOscillationMethods < handle
         function addInertialMotions(self,u,v)
             % add inertial motions to existing inertial motions
             %
+            % The amplitudes of the inertial part of the flow will be added
+            % to the existing inertial part of the flow.
+            %
             % ```matlab
             % U_io = 0.2;
             % Ld = wvt.Lz/5;
@@ -48,6 +51,8 @@ classdef WVInertialOscillationMethods < handle
         function initWithInertialMotions(self,u,v)
             % initialize with inertial motions
             %
+            % Clears variables Ap,Am,A0 and then sets inertial motions.
+            % 
             % ```matlab
             % U_io = 0.2;
             % Ld = wvt.Lz/5;
@@ -62,7 +67,6 @@ classdef WVInertialOscillationMethods < handle
             % same function out that you put in. The high-modes are
             % removed.
             %
-            % Clears variables Ap,Am,A0 and then sets inertial motions
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: initWithInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)
@@ -75,6 +79,9 @@ classdef WVInertialOscillationMethods < handle
 
         function setInertialMotions(self,u,v)
             % set inertial motions
+            %
+            % % Overwrites existing inertial motions with the new values.
+            % Other components of the flow will remain unaffected.
             %
             % ```matlab
             % U_io = 0.2;
@@ -90,7 +97,7 @@ classdef WVInertialOscillationMethods < handle
             % same function out that you put in. The high-modes are
             % removed.
             %
-            % Overwrites existing inertial motions with the new values
+            
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: setInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)
@@ -102,7 +109,8 @@ classdef WVInertialOscillationMethods < handle
         function removeAllInertialMotions(self)
             % remove all inertial motions
             %
-            % All inertial motions are removed
+            % All inertial motions are removed. Other components of the flow will remain unaffected.
+            %
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: removeAllInertialMotions()
             self.Ap(:,1) = 0;
