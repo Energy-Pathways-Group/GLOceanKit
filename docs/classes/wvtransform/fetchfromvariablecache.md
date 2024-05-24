@@ -3,7 +3,7 @@ layout: default
 title: fetchFromVariableCache
 parent: WVTransform
 grand_parent: Classes
-nav_order: 94
+nav_order: 92
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: initFromNetCDFFile
 parent: WVTransform
 grand_parent: Classes
-nav_order: 108
+nav_order: 106
 mathjax: true
 ---
 

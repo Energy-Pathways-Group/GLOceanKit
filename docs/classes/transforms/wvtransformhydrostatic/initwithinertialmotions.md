@@ -3,7 +3,7 @@ layout: default
 title: initWithInertialMotions
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 11
+nav_order: 14
 mathjax: true
 ---
 
@@ -24,6 +24,8 @@ initialize with inertial motions
 
 ## Discussion
 
+  Clears variables Ap,Am,A0 and then sets inertial motions.
+  
   ```matlab
   U_io = 0.2;
   Ld = wvt.Lz/5;
@@ -38,5 +40,4 @@ initialize with inertial motions
   same function out that you put in. The high-modes are
   removed.
  
-  Clears variables Ap,Am,A0 and then sets inertial motions
         

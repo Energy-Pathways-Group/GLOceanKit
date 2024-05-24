@@ -109,14 +109,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`setWaveModes`](/classes/wvtransform/setwavemodes.html) set amplitudes of the given wave modes
     + [`waveCoefficientsFromWaveModes`](/classes/wvtransform/wavecoefficientsfromwavemodes.html) Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
     + [`waveModesFromWaveCoefficients`](/classes/wvtransform/wavemodesfromwavecoefficients.html) Returns normalized amplitudes and phases of all waves
-  + Geostrophic Motions
-    + [`addGeostrophicModes`](/classes/wvtransform/addgeostrophicmodes.html) add amplitudes of the given geostrophic modes
-    + [`addGeostrophicStreamfunction`](/classes/wvtransform/addgeostrophicstreamfunction.html) add a geostrophic streamfunction to existing geostrophic motions
-    + [`geostrophicCoefficientsFromGeostrophicModes`](/classes/wvtransform/geostrophiccoefficientsfromgeostrophicmodes.html) Returns the indices (and re-normalized values) of the geostropic mode appropriate for the A0 matrix.
-    + [`initWithGeostrophicStreamfunction`](/classes/wvtransform/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
-    + [`removeAllGeostrophicMotions`](/classes/wvtransform/removeallgeostrophicmotions.html) remove all geostrophic motions
-    + [`setGeostrophicModes`](/classes/wvtransform/setgeostrophicmodes.html) set amplitudes of the given geostrophic modes
-    + [`setGeostrophicStreamfunction`](/classes/wvtransform/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
 + Energetics
   + [`summarizeEnergyContent`](/classes/wvtransform/summarizeenergycontent.html) displays a summary of the energy content of the fluid
   + [`summarizeModeEnergy`](/classes/wvtransform/summarizemodeenergy.html) List the most energetic modes
@@ -154,7 +146,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`F0`](/classes/wvtransform/f0.html) non-linear flux into A0
   + [`Fm`](/classes/wvtransform/fm.html) non-linear flux into Am
   + [`Fp`](/classes/wvtransform/fp.html) non-linear flux into Ap
-  + [`rho_prime`](/classes/wvtransform/rho_prime.html) density anomaly
+  + [`rho_e`](/classes/wvtransform/rho_e.html) excess density
   + [`rho_total`](/classes/wvtransform/rho_total.html) total potential density
   + [`seaSurfaceHeight`](/classes/wvtransform/seasurfaceheight.html) sea-surface height
   + [`seaSurfaceU`](/classes/wvtransform/seasurfaceu.html) x-component of the fluid velocity at the surface
@@ -254,6 +246,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`geostrophicEnergy`](/classes/wvtransform/geostrophicenergy.html) 
   + [`h_0`](/classes/wvtransform/h_0.html) [Nj Nkl]
   + [`h_pm`](/classes/wvtransform/h_pm.html) [Nj Nkl]
+  + [`hasMeanPressureDifference`](/classes/wvtransform/hasmeanpressuredifference.html) checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
   + [`horizontalModes`](/classes/wvtransform/horizontalmodes.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
   + [`inertialEnergy`](/classes/wvtransform/inertialenergy.html) 
