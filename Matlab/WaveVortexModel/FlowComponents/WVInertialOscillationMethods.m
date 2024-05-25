@@ -96,8 +96,7 @@ classdef WVInertialOscillationMethods < handle
             % de-aliases by default, you will not likely get exactly the
             % same function out that you put in. The high-modes are
             % removed.
-            %
-            
+            %            
             % - Topic: Initial conditions — Inertial Oscillations
             % - Declaration: setInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)

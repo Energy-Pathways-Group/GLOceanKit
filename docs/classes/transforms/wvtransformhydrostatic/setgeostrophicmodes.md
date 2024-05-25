@@ -32,4 +32,5 @@ set amplitudes of the given geostrophic modes
 ## Discussion
 
   Overwrite any existing amplitudes to any existing amplitudes
+ 
                   

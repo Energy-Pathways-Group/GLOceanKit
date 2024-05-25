@@ -23,6 +23,9 @@ initialize with a geostrophic streamfunction
 
 ## Discussion
 
+  Clears variables Ap,Am,A0 and then sets the geostrophic
+  streamfunction.
+ 
   The geostrophic streamfunction, $$\psi$$, is defined such that
  
   $$
@@ -37,5 +40,8 @@ initialize with a geostrophic streamfunction
   N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
   $$
  
-  Clears variables Ap,Am,A0 and then sets the geostrophic streamfunction
+  Note that a streamfunction also projects onto the
+  mean-density-anomaly (MDA) component of the flow, and thus it
+  is not strictly geostrophic.
+ 
       

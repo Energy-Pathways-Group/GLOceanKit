@@ -23,6 +23,8 @@ set a geostrophic streamfunction
 
 ## Discussion
 
+  Clears A0 by setting a geostrophic streamfunction
+ 
   The geostrophic streamfunction, $$\psi$$, is defined such that
  
   $$
@@ -37,5 +39,8 @@ set a geostrophic streamfunction
   N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
   $$
  
-  Clears A0 by setting a geostrophic streamfunction
+  Note that a streamfunction also projects onto the
+  mean-density-anomaly (MDA) component of the flow, and thus it
+  is not strictly geostrophic.
+ 
       

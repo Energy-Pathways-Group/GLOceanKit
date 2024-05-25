@@ -13,7 +13,7 @@ classdef WVGeostrophicMethods < handle
         ratio = uMaxA0(self,kMode,lMode,jMode);
     end
 
-    methods %(Access=protected)
+    methods (Access=protected)
         function throwErrorIfMeanPressureViolation(self,psi_xyz)
             relError = 1e-5;
             surfaceViolation = mean(mean(psi_xyz(:,:,end)))/max(abs(psi_xyz(:))) > relError;
@@ -52,6 +52,9 @@ classdef WVGeostrophicMethods < handle
         function initWithGeostrophicStreamfunction(self,psi)
             % initialize with a geostrophic streamfunction
             %
+            % Clears variables Ap,Am,A0 and then sets the geostrophic
+            % streamfunction.
+            %
             % The geostrophic streamfunction, $$\psi$$, is defined such that
             %
             % $$
@@ -66,7 +69,10 @@ classdef WVGeostrophicMethods < handle
             % N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
             % $$
             %
-            % Clears variables Ap,Am,A0 and then sets the geostrophic streamfunction
+            % Note that a streamfunction also projects onto the
+            % mean-density-anomaly (MDA) component of the flow, and thus it
+            % is not strictly geostrophic.
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: initWithGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
@@ -79,6 +85,8 @@ classdef WVGeostrophicMethods < handle
         function addGeostrophicStreamfunction(self,psi)
             % add a geostrophic streamfunction to existing geostrophic motions
             %
+            % The geostrophic streamfunction is added to the existing values in `A0`
+            %
             % The geostrophic streamfunction, $$\psi$$, is defined such that
             %
             % $$
@@ -93,7 +101,10 @@ classdef WVGeostrophicMethods < handle
             % N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
             % $$
             %
-            % The geostrophic streamfunction is added to the existing values in `A0`
+            % Note that a streamfunction also projects onto the
+            % mean-density-anomaly (MDA) component of the flow, and thus it
+            % is not strictly geostrophic.
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: addGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
@@ -107,6 +118,8 @@ classdef WVGeostrophicMethods < handle
         function setGeostrophicStreamfunction(self,psi)
             % set a geostrophic streamfunction
             %
+            % Clears A0 by setting a geostrophic streamfunction
+            %
             % The geostrophic streamfunction, $$\psi$$, is defined such that
             %
             % $$
@@ -121,7 +134,10 @@ classdef WVGeostrophicMethods < handle
             % N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
             % $$
             %
-            % Clears A0 by setting a geostrophic streamfunction
+            % Note that a streamfunction also projects onto the
+            % mean-density-anomaly (MDA) component of the flow, and thus it
+            % is not strictly geostrophic.
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: setGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
@@ -135,6 +151,7 @@ classdef WVGeostrophicMethods < handle
             % set amplitudes of the given geostrophic modes
             %
             % Overwrite any existing amplitudes to any existing amplitudes
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: [k,l] = setGeostrophicModes(self)
             % - Parameter kMode: (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
@@ -167,6 +184,7 @@ classdef WVGeostrophicMethods < handle
             % add amplitudes of the given geostrophic modes
             %
             % Add new amplitudes to any existing amplitudes
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: [k,l] = addGeostrophicModes(self,options)
             % - Parameter kMode: (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
@@ -199,9 +217,14 @@ classdef WVGeostrophicMethods < handle
             % remove all geostrophic motions
             %
             % All geostrophic motions are removed by setting A0 to zero.
+            %
+            % **Note** that this does *not* remove the mean density anomaly
+            % (mda) part of the solution, just the geostrophic part. Thus,
+            % this function will not clear all parts of a geostrophic
+            % streamfunction.
+            %
             % - Topic: Initial conditions — Geostrophic Motions
-            % - Declaration: removeAllGeostrophicMotions()
-            
+            % - Declaration: removeAllGeostrophicMotions()      
             self.A0(logical(self.flowComponent('geostrophic').maskA0)) = 0;
         end
 

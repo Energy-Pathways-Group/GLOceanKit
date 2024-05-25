@@ -23,6 +23,8 @@ add a geostrophic streamfunction to existing geostrophic motions
 
 ## Discussion
 
+  The geostrophic streamfunction is added to the existing values in `A0`
+ 
   The geostrophic streamfunction, $$\psi$$, is defined such that
  
   $$
@@ -37,5 +39,8 @@ add a geostrophic streamfunction to existing geostrophic motions
   N^2 \eta = \frac{g}{\rho_0} \rho = - f \frac{\partial \psi}{\partial z}
   $$
  
-  The geostrophic streamfunction is added to the existing values in `A0`
+  Note that a streamfunction also projects onto the
+  mean-density-anomaly (MDA) component of the flow, and thus it
+  is not strictly geostrophic.
+ 
       
