@@ -215,28 +215,40 @@ classdef WVGeostrophicMethods < handle
         function [k,l] = setGeostrophicModes(self, options)
             % set amplitudes of the given geostrophic modes
             %
-            % Overwrite any existing amplitudes to any existing amplitudes
+            % Set the amplitude of the given geostrophic modes by
+            % overwriting any existing amplitudes. The parameters are given
+            % as [horizontal and vertical modes](/users-guide/wavenumber-modes-and-indices.html),
+            % and the function will return the associated [horizontal wavenumbers](/users-guide/wavenumber-modes-and-indices.html)
+            % of those modes.
+            %
+            % For example,
+            %
+            % ```matlab
+            % wvt.addGeostrophicModes(kMode=0,lMode=1,jMode=1,u=0.5);
+            % ```
+            %
+            % will add a geostrophic mode.
             %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: [k,l] = setGeostrophicModes(self)
-            % - Parameter kMode: (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
-            % - Parameter lMode: (optional) integer index, (l0 > -Ny/2 && l0 < Ny/2)
-            % - Parameter jMode: (optional) integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
-            % - Parameter phi: (optional) phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter u: (optional) fluid velocity u (m/s)
-            % - Returns k: wavenumber k of the waves (radians/m)
-            % - Returns l: wavenumber l of the waves (radians/m)
+            % - Parameter kMode: integer index, (kMode > -Nx/2 && kMode < Nx/2)
+            % - Parameter lMode: integer index, (lMode > -Ny/2 && lMode < Ny/2)
+            % - Parameter j: integer index, (j >= 1 && j <= nModes), unless k=l=j=0
+            % - Parameter phi: (optional) phase in radians, (0 <= phi <= 2*pi), default 0
+            % - Parameter u: fluid velocity u (m/s)
+            % - Returns k: wavenumber k of the kModes (radians/m)
+            % - Returns l: wavenumber l of the lModes (radians/m)
             % - nav_order: 4
             arguments
                 self WVTransform {mustBeNonempty}
                 options.kMode (:,1) double
                 options.lMode (:,1) double
-                options.jMode (:,1) double
+                options.j (:,1) double
                 options.phi (:,1) double = 0
                 options.u (:,1) double
             end
 
-            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
+            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.j,options.u,options.phi);
             ratio = self.uMaxA0(kMode,lMode,jMode);
             A0_indices = u.*exp(sqrt(-1)*phi)./(2*ratio);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);

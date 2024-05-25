@@ -19,18 +19,30 @@ set amplitudes of the given geostrophic modes
  [k,l] = setGeostrophicModes(self)
 ```
 ## Parameters
-+ `kMode`  (optional) integer index, (k0 > -Nx/2 && k0 < Nx/2)
-+ `lMode`  (optional) integer index, (l0 > -Ny/2 && l0 < Ny/2)
-+ `jMode`  (optional) integer index, (j0 >= 1 && j0 <= nModes), unless k=l=j=0
-+ `phi`  (optional) phase in radians, (0 <= phi <= 2*pi)
-+ `u`  (optional) fluid velocity u (m/s)
++ `kMode`  integer index, (kMode > -Nx/2 && kMode < Nx/2)
++ `lMode`  integer index, (lMode > -Ny/2 && lMode < Ny/2)
++ `j`  integer index, (j >= 1 && j <= nModes), unless k=l=j=0
++ `phi`  (optional) phase in radians, (0 <= phi <= 2*pi), default 0
++ `u`  fluid velocity u (m/s)
 
 ## Returns
-+ `k`  wavenumber k of the waves (radians/m)
-+ `l`  wavenumber l of the waves (radians/m)
++ `k`  wavenumber k of the kModes (radians/m)
++ `l`  wavenumber l of the lModes (radians/m)
 
 ## Discussion
 
-  Overwrite any existing amplitudes to any existing amplitudes
+  Set the amplitude of the given geostrophic modes by
+  overwriting any existing amplitudes. The parameters are given
+  as [horizontal and vertical modes](/users-guide/wavenumber-modes-and-indices.html),
+  and the function will return the associated [horizontal wavenumbers](/users-guide/wavenumber-modes-and-indices.html)
+  of those modes.
+ 
+  For example,
+ 
+  ```matlab
+  wvt.addGeostrophicModes(kMode=0,lMode=1,jMode=1,u=0.5);
+  ```
+ 
+  will add a geostrophic mode.
  
                     

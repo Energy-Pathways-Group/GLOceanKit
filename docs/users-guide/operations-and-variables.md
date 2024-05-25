@@ -3,7 +3,7 @@ layout: default
 title: Operations and variables
 parent: Users guide
 mathjax: true
-nav_order: 4
+nav_order: 5
 ---
 
 #  Operations and variables
