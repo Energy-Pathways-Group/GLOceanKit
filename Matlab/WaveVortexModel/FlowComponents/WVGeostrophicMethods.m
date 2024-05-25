@@ -30,17 +30,22 @@ classdef WVGeostrophicMethods < handle
         end
 
         function throwErrorIfDensityViolation(self,A0,options)
+            % Given some proposed new set of values for A0, will the fluid
+            % state violate our density condition?
             arguments
                 self WVGeostrophicMethods
                 A0 
-                options.additionalErrorInfo = ''
+                options.additionalErrorInfo = sprintf(' ');
             end
-            rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*A0);
+            % Trying to be extra careful here, so we include the wave part
+            % of the flow because we do not really know how everything will
+            % add together in the end.
+            rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*A0,Apm=self.NAp.*self.Apt + self.NAm.*self.Amt);
             densityViolation = any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm));
             if densityViolation == 1
-                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range.\n',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
-                minString = sprintf('\tminimum density from this streamfunction: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
-                maxString = sprintf('\tmaximum density from this streamfunction: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
+                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
+                minString = sprintf('\tminimum density: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
+                maxString = sprintf('\tmaximum density: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
                 errorStruct.message = [errorString,options.additionalErrorInfo,minString,maxString];
                 errorStruct.identifier = 'WVTransform:DensityBoundsViolation';
                 error(errorStruct);
@@ -73,9 +78,29 @@ classdef WVGeostrophicMethods < handle
             % mean-density-anomaly (MDA) component of the flow, and thus it
             % is not strictly geostrophic.
             %
+            % Consider a shallow eddy where the density anomaly sits close to the
+            % surface. This example was constructed in [Early, Hernández-Dueñas, Smith,
+            % and Lelong (2024)](https://arxiv.org/abs/2403.20269)
+            %
+            % ```matlab
+            % x0 = 3*Lx/4;
+            % y0 = Ly/2;
+            %
+            % Le = 80e3;
+            % He = 300;
+            % U = 0.20; % m/s
+            %
+            % H = @(z) exp(-(z/He/sqrt(2)).^2 );
+            % F = @(x,y) exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2);
+            % psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*H(z).*(F(x,y) - (pi*Le*Le/(wvt.Lx*wvt.Ly)));
+            %
+            % wvt.initWithGeostrophicStreamfunction(psi);
+            % ```
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: initWithGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
+            % - nav_order: 1
             self.Ap = zeros(size(self.Ap));
             self.Am = zeros(size(self.Am));
             self.A0 = zeros(size(self.A0));
@@ -105,13 +130,33 @@ classdef WVGeostrophicMethods < handle
             % mean-density-anomaly (MDA) component of the flow, and thus it
             % is not strictly geostrophic.
             %
+            % Consider a shallow eddy where the density anomaly sits close to the
+            % surface. This example was constructed in [Early, Hernández-Dueñas, Smith,
+            % and Lelong (2024)](https://arxiv.org/abs/2403.20269)
+            %
+            % ```matlab
+            % x0 = 3*Lx/4;
+            % y0 = Ly/2;
+            %
+            % Le = 80e3;
+            % He = 300;
+            % U = 0.20; % m/s
+            %
+            % H = @(z) exp(-(z/He/sqrt(2)).^2 );
+            % F = @(x,y) exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2);
+            % psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*H(z).*(F(x,y) - (pi*Le*Le/(wvt.Lx*wvt.Ly)));
+            %
+            % wvt.addGeostrophicStreamfunction(psi);
+            % ```
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: addGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
+            % - nav_order: 3
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
             self.throwErrorIfDensityViolation(A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
-            self.throwErrorIfDensityViolation(self.A0 + A0_,additionalErrorInfo='\n\nAlthough the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n');
+            self.throwErrorIfDensityViolation(self.A0 + A0_,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
             self.A0 = self.A0 + A0_;
         end
 
@@ -138,12 +183,32 @@ classdef WVGeostrophicMethods < handle
             % mean-density-anomaly (MDA) component of the flow, and thus it
             % is not strictly geostrophic.
             %
+            % Consider a shallow eddy where the density anomaly sits close to the
+            % surface. This example was constructed in [Early, Hernández-Dueñas, Smith,
+            % and Lelong (2024)](https://arxiv.org/abs/2403.20269)
+            %
+            % ```matlab
+            % x0 = 3*Lx/4;
+            % y0 = Ly/2;
+            %
+            % Le = 80e3;
+            % He = 300;
+            % U = 0.20; % m/s
+            %
+            % H = @(z) exp(-(z/He/sqrt(2)).^2 );
+            % F = @(x,y) exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2);
+            % psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*H(z).*(F(x,y) - (pi*Le*Le/(wvt.Lx*wvt.Ly)));
+            %
+            % wvt.setGeostrophicStreamfunction(psi);
+            % ```
+            %
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: setGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
+            % - nav_order: 2
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
-            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo='\n\nThe streamfunction you are setting violates this condition.\n');
+            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
             self.A0 = A0_;
         end
 
@@ -161,20 +226,28 @@ classdef WVGeostrophicMethods < handle
             % - Parameter u: (optional) fluid velocity u (m/s)
             % - Returns k: wavenumber k of the waves (radians/m)
             % - Returns l: wavenumber l of the waves (radians/m)
+            % - nav_order: 4
             arguments
                 self WVTransform {mustBeNonempty}
                 options.kMode (:,1) double
                 options.lMode (:,1) double
                 options.jMode (:,1) double
-                options.phi (:,1) double
+                options.phi (:,1) double = 0
                 options.u (:,1) double
             end
 
-            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(self,options.kMode,options.lMode,options.jMode,options.u,options.phi);
+            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
             ratio = self.uMaxA0(kMode,lMode,jMode);
-            A0_ = u.*exp(sqrt(-1)*phi)./(2*ratio);
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*ratio);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            self.A0(indices) = A0_;
+
+            % Check to see if the user is about to make things bad.
+            A0_ = self.A0;
+            A0_(indices) = A0_indices;
+            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
+
+            % If we made it this far, then things must be okay.
+            self.A0(indices) = A0_indices;
 
             k = self.K(indices);
             l = self.L(indices);
@@ -194,20 +267,27 @@ classdef WVGeostrophicMethods < handle
             % - Parameter u: (optional) fluid velocity u (m/s)
             % - Returns k: wavenumber k of the waves (radians/m)
             % - Returns l: wavenumber l of the waves (radians/m)
+            % - nav_order: 5
             arguments
                 self WVTransform {mustBeNonempty}
                 options.kMode (:,1) double
                 options.lMode (:,1) double
                 options.jMode (:,1) double
-                options.phi (:,1) double
+                options.phi (:,1) double = 0
                 options.u (:,1) double
             end
 
-            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(self,options.kMode,options.lMode,options.jMode,options.u,options.phi);
+            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
             ratio = self.uMaxA0(kMode,lMode,jMode);
-            A0_ = u.*exp(sqrt(-1)*phi)./(2*ratio);
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*ratio);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            self.A0(indices) = self.A0(indices) + A0_;
+
+            % Check to see if the user is about to make things bad.
+            A0_ = self.A0;
+            A0_(indices) = A0_(indices) + A0_indices;
+            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The modes you are adding will cause the fluid state to violate this condition.\n'));
+
+            self.A0(indices) = self.A0(indices) + A0_indices;
 
             k = self.K(indices);
             l = self.L(indices);
@@ -224,7 +304,8 @@ classdef WVGeostrophicMethods < handle
             % streamfunction.
             %
             % - Topic: Initial conditions — Geostrophic Motions
-            % - Declaration: removeAllGeostrophicMotions()      
+            % - Declaration: removeAllGeostrophicMotions()     
+            % - nav_order: 6
             self.A0(logical(self.flowComponent('geostrophic').maskA0)) = 0;
         end
 

@@ -16,7 +16,7 @@ remove all geostrophic motions
 
 ## Declaration
 ```matlab
- removeAllGeostrophicMotions()
+ removeAllGeostrophicMotions()     
 ```
 ## Discussion
 
@@ -27,4 +27,4 @@ remove all geostrophic motions
   this function will not clear all parts of a geostrophic
   streamfunction.
  
-    
+      

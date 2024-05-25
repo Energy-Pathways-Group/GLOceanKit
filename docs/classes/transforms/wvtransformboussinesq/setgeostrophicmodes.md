@@ -33,4 +33,4 @@ set amplitudes of the given geostrophic modes
 
   Overwrite any existing amplitudes to any existing amplitudes
  
-                  
+                    

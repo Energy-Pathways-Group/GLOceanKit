@@ -29,25 +29,24 @@ wvt = WVTransformHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz], N2=N2,latitude=25);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% "Deep eddy"
-% We are going to have its velocity vanish at the bottom, and only have its
-% density anomaly in the middle--hence the errorfunction.
+
+% Consider a "shallow eddy" where the density anomaly sits close to the
+% surface. This example was constructed in Early, Hernández-Dueñas, Smith,
+% and Lelong (2024), https://arxiv.org/abs/2403.20269
+
 x0 = 3*Lx/4;
 y0 = Ly/2;
-% Le = 80e3;
-% z0 = -wvt.Lz/4;
-% He = wvt.Lz/10;
-% U = 0.25; % m/s
-% psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2) .* (erf((z-z0)/He)+1)/2;
 
-% "Shallow eddy"
-% Density anomaly sits close to the surface
 Le = 80e3;
-He = wvt.Lz/5;
-U = 0.30; % m/s
-psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2 -(z/He).^2 );
+He = 300;
+U = 0.20; % m/s
+
+H = @(z) exp(-(z/He/sqrt(2)).^2 );
+F = @(x,y) exp(-((x-x0)/Le).^2 -((y-y0)/Le).^2);
+psi = @(x,y,z) U*(Le/sqrt(2))*exp(1/2)*H(z).*(F(x,y) - (pi*Le*Le/(wvt.Lx*wvt.Ly)));
 
 wvt.setGeostrophicStreamfunction(psi);
+
 % fprintf('min-rv: %.2f f, max-rv: %.2f f\n',min(rv(:))/wvt.f,max(rv(:))/wvt.f)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
