@@ -3,7 +3,7 @@ layout: default
 title: removeAllInertialMotions
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 21
+nav_order: 24
 mathjax: true
 ---
 

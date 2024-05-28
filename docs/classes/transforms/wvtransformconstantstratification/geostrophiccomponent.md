@@ -1,13 +1,13 @@
 ---
 layout: default
-title: transformFromSpatialDomainWithF_MM
+title: geostrophicComponent
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 37
+nav_order: 22
 mathjax: true
 ---
 
-#  transformFromSpatialDomainWithF_MM
+#  geostrophicComponent
 
 
 

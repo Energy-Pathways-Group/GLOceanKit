@@ -3,7 +3,7 @@ layout: default
 title: solutionForModeAtIndex
 parent: WVPrimaryFlowComponent
 grand_parent: Classes
-nav_order: 12
+nav_order: 13
 mathjax: true
 ---
 

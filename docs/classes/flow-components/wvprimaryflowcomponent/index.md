@@ -53,6 +53,8 @@ Orthogonal solution group
   + [`isValidConjugateModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidmodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidPrimaryModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidprimarymodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
++ Other
+  + [`randomAmplitudesWithSpectrum`](/classes/flow-components/wvprimaryflowcomponent/randomamplitudeswithspectrum.html) 
 
 
 ---
