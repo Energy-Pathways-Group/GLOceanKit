@@ -3,7 +3,7 @@ layout: default
 title: initWithWaveModes
 parent: WVTransform
 grand_parent: Classes
-nav_order: 114
+nav_order: 113
 mathjax: true
 ---
 

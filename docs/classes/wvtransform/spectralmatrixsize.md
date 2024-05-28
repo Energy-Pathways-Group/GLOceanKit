@@ -3,7 +3,7 @@ layout: default
 title: spectralMatrixSize
 parent: WVTransform
 grand_parent: Classes
-nav_order: 161
+nav_order: 159
 mathjax: true
 ---
 

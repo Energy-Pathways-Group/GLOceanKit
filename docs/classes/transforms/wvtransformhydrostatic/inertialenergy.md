@@ -3,7 +3,7 @@ layout: default
 title: inertialEnergy
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 15
+nav_order: 17
 mathjax: true
 ---
 

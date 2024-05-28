@@ -249,13 +249,11 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`hasMeanPressureDifference`](/classes/wvtransform/hasmeanpressuredifference.html) checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
   + [`horizontalModes`](/classes/wvtransform/horizontalmodes.html) 
   + [`iOmega`](/classes/wvtransform/iomega.html) 
-  + [`inertialEnergy`](/classes/wvtransform/inertialenergy.html) 
   + [`initializePrimaryFlowComponents`](/classes/wvtransform/initializeprimaryflowcomponents.html) 
   + [`isHydrostatic`](/classes/wvtransform/ishydrostatic.html) 
   + [`isequal`](/classes/wvtransform/isequal.html) 
   + [`kl`](/classes/wvtransform/kl.html) dimension of the interleaved k-l wavenumber coordinate
   + [`knownDynamicalVariables`](/classes/wvtransform/knowndynamicalvariables.html) 
-  + [`mdaEnergy`](/classes/wvtransform/mdaenergy.html) 
   + [`modeNumberFromIndex`](/classes/wvtransform/modenumberfromindex.html) 
   + [`operationForDynamicalVariable`](/classes/wvtransform/operationfordynamicalvariable.html) This function is designed with the following goals:
   + [`operationNameMap`](/classes/wvtransform/operationnamemap.html) 

@@ -3,7 +3,7 @@ layout: default
 title: removeAllGeostrophicMotions
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 19
+nav_order: 24
 mathjax: true
 ---
 
