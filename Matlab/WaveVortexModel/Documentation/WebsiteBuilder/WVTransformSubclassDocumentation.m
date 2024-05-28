@@ -19,6 +19,7 @@ classdef WVTransformSubclassDocumentation < ClassDocumentation
 
             classMetadata = meta.class.fromName(self.name);
             for iClass=1:length(classMetadata.SuperclassList)
+                variableAnnotations = WVVariableAnnotation.empty(0,0);
                 switch classMetadata.SuperclassList(iClass).Name
                     case 'WVStratifiedFlow'
                         props = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow();
@@ -47,34 +48,26 @@ classdef WVTransformSubclassDocumentation < ClassDocumentation
                         end
 
                     case 'WVInertialOscillationMethods'
-                        props = WVInertialOscillationMethods.variableAnnotationsForInertialFlow();
-                        for iDim=1:length(props)
-                            metadata = MethodDocumentation(props(iDim).name);
-                            metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
-                            metadata.definingClassName = self.name;
-                            metadata.addDeclaringClass(self.name);
-                            metadata.shortDescription = props(iDim).description;
-                            metadata.units = props(iDim).units;
-                            metadata.dimensions = props(iDim).dimensions;
-                            metadata.isComplex = props(iDim).isComplex;
-                            metadata.functionType = FunctionType.stateVariable;
-                            self.addMethodDocumentation(metadata);
-                        end
-
+                        variableAnnotations = WVInertialOscillationMethods.variableAnnotationsForInertialOscillationComponent();
                     case 'WVGeostrophicMethods'
-                        props = WVGeostrophicMethods.variableAnnotationsForGeostrophicFlow();
-                        for iDim=1:length(props)
-                            metadata = MethodDocumentation(props(iDim).name);
-                            metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
-                            metadata.definingClassName = self.name;
-                            metadata.addDeclaringClass(self.name);
-                            metadata.shortDescription = props(iDim).description;
-                            metadata.units = props(iDim).units;
-                            metadata.dimensions = props(iDim).dimensions;
-                            metadata.isComplex = props(iDim).isComplex;
-                            metadata.functionType = FunctionType.stateVariable;
-                            self.addMethodDocumentation(metadata);
-                        end
+                        variableAnnotations = WVGeostrophicMethods.variableAnnotationsForGeostrophicComponent();
+                    case 'WVMeanDensityAnomalyMethods'
+                        variableAnnotations = WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent();
+                    case 'WVInternalGravityWaveMethods'
+                        variableAnnotations = WVInternalGravityWaveMethods.variableAnnotationsForInternalGravityWaveComponent();
+                end
+
+                for iDim=1:length(variableAnnotations)
+                    metadata = MethodDocumentation(variableAnnotations(iDim).name);
+                    metadata.addMetadataFromDetailedDescription(variableAnnotations(iDim).detailedDescription);
+                    metadata.definingClassName = self.name;
+                    metadata.addDeclaringClass(self.name);
+                    metadata.shortDescription = variableAnnotations(iDim).description;
+                    metadata.units = variableAnnotations(iDim).units;
+                    metadata.dimensions = variableAnnotations(iDim).dimensions;
+                    metadata.isComplex = variableAnnotations(iDim).isComplex;
+                    metadata.functionType = FunctionType.stateVariable;
+                    self.addMethodDocumentation(metadata);
                 end
             end
 

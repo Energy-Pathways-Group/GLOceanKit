@@ -614,19 +614,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function energy = inertialEnergy(self)
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('inertial'));
-        end
-        
         function energy = waveEnergy(self)
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
         end
-
-        function energy = mdaEnergy(self)
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
-        end
-        
-
 
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)

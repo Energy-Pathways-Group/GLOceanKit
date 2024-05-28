@@ -1,4 +1,4 @@
-classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
+classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods & WVMeanDensityAnomalyMethods & WVInternalGravityWaveMethods
     % A class for disentangling hydrostatic waves and vortices in variable stratification
     %
     % To initialization an instance of the WVTransformHydrostatic class you
@@ -130,10 +130,10 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             end
             
             self.initializeStratifiedFlow();
-            self.initializeGeostrophicFlow();
-            
-            self.initializePrimaryFlowComponents();
-            self.initializeInertialFlow();
+            self.initializeGeostrophicComponent();
+            self.initializeMeanDensityAnomalyComponent();
+            self.initializeInternalGravityWaveComponent();
+            self.initializeInertialOscillationComponent();
 
             % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 

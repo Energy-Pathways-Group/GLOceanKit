@@ -19,7 +19,7 @@ classdef WVGeostrophicMethods < handle
     end
 
     methods (Access=protected)
-        function initializeGeostrophicFlow(self)
+        function initializeGeostrophicComponent(self)
             % After the WVStratifiedFlow and WVTransform constructors have
             % finishes, this should be called to finish initialization of
             % this flow component.
@@ -50,7 +50,7 @@ classdef WVGeostrophicMethods < handle
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
-            self.addVariableAnnotations(WVGeostrophicMethods.variableAnnotationsForGeostrophicFlow);
+            self.addVariableAnnotations(WVGeostrophicMethods.variableAnnotationsForGeostrophicComponent);
         end
 
         function throwErrorIfMeanPressureViolation(self,psi_xyz)
@@ -359,7 +359,7 @@ classdef WVGeostrophicMethods < handle
        
     end
     methods (Static, Hidden=true)
-        function variableAnnotations = variableAnnotationsForGeostrophicFlow()
+        function variableAnnotations = variableAnnotationsForGeostrophicComponent()
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by

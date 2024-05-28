@@ -44,9 +44,4 @@ annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('waveEnergy',{},'m3/s2', 'total energy, waves');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
 end

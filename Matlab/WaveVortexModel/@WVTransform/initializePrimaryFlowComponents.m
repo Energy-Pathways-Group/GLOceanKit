@@ -1,11 +1,4 @@
 function self = initializePrimaryFlowComponents(self)
-flowComponent = WVMeanDensityAnomalyComponent(self);
-self.addPrimaryFlowComponent(flowComponent);
-A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
-NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
-self.A0N = self.A0N + A0Nmda;
-self.NA0 = self.NA0 + NA0mda;
-self.PA0 = self.PA0 + NA0mda;
 
 flowComponent = WVInternalGravityWaveComponent(self);
 self.addPrimaryFlowComponent(flowComponent);

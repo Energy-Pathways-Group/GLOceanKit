@@ -1,4 +1,4 @@
-classdef WVInertialOscillationMethods < handle
+classdef WVMeanDensityAnomalyMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -7,26 +7,25 @@ classdef WVInertialOscillationMethods < handle
     end
     properties (Abstract,GetAccess=public, SetAccess=protected)
         z
-        UAp,VAp
-        UAm,VAm
-        Apm_TE_factor
+        A0N
+        NA0,PA0
+        A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
     end
     methods (Abstract)
         addPrimaryFlowComponent(self,primaryFlowComponent)
-        u_bar = transformFromSpatialDomainWithFio(self,u)
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
-        inertialComponent
+        mdaComponent
     end
     methods (Access=protected)
-        function initializeInertialOscillationComponent(self)
+        function initializeMeanDensityAnomalyComponent(self)
             % After the WVStratifiedFlow and WVTransform constructors have
             % finishes, this should be called to finish initialization of
             % this flow component.
             arguments
                 self WVTransform
             end
-            flowComponent = WVInertialOscillationComponent(self);
+            flowComponent = WVMeanDensityAnomalyComponent(self);
             self.addPrimaryFlowComponent(flowComponent);
 
             function initVariable(varName,value)
@@ -37,40 +36,41 @@ classdef WVInertialOscillationMethods < handle
                 end
                 
             end
-            [UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
-            initVariable("UAp",UAp_io);
-            initVariable("VAp",VAp_io);
+            A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
+            NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
+            initVariable("A0N",A0Nmda);
+            initVariable("NA0",NA0mda);
+            initVariable("PA0",NA0mda);
 
-            initVariable("UAm",conj(UAp_io));
-            initVariable("VAm",conj(VAp_io));
+            initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
+            initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
+            initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
-            initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
-
-            self.addVariableAnnotations(WVInertialOscillationMethods.variableAnnotationsForInertialOscillationComponent);
+            self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);
         end
     end
 
     methods
-        function flowComponent = get.inertialComponent(self)
-            % returns the geostrophic flow component
+        function flowComponent = get.mdaComponent(self)
+            % returns the mean density anomaly component
             %
             % - Topic: Primary flow components
-            % - Declaration: geostrophicComponent
+            % - Declaration: mdaComponent
             % - Returns flowComponent: subclass of WVPrimaryFlowComponent
             % - nav_order: 1
-            flowComponent = self.flowComponent('inertial');
+            flowComponent = self.flowComponent('mda');
         end
 
-        function energy = inertialEnergy(self)
-            % total energy of the inertial flow
+        function energy = mdaEnergy(self)
+            % total energy of the mean density anomaly
             %
             % - Topic: Energetics
-            % - Declaration: inertialEnergy
+            % - Declaration: mdaEnergy
             % - nav_order: 1
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('inertial'));
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
         end
 
-        function addInertialMotions(self,u,v)
+        function addMeanDensityAnomaly(self,eta)
             % add inertial motions to existing inertial motions
             %
             % The amplitudes of the inertial part of the flow will be added
@@ -95,11 +95,10 @@ classdef WVInertialOscillationMethods < handle
             % - Declaration: addInertialMotions(self,u,v)
             % - Parameter u: function handle that takes a single argument, u(Z)
             % - Parameter v: function handle that takes a single argument, v(Z)
-            self.Ap(:,1) = self.Ap(:,1) + self.transformFromSpatialDomainWithFio(u(self.z) - sqrt(-1)*v(self.z))/2;
-            self.Am(:,1) = conj(self.Ap(:,1));
+            self.A0(:,1) = self.A0(:,1) + self.transformFromSpatialDomainWithGg(eta(self.z));
         end
 
-        function initWithInertialMotions(self,u,v)
+        function initWithMeanDensityAnomaly(self,eta)
             % initialize with inertial motions
             %
             % Clears variables Ap,Am,A0 and then sets inertial motions.
@@ -125,13 +124,13 @@ classdef WVInertialOscillationMethods < handle
             self.Ap = zeros(size(self.Ap));
             self.Am = zeros(size(self.Am));
             self.A0 = zeros(size(self.A0));
-            self.setInertialMotions(u,v);
+            self.setMeanDensityAnomaly(eta);
         end
 
-        function setInertialMotions(self,u,v)
+        function setMeanDensityAnomaly(self,eta)
             % set inertial motions
             %
-            % % Overwrites existing inertial motions with the new values.
+            % Overwrites existing inertial motions with the new values.
             % Other components of the flow will remain unaffected.
             %
             % ```matlab
@@ -148,28 +147,25 @@ classdef WVInertialOscillationMethods < handle
             % same function out that you put in. The high-modes are
             % removed.
             %            
-            % - Topic: Initial conditions — Inertial Oscillations
-            % - Declaration: setInertialMotions(self,u,v)
-            % - Parameter u: function handle that takes a single argument, u(Z)
-            % - Parameter v: function handle that takes a single argument, v(Z)
-            self.Ap(:,1) = self.transformFromSpatialDomainWithFio(u(self.z) - sqrt(-1)*v(self.z))/2;
-            self.Am(:,1) = conj(self.Ap(:,1));
+            % - Topic: Initial conditions — Mean density anomaly
+            % - Declaration: setMeanDensityAnomaly(eta)
+            % - Parameter eta: function handle that takes a single argument, eta(Z)
+            self.A0(:,1) = self.transformFromSpatialDomainWithGg(eta(self.z));
         end
 
-        function removeAllInertialMotions(self)
-            % remove all inertial motions
+        function removeAllMeanDensityAnomaly(self)
+            % remove all mean density anomalies
             %
-            % All inertial motions are removed. Other components of the flow will remain unaffected.
+            % All mean density anomalies are removed. Other components of the flow will remain unaffected.
             %
-            % - Topic: Initial conditions — Inertial Oscillations
-            % - Declaration: removeAllInertialMotions()
-            self.Ap(:,1) = 0;
-            self.Am(:,1) = 0;
+            % - Topic: Initial conditions — Mean density anomaly
+            % - Declaration: removeAllMeanDensityAnomaly()
+            self.A0(:,1) = 0;
         end
     end
     methods (Static, Hidden=true)
 
-        function variableAnnotations = variableAnnotationsForInertialOscillationComponent()
+        function variableAnnotations = variableAnnotationsForMeanDensityAnomalyComponent()
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by
@@ -181,7 +177,7 @@ classdef WVInertialOscillationMethods < handle
             
             variableAnnotations = WVVariableAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+            annotation = WVVariableAnnotation('mdaEnergy',{},'m3/s2', 'total energy, mean density anomaly');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
