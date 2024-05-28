@@ -12,6 +12,12 @@ classdef WVGeostrophicMethods < handle
         A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
+        % returns the geostrophic flow component
+        %
+        % - Topic: Primary flow components
+        % - Declaration: geostrophicComponent
+        % - Returns flowComponent: subclass of WVPrimaryFlowComponent
+        % - nav_order: 1
         geostrophicComponent
     end
     methods (Abstract)
@@ -71,12 +77,6 @@ classdef WVGeostrophicMethods < handle
 
     methods
         function flowComponent = get.geostrophicComponent(self)
-            % returns the geostrophic flow component
-            %
-            % - Topic: Primary flow components
-            % - Declaration: geostrophicComponent
-            % - Returns flowComponent: subclass of WVPrimaryFlowComponent
-            % - nav_order: 1
             flowComponent = self.flowComponent('geostrophic');
         end
 

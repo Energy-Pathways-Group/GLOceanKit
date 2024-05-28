@@ -16,6 +16,12 @@ classdef WVInertialOscillationMethods < handle
         u_bar = transformFromSpatialDomainWithFio(self,u)
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
+        % returns the inertial oscillation flow component
+        %
+        % - Topic: Primary flow components
+        % - Declaration: inertialComponent
+        % - Returns flowComponent: subclass of WVPrimaryFlowComponent
+        % - nav_order: 3
         inertialComponent
     end
     methods (Access=protected)
@@ -52,12 +58,6 @@ classdef WVInertialOscillationMethods < handle
 
     methods
         function flowComponent = get.inertialComponent(self)
-            % returns the geostrophic flow component
-            %
-            % - Topic: Primary flow components
-            % - Declaration: geostrophicComponent
-            % - Returns flowComponent: subclass of WVPrimaryFlowComponent
-            % - nav_order: 1
             flowComponent = self.flowComponent('inertial');
         end
 

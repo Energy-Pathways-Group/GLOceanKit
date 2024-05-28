@@ -15,6 +15,12 @@ classdef WVMeanDensityAnomalyMethods < handle
         addPrimaryFlowComponent(self,primaryFlowComponent)
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
+        % returns the mean density anomaly component
+        %
+        % - Topic: Primary flow components
+        % - Declaration: mdaComponent
+        % - Returns flowComponent: subclass of WVPrimaryFlowComponent
+        % - nav_order: 4
         mdaComponent
     end
     methods (Access=protected)
@@ -51,13 +57,7 @@ classdef WVMeanDensityAnomalyMethods < handle
     end
 
     methods
-        function flowComponent = get.mdaComponent(self)
-            % returns the mean density anomaly component
-            %
-            % - Topic: Primary flow components
-            % - Declaration: mdaComponent
-            % - Returns flowComponent: subclass of WVPrimaryFlowComponent
-            % - nav_order: 1
+        function flowComponent = get.mdaComponent(self)   
             flowComponent = self.flowComponent('mda');
         end
 
@@ -91,10 +91,9 @@ classdef WVMeanDensityAnomalyMethods < handle
             % removed.
             %
             % The new inertial motions are added to the existing inertial motions
-            % - Topic: Initial conditions — Inertial Oscillations
-            % - Declaration: addInertialMotions(self,u,v)
-            % - Parameter u: function handle that takes a single argument, u(Z)
-            % - Parameter v: function handle that takes a single argument, v(Z)
+            % - Topic: Initial conditions — Mean density anomaly
+            % - Declaration: addMeanDensityAnomaly(eta)
+            % - Parameter eta: function handle that takes a single argument, eta(Z)
             self.A0(:,1) = self.A0(:,1) + self.transformFromSpatialDomainWithGg(eta(self.z));
         end
 
@@ -117,10 +116,9 @@ classdef WVMeanDensityAnomalyMethods < handle
             % same function out that you put in. The high-modes are
             % removed.
             %
-            % - Topic: Initial conditions — Inertial Oscillations
-            % - Declaration: initWithInertialMotions(self,u,v)
-            % - Parameter u: function handle that takes a single argument, u(Z)
-            % - Parameter v: function handle that takes a single argument, v(Z)
+            % - Topic: Initial conditions — Mean density anomaly
+            % - Declaration: initWithMeanDensityAnomaly(eta)
+            % - Parameter eta: function handle that takes a single argument, eta(Z)
             self.Ap = zeros(size(self.Ap));
             self.Am = zeros(size(self.Am));
             self.A0 = zeros(size(self.A0));

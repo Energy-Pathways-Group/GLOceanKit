@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Operations and variables
-parent: Users guide
+parent: Developers guide
 mathjax: true
-nav_order: 5
+nav_order: 1
 ---
 
 #  Operations and variables

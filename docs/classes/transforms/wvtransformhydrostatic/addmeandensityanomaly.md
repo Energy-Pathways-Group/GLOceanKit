@@ -16,11 +16,10 @@ add inertial motions to existing inertial motions
 
 ## Declaration
 ```matlab
- addInertialMotions(self,u,v)
+ addMeanDensityAnomaly(eta)
 ```
 ## Parameters
-+ `u`  function handle that takes a single argument, u(Z)
-+ `v`  function handle that takes a single argument, v(Z)
++ `eta`  function handle that takes a single argument, eta(Z)
 
 ## Discussion
 
@@ -42,4 +41,4 @@ add inertial motions to existing inertial motions
   removed.
  
   The new inertial motions are added to the existing inertial motions
-        
+      

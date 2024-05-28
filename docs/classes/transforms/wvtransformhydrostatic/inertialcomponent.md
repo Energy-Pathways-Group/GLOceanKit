@@ -9,8 +9,18 @@ mathjax: true
 
 #  inertialComponent
 
-
+returns the inertial oscillation flow component
 
 
 ---
 
+## Declaration
+```matlab
+ inertialComponent
+```
+## Returns
++ `flowComponent`  subclass of WVPrimaryFlowComponent
+
+## Discussion
+
+        

@@ -16,11 +16,10 @@ initialize with inertial motions
 
 ## Declaration
 ```matlab
- initWithInertialMotions(self,u,v)
+ initWithMeanDensityAnomaly(eta)
 ```
 ## Parameters
-+ `u`  function handle that takes a single argument, u(Z)
-+ `v`  function handle that takes a single argument, v(Z)
++ `eta`  function handle that takes a single argument, eta(Z)
 
 ## Discussion
 
@@ -40,4 +39,4 @@ initialize with inertial motions
   same function out that you put in. The high-modes are
   removed.
  
-        
+      

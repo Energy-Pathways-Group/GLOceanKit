@@ -25,4 +25,4 @@ checks if the density field is a valid adiabatic re-arrangement of the base stat
 
   This is probably best re-defined as a dynamical variable.
  
-    
+      

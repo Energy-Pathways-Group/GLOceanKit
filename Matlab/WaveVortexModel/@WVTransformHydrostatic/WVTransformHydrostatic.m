@@ -13,9 +13,12 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
     % ```
     %
     % - Topic: Initialization
+    % - Topic: Primary flow components
     % - Topic: Stratification
     % - Topic: Stratification — Vertical modes
+    % - Topic: Stratification — Validation
     % - Topic: Initial conditions
+    % - Topic: Energetics of flow components
     % - Topic: Operations
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)

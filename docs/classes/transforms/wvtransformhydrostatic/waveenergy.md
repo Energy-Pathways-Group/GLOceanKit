@@ -3,7 +3,7 @@ layout: default
 title: waveEnergy
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 35
+nav_order: 34
 mathjax: true
 ---
 
@@ -19,5 +19,5 @@ Real valued state variable with no dimensions and units of $$m3/s2$$.
 
 ## Discussion
 
-Total wave energy, including both internal gravity waves and surface gravity waves.
+Total energy of the internal gravity waves.
 

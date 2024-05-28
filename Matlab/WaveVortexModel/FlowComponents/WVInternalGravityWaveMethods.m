@@ -17,6 +17,12 @@ classdef WVInternalGravityWaveMethods < handle
         addPrimaryFlowComponent(self,primaryFlowComponent)
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
+        % returns the internal gravity wave flow component
+        %
+        % - Topic: Primary flow components
+        % - Declaration: waveComponent
+        % - Returns flowComponent: subclass of WVPrimaryFlowComponent
+        % - nav_order: 2
         waveComponent
     end
     % methods (Abstract)
@@ -66,13 +72,7 @@ classdef WVInternalGravityWaveMethods < handle
 
     methods
         function flowComponent = get.waveComponent(self)
-            % returns the geostrophic flow component
-            %
-            % - Topic: Primary flow components
-            % - Declaration: geostrophicComponent
-            % - Returns flowComponent: subclass of WVPrimaryFlowComponent
-            % - nav_order: 1
-            flowComponent = self.flowComponent('geostrophic');
+            flowComponent = self.flowComponent('wave');
         end       
     end
     methods (Static, Hidden=true)
