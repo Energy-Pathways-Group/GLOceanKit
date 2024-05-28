@@ -48,8 +48,8 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
                 Am double
                 A0 double
             end
-            Ap = (randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            Am = (randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+            Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Am);
             A0 = zeros(self.wvt.spectralMatrixSize);
         end
 

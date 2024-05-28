@@ -53,7 +53,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
             Ap = zeros(self.wvt.spectralMatrixSize);
             Am = zeros(self.wvt.spectralMatrixSize);
-            A0 = (randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)

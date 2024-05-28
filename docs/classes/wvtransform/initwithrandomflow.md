@@ -20,6 +20,7 @@ initialize with a random flow state
 ```
 ## Parameters
 + `flowComponentNames`  strings of flow component names names.
++ `uvMax`  (optional) maximum horizontal velocity
 
 ## Discussion
 
@@ -40,5 +41,5 @@ initialize with a random flow state
   will initialize the flow with geostrophic and mean density anomaly flow
   components, while the wave and inertial oscillations components will be
   zero.
-  
-      
+ 
+        

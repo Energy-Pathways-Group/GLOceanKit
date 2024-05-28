@@ -1,9 +1,4 @@
 function self = initializePrimaryFlowComponents(self)
-flowComponent = WVGeostrophicComponent(self);
-self.addPrimaryFlowComponent(flowComponent);
-[self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;
-[self.UA0,self.VA0,self.NA0,self.PA0] = flowComponent.geostrophicSpatialTransformCoefficients;
-
 flowComponent = WVMeanDensityAnomalyComponent(self);
 self.addPrimaryFlowComponent(flowComponent);
 A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
@@ -16,12 +11,6 @@ flowComponent = WVInternalGravityWaveComponent(self);
 self.addPrimaryFlowComponent(flowComponent);
 [self.ApmD,self.ApmN] = flowComponent.internalGravityWaveSpectralTransformCoefficients;
 [self.UAp,self.VAp,self.WAp,self.NAp] = flowComponent.internalGravityWaveSpatialTransformCoefficients;
-
-flowComponent = WVInertialOscillationComponent(self);
-self.addPrimaryFlowComponent(flowComponent);
-[UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
-self.UAp = self.UAp + UAp_io;
-self.VAp = self.VAp + VAp_io;
 
 self.UAm = conj(self.UAp);
 self.VAm = conj(self.VAp);

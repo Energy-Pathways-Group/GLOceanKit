@@ -49,14 +49,4 @@ annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
-annotation = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
 end

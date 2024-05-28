@@ -45,6 +45,36 @@ classdef WVTransformSubclassDocumentation < ClassDocumentation
                             metadata.functionType = FunctionType.instanceMethod;
                             self.addMethodDocumentation(metadata);
                         end
+
+                    case 'WVInertialOscillationMethods'
+                        props = WVInertialOscillationMethods.variableAnnotationsForInertialFlow();
+                        for iDim=1:length(props)
+                            metadata = MethodDocumentation(props(iDim).name);
+                            metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
+                            metadata.definingClassName = self.name;
+                            metadata.addDeclaringClass(self.name);
+                            metadata.shortDescription = props(iDim).description;
+                            metadata.units = props(iDim).units;
+                            metadata.dimensions = props(iDim).dimensions;
+                            metadata.isComplex = props(iDim).isComplex;
+                            metadata.functionType = FunctionType.stateVariable;
+                            self.addMethodDocumentation(metadata);
+                        end
+
+                    case 'WVGeostrophicMethods'
+                        props = WVGeostrophicMethods.variableAnnotationsForGeostrophicFlow();
+                        for iDim=1:length(props)
+                            metadata = MethodDocumentation(props(iDim).name);
+                            metadata.addMetadataFromDetailedDescription(props(iDim).detailedDescription);
+                            metadata.definingClassName = self.name;
+                            metadata.addDeclaringClass(self.name);
+                            metadata.shortDescription = props(iDim).description;
+                            metadata.units = props(iDim).units;
+                            metadata.dimensions = props(iDim).dimensions;
+                            metadata.isComplex = props(iDim).isComplex;
+                            metadata.functionType = FunctionType.stateVariable;
+                            self.addMethodDocumentation(metadata);
+                        end
                 end
             end
 

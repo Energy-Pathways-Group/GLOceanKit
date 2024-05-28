@@ -621,10 +621,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function energy = waveEnergy(self)
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
         end
-        
-        function energy = geostrophicEnergy(self)
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('geostrophic'));
-        end
 
         function energy = mdaEnergy(self)
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
@@ -698,7 +694,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         initWithUVRho(self,u,v,rho,t)
         initWithUVEta(self,U,V,N)
         addUVEta(self,U,V,N)
+
         initWithRandomFlow(self,flowComponentNames)
+        addRandomFlow(self,flowComponentNames)
         
         removeAll(self)
         

@@ -9,10 +9,43 @@ classdef WVInertialOscillationMethods < handle
         z
         UAp,VAp
         UAm,VAm
+        Apm_TE_factor
     end
     methods (Abstract)
         addPrimaryFlowComponent(self,primaryFlowComponent)
         u_bar = transformFromSpatialDomainWithFio(self,u)
+    end
+
+    methods (Access=protected)
+        function initializeInertialFlow(self)
+            % After the WVStratifiedFlow and WVTransform constructors have
+            % finishes, this should be called to finish initialization of
+            % this flow component.
+            arguments
+                self WVTransform
+            end
+            flowComponent = WVInertialOscillationComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+
+            function initVariable(varName,value)
+                if isempty(self.(varName))
+                    self.(varName) = value;
+                else
+                    self.(varName) = self.(varName) + value;
+                end
+                
+            end
+            [UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
+            initVariable("UAp",UAp_io);
+            initVariable("VAp",VAp_io);
+            mask = logical(flowComponent.maskOfModesForCoefficientMatrix("Ap"));
+            self.UAm(mask) = conj(self.UAp(mask));
+            self.VAm(mask) = conj(self.VAp(mask));
+
+            initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
+
+            self.addVariableAnnotations(WVInertialOscillationMethods.variableAnnotationsForInertialFlow);
+        end
     end
 
     methods
@@ -116,6 +149,25 @@ classdef WVInertialOscillationMethods < handle
             self.Am(:,1) = 0;
         end
     end
+    methods (Static, Hidden=true)
 
+        function variableAnnotations = variableAnnotationsForInertialFlow()
+            % return array of WVVariableAnnotation instances initialized by default
+            %
+            % This function creates annotations for the built-in variables supported by
+            % the WVTransform.
+            %
+            % - Topic: Internal
+            % - Declaration: operations = defaultVariableAnnotations()
+            % - Returns operations: array of WVVariableAnnotation instances
+            
+            variableAnnotations = WVVariableAnnotation.empty(0,0);
+
+            annotation = WVVariableAnnotation('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+            annotation.isVariableWithLinearTimeStep = 0;
+            annotation.isVariableWithNonlinearTimeStep = 1;
+            variableAnnotations(end+1) = annotation;
+        end
+    end
 
 end

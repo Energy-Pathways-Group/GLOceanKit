@@ -8,12 +8,51 @@ classdef WVGeostrophicMethods < handle
     properties (Abstract,GetAccess=public, SetAccess=protected)
         z
         UA0,VA0,NA0,PA0
+        A0Z,A0N
+        A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
+    end
+    properties (Dependent,GetAccess=public, SetAccess=protected)
+        geostrophicComponent
     end
     methods (Abstract)
         ratio = uMaxA0(self,kMode,lMode,jMode);
     end
 
     methods (Access=protected)
+        function initializeGeostrophicFlow(self)
+            % After the WVStratifiedFlow and WVTransform constructors have
+            % finishes, this should be called to finish initialization of
+            % this flow component.
+            arguments
+                self WVTransform
+            end
+            flowComponent = WVGeostrophicComponent(self);
+            self.addPrimaryFlowComponent(flowComponent);
+
+            function initVariable(varName,value)
+                if isempty(self.(varName))
+                    self.(varName) = value;
+                else
+                    self.(varName) = self.(varName) + value;
+                end
+                
+            end
+            [A0Z_,A0N_] = flowComponent.geostrophicSpectralTransformCoefficients;
+            [UA0_,VA0_,NA0_,PA0_] = flowComponent.geostrophicSpatialTransformCoefficients;
+            initVariable("A0Z",A0Z_);
+            initVariable("A0N",A0N_);
+            initVariable("UA0",UA0_);
+            initVariable("VA0",VA0_);
+            initVariable("NA0",NA0_);
+            initVariable("PA0",PA0_);
+
+            initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
+            initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
+            initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
+
+            self.addVariableAnnotations(WVGeostrophicMethods.variableAnnotationsForGeostrophicFlow);
+        end
+
         function throwErrorIfMeanPressureViolation(self,psi_xyz)
             relError = 1e-5;
             surfaceViolation = mean(mean(psi_xyz(:,:,end)))/max(abs(psi_xyz(:))) > relError;
@@ -28,32 +67,28 @@ classdef WVGeostrophicMethods < handle
                 error(errorStruct);
             end
         end
-
-        function throwErrorIfDensityViolation(self,A0,options)
-            % Given some proposed new set of values for A0, will the fluid
-            % state violate our density condition?
-            arguments
-                self WVGeostrophicMethods
-                A0 
-                options.additionalErrorInfo = sprintf(' ');
-            end
-            % Trying to be extra careful here, so we include the wave part
-            % of the flow because we do not really know how everything will
-            % add together in the end.
-            rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*A0,Apm=self.NAp.*self.Apt + self.NAm.*self.Amt);
-            densityViolation = any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm));
-            if densityViolation == 1
-                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
-                minString = sprintf('\tminimum density: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
-                maxString = sprintf('\tmaximum density: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
-                errorStruct.message = [errorString,options.additionalErrorInfo,minString,maxString];
-                errorStruct.identifier = 'WVTransform:DensityBoundsViolation';
-                error(errorStruct);
-            end
-        end
     end
 
     methods
+        function flowComponent = get.geostrophicComponent(self)
+            % returns the geostrophic flow component
+            %
+            % - Topic: Primary flow components
+            % - Declaration: geostrophicComponent
+            % - Returns flowComponent: subclass of WVPrimaryFlowComponent
+            % - nav_order: 1
+            flowComponent = self.flowComponent('geostrophic');
+        end
+
+        function energy = geostrophicEnergy(self)
+            % total energy of the geostrophic flow
+            %
+            % - Topic: Energetics
+            % - Declaration: geostrophicEnergy
+            % - nav_order: 1
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('geostrophic'));
+        end
+
         function initWithGeostrophicStreamfunction(self,psi)
             % initialize with a geostrophic streamfunction
             %
@@ -155,8 +190,8 @@ classdef WVGeostrophicMethods < handle
             % - nav_order: 3
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
-            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
-            self.throwErrorIfDensityViolation(self.A0 + A0_,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
+            self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
+            self.throwErrorIfDensityViolation(A0=self.A0 + A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
             self.A0 = self.A0 + A0_;
         end
 
@@ -208,7 +243,7 @@ classdef WVGeostrophicMethods < handle
             % - nav_order: 2
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
-            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
+            self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
             self.A0 = A0_;
         end
 
@@ -256,7 +291,7 @@ classdef WVGeostrophicMethods < handle
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
             A0_(indices) = A0_indices;
-            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
+            self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
 
             % If we made it this far, then things must be okay.
             self.A0(indices) = A0_indices;
@@ -297,7 +332,7 @@ classdef WVGeostrophicMethods < handle
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
             A0_(indices) = A0_(indices) + A0_indices;
-            self.throwErrorIfDensityViolation(A0_,additionalErrorInfo=sprintf('The modes you are adding will cause the fluid state to violate this condition.\n'));
+            self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are adding will cause the fluid state to violate this condition.\n'));
 
             self.A0(indices) = self.A0(indices) + A0_indices;
 
@@ -323,6 +358,24 @@ classdef WVGeostrophicMethods < handle
 
        
     end
+    methods (Static, Hidden=true)
+        function variableAnnotations = variableAnnotationsForGeostrophicFlow()
+            % return array of WVVariableAnnotation instances initialized by default
+            %
+            % This function creates annotations for the built-in variables supported by
+            % the WVTransform.
+            %
+            % - Topic: Internal
+            % - Declaration: operations = defaultVariableAnnotations()
+            % - Returns operations: array of WVVariableAnnotation instances
+            
+            variableAnnotations = WVVariableAnnotation.empty(0,0);
 
+            annotation = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
+            annotation.isVariableWithLinearTimeStep = 0;
+            annotation.isVariableWithNonlinearTimeStep = 1;
+            variableAnnotations(end+1) = annotation;
+        end
+    end
 
 end

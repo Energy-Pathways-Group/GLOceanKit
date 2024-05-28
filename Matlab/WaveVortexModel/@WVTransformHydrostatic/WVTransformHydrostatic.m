@@ -128,7 +128,12 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             else
                 [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
+            
+            self.initializeStratifiedFlow();
+            self.initializeGeostrophicFlow();
+            
             self.initializePrimaryFlowComponents();
+            self.initializeInertialFlow();
 
             % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 

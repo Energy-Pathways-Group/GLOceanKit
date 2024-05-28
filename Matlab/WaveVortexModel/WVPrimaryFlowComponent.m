@@ -125,6 +125,56 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             A0 = zeros(self.wvt.spectralMatrixSize);
         end
 
+        function [Ap,Am,A0] = randomAmplitudesWithSpectrum(self,options)
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+                options.A0Spectrum = @isempty
+                options.ApmSpectrum = @isempty
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+            end
+            arguments (Output)
+                Ap double
+                Am double
+                A0 double
+            end
+            if isequal(options.A0Spectrum,@isempty)
+                A0Spectrum = @(k,j) ones(size(k));
+            else
+                A0Spectrum = options.A0Spectrum;
+            end
+            if isequal(options.ApmSpectrum,@isempty)
+                ApmSpectrum = @(k,j) ones(size(k));
+            else
+                ApmSpectrum = options.ApmSpectrum;
+            end
+            
+            [Ap,Am,A0] = self.randomAmplitudes;
+
+            wvt = self.wvt;
+            dk = wvt.kRadial(2)-wvt.kRadial(1);
+            for iJ=1:length(wvt.j)
+                for iK=1:length(wvt.kRadial)
+                    indicesForK = wvt.kRadial(iK)-dk/2 < wvt.Kh & wvt.Kh <= wvt.kRadial(iK)+dk/2 & wvt.J == wvt.j(iJ);
+                    
+                    energyPerA0Component = integral(@(k) A0Spectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:));
+                    A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForK) ));
+
+                    energyPerApmComponent = integral(@(k) ApmSpectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
+                    Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
+                    Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
+
+                    if options.shouldOnlyRandomizeOrientations == 1
+                        A0(indicesForK) = A0(indicesForK) ./ abs(A0(indicesForK));
+                        Ap(indicesForK) = Ap(indicesForK) ./ abs(Ap(indicesForK));
+                        Am(indicesForK) = Am(indicesForK) ./ abs(Am(indicesForK));
+                    end
+                end
+            end
+            A0(isnan(A0)) = 0;
+            Ap(isnan(Ap)) = 0;
+            Am(isnan(Am)) = 0;
+        end
+
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
             % returns the total energy multiplier for the coefficient matrix.
             %

@@ -92,6 +92,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`Amt`](/classes/wvtransform/amt.html) negative wave coefficients at time t
     + [`Apt`](/classes/wvtransform/apt.html) positive wave coefficients at time t
 + Initial Conditions
+  + [`addRandomFlow`](/classes/wvtransform/addrandomflow.html) add randomized flow to the existing state
   + [`addUVEta`](/classes/wvtransform/adduveta.html) add $$(u,v,\eta)$$ to the existing values
   + [`initFromNetCDFFile`](/classes/wvtransform/initfromnetcdffile.html) initialize the flow from a NetCDF file
   + [`initWithRandomFlow`](/classes/wvtransform/initwithrandomflow.html) initialize with a random flow state
@@ -243,7 +244,6 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`dynamicalVariable`](/classes/wvtransform/dynamicalvariable.html) 
   + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
   + [`flowComponentNameMap`](/classes/wvtransform/flowcomponentnamemap.html) 
-  + [`geostrophicEnergy`](/classes/wvtransform/geostrophicenergy.html) 
   + [`h_0`](/classes/wvtransform/h_0.html) [Nj Nkl]
   + [`h_pm`](/classes/wvtransform/h_pm.html) [Nj Nkl]
   + [`hasMeanPressureDifference`](/classes/wvtransform/hasmeanpressuredifference.html) checks if there is a non-zero mean pressure difference between the top and bottom of the fluid

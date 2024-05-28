@@ -10,7 +10,7 @@ mathjax: true
 ## Naming
 
 - All classes within the WaveVortexModel use a prefix of `WV` to establish a namespace.
-- Any user defined subclasses should *not* use teh `WV` prefix.
+- Any user defined subclasses should *not* use the `WV` prefix.
 - Class names use [`UpperCamelCase`](https://en.wikipedia.org/wiki/Camel_case) starting with a capital letter.
 - Property and method names use [`lowerCamelCase`](https://en.wikipedia.org/wiki/Camel_case) starting with a lower-case letter.
 - The only exceptions are properties where the notation follows standard practice or follows a manuscript's notation. For example, the squared buoyancy frequency is written as `N2` and not `n2`.

@@ -1,4 +1,4 @@
-function initWithRandomFlow(self,flowComponentNames)
+function initWithRandomFlow(self,flowComponentNames,options)
 % initialize with a random flow state
 %
 % Clears variables Ap,Am,A0 and then randomizes the flow by adding random
@@ -18,33 +18,21 @@ function initWithRandomFlow(self,flowComponentNames)
 % will initialize the flow with geostrophic and mean density anomaly flow
 % components, while the wave and inertial oscillations components will be
 % zero.
-% 
+%
 % - Topic: Initial conditions
 % - Declaration: initWithRandomFlow(flowComponentNames)
 % - Parameter flowComponentNames: strings of flow component names names.
-    arguments
-        self WVTransform {mustBeNonempty}
-    end
-    arguments (Repeating)
-        flowComponentNames char
-    end
-Ap = zeros(self.spectralMatrixSize);
-Am = zeros(self.spectralMatrixSize);
-A0 = zeros(self.spectralMatrixSize);
-if isempty(flowComponentNames)
-    flowComponentNames = keys(self.primaryFlowComponentNameMap);
+% - Parameter uvMax: (optional) maximum horizontal velocity
+arguments
+    self WVTransform {mustBeNonempty}
 end
-
-for name = flowComponentNames
-    flowComponent = self.flowComponentNameMap(name{1});
-    [Ap_,Am_,A0_] = flowComponent.randomAmplitudes;
-    Ap = Ap+Ap_;
-    Am = Am+Am_;
-    A0 = A0+A0_;
+arguments (Repeating)
+    flowComponentNames char
 end
-
-self.Ap = Ap;
-self.Am = Am;
-self.A0 = A0;
+arguments
+    options.uvMax (1,1) double = 0.2
+end
+self.removeAll();
+self.addRandomFlow(flowComponentNames{:},uvMax=options.uvMax);
 
 end
