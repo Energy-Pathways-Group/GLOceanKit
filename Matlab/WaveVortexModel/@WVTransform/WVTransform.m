@@ -71,19 +71,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         version = 3.0;
 
-        A0Z, ApmD, ApmN, A0N
+        A0Z=0, ApmD=0, ApmN=0, A0N=0
         
-        UAp, UAm, UA0
-        VAp, VAm, VA0
-        WAp, WAm
-        NAp, NAm, NA0
-        PA0
+        UAp=0, UAm=0, UA0=0
+        VAp=0, VAm=0, VA0=0
+        WAp=0, WAm=0
+        NAp=0, NAm=0, NA0=0
+        PA0=0
 
         % These convert the coefficients to their depth integrated energies
-        Apm_TE_factor
-        A0_TE_factor 
-        A0_TZ_factor
-        A0_QGPV_factor
+        Apm_TE_factor=0
+        A0_TE_factor=0
+        A0_TZ_factor=0
+        A0_QGPV_factor=0
 
         conjugateDimension = 2
         shouldAntialias = 1
@@ -448,6 +448,22 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.clearVariableCache();
         end
 
+        function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
+            %returns the effective grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Properties
+            % - Declaration: flag = effectiveHorizontalGridResolution(other)
+            % - Returns effectiveHorizontalGridResolution: double
+            arguments
+                self WVTransform
+            end
+            effectiveHorizontalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
+        end
 
         self = initializePrimaryFlowComponents(self)
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)

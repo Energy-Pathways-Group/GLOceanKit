@@ -1,34 +1,47 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Specify the problem dimensions
+%% Specify the problem dimensions
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 2000e3;
-Ly = 1000e3;
 
-Nx = 256;
-Ny = 128;
+wvt = WVTransformSingleMode([2000e3 1000e3], [256 128], h=0.8, latitude=25);
 
-latitude = 25;
-
-wvt = WVTransformSingleMode([Lx, Ly], [Nx, Ny], h=0.8, latitude=latitude);
-
-x0 = 3*Lx/4;
-y0 = Ly/2;
+x0 = 3*wvt.Lx/4;
+y0 = wvt.Ly/2;
 A = 0.15;
 L = 80e3;
-wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
+wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2),shouldRemoveMeanPressure=1 );
 
-figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
+figure
+tl = tiledlayout(2,1);
+nexttile(tl)
+pcolor(wvt.x/1e3,wvt.y/1e3,100*wvt.ssh.'), shading interp, axis equal, xlim([0 wvt.Lx]/1e3), ylim([0 wvt.Ly]/1e3), title(sprintf('day %d',round(wvt.t/86400)))
+cb = colorbar('eastoutside'); cb.Label.String = 'cm'; clim([-5 15])
+pause(0.1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Set up the integrator
+%% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
+model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
+tic
+model.integrateToTime(365*86400);
+toc
 
+nexttile(tl)
+pcolor(wvt.x/1e3,wvt.y/1e3,100*wvt.ssh.'), shading interp, axis equal
+cb = colorbar('eastoutside'); cb.Label.String = 'cm'; clim([-5 15]), xlim([0 wvt.Lx]/1e3), ylim([0 wvt.Ly]/1e3), title(sprintf('day %d',round(wvt.t/86400)))
+pause(0.1);
+
+return
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Set up the integrator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
 if model.nonlinearFluxOperation.beta > 0
     beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
     outputVar = WVVariableAnnotation('qgpv',{'x','y','z'},'1/s', 'quasigeostrophic potential vorticity');

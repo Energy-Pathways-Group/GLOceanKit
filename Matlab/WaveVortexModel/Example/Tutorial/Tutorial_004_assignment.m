@@ -87,7 +87,7 @@ return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uvMax));
 model.setupIntegrator(timeStepConstraint="advective");
 % model.createNetCDFFileForModelOutput('qg-eddy.nc')
 % model.setNetCDFOutputVariables('u','v','eta','seaSurfaceHeight');
@@ -109,7 +109,7 @@ wvt.setInertialMotions(u_NIO,v_NIO);
 
 %%
 
-model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldAntialias=1,uv_damp=wvt.uvMax));
 model.setupIntegrator(timeStepConstraint="advective");
 model.integrateToTime(wvt.t + 1*wvt.inertialPeriod);
 

@@ -23,7 +23,7 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
 
-    properties (Access=protected) %(GetAccess=public, SetAccess=protected) %(Access=private)
+    properties (Hidden=true) %(GetAccess=public, SetAccess=protected) %(Access=private)
         % Transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
         PF0, QG0 % size(PF,PG)=[Nj x Nz]
@@ -168,7 +168,9 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             end
 
             wvtX2.t0 = self.t0;
+            wvtX2.t = self.t;
             [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+            wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
 
 
@@ -321,7 +323,7 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
                 lMode (:,1) double
                 jMode (:,1) double
             end
-            % uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
+            % uvMax for a geostrophic mode is uvMax =(g/f)*Kh*max(F_j)*abs(A0)
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
             ratio = (self.g/self.f)*self.Kh(indices)*self.P0(jMode+1);
         end

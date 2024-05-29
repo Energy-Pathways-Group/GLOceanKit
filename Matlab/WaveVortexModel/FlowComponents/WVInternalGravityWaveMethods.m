@@ -41,7 +41,7 @@ classdef WVInternalGravityWaveMethods < handle
             self.addPrimaryFlowComponent(flowComponent);
 
             function initVariable(varName,value)
-                if isempty(self.(varName))
+                if isempty(self.(varName)) || isscalar(self.(varName))
                     self.(varName) = value;
                 else
                     self.(varName) = self.(varName) + value;
@@ -73,6 +73,15 @@ classdef WVInternalGravityWaveMethods < handle
     methods
         function flowComponent = get.waveComponent(self)
             flowComponent = self.flowComponent('wave');
+        end
+
+        function energy = waveEnergy(self)
+            % total energy of the geostrophic flow
+            %
+            % - Topic: Energetics
+            % - Declaration: geostrophicEnergy
+            % - nav_order: 2
+            energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
         end
 
         function [omega,k,l] = initWithWaveModes(self, waveproperties)

@@ -36,7 +36,7 @@ classdef WVGeostrophicMethods < handle
             self.addPrimaryFlowComponent(flowComponent);
 
             function initVariable(varName,value)
-                if isempty(self.(varName))
+                if isempty(self.(varName)) || isscalar(self.(varName))
                     self.(varName) = value;
                 else
                     self.(varName) = self.(varName) + value;

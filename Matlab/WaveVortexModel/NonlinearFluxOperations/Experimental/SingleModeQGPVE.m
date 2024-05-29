@@ -13,7 +13,7 @@ classdef SingleModeQGPVE < WVNonlinearFluxOperation
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'SingleModeQGPVE'
                 options.nu (1,1) double

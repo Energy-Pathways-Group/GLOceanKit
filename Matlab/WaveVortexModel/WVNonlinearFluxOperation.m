@@ -131,22 +131,6 @@ classdef WVNonlinearFluxOperation < WVOperation
             flag = (self.doesFluxAp == other.doesFluxAp) && (self.doesFluxAm == other.doesFluxAm) && (self.doesFluxA0 == other.doesFluxA0) && strcmp(self.name,other.name);
         end
 
-        function effectiveGridResolution = effectiveGridResolution(self)
-            %returns the effective grid resolution in meters
-            %
-            % The effective grid resolution is the highest fully resolved
-            % wavelength in the model. This value takes into account
-            % anti-aliasing, and is thus appropriate for setting damping
-            % operators.
-            %
-            % - Topic: Properties
-            % - Declaration: flag = effectiveGridResolution(other)
-            % - Returns effectiveGridResolution: double
-            arguments
-                self WVNonlinearFluxOperation
-            end
-            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
-        end
     end
 
     methods (Static)

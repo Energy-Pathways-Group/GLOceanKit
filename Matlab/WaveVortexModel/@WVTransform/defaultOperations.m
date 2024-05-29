@@ -22,9 +22,9 @@ outputVar = WVVariableAnnotation('A0t',{'j','kl'},'m', 'geostrophic coefficients
 outputVar.isComplex = 1;
 operations(end+1) = WVOperation('A0t',outputVar,@(wvt) wvt.A0);
 
-outputVar = WVVariableAnnotation('uMax',{},'m s^{-1}', 'max horizontal fluid speed');
+outputVar = WVVariableAnnotation('uvMax',{},'m s^{-1}', 'max horizontal fluid speed');
 f = @(wvt) max(max(max( sqrt( (wvt.u).^2 + (wvt.v).^2 ) )));
-operations(end+1) = WVOperation('uMax',outputVar,f);
+operations(end+1) = WVOperation('uvMax',outputVar,f);
 
 outputVar = WVVariableAnnotation('wMax',{},'m s^{-1}', 'max vertical fluid speed');
 f = @(wvt) max(max(max( abs(wvt.w)  )));
@@ -77,14 +77,14 @@ operations(end+1) = WVOperation('rho_total',outputVar,f);
 % f = @(wvt) wvt.g*wvt.h_0/(wvt.f*wvt.f);
 % operations(end+1) = WVOperation('Lr2',outputVar,f);
 
-outputVar = WVVariableAnnotation('seaSurfaceU',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
-operations(end+1) = WVOperation('seaSurfaceU', outputVar,@(wvt) wvt.u(:,:,end));
+outputVar = WVVariableAnnotation('ssu',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
+operations(end+1) = WVOperation('ssu', outputVar,@(wvt) wvt.u(:,:,end));
 
-outputVar = WVVariableAnnotation('seaSurfaceV',{'x','y'},'m/s', 'y-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
-operations(end+1) = WVOperation('seaSurfaceV', outputVar,@(wvt) wvt.v(:,:,end));
+outputVar = WVVariableAnnotation('ssv',{'x','y'},'m/s', 'y-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
+operations(end+1) = WVOperation('ssv', outputVar,@(wvt) wvt.v(:,:,end));
 
-outputVar = WVVariableAnnotation('seaSurfaceHeight',{'x','y'},'m', 'sea-surface height');
-operations(end+1) = WVOperation('seaSurfaceHeight', outputVar,@(wvt) wvt.p(:,:,end)/(wvt.rho0*wvt.g));
+outputVar = WVVariableAnnotation('ssh',{'x','y'},'m', 'sea-surface height');
+operations(end+1) = WVOperation('ssh', outputVar,@(wvt) wvt.p(:,:,end)/(wvt.rho0*wvt.g));
 
 fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap', isComplex=1, detailedDescription='- topic: State Variables');
 fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am', isComplex=1,detailedDescription='- topic: State Variables');

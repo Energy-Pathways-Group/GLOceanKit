@@ -15,7 +15,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     % This is most often used when initializing a model, e.g.,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uvMax));
     % ```
     %
     % - Topic: Initializing
@@ -41,7 +41,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
             % - Parameter wvt: a WVTransform instance
-            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax.
+            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax.
             % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Parameter nu_z: (optional) coefficient for damping
@@ -78,8 +78,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.nu_xy = options.nu_xy;
             else
                 if isfield(options,'uv_damp')
-                    effectiveGridResolution = pi/max(max(abs(wvt.l(:)),abs(wvt.k(:))));
-                    self.nu_xy = effectiveGridResolution*options.uv_damp/(pi^2);
+                    self.nu_xy = wvt.effectiveHorizontalGridResolution*options.uv_damp/(pi^2);
                 else
                     self.nu_xy = 0;
                 end
@@ -122,11 +121,11 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         end
 
         function set.uv_damp(self,uv_damp)
-            self.nu_xy = self.effectiveGridResolution*uv_damp/(pi^2);
+            self.nu_xy = self.wvt.effectiveHorizontalGridResolution*uv_damp/(pi^2);
         end
 
         function val = get.uv_damp(self)
-            val = self.nu_xy*(pi^2)/self.effectiveGridResolution;
+            val = self.nu_xy*(pi^2)/self.wvt.effectiveHorizontalGridResolution;
         end
 
         function buildDampingOperator(self)
@@ -199,7 +198,9 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            nlFlux = WVNonlinearFlux(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2);
+            ratio_h = self.wvt.effectiveHorizontalGridResolution/wvtX2.effectiveHorizontalGridResolution;
+            ratio_v = self.wvt.effectiveVerticalGridResolution/wvtX2.effectiveVerticalGridResolution;
+            nlFlux = WVNonlinearFluxForced(wvtX2,r=self.r,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v,shouldUseBeta=(self.beta>0));
         end
 
         function flag = isequal(self,other)

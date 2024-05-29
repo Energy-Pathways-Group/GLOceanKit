@@ -25,7 +25,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
     % This is most often used when initializing a model, e.g.,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxForced(wvt,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxForced(wvt,uv_damp=wvt.uvMax));
     % ```
     %
     % - Topic: Initializing
@@ -51,7 +51,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             % - Topic: Initialization
             % - Declaration: nlFlux = WVNonlinearFluxForced(wvt,options)
             % - Parameter wvt: a WVTransform instance
-            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax.
+            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax.
             % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Parameter nu_z: (optional) coefficient for damping
@@ -192,6 +192,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 wvt WVTransform {mustBeNonempty}
             end
             writeToFile@WVNonlinearFlux(self,ncfile,wvt);
+            
             self.addVariableOfType(ncfile,wvt,'MAp',self.MAp,@(v) uint8(v));
             self.addVariableOfType(ncfile,wvt,'Apbar',self.Apbar,@(v) v);
             ncfile.addVariable('tauP',self.tauP,{});
@@ -212,14 +213,13 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            nlFlux = WVNonlinearFluxForced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldUseBeta=(self.beta>0));
-            [nlFlux.MAp, nlFlux.Apbar] = self.spectralVariableWithResolution(wvtX2,self.MAp, self.Apbar);
+            nlFlux = nonlinearFluxWithResolutionOfTransform@WVNonlinearFlux(self,wvtX2);
+
+            [nlFlux.MAp, nlFlux.Apbar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MAp, self.Apbar);
             nlFlux.tauP = self.tauP;
-
-            [nlFlux.MAm, nlFlux.Ambar] = self.spectralVariableWithResolution(wvtX2,self.MAm, self.Ambar);
+            [nlFlux.MAm, nlFlux.Ambar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MAm, self.Ambar);
             nlFlux.tauM = self.tauM;
-
-            [nlFlux.MA0, nlFlux.A0bar] = self.spectralVariableWithResolution(wvtX2,self.MA0, self.A0bar);
+            [nlFlux.MA0, nlFlux.A0bar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MA0, self.A0bar);
             nlFlux.tau0 = self.tau0;
         end
 

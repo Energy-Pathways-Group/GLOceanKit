@@ -79,7 +79,7 @@ cmocean('Balance');
 
 %% Initialize a model and use the QGPVE --- on the beta plane!
 
-model = WVModel(wvt, nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt, nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uvMax));
 
 
 %% Add particles with float like behavior

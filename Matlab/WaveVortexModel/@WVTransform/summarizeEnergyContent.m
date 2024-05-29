@@ -3,10 +3,12 @@ function summarizeEnergyContent(self)
 %
 % - Topic: Energetics
 total = self.totalEnergy;
-ioPct = 100*self.inertialEnergy/total;
-wavePct = 100*self.waveEnergy/total;
-gPct = 100*self.geostrophicEnergy/total;
-mdaPct = 100*self.mdaEnergy/total;
+pctString = sprintf('(');
+nameString = sprintf('(');
+for name = keys(self.primaryFlowComponentNameMap)
+    pctString = [pctString,sprintf('%.1f,',100*self.totalEnergyOfFlowComponent(self.flowComponent(name{1}))/total)];
+    nameString = [nameString,sprintf('%s',name{1})];
+end
 
-fprintf('%.2g m^3/s^2 total depth integrated energy, split (%.1f,%.1f,%.1f,%.1f) between (inertial,wave,geostrophic,mda)\n',total,ioPct,wavePct,gPct,mdaPct);
+fprintf('%.2g m^3/s^2 total depth integrated energy, split %s) between %s)\n',total,pctString,nameString);
 end

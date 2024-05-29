@@ -1,4 +1,4 @@
-classdef WVTransformSingleMode < WVTransform
+classdef WVTransformSingleMode < WVTransform & WVGeostrophicMethods
     % A class for disentangling waves and vortices in a single layer
     %
     % This is a two-dimensional, single-layer which may be interepreted as
@@ -29,7 +29,7 @@ classdef WVTransformSingleMode < WVTransform
         dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
     properties (GetAccess=public)
-        iOmega
+        iOmega = 0
     end
     properties (Dependent)
         h_0  % [Nj 1]
@@ -71,7 +71,7 @@ classdef WVTransformSingleMode < WVTransform
             self.h = options.h;
             self.isBarotropic = 1;
             
-            self.initializePrimaryFlowComponents();
+            self.initializeGeostrophicComponent();
 
             % Lr2 = self.g*(self.h)/(self.f*self.f);
             % Lr2(1) = self.g*self.Lz/(self.f*self.f);
@@ -96,43 +96,6 @@ classdef WVTransformSingleMode < WVTransform
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
-        function self = initializePrimaryFlowComponents(self)
-            flowComponent = WVGeostrophicComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [self.A0Z,self.A0N] = flowComponent.geostrophicSpectralTransformCoefficients;
-            [self.UA0,self.VA0,self.NA0,self.PA0] = flowComponent.geostrophicSpatialTransformCoefficients;
-
-            flowComponent = WVInternalGravityWaveComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [self.ApmD,self.ApmN] = flowComponent.internalGravityWaveSpectralTransformCoefficients;
-            [self.UAp,self.VAp,self.WAp,self.NAp] = flowComponent.internalGravityWaveSpatialTransformCoefficients;
-
-            flowComponent = WVInertialOscillationComponent(self);
-            self.addPrimaryFlowComponent(flowComponent);
-            [UAp_io,VAp_io] = flowComponent.inertialOscillationSpatialTransformCoefficients;
-            self.UAp = self.UAp + UAp_io;
-            self.VAp = self.VAp + VAp_io;
-
-            self.UAm = conj(self.UAp);
-            self.VAm = conj(self.VAp);
-            self.WAm = self.WAp;
-            self.NAm = -self.NAp;
-
-            self.iOmega = sqrt(-1)*self.Omega;
-
-            self.Apm_TE_factor = zeros(self.spectralMatrixSize);
-            self.A0_TE_factor = zeros(self.spectralMatrixSize);
-            self.A0_QGPV_factor = zeros(self.spectralMatrixSize);
-            self.A0_TZ_factor = zeros(self.spectralMatrixSize);
-            for name = keys(self.primaryFlowComponentNameMap)
-                flowComponent = self.primaryFlowComponentNameMap(name{1});
-                self.Apm_TE_factor = self.Apm_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                self.A0_TE_factor = self.A0_TE_factor + flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0);
-                self.A0_QGPV_factor = self.A0_QGPV_factor + flowComponent.qgpvFactorForA0;
-                self.A0_TZ_factor = self.A0_TZ_factor + flowComponent.enstrophyFactorForA0;
-            end
-        end
-
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)
             wvtX2 = self.waveVortexTransformWithResolution(2*[self.Nx self.Ny]);
         end
@@ -152,8 +115,19 @@ classdef WVTransformSingleMode < WVTransform
             end
         end
 
-        function setSSH(self,ssh)
-            psi = @(X,Y,Z) (self.g/self.f)*ssh(X,Y);
+        function setSSH(self,ssh,options)
+            arguments
+                self WVTransformSingleMode
+                ssh 
+                options.shouldRemoveMeanPressure double {mustBeMember(options.shouldRemoveMeanPressure,[0 1])} = 0
+            end
+            if options.shouldRemoveMeanPressure == 1
+                sshbar = mean(mean(ssh(self.X,self.Y)));
+            else
+                sshbar = 0;
+            end
+            psi = @(X,Y,Z) (self.g/self.f)*(ssh(X,Y)-sshbar);
+            
             self.setGeostrophicStreamfunction(psi);
         end
 

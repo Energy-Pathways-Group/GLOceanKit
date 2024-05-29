@@ -62,7 +62,7 @@ wvt.addOperation(WVOperation('sigma',outputVar,f));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uvMax));
 
 % set initial positions for a bunch of floats
 [xFloat,yFloat] = ndgrid(wvt.x,wvt.y);

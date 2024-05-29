@@ -14,7 +14,7 @@ classdef WVModel < handle
     % By default the model only takes a linear time-step. To specify a
     % nonlinear flux on initialization, for example,
     %```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,u_damp=wvt.uvMax));
     %```
     %
     % You can also initialize a model from existing output,
@@ -195,6 +195,11 @@ classdef WVModel < handle
             if isfield(options,"nonlinearFlux")
                 self.nonlinearFluxOperation = options.nonlinearFlux;
                 self.wvt.nonlinearFluxOperation = options.nonlinearFlux;
+            else
+                self.nonlinearFluxOperation = self.wvt.nonlinearFluxOperation;
+                if self.nonlinearFluxOperation.nu_xy == 0
+                    warning('The nonlinear flux has no damping.');
+                end
             end
 
 %             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);

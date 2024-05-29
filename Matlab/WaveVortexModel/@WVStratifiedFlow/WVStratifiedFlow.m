@@ -35,6 +35,23 @@ classdef WVStratifiedFlow < handle
             % - Returns flag: a boolean
             flag = ~(any(self.rho_total(:) < min(self.rho_nm)) | any(self.rho_total(:) > max(self.rho_nm)));
         end
+
+        function effectiveVerticalGridResolution = effectiveVerticalGridResolution(self)
+            %returns the effective vertical grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Stratification
+            % - Declaration: flag = effectiveVerticalGridResolution(other)
+            % - Returns effectiveVerticalGridResolution: double
+            arguments
+                self WVNonlinearFluxOperation
+            end
+            effectiveVerticalGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+        end
     end
 
     methods (Access=protected)

@@ -7,7 +7,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
     % To initialize the WVNonlinearFluxQG,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
     % ```
     %
     % - Topic: Initializing
@@ -19,8 +19,8 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         RVA0 % conversion from A0 to RV
         beta
         damp
-        nu_xy
-        r
+        nu_xy = 0
+        r = 0
     end
 
     properties (Dependent)
@@ -34,14 +34,14 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % - Declaration: nlFlux = QGPVE(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
-            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
+            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax
             % - Parameter r: (optional) bottom friction
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'QGPVE'
                 options.nu_xy (1,1) double
@@ -63,7 +63,8 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             self.PVA0 = wvt.A0_QGPV_factor;
             self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
             self.A0PV = 1./self.PVA0;
-            self.A0PV(wvt.Kh == 0 & wvt.J == 0) = 0;
+            % self.A0PV(wvt.Kh == 0 & wvt.J == 0) = 0;
+            self.A0PV(isinf(self.A0PV))=0;
             
             % Components to the damping operator (which will multiply A0):
             % 1. Convert A0 to a velocity streamfunction (g/f)
@@ -96,11 +97,11 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function set.uv_damp(self,uv_damp)
-            self.nu_xy = self.effectiveGridResolution*uv_damp/(pi^2);
+            self.nu_xy = self.wvt.effectiveHorizontalGridResolution*uv_damp/(pi^2);
         end
 
         function val = get.uv_damp(self)
-            val = self.nu_xy*(pi^2)/self.effectiveGridResolution;
+            val = self.nu_xy*(pi^2)/self.wvt.effectiveHorizontalGridResolution;
         end
 
         function buildDampingOperator(self)
@@ -183,7 +184,8 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            nlFlux = WVNonlinearFluxQG(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu=self.nu_xy/2);
+            ratio = self.wvt.effectiveHorizontalGridResolution/wvtX2.effectiveHorizontalGridResolution;
+            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
         end
 
         function flag = isequal(self,other)

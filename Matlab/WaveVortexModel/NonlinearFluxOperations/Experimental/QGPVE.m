@@ -7,7 +7,7 @@ classdef QGPVE < WVNonlinearFluxOperation
     % To initialize the QGPVE,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uvMax));
     % ```
     %
     % - Topic: Initializing
@@ -29,14 +29,14 @@ classdef QGPVE < WVNonlinearFluxOperation
             % - Declaration: nlFlux = QGPVE(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
-            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
+            % - Parameter u_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax
             % - Parameter r: (optional) bottom friction
             % - Parameter nu: (optional) coefficient for damping
             % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.u_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'QGPVE'
                 options.nu (1,1) double

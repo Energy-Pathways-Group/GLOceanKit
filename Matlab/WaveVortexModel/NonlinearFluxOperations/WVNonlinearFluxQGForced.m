@@ -11,7 +11,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
     % To initialize the WVNonlinearFluxQGForced,
     %
     % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQGForced(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQGForced(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
     % ```
     %
     % - Topic: Initializing
@@ -29,14 +29,14 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             % - Declaration: nlFlux = WVNonlinearFluxQGForced(wvt,options)
             % - Parameter wvt: a WVTransform instance
             % - Parameter shouldUseBeta: (optional) a Boolean indicating whether or not to include beta in the flux
-            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uMax
+            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax
             % - Parameter r: (optional) bottom friction
             % - Parameter nu_xy: (optional) coefficient for damping
             % - Returns nlFlux: a QGPVE instance
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
-                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uMax.
+                options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
                 options.fluxName char = 'WVNonlinearFluxQGForced'
                 options.nu_xy (1,1) double
@@ -210,14 +210,8 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            ratio = wvtX2.Nk/self.wvt.Nk;
-            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
-            if ~isempty(self.MA0)
-                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
-            if ~isempty(self.A0bar)
-                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
+            nlFlux = nonlinearFluxWithResolutionOfTransform@WVNonlinearFluxQG(self,wvtX2);
+            [nlFlux.MA0, nlFlux.A0bar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MA0, self.A0bar);
             nlFlux.tau0 = self.tau0;
         end
 
