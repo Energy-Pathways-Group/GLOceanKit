@@ -34,9 +34,6 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
 
         zInterp
         PFinvInterp, QGinvInterp
-
-        dftBuffer, wvBuffer
-        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (GetAccess=public)
@@ -224,15 +221,13 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             if isscalar(options.Apm) && isscalar(options.A0)
                 u = zeros(self.spatialMatrixSize);
             else
-                % Perform the vertical mode matrix multiplication
-                self.wvBuffer = self.PF0inv*(self.P0 .* (options.Apm + options.A0));
-
-                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-                % Perform a 2D DFT
-                u = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
+                elseif ~isscalar(options.Apm)
+                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* options.Apm ));
+                else
+                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* options.A0));
+                end
             end
         end
 
@@ -245,15 +240,13 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             if isscalar(options.Apm) && isscalar(options.A0)
                 w = zeros(self.spatialMatrixSize);
             else
-                % Perform the vertical mode matrix multiplication
-                self.wvBuffer = self.QG0inv*(self.Q0 .* (options.Apm + options.A0));
-
-                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-                % Perform a 2D DFT
-                w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
+                elseif ~isscalar(options.Apm)
+                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.Apm));
+                else
+                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.A0));
+                end
             end
         end
 

@@ -14,6 +14,7 @@
 % wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [64 64 33]);
+% wvt = WVTransformSingleMode([2000e3 1000e3], 2*[256 128], h=0.8, latitude=25);
 % profile viewer
 wvt.initWithRandomFlow();
 

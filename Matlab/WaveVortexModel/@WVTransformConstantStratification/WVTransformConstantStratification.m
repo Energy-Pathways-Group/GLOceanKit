@@ -313,7 +313,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 u = zeros(self.spatialMatrixSize);
             else
                 u_bar = self.transformToSpatialDomainWithF_MM(options.Apm./self.F_wg + options.A0);
-                u = self.transformToSpatialDomainWithFourier(self.horizontalModes.transformFromWVGridToDFTGrid(u_bar));
+                u = self.transformToSpatialDomainWithFourier(u_bar);
             end
         end
 
@@ -327,7 +327,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 w = zeros(self.spatialMatrixSize);
             else
                 w_bar = self.transformToSpatialDomainWithG_MM(options.Apm./self.G_wg + options.A0 );
-                w = self.transformToSpatialDomainWithFourier(self.horizontalModes.transformFromWVGridToDFTGrid(w_bar));
+                w = self.transformToSpatialDomainWithFourier(w_bar);
             end
         end
 

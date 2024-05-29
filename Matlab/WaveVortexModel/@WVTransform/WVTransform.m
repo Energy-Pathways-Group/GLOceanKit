@@ -87,6 +87,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         conjugateDimension = 2
         shouldAntialias = 1
+
+        dftBuffer, wvBuffer
+        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (Dependent, SetAccess=private)
@@ -245,6 +248,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
             % must use double quotes, and these need to match the cases in operationForDynamicalVariable
             self.knownDynamicalVariables = ["u","v","w","eta","p","psi","qgpv"];
+
+            self.dftBuffer = zeros(self.spatialMatrixSize);
+            self.wvBuffer = zeros([self.Nz self.Nkl]);
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -471,11 +478,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = self.horizontalModes.transformFromDFTGridToWVGrid(u_bar);
+            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
         end
 
         function u = transformToSpatialDomainWithFourier(self,u_bar)
-            u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
+            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
+            u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)

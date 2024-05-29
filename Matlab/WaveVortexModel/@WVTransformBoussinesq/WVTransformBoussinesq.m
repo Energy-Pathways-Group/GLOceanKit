@@ -36,9 +36,6 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         Wzkl
         Wklz
         Aklz
-
-        dftBuffer, wvBuffer
-        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
     end
 
     properties (Dependent, SetAccess=private)
@@ -191,10 +188,6 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
             self.Wzkl = complex(zeros(self.Nz,self.Nkl));
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
-
-            self.dftBuffer = zeros(self.spatialMatrixSize);
-            self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function value = get.nK2unique(self)
@@ -261,19 +254,6 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
             end
         end
 
-        function u_bar = transformFromSpatialDomainWithFourier(self,u)
-            % self.dftBuffer = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            % u_bar(self.wvPrimaryIndex) = self.dftBuffer(self.dftPrimaryIndex);
-            % u_bar=reshape(u_bar,[self.Nz self.Nkl]);
-
-            % u_bar1 = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            % u_bar(self.wvPrimaryIndex) = u_bar1(self.dftPrimaryIndex);
-            % u_bar = reshape(u_bar,[self.Nz self.Nkl]);
-
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations to and from the spatial domain
@@ -304,13 +284,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 else
                     self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
                 end
-
-                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-                % Perform a 2D DFT
-                u = self.transformToSpatialDomainWithFourier(self.dftBuffer);  
+                u = self.transformToSpatialDomainWithFourier(self.wvBuffer);  
             end
         end
 
@@ -338,13 +312,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 else
                     self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
                 end
-
-                % re-arrange the matrix from size [Nz Nkl] to [Nx Ny Nz]
-                self.dftBuffer(self.dftPrimaryIndex) = self.wvBuffer;
-                self.dftBuffer(self.dftConjugateIndex) = conj(self.wvBuffer(self.wvConjugateIndex));
-
-                % Perform a 2D DFT
-                w = self.transformToSpatialDomainWithFourier(self.dftBuffer);
+                w = self.transformToSpatialDomainWithFourier(self.wvBuffer);
             end
         end
 

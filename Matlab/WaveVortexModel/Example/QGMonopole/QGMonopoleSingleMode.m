@@ -27,9 +27,8 @@ pause(0.1);
 % initialize the integrator with the model
 model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
-tic
+
 model.integrateToTime(365*86400);
-toc
 
 nexttile(tl)
 pcolor(wvt.x/1e3,wvt.y/1e3,100*wvt.ssh.'), shading interp, axis equal

@@ -550,7 +550,7 @@ classdef WVGeometryDoublyPeriodic
                 Nz (1,1) double {mustBeInteger,mustBePositive} = 1
             end
             arguments (Output)
-                dftToWVIndices (:,1) double
+                dftToWVIndices double
             end
             dftToWVIndices = zeros(Nz*self.Nkl_wv,1);
             index=1;
@@ -562,6 +562,7 @@ classdef WVGeometryDoublyPeriodic
                     index = index+1;
                 end
             end
+            dftToWVIndices = reshape(dftToWVIndices,[Nz,self.Nkl_wv]);
         end
 
         function Aklz = transformFromWVGridToDFTGrid(self,Azkl,options)
