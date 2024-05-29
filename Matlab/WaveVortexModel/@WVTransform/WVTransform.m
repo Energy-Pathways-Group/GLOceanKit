@@ -67,7 +67,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         horizontalModes
 
-        % mean density at the surface, z=0. (kg/m3)
         rho0
 
         version = 3.0;
@@ -221,9 +220,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             
 
             % Now set the initial conditions to zero
-            self.Ap = zeros(self.Nj,self.Nkl);
-            self.Am = zeros(self.Nj,self.Nkl);
-            self.A0 = zeros(self.Nj,self.Nkl);  
+            self.Ap = zeros(self.spectralMatrixSize);
+            self.Am = zeros(self.spectralMatrixSize);
+            self.A0 = zeros(self.spectralMatrixSize);  
             
             self.clearVariableCache();
 
@@ -235,14 +234,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.operationNameMap = containers.Map();
             self.timeDependentVariablesNameMap = containers.Map();
 
+            self.primaryFlowComponentNameMap = containers.Map();
+            self.flowComponentNameMap = containers.Map();
+
             self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
             self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
             self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p','psi','qgpv'));
-
-            self.primaryFlowComponentNameMap = containers.Map();
-            self.flowComponentNameMap = containers.Map();
 
             % must use double quotes, and these need to match the cases in operationForDynamicalVariable
             self.knownDynamicalVariables = ["u","v","w","eta","p","psi","qgpv"];
@@ -715,6 +714,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % - Returns flag: a boolean
             error('Not yet implemented');
         end
+
+        [varargout] = spectralVariableWithResolution(self,wvtX2,varargin)
     end
 
     methods (Access=protected)
@@ -723,18 +724,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods (Static)
+        % Initialize the a transform from file
+        wvt = waveVortexTransformFromFile(path,iTime)
+    end
+
+    methods (Static, Hidden=true)
         dimensions = defaultDimensionAnnotations()
         transformProperties = defaultPropertyAnnotations()
         transformOperations = defaultOperations()
         variableAnnotations = defaultVariableAnnotations()
         transformMethods = defaultMethodAnnotations()
-
-        % Initialize the a transform from file
-        wvt = waveVortexTransformFromFile(path,iTime)
-        
-        [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
-        
-        varX2 = spectralVariableWithResolution(var,Nklj)
     end
         
         

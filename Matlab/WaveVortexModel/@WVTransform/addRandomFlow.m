@@ -44,6 +44,9 @@ for name = flowComponentNames
     u = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap_+self.UAm.*Am_,A0=self.UA0.*A0_);
     v = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap_+self.VAm.*Am_,A0=self.VA0.*A0_);
     ratio = options.uvMax/sqrt(max(u(:).^2 + v(:).^2));
+    if isinf(ratio)
+        ratio = 1;
+    end
     Ap = Ap+ratio*Ap_;
     Am = Am+ratio*Am_;
     A0 = A0+ratio*A0_;

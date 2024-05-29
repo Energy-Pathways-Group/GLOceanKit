@@ -1,34 +1,27 @@
-function varX2 = spectralVariableWithResolution(var,Nklj)
-% create a new variable with increased resolution
+function [varargout] = spectralVariableWithResolution(self,wvtX2,varargin)
+% create a new variable with different resolution
 %
-% Given a variable with dimensions [Nk Nl Nj], this returns a new variable
-% with the dimension Nklj.
+% Given a variable with dimensions [Nj Nkl], this returns a new variable
+% with dimensions matching wvtX2. This can be either increased or decreased
+% resolution.
 %
 % - Topic: Utility function
 % - Declaration: varX2 = spectralVariableWithResolution(var,Nklj)
-% - Parameter var: a variable with dimensions [Nk Nl Nj]
-% - Parameter Nklj: vector of size [1 3] with new dimensions, [NkX2 NlX2 NjX2]
+% - Parameter var: a variable with dimensions [Nj Nkl]
+% - Parameter wvtX2: a WVTransform of different size.
 % - Returns varX2: matrix the size Nklj
-arguments
-    var (:,:,:) double
-    Nklj (1,3) double {mustBePositive}
+
+if ~isequal(self.Lx,wvtX2.Lx) || ~isequal(self.Ly,wvtX2.Ly) || ~isequal(self.Lz,wvtX2.Lz)
+    error('These transforms are not compatible.')
 end
 
-Nk = size(var,1);
-Nl = size(var,2);
-Nj = size(var,3);
+Nkl = min(self.Nkl,wvtX2.Nkl);
+Nj = min(self.Nj,wvtX2.Nj);
 
-NkX2 = Nklj(1);
-NlX2 = Nklj(2);
-NjX2 = Nklj(3);
-
-varX2 = zeros(Nklj);
-
-if NkX2>=Nk && NlX2>=Nl && NjX2>=Nj
-    kIndices = cat(2,1:(Nk/2),(NkX2-Nk/2 + 1):NkX2);
-    lIndices = cat(2,1:(Nl/2),(NlX2-Nl/2 + 1):NlX2);
-    varX2(kIndices,lIndices,1:Nj) = var;
-else
-    error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
+varargout = cell(size(varargin));
+for iVar=1:length(varargin)
+    varargout{iVar} = zeros(wvtX2.spectralMatrixSize);
+    varargout{iVar}(1:Nj,1:Nkl) = varargin{iVar}(1:Nj,1:Nkl);
 end
+
 end
