@@ -96,13 +96,11 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function set.uv_damp(self,uv_damp)
-            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
-            self.nu_xy = effectiveGridResolution*uv_damp/(pi^2);
+            self.nu_xy = self.effectiveGridResolution*uv_damp/(pi^2);
         end
 
         function val = get.uv_damp(self)
-            effectiveGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
-            val = self.nu_xy*(pi^2)/effectiveGridResolution;
+            val = self.nu_xy*(pi^2)/self.effectiveGridResolution;
         end
 
         function buildDampingOperator(self)

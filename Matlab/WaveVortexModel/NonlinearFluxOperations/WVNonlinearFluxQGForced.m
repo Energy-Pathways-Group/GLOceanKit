@@ -68,8 +68,8 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             % - Returns varargout: cell array of returned variables
             arguments
                 self WVNonlinearFluxQGForced {mustBeNonempty}
-                A0bar (:,:,:) double {mustBeNonempty}
-                options.MA0 (:,:,:) logical = abs(A0bar) > 0
+                A0bar (:,:) double {mustBeNonempty}
+                options.MA0 (:,:) logical = abs(A0bar) > 0
                 options.tau0 (1,1) double = 0
             end
 
@@ -196,24 +196,20 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 wvt WVTransform {mustBeNonempty}
             end
             writeToFile@WVNonlinearFluxQG(self,ncfile,wvt);
-            ncfile.addVariable('MA0',int8(self.MA0),{'k','l','j'});
-            ncfile.addVariable('A0bar',self.A0bar,{'k','l','j'});
+            self.addVariableOfType(ncfile,wvt,'MA0',self.MA0,@(v) uint8(v));
+            self.addVariableOfType(ncfile,wvt,'A0bar',self.A0bar,@(v) v);
             ncfile.addVariable('tau0',self.tau0,{});
         end
 
-        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            ratio = wvtX2.Nk/self.wvt.Nk;
-            nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
-            if ~isempty(self.MA0)
-                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
+        function addVariableOfType(self,ncfile,wvt,name,var,type)
+            if isempty(var)
+                ncfile.addVariable(name,type(zeros(wvt.Nj,wvt.Nkl)),{'j','kl'});
+            else
+                ncfile.addVariable(name,type(var),{'j','kl'});
             end
-            if ~isempty(self.A0bar)
-                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
-            nlFlux.tau0 = self.tau0;
         end
 
-        function nlFlux = nonlinearFluxWithResolutionForTransform(self,wvtX2)
+        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
             ratio = wvtX2.Nk/self.wvt.Nk;
             nlFlux = WVNonlinearFluxQGForced(wvtX2,r=self.r,shouldUseBeta=(self.beta>0),nu_xy=self.nu_xy/ratio);
             if ~isempty(self.MA0)

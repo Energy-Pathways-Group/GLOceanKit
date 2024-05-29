@@ -100,10 +100,10 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             % - Parameter tauM: (optional) relaxation time (default 0)
             arguments
                 self WVNonlinearFluxForced {mustBeNonempty}
-                Apbar (:,:,:) double {mustBeNonempty}
-                Ambar (:,:,:) double {mustBeNonempty}
-                options.MAp (:,:,:) logical = abs(Apbar) > 0
-                options.MAm (:,:,:) logical = abs(Ambar) > 0
+                Apbar (:,:) double {mustBeNonempty}
+                Ambar (:,:) double {mustBeNonempty}
+                options.MAp (:,:) logical = abs(Apbar) > 0
+                options.MAm (:,:) logical = abs(Ambar) > 0
                 options.tauP (1,1) double = 0
                 options.tauM (1,1) double = 0
             end
@@ -154,8 +154,8 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             % - Parameter tau0: (optional) relaxation time
             arguments
                 self WVNonlinearFluxForced {mustBeNonempty}
-                A0bar (:,:,:) double {mustBeNonempty}
-                options.MA0 (:,:,:) logical = abs(A0bar) > 0
+                A0bar (:,:) double {mustBeNonempty}
+                options.MA0 (:,:) logical = abs(A0bar) > 0
                 options.tau0 (1,1) double = 0
             end
 
@@ -212,29 +212,14 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
-            nlFlux = WVNonlinearFluxForced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldAntialias=self.shouldAntialias);
-            if ~isempty(self.MAp)
-                nlFlux.MAp = WVTransform.spectralVariableWithResolution(self.MAp,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
-            if ~isempty(self.Apbar)
-                nlFlux.Apbar = WVTransform.spectralVariableWithResolution(self.Apbar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
+            nlFlux = WVNonlinearFluxForced(wvtX2,nu_xy=self.nu_xy/2,nu_z=self.nu_z/2,shouldUseBeta=(self.beta>0));
+            [nlFlux.MAp, nlFlux.Apbar] = self.spectralVariableWithResolution(wvtX2,self.MAp, self.Apbar);
             nlFlux.tauP = self.tauP;
 
-            if ~isempty(self.MAm)
-                nlFlux.MAm = WVTransform.spectralVariableWithResolution(self.MAm,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
-            if ~isempty(self.Ambar)
-                nlFlux.Ambar = WVTransform.spectralVariableWithResolution(self.Ambar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
+            [nlFlux.MAm, nlFlux.Ambar] = self.spectralVariableWithResolution(wvtX2,self.MAm, self.Ambar);
             nlFlux.tauM = self.tauM;
 
-            if ~isempty(self.MA0)
-                nlFlux.MA0 = WVTransform.spectralVariableWithResolution(self.MA0,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
-            if ~isempty(self.A0bar)
-                nlFlux.A0bar = WVTransform.spectralVariableWithResolution(self.A0bar,[wvtX2.Nk wvtX2.Nl wvtX2.Nj]);
-            end
+            [nlFlux.MA0, nlFlux.A0bar] = self.spectralVariableWithResolution(wvtX2,self.MA0, self.A0bar);
             nlFlux.tau0 = self.tau0;
         end
 

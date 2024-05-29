@@ -20,8 +20,12 @@ Nj = min(self.Nj,wvtX2.Nj);
 
 varargout = cell(size(varargin));
 for iVar=1:length(varargin)
-    varargout{iVar} = zeros(wvtX2.spectralMatrixSize);
-    varargout{iVar}(1:Nj,1:Nkl) = varargin{iVar}(1:Nj,1:Nkl);
+    if isempty(varargin{iVar})
+        varargout{iVar} = [];
+    else
+        varargout{iVar} = zeros(wvtX2.spectralMatrixSize);
+        varargout{iVar}(1:Nj,1:Nkl) = varargin{iVar}(1:Nj,1:Nkl);
+    end
 end
 
 end
