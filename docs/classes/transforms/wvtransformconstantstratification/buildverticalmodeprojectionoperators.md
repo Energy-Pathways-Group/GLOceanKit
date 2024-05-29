@@ -3,7 +3,7 @@ layout: default
 title: buildVerticalModeProjectionOperators
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 18
+nav_order: 19
 mathjax: true
 ---
 

@@ -84,6 +84,9 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + Differentiation
     + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
     + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
++ Other
+  + [`uMaxA0`](/classes/transforms/wvtransformhydrostatic/umaxa0.html) uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
+  + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformhydrostatic/umaxgnormratioforwave.html) 
 
 
 ---

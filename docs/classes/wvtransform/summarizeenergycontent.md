@@ -3,7 +3,7 @@ layout: default
 title: summarizeEnergyContent
 parent: WVTransform
 grand_parent: Classes
-nav_order: 165
+nav_order: 155
 mathjax: true
 ---
 

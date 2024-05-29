@@ -1,4 +1,4 @@
-classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
+classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods & WVMeanDensityAnomalyMethods & WVInternalGravityWaveMethods
     % Wave-vortex transformation that assumes constant stratification
     %
     % To initialization an instance of the
@@ -81,7 +81,12 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             self.N0 = N0;
 
             self.buildVerticalModeProjectionOperators();
-            self.initializePrimaryFlowComponents();
+
+            self.initializeStratifiedFlow();
+            self.initializeGeostrophicComponent();
+            self.initializeMeanDensityAnomalyComponent();
+            self.initializeInternalGravityWaveComponent();
+            self.initializeInertialOscillationComponent();
 
             % self.offgridModes = WVOffGridTransform(verticalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
             

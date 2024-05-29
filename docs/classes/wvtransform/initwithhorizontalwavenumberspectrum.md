@@ -1,13 +1,13 @@
 ---
 layout: default
-title: initWithHorizontalWaveNUmberSpectrum
+title: initWithHorizontalWaveNumberSpectrum
 parent: WVTransform
 grand_parent: Classes
-nav_order: 107
+nav_order: 103
 mathjax: true
 ---
 
-#  initWithHorizontalWaveNUmberSpectrum
+#  initWithHorizontalWaveNumberSpectrum
 
 initialize with a Alternative Interal Wave Spectrum in 
 

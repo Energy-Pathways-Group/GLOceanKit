@@ -28,9 +28,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % - Topic: Initial Conditions — Inertial Oscillations
     % - Topic: Initial Conditions — Geostrophic Motions
     % - Topic: Energetics
-    % - Topic: Energetics — Major Constituents
-    % - Topic: Energetics — Geostrophic Constituents
-    % - Topic: Energetics — Inertia-Gravity Wave Constituents
     %
     % - Declaration: classdef WVTransform < handle
     
@@ -109,11 +106,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         X, Y, Z
         K, L, J
 
-        Nk, Nl
         Nz
     end
 
-    properties %(Access=private)
+    properties (Access=private)
         variableAnnotationNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
@@ -147,10 +143,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Required for transformWaveVortexToUVEta
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
-
-        % Needed to add and remove internal waves from the model
-        ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-        ratio = uMaxA0(self,k0, l0, j0)
     end
     
     properties (Constant)
@@ -613,10 +605,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function energy = waveEnergy(self)
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
-        end
 
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)
@@ -694,19 +682,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        [omega,k,l] = initWithWaveModes(self, waveproperties)
-        [omega,k,l] = setWaveModes(self, waveproperties)
-        [omega,k,l] = addWaveModes(self, waveproperties) 
-        removeAllWaves(self);
-        
-        [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
-        [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
-        
-        initWithGMSpectrum(self, GMAmplitude, varargin);
-        [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
-        
-        initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
-        
         % Primary method for accessing the dynamical variables
         [varargout] = variables(self, varargin);
                         

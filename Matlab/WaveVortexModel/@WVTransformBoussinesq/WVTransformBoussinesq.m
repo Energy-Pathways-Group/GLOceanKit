@@ -1,4 +1,4 @@
-classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods
+classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOscillationMethods & WVGeostrophicMethods & WVMeanDensityAnomalyMethods & WVInternalGravityWaveMethods
     % 3D hydrostatic Boussinesq model with arbitrary stratification solved
     % in wave-vortex space
     %
@@ -157,7 +157,12 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
 
                 self.buildVerticalModeProjectionOperators();
             end
-            self.initializePrimaryFlowComponents();
+
+            self.initializeStratifiedFlow();
+            self.initializeGeostrophicComponent();
+            self.initializeMeanDensityAnomalyComponent();
+            self.initializeInternalGravityWaveComponent();
+            self.initializeInertialOscillationComponent();
 
             % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
 

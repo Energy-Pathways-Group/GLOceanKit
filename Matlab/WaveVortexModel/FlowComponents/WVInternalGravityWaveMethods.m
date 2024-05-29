@@ -25,9 +25,9 @@ classdef WVInternalGravityWaveMethods < handle
         % - nav_order: 2
         waveComponent
     end
-    % methods (Abstract)
-    %     ratio = uMaxA0(self,kMode,lMode,jMode);
-    % end
+    methods (Abstract)
+        ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
+    end
 
     methods (Access=protected)
         function initializeInternalGravityWaveComponent(self)
@@ -74,6 +74,19 @@ classdef WVInternalGravityWaveMethods < handle
         function flowComponent = get.waveComponent(self)
             flowComponent = self.flowComponent('wave');
         end       
+
+        % [omega,k,l] = initWithWaveModes(self, waveproperties)
+        % [omega,k,l] = setWaveModes(self, waveproperties)
+        % [omega,k,l] = addWaveModes(self, waveproperties)
+        % removeAllWaves(self);
+        % 
+        % [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
+        % [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
+        % 
+        % initWithGMSpectrum(self, GMAmplitude, varargin);
+        % [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin);
+        % 
+        % initWithHorizontalWaveNUmberSpectrum(GMAmplitude,options)
     end
     methods (Static, Hidden=true)
         function variableAnnotations = variableAnnotationsForInternalGravityWaveComponent()
