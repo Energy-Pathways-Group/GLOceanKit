@@ -52,6 +52,34 @@ classdef WVStratifiedFlow < handle
             end
             effectiveVerticalGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
         end
+
+        function throwErrorIfDensityViolation(self,options)
+            % checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
+            %
+            % Given some proposed new set of values for A0, Ap, Am, will
+            % the fluid state violate our density condition? If yes, then
+            % throw an error and tell the user about it.
+            arguments
+                self WVGeostrophicMethods
+                options.Ap double = 0
+                options.Am double = 0
+                options.A0 double = 0
+                options.additionalErrorInfo = sprintf(' ');
+            end
+            % Trying to be extra careful here, so we include the wave part
+            % of the flow because we do not really know how everything will
+            % add together in the end.
+            rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0,Apm=self.NAp.*options.Ap + self.NAm.*options.Am);
+            densityViolation = any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm));
+            if densityViolation == 1
+                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
+                minString = sprintf('\tminimum density: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
+                maxString = sprintf('\tmaximum density: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
+                errorStruct.message = [errorString,options.additionalErrorInfo,minString,maxString];
+                errorStruct.identifier = 'WVTransform:DensityBoundsViolation';
+                error(errorStruct);
+            end
+        end
     end
 
     methods (Access=protected)
@@ -117,34 +145,6 @@ classdef WVStratifiedFlow < handle
                 self WVTransform
             end
             self.addPropertyAnnotations(WVStratifiedFlow.propertyAnnotationsForStratifiedFlow);
-        end
-
-        function throwErrorIfDensityViolation(self,options)
-            % checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
-            %
-            % Given some proposed new set of values for A0, Ap, Am, will
-            % the fluid state violate our density condition? If yes, then
-            % throw an error and tell the user about it.
-            arguments
-                self WVGeostrophicMethods
-                options.Ap double = 0
-                options.Am double = 0
-                options.A0 double = 0
-                options.additionalErrorInfo = sprintf(' ');
-            end
-            % Trying to be extra careful here, so we include the wave part
-            % of the flow because we do not really know how everything will
-            % add together in the end.
-            rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0,Apm=self.NAp.*options.Ap + self.NAm.*options.Am);
-            densityViolation = any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm));
-            if densityViolation == 1
-                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
-                minString = sprintf('\tminimum density: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
-                maxString = sprintf('\tmaximum density: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
-                errorStruct.message = [errorString,options.additionalErrorInfo,minString,maxString];
-                errorStruct.identifier = 'WVTransform:DensityBoundsViolation';
-                error(errorStruct);
-            end
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)

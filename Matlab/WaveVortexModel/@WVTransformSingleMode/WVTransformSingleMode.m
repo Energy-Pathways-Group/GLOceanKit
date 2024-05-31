@@ -191,31 +191,6 @@ classdef WVTransformSingleMode < WVTransform & WVGeostrophicMethods
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Energetics and enstrophy
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-%         function value = get.Apm_TE_factor(self)
-%             value = repmat(self.h,self.Nx,self.Ny); % factor of 2 larger than in the manuscript
-% %             value(:,:,1) = self.Lz;
-%         end
-% 
-%         function value = get.A0_HKE_factor(self)
-%             [K,L,~] = ndgrid(self.k,self.l,self.j);
-%             K2 = K.*K + L.*L;
-% 
-%             value = (self.g^2/(self.f*self.f)) * K2 .* self.Apm_TE_factor/2;
-%         end
-%         function value = get.A0_PE_factor(self)
-%             value = self.g*ones(self.Nk,self.Nl,self.Nj)/2;
-%         end
-% 
-%         function value = get.A0_TE_factor(self)
-%             value = self.A0_HKE_factor + self.A0_PE_factor;
-%         end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
         % Transformations TO0 the spatial domain
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -295,10 +270,10 @@ classdef WVTransformSingleMode < WVTransform & WVGeostrophicMethods
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            ratio = 1/self.P(j0+1);
+        function ratio = maxFw(self,kMode,lMode,j)
+            ratio = 1/self.P(j+1);
         end
-        function ratio = uMaxA0(self,k0, l0, j0)
+        function ratio = maxFg(self,k0, l0, j0)
             ratio = 1/self.P(j0+1);
         end
 

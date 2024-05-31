@@ -9,7 +9,7 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
         Nxyz = struct('Nx64Ny64Nz30',[64 64 40]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'constant'};
+        transform = {'boussinesq'};
     end
 
     methods (TestClassSetup)
@@ -36,7 +36,9 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
             % the same as the initial total, minus the initial geostrophic.
             self.wvt.removeAll();
 
-            self.wvt.initWithRandomFlow();
+            % currently we need to make this small-ish to avoid density
+            % overturns.
+            self.wvt.initWithRandomFlow(uvMax=0.05);
 
             initialTotalEnergy = self.wvt.totalEnergy;
             initialGeostrophicEnergy = self.wvt.geostrophicEnergy;
@@ -137,6 +139,52 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
             self.verifyThat(v(self.wvt.X,self.wvt.Y,self.wvt.Z),IsSameSolutionAs(self.wvt.v,relTol=1e-3),'v');
             self.verifyThat(rho_e(self.wvt.X,self.wvt.Y,self.wvt.Z),IsSameSolutionAs(self.wvt.rho_e,relTol=1e-3),'rho_e');
             self.verifyThat(psi(self.wvt.X,self.wvt.Y,self.wvt.Z),IsSameSolutionAs(self.wvt.psi,relTol=1e-3),'psi');
+        end
+
+        function testSetGeostrophicModes(self)
+            self.wvt.removeAll();
+
+            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.1;
+
+            self.wvt.setGeostrophicModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u);
+
+            soln = self.wvt.geostrophicComponent.geostrophicSolution(kMode,lMode,j,u,phi,amplitudeIsMaxU=1);
+
+            self.wvt.t = 86400;
+            args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+            self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
+            self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
+            self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
+            self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
+            self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+            self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
+
+            self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
+        end
+
+        function testAddGeostrophicModes(self)
+            self.wvt.removeAll();
+
+            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.1;
+            self.wvt.setGeostrophicModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u);
+            soln1 = self.wvt.geostrophicComponent.geostrophicSolution(kMode,lMode,j,u,phi,amplitudeIsMaxU=1);
+
+            kMode = 4; lMode = 1; j=2; phi = pi*0.1; u=0.05;
+            self.wvt.addGeostrophicModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u);
+            soln2 = self.wvt.geostrophicComponent.geostrophicSolution(kMode,lMode,j,u,phi,amplitudeIsMaxU=1);
+
+            self.wvt.t = 86400;
+            args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+            self.verifyThat(self.wvt.u,IsSameSolutionAs(soln1.u(args{:})+soln2.u(args{:})),'u');
+            self.verifyThat(self.wvt.v,IsSameSolutionAs(soln1.v(args{:})+soln2.v(args{:})),'v');
+            self.verifyThat(self.wvt.w,IsSameSolutionAs(soln1.w(args{:})+soln2.w(args{:})),'w');
+            self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln1.eta(args{:})+soln2.eta(args{:})),'eta');
+            self.verifyThat(self.wvt.p,IsSameSolutionAs(soln1.p(args{:})+soln2.p(args{:})),'p');
+            self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln1.qgpv(args{:})+soln2.qgpv(args{:})),'qgpv');
+
+            self.verifyEqual(self.wvt.totalEnergy,soln1.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic)+soln2.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln1.depthIntegratedTotalEnstrophy+soln2.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
         end
 
     end

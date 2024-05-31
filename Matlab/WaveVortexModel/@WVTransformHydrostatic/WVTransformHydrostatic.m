@@ -305,20 +305,24 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            ratio = 1/self.P0(j0+1);
-        end
-
-        function ratio = uMaxA0(self,kMode,lMode,jMode)
+        function ratio = maxFw(self,kMode,lMode,j)
             arguments
                 self WVTransform {mustBeNonempty}
                 kMode (:,1) double
                 lMode (:,1) double
-                jMode (:,1) double
+                j (:,1) double
             end
-            % uvMax for a geostrophic mode is uvMax =(g/f)*Kh*max(F_j)*abs(A0)
-            indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            ratio = (self.g/self.f)*self.Kh(indices)*self.P0(jMode+1);
+            ratio = self.P0(j+1);
+        end
+
+        function ratio = maxFg(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
         end
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)

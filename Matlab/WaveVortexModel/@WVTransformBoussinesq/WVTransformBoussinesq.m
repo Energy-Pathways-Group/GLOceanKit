@@ -439,17 +439,24 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            ratio = 1/self.P0(j0+1);
-        end   
-
-        function ratio = uMaxA0(self,k0, l0, j0)
-            error('This is pulled straight from hydrostatic and must be updated.')
-            if j0 == 0
-                ratio = 1;
-            else
-                ratio = abs(1/self.F_g(k0+1,l0+1,j0+1));
+        function ratio = maxFw(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
             end
+            ratio = self.P0(j+1);
+        end
+
+        function ratio = maxFg(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
         end
 
         [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)

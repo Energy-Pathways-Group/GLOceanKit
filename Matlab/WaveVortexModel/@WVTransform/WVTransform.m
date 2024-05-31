@@ -163,6 +163,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 end
             elseif isKey(self.operationNameMap,indexOp(1).Name)
                 [varargout{:}] = self.performOperation(self.operationNameMap(indexOp(1).Name));
+            else
+                error("WVTransform:UnknownVariable","The variable %s does not exist",indexOp(1).Name);
             end
             
         end

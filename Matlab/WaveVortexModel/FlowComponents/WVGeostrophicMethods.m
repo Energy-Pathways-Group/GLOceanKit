@@ -21,7 +21,7 @@ classdef WVGeostrophicMethods < handle
         geostrophicComponent
     end
     methods (Abstract)
-        ratio = uMaxA0(self,kMode,lMode,jMode);
+        ratio = maxFg(self,kMode,lMode,jMode);
     end
 
     methods (Access=protected)
@@ -136,9 +136,9 @@ classdef WVGeostrophicMethods < handle
             % - Declaration: initWithGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 1
-            self.Ap = zeros(size(self.Ap));
-            self.Am = zeros(size(self.Am));
-            self.A0 = zeros(size(self.A0));
+            self.Ap = zeros(self.spectralMatrixSize);
+            self.Am = zeros(self.spectralMatrixSize);
+            self.A0 = zeros(self.spectralMatrixSize);
             self.setGeostrophicStreamfunction(psi);
         end
 
@@ -283,11 +283,10 @@ classdef WVGeostrophicMethods < handle
                 options.u (:,1) double
             end
 
-            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.j,options.u,options.phi);
-            ratio = self.uMaxA0(kMode,lMode,jMode);
-            A0_indices = u.*exp(sqrt(-1)*phi)./(2*ratio);
+            [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.j,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-
+            A0_indices = (self.f/self.g)*u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
+            
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
             A0_(indices) = A0_indices;
@@ -324,10 +323,9 @@ classdef WVGeostrophicMethods < handle
                 options.u (:,1) double
             end
 
-            [kMode,lMode,jMode,u,phi] = self.flowComponent('geostrophic').normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
-            ratio = self.uMaxA0(kMode,lMode,jMode);
-            A0_indices = u.*exp(sqrt(-1)*phi)./(2*ratio);
+            [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
+            A0_indices = (self.f/self.g)*u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
 
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
@@ -353,7 +351,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Initial conditions — Geostrophic Motions
             % - Declaration: removeAllGeostrophicMotions()     
             % - nav_order: 6
-            self.A0(logical(self.flowComponent('geostrophic').maskA0)) = 0;
+            self.A0(logical(self.geostrophicComponent.maskA0)) = 0;
         end
 
        

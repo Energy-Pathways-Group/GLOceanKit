@@ -26,7 +26,7 @@ classdef WVInternalGravityWaveMethods < handle
         waveComponent
     end
     methods (Abstract)
-        ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
+        ratio = maxFw(self,kMode,lMode,j)
     end
 
     methods (Access=protected)
@@ -84,7 +84,7 @@ classdef WVInternalGravityWaveMethods < handle
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
         end
 
-        function [omega,k,l] = initWithWaveModes(self, waveproperties)
+        function [omega,k,l] = initWithWaveModes(self, options)
             % initialize with the given wave modes
             %
             % $$
@@ -93,140 +93,126 @@ classdef WVInternalGravityWaveMethods < handle
             %
             % Clears variables Ap,Am,A0 and then sets the given wave modes.
             % - Topic: Initial conditions — Waves
-            % - Declaration: [omega,k,l] = initWithWaveModes( kMode, lMode, jMode, phi, Amp, signs)
-            % - Parameter k: integer index, (k0 > -Nx/2 && k0 < Nx/2)
-            % - Parameter l: integer index, (l0 > -Ny/2 && l0 < Ny/2)
+            % - Declaration: [omega,k,l] = initWithWaveModes(kMode, lMode, j, phi, u, sign)
+            % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
+            % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
             % - Parameter j: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter u: fluid velocity u (m/s)
+            % - Parameter u: fluid velocity (m/s)
             % - Parameter sign: sign of the frequency, +1 or -1
             % - Returns omega: frequencies of the waves (radians/s)
             % - Returns k: wavenumber k of the waves (radians/m)
             % - Returns l: wavenumber l of the waves (radians/m)
             arguments
                 self WVTransform {mustBeNonempty}
-                waveproperties.k (1,1) double
-                waveproperties.l (1,1) double
-                waveproperties.j (1,1) double
-                waveproperties.phi (1,1) double
-                waveproperties.u (1,1) double
-                waveproperties.sign (1,1) double
+                options.kMode (:,1) double
+                options.lMode (:,1) double
+                options.j (:,1) double
+                options.phi (:,1) double = 0
+                options.u (:,1) double
+                options.sign (:,1) double
             end
-            self.Ap = zeros(size(self.Ap));
-            self.Am = zeros(size(self.Am));
-            self.A0 = zeros(size(self.A0));
+            self.Ap = zeros(self.spectralMatrixSize);
+            self.Am = zeros(self.spectralMatrixSize);
+            self.A0 = zeros(self.spectralMatrixSize);
 
-            [omega,k,l] = self.setWaveModes(k=waveproperties.k,l=waveproperties.l,j=waveproperties.j,phi=waveproperties.phi,u=waveproperties.u,sign=waveproperties.sign);
-
+            [omega,k,l] = self.setWaveModes(kMode=options.kMode,lMode=options.lMode,j=options.j,phi=options.phi,u=options.u,sign=options.sign);
         end
 
-        function [omega,k,l] = setWaveModes(self, waveproperties)
+        function [omega,k,l] = setWaveModes(self, options)
             % set amplitudes of the given wave modes
             %
             % Overwrite any existing wave modes with the given new values
             % - Topic: Initial conditions — Waves
-            % - Declaration: [omega,k,l] = setWaveModes(kMode, lMode, jMode, phi, u, signs)
+            % - Declaration: [omega,k,l] = setWaveModes(kMode, lMode, j, phi, u, sign)
             % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
             % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
-            % - Parameter jMode: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
+            % - Parameter j: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter Amp: fluid velocity u (m/s)
+            % - Parameter u: fluid velocity (m/s)
             % - Parameter sign: sign of the frequency, +1 or -1
             % - Returns omega: frequencies of the waves (radians/s)
             % - Returns k: wavenumber k of the waves (radians/m)
             % - Returns l: wavenumber l of the waves (radians/m)
             arguments
                 self WVTransform {mustBeNonempty}
-                waveproperties.k (:,1) double
-                waveproperties.l (:,1) double
-                waveproperties.j (:,1) double
-                waveproperties.phi (:,1) double
-                waveproperties.u (:,1) double
-                waveproperties.sign (:,1) double
+                options.kMode (:,1) double
+                options.lMode (:,1) double
+                options.j (:,1) double
+                options.phi (:,1) double = 0
+                options.u (:,1) double
+                options.sign (:,1) double
             end
 
-            kMode = waveproperties.k;
-            lMode = waveproperties.l;
-            jMode = waveproperties.j;
-            phi = waveproperties.phi;
-            u = waveproperties.u;
-            signs = waveproperties.sign;
+            [kMode,lMode,j,u,phi,omegasign] = self.waveComponent.normalizeWaveModeProperties(options.kMode, options.lMode, options.j, options.u, options.phi, options.sign);
+            ratio = self.maxFw(kMode,lMode,j);
+            A = u.*exp(sqrt(-1)*phi)/(2*ratio);
+            indices = self.indexFromModeNumber(kMode,lMode,j);
 
-            [kIndex,lIndex,jIndex,ApAmp,AmAmp] = self.waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs);
-            self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = ApAmp(abs(ApAmp)>0);
-            self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = AmAmp(abs(AmAmp)>0);
+            Ap_ = self.Ap;
+            Am_ = self.Am;
+            Ap_(indices(omegasign>0)) = A(omegasign>0);
+            Am_(indices(omegasign<0)) = A(omegasign<0);
+            self.throwErrorIfDensityViolation(A0=self.A0,Ap=Ap_,Am=Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
+            self.Ap(indices(omegasign>0)) = A(omegasign>0);
+            self.Am(indices(omegasign<0)) = A(omegasign<0);
 
-            self.Ap = WVTransform.makeHermitian(self.Ap);
-            self.Am = WVTransform.makeHermitian(self.Am);
-
-            % When we hand back the actual frequency and wavenumbers, but we honor the
-            % users original intent and the match the signs they provided.
-            kMode(kMode<0) = kMode(kMode<0) + self.Nx;
-            lMode(lMode<0) = lMode(lMode<0) + self.Ny;
-            linearIndices = sub2ind(size(self.Ap),kMode+1,lMode+1,jIndex);
-            omegaT = self.Omega;
-            omega = signs.*abs(omegaT(linearIndices));
-            [K,L,~] = self.kljGrid;
-            k = K(linearIndices);
-            l = L(linearIndices);
+            k = self.K(indices);
+            l = self.L(indices);
+            omega = self.Omega(indices);
         end
-        function [omega,k,l] = addWaveModes(self, waveproperties)
+        function [omega,k,l] = addWaveModes(self, options)
             % add amplitudes of the given wave modes
             %
             % Add new amplitudes to any existing amplitudes
             % - Topic: Initial conditions — Waves
-            % - Declaration: [omega,k,l] = addWaveModes(self, kMode, lMode, jMode, phi, u, signs)
-            % - Parameter k: integer index, (k0 > -Nx/2 && k0 < Nx/2)
-            % - Parameter l: integer index, (l0 > -Ny/2 && l0 < Ny/2)
+            % - Declaration: [omega,k,l] = addWaveModes(kMode, lMode, j, phi, u, sign)
+            % - Parameter kMode: integer index, (k0 > -Nx/2 && k0 < Nx/2)
+            % - Parameter lMode: integer index, (l0 > -Ny/2 && l0 < Ny/2)
             % - Parameter j: integer index, (j0 >= 1 && j0 <= nModes), unless k=l=0 in which case j=0 is okay (inertial oscillations)
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
-            % - Parameter u: fluid velocity u (m/s)
+            % - Parameter u: fluid velocity (m/s)
             % - Parameter sign: sign of the frequency, +1 or -1
             % - Returns omega: frequencies of the waves (radians/s)
             % - Returns k: wavenumber k of the waves (radians/m)
             % - Returns l: wavenumber l of the waves (radians/m)
             arguments
                 self WVTransform {mustBeNonempty}
-                waveproperties.k (:,1) double
-                waveproperties.l (:,1) double
-                waveproperties.j (:,1) double
-                waveproperties.phi (:,1) double
-                waveproperties.u (:,1) double
-                waveproperties.sign (:,1) double
+                options.kMode (:,1) double
+                options.lMode (:,1) double
+                options.j (:,1) double
+                options.phi (:,1) double = 0
+                options.u (:,1) double
+                options.sign (:,1) double
             end
-            kMode = waveproperties.k;
-            lMode = waveproperties.l;
-            jMode = waveproperties.j;
-            phi = waveproperties.phi;
-            u = waveproperties.u;
-            signs = waveproperties.sign;
 
-            [kIndex,lIndex,jIndex,ApAmp,AmAmp] = self.waveCoefficientsFromWaveModes(kMode, lMode, jMode, phi, u, signs);
-            self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0)) = ApAmp(abs(ApAmp)>0) + self.Ap(kIndex(abs(ApAmp)>0),lIndex(abs(ApAmp)>0),jIndex(abs(ApAmp)>0));
-            self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0)) = AmAmp(abs(AmAmp)>0) + self.Am(kIndex(abs(AmAmp)>0),lIndex(abs(AmAmp)>0),jIndex(abs(AmAmp)>0));
+            [kMode,lMode,j,u,phi,omegasign] = self.waveComponent.normalizeWaveModeProperties(options.kMode, options.lMode, options.j, options.u, options.phi, options.sign);
+            ratio = self.maxFw(kMode,lMode,j);
+            A = u.*exp(sqrt(-1)*phi)/(2*ratio);
+            indices = self.indexFromModeNumber(kMode,lMode,j);
 
-            self.Ap = WVTransform.makeHermitian(self.Ap);
-            self.Am = WVTransform.makeHermitian(self.Am);
+            Ap_ = self.Ap;
+            Am_ = self.Am;
+            Ap_(indices(omegasign>0)) = Ap_(indices(omegasign>0)) + A(omegasign>0);
+            Am_(indices(omegasign<0)) = Am_(indices(omegasign<0)) + A(omegasign<0);
+            self.throwErrorIfDensityViolation(A0=self.A0,Ap=Ap_,Am=Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
+            self.Ap = Ap_;
+            self.Am = Am_;
 
-            % When we hand back the actual frequency and wavenumbers, but we honor the
-            % users original intent and the match the signs they provided.
-            kMode(kMode<0) = kMode(kMode<0) + self.Nx;
-            lMode(lMode<0) = lMode(lMode<0) + self.Ny;
-            linearIndices = sub2ind(size(self.Ap),kMode+1,lMode+1,jIndex);
-            omegaT = self.Omega;
-            omega = signs.*abs(omegaT(linearIndices));
-            [K,L,~] = self.kljGrid;
-            k = K(linearIndices);
-            l = L(linearIndices);
+            k = self.K(indices);
+            l = self.L(indices);
+            omega = self.Omega(indices);
         end
+
         function removeAllWaves(self)
             % removes all wave from the model, including inertial oscillations
             %
             % Simply sets Ap and Am to zero.
             % - Topic: Initial conditions — Waves
-            self.Ap = 0*self.Ap;
-            self.Am = 0*self.Am;
+            self.Ap(logical(self.waveComponent.maskAp)) = 0;
+            self.Am(logical(self.waveComponent.maskAm)) = 0;
         end
+
         function [kIndex,lIndex,jIndex,ApAmp,AmAmp] = waveCoefficientsFromWaveModes(self, kMode, lMode, jMode, phi, u, signs)
             % Returns the indices (and re-normalized values) of the wave mode appropriate for the Ap, Am matrices.
             %
@@ -316,7 +302,7 @@ classdef WVInternalGravityWaveMethods < handle
                     kNorm(iMode) = self.Nx + kNorm(iMode);
                 end
 
-                ratio = self.uMaxGNormRatioForWave(kNorm(iMode), lNorm(iMode), jNorm(iMode));
+                ratio = self.maxFw(kNorm(iMode), lNorm(iMode), jNorm(iMode));
                 A = uNorm(iMode)*ratio/2*exp(sqrt(-1)*phiNorm(iMode));
                 if lNorm(iMode) == 0 && kNorm(iMode) == 0
                     ApAmp(iMode) = A;

@@ -538,18 +538,31 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function ratio = uMaxGNormRatioForWave(self,k0, l0, j0)
-            if j0 == 0
+        function ratio = maxFw(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            if j == 0
                 ratio = 1;
             else
-                ratio = abs(self.F_wg(k0+1,l0+1,j0+1)/self.F_g(k0+1,l0+1,j0+1));
+                ratio = abs(self.F_wg(indices)./self.F_g(indices));
             end
         end
-        function ratio = uMaxA0(self,k0, l0, j0)
-            if j0 == 0
+        function ratio = maxFg(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            if j == 0
                 ratio = 1;
             else
-                ratio = abs(1/self.F_g(k0+1,l0+1,j0+1));
+                indices = self.indexFromModeNumber(kMode,lMode,j);
+                ratio = abs(self.F_g(indices));
             end
         end  
         

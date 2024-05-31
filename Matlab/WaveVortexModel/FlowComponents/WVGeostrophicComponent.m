@@ -274,6 +274,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                 A (1,1) double
                 phi (1,1) double
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
+                options.amplitudeIsMaxU (1,1) logical {mustBeMember(options.amplitudeIsMaxU,[0 1])} = 0
             end
             arguments (Output)
                 solution (1,1) WVOrthogonalSolution
@@ -291,6 +292,10 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
+
+            if options.amplitudeIsMaxU == 1
+                A = A*wvt.f/abs((wvt.g*sqrt(k*k+l*l)*norm*h*m));
+            end
 
             if jMode == 0
                 G = @(z) zeros(size(z));
