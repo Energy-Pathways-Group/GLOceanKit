@@ -1,6 +1,6 @@
  % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [16 16 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5]);
-wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [32 32 10], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 % wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [32 32 17]);
 
@@ -9,7 +9,12 @@ wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [8 8 5], N2=@(z) (5.2e-3)*(5.2e
 % catch ME
 %     disp(ME)
 % end
-
+%%
+wvt.removeAll();
+kMode = -3; lMode = -5; j=3; phi = pi*0.3; u=0.1; sign = +1;
+wvt.t = 22654;
+wvt.setWaveModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u,sign=sign);
+soln = wvt.waveComponent.internalGravityWaveSolution(kMode,lMode,j,u,phi,sign,amplitudeIsMaxU=1,t=wvt.t);
 %%
 % flowComponent = WVMeanDensityAnomalyComponent(wvt);
 flowComponent = WVInternalGravityWaveComponent(wvt);

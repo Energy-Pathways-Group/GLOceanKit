@@ -181,7 +181,6 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             end
             isValidConjugate = self.isValidConjugateModeNumber(kMode,lMode,jMode);
             
-            % Geostrophic modes have the following symmetry for conjugates:
             kMode(isValidConjugate) = -kMode(isValidConjugate);
             lMode(isValidConjugate) = -lMode(isValidConjugate);
             A(isValidConjugate) = -A(isValidConjugate);
@@ -203,6 +202,8 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
             % - Parameter omegasign: sign of omega, [-1 1]
             % - Parameter shouldAssumeConstantN: (optional) default 1
+            % - Parameter amplitudeIsMaxU: (optional) default 0
+            % - Parameter t: (optional) time of observation, default 0
             % - Returns u: fluid velocity, u = @(x,y,z,t)
             % - Returns v: fluid velocity, v = @(x,y,z,t)
             % - Returns w: fluid velocity, w = @(x,y,z,t)
@@ -217,18 +218,21 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
                 phi (1,1) double
                 omegasign (1,1) double {mustBeMember(omegasign,[-1 1])}
                 options.shouldAssumeConstantN (1,1) logical {mustBeMember(options.shouldAssumeConstantN,[0 1])} = 1
+                options.amplitudeIsMaxU (1,1) logical {mustBeMember(options.amplitudeIsMaxU,[0 1])} = 0
+                options.t (1,1) double = 0
             end
             arguments (Output)
                 solution (1,1) WVOrthogonalSolution
             end
             wvt = self.wvt;
+
+            [kMode,lMode,jMode,A,phi,omegasign] = self.normalizeWaveModeProperties(kMode,lMode,jMode,A,phi,omegasign);
             if omegasign > 0
                 coefficientMatrix = WVCoefficientMatrix.Ap;
             else
                 coefficientMatrix = WVCoefficientMatrix.Am;
             end
 
-            [kMode,lMode,jMode,A,phi,omegasign] = self.normalizeWaveModeProperties(kMode,lMode,jMode,A,phi,omegasign);
             index = wvt.indexFromModeNumber(kMode,lMode,jMode);
             if options.shouldAssumeConstantN == 1
                 N0=5.2e-3;
@@ -254,6 +258,12 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             omega = omegasign*sqrt( wvt.g*h*(k^2+l^2) + wvt.f^2 );
             f0OverOmega = wvt.f/omega;
             kOverOmega = K/omega;
+
+            if options.amplitudeIsMaxU == 1
+                A = A/abs(norm*h*m);
+            end
+            % note that omega includes the sign already!
+            phi = phi - omega*options.t;
 
             theta = @(x,y,t) k*x + l*y + omega*t + phi;
             u = @(x,y,z,t) A*(cos(alpha)*cos( theta(x,y,t) ) + f0OverOmega*sin(alpha)*sin( theta(x,y,t) )).*F(z);

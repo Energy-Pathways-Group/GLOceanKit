@@ -13,7 +13,8 @@ runner.addPlugin(plugin)
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestSpectralDifferentiationZ);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestNonlinearFlux);
  % diffTest = matlab.unittest.TestSuite.fromClass(?TestInertialOscillationMethods);
-diffTest = matlab.unittest.TestSuite.fromClass(?TestGeostrophicMethods);
+% diffTest = matlab.unittest.TestSuite.fromClass(?TestGeostrophicMethods);
+diffTest = matlab.unittest.TestSuite.fromClass(?TestInternalGravityWaveMethods);
 result = runner.run(diffTest);
 
 % generateHTMLReport(result);

@@ -261,6 +261,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             % - Parameter A: amplitude in m.
             % - Parameter phi: phase in radians, (0 <= phi <= 2*pi)
             % - Parameter shouldAssumeConstantN: (optional) default 1
+            % - Parameter amplitudeIsMaxU: (optional) default 0
             % - Returns u: fluid velocity, u = @(x,y,z,t)
             % - Returns v: fluid velocity, v = @(x,y,z,t)
             % - Returns w: fluid velocity, w = @(x,y,z,t)
