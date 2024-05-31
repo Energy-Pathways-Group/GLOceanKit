@@ -39,20 +39,6 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             end
         end
 
-        function [Ap,Am,A0] = randomAmplitudes(self)
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                Ap double
-                Am double
-                A0 double
-            end
-            Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-            A0 = zeros(self.wvt.spectralMatrixSize);
-        end
-
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
             % returns the total energy multiplier for the coefficient matrix.
             %

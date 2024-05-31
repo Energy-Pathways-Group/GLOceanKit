@@ -100,7 +100,7 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             mask = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function [Ap,Am,A0] = randomAmplitudes(self)
+        function [Ap,Am,A0] = randomAmplitudes(self,options)
             % returns random amplitude for a valid flow state
             %
             % Returns Ap, Am, A0 matrices initialized with random amplitude
@@ -114,6 +114,7 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             % - Returns A0: matrix of size [Nj Nkl]
             arguments (Input)
                 self WVFlowComponent {mustBeNonempty}
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
             end
             arguments (Output)
                 Ap double
@@ -123,6 +124,38 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             Ap = zeros(self.wvt.spectralMatrixSize);
             Am = zeros(self.wvt.spectralMatrixSize);
             A0 = zeros(self.wvt.spectralMatrixSize);
+
+            validModes = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            if any(validModes(:))
+                A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                A0(~validModes) = 0;
+                if options.shouldOnlyRandomizeOrientations == 1
+                    A0(logical(validModes)) = A0(logical(validModes)) ./ abs(A0(logical(validModes)));
+                end
+            end
+
+            validModes = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+            if any(validModes(:))
+                Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                Ap(~validModes) = 0;
+                if options.shouldOnlyRandomizeOrientations == 1
+                    Ap(logical(validModes)) = Ap(logical(validModes)) ./ abs(Ap(logical(validModes)));
+                end
+
+                conjugateModes = self.maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+                if any(conjugateModes(:))
+                    Am(logical(conjugateModes)) = conj(Ap(logical(validModes)));
+                end
+            end
+
+            validModes = self.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+            if any(validModes(:))
+                Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                Am(~validModes) = 0;
+                if options.shouldOnlyRandomizeOrientations == 1
+                    Am(logical(validModes)) = Am(logical(validModes)) ./ abs(Am(logical(validModes)));
+                end
+            end
         end
 
         function [Ap,Am,A0] = randomAmplitudesWithSpectrum(self,options)
@@ -148,7 +181,7 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
                 ApmSpectrum = options.ApmSpectrum;
             end
             
-            [Ap,Am,A0] = self.randomAmplitudes;
+            [Ap,Am,A0] = self.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
 
             wvt = self.wvt;
             dk = wvt.kRadial(2)-wvt.kRadial(1);
@@ -162,12 +195,6 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
                     energyPerApmComponent = integral(@(k) ApmSpectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
                     Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
                     Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
-
-                    if options.shouldOnlyRandomizeOrientations == 1
-                        A0(indicesForK) = A0(indicesForK) ./ abs(A0(indicesForK));
-                        Ap(indicesForK) = Ap(indicesForK) ./ abs(Ap(indicesForK));
-                        Am(indicesForK) = Am(indicesForK) ./ abs(Am(indicesForK));
-                    end
                 end
             end
             A0(isnan(A0)) = 0;

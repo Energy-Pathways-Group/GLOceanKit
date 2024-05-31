@@ -214,377 +214,142 @@ classdef WVInternalGravityWaveMethods < handle
             self.Am(logical(self.waveComponent.maskAm)) = 0;
         end
 
-        function [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
-            % Returns normalized amplitudes and phases of all waves
-            %
-            % This returns the properties of the waves being used in the
-            % gridded simulation, as their properly normalized individual
-            % wave components. Very useful for debugging.
-            %
-            % Note that A_plus and A_minus each have half the inertial
-            % energy. This can be misleading, but the phasing is chosen to
-            % make it work. Never-the-less, we double/zero that component.
-            %
-            % - Topic: Initial conditions — Waves
-            % - Declaration: [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients()
-            A_p = self.Ap;
-            A_p(1,1,:) = 2*A_p(1,1,:);
-            A_m = self.Am;
-            A_m(1,1,:) = 0*A_m(1,1,:);
-
-            [K,L,J] = self.kljGrid;
-            Omega = self.Omega;
-
-            [A_plus,phi_plus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_p);
-            omega_plus = Omega(linearIndex);
-            mode_plus = J(linearIndex);
-            alpha_plus = atan2(L(linearIndex),K(linearIndex));
-            k_plus = K(linearIndex);
-            l_plus = L(linearIndex);
-
-            [A_minus,phi_minus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_m);
-            omega_minus = -Omega(linearIndex);
-            mode_minus = J(linearIndex);
-            alpha_minus = atan2(L(linearIndex),K(linearIndex));
-            k_minus = K(linearIndex);
-            l_minus = L(linearIndex);
-
-            k = [k_plus; k_minus];
-            l = [l_plus; l_minus];
-            omega = [omega_plus; omega_minus];
-            mode = [mode_plus; mode_minus];
-            alpha = [alpha_plus; alpha_minus];
-            phi = [phi_plus; phi_minus];
-            A = [A_plus; A_minus];
-            norm = Normalization.kConstant;
-        end
-        function initWithGMSpectrum(self, GMAmplitude, varargin)
-            % initialize with a Garrett-Munk spectrum
-            %
-            % This only initializes the wave components, A0 is left untouched.
-            %
-            % - Topic: Initial conditions — Waves
-            % - Declaration: initWithGMSpectrum( GMAmplitude, varargin)
-            if mod(length(varargin),2) ~= 0
-                error('Arguments must be given as name/value pairs.');
+        function initWithFrequencySpectrum(self,options)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.ApmSpectrum = @isempty
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
             end
 
-            % Set defaults
-            j_star = 3;
+            if isequal(options.ApmSpectrum,@isempty)
+                ApmSpectrum = @(omega,j) ones(size(k));
+            else
+                ApmSpectrum = options.ApmSpectrum;
+            end
+            
+            % We let the spectrum be defined over inertial and wave modes.
+            % Perhaps the correct way to do this is to create a flow
+            % component with the correct number of modes.
+            [Ap_rand,Am_rand,~] = self.waveComponent.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
+            [Ap_io,Am_io,~] = self.inertialComponent.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
+            Ap_rand = Ap_rand + Ap_io;
+            Am_rand = Am_rand + Am_io;
 
-            % Now override the defaults with user settings
-            for iArg = 1:2:length(varargin)
-                if strcmp(varargin{iArg}, 'j_star')
-                    j_star = varargin{iArg+1};
-                    varargin(iArg+1) = [];
-                    varargin(iArg) = [];
-                    break;
+            % Rather than renormalize the randomized modes, we copy modes
+            % once we've touched them. This is good because starting our
+            % for-loop at j=1 means we've neglected the j=0 mode, and thus
+            % it would be left untouched.
+            Ap_ = zeros(self.spectralMatrixSize);
+            Am_ = zeros(self.spectralMatrixSize);
+
+            % This loops adds energy to each unique frequency, for each j.
+            % It does this by integrating the energy spectrum from the
+            % point midway between the frequency to the left, to the
+            % point midway between the frequency to the right.
+            allIndices = (1:numel(self.Omega)).';
+            for j=1:max(self.j) % start at j=1---no barotropic mode!
+                indicesForJ = allIndices(self.J == j);
+                [sortedOmegas, sortedOmegasIndices] = sort(self.Omega(indicesForJ));
+                indicesForJ = indicesForJ(sortedOmegasIndices); % contains the indices back to the Ap matrix
+                omegaDiffIndices = find(diff(sortedOmegas) > 0);
+
+                lastIdx = 1;
+                omega0 = sortedOmegas(lastIdx); % current omega we will be assigning energy to
+                leftDeltaOmega = 0;
+                totalEnergyAdded = 0;
+                for idx=omegaDiffIndices'
+                    indicesForOmega = indicesForJ(lastIdx:idx);
+                    nOmegas = length(indicesForOmega);
+
+                    omega1 = sortedOmegas(idx + 1);
+                    rightDeltaOmega = (omega1-omega0)/2;
+
+                    energyPerApmComponent = integral(@(omega) ApmSpectrum(omega,j),omega0-leftDeltaOmega,omega0+rightDeltaOmega)/nOmegas/2;
+                    Ap_(indicesForOmega) = Ap_rand(indicesForOmega).*sqrt(energyPerApmComponent./(self.Apm_TE_factor(indicesForOmega) ));
+                    Am_(indicesForOmega) = Am_rand(indicesForOmega).*sqrt(energyPerApmComponent./(self.Apm_TE_factor(indicesForOmega) ));
+
+                    totalEnergyAdded = totalEnergyAdded + energyPerApmComponent*nOmegas*2;
+
+                    omega0 = omega1;
+                    leftDeltaOmega = rightDeltaOmega;
+                    lastIdx = idx+1;
+                end
+
+                % The right-most omega still needs to be set
+                indicesForOmega = indicesForJ(lastIdx:end);
+                nOmegas = length(indicesForOmega);
+
+                energyPerApmComponent = integral(@(omega) ApmSpectrum(omega,j),omega0-leftDeltaOmega,omega0)/nOmegas/2;
+                Ap_(indicesForOmega) = Ap_rand(indicesForOmega).*sqrt(energyPerApmComponent./(self.Apm_TE_factor(indicesForOmega) ));
+                Am_(indicesForOmega) = Am_rand(indicesForOmega).*sqrt(energyPerApmComponent./(self.Apm_TE_factor(indicesForOmega) ));
+                totalEnergyAdded = totalEnergyAdded + energyPerApmComponent*nOmegas*2;
+
+                if options.shouldShowDiagnostics == 1
+                    totalEnergyDesired = integral( @(omega) ApmSpectrum(omega,j),self.f,sqrt(max(self.N2)));
+                    cumulativeEnergy = sum(sum(self.Apm_TE_factor.*(abs(Ap_).^2+abs(Am_).^2)));
+                    fprintf('Total energy desired in j=%d is %.5f, total energy added is %.5f. Cumulative is %.5f\n',j,totalEnergyDesired,totalEnergyAdded ,cumulativeEnergy);
                 end
             end
 
-            % GM Parameters
+            self.throwErrorIfDensityViolation(A0=self.A0,Ap=Ap_,Am=Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
+            self.Ap = Ap_;
+            self.Am = Am_;
+        end
+
+
+        function initWithGMSpectrum(self,options)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.GMAmplitude (1,1) double = 1
+                options.j_star (1,1) double = 3
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
+            end
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
-            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*GMAmplitude;
-            %             E = E*(self.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
+            E = options.GMAmplitude*L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+
+            j_star = options.j_star;
+            Nmax = sqrt(max(self.N2));
 
             % Compute the proper vertical function normalization
             H = (j_star+(1:1024)).^(-5/2);
             H_norm = 1/sum(H);
 
             % Do the same for the frequency function.
-            B_norm = 1/atan(sqrt(self.Nmax*self.Nmax/(self.f*self.f)-1));
+            B_norm = 1/atan(sqrt(Nmax*Nmax/(self.f*self.f)-1));
 
-            % This function tells you how much energy you need between two
-            % frequencies for a given vertical mode.
-            GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(self.f/sqrt(omega0*omega0-self.f*self.f)) - atan(self.f/sqrt(omega1*omega1-self.f*self.f)));
+            H = @(j) H_norm*((j+j_star).^(-5/2));
+            B = @(omega) B_norm*self.f./(omega.*sqrt(omega.*omega-self.f*self.f));
+            GM = @(omega,j) E*H(j) .* B(omega);
 
-            % Do a quick check to see how much energy is lost due to
-            % limited vertical resolution.
-            maxMode = self.Nj;
-            for iArg = 1:2:length(varargin)
-                if strcmp(varargin{iArg}, 'maxMode')
-                    maxMode = varargin{iArg+1};
+            self.initWithFrequencySpectrum(ApmSpectrum=GM,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations,shouldShowDiagnostics=0);
+
+            if options.shouldShowDiagnostics == 1
+                igwEnergy = self.Apm_TE_factor.*(abs(self.Ap).^2+abs(self.Am).^2);
+                totalEnergyActual = sum(sum(igwEnergy));
+                fprintf('After distributing energy across frequency and mode, you have %.2f%% of reference GM energy.\n',100*totalEnergyActual/E);
+                if options.shouldOnlyRandomizeOrientations == 0
+                    fprintf('Because you are allowing amplitudes to be randomized, primarly due to the amplitudes of the most energetic modes.\n')
                 end
+
+
+                verticalModeTotalEnergy = 0;
+                for j=1:max(self.j)
+                    verticalModeTotalEnergy = verticalModeTotalEnergy + integral( @(omega) GM(omega,j),self.f,Nmax);
+                end
+                missingVerticalModeEnergy = E - verticalModeTotalEnergy;
+                fprintf('\tYou are missing %.2f%% of the energy due to limited vertical modes.\n',100*missingVerticalModeEnergy/E);
+                fprintf('\tYou are missing %.2f%% of the energy due to limited horizontal resolution.\n',100*(E-totalEnergyActual-missingVerticalModeEnergy)/E);
+
+                
+                fprintf('Due to restricted domain size:\n');
+                fprintf('\tThe inertial oscillations contain %.2f%% of the total energy\n',100*sum(sum(igwEnergy(self.Kh == 0)))/totalEnergyActual);
+                fprintf('\tThe inertial oscillation j=1 mode contains %.2f%% of the total energy\n',100*igwEnergy(self.J==1 & self.Kh == 0)/totalEnergyActual);
             end
 
-            totalEnergy = 0;
-            for mode=1:maxMode
-                totalEnergy = totalEnergy + GM2D_int(self.f,self.Nmax,mode);
-            end
-            fprintf('You will miss %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
-
-            [GM3Dint,GM3Dext] = self.initWithSpectralFunction(GM2D_int,varargin{:});
-
-            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*(sum(sum(sum(GM3Dint))) + sum(GM3Dext))/E);
-            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3Dint(1,1,1)/(sum(sum(sum(GM3Dint))) + sum(GM3Dext)) );
-
-            GM_sum_int = sum(sum(sum(GM3Dint)))/E;
-            GM_sum_ext = sum(GM3Dext)/E;
-            C = self.Apm_TE_factor.*(self.Ap.*conj(self.Ap) + self.Am.*conj(self.Am));
-            GM_random_sum_int = sum( C(:) )/E;
-            GM_random_sum_ext = sum((self.offgridModes.U_cos_ext.*self.offgridModes.U_cos_ext + self.offgridModes.V_cos_ext.*self.offgridModes.V_cos_ext).*self.offgridModes.h_ext/2)/E;
-            fprintf('The (gridded, external) wave field sums to (%.2f%%, %.2f%%) GM given the scales, and the randomized field sums to (%.2f%%, %.2f%%) GM\n', 100*GM_sum_int, 100*GM_sum_ext, 100*GM_random_sum_int,100*GM_random_sum_ext);
-        end
-
-        function [GM3Dint,GM3Dext] = initWithSpectralFunction(self, GM2D_int, varargin)
-            % initialize the wave spectrum with a given function
-            %
-            % - Topic: Initial conditions — Waves
-            % - Declaration: [GM3Dint,GM3Dext] = initWithSpectralFunction(GM2D_int, varargin)
-            %
-            % The GM2D_int function is used to assign variance to a given
-            % wave mode. It has three arguments, omega0, omega1, and j and
-            % should return the amount of variance you want assigned to a
-            % wave mode between omega0 and omega1 at vertical mode j.
-            %
-            % The returned values GM3Dint are the results of distributing
-            % this variance. size(GM3Dint) = size(Kh), so you can see
-            % how much energy was assigned to each internal mode and
-            % similarly size(GM3Dext) = size(self.k_ext).
-            %
-            % The function takes the (optional) name/value pairs:
-            %
-            % shouldRandomizeAmplitude = 1 or 0 will randomize the
-            % energy in each mode such that the expected value matches that
-            % assigned. Default 0 (amplitudes will not be randomized)
-            %
-            % maxDeltaOmega is the maximum width in frequency that will be
-            % integrated over for assigned energy. By default it is self.Nmax-self.f
-            if nargin(GM2D_int) ~= 3
-                error('The spectral function must take three inputs: omega0, omega1, and j.\n');
-            end
-
-            if mod(length(varargin),2) ~= 0
-                error('Arguments must be given as name/value pairs.');
-            end
-
-            [K,L,~] = self.kljGrid;
-            Kh = sqrt(K.*K + L.*L);
-            Omega = self.Omega;
-
-            % Set defaults
-            shouldRandomizeAmplitude = 0;
-            maxDeltaOmega = self.Nmax-self.f;
-            initializeModes = 0;
-            energyWarningThreshold = 0.5;
-            excludeNyquist = 1;
-            minK = 0;
-            maxK = max(max(max(abs(K))));
-            minMode = 1;
-            maxMode = self.Nj-1; % j=0 mode shouldn't be used/counted
-
-            % Now override the defaults with user settings
-            for iArg = 1:2:length(varargin)
-                if strcmp(varargin{iArg}, 'shouldRandomizeAmplitude')
-                    shouldRandomizeAmplitude = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'maxDeltaOmega')
-                    maxDeltaOmega = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'energyWarningThreshold')
-                    energyWarningThreshold = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'excludeNyquist')
-                    excludeNyquist = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'initializeModes')
-                    if strcmp(varargin{iArg+1}, 'all')
-                        initializeModes = 0;
-                    elseif strcmp(varargin{iArg+1}, 'internalOnly')
-                        initializeModes = 1;
-                    elseif strcmp(varargin{iArg+1}, 'externalOnly')
-                        initializeModes = 2;
-                    else
-                        error('Invalid option for initializeModes');
-                    end
-                elseif strcmp(varargin{iArg}, 'minK')
-                    minK = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'maxK')
-                    maxK = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'minMode')
-                    minMode = varargin{iArg+1};
-                elseif strcmp(varargin{iArg}, 'maxMode')
-                    maxMode = varargin{iArg+1};
-                else
-                    error('Invalid argument');
-                end
-            end
-
-            if excludeNyquist == 1
-                nyquistIndicesForK = sub2ind(size(Omega),repmat((ceil(self.Nx/2)+1)*ones(1,self.Ny),[1 self.Nj]),repmat(1:self.Ny,[1 self.Nj]),reshape(ones(1,self.Ny)'*(1:self.Nj),1,[]));
-                nyquistIndicesForL = sub2ind(size(Omega),repmat(1:self.Nx,[1 self.Nj]),repmat((ceil(self.Ny/2)+1)*ones(1,self.Nx),[1 self.Nj]),reshape(ones(1,self.Nx)'*(1:self.Nj),1,[]));
-                nyquistIndices = union(nyquistIndicesForK,nyquistIndicesForL);
-            end
-
-            % Sort the frequencies (for each mode) and distribute energy.
-            % This algorithm is fairly complicated because we are using two
-            % separate lists of frequencies: one for the gridded IW modes
-            % and one for the 'external' modes.
-            %
-            % Note that it would appear that we are double counting the
-            % number of waves at each frequency because we're included the
-            % negative part of the hermitian conjugate. However, we also
-            % have negative frequency waves, so this is justified.
-            internalOmegaLinearIndices = reshape(1:numel(Omega),size(Omega));
-            externalOmegaLinearIndices = 1:length(self.offgridModes.omega_ext);
-            GM3Dint = zeros(size(Kh));
-            GM3Dext = zeros(size(self.offgridModes.k_ext));
-            indicesToSkip = reshape(internalOmegaLinearIndices(abs(Kh) < minK | abs(Kh) > maxK),[],1);
-            for iMode = minMode:maxMode
-                intOmegasLinearIndicesForIMode = reshape(internalOmegaLinearIndices(:,:,iMode+1),[],1); % Find the indices of everything with this iMode (iMode+1 b/c of j=0 mode)
-                if excludeNyquist == 1
-                    intOmegasLinearIndicesForIMode = setdiff( intOmegasLinearIndicesForIMode, nyquistIndices); % Now remove indices associated with the Nyquist
-                end
-                intOmegasLinearIndicesForIMode = setdiff( intOmegasLinearIndicesForIMode, indicesToSkip); % And remove indices outside the user specified wavenumber threshold.
-
-                % Flatten the internal omegas (and their index)
-                intOmegas = abs(Omega(intOmegasLinearIndicesForIMode));
-
-                % Now do the same for the external modes
-                indices = find(self.offgridModes.j_ext == iMode);
-                extOmegas = reshape(abs(self.offgridModes.omega_ext(indices)),[],1);
-                extOmegasLinearIndicesForIMode = reshape(externalOmegaLinearIndices(indices),[],1);
-
-                % Make a combined list, but note which list each omega came
-                % from.
-                if initializeModes == 0
-                    allOmegas = cat(1,intOmegas,extOmegas);
-                    allIndices = cat(1,intOmegasLinearIndicesForIMode,extOmegasLinearIndicesForIMode);
-                    allSource = cat(1,zeros(size(intOmegas)), ones(size(extOmegas)));
-                elseif initializeModes == 1
-                    allOmegas = intOmegas;
-                    allIndices = intOmegasLinearIndicesForIMode;
-                    allSource = zeros(size(intOmegas));
-                else
-                    allOmegas = extOmegas;
-                    allIndices = extOmegasLinearIndicesForIMode;
-                    allSource = ones(size(extOmegas));
-                end
-
-                if isempty(allOmegas)
-                    continue;
-                end
-
-                % Sort the frequencies for this mode.
-                [sortedOmegas, sortedOmegasIndices] = sort(allOmegas);
-                sortedIndices = allIndices(sortedOmegasIndices);
-                sortedSource = allSource(sortedOmegasIndices);
-
-                % Then find where the omegas differ.
-                omegaDiffIndices = find(diff(sortedOmegas) > 0);
-
-                % Let's do a sanity check for users to make sure they don't
-                % put too much energy in a single mode
-                totalEnergyInThisMode = GM2D_int(self.f,self.Nmax,iMode);
-
-                lastIdx = 1;
-                omega0 = sortedOmegas(lastIdx);
-                leftDeltaOmega = 0;
-                for idx=omegaDiffIndices'
-                    currentIdx = idx+1;
-                    nOmegas = currentIdx-lastIdx;
-
-                    omega1 = sortedOmegas(idx + 1);
-                    rightDeltaOmega = (omega1-omega0)/2;
-
-                    % This enforces our maximum allowed gap.
-                    if rightDeltaOmega > maxDeltaOmega/2
-                        rightDeltaOmega = maxDeltaOmega/2;
-                    end
-                    energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
-
-                    if energyPerFrequency/totalEnergyInThisMode > energyWarningThreshold
-                        warning('A j=%d mode has %d%% of the GM energy in a single mode',iMode,round(100*energyPerFrequency/totalEnergyInThisMode));
-                    end
-
-                    for iIndex = lastIdx:(currentIdx-1)
-                        if sortedSource(iIndex) == 0
-                            GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
-                        else
-                            GM3Dext(sortedIndices(iIndex)) = energyPerFrequency;
-                        end
-                    end
-
-                    omega0 = omega1;
-                    leftDeltaOmega = rightDeltaOmega;
-                    lastIdx = currentIdx;
-                end
-
-                % Still have to deal with the last point.
-                if lastIdx == 1
-                    % There is only one point for this entire iMode!
-                    leftDeltaOmega = omega0 - self.f;
-                    if leftDeltaOmega > maxDeltaOmega/2
-                        leftDeltaOmega = maxDeltaOmega/2;
-                    end
-                    rightDeltaOmega = self.Nmax-omega0;
-                    if rightDeltaOmega > maxDeltaOmega/2
-                        rightDeltaOmega = maxDeltaOmega/2;
-                    end
-                else
-                    % okay, so there's more than one point.
-                    % so just be symmetric about this point,
-                    rightDeltaOmega = leftDeltaOmega;
-
-                    % but don't let it exceed the buoyancy frequency
-                    if omega0+rightDeltaOmega > self.Nmax
-                        rightDeltaOmega = self.Nmax-omega0;
-                    end
-
-                    % This enforces our maximum allowed gap.
-                    if rightDeltaOmega > maxDeltaOmega/2
-                        rightDeltaOmega = maxDeltaOmega/2;
-                    end
-                end
-
-                nOmegas = length(sortedOmegas)+1-lastIdx;
-                energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
-                if energyPerFrequency/totalEnergyInThisMode > energyWarningThreshold
-                    warning('A j=%d mode has %d%% of the GM energy in a single mode',iMode,round(100*energyPerFrequency/totalEnergyInThisMode));
-                end
-                for iIndex = lastIdx:length(sortedOmegas)
-                    if sortedSource(iIndex) == 0
-                        GM3Dint(sortedIndices(iIndex)) = energyPerFrequency;
-                    else
-                        GM3Dext(sortedIndices(iIndex)) = energyPerFrequency;
-                    end
-                end
-            end
-
-
-            % At this stage GM3Dint contains all the energy, E_gm.
-            % Now this needs to be split so that
-            %       (1)     E<A_plus^2 + A_minus^2> = E_gm
-            A = sqrt((GM3Dint./self.h)/2);
-
-            % Each standard coefficient a(i,j,k) has equal conjugate, which
-            % is already accounted for as having the same frequency. So
-            % sum(a^2/2) really is the total energy.
-            if shouldRandomizeAmplitude == 1
-                A_plus = A.*self.generateHermitianRandomMatrix( );
-                A_minus = A.*self.generateHermitianRandomMatrix(  );
-
-                self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext).*randn( size(self.offgridModes.h_ext) );
-                self.offgridModes.PrecomputeExternalWaveCoefficients();
-            else
-                % Randomize phases, but keep unit length
-                A_plus = self.generateHermitianRandomMatrix(  shouldExcludeNyquist=excludeNyquist, allowMeanPhase=1 );
-                A_minus = self.generateHermitianRandomMatrix( shouldExcludeNyquist=excludeNyquist, allowMeanPhase=1 );
-
-                goodIndices = abs(A_plus) > 0;
-                A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
-                A_plus = A.*A_plus;
-                goodIndices = abs(A_minus) > 0;
-                A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
-                A_minus = A.*A_minus;
-
-                % Check this factor of 2!!! Is the correct? squared
-                % velocity to energy, I think.
-                self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext);
-                self.offgridModes.PrecomputeExternalWaveCoefficients();
-            end
-
-            A_minus(1,1,:) = conj(A_plus(1,1,:)); % Inertial motions go only one direction!
-            self.Ap = A_plus;
-            self.Am = A_minus;
         end
 
         function initWithHorizontalWaveNumberSpectrum(self,GMAmplitude,options)
@@ -716,6 +481,54 @@ classdef WVInternalGravityWaveMethods < handle
 
         end
     end
+
+    methods (Hidden=true)
+        function [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients(self)
+            % Returns normalized amplitudes and phases of all waves
+            %
+            % This returns the properties of the waves being used in the
+            % gridded simulation, as their properly normalized individual
+            % wave components. Very useful for debugging.
+            %
+            % Note that A_plus and A_minus each have half the inertial
+            % energy. This can be misleading, but the phasing is chosen to
+            % make it work. Never-the-less, we double/zero that component.
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: [omega, alpha, k, l, mode, phi, A, norm] = waveModesFromWaveCoefficients()
+            A_p = self.Ap;
+            A_p(1,1,:) = 2*A_p(1,1,:);
+            A_m = self.Am;
+            A_m(1,1,:) = 0*A_m(1,1,:);
+
+            [K,L,J] = self.kljGrid;
+            Omega = self.Omega;
+
+            [A_plus,phi_plus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_p);
+            omega_plus = Omega(linearIndex);
+            mode_plus = J(linearIndex);
+            alpha_plus = atan2(L(linearIndex),K(linearIndex));
+            k_plus = K(linearIndex);
+            l_plus = L(linearIndex);
+
+            [A_minus,phi_minus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_m);
+            omega_minus = -Omega(linearIndex);
+            mode_minus = J(linearIndex);
+            alpha_minus = atan2(L(linearIndex),K(linearIndex));
+            k_minus = K(linearIndex);
+            l_minus = L(linearIndex);
+
+            k = [k_plus; k_minus];
+            l = [l_plus; l_minus];
+            omega = [omega_plus; omega_minus];
+            mode = [mode_plus; mode_minus];
+            alpha = [alpha_plus; alpha_minus];
+            phi = [phi_plus; phi_minus];
+            A = [A_plus; A_minus];
+            norm = Normalization.kConstant;
+        end
+    end
+
     methods (Static, Hidden=true)
         function variableAnnotations = variableAnnotationsForInternalGravityWaveComponent()
             % return array of WVVariableAnnotation instances initialized by default

@@ -42,20 +42,6 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
         end
 
-        function [Ap,Am,A0] = randomAmplitudes(self)
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                Ap double
-                Am double
-                A0 double
-            end
-            Ap = zeros(self.wvt.spectralMatrixSize);
-            Am = zeros(self.wvt.spectralMatrixSize);
-            A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2)).* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
-
         function totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(self,coefficientMatrix)
             % returns the total energy multiplier for the coefficient matrix.
             %
