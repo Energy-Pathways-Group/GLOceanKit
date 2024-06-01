@@ -1,31 +1,60 @@
-wvt = WVTransformHydrostatic([800e3, 800e3, 1300], [64 64 30], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Create a WVTransform
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Lz = 4000;
+N0 = 3*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
+L_gm = 1300; % thermocline exponential scale, meters
+N2 = @(z) N0*N0*exp(2*z/L_gm);
+
+wvt = WVTransformHydrostatic([800e3, 400e3, Lz], [256 128 40], N2=N2);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Add a Garrett-Munk wave spectrum
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+wvt.initWithGMSpectrum(shouldShowDiagnostics=1);
+
 
 %%
-L_gm = 1.3e3; % thermocline exponential scale, meters
-invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
-E_gm = 6.3e-5; % non-dimensional energy parameter
-E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
 
-j_star = 3;
-Nmax = invT_gm;
+Euv = squeeze(mean(mean(wvt.u.^2 + wvt.v.^2)));
+Eeta = squeeze(mean(mean(wvt.eta.^2)));
+Ew = squeeze(mean(mean(wvt.w.^2)));
+E = 0.5*squeeze(mean(mean(wvt.u.^2 + wvt.v.^2 + shiftdim( wvt.N2,-2).*wvt.eta.^2)));
 
-% Compute the proper vertical function normalization
-H = (j_star+(1:1024)).^(-5/2);
-H_norm = 1/sum(H);
+figure
+tiledlayout(1,4,TileSpacing="tight")
+nexttile
+plot(1e4*Euv,wvt.z,LineWidth=2)
+title('$E\left\langle u^2 + v^2 \right\rangle$','Interpreter','latex')
+xlabel('cm^2/s^2')
+ylabel('depth (m)')
+xlim([0 1.05*max(1e4*Euv)])
 
-% Do the same for the frequency function.
-B_norm = 1/atan(sqrt(Nmax*Nmax/(wvt.f*wvt.f)-1));
+nexttile
+plot(Eeta,wvt.z,LineWidth=2)
+title('$E\left\langle \eta^2 \right\rangle$','Interpreter','latex')
+xlabel('m^2')
+xlim([0 1.05*max(Eeta)])
+set(gca,'YTickLabel',[]);
 
-H = @(j) H_norm*((j+j_star).^(-5/2));
-B = @(omega) B_norm*wvt.f./(omega.*sqrt(omega.*omega-wvt.f*wvt.f));
-GM = @(omega,j) E*H(j) .* B(omega);
+nexttile
+plot(1e4*Ew,wvt.z,LineWidth=2)
+title('$E\left\langle w^2 \right\rangle$','Interpreter','latex')
+xlabel('cm^2/s^2')
+xlim([0 1.05*max(1e4*Ew)])
+set(gca,'YTickLabel',[]);
 
-totalEnergy = 0;
-for j=1:20
-    totalEnergy = totalEnergy + integral( @(omega) GM(omega,j),wvt.f,Nmax);
-end
-totalEnergy
+nexttile
+plot(1e4*E,wvt.z,LineWidth=2)
+title('$\frac{1}{2} E\left\langle u^2 + v^2 + N^2 \eta^2 \right\rangle$','Interpreter','latex')
+xlabel('cm^2/s^2')
+xlim([0 1.05*max(1e4*E)])
+set(gca,'YTickLabel',[]);
 
-wvt.initWithFrequencySpectrum(ApmSpectrum=GM);
-
-% GM2D_int = @(omega0,omega1,j) E*B_norm*((j+j_star).^(-5/2))*(atan(self.f/sqrt(omega0*omega0-self.f*self.f)) - atan(self.f/sqrt(omega1*omega1-self.f*self.f)));
+fprintf('The total hydrostatic energy in the water column is %f J/m^2, compared to 3800 J/m^2 expected for GM.\n',wvt.rho0*trapz(wvt.z,E));
