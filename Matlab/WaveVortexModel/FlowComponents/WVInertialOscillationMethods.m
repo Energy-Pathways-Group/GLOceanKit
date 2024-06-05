@@ -53,6 +53,7 @@ classdef WVInertialOscillationMethods < handle
             initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
 
             self.addVariableAnnotations(WVInertialOscillationMethods.variableAnnotationsForInertialOscillationComponent);
+            self.addOperation(self.operationForDynamicalVariable('u','v',flowComponent=self.inertialComponent));
         end
     end
 

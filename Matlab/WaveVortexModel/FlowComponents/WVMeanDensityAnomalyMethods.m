@@ -53,6 +53,7 @@ classdef WVMeanDensityAnomalyMethods < handle
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
             self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);
+            self.addOperation(self.operationForDynamicalVariable('eta','p',flowComponent=self.mdaComponent));
         end
     end
 

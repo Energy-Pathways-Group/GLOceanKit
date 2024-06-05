@@ -57,6 +57,7 @@ classdef WVGeostrophicMethods < handle
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
             self.addVariableAnnotations(WVGeostrophicMethods.variableAnnotationsForGeostrophicComponent);
+            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
         end
 
         function throwErrorIfMeanPressureViolation(self,psi_xyz)

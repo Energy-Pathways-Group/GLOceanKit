@@ -67,6 +67,7 @@ classdef WVInternalGravityWaveMethods < handle
             initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
 
             self.addVariableAnnotations(WVInternalGravityWaveMethods.variableAnnotationsForInternalGravityWaveComponent);
+            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
         end
     end
 
