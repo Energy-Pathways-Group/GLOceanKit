@@ -30,6 +30,12 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
         iOmega
         isHydrostatic = 0
     end
+    properties (Dependent)
+        FinvMatrix
+        GinvMatrix
+        FMatrix
+        GMatrix
+    end
 
     properties (Access=private)
         realScratch, complexScratch; % of size Nx x Ny x (2*Nz-1)
@@ -530,6 +536,78 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             m = cat(3,sqrt(-1)*m,0,-sqrt(-1)*flip(m,3));
             wz = ifft( m.*self.complexScratch,2*(self.Nz-1),3,'symmetric');
             wz = wz(:,:,1:self.Nz)*(2*self.Nz-2);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function Finv = get.FinvMatrix(wvt)
+            % transformation matrix $$F^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Finv = shiftdim(wvt.F_g(:,1),1) .* wvt.iDCT;
+
+        end
+
+        function F = get.FMatrix(wvt)
+            % transformation matrix $$F$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            F = wvt.DCT ./ wvt.F_g(:,1);
+
+        end
+        function Ginv = get.GinvMatrix(wvt)
+            % transformation matrix $$G^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Ginv = shiftdim(wvt.G_g(:,1),1) .* wvt.iDST;
+
+        end
+        function G = get.GMatrix(wvt)
+            % transformation matrix $$G$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GMatrix(wvt)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            G = wvt.DST ./ wvt.G_g(:,1);
+
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

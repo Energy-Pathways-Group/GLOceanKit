@@ -48,6 +48,13 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         iOmega
         isHydrostatic = 0
     end
+
+    properties (Dependent)
+        FinvMatrix
+        GinvMatrix
+        FMatrix
+        GMatrix
+    end
         
     methods
          
@@ -431,8 +438,79 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
             w = permute(w,[2 3 1]);
         end
         
-        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function Finv = get.FinvMatrix(wvt)
+            % transformation matrix $$F^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Finv = shiftdim(wvt.P0,1) .* wvt.PF0inv;
+
+        end
+
+        function F = get.FMatrix(wvt)
+            % transformation matrix $$F$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            F = wvt.PF0 ./ shiftdim(wvt.P0,2);
+
+        end
+
+        function Ginv = get.GinvMatrix(wvt)
+            % transformation matrix $$G^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Ginv = shiftdim(wvt.Q0,1) .* wvt.QG0inv;
+
+        end
+
+        function G = get.GMatrix(wvt)
+            % transformation matrix $$G$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GMatrix(wvt)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            G = wvt.QG0 ./ shiftdim(wvt.Q0,2);
+
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Needed to add and remove internal waves from the model

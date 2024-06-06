@@ -14,14 +14,14 @@ classdef WVStratifiedFlow < handle
     methods (Abstract)
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
+    end
 
-        Finv = FinvMatrix(self);
+    properties (Abstract)
+        FinvMatrix
+        GinvMatrix
 
-
-        Ginv = GinvMatrix(self);
-
-        F = FMatrix(self);
-        G = GMatrix(self);
+        FMatrix
+        GMatrix
     end
 
     methods
