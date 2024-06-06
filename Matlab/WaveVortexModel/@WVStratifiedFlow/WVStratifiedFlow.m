@@ -289,7 +289,7 @@ classdef WVStratifiedFlow < handle
             end
             im.normalization = Normalization.kConstant;
             im.upperBoundary = UpperBoundary.rigidLid;
-            z = im.GaussQuadraturePointsForModesAtFrequency(Nz,im.f0);
+            z = im.GaussQuadraturePointsForModesAtFrequency(Nz,0);
         end
     end
     methods (Static, Hidden=true)
