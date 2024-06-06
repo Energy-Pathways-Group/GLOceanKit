@@ -150,7 +150,7 @@ classdef WVStratifiedFlow < handle
         function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
             % Now go compute the appropriate number of modes at the
             % quadrature points.
-            self.verticalModes.normalization = Normalization.kConstant;
+            self.verticalModes.normalization = Normalization.geostrophic;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv,h] = self.verticalModes.ModesAtFrequency(0);
             [P,Q,PFinv,PF,QGinv,QG,h] = self.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj);
@@ -287,7 +287,7 @@ classdef WVStratifiedFlow < handle
             elseif ~isequal(options.rho,@isempty)
                 im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude);
             end
-            im.normalization = Normalization.kConstant;
+            im.normalization = Normalization.geostrophic;
             im.upperBoundary = UpperBoundary.rigidLid;
             z = im.GaussQuadraturePointsForModesAtFrequency(Nz,0);
         end
