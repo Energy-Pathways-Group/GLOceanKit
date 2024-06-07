@@ -36,20 +36,35 @@ intG = reshape(intG(1:end-1),[],1);
 Ginv = Ginv(2:end-1,1:end-1);
 G = inv(Ginv);
 
+w_actual = G./(Ginv.');
+w_actual = (w_actual(1,:)).';
+
 intG-intG_const(1:end-1); % this looks superb.
 
-% This requirement is not, apparently, the correct thing. sum(G,2) does not result in intG and sum(Gw,2)
-w = (Ginv.')\intG;
-Gw = (w.').*(Ginv.');
+%% This requirement is not, apparently, the correct thing.
+% sum(Gw,2) does give us the correct integrals back... but, this is not what we want?
+% It returns 
+N2G = (N2(z(2:end-1)).*Ginv)/g;
+w = (N2G.')\intG;
+w = w.*((N2(z(2:end-1))/g));
+Gw = (w.*Ginv).';
+% I do not understand what is going on wrong... the inverse works fine, and
+% I can reproduce it in other ways. But we are not simply getting the
+% integrals correct for our polynomials.
 
+%%
 invW = diag(((Ginv.')*(Ginv))/eye(Nz-2));
 w = 1./invW;
 Gw = (w.').*(Ginv.');
 
-% Actually, much better, Nope
-w = ((Ginv.')*Ginv)\ones(Nz-2,1);
-Gw = (w.').*(Ginv.');
 
+
+% Actually, much better, Nope
+w = ((N2G.')*Ginv)\ones(Nz-2,1);
+w = w.*((N2(z(2:end-1))/g));
+Gw = (w.*Ginv).';
+
+((w_actual.*Ginv).' * Ginv);
 
 %%
 % Lx = 50e3; Ly=50e3; N=16;
