@@ -8,7 +8,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
     % 
     % ```matlab
     % N0 = 3*2*pi/3600;
-    % wvt = WVTransformConstantStratification([100e3, 100e3, 1300],[64, 64, 65], NN0=N0,latitude=30);
+    % wvt = WVTransformConstantStratification([100e3, 100e3, 1300],[64, 64, 65], N0=N0,latitude=30);
     % ```
     %
     % - Topic: Initialization
@@ -45,8 +45,25 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
         function self = WVTransformConstantStratification(Lxyz, Nxyz, options)
             % initialze a wave-vortex transform with constant stratification
             %
+            %
+            % To initialization an instance of the
+            % WVTransformConstantStratification class you must specific the
+            % stratification and latitude, otherwise defaults will be
+            % assumed for you.
+            %
+            % To initialize a domain of size (100 km, 100 km, 1300 m) with
+            % a buoyancy frequency of 3 cycles per hour at latitude 30,
+            % call
+            %
+            % ```matlab
+            % N0 = 3*2*pi/3600;
+            % wvt = WVTransformConstantStratification([100e3, 100e3, 1300],[64, 64, 65], N0=N0,latitude=30);
+            % ```
+            %
+            % 
+            %
             % - Topic: Initialization
-            % - Declaration: wvt = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
+            % - Declaration: wvt = WVTransformConstantStratification(Lxyz, Nxyz, options)
             % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
             % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
             % - Parameter N0:  (optional) buoyancy frequency (radians/s) default is 5.2e-3, or 3 cph)
@@ -626,7 +643,8 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             if j == 0
                 ratio = 1;
             else
-                ratio = abs(self.F_wg(indices)./self.F_g(indices));
+                indices = self.indexFromModeNumber(kMode,lMode,j);
+                ratio = abs(self.F_g(indices)./self.F_wg(indices));
             end
         end
         function ratio = maxFg(self,kMode,lMode,j)

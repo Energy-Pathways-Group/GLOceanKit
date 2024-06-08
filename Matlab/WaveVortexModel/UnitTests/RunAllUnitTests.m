@@ -1,10 +1,10 @@
 import matlab.unittest.plugins.CodeCoveragePlugin
 import matlab.unittest.plugins.codecoverage.CoverageResult
 
-runner = testrunner("textoutput");
-format = CoverageResult();
-plugin = CodeCoveragePlugin.forFile("../FlowComponents/WVGeostrophicMethods.m",Producing=format);
-runner.addPlugin(plugin)
+% runner = testrunner("textoutput");
+% format = CoverageResult();
+% plugin = CodeCoveragePlugin.forFile("../FlowComponents/WVGeostrophicMethods.m",Producing=format);
+% runner.addPlugin(plugin)
 
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestSpectralDifferentiationXY);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestOrthogonalSolutionGroups);

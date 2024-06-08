@@ -31,7 +31,7 @@ classdef InternalModesConstantStratification < InternalModesBase
             self.rho_z = -(self.N0*self.N0*self.rho0/self.g)*ones(size(self.z));
             self.rho_zz = zeros(size(self.z));
             
-            fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
+            % fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
         end
                 
         function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )
