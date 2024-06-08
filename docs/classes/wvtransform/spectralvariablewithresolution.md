@@ -3,13 +3,13 @@ layout: default
 title: spectralVariableWithResolution
 parent: WVTransform
 grand_parent: Classes
-nav_order: 151
+nav_order: 138
 mathjax: true
 ---
 
 #  spectralVariableWithResolution
 
-create a new variable with increased resolution
+create a new variable with different resolution
 
 
 ---
@@ -19,15 +19,16 @@ create a new variable with increased resolution
  varX2 = spectralVariableWithResolution(var,Nklj)
 ```
 ## Parameters
-+ `var`  a variable with dimensions [Nk Nl Nj]
-+ `Nklj`  vector of size [1 3] with new dimensions, [NkX2 NlX2 NjX2]
++ `var`  a variable with dimensions [Nj Nkl]
++ `wvtX2`  a WVTransform of different size.
 
 ## Returns
 + `varX2`  matrix the size Nklj
 
 ## Discussion
 
-  Given a variable with dimensions [Nk Nl Nj], this returns a new variable
-  with the dimension Nklj.
+  Given a variable with dimensions [Nj Nkl], this returns a new variable
+  with dimensions matching wvtX2. This can be either increased or decreased
+  resolution.
  
           

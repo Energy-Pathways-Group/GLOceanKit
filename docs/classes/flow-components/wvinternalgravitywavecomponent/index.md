@@ -32,7 +32,6 @@ Geostrophic solution group
   + [`normalizeWaveModeProperties`](/classes/flow-components/wvinternalgravitywavecomponent/normalizewavemodeproperties.html) returns properties of a internal gravity wave solutions relative to the primary mode number
   + [`solutionForModeAtIndex`](/classes/flow-components/wvinternalgravitywavecomponent/solutionformodeatindex.html) return the analytical solution at this index
 + Quadratic quantities
-  + [`randomAmplitudes`](/classes/flow-components/wvinternalgravitywavecomponent/randomamplitudes.html) returns random amplitude for a valid flow state
   + [`totalEnergyFactorForCoefficientMatrix`](/classes/flow-components/wvinternalgravitywavecomponent/totalenergyfactorforcoefficientmatrix.html) returns the total energy multiplier for the coefficient matrix.
 + Other
   + [`WVInternalGravityWaveComponent`](/classes/flow-components/wvinternalgravitywavecomponent/wvinternalgravitywavecomponent.html) Geostrophic solution group

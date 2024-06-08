@@ -38,7 +38,6 @@ Geostrophic solution group
   + [`solutionForModeAtIndex`](/classes/flow-components/wvgeostrophiccomponent/solutionformodeatindex.html) return the analytical solution at this index
 + Quadratic quantities
   + [`qgpvFactorForA0`](/classes/flow-components/wvgeostrophiccomponent/qgpvfactorfora0.html) returns the qgpv multiplier for the coefficient matrix.
-  + [`randomAmplitudes`](/classes/flow-components/wvgeostrophiccomponent/randomamplitudes.html) returns random amplitude for a valid flow state
   + [`totalEnergyFactorForCoefficientMatrix`](/classes/flow-components/wvgeostrophiccomponent/totalenergyfactorforcoefficientmatrix.html) returns the total energy multiplier for the coefficient matrix.
 + Other
   + [`WVGeostrophicComponent`](/classes/flow-components/wvgeostrophiccomponent/wvgeostrophiccomponent.html) Geostrophic solution group

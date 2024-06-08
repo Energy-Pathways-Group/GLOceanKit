@@ -36,7 +36,7 @@ nav_order: 2
   This is most often used when initializing a model, e.g.,
  
   ```matlab
-  model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
+  model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uvMax));
   ```
  
     

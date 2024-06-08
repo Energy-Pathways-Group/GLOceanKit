@@ -21,7 +21,7 @@ initialize 3D quasigeostrophic potential vorticity flux
 ## Parameters
 + `wvt`  a WVTransform instance
 + `shouldUseBeta`  (optional) a Boolean indicating whether or not to include beta in the flux
-+ `u_damp`  (optional) characteristic speed used to set the damping. Try using wvt.uMax
++ `u_damp`  (optional) characteristic speed used to set the damping. Try using wvt.uvMax
 + `r`  (optional) bottom friction
 + `nu_xy`  (optional) coefficient for damping
 

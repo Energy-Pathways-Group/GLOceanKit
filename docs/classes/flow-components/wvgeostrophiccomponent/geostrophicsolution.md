@@ -25,6 +25,7 @@ return a real-valued analytical solution of the geostrophic mode
 + `A`  amplitude in m.
 + `phi`  phase in radians, (0 <= phi <= 2*pi)
 + `shouldAssumeConstantN`  (optional) default 1
++ `amplitudeIsMaxU`  (optional) default 0
 
 ## Returns
 + `u`  fluid velocity, u = @(x,y,z,t)
@@ -37,4 +38,4 @@ return a real-valued analytical solution of the geostrophic mode
 
   Returns function handles of the form u=@(x,y,z,t)
  
-                          
+                            

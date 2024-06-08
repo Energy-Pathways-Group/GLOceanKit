@@ -32,7 +32,7 @@ nav_order: 5
   To initialize the WVNonlinearFluxQGForced,
  
   ```matlab
-  model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQGForced(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+  model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQGForced(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
   ```
  
     
@@ -52,8 +52,8 @@ nav_order: 5
   + [`A0bar`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/a0bar.html) A0 'mean' value to relax to
   + [`MA0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/ma0.html) Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
   + [`WVNonlinearFluxQGForced`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/wvnonlinearfluxqgforced.html) initialize 3D quasigeostrophic potential vorticity flux
+  + [`addVariableOfType`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/addvariableoftype.html) 
   + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/compute.html) Apply operator S---defined in (C4) in the manuscript
-  + [`nonlinearFluxWithResolutionForTransform`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/nonlinearfluxwithresolutionfortransform.html) 
   + [`setNarrowBandForcing`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setnarrowbandforcing.html) 
   + [`tau0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/tau0.html) relaxation time
 

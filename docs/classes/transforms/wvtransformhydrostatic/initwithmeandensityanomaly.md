@@ -3,7 +3,7 @@ layout: default
 title: initWithMeanDensityAnomaly
 parent: WVTransformHydrostatic
 grand_parent: Classes
-nav_order: 20
+nav_order: 25
 mathjax: true
 ---
 

@@ -3,7 +3,7 @@ layout: default
 title: removeAllMeanDensityAnomaly
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 35
+nav_order: 43
 mathjax: true
 ---
 

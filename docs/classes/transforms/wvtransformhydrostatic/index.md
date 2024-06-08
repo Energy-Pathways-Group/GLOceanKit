@@ -50,6 +50,7 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + [`N2`](/classes/transforms/wvtransformhydrostatic/n2.html) $$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
   + [`dLnN2`](/classes/transforms/wvtransformhydrostatic/dlnn2.html) $$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency
   + [`verticalModes`](/classes/transforms/wvtransformhydrostatic/verticalmodes.html) instance of the InternalModes class
+  + [`effectiveVerticalGridResolution`](/classes/transforms/wvtransformhydrostatic/effectiveverticalgridresolution.html) returns the effective vertical grid resolution in meters
   + Vertical modes
     + [`FMatrix`](/classes/transforms/wvtransformhydrostatic/fmatrix.html) transformation matrix $$F_g$$
     + [`FinvMatrix`](/classes/transforms/wvtransformhydrostatic/finvmatrix.html) transformation matrix $$F_g^{-1}$$
@@ -75,6 +76,12 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`initWithMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/initwithmeandensityanomaly.html) initialize with inertial motions
     + [`removeAllMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/removeallmeandensityanomaly.html) remove all mean density anomalies
     + [`setMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/setmeandensityanomaly.html) set inertial motions
+  + Waves
+    + [`addWaveModes`](/classes/transforms/wvtransformhydrostatic/addwavemodes.html) add amplitudes of the given wave modes
+    + [`initWithHorizontalWaveNumberSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in
+    + [`initWithWaveModes`](/classes/transforms/wvtransformhydrostatic/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAllWaves`](/classes/transforms/wvtransformhydrostatic/removeallwaves.html) removes all wave from the model, including inertial oscillations
+    + [`setWaveModes`](/classes/transforms/wvtransformhydrostatic/setwavemodes.html) set amplitudes of the given wave modes
 + Energetics of flow components
   + [`geostrophicEnergy`](/classes/transforms/wvtransformhydrostatic/geostrophicenergy.html) total energy, geostrophic
   + [`waveEnergy`](/classes/transforms/wvtransformhydrostatic/waveenergy.html) total energy, waves
@@ -85,8 +92,11 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
     + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
 + Other
-  + [`uMaxA0`](/classes/transforms/wvtransformhydrostatic/umaxa0.html) uMax for a geostrophic mode is uMax =(g/f)*Kh*max(F_j)*abs(A0)
-  + [`uMaxGNormRatioForWave`](/classes/transforms/wvtransformhydrostatic/umaxgnormratioforwave.html) 
+  + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformhydrostatic/initwithfrequencyspectrum.html) 
+  + [`initWithGMSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithgmspectrum.html) 
+  + [`maxFg`](/classes/transforms/wvtransformhydrostatic/maxfg.html) 
+  + [`maxFw`](/classes/transforms/wvtransformhydrostatic/maxfw.html) 
+  + [`throwErrorIfDensityViolation`](/classes/transforms/wvtransformhydrostatic/throwerrorifdensityviolation.html) checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
 
 
 ---

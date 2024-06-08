@@ -28,7 +28,7 @@ nav_order: 4
   To initialize the WVNonlinearFluxQG,
  
   ```matlab
-  model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uMax));
+  model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
   ```
  
     

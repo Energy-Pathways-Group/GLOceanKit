@@ -26,6 +26,8 @@ return a real-valued analytical solution of the internal gravity wave mode
 + `phi`  phase in radians, (0 <= phi <= 2*pi)
 + `omegasign`  sign of omega, [-1 1]
 + `shouldAssumeConstantN`  (optional) default 1
++ `amplitudeIsMaxU`  (optional) default 0
++ `t`  (optional) time of observation, default 0
 
 ## Returns
 + `u`  fluid velocity, u = @(x,y,z,t)
@@ -38,4 +40,4 @@ return a real-valued analytical solution of the internal gravity wave mode
 
   Returns function handles of the form u=@(x,y,z,t)
  
-                            
+                                

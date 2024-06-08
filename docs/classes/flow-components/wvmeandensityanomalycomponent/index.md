@@ -35,7 +35,6 @@ Inertial oscillation solution group
   + [`solutionForModeAtIndex`](/classes/flow-components/wvmeandensityanomalycomponent/solutionformodeatindex.html) return the analytical solution at this index
 + Quadratic quantities
   + [`qgpvFactorForA0`](/classes/flow-components/wvmeandensityanomalycomponent/qgpvfactorfora0.html) returns the qgpv multiplier for the coefficient matrix.
-  + [`randomAmplitudes`](/classes/flow-components/wvmeandensityanomalycomponent/randomamplitudes.html) returns random amplitude for a valid flow state
   + [`totalEnergyFactorForCoefficientMatrix`](/classes/flow-components/wvmeandensityanomalycomponent/totalenergyfactorforcoefficientmatrix.html) returns the total energy multiplier for the coefficient matrix.
 + Other
   + [`WVMeanDensityAnomalyComponent`](/classes/flow-components/wvmeandensityanomalycomponent/wvmeandensityanomalycomponent.html) Inertial oscillation solution group

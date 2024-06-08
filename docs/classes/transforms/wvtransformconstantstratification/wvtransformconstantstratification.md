@@ -16,7 +16,7 @@ initialze a wave-vortex transform with constant stratification
 
 ## Declaration
 ```matlab
- wvt = WVTransformConstantStratification(Lxyz, Nxyz, N0, options)
+ wvt = WVTransformConstantStratification(Lxyz, Nxyz, options)
 ```
 ## Parameters
 + `Lxyz`  length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
@@ -31,4 +31,21 @@ initialze a wave-vortex transform with constant stratification
 
 ## Discussion
 
+ 
+  To initialization an instance of the
+  WVTransformConstantStratification class you must specific the
+  stratification and latitude, otherwise defaults will be
+  assumed for you.
+ 
+  To initialize a domain of size (100 km, 100 km, 1300 m) with
+  a buoyancy frequency of 3 cycles per hour at latitude 30,
+  call
+ 
+  ```matlab
+  N0 = 3*2*pi/3600;
+  wvt = WVTransformConstantStratification([100e3, 100e3, 1300],[64, 64, 65], N0=N0,latitude=30);
+  ```
+ 
+ 
+ 
                   

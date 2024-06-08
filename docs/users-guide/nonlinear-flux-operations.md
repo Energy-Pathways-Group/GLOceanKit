@@ -25,7 +25,7 @@ which then specifies how to compute `F0`, `Fp`, and `Fm`. The default nonlinear 
 
 When initializing a model `WVTransform` you can set the nonlinear flux to something more appropriate, e.g.,
 ```matlab
- model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uMax));
+ model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uvMax));
  ```
 
 
