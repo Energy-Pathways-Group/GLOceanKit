@@ -61,7 +61,7 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 
 % model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 % model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(10*86400);
+model.integrateToTime(1*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
@@ -72,16 +72,19 @@ model.integrateToTime(10*86400);
 
 EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 
-figure(Position=[100 100 1000 400])
-subplot(1,2,1)
-pcolor(wvt.X/1000,wvt.Y/1000,wvt.ssh), shading interp
+figure(name="Forced-dissipative quasigeostrophic turbulence spinup",Position=[100 100 1000 400])
+tiledlayout(1,2,TileSpacing="compact")
+
+nexttile
+pcolor(wvt.X/1000,wvt.Y/1000,wvt.zeta_z), shading interp
 colormap("gray")
 xlabel('km'), ylabel('km')
+title('relative vorticity')
 
-subplot(1,2,2)
+nexttile
 plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
 plot(wvt.kRadial,model_spectrum2D(wvt.kRadial))
-ylabel('m^3/s^2')
+ylabel('m^2/s^2')
 xlabel('1/m')
-title('horizontal velocity spectrum')
+title('total energy spectrum')
 vlines([k_f,k_r],'g--')

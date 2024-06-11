@@ -515,8 +515,9 @@ classdef NetCDFFile < handle
             if isKey(self.complexVariableWithName,name)
                 complexVariable = self.complexVariableWithName(name);
                 variable = complexVariable.realVar;
+                nDims = length(variable.dimensions);
                 for iDim=1:length(variable.dimensions)
-                    if (isvector(data) && length(data) ~= variable.dimensions(iDim).nPoints) || (~isvector(data) && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
+                    if (nDims==1 && length(data) ~= variable.dimensions(iDim).nPoints) || (nDims~=1 && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
                         error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,name,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
                     end
                 end
@@ -532,8 +533,9 @@ classdef NetCDFFile < handle
                 end
             else
                 variable = self.variableWithName(name);
+                nDims = length(variable.dimensions);
                 for iDim=1:length(variable.dimensions)
-                    if (isvector(data) && length(data) ~= variable.dimensions(iDim).nPoints) || (~isvector(data) && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
+                    if (nDims==1 && length(data) ~= variable.dimensions(iDim).nPoints) || (nDims~=1 && size(data,iDim) ~= variable.dimensions(iDim).nPoints)
                         error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,name,size(data,iDim),variable.dimensions(iDim).name,variable.dimensions(iDim).nPoints);
                     end
                 end

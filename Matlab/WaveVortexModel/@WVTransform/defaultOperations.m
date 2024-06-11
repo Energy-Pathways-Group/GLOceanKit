@@ -77,6 +77,11 @@ operations(end+1) = WVOperation('rho_total',outputVar,f);
 % f = @(wvt) wvt.g*wvt.h_0/(wvt.f*wvt.f);
 % operations(end+1) = WVOperation('Lr2',outputVar,f);
 
+outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+outputVar.attributes('short_name') = 'ocean_relative_vorticity';
+f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
+operations(end+1) = WVOperation('zeta_z',outputVar,f);
+
 outputVar = WVVariableAnnotation('ssu',{'x','y'},'m/s', 'x-component of the fluid velocity at the surface',detailedDescription='- topic: State Variables');
 operations(end+1) = WVOperation('ssu', outputVar,@(wvt) wvt.u(:,:,end));
 

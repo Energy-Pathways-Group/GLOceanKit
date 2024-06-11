@@ -70,6 +70,8 @@ classdef WVTransformSingleMode < WVTransform & WVGeostrophicMethods
             
             self.initializeGeostrophicComponent();
 
+            self.addPropertyAnnotations(WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode'));
+
             % Lr2 = self.g*(self.h)/(self.f*self.f);
             % Lr2(1) = self.g*self.Lz/(self.f*self.f);
             % self.A0_QGPV_factor = -(self.g/self.f) * ( (self.Kh).^2 + Lr2.^(-1) );
@@ -97,15 +99,8 @@ classdef WVTransformSingleMode < WVTransform & WVGeostrophicMethods
             wvtX2 = WVTransformSingleMode([self.Lx self.Ly],m,h=self.h,latitude=self.latitude);
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
-            if wvtX2.Nx>=self.Nx && wvtX2.Ny >= self.Ny && wvtX2.Nj >= self.Nj
-                kIndices = cat(2,1:(self.Nk/2),(wvtX2.Nk-self.Nk/2 + 1):wvtX2.Nk);
-                lIndices = cat(2,1:(self.Nl/2),(wvtX2.Nl-self.Nl/2 + 1):wvtX2.Nl);
-                wvtX2.Ap(kIndices,lIndices,1:self.Nj) = self.Ap;
-                wvtX2.Am(kIndices,lIndices,1:self.Nj) = self.Am;
-                wvtX2.A0(kIndices,lIndices,1:self.Nj) = self.A0;
-            else
-                error('Reducing resolution not yet implemented. Go for it though, it should be easy.');
-            end
+            [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+            wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
 
         function setSSH(self,ssh,options)

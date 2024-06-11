@@ -10,9 +10,9 @@ model = WVModel.modelFromFile('ForcedDissipativeQG-spinup-256.nc',shouldDoubleRe
 wvt = model.wvt;
 
 model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
-model.createNetCDFFileForModelOutput('ForcedDissipativeQG-spinup-512.nc',shouldOverwriteExisting=1);
-model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(wvt.t + 50*86400);
+% model.createNetCDFFileForModelOutput('ForcedDissipativeQG-spinup-512.nc',shouldOverwriteExisting=1);
+% model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
+model.integrateToTime(wvt.t + 1*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -23,6 +23,7 @@ model.integrateToTime(wvt.t + 50*86400);
 
 EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(wvt.A0)));
 
+figure(name="Forced-dissipative quasigeostrophic turbulence restart",Position=[100 100 1000 400])
 tiledlayout(1,2,TileSpacing="tight")
 nexttile
 pcolor(wvt.X/1000,wvt.Y/1000,wvt.zeta_z), shading interp, axis equal
@@ -36,9 +37,9 @@ plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
 ylabel('m^3/s^2')
 xlabel('1/m')
 title('horizontal velocity spectrum')
-k_f = model.ncfile.attributes('k_f');
-k_r = model.ncfile.attributes('k_r');
-vlines([k_f,k_r],'g--')
+% k_f = model.ncfile.attributes('k_f');
+% k_r = model.ncfile.attributes('k_r');
+% vlines([k_f,k_r],'g--')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

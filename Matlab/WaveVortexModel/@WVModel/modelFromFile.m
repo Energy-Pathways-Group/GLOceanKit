@@ -19,7 +19,7 @@ function model = modelFromFile(path,options)
     end
 
     ncfile = NetCDFFile(path);
-    if ncfile.attributes('shouldUseLinearDynamics') == 0
+    if ncfile.attributes.isKey('shouldUseLinearDynamics') && ncfile.attributes('shouldUseLinearDynamics') == 0
         model = WVModel(wvt,nonlinearFlux=wvt.nonlinearFluxOperation);
     else
         model = WVModel(wvt);
