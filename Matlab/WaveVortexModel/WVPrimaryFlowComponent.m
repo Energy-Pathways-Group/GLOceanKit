@@ -180,7 +180,7 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             else
                 ApmSpectrum = options.ApmSpectrum;
             end
-            
+ 
             [Ap,Am,A0] = self.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
 
             wvt = self.wvt;
@@ -189,12 +189,16 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
                 for iK=1:length(wvt.kRadial)
                     indicesForK = wvt.kRadial(iK)-dk/2 < wvt.Kh & wvt.Kh <= wvt.kRadial(iK)+dk/2 & wvt.J == wvt.j(iJ);
                     
-                    energyPerA0Component = integral(@(k) A0Spectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:));
-                    A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForK) ));
+                    if any(A0)
+                        energyPerA0Component = integral(@(k) A0Spectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:));
+                        A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForK) ));
+                    end
 
-                    energyPerApmComponent = integral(@(k) ApmSpectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
-                    Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
-                    Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
+                    if any(Ap) || any(Am)
+                        energyPerApmComponent = integral(@(k) ApmSpectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
+                        Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
+                        Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
+                    end
                 end
             end
             A0(isnan(A0)) = 0;

@@ -103,7 +103,6 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 surfaceMag = 1;
                 sbRatio = 1;
                 h = self.wvt.h;
-                options.j_f = 0;
                 magicNumber = 0.0225;
             end
 
@@ -127,7 +126,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
 
             
             deltaK = wvt.kRadial(2)-wvt.kRadial(1);
-            self.MA0 = zeros(wvt.Nk,wvt.Nl,wvt.Nj);
+            self.MA0 = zeros(wvt.spectralMatrixSize);
             self.MA0(wvt.Kh > k_f-deltaK/2 & wvt.Kh < k_f+deltaK/2 & wvt.J == j_f) = 1;
 
             if strcmp(options.initialPV,'narrow-band') || strcmp(options.initialPV,'full-spectrum')
@@ -140,32 +139,33 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
                 model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
 
+                [~,~,wvt.A0] = wvt.geostrophicComponent.randomAmplitudesWithSpectrum(A0Spectrum= @(k,j) model_spectrum(k));
+
                 % In this loop we set the energy level directly to wvt.A0
                 % as computed by integrated the spectrum--so it is *not*
                 % depth integrated and must be converted at the end.
                 % ARand contains the random orientations
-                kAxis = wvt.kRadial;
-                dk = kAxis(2)-kAxis(1);
-                ARand = wvt.generateHermitianRandomMatrix();
-                for iK=1:(length(wvt.kRadial)-1)
-                    indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2 & wvt.J == j_f  );
-                    energy = integral(model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                    wvt.A0(indicesForK) = energy/length(indicesForK);
-                    ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
-                end
-                wvt.A0 = WVTransform.makeHermitian(wvt.A0);
-
-                AA = ~(wvt.maskForAliasedModes(jFraction=1));
-                wvt.A0 = AA .* (sqrt(wvt.h .* wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
-                wvt.A0(isnan(wvt.A0)) = 0;
-                WVTransform.checkHermitian(wvt.A0);
+                % kAxis = wvt.kRadial;
+                % dk = kAxis(2)-kAxis(1);
+                % ARand = wvt.generateHermitianRandomMatrix();
+                % for iK=1:(length(wvt.kRadial)-1)
+                %     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2 & wvt.J == j_f  );
+                %     energy = integral(model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
+                %     wvt.A0(indicesForK) = energy/length(indicesForK);
+                %     ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
+                % end
+                % wvt.A0 = WVTransform.makeHermitian(wvt.A0);
+                % 
+                % wvt.A0 = (sqrt(wvt.h .* wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
+                % wvt.A0(isnan(wvt.A0)) = 0;
+                % WVTransform.checkHermitian(wvt.A0);
 
                 if strcmp(options.initialPV,'narrow-band')
                     wvt.A0 = (self.MA0) .* wvt.A0;
                 else
-                    u = wvt.seaSurfaceU;
-                    v = wvt.seaSurfaceV;
-                    zeta = wvt.seaSurfaceHeight;
+                    u = wvt.ssu;
+                    v = wvt.ssv;
+                    zeta = wvt.ssh;
                     KE = mean(mean(0.5*(u.^2+v.^2)));
                     PE = mean(mean(0.5*(9.81*zeta.^2)/h));
                     u_rms_surface = mean(mean(sqrt(u.^2+v.^2)));

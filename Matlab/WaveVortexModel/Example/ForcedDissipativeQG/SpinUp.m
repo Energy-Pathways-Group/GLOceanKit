@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Specify the problem dimensions and initialize a WVTransform.
 % The 'h' parameter is the equivalent depth, and 0.80 m is a typical value
 % for the first baroclinic mode.
@@ -13,7 +13,7 @@ latitude = 25;
 wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Initialize a non-linear flux operator---in this case, the NonlinearFlux
 % subclass is specific to QG forced-dissipative turbulence.
 %
@@ -26,15 +26,17 @@ wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dk = (wvt.k(2)-wvt.k(1));
-k_f = 30*dk;
-k_r = 4*dk;
+k_f = 30*wvt.dk;
+k_r = 4*wvt.dk;
 u_rms = 0.05;
+uv_damp = (pi^2)*u_rms; % Damping needs to know the maximum value of u; used to set the small scale damping
 
-fdFlux = SingleModeForcedDissipativeQGPVEMasked(wvt,k_f=k_f,k_r=k_r,u_rms=u_rms,initialPV='full-spectrum');
+fdFlux = WVNonlinearFluxQGForced(wvt,uv_damp=uv_damp);
+model_spectrum2D = fdFlux.setNarrowBandForcing(initialPV='full-spectrum',k_f=k_f,k_r=k_r,u_rms=u_rms);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+%%
 % Once a WVTransform and a NonlinearFlux operator have been
 % initialized, we can now initialize a model.
 % 
@@ -59,7 +61,7 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 
 % model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 % model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-model.integrateToTime(50*86400);
+model.integrateToTime(10*86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
@@ -72,13 +74,13 @@ EkT = wvt.transformToRadialWavenumber((wvt.A0_TE_factor/wvt.h) .* (wvt.A0.*conj(
 
 figure(Position=[100 100 1000 400])
 subplot(1,2,1)
-pcolor(wvt.X/1000,wvt.Y/1000,wvt.zeta_z), shading interp
+pcolor(wvt.X/1000,wvt.Y/1000,wvt.ssh), shading interp
 colormap("gray")
 xlabel('km'), ylabel('km')
 
 subplot(1,2,2)
 plot(wvt.kRadial,EkT/(wvt.kRadial(2)-wvt.kRadial(1))), xlog, ylog, hold on
-plot(wvt.kRadial,fdFlux.model_spectrum(wvt.kRadial))
+plot(wvt.kRadial,model_spectrum2D(wvt.kRadial))
 ylabel('m^3/s^2')
 xlabel('1/m')
 title('horizontal velocity spectrum')
