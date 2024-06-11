@@ -120,8 +120,8 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             j_f = options.j_f;
             wvt = self.wvt;
 
-            smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(self.r),1,'first');
-            fprintf('(k_r=%.2f dk, k_f=%d dk, k_nu=%d dk.\n',k_r/(wvt.k(2)-wvt.k(1)),round(k_f/(wvt.k(2)-wvt.k(1))),smallDampIndex-1);
+            % smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(self.r),1,'first');
+            fprintf('(k_r=%.2f dk, k_f=%d dk, k_nu=%d dk.\n',k_r/wvt.dk,round(k_f/wvt.dk),round(self.k_damp/wvt.dk));
             % fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
 
             

@@ -21,6 +21,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         damp
         nu_xy = 0
         r = 0
+        k_damp
     end
 
     properties (Dependent)
@@ -116,7 +117,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 % compute it yet.
                 friction = 0;
             end
-            Qkl = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            [Qkl,~,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
             self.damp = friction - self.nu_xy*Qkl.*(-(K.^2 +L.^2)).^2;
             self.damp = -(self.wvt.g/self.wvt.f) * self.A0PV .* self.damp; % (g/f) converts A0 into a velocity
         end
