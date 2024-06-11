@@ -519,7 +519,7 @@ classdef WVGeometryDoublyPeriodic
                 Aklz (:,:,:) double
             end
             arguments (Output)
-                Azkl (:,:,:) double
+                Azkl (:,:) double
             end
             Nz = size(Aklz,3);
             Aklz = reshape(Aklz,[self.Nx*self.Ny Nz]);
@@ -576,12 +576,12 @@ classdef WVGeometryDoublyPeriodic
             % - Topic: Operations — Grid transformation
             % - Declaration: Aklz = transformFromWVGridToDFTGrid(self,Azkl)
             % - Parameter Azkl: WV format matrix of size [Nz Nkl_wv] where Nz can be of any length
-            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
+            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 0)
             % - Returns Aklz: DFT format matrix of size [Nk_dft Nl_dft Nz] (equivalently [Nx Ny Nz])
             arguments (Input)
                 self WVGeometryDoublyPeriodic {mustBeNonempty}
-                Azkl (:,:,:) double
-                options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 1
+                Azkl (:,:) double
+                options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 0
             end
             arguments (Output)
                 Aklz (:,:,:) double

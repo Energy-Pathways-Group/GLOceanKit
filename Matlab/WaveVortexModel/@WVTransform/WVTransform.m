@@ -94,7 +94,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     properties (Dependent, SetAccess=private)
         x, y
-        % k, l
         kl
         dk, dl
         kRadial
