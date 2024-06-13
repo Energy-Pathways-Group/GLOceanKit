@@ -194,7 +194,7 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
                         A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForK) ));
                     end
 
-                    if any(Ap) || any(Am)
+                    if any(Ap(:)) || any(Am(:))
                         energyPerApmComponent = integral(@(k) ApmSpectrum(k,wvt.j(iJ)),max(wvt.kRadial(iK)-dk/2,0),wvt.kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
                         Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
                         Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForK) ));
