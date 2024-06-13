@@ -58,6 +58,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         Lx, Ly, Lz
         Nx, Ny, Nj, Nkl
         k, l, j, z = 0
+        kAxis, lAxis
         latitude
 
         % Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -221,8 +222,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nkl = self.horizontalModes.Nkl_wv;
             self.k = self.horizontalModes.k_wv;
             self.l = self.horizontalModes.l_wv;
+            self.kAxis = fftshift(self.horizontalModes.k_dft);
+            self.lAxis = fftshift(self.horizontalModes.l_dft);
             
-
             % Now set the initial conditions to zero
             self.Ap = zeros(self.spectralMatrixSize);
             self.Am = zeros(self.spectralMatrixSize);
@@ -730,6 +732,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
         [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
+
+        [varargout] = transformToKLAxes(self,varargin);
+        [varargout] = transformToRadialWavenumber(self,varargin);
 
         function flag = hasMeanPressureDifference(self)
             % checks if there is a non-zero mean pressure difference between the top and bottom of the fluid

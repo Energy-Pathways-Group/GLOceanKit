@@ -53,6 +53,7 @@ nav_order: 4
   + [`damp`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/damp.html) 
   + [`dampingOperator`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/dampingoperator.html) 
   + [`dampingTimeScale`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/dampingtimescale.html) 
+  + [`k_damp`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/k_damp.html) 
   + [`nu_xy`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/nu_xy.html) 
   + [`r`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/r.html) 
   + [`uv_damp`](/classes/nonlinear-fluxes/wvnonlinearfluxqg/uv_damp.html) 

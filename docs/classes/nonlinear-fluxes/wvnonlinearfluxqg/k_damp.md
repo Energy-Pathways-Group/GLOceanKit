@@ -1,13 +1,13 @@
 ---
 layout: default
-title: wvt
+title: k_damp
 parent: WVNonlinearFluxQG
 grand_parent: Classes
-nav_order: 19
+nav_order: 12
 mathjax: true
 ---
 
-#  wvt
+#  k_damp
 
 
 

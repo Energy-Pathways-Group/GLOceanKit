@@ -143,6 +143,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`ssv`](/classes/wvtransform/ssv.html) y-component of the fluid velocity at the surface
   + [`uvMax`](/classes/wvtransform/uvmax.html) max horizontal fluid speed
   + [`wMax`](/classes/wvtransform/wmax.html) max vertical fluid speed
+  + [`zeta_z`](/classes/wvtransform/zeta_z.html) vertical component of relative vorticity
 + Internal
   + [`WVTransform`](/classes/wvtransform/wvtransform.html) initialize a WVTransform instance
   + [`addToVariableCache`](/classes/wvtransform/addtovariablecache.html) add variable to internal cache, in case it is needed again
@@ -183,6 +184,7 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
     + [`transformFromSpatialDomainWithFg`](/classes/wvtransform/transformfromspatialdomainwithfg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic F-modes
     + [`transformFromSpatialDomainWithFio`](/classes/wvtransform/transformfromspatialdomainwithfio.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the inertial oscillation F-modes
     + [`transformFromSpatialDomainWithGg`](/classes/wvtransform/transformfromspatialdomainwithgg.html) transforms from the spatial domain (z,:,:) to the spectral domain (j,:,:) using the geostrophic G-modes
+    + [`transformToKLAxes`](/classes/wvtransform/transformtoklaxes.html) transforms in the spectral domain from (j,kl) to (kAxis,lAxis,j)
     + [`transformToRadialWavenumber`](/classes/wvtransform/transformtoradialwavenumber.html) transforms in the spectral domain from (j,kl) to (j,kRadial)
     + [`transformToSpatialDomainWithF`](/classes/wvtransform/transformtospatialdomainwithf.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes
     + [`transformToSpatialDomainWithFAllDerivatives`](/classes/wvtransform/transformtospatialdomainwithfallderivatives.html) transforms from the spectral domain (k,l,j) to the spatial domain (x,y,z) using the F-modes, returning the transformed variable an its derivatives.
@@ -234,7 +236,9 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`initializePrimaryFlowComponents`](/classes/wvtransform/initializeprimaryflowcomponents.html) 
   + [`isHydrostatic`](/classes/wvtransform/ishydrostatic.html) 
   + [`isequal`](/classes/wvtransform/isequal.html) 
+  + [`kAxis`](/classes/wvtransform/kaxis.html) k coordinate
   + [`kl`](/classes/wvtransform/kl.html) dimension of the interleaved k-l wavenumber coordinate
+  + [`lAxis`](/classes/wvtransform/laxis.html) l coordinate
   + [`modeNumberFromIndex`](/classes/wvtransform/modenumberfromindex.html) 
   + [`operationForDynamicalVariable`](/classes/wvtransform/operationfordynamicalvariable.html) This function is designed with the following goals:
   + [`qgpvFluxFromF0`](/classes/wvtransform/qgpvfluxfromf0.html) 

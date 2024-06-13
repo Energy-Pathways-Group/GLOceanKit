@@ -1,15 +1,15 @@
 ---
 layout: default
-title: kl
+title: lAxis
 parent: WVTransform
 grand_parent: Classes
-nav_order: 112
+nav_order: 115
 mathjax: true
 ---
 
-#  kl
+#  lAxis
 
-dimension of the interleaved k-l wavenumber coordinate
+l coordinate
 
 
 ---

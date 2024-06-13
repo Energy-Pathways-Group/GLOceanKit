@@ -20,7 +20,7 @@ convert from a WV to DFT grid
 ```
 ## Parameters
 + `Azkl`  WV format matrix of size [Nz Nkl_wv] where Nz can be of any length
-+ `isHalfComplex`  (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
++ `isHalfComplex`  (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 0)
 
 ## Returns
 + `Aklz`  DFT format matrix of size [Nk_dft Nl_dft Nz] (equivalently [Nx Ny Nz])
