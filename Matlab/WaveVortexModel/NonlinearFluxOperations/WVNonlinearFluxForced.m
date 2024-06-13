@@ -115,13 +115,11 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
             Ambar(self.wvt.Kh > self.k_damp) = 0;
             options.MAm(self.wvt.Kh > self.k_damp) = 0;
 
-            % multiply by the anti-alias filter so we don't force in the
-            % aliased region.
-            self.Apbar = self.AA .* Apbar;
+            self.Apbar = Apbar;
             self.MAp = options.MAp;
             self.tauP = options.tauP;
 
-            self.Ambar = self.AA .* Ambar;
+            self.Ambar = Ambar;
             self.MAm = options.MAm;
             self.tauM = options.tauM;
 
@@ -159,7 +157,7 @@ classdef WVNonlinearFluxForced < WVNonlinearFlux
                 options.tau0 (1,1) double = 0
             end
 
-            self.A0bar = self.AA .* A0bar;
+            self.A0bar = A0bar;
             self.MA0 = options.MA0;
             self.tau0 = options.tau0;
         end
