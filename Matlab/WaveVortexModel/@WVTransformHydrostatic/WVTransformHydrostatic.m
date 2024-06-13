@@ -149,10 +149,10 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             self.addPropertyAnnotations(WVPropertyAnnotation('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. '));
             self.addPropertyAnnotations(WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification'));
 
-            outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
-            outputVar.attributes('short_name') = 'ocean_relative_vorticity';
-            f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
-            self.addOperation(WVOperation('zeta_z',outputVar,f));
+            % outputVar = WVVariableAnnotation('zeta_z',{'x','y','z'},'1/s^2', 'vertical component of relative vorticity');
+            % outputVar.attributes('short_name') = 'ocean_relative_vorticity';
+            % f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
+            % self.addOperation(WVOperation('zeta_z',outputVar,f));
 
             self.nonlinearFluxOperation = WVNonlinearFlux(self);
 
