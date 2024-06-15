@@ -139,26 +139,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
                 model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
 
-                [~,~,wvt.A0] = wvt.geostrophicComponent.randomAmplitudesWithSpectrum(A0Spectrum= @(k,j) model_spectrum(k));
-
-                % In this loop we set the energy level directly to wvt.A0
-                % as computed by integrated the spectrum--so it is *not*
-                % depth integrated and must be converted at the end.
-                % ARand contains the random orientations
-                % kAxis = wvt.kRadial;
-                % dk = kAxis(2)-kAxis(1);
-                % ARand = wvt.generateHermitianRandomMatrix();
-                % for iK=1:(length(wvt.kRadial)-1)
-                %     indicesForK = find( kAxis(iK)-dk/2 <= wvt.Kh & wvt.Kh < kAxis(iK)+dk/2 & wvt.J == j_f  );
-                %     energy = integral(model_spectrum,max(kAxis(iK)-dk/2,0),kAxis(iK)+dk/2);
-                %     wvt.A0(indicesForK) = energy/length(indicesForK);
-                %     ARand(indicesForK) = ARand(indicesForK) /sqrt( sum(ARand(indicesForK) .* conj( ARand(indicesForK)))/length(indicesForK) );
-                % end
-                % wvt.A0 = WVTransform.makeHermitian(wvt.A0);
-                % 
-                % wvt.A0 = (sqrt(wvt.h .* wvt.A0) ./sqrt(wvt.A0_TE_factor)) .* ARand;
-                % wvt.A0(isnan(wvt.A0)) = 0;
-                % WVTransform.checkHermitian(wvt.A0);
+                [~,~,wvt.A0] = wvt.geostrophicComponent.randomAmplitudesWithSpectrum(A0Spectrum= @(k,j) model_spectrum(k),shouldOnlyRandomizeOrientations=1);
 
                 if strcmp(options.initialPV,'narrow-band')
                     wvt.A0 = (self.MA0) .* wvt.A0;
@@ -176,6 +157,18 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             end
             self.A0bar = (self.MA0) .* wvt.A0;
             self.tau0 = 0;
+        end
+
+        function varargout = forcingFlux(self)
+            if self.tau0 > 0
+                varargout{1} = self.MA0.*(self.A0bar - self.wvt.A0)/self.tau0;
+            else
+                % compute the amount that wanted to leave inertially and
+                % flip the sign (because that's what we implicitly added
+                % back in).
+                F0 = self.MA0 .* self.inertialFlux;
+                varargout{1} = -F0;
+            end
         end
 
         function varargout = compute(self,wvt,varargin)

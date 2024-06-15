@@ -28,7 +28,7 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
         function testNonlinearFlux(self)
             self.wvt.initWithRandomFlow();
             spatialFlux = WVNonlinearFluxSpatial(self.wvt);
-            standardFlux = WVNonlinearFlux(self.wvt,shouldAntialias=0);
+            standardFlux = WVNonlinearFlux(self.wvt);
 
             self.wvt.t = 6000;
             [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(self.wvt);

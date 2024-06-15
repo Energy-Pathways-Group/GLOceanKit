@@ -144,6 +144,34 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % u = permute(u,[2 3 1]);
         end
 
+        function varargout = inertialFlux(self)
+            Ubar = self.wvt.UA0 .* self.wvt.A0;
+            Vbar = self.wvt.VA0 .* self.wvt.A0;
+            PVbar = self.PVA0 .* self.wvt.A0;
+
+            u_g = self.wvt.transformToSpatialDomainWithF(A0=Ubar);
+            v_g = self.wvt.transformToSpatialDomainWithF(A0=Vbar);
+            PVx = self.wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(self.wvt.k,-1).*PVbar);
+            PVy = self.wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(self.wvt.l,-1).*PVbar);
+
+            PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
+
+            F0 = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVnl));
+            varargout = {F0};
+        end
+
+        function varargout = dampingFlux(self)
+            if self.wvt.isBarotropic
+                F0 = self.damp .* self.wvt.A0;
+            else
+                mask = zeros(self.wvt.spatialMatrixSize);
+                mask(:,:,1) = 1;
+                PVabs = self.r * mask.*self.wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* self.wvt.A0);
+                F0 = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVabs));
+            end
+            varargout = {F0};
+        end
+
         function varargout = compute(self,wvt,varargin)
             % Apply operator S---defined in (C4) in the manuscript
             Ubar = wvt.UA0 .* wvt.A0;
@@ -158,7 +186,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             if wvt.isBarotropic
                 PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
             else
-                mask = zeros(size(wvt.X));
+                mask = zeros(wvt.spatialMatrixSize);
                 mask(:,:,1) = 1;
                 PVabs = self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
                 PVnl = u_g.*PVx + v_g.*(PVy+self.beta) + PVabs;

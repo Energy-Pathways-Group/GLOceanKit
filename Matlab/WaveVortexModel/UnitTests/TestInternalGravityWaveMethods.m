@@ -37,7 +37,7 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
 
             % currently we need to make this small-ish to avoid density
             % overturns.
-            self.wvt.initWithRandomFlow(uvMax=0.05);
+            self.wvt.initWithRandomFlow(uvMax=0.025);
 
             initialTotalEnergy = self.wvt.totalEnergy;
             initialWaveEnergy = self.wvt.waveEnergy;
