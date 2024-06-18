@@ -3,6 +3,6 @@ function varargout = performOperationWithName(self,opName,varargin)
 %
 % - Topic: Internal
 modelOp = self.operationNameMap(opName);
-varargout = cell(1,modelOp.nVarOut);
-[varargout{:}] = self.performOperation(modelOp,varargin{:});
+varargout = cell(1,modelOp{1}.nVarOut);
+[varargout{:}] = self.performOperation(modelOp{1},varargin{:});
 end

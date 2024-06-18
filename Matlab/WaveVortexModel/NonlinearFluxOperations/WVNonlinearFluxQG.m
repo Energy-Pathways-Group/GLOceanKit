@@ -85,6 +85,18 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             else
                 self.beta = 0;
             end
+
+            variable = WVVariableAnnotation('F0_inertial',{'j','kl'},'m/s', 'non-linear flux into A0, inertial');
+            wvt.addOperation(WVOperation('F0_inertial', variable,@(wvt) self.inertialFlux));
+
+            variable = WVVariableAnnotation('F0_inertial_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, inertial');
+            wvt.addOperation(WVOperation('F0_inertial_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_inertial) ));
+
+            variable = WVVariableAnnotation('F0_damp',{'j','kl'},'m/s', 'non-linear flux into A0, damping');
+            wvt.addOperation(WVOperation('F0_damp', variable,@(wvt) self.dampingFlux));
+
+            variable = WVVariableAnnotation('F0_damp_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, damping');
+            wvt.addOperation(WVOperation('F0_damp_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_damp) ));
         end
 
         function set.r(self,value)
@@ -144,7 +156,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % u = permute(u,[2 3 1]);
         end
 
-        function varargout = inertialFlux(self)
+        function F0_inertial = inertialFlux(self)
             Ubar = self.wvt.UA0 .* self.wvt.A0;
             Vbar = self.wvt.VA0 .* self.wvt.A0;
             PVbar = self.PVA0 .* self.wvt.A0;
@@ -156,20 +168,18 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
             PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
 
-            F0 = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVnl));
-            varargout = {F0};
+            F0_inertial = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVnl));
         end
 
-        function varargout = dampingFlux(self)
+        function F0_damp = dampingFlux(self)
             if self.wvt.isBarotropic
-                F0 = self.damp .* self.wvt.A0;
+                F0_damp = self.damp .* self.wvt.A0;
             else
                 mask = zeros(self.wvt.spatialMatrixSize);
                 mask(:,:,1) = 1;
                 PVabs = self.r * mask.*self.wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* self.wvt.A0);
-                F0 = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVabs));
+                F0_damp = -self.A0PV .* self.wvt.transformFromSpatialDomainWithFg(self.wvt.transformFromSpatialDomainWithFourier(PVabs)) + self.damp .* self.wvt.A0;
             end
-            varargout = {F0};
         end
 
         function varargout = compute(self,wvt,varargin)

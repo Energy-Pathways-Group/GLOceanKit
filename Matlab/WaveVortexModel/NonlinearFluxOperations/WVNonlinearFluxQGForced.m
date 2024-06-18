@@ -50,6 +50,12 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             qgArgs = namedargs2cell(options);
             self@WVNonlinearFluxQG(wvt,qgArgs{:});
 
+            variable = WVVariableAnnotation('F0_force',{'j','kl'},'m/s', 'non-linear flux into A0, forcing');
+            wvt.addOperation(WVOperation('F0_force', variable,@(wvt) self.forcingFlux));
+
+            variable = WVVariableAnnotation('F0_force_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, forcing');
+            wvt.addOperation(WVOperation('F0_force_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=wvt.F0_force) ));
+
             % self.setGeostrophicForcingCoefficients(zeros(wvt.Nk,wvt.Nl,wvt.Nj),ones(wvt.Nk,wvt.Nl,wvt.Nj),newOptions.FTA0);
         end
 
@@ -159,15 +165,14 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
             self.tau0 = 0;
         end
 
-        function varargout = forcingFlux(self)
+        function F0_force = forcingFlux(self)
             if self.tau0 > 0
-                varargout{1} = self.MA0.*(self.A0bar - self.wvt.A0)/self.tau0;
+                F0_force = self.MA0.*(self.A0bar - self.wvt.A0)/self.tau0;
             else
                 % compute the amount that wanted to leave inertially and
                 % flip the sign (because that's what we implicitly added
                 % back in).
-                F0 = self.MA0 .* self.inertialFlux;
-                varargout{1} = -F0;
+                F0_force = - self.MA0 .* self.inertialFlux;
             end
         end
 

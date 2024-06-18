@@ -113,12 +113,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     properties (Access=private)
         variableAnnotationNameMap
+        timeDependentVariablesNameMap
         propertyAnnotationNameMap
         dimensionAnnotationNameMap
 
         operationNameMap
         operationVariableNameMap
-        timeDependentVariablesNameMap
         variableCache
 
         primaryFlowComponentNameMap
@@ -162,7 +162,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                     varargout{1} = varargout{1}.(indexOp(2:end));
                 end
             elseif isKey(self.operationNameMap,indexOp(1).Name)
-                [varargout{:}] = self.performOperation(self.operationNameMap(indexOp(1).Name));
+                op = self.operationNameMap(indexOp(1).Name);
+                [varargout{:}] = self.performOperation(op{1});
             else
                 error("WVTransform:UnknownVariable","The variable %s does not exist",indexOp(1).Name);
             end
@@ -176,7 +177,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function n = dotListLength(self,indexOp,indexContext)
             if isKey(self.operationNameMap,indexOp(1).Name)
                 modelOp = self.operationNameMap(indexOp(1).Name);
-                n = modelOp.nVarOut;
+                n = modelOp{1}.nVarOut;
             else
                 n=1;
             end
@@ -232,13 +233,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             
             self.clearVariableCache();
 
-            self.dimensionAnnotationNameMap = containers.Map();
-            self.propertyAnnotationNameMap = containers.Map();
-            self.variableAnnotationNameMap = containers.Map(); % contains names of *all* variables
-
-            self.operationVariableNameMap = containers.Map(); % contains names of variables with associated operations
-            self.operationNameMap = containers.Map();
-            self.timeDependentVariablesNameMap = containers.Map();
+            self.dimensionAnnotationNameMap =    configureDictionary("string","WVDimensionAnnotation"); %containers.Map();
+            self.propertyAnnotationNameMap =     configureDictionary("string","WVPropertyAnnotation"); %containers.Map();
+            self.variableAnnotationNameMap =     configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of *all* variables
+            self.timeDependentVariablesNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map();
+            self.operationVariableNameMap =      configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
+            self.operationNameMap =              configureDictionary("string","cell"); containers.Map(); % cannot use a dictionary, because dictionaries cannot take subclasses of the defined type
 
             self.primaryFlowComponentNameMap = containers.Map();
             self.flowComponentNameMap = containers.Map();
@@ -638,21 +638,18 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         summarizeModeEnergy(self)
 
         function summarizeDynamicalVariables(self)
-            Name = cell(self.variableAnnotationNameMap.length,1);
-            Dimension = cell(self.variableAnnotationNameMap.length,1);
-            Units = cell(self.variableAnnotationNameMap.length,1);
-            Description = cell(self.variableAnnotationNameMap.length,1);
-            iVar = 0;
-            for name = keys(self.variableAnnotationNameMap)
-                iVar = iVar+1;
-                Name{iVar} = name{1};
-                if isempty(self.variableAnnotationNameMap(name{1}).dimensions)
+            Dimension = cell(self.variableAnnotationNameMap.numEntries,1);
+            Units = cell(self.variableAnnotationNameMap.numEntries,1);
+            Description = cell(self.variableAnnotationNameMap.numEntries,1);
+            Name = keys(self.variableAnnotationNameMap,'cell');
+            for iVar=1:length(Name)
+                if isempty(self.variableAnnotationNameMap(Name{iVar}).dimensions)
                     Dimension{iVar} = "()";
                 else
-                Dimension{iVar} = join(["(",join(string(self.variableAnnotationNameMap(name{1}).dimensions),', '),")"]) ;
+                    Dimension{iVar} = join(["(",join(string(self.variableAnnotationNameMap(Name{iVar}).dimensions),', '),")"]) ;
                 end
-                Units{iVar} = self.variableAnnotationNameMap(name{1}).units;
-                Description{iVar} = self.variableAnnotationNameMap(name{1}).description;
+                Units{iVar} = self.variableAnnotationNameMap(Name{iVar}).units;
+                Description{iVar} = self.variableAnnotationNameMap(Name{iVar}).description;
             end
             Name = string(Name);
             Dimension = string(Dimension);

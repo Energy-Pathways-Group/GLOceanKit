@@ -61,7 +61,9 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 
 % model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
 % model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
+tic
 model.integrateToTime(1*86400);
+toc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%

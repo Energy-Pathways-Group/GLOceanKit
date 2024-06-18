@@ -61,7 +61,7 @@ for iOp=1:length(transformOperation)
     for iVar=1:length(transformOperation(iOp).outputVariables)
         self.operationVariableNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
     end
-    self.operationNameMap(transformOperation(iOp).name) = transformOperation(iOp);
+    self.operationNameMap(transformOperation(iOp).name) = {transformOperation(iOp)};
 
 end
 end
