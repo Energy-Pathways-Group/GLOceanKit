@@ -22,6 +22,9 @@ function addRandomFlow(self,flowComponentNames,options)
 % - Declaration: addRandomFlow(flowComponentNames,options)
 % - Parameter flowComponentNames: strings of flow component names names.
 % - Parameter uvMax: (optional) maximum horizontal velocity
+% - Parameter A0Spectrum: (optional) function_handle of the form @(k,j)
+% - Parameter ApmSpectrum: (optional) function_handle of the form @(k,j)
+% - Parameter shouldOnlyRandomizeOrientations: amplitudes follow the spectrum exactly, but directions are still randomized
 arguments
     self WVTransform {mustBeNonempty}
 end
@@ -30,6 +33,9 @@ arguments (Repeating)
 end
 arguments
     options.uvMax (1,1) double = 0.2
+    options.A0Spectrum = @isempty
+    options.ApmSpectrum = @isempty
+    options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
 end
 Ap = zeros(self.spectralMatrixSize);
 Am = zeros(self.spectralMatrixSize);
@@ -40,7 +46,7 @@ end
 
 for name = flowComponentNames
     flowComponent = self.flowComponentNameMap(name{1});
-    [Ap_,Am_,A0_] = flowComponent.randomAmplitudesWithSpectrum;
+    [Ap_,Am_,A0_] = flowComponent.randomAmplitudesWithSpectrum(A0Spectrum=options.A0Spectrum,ApmSpectrum=options.ApmSpectrum,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
     u = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap_+self.UAm.*Am_,A0=self.UA0.*A0_);
     v = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap_+self.VAm.*Am_,A0=self.VA0.*A0_);
     ratio = options.uvMax/sqrt(max(u(:).^2 + v(:).^2));

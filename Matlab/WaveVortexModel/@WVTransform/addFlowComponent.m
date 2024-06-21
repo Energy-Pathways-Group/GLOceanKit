@@ -4,9 +4,9 @@ function addFlowComponent(self,flowComponent)
 % - Topic: Flow components
 arguments
     self WVTransform {mustBeNonempty}
-    flowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
+    flowComponent (1,:) WVFlowComponent {mustBeNonempty}
 end
 for i=1:length(flowComponent)
-    self.flowComponentNameMap(flowComponent(i).name) = flowComponent(i);
+    self.flowComponentNameMap(flowComponent(i).shortName) = flowComponent(i);
 end
 end

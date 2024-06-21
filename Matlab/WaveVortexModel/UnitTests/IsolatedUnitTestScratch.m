@@ -10,6 +10,35 @@ wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [32 32 10], N2=@(z) (5.2e-3)*(5
 %     disp(ME)
 % end
 %%
+U_io = 0.2;
+Ld = wvt.Lz/2;
+theta = 0;
+u_NIO = @(z) U_io*cos(theta)*exp((z/Ld));
+v_NIO = @(z) U_io*sin(theta)*exp((z/Ld));
+
+wvt.initWithInertialMotions(u_NIO,v_NIO);
+u1 = wvt.u_io;
+v1 = wvt.v_io;
+Ap1 = wvt.Ap; Am1 = wvt.Am; A01 = wvt.A0;
+
+%% Populate the flow field with junk...
+wvt.initWithRandomFlow();
+u2 = wvt.u_io;
+v2 = wvt.v_io;
+Ap2 = wvt.Ap; Am2 = wvt.Am; A02 = wvt.A0;
+
+%%
+wvt.addInertialMotions(u_NIO,v_NIO);
+u3 = wvt.u_io;
+v3 = wvt.v_io;
+Ap3 = wvt.Ap; Am3 = wvt.Am; A03 = wvt.A0;
+
+
+%%
+self.verifyThat(u1 + u2,IsSameSolutionAs(u3),'u_tot');
+self.verifyThat(v1 + v2,IsSameSolutionAs(v3),'v_tot');
+
+%%
 wvt.removeAll();
 kMode = -3; lMode = -5; j=3; phi = pi*0.3; u=0.1; sign = +1;
 wvt.t = 22654;

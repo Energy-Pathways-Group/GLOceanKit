@@ -1,13 +1,17 @@
-function wvt = waveVortexTransformFromFile(path,options)
+function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 % Initialize a WVTransformSingleMode instance from an existing file
 %
 % - Topic: Initialization
 % - Declaration: wvt = waveVortexTransformFromFile(path,options)
 % - Parameter path: path to a NetCDF file
 % - Parameter iTime: (optional) time index to initialize from (default 1)
-arguments
+arguments (Input)
     path char {mustBeFile}
     options.iTime (1,1) double {mustBePositive} = 1
+end
+arguments (Output)
+    wvt WVTransform
+    ncfile NetCDFFile
 end
 
 ncfile = NetCDFFile(path);

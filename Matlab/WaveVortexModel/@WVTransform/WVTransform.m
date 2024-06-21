@@ -58,7 +58,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         Lx, Ly, Lz
         Nx, Ny, Nj, Nkl
         k, l, j, z = 0
-        kAxis, lAxis
+        kAxis, lAxis, kRadial
         latitude
 
         % Boolean indicating whether there is a single (equivalent barotropic) mode
@@ -91,13 +91,60 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         dftBuffer, wvBuffer
         dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
+
+        % returns a mask indicating where primary solutions live in the Ap matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % primary solutions live in the Ap matrix.
+        %
+        % - Topic: Masks
+        maskApPrimary = 0
+
+        % returns a mask indicating where primary solutions live in the Am matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % primary solutions live in the Am matrix.
+        %
+        % - Topic: Masks
+        maskAmPrimary = 0
+
+        % returns a mask indicating where primary solutions live in the A0 matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % primary solutions live in the A0 matrix.
+        %
+        % - Topic: Masks
+        maskA0Primary = 0
+
+        % returns a mask indicating where conjugate solutions live in the Ap matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % conjugate solutions live in the Ap matrix.
+        %
+        % - Topic: Masks
+        maskApConj = 0
+
+        % returns a mask indicating where conjugate solutions live in the Am matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % conjugate solutions live in the Am matrix.
+        %
+        % - Topic: Masks
+        maskAmConj = 0
+
+        % returns a mask indicating where conjugate solutions live in the A0 matrix.
+        %
+        % Returns a 'mask' (matrix with 1s or 0s) indicating where
+        % conjugate solutions live in the A0 matrix.
+        %
+        % - Topic: Masks
+        maskA0Conj = 0
     end
 
     properties (Dependent, SetAccess=private)
         x, y
         kl
         dk, dl
-        kRadial
         K2, Kh
 
         Omega
@@ -223,8 +270,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.Nkl = self.horizontalModes.Nkl_wv;
             self.k = self.horizontalModes.k_wv;
             self.l = self.horizontalModes.l_wv;
+            self.kRadial = self.horizontalModes.kRadial_wv;
             self.kAxis = fftshift(self.horizontalModes.k_dft);
-            self.lAxis = fftshift(self.horizontalModes.l_dft);
+            self.lAxis = fftshift(self.horizontalModes.l_dft);   
             
             % Now set the initial conditions to zero
             self.Ap = zeros(self.spectralMatrixSize);
@@ -428,15 +476,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function kl = get.kl(self)
             kl = (0:(self.Nkl-1))';
-        end
-
-        function kRadial = get.kRadial(self)
-            allKs = unique(reshape(abs(self.Kh),[],1),'sorted');
-            deltaK = max(diff(allKs));
-            kAxis = 0:deltaK:(max(allKs)+deltaK/2);
-
-            % Thi is the final output axis for wavenumber
-            kRadial = reshape(kAxis,[],1);
         end
 
         function value = get.Nz(self)
@@ -753,7 +792,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     methods (Static)
         % Initialize the a transform from file
-        wvt = waveVortexTransformFromFile(path,iTime)
+        [wvt,ncfile] = waveVortexTransformFromFile(path,options)
     end
 
     methods (Static, Hidden=true)

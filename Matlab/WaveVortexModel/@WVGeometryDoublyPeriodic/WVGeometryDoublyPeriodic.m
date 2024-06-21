@@ -167,6 +167,11 @@ classdef WVGeometryDoublyPeriodic
         %
         % - Topic: Domain attributes — WV grid
         lMode_wv
+
+        % radial (k,l) wavenumber on the WV grid
+        %
+        % - Topic: Domain attributes — WV grid
+        kRadial_wv
     end
 
     methods
@@ -290,6 +295,17 @@ classdef WVGeometryDoublyPeriodic
 
         function N = get.Nkl_wv(self)
             N = length(self.k_wv);
+        end
+
+        function kRadial = get.kRadial_wv(self)
+            [K,L] = ndgrid(self.kMode_wv,self.lMode_wv);
+            Kh = sqrt(K .* K + L .* L);
+            allKs = unique(reshape(abs(Kh),[],1),'sorted');
+            deltaK = max(diff(allKs));
+            kAxis = 0:deltaK:(max(allKs)+deltaK/2);
+
+            % Thi is the final output axis for wavenumber
+            kRadial = reshape(kAxis,[],1);
         end
 
         function u_bar = transformFromSpatialDomain(self,u)

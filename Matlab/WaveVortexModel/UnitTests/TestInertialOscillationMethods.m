@@ -22,7 +22,7 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
                 case 'boussinesq'
                     testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
             end
-            testCase.wvt.addOperation(testCase.wvt.operationForDynamicalVariable('u','v','eta','w',flowComponent=testCase.wvt.flowComponent('inertial')));
+            % testCase.wvt.addOperation(testCase.wvt.operationForDynamicalVariable('u','v','eta','w',flowComponent=testCase.wvt.flowComponent('inertial')));
             testCase.solutionGroup = WVInertialOscillationComponent(testCase.wvt);
         end
     end
@@ -34,7 +34,7 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
             % remove all the inertial energy, and then confirm that there
             % is no inertial energy remaining, and that the total energy is
             % the same as the initial total, minus the initial inertial.
-            self.wvt.initWithRandomFlow();
+            self.wvt.initWithRandomFlow(uvMax=0.02);
 
             initialTotalEnergy = self.wvt.totalEnergy;
             initialInertialEnergy = self.wvt.inertialEnergy;
@@ -63,7 +63,7 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
             v_NIO = @(z) U_io*sin(theta)*exp((z/Ld));
 
             % Populate the flow field with junk...
-            self.wvt.initWithRandomFlow();
+            self.wvt.initWithRandomFlow(uvMax=0.02);
 
             % call our initWithInertialMotions method
             self.wvt.initWithInertialMotions(u_NIO,v_NIO);
@@ -84,7 +84,7 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
             
 
             % Populate the flow field with junk...
-            self.wvt.initWithRandomFlow();
+            self.wvt.initWithRandomFlow(uvMax=0.02);
 
             initialTotalEnergy = self.wvt.totalEnergy;
             initialInertialEnergy = self.wvt.inertialEnergy;
@@ -113,15 +113,22 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
             self.wvt.initWithInertialMotions(u_NIO,v_NIO);
             u1 = self.wvt.u_io;
             v1 = self.wvt.v_io;
+            Ap1 = self.wvt.Ap; Am1 = self.wvt.Am; A01 = self.wvt.A0;
 
             % Populate the flow field with junk...
-            self.wvt.initWithRandomFlow();
+            self.wvt.initWithRandomFlow(uvMax=0.02);
             u2 = self.wvt.u_io;
             v2 = self.wvt.v_io;
+            Ap2 = self.wvt.Ap; Am2 = self.wvt.Am; A02 = self.wvt.A0;
 
             self.wvt.addInertialMotions(u_NIO,v_NIO);
             u3 = self.wvt.u_io;
             v3 = self.wvt.v_io;
+            Ap3 = self.wvt.Ap; Am3 = self.wvt.Am; A03 = self.wvt.A0;
+
+            self.verifyThat(Ap1 + Ap2,IsSameSolutionAs(Ap3),'Ap');
+            self.verifyThat(Am1 + Am2,IsSameSolutionAs(Am3),'Am');
+            self.verifyThat(A01 + A02,IsSameSolutionAs(A03),'A0');
 
             self.verifyThat(u1 + u2,IsSameSolutionAs(u3),'u_tot');
             self.verifyThat(v1 + v2,IsSameSolutionAs(v3),'v_tot');

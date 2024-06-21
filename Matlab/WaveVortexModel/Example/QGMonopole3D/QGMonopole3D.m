@@ -53,7 +53,7 @@ wvt.setGeostrophicStreamfunction(psi);
 %% Plot SSH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-ssh = wvt.seaSurfaceHeight;
+ssh = wvt.ssh;
 figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
 max(ssh(:))
 % figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
@@ -83,8 +83,7 @@ model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
 % model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
 model.integrateToTime(100*86400);
 
-ssh = wvt.seaSurfaceHeight;
-figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
+figure, pcolor(wvt.x/1e3, wvt.y/1e3, wvt.ssh.'), shading interp
 max(ssh(:))
 
 return

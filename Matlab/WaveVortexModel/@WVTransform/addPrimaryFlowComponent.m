@@ -12,5 +12,13 @@ end
 for i=1:length(primaryFlowComponent)
     self.primaryFlowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
     self.flowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
+
+    self.maskApPrimary = self.maskApPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+    self.maskAmPrimary = self.maskAmPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+    self.maskA0Primary = self.maskA0Primary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+
+    self.maskApConj = self.maskApConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+    self.maskAmConj = self.maskAmConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+    self.maskA0Conj = self.maskA0Conj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
 end
 end
