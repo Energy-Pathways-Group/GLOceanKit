@@ -20,6 +20,29 @@ pcolor(wvt.x/1e3,wvt.y/1e3,100*wvt.ssh.'), shading interp, axis equal, xlim([0 w
 cb = colorbar('eastoutside'); cb.Label.String = 'cm'; clim([-5 15])
 pause(0.1);
 
+%%
+% figure
+% tiledlayout('flow')
+% 
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.u.'), shading interp, axis equal, title('u')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.v.'), shading interp, axis equal, title('v')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.u_g.'), shading interp, axis equal, title('u_g')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.v_g.'), shading interp, axis equal, title('v_g')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.qgpv.'), shading interp, axis equal, title('qgpv')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.diffX(wvt.qgpv).'), shading interp, axis equal, title('qgpv_x')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.diffY(wvt.qgpv).'), shading interp, axis equal, title('qgpv_y')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,(wvt.u_g.*wvt.diffX(wvt.qgpv)).'), shading interp, axis equal, title('u_g*qgpv_x')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,(wvt.v_g.*wvt.diffY(wvt.qgpv)).'), shading interp, axis equal, title('v_g*qgpv_y')
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,(wvt.u_g.*wvt.diffX(wvt.qgpv) + wvt.v_g.*wvt.diffY(wvt.qgpv)).'), shading interp, axis equal, title('u_g*qgpv_x+v_g*qgpv_y')
+% 
+% 
+% 
+% F0_spatial = wvt.transformToSpatialDomainWithF(A0=wvt.F0);
+% nexttile, pcolor(wvt.x/1e3,wvt.y/1e3,F0_spatial.'), shading interp, axis equal
+% % cb = colorbar('eastoutside'); cb.Label.String = 'cm'; clim([-5 15]), xlim([0 wvt.Lx]/1e3), ylim([0 wvt.Ly]/1e3), title(sprintf('day %d',round(wvt.t/86400)))
+% % pause(0.1);
+% % 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

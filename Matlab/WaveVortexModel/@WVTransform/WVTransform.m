@@ -158,7 +158,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         Nz
     end
 
-    properties (Access=private)
+    properties %(Access=private)
         variableAnnotationNameMap
         timeDependentVariablesNameMap
         propertyAnnotationNameMap

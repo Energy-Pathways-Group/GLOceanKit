@@ -44,15 +44,15 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
                 options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
-                options.fluxName char = 'QGPVE'
+                options.fluxName char = 'F0'
                 options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
             end
             fluxVar(1) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0');
-            fluxVar(2) = WVVariableAnnotation('u_g',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
-            fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
-            fluxVar(3) = WVVariableAnnotation('v_g',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
-            fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
+            % fluxVar(2) = WVVariableAnnotation('u_g',{'x','y','z'},'m/s', 'geostrophic velocity x-direction');
+            % fluxVar(2).attributes('standard_name') = 'eastward_sea_water_velocity';
+            % fluxVar(3) = WVVariableAnnotation('v_g',{'x','y','z'},'m/s', 'geostrophic velocity y-direction');
+            % fluxVar(3).attributes('standard_name') = 'northward_sea_water_velocity';
             fluxVar = cat(2,fluxVar,options.stateVariables);
 
             self@WVNonlinearFluxOperation(options.fluxName,fluxVar);
@@ -184,12 +184,12 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
 
         function varargout = compute(self,wvt,varargin)
             % Apply operator S---defined in (C4) in the manuscript
-            Ubar = wvt.UA0 .* wvt.A0;
-            Vbar = wvt.VA0 .* wvt.A0;
+            % Ubar = wvt.UA0 .* wvt.A0;
+            % Vbar = wvt.VA0 .* wvt.A0;
             PVbar = self.PVA0 .* wvt.A0;
 
-            u_g = wvt.transformToSpatialDomainWithF(A0=Ubar);
-            v_g = wvt.transformToSpatialDomainWithF(A0=Vbar);
+            u_g = wvt.u_g;
+            v_g = wvt.v_g;
             PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.k,-1).*PVbar);
             PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
@@ -202,7 +202,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 PVnl = u_g.*PVx + v_g.*(PVy+self.beta) + PVabs;
             end
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithFg(wvt.transformFromSpatialDomainWithFourier(PVnl)) + self.damp .* wvt.A0;
-            varargout = {F0,u_g,v_g};
+            varargout = {F0};
         end
 
         function writeToFile(self,ncfile,wvt)

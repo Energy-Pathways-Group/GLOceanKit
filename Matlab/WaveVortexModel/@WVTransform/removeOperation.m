@@ -8,8 +8,8 @@ arguments
 end
 self.removeVariableAnnotations(transformOperation.outputVariables);
 for iVar=1:transformOperation.nVarOut
-    remove(self.operationVariableNameMap,transformOperation.outputVariables(iVar).name);
+    self.operationVariableNameMap(transformOperation.outputVariables(iVar).name) = [];
 end
-remove(self.operationNameMap,transformOperation.name);
+self.operationNameMap(transformOperation.name) = [];
 self.clearVariableCache();
 end

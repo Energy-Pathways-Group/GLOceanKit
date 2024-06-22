@@ -53,9 +53,8 @@ wvt.setGeostrophicStreamfunction(psi);
 %% Plot SSH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-ssh = wvt.ssh;
-figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
-max(ssh(:))
+figure, pcolor(wvt.x/1e3, wvt.y/1e3, wvt.ssh.'), shading interp
+max(wvt.ssh(:))
 % figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +62,7 @@ max(ssh(:))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax,r = 1/(200*86400)));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax,r = 1/(200*86400)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Add floats
@@ -79,12 +78,13 @@ model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,shouldUseBeta=1,uv_damp=wv
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
+% model.setupIntegrator(deltaT=2*pi/max(wvt.Omega(:)),outputInterval=86400);
 % model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1,shouldUseClassicNetCDF=1);
 % model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
 model.integrateToTime(100*86400);
 
 figure, pcolor(wvt.x/1e3, wvt.y/1e3, wvt.ssh.'), shading interp
-max(ssh(:))
+max(wvt.ssh(:))
 
 return
 

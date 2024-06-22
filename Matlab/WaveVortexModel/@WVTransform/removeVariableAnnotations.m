@@ -7,9 +7,9 @@ arguments
     variableAnnotation (1,:) WVVariableAnnotation {mustBeNonempty}
 end
 for i=1:length(variableAnnotation)
-    remove(self.variableAnnotationNameMap,variableAnnotation(i).name);
+    self.variableAnnotationNameMap(variableAnnotation(i).name) = [];
     if isKey(self.timeDependentVariablesNameMap,variableAnnotation(i).name)
-        remove(self.timeDependentVariablesNameMap,variableAnnotation(i).name);
+        self.timeDependentVariablesNameMap(variableAnnotation(i).name) = [];
     end
 end
 end
