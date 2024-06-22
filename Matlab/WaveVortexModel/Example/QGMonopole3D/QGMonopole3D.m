@@ -55,8 +55,11 @@ wvt.setGeostrophicStreamfunction(psi);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ssh = wvt.seaSurfaceHeight;
-figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
-max(ssh(:))
+figure
+tiledlayout('flow')
+nexttile, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp, axis equal, xlim([min(wvt.x) max(wvt.x)]/1e3), ylim([min(wvt.y) max(wvt.y)]/1e3)
+title(sprintf('ssh %.1f cm',100*max(ssh(:))))
+pause(0.1)
 
 % figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
@@ -81,12 +84,18 @@ model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=
 %% Set up the integrator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
-model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1,shouldUseClassicNetCDF=1);
-model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
-model.integrateToTime(100*86400);
-
+% model.createNetCDFFileForModelOutput('qg-eddy.nc',shouldOverwriteExisting=1,shouldUseClassicNetCDF=1);
+% model.setNetCDFOutputVariables('u','v','eta','rho_prime','seaSurfaceHeight');
+model.integrateToTime(50*86400);
 ssh = wvt.seaSurfaceHeight;
-figure, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp
+nexttile, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp, axis equal, xlim([min(wvt.x) max(wvt.x)]/1e3), ylim([min(wvt.y) max(wvt.y)]/1e3)
+title(sprintf('ssh %.1f cm',100*max(ssh(:))))
+pause(0.1)
+
+model.integrateToTime(100*86400);
+ssh = wvt.seaSurfaceHeight;
+nexttile, pcolor(wvt.x/1e3, wvt.y/1e3, ssh.'), shading interp, axis equal, xlim([min(wvt.x) max(wvt.x)]/1e3), ylim([min(wvt.y) max(wvt.y)]/1e3)
+title(sprintf('ssh %.1f cm',100*max(ssh(:))))
 max(ssh(:))
 
 return
