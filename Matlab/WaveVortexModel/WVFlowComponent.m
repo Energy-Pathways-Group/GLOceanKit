@@ -192,7 +192,7 @@ classdef WVFlowComponent < handle
                 for iK=1:length(kRadial)
                     indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2 & J == self.wvt.j(iJ);
                     
-                    if any(A0)
+                    if any(A0(:))
                         energyPerA0Component = integral(@(k) A0Spectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/sum(indicesForK(:));
                         A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForK) ));
                     end
