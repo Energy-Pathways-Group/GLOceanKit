@@ -38,7 +38,7 @@ classdef WVNonlinearFluxQGForced < WVNonlinearFluxQG
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
                 options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
-                options.fluxName char = 'WVNonlinearFluxQGForced'
+                options.fluxName char = 'F0'
                 options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
 
