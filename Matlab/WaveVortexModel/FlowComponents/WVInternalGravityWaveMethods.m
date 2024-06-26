@@ -353,7 +353,57 @@ classdef WVInternalGravityWaveMethods < handle
 
         end
 
-        function initWithHorizontalWaveNumberSpectrum(self,GMAmplitude,options)
+
+
+%%%%%%%%%%% HERE
+
+
+        function initWithAlternativeSpectrum(self,options)
+        
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.GMAmplitude (1,1) double =1
+                options.j_star (1,1) double = 3
+                options.slope (1,1) double = 1
+                %options.shouldRandomizeAmplitude = 1
+            end
+                
+
+            j_star=options.j_star;
+            slope=options.slope;
+
+            % GM Parameters
+            L_gm = 1.3e3; % thermocline exponential scale, meters
+            invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
+            E_gm = 6.3e-5; % non-dimensional energy parameter
+            E_T = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*GMAmplitude;
+
+            % Compute the proper vertical function normalization
+            M = (j_star^2 +(2:1024).^2).^((-5/4));
+            M_norm = sum(M);
+
+            for jind=(2:self.nModes)    %I need to think better about the inds here!!!
+                j=jind-1;
+
+                LR= sqrt(self.g*self.h(jind,:))/f0;
+
+                fun = @(k) (1./(k.^2*LR^2 + 1).^(1*slope))*LR;
+                B_norm = integral(fun,self.kRadial(1),self.kRadial(end));
+
+                model_spectrum = @(k)E_T*fun/B_norm*(((j^2 + j_star^2).^((-5/4)))/M_norm); 
+
+                [wvt.Ap(jind,:),wvt.Am(jind,:),~] = wvt.waveComponent.randomAmplitudesWithSpectrum(ApmSpectrum= @(k,j) model_spectrum(k),shouldOnlyRandomizeOrientations=1);
+
+            end
+
+            
+        end
+
+        
+
+
+
+        function initWithHorizontalWaveNumberSpectrum(self,options)
             % initialize with a Alternative Interal Wave Spectrum in
             % function of horizontal wave number and mode
             %
@@ -366,11 +416,16 @@ classdef WVInternalGravityWaveMethods < handle
             % - Parameter slope: (optional)
 
 
-            arguments
+            arguments (Input)
                 self WVTransform {mustBeNonempty}
-                GMAmplitude (1,1) double
+                options.GMAmplitude (1,1) double =1
                 options.j_star (1,1) double = 3
                 options.slope (1,1) double = 1
+                % the next line is for future changes in this code
+                % i.e, having two separate codes:
+                % initWithHorizontalWaveNumberSpectrum(self,options) and
+                % initWithAlternativeSpectrum(self,options)
+                options.ApmSpectrum = @isempty 
                 options.shouldRandomizeAmplitude = 1
             end
 
