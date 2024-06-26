@@ -298,8 +298,7 @@ classdef WVGeometryDoublyPeriodic
         end
 
         function kRadial = get.kRadial_wv(self)
-            [K,L] = ndgrid(self.k_wv,self.k_wv);
-            Kh = sqrt(K .* K + L .* L);
+            Kh = sqrt(self.k_wv.^2 + self.l_wv.^2);
             allKs = unique(reshape(abs(Kh),[],1),'sorted');
             deltaK = max(diff(allKs));
             kAxis = 0:deltaK:(max(allKs)+deltaK/2);
