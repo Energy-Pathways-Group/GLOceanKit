@@ -7,7 +7,7 @@ classdef WVStratifiedFlow < handle
     end
 
 
-    properties (GetAccess=protected)
+    properties %(GetAccess=protected) eta_true operation needs rhoFunction
         rhoFunction, N2Function, dLnN2Function = [] % function handles
     end
 
@@ -145,6 +145,8 @@ classdef WVStratifiedFlow < handle
                 self WVTransform
             end
             self.addPropertyAnnotations(WVStratifiedFlow.propertyAnnotationsForStratifiedFlow);
+            self.addOperation(EtaTrueOperation());
+            self.addOperation(APVOperation());
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
