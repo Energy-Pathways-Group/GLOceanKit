@@ -371,6 +371,7 @@ classdef WVInternalGravityWaveMethods < handle
 
             j_star=options.j_star;
             slope=options.slope;
+            GMAmplitude=options.GMAmplitude;
 
             % GM Parameters
             L_gm = 1.3e3; % thermocline exponential scale, meters
@@ -379,22 +380,27 @@ classdef WVInternalGravityWaveMethods < handle
             E_T = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*GMAmplitude;
 
             % Compute the proper vertical function normalization
-            M = (j_star^2 +(2:1024).^2).^((-5/4));
-            M_norm = sum(M);
+            M = @(j) (j_star.^2 +(j).^2).^((-5/4));
+            M_norm = sum(M(1:1024));
+            M= @(j) ((j_star.^2 +(j).^2).^((-5/4)))/M_norm;
 
-            for jind=(2:self.nModes)    %I need to think better about the inds here!!!
-                j=jind-1;
 
-                LR= sqrt(self.g*self.h(jind,:))/f0;
+            % Definir a função anônima fun (k?)
+            fun = @(k, j) (1./(k.^2.* self.Lr2(j+1) + 1).^(1 * slope)).*sqrt(self.Lr2(j+1))*M(j);
 
-                fun = @(k) (1./(k.^2*LR^2 + 1).^(1*slope))*LR;
-                B_norm = integral(fun,self.kRadial(1),self.kRadial(end));
-
-                model_spectrum = @(k)E_T*fun/B_norm*(((j^2 + j_star^2).^((-5/4)))/M_norm); 
-
-                [wvt.Ap(jind,:),wvt.Am(jind,:),~] = wvt.waveComponent.randomAmplitudesWithSpectrum(ApmSpectrum= @(k,j) model_spectrum(k),shouldOnlyRandomizeOrientations=1);
-
+            % Definir a função anônima B_norm que integra fun em relação a k
+            B_norm = ones(self.Nj,1);
+            for jind=(2:self.Nj)                
+                B_norm(jind) = integral(@(k) fun(k, self.j(jind)), 0, 1);
             end
+             
+            % Definir a função model_spectrum
+            model_spectrum = @(k, j) (E_T) * fun(k, j) / (B_norm(j+1));
+            
+
+            [self.Ap,self.Am,~] = self.waveComponent.randomAmplitudesWithSpectrum(ApmSpectrum= model_spectrum,shouldOnlyRandomizeOrientations=1);
+
+            
 
             
         end

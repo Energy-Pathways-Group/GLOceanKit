@@ -9,7 +9,7 @@ N0 = 3*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
 L_gm = 1300; % thermocline exponential scale, meters
 N2 = @(z) N0*N0*exp(2*z/L_gm);
 
-wvt = WVTransformHydrostatic([800e3, 400e3, Lz], [256 128 40], N2=N2);
+wvt = WVTransformHydrostatic([800e3, 800e3, Lz], [256 256 40], N2=N2);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -17,7 +17,7 @@ wvt = WVTransformHydrostatic([800e3, 400e3, Lz], [256 128 40], N2=N2);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wvt.initWithGMSpectrum(shouldShowDiagnostics=1);
+wvt.initWithAlternativeSpectrum;
 
 
 %%
