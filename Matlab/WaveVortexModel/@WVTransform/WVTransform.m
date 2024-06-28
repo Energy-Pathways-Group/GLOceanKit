@@ -762,7 +762,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         flag = isequal(self,other)
  
-        [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options);
+        [Qkl,Qj,kl_cutoff,kl_damp] = spectralVanishingViscosityFilter(self,options);
         
 
         % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);

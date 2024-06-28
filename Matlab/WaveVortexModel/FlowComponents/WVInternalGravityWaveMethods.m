@@ -384,25 +384,31 @@ classdef WVInternalGravityWaveMethods < handle
             M_norm = sum(M(1:1024));
             M= @(j) ((j_star.^2 +(j).^2).^((-5/4)))/M_norm;
 
+            % sanity check to confirm this is 1
+            % sum(M(1:1024))
 
             % Definir a função anônima fun (k?)
-            fun = @(k, j) (1./(k.^2.* self.Lr2(j+1) + 1).^(1 * slope)).*sqrt(self.Lr2(j+1))*M(j);
+            B = @(k, j) (1./(k.^2.* self.Lr2(j+1) + 1).^(1 * slope)).*sqrt(self.Lr2(j+1));
 
             % Definir a função anônima B_norm que integra fun em relação a k
             B_norm = ones(self.Nj,1);
             for jind=(2:self.Nj)                
-                B_norm(jind) = integral(@(k) fun(k, self.j(jind)), 0, 1);
+                B_norm(jind) = integral(@(k) B(k, self.j(jind)), 0, 1);
             end
+
+            B = @(k, j) (1./(k.^2.* self.Lr2(j+1) + 1).^(1 * slope)).*sqrt(self.Lr2(j+1))/B_norm(j+1);
+
+            % Sanity check to confirm that the integrals are now normalized
+            % for jind=(2:self.Nj)                
+            %     integral(@(k) B(k, self.j(jind)), 0, 1)
+            % end
+
              
             % Definir a função model_spectrum
-            model_spectrum = @(k, j) (E_T) * fun(k, j) / (B_norm(j+1));
+            model_spectrum = @(k, j) (E_T) * B(k, j) * M(j);
             
 
             [self.Ap,self.Am,~] = self.waveComponent.randomAmplitudesWithSpectrum(ApmSpectrum= model_spectrum,shouldOnlyRandomizeOrientations=1);
-
-            
-
-            
         end
 
         

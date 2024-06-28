@@ -1,4 +1,4 @@
-function [Qkl,Qj,kl_cutoff] = spectralVanishingViscosityFilter(self,options)
+function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self,options)
 arguments
     self WVTransform {mustBeNonempty}
     options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
@@ -16,6 +16,7 @@ end
 kl_max = min(k_max,l_max);
 dkl_min = min(self.dk, self.dl);
 kl_cutoff = dkl_min*(kl_max/dkl_min)^(3/4);
+kl_damp = 0.4*(kl_max-kl_cutoff); % approximately
 
 [K,L,J] = self.kljGrid;
 Kh = sqrt(K.^2 + L.^2);
