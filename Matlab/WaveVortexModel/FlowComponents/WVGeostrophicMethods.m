@@ -90,6 +90,26 @@ classdef WVGeostrophicMethods < handle
             energy = self.totalEnergyOfFlowComponent(self.flowComponent('geostrophic'));
         end
 
+        function energy = geostrophicKineticEnergy(self)
+            % kinetic energy of the geostrophic flow
+            %
+            % - Topic: Energetics
+            % - Declaration: geostrophicKineticEnergy
+            % - nav_order: 2
+            hkeFactorForA0 = self.geostrophicComponent.hkeFactorForA0;
+            energy = sum(hkeFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
+        end
+
+        function energy = geostrophicPotentialEnergy(self)
+            % potential energy of the geostrophic flow
+            %
+            % - Topic: Energetics
+            % - Declaration: geostrophicPotentialEnergy
+            % - nav_order: 3
+            peFactorForA0 = self.geostrophicComponent.peFactorForA0;
+            energy = sum(peFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
+        end
+
         function initWithGeostrophicStreamfunction(self,psi)
             % initialize with a geostrophic streamfunction
             %

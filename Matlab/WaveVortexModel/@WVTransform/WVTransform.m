@@ -271,8 +271,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.k = self.horizontalModes.k_wv;
             self.l = self.horizontalModes.l_wv;
             self.kRadial = self.horizontalModes.kRadial_wv;
-            self.kAxis = fftshift(self.horizontalModes.k_dft);
-            self.lAxis = fftshift(self.horizontalModes.l_dft);   
+            self.kAxis = fftshift(self.horizontalModes.k_dft); %(min(self.k):self.dk:max(self.k)).';
+            self.lAxis = fftshift(self.horizontalModes.l_dft); %(min(self.l):self.dl:max(self.l)).';
             
             % Now set the initial conditions to zero
             self.Ap = zeros(self.spectralMatrixSize);
