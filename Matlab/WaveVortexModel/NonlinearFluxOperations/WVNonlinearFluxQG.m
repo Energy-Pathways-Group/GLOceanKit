@@ -86,17 +86,17 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 self.beta = 0;
             end
 
-            variable = WVVariableAnnotation('F0_inertial',{'j','kl'},'m/s', 'non-linear flux into A0, inertial');
-            wvt.addOperation(WVOperation('F0_inertial', variable,@(wvt) self.inertialFlux));
-
-            variable = WVVariableAnnotation('F0_inertial_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, inertial');
-            wvt.addOperation(WVOperation('F0_inertial_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_inertial) ));
-
-            variable = WVVariableAnnotation('F0_damp',{'j','kl'},'m/s', 'non-linear flux into A0, damping');
-            wvt.addOperation(WVOperation('F0_damp', variable,@(wvt) self.dampingFlux));
-
-            variable = WVVariableAnnotation('F0_damp_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, damping');
-            wvt.addOperation(WVOperation('F0_damp_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_damp) ));
+            % variable = WVVariableAnnotation('F0_inertial',{'j','kl'},'m/s', 'non-linear flux into A0, inertial');
+            % wvt.addOperation(WVOperation('F0_inertial', variable,@(wvt) self.inertialFlux));
+            % 
+            % variable = WVVariableAnnotation('F0_inertial_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, inertial');
+            % wvt.addOperation(WVOperation('F0_inertial_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_inertial) ));
+            % 
+            % variable = WVVariableAnnotation('F0_damp',{'j','kl'},'m/s', 'non-linear flux into A0, damping');
+            % wvt.addOperation(WVOperation('F0_damp', variable,@(wvt) self.dampingFlux));
+            % 
+            % variable = WVVariableAnnotation('F0_damp_xyz',{'x','y','z'},'m/s', 'non-linear flux into A0, damping');
+            % wvt.addOperation(WVOperation('F0_damp_xyz', variable,@(wvt) wvt.transformToSpatialDomainWithF(A0=self.F0_damp) ));
         end
 
         function set.r(self,value)

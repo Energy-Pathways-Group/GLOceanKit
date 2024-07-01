@@ -16,7 +16,9 @@ end
 kl_max = min(k_max,l_max);
 dkl_min = min(self.dk, self.dl);
 kl_cutoff = dkl_min*(kl_max/dkl_min)^(3/4);
-kl_damp = 0.4*(kl_max-kl_cutoff); % approximately
+
+b = sqrt(-log(0.1));
+kl_damp = (kl_max+b*kl_cutoff)/(1+b); % approximately
 
 [K,L,J] = self.kljGrid;
 Kh = sqrt(K.^2 + L.^2);

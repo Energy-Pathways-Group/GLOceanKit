@@ -18,7 +18,7 @@ x0 = 3*Lx/4;
 y0 = Ly/2;
 A = 0.15;
 L = 80e3;
-wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2) );
+wvt.setSSH(@(x,y) A*exp( - ((x-x0).^2 + (y-y0).^2)/L^2),shouldRemoveMeanPressure=1 );
 
 figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 
@@ -27,7 +27,7 @@ figure, pcolor(wvt.x,wvt.y,wvt.ssh.'), shading interp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize the integrator with the model
-model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,shouldUseBeta=1,u_damp=wvt.uvMax));
+model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
 
 % set initial positions for a bunch of floats
 [xFloat,yFloat] = ndgrid(wvt.x(1:2:end),wvt.y(1:2:end));
