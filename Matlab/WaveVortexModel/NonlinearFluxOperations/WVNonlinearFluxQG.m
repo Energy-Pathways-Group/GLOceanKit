@@ -183,23 +183,16 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         end
 
         function varargout = compute(self,wvt,varargin)
-            % Apply operator S---defined in (C4) in the manuscript
-            % Ubar = wvt.UA0 .* wvt.A0;
-            % Vbar = wvt.VA0 .* wvt.A0;
-            PVbar = self.PVA0 .* wvt.A0;
+            % this is ever so slightly faster (for barotropic only), but why add the complication?
+            % PVbar = self.PVA0 .* wvt.A0;
+            % PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.k,-1).*PVbar);
+            % PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
-            u_g = wvt.u_g;
-            v_g = wvt.v_g;
-            PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.k,-1).*PVbar);
-            PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
-
-            if wvt.isBarotropic
-                PVnl = u_g.*PVx + v_g.*(PVy+self.beta);
-            else
+            PVnl = wvt.u_g.*wvt.diffX(wvt.qgpv) + wvt.v_g.*(wvt.diffY(wvt.qgpv)+self.beta);
+            if ~wvt.isBarotropic
                 mask = zeros(wvt.spatialMatrixSize);
                 mask(:,:,1) = 1;
-                PVabs = self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
-                PVnl = u_g.*PVx + v_g.*(PVy+self.beta) + PVabs;
+                PVnl = PVnl + self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
             end
             F0 = -self.A0PV .* wvt.transformFromSpatialDomainWithFg(wvt.transformFromSpatialDomainWithFourier(PVnl)) + self.damp .* wvt.A0;
             varargout = {F0};
