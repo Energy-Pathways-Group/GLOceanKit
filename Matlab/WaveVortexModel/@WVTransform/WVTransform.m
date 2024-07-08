@@ -529,6 +529,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
+        function u = transformToSpatialDomainWithFourierAtPosition(self,u_bar,x,y)
+            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
+            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
+            u = self.horizontalModes.transformToSpatialDomainAtPosition(self.dftBuffer,x,y);
+        end
+
         function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
             arguments
                 self WVTransform {mustBeNonempty}

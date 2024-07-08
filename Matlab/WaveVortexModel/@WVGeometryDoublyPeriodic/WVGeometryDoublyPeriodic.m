@@ -333,6 +333,30 @@ classdef WVGeometryDoublyPeriodic
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
+        function u = transformToSpatialDomainAtPosition(self,u_bar,x,y)
+            % transform from $$(k,l)$$ on the DFT grid to $$(x,y)$$ at any position
+            %
+            % Performs an inverse non-uniform Fourier transform to take a
+            % matrix from the DFT grid back to the spatial domain at any
+            % set of points (x,y).
+            %
+            % - Topic: Operations — Fourier transformation
+            % - Declaration: u = transformToSpatialDomainAtPosition(u_bar)
+            % - Parameter u_bar: a complex-valued matrix of size [Nk_dft Nl_dft]
+            % - Returns u: a real-valued matrix of size [length(x) length(y)]
+            arguments (Output)
+                u (1, :)
+            end
+            x = reshape(x, [numel(x), 1]) * 2*pi / self.Lx;
+            y = reshape(y, [numel(y), 1]) * 2*pi / self.Ly;
+
+            opts.debug=0;
+            plan = finufft_plan(2,[self.Nx,self.Ny],+1,1,1e-12,opts);
+            plan.setpts(x, y);
+
+            u = real(plan.execute(u_bar));
+        end
+
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
 
