@@ -188,7 +188,13 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             % PVx = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.k,-1).*PVbar);
             % PVy = wvt.transformToSpatialDomainWithF(A0=sqrt(-1)*shiftdim(wvt.l,-1).*PVbar);
 
-            PVnl = wvt.u_g.*wvt.diffX(wvt.qgpv) + wvt.v_g.*(wvt.diffY(wvt.qgpv)+self.beta);
+            Ubar = self.wvt.UA0 .* self.wvt.A0;
+            Vbar = self.wvt.VA0 .* self.wvt.A0;
+
+            u_g = self.wvt.transformToSpatialDomainWithF(A0=Ubar);
+            v_g = self.wvt.transformToSpatialDomainWithF(A0=Vbar);
+
+            PVnl = u_g.*wvt.diffX(wvt.qgpv) + v_g.*(wvt.diffY(wvt.qgpv)+self.beta);
             if ~wvt.isBarotropic
                 mask = zeros(wvt.spatialMatrixSize);
                 mask(:,:,1) = 1;
