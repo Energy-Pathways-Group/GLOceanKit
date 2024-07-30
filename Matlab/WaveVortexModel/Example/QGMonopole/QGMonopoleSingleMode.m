@@ -49,7 +49,7 @@ pause(0.1);
 
 % initialize the integrator with the model
 model = WVModel(wvt,nonlinearFlux=WVNonlinearFluxQG(wvt,shouldUseBeta=1,uv_damp=wvt.uvMax));
-model.setupIntegrator(timeStepConstraint="advective",outputInterval=86400);
+% model.setupIntegrator(outputInterval=86400);
 
 model.integrateToTime(365*86400);
 

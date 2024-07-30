@@ -1,4 +1,4 @@
-classdef WVModel < handle
+classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeStepMethods
     % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WVTransform.
     %
     % Assuming you have already initialized a WVTransform, e.g.,
@@ -63,12 +63,17 @@ classdef WVModel < handle
         % set, it will allow you to call -integrateToNextOutputTime and, if
         % a NetCDF file is set for output, it will set the interval at
         % which time steps are written to file.
-        outputInterval (1,1) double
+        outputInterval = [] % (1,1) double
 
         % output index of the current/most recent step.
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        outputIndex (1,1) uint64 = 1
+        incrementsWrittenToFile (1,1) uint64 = 0
+
+        % output index of the current/most recent step.
+        % - Topic: Integration
+        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+        timeOfLastIncrementWrittenToFile (1,1) double = Inf
     end
 
     properties (Dependent)
@@ -81,7 +86,7 @@ classdef WVModel < handle
         % Current model time (seconds)
         % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
-        t (1,1) double
+        t % (1,1) double
     end
 
 
@@ -202,10 +207,6 @@ classdef WVModel < handle
                 end
             end
 
-%             nlFlux = NonlinearBoussinesqWithReducedInteractionMasks(self.wvt);
-%             self.nonlinearFlux = SingleModeQGPVE(self.wvt);
-%             self.wvt.addOperation(nlFlux);
-
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
             self.netcdfVariableMapForParticleWithName = containers.Map();
@@ -252,7 +253,7 @@ classdef WVModel < handle
                 trackedFieldNames char
             end
             arguments
-                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "spline"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "spline"
             end
 
             if self.didSetupIntegrator == 1
@@ -367,8 +368,8 @@ classdef WVModel < handle
                 trackedFields char
             end
             arguments
-                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
-                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
             end
             floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
             self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
@@ -418,8 +419,8 @@ classdef WVModel < handle
                 trackedFields char
             end
             arguments
-                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact"])} = "linear"
-                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact"])} = "linear"
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
             end
             drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',interpolationMethod=options.advectionInterpolation),isXYOnly=1);
             self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
@@ -451,99 +452,44 @@ classdef WVModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function varargout = setupIntegrator(self,options)
+        function setupIntegrator(self,options,fixedTimeStepOptions,adaptiveTimeStepOptions)
             % Customize the time-stepping
             %
             % - Topic: Integration
             % - Declaration: setupIntegrator(self,options)
-            % - Parameter deltaT: (optional) set the integrator time step
-            % - Parameter cfl: (optional) set the cfl condition used to set integrator time step
-            % - Parameter timeStepConstraint: (optional) set the method used to determine the integrator time step. "advective","oscillatory","min"
-            % - Parameter outputInterval: (optional) If set, it will allow you to call -integrateToNextOutputTime and, if a NetCDF file is set for output, it will set the interval at which time steps are written to file.
-            % - Parameter finalTime: (optional) if set, the NetCDF file may set a fixed time dimension length.
             arguments
                 self WVModel {mustBeNonempty}
-                options.deltaT (1,1) double {mustBePositive}
-                options.cfl (1,1) double
-                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
-                options.outputInterval
-                options.finalTime
-            end
-            
-            if self.didSetupIntegrator == 1
-                warning('You cannot setup the same integrator more than once.')
-                return;
+
+                options.integratorType char {mustBeMember(options.integratorType,["fixed","adaptive"])} = "adaptive"
+
+                fixedTimeStepOptions.deltaT (1,1) double {mustBePositive}
+                fixedTimeStepOptions.cfl (1,1) double
+                fixedTimeStepOptions.timeStepConstraint char {mustBeMember(fixedTimeStepOptions.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
+
+                adaptiveTimeStepOptions.integrator = @ode78
+                adaptiveTimeStepOptions.absTolerance = 1e-6
+                adaptiveTimeStepOptions.relTolerance = 1e-3;
+                adaptiveTimeStepOptions.shouldUseScaledTolerance = 1;
+                adaptiveTimeStepOptions.absToleranceA0 = 1e-10
+                adaptiveTimeStepOptions.absToleranceApm = 1e-6
+                adaptiveTimeStepOptions.absToleranceXY = 1e-1; % 100 km * 10^{-6}
+                adaptiveTimeStepOptions.absToleranceZ = 1e-2;  
+                adaptiveTimeStepOptions.shouldShowIntegrationStats double {mustBeMember(adaptiveTimeStepOptions.shouldShowIntegrationStats,[0 1])} = 1
             end
 
-            if ~isempty(self.ncfile) && ~isfield(options,"outputInterval")
-                error('You set a NetCDF output file, but have not set an outputInterval. Use -setupIntegrator with an outputInterval.');
-            end
+            self.resetFixedTimeStepIntegrator();
+            self.resetAdapativeTimeStepIntegrator();
 
-            if isfield(options,"deltaT")
-                if isfield(options,"cfl")
-                    warning('deltaT was already set, ignoring cfl')
-                end
-                deltaT = options.deltaT;
-
-                if isfield(options,"outputInterval")
-                    deltaT = options.outputInterval/ceil(options.outputInterval/deltaT);
-                    if options.deltaT ~= deltaT
-                        warning('deltaT changed from %f to %f to match the outputInterval.',options.deltaT,deltaT);
-                    end
-                end
+            self.integratorType = options.integratorType;
+            if strcmp(self.integratorType,"adaptive")
+                optionArgs = namedargs2cell(adaptiveTimeStepOptions);
+                self.setupAdaptiveTimeStepIntegrator(optionArgs{:});
             else
-                if ~isfield(options,"cfl")
-                    options.cfl = 0.25;
-                end
-                if isfield(options,"outputInterval")
-                    [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl,options.outputInterval);
-                else
-                    [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(options.cfl);
-                end
-                if strcmp(options.timeStepConstraint,"advective")
-                    deltaT = advectiveDT;
-                    fprintf('Using the advective dt')
-                
-                elseif strcmp(options.timeStepConstraint,"oscillatory")
-                    deltaT = oscillatoryDT;
-                    fprintf('Using the oscillatory dt')
-                elseif strcmp(options.timeStepConstraint,"min")
-                    deltaT = min(oscillatoryDT,advectiveDT);
-                    fprintf('Using the min dt')
-                end
-                if isfield(options,"outputInterval")
-                    fprintf(': %.2f s (%d steps per output)\n',deltaT,round(options.outputInterval/deltaT));
-                else
-                    fprintf(': %.2f s\n',deltaT);
-                end
-            end
-
-            % Now set the initial conditions and point the integrator to
-            % the correct flux function
-            Y0 = self.initialConditionsArray();
-            if isempty(Y0{1})
-                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
-            end
-            self.integrator = WVArrayIntegrator(@(t,y0) self.fluxAtTime(t,y0),Y0,deltaT,currentTime=self.t);
-
-            if isfield(options,"outputInterval")
-                self.outputInterval = options.outputInterval;
-                self.stepsPerOutput = round(self.outputInterval/self.integrator.stepSize);
-                self.firstOutputStep = round((self.initialOutputTime-self.t)/self.integrator.stepSize);
-            end
-
-            if isfield(options,"finalTime")
-                 % total dT time steps to meet or exceed the requested time.
-                self.nSteps = ceil((options.finalTime-self.t)/self.integrator.stepSize);
-                varargout{1} = length(self.firstOutputStep:self.stepsPerOutput:self.nSteps);
-            else
-                varargout = cell(1,0);
-            end
-
-            self.didSetupIntegrator = 1;
+                optionArgs = namedargs2cell(fixedTimeStepOptions);
+                self.setupFixedTimeStepIntegrator(optionArgs{:});
+            end 
         end
         
-
         function integrateToTime(self,finalTime)
             % Time step the model forward to the requested time.
             % - Topic: Integration
@@ -551,50 +497,68 @@ classdef WVModel < handle
                 self WVModel {mustBeNonempty}
                 finalTime (1,:) double
             end
-
+            if finalTime <= self.t
+                fprintf('Reqested integration to time %d, but the model is currently at time t=%d.\n',round(finalTime),round(self.t));
+                return;
+            end
             if self.didSetupIntegrator ~= 1
                 self.setupIntegrator();
             end
-            
-            self.showIntegrationStartDiagnostics(finalTime);
+                  
             self.openNetCDFFileForTimeStepping();
-            while(self.t < finalTime)
-                self.integrateOneTimeStep();
-                if self.didBlowUp == 1
-                    return;
-                end
-                self.showIntegrationTimeDiagnostics(finalTime);
+            if ~isempty(self.ncfile)
+                outputTimes = self.timeOfLastIncrementWrittenToFile:self.outputInterval:finalTime;
+            else
+                outputTimes = [self.t finalTime];
             end
-            self.recordNetCDFFileHistory();
+
+            self.finalIntegrationTime = finalTime;
+            if strcmp(self.integratorType,"adaptive")
+                self.integrateToTimeWithAdaptiveTimeStep(outputTimes)
+            else
+                self.integrateToTimeWithFixedTimeStep(outputTimes);
+            end
+            self.finalIntegrationTime = [];
+
+            self.recordNetCDFFileHistory();            
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % NetCDF Output
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function modelTime = integrateToNextOutputTime(self)
-            % Time step the model forward to the next output time
-            % - Topic: Integration
-            if isempty(self.outputInterval)
-                fprintf('You did not set an output interval, so how could I integrateToNextOutputTime?\n');
-                return;
-            end
-            
-            self.openNetCDFFileForTimeStepping();
-            if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
-                modelTime = self.integrateOneTimeStep;
-                if self.didBlowUp == 1
-                    self.recordNetCDFFileHistory(didBlowUp=1);
-                    return;
-                end
-            end
-
-            while( mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) ~= 0 )
-                modelTime = self.integrateOneTimeStep;
-                if self.didBlowUp == 1
-                    self.recordNetCDFFileHistory(didBlowUp=1);
-                    return;
-                end
+        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
+            % Create a NetCDF file for model output
+            % - Topic: Writing to NetCDF files
+            arguments
+                self WVModel {mustBeNonempty}
+                netcdfFile char {mustBeNonempty}
+                options.outputInterval (1,1) double {mustBePositive} = 86400
+                options.Nt (1,1) double {mustBePositive} = Inf
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+                options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
             end
 
-            self.recordNetCDFFileHistory();
+            self.outputInterval = options.outputInterval;
+
+            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
+
+            % Now add a time dimension
+            varAnnotation = self.wvt.variableAnnotationWithName('t');
+            varAnnotation.attributes('units') = varAnnotation.units;
+            varAnnotation.attributes('long_name') = varAnnotation.description;
+            varAnnotation.attributes('standard_name') = 'time';
+            varAnnotation.attributes('long_name') = 'time';
+            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
+            varAnnotation.attributes('axis') = 'T';
+            varAnnotation.attributes('calendar') = 'standard';
+            ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
+
+            ncfile.addAttribute('shouldUseLinearDynamics',uint8(self.linearDynamics));
+
+            self.ncfile = ncfile;
         end
 
         function recordNetCDFFileHistory(self,options)
@@ -620,49 +584,10 @@ classdef WVModel < handle
             self.ncfile.addAttribute('history',history);
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % NetCDF Output
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
-            % Create a NetCDF file for model output
-            % - Topic: Writing to NetCDF files
-            arguments
-                self WVModel {mustBeNonempty}
-                netcdfFile char {mustBeNonempty}
-                options.Nt (1,1) double {mustBePositive} = Inf
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-                options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
-            end
-
-            if self.didSetupIntegrator == 1 && isempty(self.outputInterval)
-                error('You creating a NetCDF output file, but when when you called -setupIntegrator you did set an outputInterval.');
-            end
-
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
-
-            % Now add a time dimension
-            varAnnotation = self.wvt.variableAnnotationWithName('t');
-            varAnnotation.attributes('units') = varAnnotation.units;
-            varAnnotation.attributes('long_name') = varAnnotation.description;
-            varAnnotation.attributes('standard_name') = 'time';
-            varAnnotation.attributes('long_name') = 'time';
-            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
-            varAnnotation.attributes('axis') = 'T';
-            varAnnotation.attributes('calendar') = 'standard';
-            ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
-
-            ncfile.addAttribute('shouldUseLinearDynamics',uint8(self.linearDynamics));
-
-            self.ncfile = ncfile;
-        end
-
     end
 
 
-    properties (Access = protected)
+    properties %(Access = protected)
         particle = {}  % cell array containing particle structs
         particleIndexWithName % map from particle name to cell array index
 
@@ -677,24 +602,15 @@ classdef WVModel < handle
 
         netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
 
+        integrationStartTime
         integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
         integrationLastInformModelTime
         integrationInformTime = 10
 
         initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
 
-        integrator      % Array integrator
-
-        % These methods all assume a fixed time-step integrator
-
-        stepsTaken=0    % number of RK4 steps/increments that have been made
-        nSteps=inf      % total number of expected RK4 increments to reach the model time requested by the user
-
-        stepsPerOutput      % number of RK4 steps between each output
-        firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
-
-        incrementsWrittenToFile
-
+        integratorType      % Array integrator
+        finalIntegrationTime % set only during an integration
 
         % Initial model time (seconds)
         % - Topic: Model Properties
@@ -705,7 +621,7 @@ classdef WVModel < handle
     end
     
 
-    methods (Access=protected)
+    methods %(Access=protected)
 
         function flag = didBlowUp(self)
             if ( any(isnan(self.wvt.Ap)|isnan(self.wvt.Am)|isnan(self.wvt.A0)) )
@@ -717,7 +633,8 @@ classdef WVModel < handle
         end
 
         function showIntegrationStartDiagnostics(self,finalTime)
-            fprintf('Starting numerical simulation on %s.\n', datestr(datetime('now')));
+            self.integrationStartTime = datetime('now');
+            fprintf('Starting numerical simulation on %s.\n', datetime(self.integrationStartTime,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'));
             fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods.\n',self.t/self.wvt.inertialPeriod,finalTime/self.wvt.inertialPeriod);
             self.integrationLastInformWallTime = datetime('now');
             self.integrationLastInformModelTime = self.wvt.t;
@@ -728,7 +645,7 @@ classdef WVModel < handle
             if ( seconds(deltaWallTime) > self.integrationInformTime)
                 wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
                 wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
-                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, datestr(wallTimeRemaining, 'HH:MM:SS'), datestr(datetime('now')+wallTimeRemaining)) ;
+                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z')) ;
                 self.wvt.summarizeEnergyContent();
 
 % A02 = (self.wvt.A0_TE_factor/self.wvt.h) .* (self.wvt.A0.*conj(self.wvt.A0));
@@ -741,181 +658,14 @@ classdef WVModel < handle
             end
         end
 
-        function [deltaT,advectiveDT,oscillatoryDT] = timeStepForCFL(self, cfl, outputInterval)
-            % Return the time step (in seconds) to maintain the given cfl condition.
-            % If the cfl condition is not given, 0.25 will be assumed.
-            % If outputInterval is given, the time step will be rounded to evenly
-            % divide the outputInterval.
-            if nargin == 1
-                cfl = 0.25;
-            end
-
-            omega = self.wvt.Omega;
-            period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvt.velocityField();
-            U = max(max(max( sqrt(u.*u + v.*v) )));
-            dx = (3/2)*(self.wvt.x(2)-self.wvt.x(1));
-            
-            
-
-            advectiveDT = cfl*dx/U;
-            oscillatoryDT = cfl*period;
-            % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
-
-            if self.wvt.isBarotropic ~= 1
-                W = self.wvt.w;
-                W = W(:,:,2:end);
-                ratio = abs((W./((3/2)*shiftdim(diff(self.wvt.z),-2))));
-                dZW = 1/max(ratio(:));
-                verticalAdvectiveDT = cfl*dZW;
-                advectiveDT = min(verticalAdvectiveDT,advectiveDT);
-                fprintf('dX/U = %.1f s (%.1f min). dZ/W = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60, dZW,dZW/60,period,period/60);
-            else
-                fprintf('dX/U = %.1f s (%.1f min). The highest frequency resolved IGW has period of %.1f s (%.1f min).\n', dx/U,dx/U/60,period,period/60);
-            end
-
-            
-
-            if nargin == 3 && ~isempty(outputInterval)
-                advectiveDT = outputInterval/ceil(outputInterval/advectiveDT);
-                oscillatoryDT = outputInterval/ceil(outputInterval/oscillatoryDT);
-            end
-
-            if advectiveDT < oscillatoryDT
-                deltaT = advectiveDT;
-            else
-                deltaT = oscillatoryDT;
-            end
-
+        function showIntegrationFinishDiagnostics(self)
+            integrationTotalTime = datetime('now')-self.integrationStartTime;
+            fprintf('Finished after time %s.\n', integrationTotalTime);
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Integration: initial conditions, flux, and one time step
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
 
-        function Y0 = initialConditionsArray(self)
-            Y0 = cell(1,1);
-            n = 0;
-            if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
-                    n=n+1;Y0{n} = self.wvt.Ap;
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1;Y0{n} = self.wvt.Am;
-                end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
-                    n=n+1;Y0{n} = self.wvt.A0;
-                end
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                n=n+1;Y0{n} = p.x;
-                n=n+1;Y0{n} = p.y;
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1;Y0{n} = p.z;
-                end
-            end
-
-            for i=1:length(self.tracerArray)
-                n=n+1;Y0{n} = self.tracerArray{i};
-            end
-        end
-
-        function F = fluxAtTime(self,t,y0)
-            self.updateIntegratorValues(t,y0);
-
-            F = cell(1,1);
-            n = 0;
-            if self.linearDynamics == 0
-                nlF = cell(1,self.nonlinearFluxOperation.nVarOut);
-                [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
-                if self.nonlinearFluxOperation.doesFluxAp == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-            else
-
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+2;
-                else
-                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+3;
-                end
-            end
-
-            if ~isempty(self.tracerArray)
-                for i=1:length(self.tracerArray)
-                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
-                end
-            end
-        end
-
-        function updateIntegratorValues(self,t,y0)
-            n=0;
-            self.wvt.t = t;
-            if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
-                    n=n+1; self.wvt.Ap = y0{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1; self.wvt.Am = y0{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
-                    n=n+1; self.wvt.A0 = y0{n};
-                end
-            end
-
-            for iParticles=1:length(self.particle)
-                n=n+1; self.particle{iParticles}.x = y0{n};
-                n=n+1; self.particle{iParticles}.y = y0{n};
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1; self.particle{iParticles}.z = y0{n};
-                end
-            end
-
-            for iTracer=1:length(self.tracerArray)
-                n=n+1; self.tracerArray{iTracer} = self.y0{n};
-            end
-        end
-
-        function modelTime = integrateOneTimeStep(self)
-            % Ask the integrator to take one step forward, then record the
-            % results.
-            self.integrator.IncrementForward();
-
-            % Rather than use the integrator time, which add floating point
-            % numbers each time step, we multiple the steps taken by the
-            % step size. This reduces rounding errors.
-            self.stepsTaken = self.stepsTaken + 1;
-            modelTime = self.initialTime + self.stepsTaken * self.integrator.stepSize;
-            self.wvt.t = modelTime;
-
-            self.updateIntegratorValues(modelTime,self.integrator.currentY);
-             
-            if mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0
-                self.outputIndex = self.outputIndex + 1;
-
-                self.updateParticleTrackedFields();
-            end
-
-            self.writeTimeStepToNetCDFFile(); 
-        end
-
+ 
 
         function updateParticleTrackedFields(self)
             % One special thing we have to do is log the particle
@@ -936,7 +686,7 @@ classdef WVModel < handle
 
 
         function openNetCDFFileForTimeStepping(self)
-            arguments
+            arguments (Input)
                 self WVModel {mustBeNonempty}
             end
             if ~isempty(self.ncfile) && self.didInitializeNetCDFFile == 0
@@ -992,30 +742,34 @@ classdef WVModel < handle
                 self.didInitializeNetCDFFile = 1;
                 self.incrementsWrittenToFile = 0;
 
-                % Save the initial conditions
                 self.writeTimeStepToNetCDFFile();
             end
         
         end
 
         function writeTimeStepToNetCDFFile(self)
-            if ( ~isempty(self.ncfile) && mod(self.stepsTaken - self.firstOutputStep,self.stepsPerOutput) == 0 )
-                self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',self.outputIndex);
+            if ( ~isempty(self.ncfile) && self.timeOfLastIncrementWrittenToFile ~= self.t )
+                self.updateParticleTrackedFields();
+
+                outputIndex = self.incrementsWrittenToFile + 1;
+
+                self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',outputIndex);
 
                 for iVar=1:length(self.timeSeriesVariables)
-                    self.ncfile.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',self.outputIndex);
+                    self.ncfile.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',outputIndex);
                 end
 
                 for iParticle = 1:length(self.particle)
                     [x,y,z,trackedFields] = self.particlePositions(self.particle{iParticle}.name);
-                    self.writeParticleDataAtTimeIndex(self.particle{iParticle}.name,self.outputIndex,x,y,z,trackedFields);
+                    self.writeParticleDataAtTimeIndex(self.particle{iParticle}.name,outputIndex,x,y,z,trackedFields);
                 end
 
                 for iTracer = 1:length(self.tracerArray)
-                    self.ncfile.WriteTracerWithNameTimeAtIndex(self.outputIndex,self.tracerNames{iTracer},self.tracerArray{iTracer});
+                    self.ncfile.WriteTracerWithNameTimeAtIndex(outputIndex,self.tracerNames{iTracer},self.tracerArray{iTracer});
                 end
 
-                self.incrementsWrittenToFile = self.incrementsWrittenToFile + 1;
+                self.incrementsWrittenToFile = outputIndex;
+                self.timeOfLastIncrementWrittenToFile = self.t;
             end
         end
 

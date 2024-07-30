@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Lxy = 50e3;
-Nxy = 256;
+Nxy = 512;
 latitude = 25;
 
 wvt = WVTransformSingleMode([Lxy, Lxy], [Nxy, Nxy], h=0.8, latitude=latitude);
@@ -40,13 +40,12 @@ model_spectrum2D = fdFlux.setNarrowBandForcing(initialPV='full-spectrum',k_f=k_f
 % Once a WVTransform and a NonlinearFlux operator have been
 % initialized, we can now initialize a model.
 % 
-% Here we choose a relatively small time step, as we expect energy to build
-% up over time.
+% By default the model will use an adaptive time step, although we could
+% change this to a fixed time step.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 model = WVModel(wvt,nonlinearFlux=fdFlux);
-model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,outputInterval=86400);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -59,11 +58,31 @@ model.setupIntegrator(deltaT=0.5*model.nonlinearFluxOperation.dampingTimeScale,o
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),shouldOverwriteExisting=1);
+model.createNetCDFFileForModelOutput(sprintf('ForcedDissipativeQG-spinup-%d.nc',Nxy),outputInterval=5*86400,shouldOverwriteExisting=1);
 % model.setNetCDFOutputVariables('A0','psi','zeta_z','F_psi','F0_psi');
-tic
-model.integrateToTime(1*86400);
-toc
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Run the model, plot as the fluid goes unstable
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figure
+tl = tiledlayout(3,3,TileSpacing="compact");
+title(tl,'surface vorticity')
+
+t0 = wvt.t;
+for i=0:8
+    model.integrateToTime(t0 + i*5*86400);
+       
+    nexttile(tl)
+    pcolor(wvt.x/1e3, wvt.y/1e3, wvt.zeta_z(:,:,end).'), shading interp
+    colormap("gray")
+    title(sprintf('%d days',round(wvt.t/86400)))
+    xlabel('km'), ylabel('km')
+    xtick([]), ytick([])
+    pause(0.1);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%

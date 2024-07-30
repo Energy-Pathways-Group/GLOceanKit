@@ -15,10 +15,10 @@ for i=1:length(primaryFlowComponent)
 
     self.maskApPrimary = self.maskApPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
     self.maskAmPrimary = self.maskAmPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-    self.maskA0Primary = self.maskA0Primary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+    self.maskA0Primary = self.maskA0Primary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
 
     self.maskApConj = self.maskApConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
     self.maskAmConj = self.maskAmConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-    self.maskA0Conj = self.maskA0Conj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+    self.maskA0Conj = self.maskA0Conj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.A0);
 end
 end
