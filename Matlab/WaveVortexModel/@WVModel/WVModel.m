@@ -74,6 +74,11 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
         timeOfLastIncrementWrittenToFile (1,1) double = Inf
+
+        % output index of the anticipated next step.
+        % - Topic: Integration
+        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
+        timeOfNextIncrementToWriteToFile (1,1) double = Inf
     end
 
     properties (Dependent)
@@ -474,7 +479,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 adaptiveTimeStepOptions.absToleranceApm = 1e-6
                 adaptiveTimeStepOptions.absToleranceXY = 1e-1; % 100 km * 10^{-6}
                 adaptiveTimeStepOptions.absToleranceZ = 1e-2;  
-                adaptiveTimeStepOptions.shouldShowIntegrationStats double {mustBeMember(adaptiveTimeStepOptions.shouldShowIntegrationStats,[0 1])} = 1
+                adaptiveTimeStepOptions.shouldShowIntegrationStats double {mustBeMember(adaptiveTimeStepOptions.shouldShowIntegrationStats,[0 1])} = 0
             end
 
             self.resetFixedTimeStepIntegrator();
@@ -490,12 +495,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end 
         end
         
-        function integrateToTime(self,finalTime)
+        function integrateToTime(self,finalTime,options)
             % Time step the model forward to the requested time.
             % - Topic: Integration
             arguments
                 self WVModel {mustBeNonempty}
                 finalTime (1,:) double
+                options.shouldShowIntegrationDiagnostics double {mustBeMember(options.shouldShowIntegrationDiagnostics,[0 1])} = 1
             end
             if finalTime <= self.t
                 fprintf('Reqested integration to time %d, but the model is currently at time t=%d.\n',round(finalTime),round(self.t));
@@ -504,10 +510,14 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             if self.didSetupIntegrator ~= 1
                 self.setupIntegrator();
             end
+            self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
                   
             self.openNetCDFFileForTimeStepping();
             if ~isempty(self.ncfile)
                 outputTimes = self.timeOfLastIncrementWrittenToFile:self.outputInterval:finalTime;
+                if isscalar(outputTimes)
+                   outputTimes = cat(2,outputTimes,finalTime);
+                end
             else
                 outputTimes = [self.t finalTime];
             end
@@ -542,7 +552,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
 
             self.outputInterval = options.outputInterval;
-
+            self.timeOfNextIncrementToWriteToFile = 0;
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
             % Now add a time dimension
@@ -611,6 +621,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
         integratorType      % Array integrator
         finalIntegrationTime % set only during an integration
+        shouldShowIntegrationDiagnostics = 1
 
         % Initial model time (seconds)
         % - Topic: Model Properties
@@ -633,6 +644,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function showIntegrationStartDiagnostics(self,finalTime)
+            if self.shouldShowIntegrationDiagnostics  == 0
+                return;
+            end
             self.integrationStartTime = datetime('now');
             fprintf('Starting numerical simulation on %s.\n', datetime(self.integrationStartTime,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'));
             fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods.\n',self.t/self.wvt.inertialPeriod,finalTime/self.wvt.inertialPeriod);
@@ -641,6 +655,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function showIntegrationTimeDiagnostics(self,finalTime)
+            if self.shouldShowIntegrationDiagnostics  == 0
+                return;
+            end
             deltaWallTime = datetime('now')-self.integrationLastInformWallTime;
             if ( seconds(deltaWallTime) > self.integrationInformTime)
                 wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
@@ -659,6 +676,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function showIntegrationFinishDiagnostics(self)
+            if self.shouldShowIntegrationDiagnostics  == 0
+                return;
+            end
             integrationTotalTime = datetime('now')-self.integrationStartTime;
             fprintf('Finished after time %s.\n', integrationTotalTime);
         end
@@ -748,7 +768,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function writeTimeStepToNetCDFFile(self)
-            if ( ~isempty(self.ncfile) && self.timeOfLastIncrementWrittenToFile ~= self.t )
+            if ( ~isempty(self.ncfile) && self.timeOfNextIncrementToWriteToFile == self.t )
                 self.updateParticleTrackedFields();
 
                 outputIndex = self.incrementsWrittenToFile + 1;
@@ -770,6 +790,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
                 self.incrementsWrittenToFile = outputIndex;
                 self.timeOfLastIncrementWrittenToFile = self.t;
+                self.timeOfNextIncrementToWriteToFile = self.t + self.outputInterval;
             end
         end
 

@@ -33,7 +33,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
         function setupAdaptiveTimeStepIntegrator(self,options)
             arguments
                 self WVModel {mustBeNonempty}
-                options.shouldShowIntegrationStats double {mustBeMember(options.shouldShowIntegrationStats,[0 1])} = 1
+                options.shouldShowIntegrationStats double {mustBeMember(options.shouldShowIntegrationStats,[0 1])} = 0
                 options.integrator = @ode78
                 options.absTolerance = 1e-6
                 options.relTolerance = 1e-3;
@@ -126,6 +126,8 @@ classdef WVModelAdapativeTimeStepMethods < handle
             self.odeOptions = odeset(self.odeOptions,'Refine',1); % must be set to 1
             if options.shouldShowIntegrationStats == 1
                 self.odeOptions = odeset(self.odeOptions,'Stats','on');
+            else
+                self.odeOptions = odeset(self.odeOptions,'Stats','off');
             end
 
             self.odeIntegrator = options.integrator;
