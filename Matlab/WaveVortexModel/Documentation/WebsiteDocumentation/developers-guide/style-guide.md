@@ -1,7 +1,7 @@
 ---
 layout: default
 title: WaveVortexModel style guide
-parent: Users guide
+parent: Developers guide
 mathjax: true
 ---
 

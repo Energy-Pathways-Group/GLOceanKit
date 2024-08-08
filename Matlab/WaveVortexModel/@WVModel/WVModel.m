@@ -460,8 +460,45 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         function setupIntegrator(self,options,fixedTimeStepOptions,adaptiveTimeStepOptions)
             % Customize the time-stepping
             %
+            % By default the model will use adaptive time stepping with a
+            % reasonable choice of values. However, you may find it
+            % necessary to customize the time stepping behavior.
+            %
+            % When setting up the integrator you must choice between
+            % "adaptive" and "fixed" integrator types. Depending on which
+            % type you choose, you will have different options available.
+            %
+            % The "fixed" time-step integrator used a cfl condition based
+            % on the advective velocity, but you can change this to use the
+            % highest oscillatory frequency. Alternatively, you can simply
+            % set deltaT yourself.
+            %
+            % The "adaptive" time-step integator uses absolute and relative
+            % error tolerances. It is worth reading Matlab's documentation
+            % on RelTol and AbsTol as part of odeset to understand what
+            % these mean. By default, the adaptive time stepping uses a
+            % a relative error tolerance of 1e-3 for everything. However,
+            % the absolute error tolerance is less straightforward.
+            %
+            % The absolute tolerance has a meaningful scale with units, and
+            % thus must be chosen differently for particle positions (x,y)
+            % than for geostrophic coefficients (A0). 
+            %
             % - Topic: Integration
             % - Declaration: setupIntegrator(self,options)
+            % - Parameter integratorType: (optional) integrator type. "adaptive"(default), "fixed"
+            % - Parameter deltaT: (fixed) time step
+            % - Parameter cfl: (fixed) cfl condition
+            % - Parameter timeStepConstraint: (fixed) constraint to fix the time step. "advective" (default) ,"oscillatory","min"
+            % - Parameter integrator: (adapative) function handle of integrator. @ode78 (default)
+            % - Parameter absTolerance: (adapative) absolute tolerance for sqrt(energy). 1e-6 (default)
+            % - Parameter relTolerance: (adapative) relative tolerance for sqrt(energy). 1e-3 (default)
+            % - Parameter shouldUseScaledTolerance: (adapative) whether to scale by the energy norm. 0 or 1 (default)
+            % - Parameter absToleranceA0: (adapative) absolute tolerance for A0 used when shouldUseScaledTolerance=0 . 1e-10 (default)
+            % - Parameter absToleranceApm: (adapative) absolute tolerance for Apm used when shouldUseScaledTolerance=0 . 1e-10 (default)
+            % - Parameter absToleranceXY: (adapative) absolute tolerance in meters for particle advection in (x,y). 1e-1 (default)
+            % - Parameter absToleranceZ: (adapative) absolute tolerance  in meters for particle advection in (z). 1e-2 (default)
+            % - Parameter shouldShowIntegrationStats: (adapative) whether to show integration output 0 or 1 (default)
             arguments
                 self WVModel {mustBeNonempty}
 
@@ -665,11 +702,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z')) ;
                 self.wvt.summarizeEnergyContent();
 
-% A02 = (self.wvt.A0_TE_factor/self.wvt.h) .* (self.wvt.A0.*conj(self.wvt.A0));
-% u_rms_alt = sqrt(2*sum(A02(:)));
-% 
-% fprintf('***temp hack***: u_rms: %f\n',u_rms_alt);
-
                 self.integrationLastInformWallTime = datetime('now');
                 self.integrationLastInformModelTime = self.wvt.t;
             end
@@ -682,10 +714,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             integrationTotalTime = datetime('now')-self.integrationStartTime;
             fprintf('Finished after time %s.\n', integrationTotalTime);
         end
-
- 
-
- 
 
         function updateParticleTrackedFields(self)
             % One special thing we have to do is log the particle
@@ -702,8 +730,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 end
             end
         end
-
-
 
         function openNetCDFFileForTimeStepping(self)
             arguments (Input)
