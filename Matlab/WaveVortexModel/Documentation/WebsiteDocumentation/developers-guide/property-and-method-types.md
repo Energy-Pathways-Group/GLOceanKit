@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Annotations
-parent: Users guide
+parent: Developers guide
 mathjax: true
 ---
 
