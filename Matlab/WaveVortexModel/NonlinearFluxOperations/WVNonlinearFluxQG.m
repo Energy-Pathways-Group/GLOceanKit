@@ -21,6 +21,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
         damp
         nu_xy = 0
         r = 0
+        alpha = 0
         k_damp
     end
 
@@ -44,6 +45,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0 
                 options.uv_damp (1,1) double = 0.25 % characteristic speed used to set the damping. Try using uvMax.
                 options.r (1,1) double = 0
+                options.alpha (1,1) double = 0
                 options.fluxName char = 'F0'
                 options.nu_xy (1,1) double
                 options.stateVariables WVVariableAnnotation = WVVariableAnnotation.empty()
@@ -79,6 +81,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 self.uv_damp = options.uv_damp;
             end
             self.r = options.r;
+            self.alpha = options.alpha;
             
             if options.shouldUseBeta == 1
                 self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
@@ -104,6 +107,11 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             self.buildDampingOperator();
         end
 
+        function set.alpha(self,value)
+            self.alpha = value;
+            self.buildDampingOperator();
+        end
+
         function set.nu_xy(self,value)
             self.nu_xy = value;
             self.buildDampingOperator();
@@ -123,7 +131,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 % For a single mode, the bottom friction operator is
                 % linear, and thus we can build it into the damping
                 % operator.
-                friction = -self.r*(K.^2 +L.^2);
+                friction = -self.r*(K.^2 +L.^2) - self.alpha/self.wvt.Lr2;
             else
                 % In general, bottom friction is nonlinear, so we cannot
                 % compute it yet.
@@ -212,6 +220,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             end
             ncfile.addAttribute('beta',self.beta)
             ncfile.addAttribute('r',self.r)
+            ncfile.addAttribute('alpha',self.alpha)
             ncfile.addAttribute('nu_xy',self.nu_xy)
 
             attributes = containers.Map();
@@ -237,6 +246,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
             flag = flag & isequal(self.damp, other.damp);
             flag = flag & isequal(self.nu_xy,other.nu_xy);
             flag = flag & isequal(self.r, other.r);
+            flag = flag & isequal(self.alpha, other.alpha);
         end
 
     end
@@ -247,7 +257,7 @@ classdef WVNonlinearFluxQG < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFluxQG(wvt,r=ncfile.attributes('r'),nu_xy=ncfile.attributes('nu_xy'),shouldUseBeta=(ncfile.attributes('beta')>0) );
+            nlFlux = WVNonlinearFluxQG(wvt,alpha=ncfile.attributes('alpha'),r=ncfile.attributes('r'),nu_xy=ncfile.attributes('nu_xy'),shouldUseBeta=(ncfile.attributes('beta')>0) );
         end
     end
 
