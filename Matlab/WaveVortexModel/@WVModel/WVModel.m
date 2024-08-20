@@ -73,12 +73,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % output index of the current/most recent step.
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        timeOfLastIncrementWrittenToFile (1,1) double = Inf
-
-        % output index of the anticipated next step.
-        % - Topic: Integration
-        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        timeOfNextIncrementToWriteToFile (1,1) double = Inf
+        timeOfLastIncrementWrittenToFile (1,1) double = -Inf
     end
 
     properties (Dependent)
@@ -550,22 +545,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
                   
             self.openNetCDFFileForTimeStepping();
-            if ~isempty(self.ncfile)
-                outputTimes = self.timeOfLastIncrementWrittenToFile:self.outputInterval:finalTime;
-                if isscalar(outputTimes)
-                   outputTimes = cat(2,outputTimes,finalTime);
-                end
-            else
-                outputTimes = [self.t finalTime];
-            end
 
-            self.finalIntegrationTime = finalTime;
             if strcmp(self.integratorType,"adaptive")
-                self.integrateToTimeWithAdaptiveTimeStep(outputTimes)
+                self.integrateToTimeWithAdaptiveTimeStep(finalTime)
             else
-                self.integrateToTimeWithFixedTimeStep(outputTimes);
+                self.integrateToTimeWithFixedTimeStep(finalTime);
             end
-            self.finalIntegrationTime = [];
 
             self.recordNetCDFFileHistory();            
         end
@@ -589,7 +574,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
 
             self.outputInterval = options.outputInterval;
-            self.timeOfNextIncrementToWriteToFile = 0;
             ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
 
             % Now add a time dimension
@@ -787,14 +771,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
                 self.didInitializeNetCDFFile = 1;
                 self.incrementsWrittenToFile = 0;
-
                 self.writeTimeStepToNetCDFFile();
             end
         
         end
 
         function writeTimeStepToNetCDFFile(self)
-            if ( ~isempty(self.ncfile) && self.timeOfNextIncrementToWriteToFile == self.t )
+            if ( ~isempty(self.ncfile) && self.t > self.timeOfLastIncrementWrittenToFile )
                 self.updateParticleTrackedFields();
 
                 outputIndex = self.incrementsWrittenToFile + 1;
@@ -816,7 +799,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
                 self.incrementsWrittenToFile = outputIndex;
                 self.timeOfLastIncrementWrittenToFile = self.t;
-                self.timeOfNextIncrementToWriteToFile = self.t + self.outputInterval;
             end
         end
 

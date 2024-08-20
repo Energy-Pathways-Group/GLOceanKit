@@ -13,6 +13,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
         tracerArray
         linearDynamics
         didSetupIntegrator
+        finalIntegrationTime
     end
     methods (Abstract)
         flag = didBlowUp(self)
@@ -26,6 +27,9 @@ classdef WVModelAdapativeTimeStepMethods < handle
         arrayEndIndex
         odeOptions
         odeIntegrator
+
+        % list of remaining times that need to be output to file
+        outputTimes = [];
     end
 
     methods
@@ -143,14 +147,29 @@ classdef WVModelAdapativeTimeStepMethods < handle
             self.odeIntegrator = [];
         end
 
-        function integrateToTimeWithAdaptiveTimeStep(self,outputTimes)
+        function integrateToTimeWithAdaptiveTimeStep(self,finalTime)
             % Time step the model forward to the requested time.
             % - Topic: Integration
             arguments
                 self WVModel {mustBeNonempty}
-                outputTimes (1,:) double
+                finalTime (1,1) double
             end
-            self.odeIntegrator(@(t,y) self.fluxArray(t,y),outputTimes,self.initialConditionsArray,self.odeOptions);
+            if ~isempty(self.ncfile)
+                self.outputTimes = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
+                integratorTimes = self.outputTimes;
+                if integratorTimes(1) ~= self.t
+                    integratorTimes = cat(1,self.t,integratorTimes);
+                end
+                if integratorTimes(end) ~= finalTime
+                    integratorTimes = cat(1,integratorTimes,finalTime);
+                end
+            else
+                integratorTimes = [self.t finalTime];
+            end
+
+            self.finalIntegrationTime = finalTime;
+            self.odeIntegrator(@(t,y) self.fluxArray(t,y),integratorTimes,self.initialConditionsArray,self.odeOptions);
+            self.finalIntegrationTime = [];
         end
 
         function status = timeStepIncrement(self,t,y,flag)
@@ -164,8 +183,12 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 self.showIntegrationFinishDiagnostics();
             else
                 for iTime=1:length(t)
-                    self.updateIntegratorValues(t(iTime),y(:,iTime))
-                    self.writeTimeStepToNetCDFFile();
+                        self.updateIntegratorValues(t(iTime),y(:,iTime))
+
+                    if ~isempty(self.outputTimes) && abs(t(iTime) - self.outputTimes(1)) < eps
+                        self.writeTimeStepToNetCDFFile();
+                        self.outputTimes(1) = [];
+                    end
                 end
                 self.showIntegrationTimeDiagnostics(self.finalIntegrationTime);
             end

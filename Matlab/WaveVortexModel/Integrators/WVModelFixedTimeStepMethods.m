@@ -13,6 +13,7 @@ classdef WVModelFixedTimeStepMethods < handle
         linearDynamics
         t
         didSetupIntegrator
+        finalIntegrationTime
     end
     properties
         integratorOptions
@@ -108,13 +109,14 @@ classdef WVModelFixedTimeStepMethods < handle
 
         end
 
-        function integrateToTimeWithFixedTimeStep(self,outputTimes)
+        function integrateToTimeWithFixedTimeStep(self,finalTime)
             % Time step the model forward to the requested time.
             % - Topic: Integration
             arguments
                 self WVModel {mustBeNonempty}
-                outputTimes (1,:) double
+                finalTime (1,1) double
             end
+            self.finalIntegrationTime = finalTime;
 
             if ~isempty(self.outputInterval)
                 effectiveOutputInterval = self.outputInterval;
@@ -169,6 +171,7 @@ classdef WVModelFixedTimeStepMethods < handle
                 self.showIntegrationTimeDiagnostics(self.finalIntegrationTime);
             end
             self.showIntegrationFinishDiagnostics();
+            self.finalIntegrationTime = [];
         end
 
         function Y0 = initialConditionsCellArray(self)
