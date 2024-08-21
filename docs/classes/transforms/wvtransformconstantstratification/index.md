@@ -90,20 +90,27 @@ Wave-vortex transformation that assumes constant stratification
   + [`waveEnergy`](/classes/transforms/wvtransformconstantstratification/waveenergy.html) total energy, waves
   + [`inertialEnergy`](/classes/transforms/wvtransformconstantstratification/inertialenergy.html) total energy, inertial oscillations
   + [`mdaEnergy`](/classes/transforms/wvtransformconstantstratification/mdaenergy.html) total energy, mean density anomaly
++ Energetics
+  + [`geostrophicKineticEnergy`](/classes/transforms/wvtransformconstantstratification/geostrophickineticenergy.html) kinetic energy of the geostrophic flow
+  + [`geostrophicPotentialEnergy`](/classes/transforms/wvtransformconstantstratification/geostrophicpotentialenergy.html) potential energy of the geostrophic flow
 + Other
   + [`CosineTransformBackMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformbackmatrix.html) Discrete Cosine Transform (DCT-I) matrix
   + [`CosineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/cosinetransformforwardmatrix.html) Discrete Cosine Transform (DCT-I) matrix
   + [`N0`](/classes/transforms/wvtransformconstantstratification/n0.html) 
   + [`N2AtDepth`](/classes/transforms/wvtransformconstantstratification/n2atdepth.html) 
+  + [`N2Function`](/classes/transforms/wvtransformconstantstratification/n2function.html) 
   + [`PlaceParticlesOnIsopycnal`](/classes/transforms/wvtransformconstantstratification/placeparticlesonisopycnal.html) MAS 1/10/18 - added intext ('int' or 'both') to give option of using int vs. int+ext fields for rho_prime
   + [`RhoBarAtDepth`](/classes/transforms/wvtransformconstantstratification/rhobaratdepth.html) 
   + [`SineTransformBackMatrix`](/classes/transforms/wvtransformconstantstratification/sinetransformbackmatrix.html) CosineTransformBackMatrix  Discrete Cosine Transform (DCT-I) matrix
   + [`SineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/sinetransformforwardmatrix.html) CosineTransformForwardMatrix  Discrete Cosine Transform (DCT-I) matrix
   + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformconstantstratification/buildverticalmodeprojectionoperators.html) We renormalization the transformation matrices to directly
+  + [`dLnN2Function`](/classes/transforms/wvtransformconstantstratification/dlnn2function.html) 
+  + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithalternativespectrum.html) 
   + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformconstantstratification/initwithfrequencyspectrum.html) 
   + [`initWithGMSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithgmspectrum.html) 
   + [`maxFg`](/classes/transforms/wvtransformconstantstratification/maxfg.html) 
   + [`maxFw`](/classes/transforms/wvtransformconstantstratification/maxfw.html) 
+  + [`rhoFunction`](/classes/transforms/wvtransformconstantstratification/rhofunction.html) function handles
   + [`throwErrorIfDensityViolation`](/classes/transforms/wvtransformconstantstratification/throwerrorifdensityviolation.html) checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
   + [`transformFromSpatialDomainWithF`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithf.html) 
   + [`transformFromSpatialDomainWithG`](/classes/transforms/wvtransformconstantstratification/transformfromspatialdomainwithg.html) 

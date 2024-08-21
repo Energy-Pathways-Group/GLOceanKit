@@ -53,7 +53,8 @@ nav_order: 5
   + [`MA0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/ma0.html) Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
   + [`WVNonlinearFluxQGForced`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/wvnonlinearfluxqgforced.html) initialize 3D quasigeostrophic potential vorticity flux
   + [`addVariableOfType`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/addvariableoftype.html) 
-  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/compute.html) Apply operator S---defined in (C4) in the manuscript
+  + [`compute`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/compute.html) this is ever so slightly faster (for barotropic only), but why add the complication?
+  + [`forcingFlux`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/forcingflux.html) 
   + [`setNarrowBandForcing`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/setnarrowbandforcing.html) 
   + [`tau0`](/classes/nonlinear-fluxes/wvnonlinearfluxqgforced/tau0.html) relaxation time
 

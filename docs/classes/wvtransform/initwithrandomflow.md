@@ -3,7 +3,7 @@ layout: default
 title: initWithRandomFlow
 parent: WVTransform
 grand_parent: Classes
-nav_order: 98
+nav_order: 100
 mathjax: true
 ---
 
@@ -21,6 +21,9 @@ initialize with a random flow state
 ## Parameters
 + `flowComponentNames`  strings of flow component names names.
 + `uvMax`  (optional) maximum horizontal velocity
++ `A0Spectrum`  (optional) function_handle of the form @(k,j)
++ `ApmSpectrum`  (optional) function_handle of the form @(k,j)
++ `shouldOnlyRandomizeOrientations`  amplitudes follow the spectrum exactly, but directions are still randomized
 
 ## Discussion
 
@@ -42,4 +45,4 @@ initialize with a random flow state
   components, while the wave and inertial oscillations components will be
   zero.
  
-        
+              

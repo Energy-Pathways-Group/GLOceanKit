@@ -3,7 +3,7 @@ layout: default
 title: setGeostrophicModes
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 41
+nav_order: 47
 mathjax: true
 ---
 

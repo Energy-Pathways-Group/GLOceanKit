@@ -16,4 +16,4 @@ clear the internal cache
 
 ## Discussion
 
-  
+    self.variableCache = containers.Map();

@@ -45,6 +45,11 @@ Orthogonal solution group
   + [`maskA0`](/classes/flow-components/wvflowcomponent/maska0.html) returns a mask indicating where solutions live in the A0 matrix.
   + [`maskAm`](/classes/flow-components/wvflowcomponent/maskam.html) returns a mask indicating where solutions live in the Am matrix.
   + [`maskAp`](/classes/flow-components/wvflowcomponent/maskap.html) returns a mask indicating where solutions live in the Ap matrix.
++ Quadratic quantities
+  + [`randomAmplitudes`](/classes/flow-components/wvflowcomponent/randomamplitudes.html) returns random amplitude for a valid flow state
++ Other
+  + [`plus`](/classes/flow-components/wvflowcomponent/plus.html) 
+  + [`randomAmplitudesWithSpectrum`](/classes/flow-components/wvflowcomponent/randomamplitudeswithspectrum.html) 
 
 
 ---

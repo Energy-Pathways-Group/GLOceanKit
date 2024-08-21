@@ -3,7 +3,7 @@ layout: default
 title: initWithWaveModes
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 35
+nav_order: 40
 mathjax: true
 ---
 

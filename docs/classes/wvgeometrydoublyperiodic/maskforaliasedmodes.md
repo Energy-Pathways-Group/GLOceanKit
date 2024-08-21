@@ -3,7 +3,7 @@ layout: default
 title: maskForAliasedModes
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 31
+nav_order: 32
 mathjax: true
 ---
 

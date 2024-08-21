@@ -9,7 +9,7 @@ mathjax: true
 
 #  k_damp
 
-wavenumber at which the first small scale damping starts.
+wavenumber at which the significant scale damping starts.
 
 
 ---

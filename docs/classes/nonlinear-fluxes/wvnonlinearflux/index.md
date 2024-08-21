@@ -60,7 +60,8 @@ nav_order: 2
   + [`dLnN2`](/classes/nonlinear-fluxes/wvnonlinearflux/dlnn2.html) 
   + [`damp`](/classes/nonlinear-fluxes/wvnonlinearflux/damp.html) 
   + [`dampingTimeScale`](/classes/nonlinear-fluxes/wvnonlinearflux/dampingtimescale.html) 
-  + [`k_damp`](/classes/nonlinear-fluxes/wvnonlinearflux/k_damp.html) wavenumber at which the first small scale damping starts.
+  + [`k_damp`](/classes/nonlinear-fluxes/wvnonlinearflux/k_damp.html) wavenumber at which the significant scale damping starts.
+  + [`k_no_damp`](/classes/nonlinear-fluxes/wvnonlinearflux/k_no_damp.html) wavenumber below which there is zero damping
   + [`nu_xy`](/classes/nonlinear-fluxes/wvnonlinearflux/nu_xy.html) 
   + [`nu_z`](/classes/nonlinear-fluxes/wvnonlinearflux/nu_z.html) 
   + [`r`](/classes/nonlinear-fluxes/wvnonlinearflux/r.html) 

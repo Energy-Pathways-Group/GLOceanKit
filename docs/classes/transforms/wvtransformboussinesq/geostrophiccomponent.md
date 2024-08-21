@@ -3,7 +3,7 @@ layout: default
 title: geostrophicComponent
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 19
+nav_order: 21
 mathjax: true
 ---
 

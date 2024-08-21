@@ -3,7 +3,7 @@ layout: default
 title: removeAllMeanDensityAnomaly
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 38
+nav_order: 43
 mathjax: true
 ---
 

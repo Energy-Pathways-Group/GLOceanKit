@@ -3,7 +3,7 @@ layout: default
 title: removeAllWaves
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 39
+nav_order: 44
 mathjax: true
 ---
 

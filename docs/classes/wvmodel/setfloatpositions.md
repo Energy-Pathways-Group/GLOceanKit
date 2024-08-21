@@ -3,7 +3,7 @@ layout: default
 title: setFloatPositions
 parent: WVModel
 grand_parent: Classes
-nav_order: 21
+nav_order: 38
 mathjax: true
 ---
 

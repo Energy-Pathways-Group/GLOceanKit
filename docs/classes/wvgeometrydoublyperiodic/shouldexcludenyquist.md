@@ -3,7 +3,7 @@ layout: default
 title: shouldExcludeNyquist
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 38
+nav_order: 39
 mathjax: true
 ---
 

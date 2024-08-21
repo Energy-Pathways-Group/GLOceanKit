@@ -21,6 +21,9 @@ add randomized flow to the existing state
 ## Parameters
 + `flowComponentNames`  strings of flow component names names.
 + `uvMax`  (optional) maximum horizontal velocity
++ `A0Spectrum`  (optional) function_handle of the form @(k,j)
++ `ApmSpectrum`  (optional) function_handle of the form @(k,j)
++ `shouldOnlyRandomizeOrientations`  amplitudes follow the spectrum exactly, but directions are still randomized
 
 ## Discussion
 
@@ -41,4 +44,4 @@ add randomized flow to the existing state
   components, while the wave and inertial oscillations components will
   remain untouched
  
-        
+              

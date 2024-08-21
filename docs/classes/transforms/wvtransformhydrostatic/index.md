@@ -91,11 +91,18 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + Differentiation
     + [`diffZF`](/classes/transforms/wvtransformhydrostatic/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
     + [`diffZG`](/classes/transforms/wvtransformhydrostatic/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
++ Energetics
+  + [`geostrophicKineticEnergy`](/classes/transforms/wvtransformhydrostatic/geostrophickineticenergy.html) kinetic energy of the geostrophic flow
+  + [`geostrophicPotentialEnergy`](/classes/transforms/wvtransformhydrostatic/geostrophicpotentialenergy.html) potential energy of the geostrophic flow
 + Other
+  + [`N2Function`](/classes/transforms/wvtransformhydrostatic/n2function.html) 
+  + [`dLnN2Function`](/classes/transforms/wvtransformhydrostatic/dlnn2function.html) 
+  + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithalternativespectrum.html) 
   + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformhydrostatic/initwithfrequencyspectrum.html) 
   + [`initWithGMSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithgmspectrum.html) 
   + [`maxFg`](/classes/transforms/wvtransformhydrostatic/maxfg.html) 
   + [`maxFw`](/classes/transforms/wvtransformhydrostatic/maxfw.html) 
+  + [`rhoFunction`](/classes/transforms/wvtransformhydrostatic/rhofunction.html) function handles
   + [`throwErrorIfDensityViolation`](/classes/transforms/wvtransformhydrostatic/throwerrorifdensityviolation.html) checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
 
 

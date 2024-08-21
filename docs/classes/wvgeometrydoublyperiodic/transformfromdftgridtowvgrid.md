@@ -3,7 +3,7 @@ layout: default
 title: transformFromDFTGridToWVGrid
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 40
+nav_order: 41
 mathjax: true
 ---
 

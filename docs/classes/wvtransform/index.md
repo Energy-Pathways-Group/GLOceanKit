@@ -206,6 +206,13 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`isValidConjugateModeNumber`](/classes/wvtransform/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid conjugate mode number
   + [`isValidModeNumber`](/classes/wvtransform/isvalidmodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidPrimaryModeNumber`](/classes/wvtransform/isvalidprimarymodenumber.html) returns a boolean indicating whether (k,l,j) is a valid primary (non-conjugate) mode number
++ Masks
+  + [`maskA0Conj`](/classes/wvtransform/maska0conj.html) returns a mask indicating where conjugate solutions live in the A0 matrix.
+  + [`maskA0Primary`](/classes/wvtransform/maska0primary.html) returns a mask indicating where primary solutions live in the A0 matrix.
+  + [`maskAmConj`](/classes/wvtransform/maskamconj.html) returns a mask indicating where conjugate solutions live in the Am matrix.
+  + [`maskAmPrimary`](/classes/wvtransform/maskamprimary.html) returns a mask indicating where primary solutions live in the Am matrix.
+  + [`maskApConj`](/classes/wvtransform/maskapconj.html) returns a mask indicating where conjugate solutions live in the Ap matrix.
+  + [`maskApPrimary`](/classes/wvtransform/maskapprimary.html) returns a mask indicating where primary solutions live in the Ap matrix.
 + Other
   + [`A0`](/classes/wvtransform/a0.html) geostrophic coefficients at reference time t0 (m)
   + [`A0Z`](/classes/wvtransform/a0z.html) 
@@ -224,10 +231,12 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`diffY`](/classes/wvtransform/diffy.html) 
   + [`diffZF`](/classes/wvtransform/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
   + [`diffZG`](/classes/wvtransform/diffzg.html) differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)
+  + [`dimensionAnnotationNameMap`](/classes/wvtransform/dimensionannotationnamemap.html) 
   + [`dk`](/classes/wvtransform/dk.html) 
   + [`dl`](/classes/wvtransform/dl.html) 
   + [`dynamicalVariable`](/classes/wvtransform/dynamicalvariable.html) 
   + [`enstrophyFluxFromF0`](/classes/wvtransform/enstrophyfluxfromf0.html) 
+  + [`flowComponentNameMap`](/classes/wvtransform/flowcomponentnamemap.html) 
   + [`h_0`](/classes/wvtransform/h_0.html) [Nj Nkl]
   + [`h_pm`](/classes/wvtransform/h_pm.html) [Nj Nkl]
   + [`hasMeanPressureDifference`](/classes/wvtransform/hasmeanpressuredifference.html) checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
@@ -238,14 +247,20 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`isequal`](/classes/wvtransform/isequal.html) 
   + [`kAxis`](/classes/wvtransform/kaxis.html) k coordinate
   + [`kl`](/classes/wvtransform/kl.html) dimension of the interleaved k-l wavenumber coordinate
+  + [`knownDynamicalVariables`](/classes/wvtransform/knowndynamicalvariables.html) 
   + [`lAxis`](/classes/wvtransform/laxis.html) l coordinate
   + [`modeNumberFromIndex`](/classes/wvtransform/modenumberfromindex.html) 
   + [`operationForDynamicalVariable`](/classes/wvtransform/operationfordynamicalvariable.html) This function is designed with the following goals:
+  + [`operationNameMap`](/classes/wvtransform/operationnamemap.html) 
+  + [`operationVariableNameMap`](/classes/wvtransform/operationvariablenamemap.html) 
+  + [`primaryFlowComponentNameMap`](/classes/wvtransform/primaryflowcomponentnamemap.html) 
+  + [`propertyAnnotationNameMap`](/classes/wvtransform/propertyannotationnamemap.html) 
   + [`qgpvFluxFromF0`](/classes/wvtransform/qgpvfluxfromf0.html) 
   + [`spectralVanishingViscosityFilter`](/classes/wvtransform/spectralvanishingviscosityfilter.html) Builds the spectral vanishing viscosity operator
   + [`summarizeDegreesOfFreedom`](/classes/wvtransform/summarizedegreesoffreedom.html) 
   + [`summarizeDynamicalVariables`](/classes/wvtransform/summarizedynamicalvariables.html) 
   + [`summarizeFlowComponents`](/classes/wvtransform/summarizeflowcomponents.html) 
+  + [`timeDependentVariablesNameMap`](/classes/wvtransform/timedependentvariablesnamemap.html) 
   + [`totalEnergy`](/classes/wvtransform/totalenergy.html) 
   + [`totalEnergyOfFlowComponent`](/classes/wvtransform/totalenergyofflowcomponent.html) 
   + [`totalEnergySpatiallyIntegrated`](/classes/wvtransform/totalenergyspatiallyintegrated.html) 
@@ -254,7 +269,10 @@ Represents the state of the ocean in terms of energetically orthogonal wave and 
   + [`totalHydrostaticEnergy`](/classes/wvtransform/totalhydrostaticenergy.html) 
   + [`transformFromSpatialDomainWithFourier`](/classes/wvtransform/transformfromspatialdomainwithfourier.html) 
   + [`transformToSpatialDomainWithFourier`](/classes/wvtransform/transformtospatialdomainwithfourier.html) 
+  + [`transformToSpatialDomainWithFourierAtPosition`](/classes/wvtransform/transformtospatialdomainwithfourieratposition.html) 
   + [`transformWithG_wg`](/classes/wvtransform/transformwithg_wg.html) 
+  + [`variableAnnotationNameMap`](/classes/wvtransform/variableannotationnamemap.html) 
+  + [`variableCache`](/classes/wvtransform/variablecache.html) 
   + [`variables`](/classes/wvtransform/variables.html) access the dynamical variables
   + [`variablesAtPosition`](/classes/wvtransform/variablesatposition.html) access the dynamical variables at any position in the domain
   + [`velocityField`](/classes/wvtransform/velocityfield.html) Return the velocity field, which is the sum of the gridded

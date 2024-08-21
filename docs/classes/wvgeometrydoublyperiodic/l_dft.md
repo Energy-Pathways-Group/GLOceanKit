@@ -3,7 +3,7 @@ layout: default
 title: l_dft
 parent: WVGeometryDoublyPeriodic
 grand_parent: Classes
-nav_order: 29
+nav_order: 30
 mathjax: true
 ---
 

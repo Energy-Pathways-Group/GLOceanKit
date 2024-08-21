@@ -3,7 +3,7 @@ layout: default
 title: totalEnergyFactorForCoefficientMatrix
 parent: WVPrimaryFlowComponent
 grand_parent: Classes
-nav_order: 14
+nav_order: 12
 mathjax: true
 ---
 

@@ -45,7 +45,6 @@ Orthogonal solution group
   + [`maskOfPrimaryModesForCoefficientMatrix`](/classes/flow-components/wvprimaryflowcomponent/maskofprimarymodesforcoefficientmatrix.html) returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
 + Quadratic quantities
   + [`enstrophyFactorForA0`](/classes/flow-components/wvprimaryflowcomponent/enstrophyfactorfora0.html) returns the enstrophy multiplier for the A0 coefficient matrix.
-  + [`randomAmplitudes`](/classes/flow-components/wvprimaryflowcomponent/randomamplitudes.html) returns random amplitude for a valid flow state
   + [`totalEnergyFactorForCoefficientMatrix`](/classes/flow-components/wvprimaryflowcomponent/totalenergyfactorforcoefficientmatrix.html) returns the total energy multiplier for the coefficient matrix.
 + Analytical solutions
   + [`solutionForModeAtIndex`](/classes/flow-components/wvprimaryflowcomponent/solutionformodeatindex.html) return the analytical solution for the mode at this index
@@ -53,8 +52,6 @@ Orthogonal solution group
   + [`isValidConjugateModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidconjugatemodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidmodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
   + [`isValidPrimaryModeNumber`](/classes/flow-components/wvprimaryflowcomponent/isvalidprimarymodenumber.html) returns a boolean indicating whether (k,l,j) is a valid mode number
-+ Other
-  + [`randomAmplitudesWithSpectrum`](/classes/flow-components/wvprimaryflowcomponent/randomamplitudeswithspectrum.html) 
 
 
 ---

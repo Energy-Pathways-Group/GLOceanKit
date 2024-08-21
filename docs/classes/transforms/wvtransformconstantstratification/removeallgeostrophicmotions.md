@@ -3,7 +3,7 @@ layout: default
 title: removeAllGeostrophicMotions
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 41
+nav_order: 46
 mathjax: true
 ---
 

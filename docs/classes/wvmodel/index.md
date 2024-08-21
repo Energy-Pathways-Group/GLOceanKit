@@ -46,16 +46,17 @@ The WVModel is responsible for time-stepping (integrating) the ocean state forwa
   + [`WVModel`](/classes/wvmodel/wvmodel.html) Initialize a model from a WVTransform instance
   + [`modelFromFile`](/classes/wvmodel/modelfromfile.html) Initialize a model from an existing file
 + Model Properties
+  + [`initialTime`](/classes/wvmodel/initialtime.html) Initial model time (seconds)
   + [`linearDynamics`](/classes/wvmodel/lineardynamics.html) Indicates whether or not the model is using linear or nonlinear dynamics.
   + [`nonlinearFluxOperation`](/classes/wvmodel/nonlinearfluxoperation.html) The operation responsible for computing the nonlinear flux of the model
   + [`t`](/classes/wvmodel/t.html) Current model time (seconds)
   + [`wvt`](/classes/wvmodel/wvt.html) The WVTransform instance the represents the ocean state.
 + Integration
-  + [`integrateToNextOutputTime`](/classes/wvmodel/integratetonextoutputtime.html) Time step the model forward to the next output time
+  + [`incrementsWrittenToFile`](/classes/wvmodel/incrementswrittentofile.html) output index of the current/most recent step.
   + [`integrateToTime`](/classes/wvmodel/integratetotime.html) Time step the model forward to the requested time.
-  + [`outputIndex`](/classes/wvmodel/outputindex.html) output index of the current/most recent step.
   + [`outputInterval`](/classes/wvmodel/outputinterval.html) Model output interval (seconds)
   + [`setupIntegrator`](/classes/wvmodel/setupintegrator.html) Customize the time-stepping
+  + [`timeOfLastIncrementWrittenToFile`](/classes/wvmodel/timeoflastincrementwrittentofile.html) output index of the current/most recent step.
 + Particles
   + [`addParticles`](/classes/wvmodel/addparticles.html) Add particles to be advected by the flow.
   + [`drifterPositions`](/classes/wvmodel/drifterpositions.html) Current positions of the drifter particles
@@ -74,7 +75,34 @@ The WVModel is responsible for time-stepping (integrating) the ocean state forwa
   + [`removeNetCDFOutputVariables`](/classes/wvmodel/removenetcdfoutputvariables.html) Remove variables from the list of variables to be written to the NetCDF variable during the model run.
   + [`setNetCDFOutputVariables`](/classes/wvmodel/setnetcdfoutputvariables.html) Set list of variables to be written to the NetCDF variable during the model run.
 + Other
+  + [`closeNetCDFFile`](/classes/wvmodel/closenetcdffile.html) 
+  + [`didBlowUp`](/classes/wvmodel/didblowup.html) 
+  + [`didInitializeNetCDFFile`](/classes/wvmodel/didinitializenetcdffile.html) 
+  + [`didSetupIntegrator`](/classes/wvmodel/didsetupintegrator.html) 
+  + [`finalIntegrationTime`](/classes/wvmodel/finalintegrationtime.html) set only during an integration
+  + [`initialConditionOnlyVariables`](/classes/wvmodel/initialconditiononlyvariables.html) 
+  + [`initialOutputTime`](/classes/wvmodel/initialoutputtime.html) output time corresponding to outputIndex=1 (set on instance initialization)
+  + [`initializeParticleStorage`](/classes/wvmodel/initializeparticlestorage.html) 
+  + [`integrationInformTime`](/classes/wvmodel/integrationinformtime.html) 
+  + [`integrationLastInformModelTime`](/classes/wvmodel/integrationlastinformmodeltime.html) 
+  + [`integrationLastInformWallTime`](/classes/wvmodel/integrationlastinformwalltime.html) wall clock, to keep track of the expected integration time
+  + [`integrationStartTime`](/classes/wvmodel/integrationstarttime.html) 
+  + [`integratorType`](/classes/wvmodel/integratortype.html) Array integrator
+  + [`netcdfVariableMapForParticleWithName`](/classes/wvmodel/netcdfvariablemapforparticlewithname.html) map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
+  + [`openNetCDFFileForTimeStepping`](/classes/wvmodel/opennetcdffilefortimestepping.html) 
+  + [`particle`](/classes/wvmodel/particle.html) cell array containing particle structs
+  + [`particleIndexWithName`](/classes/wvmodel/particleindexwithname.html) map from particle name to cell array index
   + [`recordNetCDFFileHistory`](/classes/wvmodel/recordnetcdffilehistory.html) 
+  + [`shouldShowIntegrationDiagnostics`](/classes/wvmodel/shouldshowintegrationdiagnostics.html) 
+  + [`showIntegrationFinishDiagnostics`](/classes/wvmodel/showintegrationfinishdiagnostics.html) 
+  + [`showIntegrationStartDiagnostics`](/classes/wvmodel/showintegrationstartdiagnostics.html) 
+  + [`showIntegrationTimeDiagnostics`](/classes/wvmodel/showintegrationtimediagnostics.html) 
+  + [`timeSeriesVariables`](/classes/wvmodel/timeseriesvariables.html) 
+  + [`tracerArray`](/classes/wvmodel/tracerarray.html) 
+  + [`tracerIndexWithName`](/classes/wvmodel/tracerindexwithname.html) 
+  + [`updateParticleTrackedFields`](/classes/wvmodel/updateparticletrackedfields.html) One special thing we have to do is log the particle
+  + [`writeParticleDataAtTimeIndex`](/classes/wvmodel/writeparticledataattimeindex.html) 
+  + [`writeTimeStepToNetCDFFile`](/classes/wvmodel/writetimesteptonetcdffile.html) 
 
 
 ---

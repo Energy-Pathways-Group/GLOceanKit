@@ -81,16 +81,23 @@ nav_order: 1
   + [`waveEnergy`](/classes/transforms/wvtransformboussinesq/waveenergy.html) total energy, waves
   + [`inertialEnergy`](/classes/transforms/wvtransformboussinesq/inertialenergy.html) total energy, inertial oscillations
   + [`mdaEnergy`](/classes/transforms/wvtransformboussinesq/mdaenergy.html) total energy, mean density anomaly
++ Energetics
+  + [`geostrophicKineticEnergy`](/classes/transforms/wvtransformboussinesq/geostrophickineticenergy.html) kinetic energy of the geostrophic flow
+  + [`geostrophicPotentialEnergy`](/classes/transforms/wvtransformboussinesq/geostrophicpotentialenergy.html) potential energy of the geostrophic flow
 + Other
+  + [`N2Function`](/classes/transforms/wvtransformboussinesq/n2function.html) 
   + [`WVTransformBoussinesq`](/classes/transforms/wvtransformboussinesq/wvtransformboussinesq.html) First we need to initialize the WVStratifiedFlow.
   + [`buildInterpolationProjectionOperators`](/classes/transforms/wvtransformboussinesq/buildinterpolationprojectionoperators.html) 
   + [`buildInterpolationProjectionOperatorsForGrid`](/classes/transforms/wvtransformboussinesq/buildinterpolationprojectionoperatorsforgrid.html) 
   + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformboussinesq/buildverticalmodeprojectionoperators.html) 
+  + [`dLnN2Function`](/classes/transforms/wvtransformboussinesq/dlnn2function.html) 
+  + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformboussinesq/initwithalternativespectrum.html) 
   + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformboussinesq/initwithfrequencyspectrum.html) 
   + [`initWithGMSpectrum`](/classes/transforms/wvtransformboussinesq/initwithgmspectrum.html) 
   + [`maxFg`](/classes/transforms/wvtransformboussinesq/maxfg.html) 
   + [`maxFw`](/classes/transforms/wvtransformboussinesq/maxfw.html) 
   + [`nK2unique`](/classes/transforms/wvtransformboussinesq/nk2unique.html) number of unique squared-wavenumbers
+  + [`rhoFunction`](/classes/transforms/wvtransformboussinesq/rhofunction.html) function handles
   + [`throwErrorIfDensityViolation`](/classes/transforms/wvtransformboussinesq/throwerrorifdensityviolation.html) checks if the proposed coefficients are a valid adiabatic re-arrangement of the base state
   + [`transformToSpatialDomainWithFInterp`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithfinterp.html) 
   + [`transformToSpatialDomainWithFg`](/classes/transforms/wvtransformboussinesq/transformtospatialdomainwithfg.html) arguments

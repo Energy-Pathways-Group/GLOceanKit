@@ -3,7 +3,7 @@ layout: default
 title: removeAllInertialMotions
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 42
+nav_order: 47
 mathjax: true
 ---
 

@@ -80,6 +80,7 @@ A domain periodic in both x and y.
     + [`dftConjugateIndices`](/classes/wvgeometrydoublyperiodic/dftconjugateindices.html) index into the DFT grid of the conjugate of each WV mode
     + [`dftPrimaryIndices`](/classes/wvgeometrydoublyperiodic/dftprimaryindices.html) index into the DFT grid of each WV mode
     + [`kMode_wv`](/classes/wvgeometrydoublyperiodic/kmode_wv.html) k mode number on the WV grid
+    + [`kRadial_wv`](/classes/wvgeometrydoublyperiodic/kradial_wv.html) radial (k,l) wavenumber on the WV grid
     + [`k_wv`](/classes/wvgeometrydoublyperiodic/k_wv.html) k-wavenumber dimension on the WV grid
     + [`lMode_wv`](/classes/wvgeometrydoublyperiodic/lmode_wv.html) l mode number on the WV grid
     + [`l_wv`](/classes/wvgeometrydoublyperiodic/l_wv.html) l-wavenumber dimension on the WV grid
@@ -93,6 +94,7 @@ A domain periodic in both x and y.
   + Fourier transformation
     + [`transformFromSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformfromspatialdomain.html) transform from $$(x,y,z)$$ to $$(k,l,z)$$ on the DFT grid
     + [`transformToSpatialDomain`](/classes/wvgeometrydoublyperiodic/transformtospatialdomain.html) transform from $$(k,l,z)$$ on the DFT grid to $$(x,y,z)$$
+    + [`transformToSpatialDomainAtPosition`](/classes/wvgeometrydoublyperiodic/transformtospatialdomainatposition.html) transform from $$(k,l)$$ on the DFT grid to $$(x,y)$$ at any position
   + Differentiation
     + [`diffX`](/classes/wvgeometrydoublyperiodic/diffx.html) differentiate a spatial variable in the x-direction
     + [`diffY`](/classes/wvgeometrydoublyperiodic/diffy.html) differentiate a spatial variable in the y-direction

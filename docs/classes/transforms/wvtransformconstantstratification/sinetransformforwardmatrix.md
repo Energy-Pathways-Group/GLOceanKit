@@ -3,7 +3,7 @@ layout: default
 title: SineTransformForwardMatrix
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 13
+nav_order: 14
 mathjax: true
 ---
 
