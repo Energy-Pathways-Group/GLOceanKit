@@ -887,6 +887,10 @@ classdef WVGeometryDoublyPeriodic
 
             antialiasMask = zeros(length(k),length(l),Nz);
             antialiasMask(Kh > 2*max(abs(k))/3) = 1;
+
+            % dk = k(2)-k(1);
+            % antialiasMask = zeros(length(k),length(l),Nz);
+            % antialiasMask(Kh > 2*(max(abs(k))-dk)/3) = 1;
         end
 
         function nyquistMask = maskForNyquistModes(Nx,Ny,Nz)
