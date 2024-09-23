@@ -111,6 +111,8 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             self.initializeInternalGravityWaveComponent();
             self.initializeInertialOscillationComponent();
 
+            self.addPropertyAnnotations(WVPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density'));
+
             % self.offgridModes = WVOffGridTransform(verticalModes,self.latitude, @(z) N0*N0*ones(size(z)),self.isHydrostatic);
 
             % Preallocate this array for a faster dct
