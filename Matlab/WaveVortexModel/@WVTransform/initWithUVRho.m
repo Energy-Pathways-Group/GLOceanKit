@@ -1,12 +1,20 @@
-function initWithUVRho(self,u,v,rho,t)
+function initWithUVRho(self,U,V,RHO)
 % initialize with fluid variables $$(u,v,\rho)$$
 %
-% Clears variables Ap,Am,A0 and then randomizes the flow
+% Replaces the variables Ap,Am,A0 with those computed from $$(u,v,\rho_e)$$.
 % - Topic: Initial conditions
-% - Declaration: initWithUVRho(U,V,N,t)
+% - Declaration: initWithUVRho(U,V,RHO)
 % - Parameter u: x-component of the fluid velocity
 % - Parameter v: y-component of the fluid velocity
-% - Parameter n: scaled density anomaly
-% - Parameter t: (optional) time of observations
-error('Not yet implemented');
+% - Parameter rho: density anomaly
+
+arguments
+    self WVTransform {mustBeNonempty}
+    U (:,:,:) double {mustBeNonempty,mustBeReal}
+    V (:,:,:) double {mustBeNonempty,mustBeReal}
+    RHO (:,:,:) double {mustBeNonempty,mustBeReal}
+end
+
+[self.Ap,self.Am,self.A0] = self.transformUVEtaToWaveVortex(U,V,(self.g/self.rho0)*RHO./shiftdim(self.N2,-2),self.t);
+
 end
