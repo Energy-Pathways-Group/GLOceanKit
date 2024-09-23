@@ -14,58 +14,26 @@ function summarizeModeEnergy(self,options)
     
     totalEnergy = self.totalEnergy;
 
-    A = self.Ap;
-    A(1,1,:) = 0;
-    C = self.Apm_TE_factor;
-    energy = C(:).* (A(:).*conj(A(:)));
-    [energy,indices] = sort(energy,'descend');
-    totalConstituentEnergy = self.internalWaveEnergyPlus;
+    for name = keys(self.flowComponentNameMap)
+        flowComponent = self.flowComponentNameMap(name{1});
+        flowEnergy = self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2);
+        [sortedFlowEnergy,indices] = sort(flowEnergy,'descend');
 
-    fprintf('\n(k,l,j)\t\t|Ap pct\t|total pct\n');
-    fprintf('----------------------------------\n');
-    for iMode=1:n
-        [k,l,j] = ind2sub(size(A),indices(iMode));
-        fprintf('(%d,%d,%d)\t|%.3f\t|%.3f\n',k-1,l-1,j-1,(energy(iMode)/totalConstituentEnergy)*100,(energy(iMode)/totalEnergy)*100)
-    end
+        Mode = cell(n,1);
+        ConstituentEnergyPct = cell(n,1);
+        OverallEnergyPct = cell(n,1);
+        for iMode=1:n
+            [kMode,lMode,jMode] = self.modeNumberFromIndex(indices(iMode));
+            Mode{iMode} = sprintf('(%d,%d,%d)',kMode,lMode,jMode);
+            ConstituentEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/sum(flowEnergy(:)))*100);
+            OverallEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/totalEnergy)*100);
+        end
+        Mode = string(Mode);
+        ConstituentEnergyPct = string(ConstituentEnergyPct);
+        OverallEnergyPct = string(OverallEnergyPct);
+        T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);
 
-    A = self.Am;
-    A(1,1,:) = 0;
-    C = self.Apm_TE_factor;
-    energy = C(:).* (A(:).*conj(A(:)));
-    [energy,indices] = sort(energy,'descend');
-    totalConstituentEnergy = self.internalWaveEnergyMinus;
-
-    fprintf('\n(k,l,j)\t\t|Am pct\t|total pct\n');
-    fprintf('----------------------------------\n');
-    for iMode=1:n
-        [k,l,j] = ind2sub(size(A),indices(iMode));
-        fprintf('(%d,%d,%d)\t|%.3f\t|%.3f\n',k-1,l-1,j-1,(energy(iMode)/totalConstituentEnergy)*100,(energy(iMode)/totalEnergy)*100)
-    end
-
-    A = self.A0;
-    A(1,1,:) = 0;
-    C = self.A0_TE_factor;
-    energy = C(:).* (A(:).*conj(A(:)));
-    [energy,indices] = sort(energy,'descend');
-    totalConstituentEnergy = self.geostrophicEnergy;
-
-    fprintf('\n(k,l,j)\t\t|A0 pct\t|total pct\n');
-    fprintf('----------------------------------\n');
-    for iMode=1:n
-        [k,l,j] = ind2sub(size(A),indices(iMode));
-        fprintf('(%d,%d,%d)\t|%.3f\t|%.3f\n',k-1,l-1,j-1,(energy(iMode)/totalConstituentEnergy)*100,(energy(iMode)/totalEnergy)*100)
-    end
-
-    App = self.Ap;
-    Amm = self.Am;
-    C = self.Apm_TE_factor;
-    energy = squeeze(C(1,1,:).* (abs(App(1,1,:)).^2 + abs(Amm(1,1,:)).^2)) ;
-    [energy,indices] = sort(energy,'descend');
-    totalConstituentEnergy = self.inertialEnergy;
-
-    fprintf('\n(k,l,j)\t\t|IO pct\t|total pct\n');
-    fprintf('----------------------------------\n');
-    for iMode=1:n
-        fprintf('(1,1,%d)\t|%.3f\t|%.3f\n',indices(iMode)-1,(energy(iMode)/totalConstituentEnergy)*100,(energy(iMode)/totalEnergy)*100)
+        fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponentNameMap(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
+        disp(T);
     end
 end
