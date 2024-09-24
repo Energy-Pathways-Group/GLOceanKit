@@ -171,36 +171,49 @@ classdef WVFlowComponent < handle
                 Am double
                 A0 double
             end
-            if isequal(options.A0Spectrum,@isempty)
-                A0Spectrum = @(k,j) ones(size(k));
-            else
-                A0Spectrum = options.A0Spectrum;
-            end
-            if isequal(options.ApmSpectrum,@isempty)
-                ApmSpectrum = @(k,j) ones(size(k));
-            else
-                ApmSpectrum = options.ApmSpectrum;
-            end
+            % if isequal(options.A0Spectrum,@isempty)
+            %     A0Spectrum = @(k,j) ones(size(k));
+            % else
+            %     A0Spectrum = options.A0Spectrum;
+            % end
+            % if isequal(options.ApmSpectrum,@isempty)
+            %     ApmSpectrum = @(k,j) ones(size(k));
+            % else
+            %     ApmSpectrum = options.ApmSpectrum;
+            % end
  
             [Ap,Am,A0] = self.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
+            hasRandomA0 = any(A0(:));
+            hasRandomApm = any(Ap(:)) || any(Am(:));
 
             kRadial = self.wvt.kRadial;
             Kh = self.wvt.Kh;
             J = self.wvt.J;
             dk = kRadial(2)-kRadial(1);
-            for iJ=1:length(self.wvt.j)
-                for iK=1:length(kRadial)
-                    indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2 & J == self.wvt.j(iJ);
-                    
-                    if any(A0(:))
-                        energyPerA0Component = integral(@(k) A0Spectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/sum(indicesForK(:));
-                        A0(indicesForK) = A0(indicesForK).*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForK) ));
+            for iK=1:length(kRadial)
+                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
+                for iJ=1:length(self.wvt.j)
+                    % this is faster than logical indexing
+                    indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
+                    nIndicesForKJ = length(indicesForKJ);
+
+                    if hasRandomA0
+                        if isequal(options.A0Spectrum,@isempty)
+                            energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
+                        else
+                            energyPerA0Component = integral(@(k) A0Spectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
+                        end
+                        A0(indicesForKJ) = A0(indicesForKJ).*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
                     end
 
-                    if any(Ap(:)) || any(Am(:))
-                        energyPerApmComponent = integral(@(k) ApmSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/sum(indicesForK(:))/2;
-                        Ap(indicesForK) = Ap(indicesForK).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForK) ));
-                        Am(indicesForK) = Am(indicesForK).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForK) ));
+                    if hasRandomApm
+                        if isequal(options.ApmSpectrum,@isempty)
+                            energyPerApmComponent = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ/2;
+                        else
+                            energyPerApmComponent = integral(@(k) ApmSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
+                        end
+                        Ap(indicesForKJ) = Ap(indicesForKJ).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
+                        Am(indicesForKJ) = Am(indicesForKJ).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
                     end
                 end
             end

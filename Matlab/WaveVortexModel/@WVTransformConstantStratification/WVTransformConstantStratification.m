@@ -447,6 +447,8 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
     methods (Static)
         wvt = waveVortexTransformFromFile(path,options)
 
+        resultsTable = speedTest
+
         matrix = CosineTransformForwardMatrix(N)
         matrix = CosineTransformBackMatrix(n)
         matrix = SineTransformForwardMatrix(N)
@@ -454,7 +456,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
     end
 
 
-    methods (Access=protected)
+    methods %(Access=protected)
         function ProfileTransforms(self)
             Ubar = self.UAp.*self.Ap + self.UAm.*self.Am + self.UA0.*self.A0;
             Nbar = self.NAp.*self.Ap + self.NAm.*self.Am + self.NA0.*self.A0;
