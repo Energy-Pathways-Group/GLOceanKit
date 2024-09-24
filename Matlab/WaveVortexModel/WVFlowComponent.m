@@ -201,7 +201,7 @@ classdef WVFlowComponent < handle
                         if isequal(options.A0Spectrum,@isempty)
                             energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
                         else
-                            energyPerA0Component = integral(@(k) A0Spectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
+                            energyPerA0Component = integral(@(k) options.A0Spectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
                         end
                         A0(indicesForKJ) = A0(indicesForKJ).*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
                     end
@@ -210,7 +210,7 @@ classdef WVFlowComponent < handle
                         if isequal(options.ApmSpectrum,@isempty)
                             energyPerApmComponent = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ/2;
                         else
-                            energyPerApmComponent = integral(@(k) ApmSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
+                            energyPerApmComponent = integral(@(k) options.ApmSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
                         end
                         Ap(indicesForKJ) = Ap(indicesForKJ).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
                         Am(indicesForKJ) = Am(indicesForKJ).*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
