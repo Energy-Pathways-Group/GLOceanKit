@@ -520,6 +520,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            % u_bar = fft2(u)/(self.Nx*self.Ny);
             u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
         end
 
@@ -527,6 +528,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.dftBuffer(self.dftPrimaryIndex) = u_bar;
             self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
             u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+            % u = ifft2(self.dftBuffer,'symmetric')*(self.Nx*self.Ny);
         end
 
         function u = transformToSpatialDomainWithFourierAtPosition(self,u_bar,x,y)

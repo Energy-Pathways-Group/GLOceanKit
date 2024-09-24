@@ -63,7 +63,7 @@ wvt.nonlinearFluxOperation = WVNonlinearFluxSpatial(wvt);
 [Fp,Fm,F0] = wvt.nonlinearFlux();
 
 tic
-for i=1:10
+for i=1:50
     wvt.t = i;
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end
@@ -78,7 +78,7 @@ toc
 
 %%
 profile on
-for i=1:10
+for i=1:20
     wvt.t = i;
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end
