@@ -108,7 +108,7 @@ classdef WVFlowComponent < handle
             % for this flow component. These resulting matrices will have
             % the correct symmetries for a valid flow state. 
             %
-            % - Topic: Quadratic quantities
+            % - Topic: Initialization
             % - Declaration: Ap,Am,A0] = randomAmplitudes()
             % - Returns Ap: matrix of size [Nj Nkl]
             % - Returns Am: matrix of size [Nj Nkl]
@@ -160,6 +160,19 @@ classdef WVFlowComponent < handle
         end
 
         function [Ap,Am,A0] = randomAmplitudesWithSpectrum(self,options)
+            % initialize with coefficients following a specified spectrum
+            %
+            % This allows you to initialize amplitudes following a spectrum
+            % defined in terms of wavenumber and vertical mode.
+            %
+            % - Topic: Initialization
+            % - Declaration: Ap,Am,A0] = randomAmplitudesWithSpectrum(options)
+            % - Parameter A0Spectrum: (optional) function_handle with signature @(k,j), defaults to a white spectrum.
+            % - Parameter ApmSpectrum: (optional) function_handle with signature @(k,j), defaults to a white spectrum.
+            % - Parameter shouldOnlyRandomizeOrientations: boolean indicating whether randomness in amplitudes should be eliminated (default 0)
+            % - Returns Ap: matrix of size [Nj Nkl]
+            % - Returns Am: matrix of size [Nj Nkl]
+            % - Returns A0: matrix of size [Nj Nkl]
             arguments (Input)
                 self WVFlowComponent {mustBeNonempty}
                 options.A0Spectrum = @isempty
@@ -171,16 +184,6 @@ classdef WVFlowComponent < handle
                 Am double
                 A0 double
             end
-            % if isequal(options.A0Spectrum,@isempty)
-            %     A0Spectrum = @(k,j) ones(size(k));
-            % else
-            %     A0Spectrum = options.A0Spectrum;
-            % end
-            % if isequal(options.ApmSpectrum,@isempty)
-            %     ApmSpectrum = @(k,j) ones(size(k));
-            % else
-            %     ApmSpectrum = options.ApmSpectrum;
-            % end
  
             [Ap,Am,A0] = self.randomAmplitudes(shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
             hasRandomA0 = any(A0(:));

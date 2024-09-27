@@ -36,6 +36,8 @@ Orthogonal solution group
 ## Topics
 + Initialization
   + [`WVFlowComponent`](/classes/flow-components/wvflowcomponent/wvflowcomponent.html) create a new orthogonal solution group
+  + [`randomAmplitudes`](/classes/flow-components/wvflowcomponent/randomamplitudes.html) returns random amplitude for a valid flow state
+  + [`randomAmplitudesWithSpectrum`](/classes/flow-components/wvflowcomponent/randomamplitudeswithspectrum.html) initialize with coefficients following a specified spectrum
 + Properties
   + [`abbreviatedName`](/classes/flow-components/wvflowcomponent/abbreviatedname.html) abbreviated name
   + [`name`](/classes/flow-components/wvflowcomponent/name.html) of the flow feature
@@ -45,11 +47,8 @@ Orthogonal solution group
   + [`maskA0`](/classes/flow-components/wvflowcomponent/maska0.html) returns a mask indicating where solutions live in the A0 matrix.
   + [`maskAm`](/classes/flow-components/wvflowcomponent/maskam.html) returns a mask indicating where solutions live in the Am matrix.
   + [`maskAp`](/classes/flow-components/wvflowcomponent/maskap.html) returns a mask indicating where solutions live in the Ap matrix.
-+ Quadratic quantities
-  + [`randomAmplitudes`](/classes/flow-components/wvflowcomponent/randomamplitudes.html) returns random amplitude for a valid flow state
 + Other
   + [`plus`](/classes/flow-components/wvflowcomponent/plus.html) 
-  + [`randomAmplitudesWithSpectrum`](/classes/flow-components/wvflowcomponent/randomamplitudeswithspectrum.html) 
 
 
 ---

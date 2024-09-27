@@ -3,7 +3,7 @@ layout: default
 title: inertialEnergy
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 32
+nav_order: 34
 mathjax: true
 ---
 

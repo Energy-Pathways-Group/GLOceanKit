@@ -39,6 +39,7 @@ Wave-vortex transformation that assumes constant stratification
 ## Topics
 + Initialization
   + [`WVTransformConstantStratification`](/classes/transforms/wvtransformconstantstratification/wvtransformconstantstratification.html) initialze a wave-vortex transform with constant stratification
+  + [`speedTest`](/classes/transforms/wvtransformconstantstratification/speedtest.html) Initialize a WVTransformConstantStratification instance from an existing file
 + Stratification
   + [`rho_nm`](/classes/transforms/wvtransformconstantstratification/rho_nm.html) $$\rho_\textrm{nm}(z)$$, no-motion density
   + [`N2`](/classes/transforms/wvtransformconstantstratification/n2.html) $$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$
@@ -53,6 +54,16 @@ Wave-vortex transformation that assumes constant stratification
   + Validation
     + [`isDensityInValidRange`](/classes/transforms/wvtransformconstantstratification/isdensityinvalidrange.html) checks if the density field is a valid adiabatic re-arrangement of the base state
 + Initial conditions
+  + Waves
+    + [`addGMSpectrum`](/classes/transforms/wvtransformconstantstratification/addgmspectrum.html) add waves following a Garrett-Munk spectrum
+    + [`addWaveModes`](/classes/transforms/wvtransformconstantstratification/addwavemodes.html) add amplitudes of the given wave modes
+    + [`addWavesWithFrequencySpectrum`](/classes/transforms/wvtransformconstantstratification/addwaveswithfrequencyspectrum.html) add waves with a specified frequency spectrum
+    + [`initWavesWithFrequencySpectrum`](/classes/transforms/wvtransformconstantstratification/initwaveswithfrequencyspectrum.html) initialize with waves of a specified frequency spectrum
+    + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithalternativespectrum.html) initialize with an alternative formulation of the GM spectrum in the wavenumber domain.
+    + [`initWithGMSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithgmspectrum.html) initialize the wave field following a Garrett-Munk spectrum
+    + [`initWithWaveModes`](/classes/transforms/wvtransformconstantstratification/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAllWaves`](/classes/transforms/wvtransformconstantstratification/removeallwaves.html) removes all wave from the model, including inertial oscillations
+    + [`setWaveModes`](/classes/transforms/wvtransformconstantstratification/setwavemodes.html) set amplitudes of the given wave modes
   + Geostrophic Motions
     + [`initWithGeostrophicStreamfunction`](/classes/transforms/wvtransformconstantstratification/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
     + [`setGeostrophicStreamfunction`](/classes/transforms/wvtransformconstantstratification/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
@@ -70,12 +81,6 @@ Wave-vortex transformation that assumes constant stratification
     + [`initWithMeanDensityAnomaly`](/classes/transforms/wvtransformconstantstratification/initwithmeandensityanomaly.html) initialize with inertial motions
     + [`removeAllMeanDensityAnomaly`](/classes/transforms/wvtransformconstantstratification/removeallmeandensityanomaly.html) remove all mean density anomalies
     + [`setMeanDensityAnomaly`](/classes/transforms/wvtransformconstantstratification/setmeandensityanomaly.html) set inertial motions
-  + Waves
-    + [`addWaveModes`](/classes/transforms/wvtransformconstantstratification/addwavemodes.html) add amplitudes of the given wave modes
-    + [`initWithHorizontalWaveNumberSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in
-    + [`initWithWaveModes`](/classes/transforms/wvtransformconstantstratification/initwithwavemodes.html) initialize with the given wave modes
-    + [`removeAllWaves`](/classes/transforms/wvtransformconstantstratification/removeallwaves.html) removes all wave from the model, including inertial oscillations
-    + [`setWaveModes`](/classes/transforms/wvtransformconstantstratification/setwavemodes.html) set amplitudes of the given wave modes
 + Operations
   + Differentiation
     + [`diffZF`](/classes/transforms/wvtransformconstantstratification/diffzf.html) differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)
@@ -105,9 +110,6 @@ Wave-vortex transformation that assumes constant stratification
   + [`SineTransformForwardMatrix`](/classes/transforms/wvtransformconstantstratification/sinetransformforwardmatrix.html) CosineTransformForwardMatrix  Discrete Cosine Transform (DCT-I) matrix
   + [`buildVerticalModeProjectionOperators`](/classes/transforms/wvtransformconstantstratification/buildverticalmodeprojectionoperators.html) We renormalization the transformation matrices to directly
   + [`dLnN2Function`](/classes/transforms/wvtransformconstantstratification/dlnn2function.html) 
-  + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithalternativespectrum.html) 
-  + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformconstantstratification/initwithfrequencyspectrum.html) 
-  + [`initWithGMSpectrum`](/classes/transforms/wvtransformconstantstratification/initwithgmspectrum.html) 
   + [`maxFg`](/classes/transforms/wvtransformconstantstratification/maxfg.html) 
   + [`maxFw`](/classes/transforms/wvtransformconstantstratification/maxfw.html) 
   + [`rhoFunction`](/classes/transforms/wvtransformconstantstratification/rhofunction.html) function handles

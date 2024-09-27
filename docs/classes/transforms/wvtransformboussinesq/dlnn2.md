@@ -3,7 +3,7 @@ layout: default
 title: dLnN2
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 16
+nav_order: 18
 mathjax: true
 ---
 

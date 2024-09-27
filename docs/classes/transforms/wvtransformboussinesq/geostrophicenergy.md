@@ -3,7 +3,7 @@ layout: default
 title: geostrophicEnergy
 parent: WVTransformBoussinesq
 grand_parent: Classes
-nav_order: 22
+nav_order: 24
 mathjax: true
 ---
 
