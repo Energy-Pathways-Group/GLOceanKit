@@ -1,22 +1,11 @@
-classdef WVNonlinearFlux < WVNonlinearFluxOperation
-    % 3D nonlinear flux for Boussinesq flow, appropriate for numerical modeling
-    %
-    % Computes the nonlinear flux for a Boussinesq model, and has options
-    % for anti-aliasing and damping appropriate for running a numerical
-    % model. This is *not* the simplest implementation, but instead adds
-    % some complexity in favor of speed. The [BoussinesqSpatial](/classes/boussinesqspatial/) class
-    % shows a simple implementation.
+classdef WVSpectralVanishingViscosity < handle
+    % Small-scale damping
     %
     % The damping is a simple Laplacian, but with a spectral vanishing
     % viscosity (SVV) operator applied that prevents any damping below a
     % cutoff wavenumber. The SVV operator adjusts the wavenumbers being
     % damped depending on whether anti-aliasing is applied.
     %
-    % This is most often used when initializing a model, e.g.,
-    %
-    % ```matlab
-    % model = WVModel(wvt,nonlinearFlux=WVNonlinearFlux(wvt,uv_damp=wvt.uvMax));
-    % ```
     %
     % - Topic: Initializing
     % - Declaration: WVNonlinearFlux < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
@@ -27,8 +16,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         r
         damp
         dLnN2 = 0
-        beta
-        betaA0
+
         k_damp % wavenumber at which the significant scale damping starts.
         k_no_damp % wavenumber below which there is zero damping
     end
@@ -37,7 +25,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     end
 
     methods
-        function self = WVNonlinearFlux(wvt,options)
+        function self = WVSpectralVanishingViscosity(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -54,25 +42,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
-                options.shouldUseBeta double {mustBeMember(options.shouldUseBeta,[0 1])} = 0
-            end
-            fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap');
-            fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am');
-            fluxVar(3) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0');
-
-            self@WVNonlinearFluxOperation('WVNonlinearFlux',fluxVar);
-            self.wvt = wvt;
-            self.r = options.r;
-
-            if isa(wvt,'WVTransformConstantStratification')
-                self.dLnN2 = 0;
-            elseif isa(wvt,'WVTransformHydrostatic')
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-            elseif isa(wvt,'WVTransformBoussinesq')
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-            else
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-                warning('WVTransform not recognized.')
             end
 
             if isfield(options,'nu_xy')
@@ -89,7 +58,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.nu_z = options.nu_z;
             else
                 if isfield(options,'w_damp')
-                    if self.shouldAntialias == 1
+                    if wvt.shouldAntialias == 1
                         self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
                     else
                         self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
@@ -97,15 +66,6 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 else
                     self.nu_z = 0;
                 end
-            end
-            
-            if options.shouldUseBeta == 1
-                self.beta = 2 * 7.2921E-5 * cos( wvt.latitude*pi/180. ) / 6.371e6;
-                self.betaA0 = -self.beta * (wvt.VA0 ./ wvt.A0_QGPV_factor);
-                self.betaA0(1,1,1) = 0;
-            else
-                self.beta = 0;
-                self.betaA0 = 0;
             end
 
             [K,L,J] = self.wvt.kljGrid;
@@ -157,59 +117,10 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             % Apply operator S---defined in (C4) in the manuscript
             % Finishing applying S, but also compute derivatives at the
             % same time
-            if 1
-                [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.UAp.*Apt + wvt.UAm.*Amt,A0=wvt.UA0.*A0t);
-                [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.VAp.*Apt + wvt.VAm.*Amt,A0=wvt.VA0.*A0t);
-                W = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*Apt + wvt.WAm.*Amt);
-                [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Apm=wvt.NAp.*Apt + wvt.NAm.*Amt,A0=wvt.NA0.*A0t);
-            elseif 1==0
-                U = wvt.u;
-                Ux = wvt.diffX(U);
-                Uy = wvt.diffY(U);
-                Uz = wvt.diffZF(U);
-                V = wvt.v;
-                Vx = wvt.diffX(V);
-                Vy = wvt.diffY(V);
-                Vz = wvt.diffZF(V);
-                W = wvt.w;
-                ETA = wvt.eta;
-                ETAx = wvt.diffX(ETA);
-                ETAy = wvt.diffY(ETA);
-                ETAz = wvt.diffZG(ETA);
-            else
-                f_u = parfeval(backgroundPool,@() wvt.u, 0);
-                f_ux = afterEach(f_u,@() wvt.diffX(wvt.u), 1);
-                f_uy = afterEach(f_u,@() wvt.diffY(wvt.u), 1);
-                f_uz = afterEach(f_u,@() wvt.diffZF(wvt.u), 1);
-
-                f_v = parfeval(backgroundPool,@() wvt.v, 0);
-                f_vx = afterEach(f_v,@() wvt.diffX(wvt.v), 1);
-                f_vy = afterEach(f_v,@() wvt.diffY(wvt.v), 1);
-                f_vz = afterEach(f_v,@() wvt.diffZF(wvt.v), 1);
-
-                f_eta = parfeval(backgroundPool,@() wvt.eta, 0);
-                f_etax = afterEach(f_eta,@() wvt.diffX(wvt.eta), 1);
-                f_etay = afterEach(f_eta,@() wvt.diffY(wvt.eta), 1);
-                f_etaz = afterEach(f_eta,@() wvt.diffZG(wvt.eta), 1);
-
-                U = fetchOutputs(f_u);
-                Ux = fetchOutputs(f_ux);
-                Uy = fetchOutputs(f_uy);
-                Uz = fetchOutputs(f_uz);
-
-                V = fetchOutputs(f_v);
-                Vx = fetchOutputs(f_vx);
-                Vy = fetchOutputs(f_vy);
-                Vz = fetchOutputs(f_vz);
-
-                ETA = fetchOutputs(f_eta);
-                ETAx = fetchOutputs(f_etax);
-                ETAy = fetchOutputs(f_etay);
-                ETAz = fetchOutputs(f_etaz);
-
-                W = self.w;
-            end
-
+            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.UAp.*Apt + wvt.UAm.*Amt,A0=wvt.UA0.*A0t);
+            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.VAp.*Apt + wvt.VAm.*Amt,A0=wvt.VA0.*A0t);
+            W = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*Apt + wvt.WAm.*Amt);
+            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Apm=wvt.NAp.*Apt + wvt.NAm.*Amt,A0=wvt.NA0.*A0t);
 
             % compute the nonlinear terms in the spatial domain
             % (pseudospectral!)

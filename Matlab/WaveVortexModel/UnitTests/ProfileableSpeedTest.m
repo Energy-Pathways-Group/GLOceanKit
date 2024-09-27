@@ -18,9 +18,9 @@ wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [128 128 128]);
 % profile viewer
 
 %%
-profile on
+% profile on
 wvt.initWithRandomFlow();
-profile viewer
+% profile viewer
 
 % wvt.removeEnergyFromAliasedModes();
 % spatialFlux = WVNonlinearFluxSpatial(wvt);
@@ -59,7 +59,7 @@ end
 toc
 
 %%
-wvt.nonlinearFluxOperation = WVNonlinearFluxSpatial(wvt);
+wvt.nonlinearFluxOperation = WVNonlinearFlux(wvt);
 [Fp,Fm,F0] = wvt.nonlinearFlux();
 
 tic
