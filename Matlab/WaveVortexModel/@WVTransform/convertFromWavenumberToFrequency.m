@@ -26,14 +26,11 @@ energyFrequency=zeros(length(self.j),length(omegaVector));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ​
          % Redistributing the energy %         ​
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Am=self.Am;
-Ap=self.Ap;
-
-E=(Am.*conj(Am) + Ap.*conj(Ap)).*self.Apm_TE_factor;
+E=(self.Am.*conj(self.Am) + self.Ap.*conj(self.Ap)).*self.Apm_TE_factor;
 for iMode=1:self.Nj
     for iOmega=(1:length(omegaVector)-1)   
         % find all the kl point btw the two values of omega
-        indForOmega = self.Omega(iMode,:)>=omegaVector(iOmega) & self.Omega(iMode,:)<omegaVector(iOmega+1);
+        indForOmega = self.Omega >= omegaVector(iOmega) & self.Omega < omegaVector(iOmega+1) & self.J == iMode;
         energyFrequency(iMode,iOmega) = sum(E(indForOmega));
     end
 end

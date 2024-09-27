@@ -22,16 +22,23 @@ function summarizeModeEnergy(self,options)
         Mode = cell(n,1);
         ConstituentEnergyPct = cell(n,1);
         OverallEnergyPct = cell(n,1);
+        Frequency = cell(n,1);
         for iMode=1:n
             [kMode,lMode,jMode] = self.modeNumberFromIndex(indices(iMode));
             Mode{iMode} = sprintf('(%d,%d,%d)',kMode,lMode,jMode);
             ConstituentEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/sum(flowEnergy(:)))*100);
             OverallEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/totalEnergy)*100);
+            Frequency{iMode} = sprintf('%.2f f',self.Omega(indices(iMode))/self.f);
         end
         Mode = string(Mode);
         ConstituentEnergyPct = string(ConstituentEnergyPct);
         OverallEnergyPct = string(OverallEnergyPct);
-        T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);
+        Frequency = string(Frequency);
+        if strcmp(name{1},'wave')
+            T = table(Mode,Frequency,ConstituentEnergyPct,OverallEnergyPct);
+        else
+            T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);
+        end
 
         fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponentNameMap(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
         disp(T);
