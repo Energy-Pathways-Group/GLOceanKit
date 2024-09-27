@@ -214,8 +214,20 @@ classdef WVInternalGravityWaveMethods < handle
             self.Ap(logical(self.waveComponent.maskAp)) = 0;
             self.Am(logical(self.waveComponent.maskAm)) = 0;
         end
+        
+        function initWavesWithFrequencySpectrum(self,options)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.ApmSpectrum = @isempty
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
+            end
+            self.removeAllWaves;
+            optionsArgs = namedargs2cell(options);
+            self.addWavesWithFrequencySpectrum(optionsArgs{:});
+        end
 
-        function initWithFrequencySpectrum(self,options)
+        function addWavesWithFrequencySpectrum(self,options)
             arguments (Input)
                 self WVTransform {mustBeNonempty}
                 options.ApmSpectrum = @isempty
@@ -293,13 +305,25 @@ classdef WVInternalGravityWaveMethods < handle
                 end
             end
 
-            self.throwErrorIfDensityViolation(A0=self.A0,Ap=Ap_,Am=Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
-            self.Ap = Ap_;
-            self.Am = Am_;
+            self.throwErrorIfDensityViolation(A0=self.A0,Ap=self.Ap+Ap_,Am=self.Am+Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
+            self.Ap = self.Ap+Ap_;
+            self.Am = self.Am+Am_;
         end
 
-
         function initWithGMSpectrum(self,options)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.GMAmplitude (1,1) double = 1
+                options.j_star (1,1) double = 3
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
+            end
+            self.removeAllWaves;
+            optionsArgs = namedargs2cell(options);
+            self.addGMSpectrum(optionsArgs{:});
+        end
+
+        function addGMSpectrum(self,options)
             arguments (Input)
                 self WVTransform {mustBeNonempty}
                 options.GMAmplitude (1,1) double = 1
@@ -326,7 +350,7 @@ classdef WVInternalGravityWaveMethods < handle
             B = @(omega) B_norm*self.f./(omega.*sqrt(omega.*omega-self.f*self.f));
             GM = @(omega,j) E*H(j) .* B(omega);
 
-            self.initWithFrequencySpectrum(ApmSpectrum=GM,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations,shouldShowDiagnostics=0);
+            self.addWavesWithFrequencySpectrum(ApmSpectrum=GM,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations,shouldShowDiagnostics=0);
 
             if options.shouldShowDiagnostics == 1
                 igwEnergy = self.Apm_TE_factor.*(abs(self.Ap).^2+abs(self.Am).^2);
