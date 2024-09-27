@@ -12,18 +12,14 @@ function [energyFrequency,omegaVector] = convertFromWavenumberToFrequency(self)
 % - Parameter varargin: WVT
 % - Returns varargout: energyFrequency has dimensions $$(j,omegaVector)$$ 
 
-Kh=self.Kh;
-RedundantCoefficients = WVTransform.redundantHermitianCoefficients(Kh); 
-OmNyquist = self.maskForNyquistModes();
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%​
   % Defining omega vector based on biggest dOmega %​
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 omega=self.Omega;
-omegaj1=omega(:,:,1);
+omegaj1=omega(self.J==1);
 dOmega=max(diff(sort(omegaj1(:))));
-omegaVector=min(omega(:)):5*dOmega:max(omega(:));
+omegaVector=min(omega(:)):dOmega:max(omega(:));
 
 energyFrequency=zeros(length(self.j),length(omegaVector));
 
@@ -34,26 +30,11 @@ Am=self.Am;
 Ap=self.Ap;
 
 E=(Am.*conj(Am) + Ap.*conj(Ap)).*self.Apm_TE_factor;
-for j=(1:length(self.j))   
-
-    for i=(1:length(omegaVector)-1)   
-
-          
-        % find all the kl point btw the two values of Kh
-        indForOmega = find(omega(:,:,j)>=omegaVector(i) & omega(:,:,j)<omegaVector(i+1) & ~squeeze(OmNyquist(:,:,j)) & ~squeeze(RedundantCoefficients(:,:,j)));
-        
-        for iIndex = 1:length(indForOmega)            
-            [n,m] = ind2sub([size(omega,1) size(omega,2)],indForOmega(iIndex));
-            
-            if i+m==2
-                prefactor = 1;
-            else
-                prefactor = 2;
-            end
-            
-            energyFrequency(j,i) = energyFrequency(j,i) + prefactor*E(n,m,j);        
-        
-        end  
+for iMode=1:self.Nj
+    for iOmega=(1:length(omegaVector)-1)   
+        % find all the kl point btw the two values of omega
+        indForOmega = self.Omega(iMode,:)>=omegaVector(iOmega) & self.Omega(iMode,:)<omegaVector(iOmega+1);
+        energyFrequency(iMode,iOmega) = sum(E(indForOmega));
     end
 end
 end
