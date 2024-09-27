@@ -13,9 +13,7 @@ classdef WVSpectralVanishingViscosity < handle
         wvt
         nu_xy = 0
         nu_z = 0
-        r
         damp
-        dLnN2 = 0
 
         k_damp % wavenumber at which the significant scale damping starts.
         k_no_damp % wavenumber below which there is zero damping
@@ -41,7 +39,6 @@ classdef WVSpectralVanishingViscosity < handle
                 options.w_damp (1,1) double % characteristic speed used to set the damping. Try using wMax
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
-                options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
             end
 
             if isfield(options,'nu_xy')
@@ -102,53 +99,10 @@ classdef WVSpectralVanishingViscosity < handle
             dampingTimeScale = 1/max(abs(self.damp(:)));
         end
         
-        function varargout = spatialFlux(self,wvt,varargin)
-            % To count everything:
-            % 1. (u,v,w,eta) -> 4 transformToSpatialDomainWithFourier
-            % 2. (u_x,u_y,v_x,v_y,eta_x,eta_y) -> 3 diffX, 3 diffY
-            % 3. (Ap,Am,A0) -> 3 transformFomSpatialDomainWithFourier
-            % a subclass can override this, and then modify the spatial
-            % fluxes that get returned.
-            phase = exp(wvt.iOmega*(wvt.t-wvt.t0));
-            Apt = wvt.Ap .* phase;
-            Amt = wvt.Am .* conj(phase);
-            A0t = wvt.A0;
-
-            % Apply operator S---defined in (C4) in the manuscript
-            % Finishing applying S, but also compute derivatives at the
-            % same time
-            [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.UAp.*Apt + wvt.UAm.*Amt,A0=wvt.UA0.*A0t);
-            [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.VAp.*Apt + wvt.VAm.*Amt,A0=wvt.VA0.*A0t);
-            W = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*Apt + wvt.WAm.*Amt);
-            [ETA,ETAx,ETAy,ETAz] = wvt.transformToSpatialDomainWithGAllDerivatives(Apm=wvt.NAp.*Apt + wvt.NAm.*Amt,A0=wvt.NA0.*A0t);
-
-            % compute the nonlinear terms in the spatial domain
-            % (pseudospectral!)
-            uNL = -U.*Ux - V.*Uy - W.*Uz;
-            vNL = -U.*Vx - V.*Vy - W.*Vz;
-            nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*self.dLnN2);
-            
-            % bottom friction
-            uNL(:,:,1) = uNL(:,:,1) - self.r*U(:,:,1);
-            vNL(:,:,1) = vNL(:,:,1) - self.r*V(:,:,1);
-            
-            if nargout == 5
-                uvw = struct('u',U,'v',V,'w',W,'eta',ETA,'ux',Ux,'uy',Uy,'uz',Uz,'vx',Vx,'vy',Vy,'vz',Vz,'etax',ETAx,'etay',ETAy,'etaz',ETAz);
-                varargout = {uNL,vNL,nNL,phase,uvw};
-            else
-                varargout = {uNL,vNL,nNL,phase};
-            end
-        end
-
-        function varargout = compute(self,wvt,varargin)
-            [uNL,vNL,nNL,phase] = self.spatialFlux(wvt,varargin);
-            [ApNL,AmNL,A0NL] = wvt.transformUVEtaToWaveVortex(uNL,vNL,nNL);
-
-            Fp = (self.damp .* wvt.Ap + ApNL .* conj(phase));
-            Fm = (self.damp .* wvt.Am + AmNL .* phase);
-            F0 = ((self.damp + self.betaA0) .* wvt.A0 + A0NL);
-
-            varargout = {Fp,Fm,F0};
+        function [Fp, Fm, F0] = addForcing(self, wvt, Fp, Fm, F0)
+            Fp = Fp + self.damp .* wvt.Ap;
+            Fm = Fm + self.damp .* wvt.Am;
+            F0 = F0 + self.damp .* wvt.A0;
         end
 
         function writeToFile(self,ncfile,wvt)
@@ -159,7 +113,6 @@ classdef WVSpectralVanishingViscosity < handle
             end
             ncfile.addAttribute('nu_xy',self.nu_xy)
             ncfile.addAttribute('nu_z',self.nu_z)
-            ncfile.addAttribute('r',self.r)
         end
 
         function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
