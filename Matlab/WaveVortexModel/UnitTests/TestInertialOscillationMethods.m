@@ -9,7 +9,7 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
         Nxyz = struct('Nx8Ny8Nz5',[8 8 30]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'constant'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)
@@ -18,9 +18,9 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
                 case 'constant'
                     testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
                 case 'hydrostatic'
-                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=1);
+                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
                 case 'boussinesq'
-                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
             end
             % testCase.wvt.addOperation(testCase.wvt.operationForDynamicalVariable('u','v','eta','w',flowComponent=testCase.wvt.flowComponent('inertial')));
             testCase.solutionGroup = WVInertialOscillationComponent(testCase.wvt);
@@ -80,8 +80,6 @@ classdef TestInertialOscillationMethods < matlab.unittest.TestCase
             theta = 0;
             u_NIO = @(z) U_io*cos(theta)*exp((z/Ld));
             v_NIO = @(z) U_io*sin(theta)*exp((z/Ld));
-
-            
 
             % Populate the flow field with junk...
             self.wvt.initWithRandomFlow(uvMax=0.02);

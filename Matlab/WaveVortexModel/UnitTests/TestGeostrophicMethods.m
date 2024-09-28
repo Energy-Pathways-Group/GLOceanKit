@@ -8,8 +8,8 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
         Lxyz = struct('Lxyz',[750e3, 750e3, 1300]);
         Nxyz = struct('Nx64Ny64Nz30',[64 64 40]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        % transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'boussinesq'};
+        transform = {'constant','hydrostatic','boussinesq'};
+        % transform = {'boussinesq'};
     end
 
     methods (TestClassSetup)
@@ -18,7 +18,7 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
                 case 'constant'
                     testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
                 case 'hydrostatic'
-                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=1);
+                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
                     testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
             end

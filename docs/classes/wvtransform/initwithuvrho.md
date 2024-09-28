@@ -16,15 +16,14 @@ initialize with fluid variables $$(u,v,\rho)$$
 
 ## Declaration
 ```matlab
- initWithUVRho(U,V,N,t)
+ initWithUVRho(U,V,RHO)
 ```
 ## Parameters
 + `u`  x-component of the fluid velocity
 + `v`  y-component of the fluid velocity
-+ `n`  scaled density anomaly
-+ `t`  (optional) time of observations
++ `rho`  density anomaly
 
 ## Discussion
 
-  Clears variables Ap,Am,A0 and then randomizes the flow
-            
+  Replaces the variables Ap,Am,A0 with those computed from $$(u,v,\rho_e)$$.
+          

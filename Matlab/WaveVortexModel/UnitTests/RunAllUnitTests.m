@@ -14,7 +14,7 @@ runner = testrunner("textoutput");
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestNonlinearFlux);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestInertialOscillationMethods);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestGeostrophicMethods);
-% diffTest = matlab.unittest.TestSuite.fromClass(?TestInternalGravityWaveMethods);
+diffTest = matlab.unittest.TestSuite.fromClass(?TestInternalGravityWaveMethods);
 result = runner.run(diffTest);
 
 % generateHTMLReport(result);

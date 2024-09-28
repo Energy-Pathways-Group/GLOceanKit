@@ -214,8 +214,70 @@ classdef WVInternalGravityWaveMethods < handle
             self.Ap(logical(self.waveComponent.maskAp)) = 0;
             self.Am(logical(self.waveComponent.maskAm)) = 0;
         end
+        
+        function initWavesWithFrequencySpectrum(self,options)
+            % initialize with waves of a specified frequency spectrum
+            %
+            % This allows you to initialize the wave field (Ap,Am matrices)
+            % with a spectrum specified in terms of vertical mode j and
+            % frequency $\omega$. This allows us to initialize with a
+            % Garrett-Munk spectrum, for example, using code like,
+            %
+            % ```matlab
+            % GM = @(omega,j) E*H(j) .* B(omega);
+            % ```
+            % 
+            % Because the model has limited resolution, there will not
+            % necessarily be many modes in a given frequency band. This
+            % means that the ensemble may be over a very low number of
+            % realization, and thus might not converge to the requested
+            % spectrum. For this reason, the option
+            % shouldOnlyRandomizeOrientations may be useful. This will only
+            % randomize the phases of the waves, while fixing the
+            % amplitudes so that the desired spectrum will be achieved.
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: initWavesWithFrequencySpectrum(options)
+            % - Parameter ApmSpectrum: function_handle with signature @(omega,j), defaults to a white spectrum.
+            % - Parameter shouldOnlyRandomizeOrientations: boolean indicating whether randomness in amplitudes should be eliminated (default 0)
+            % - Parameter shouldShowDiagnostics: whether to summarize what just happened (default 0)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.ApmSpectrum = @isempty
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
+            end
+            self.removeAllWaves;
+            optionsArgs = namedargs2cell(options);
+            self.addWavesWithFrequencySpectrum(optionsArgs{:});
+        end
 
-        function initWithFrequencySpectrum(self,options)
+        function addWavesWithFrequencySpectrum(self,options)
+            % add waves with a specified frequency spectrum
+            %
+            % This allows you to initialize the wave field (Ap,Am matrices)
+            % with a spectrum specified in terms of vertical mode j and
+            % frequency $\omega$. This allows us to initialize with a
+            % Garrett-Munk spectrum, for example, using code like,
+            %
+            % ```matlab
+            % GM = @(omega,j) E*H(j) .* B(omega);
+            % ```
+            % 
+            % Because the model has limited resolution, there will not
+            % necessarily be many modes in a given frequency band. This
+            % means that the ensemble may be over a very low number of
+            % realization, and thus might not converge to the requested
+            % spectrum. For this reason, the option
+            % shouldOnlyRandomizeOrientations may be useful. This will only
+            % randomize the phases of the waves, while fixing the
+            % amplitudes so that the desired spectrum will be achieved.
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: addWavesWithFrequencySpectrum(options)
+            % - Parameter ApmSpectrum: function_handle with signature @(omega,j), defaults to a white spectrum.
+            % - Parameter shouldOnlyRandomizeOrientations: boolean indicating whether randomness in amplitudes should be eliminated (default 0)
+            % - Parameter shouldShowDiagnostics: whether to summarize what just happened (default 0)
             arguments (Input)
                 self WVTransform {mustBeNonempty}
                 options.ApmSpectrum = @isempty
@@ -293,13 +355,41 @@ classdef WVInternalGravityWaveMethods < handle
                 end
             end
 
-            self.throwErrorIfDensityViolation(A0=self.A0,Ap=Ap_,Am=Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
-            self.Ap = Ap_;
-            self.Am = Am_;
+            self.throwErrorIfDensityViolation(A0=self.A0,Ap=self.Ap+Ap_,Am=self.Am+Am_,additionalErrorInfo=sprintf('The modes you are setting will cause the fluid state to violate this condition.\n'));
+            self.Ap = self.Ap+Ap_;
+            self.Am = self.Am+Am_;
         end
 
-
         function initWithGMSpectrum(self,options)
+            % initialize the wave field following a Garrett-Munk spectrum
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: initWithGMSpectrum(options)
+            % - Parameter GMAmplitude: (optional) energy amplitude, default 1
+            % - Parameter j_star: (optional) modal roll-off, default 3
+            % - Parameter shouldOnlyRandomizeOrientations: (optional) boolean indicating whether randomness in amplitudes should be eliminated (default 0)
+            % - Parameter shouldShowDiagnostics: (optional) whether to summarize what just happened (default 0)
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+                options.GMAmplitude (1,1) double = 1
+                options.j_star (1,1) double = 3
+                options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+                options.shouldShowDiagnostics (1,1) double {mustBeMember(options.shouldShowDiagnostics,[0 1])} = 0
+            end
+            self.removeAllWaves;
+            optionsArgs = namedargs2cell(options);
+            self.addGMSpectrum(optionsArgs{:});
+        end
+
+        function addGMSpectrum(self,options)
+            % add waves following a Garrett-Munk spectrum
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: addGMSpectrum(options)
+            % - Parameter GMAmplitude: (optional) energy amplitude, default 1
+            % - Parameter j_star: (optional) modal roll-off, default 3
+            % - Parameter shouldOnlyRandomizeOrientations: (optional) boolean indicating whether randomness in amplitudes should be eliminated (default 0)
+            % - Parameter shouldShowDiagnostics: (optional) whether to summarize what just happened (default 0)
             arguments (Input)
                 self WVTransform {mustBeNonempty}
                 options.GMAmplitude (1,1) double = 1
@@ -326,7 +416,7 @@ classdef WVInternalGravityWaveMethods < handle
             B = @(omega) B_norm*self.f./(omega.*sqrt(omega.*omega-self.f*self.f));
             GM = @(omega,j) E*H(j) .* B(omega);
 
-            self.initWithFrequencySpectrum(ApmSpectrum=GM,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations,shouldShowDiagnostics=0);
+            self.addWavesWithFrequencySpectrum(ApmSpectrum=GM,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations,shouldShowDiagnostics=0);
 
             if options.shouldShowDiagnostics == 1
                 igwEnergy = self.Apm_TE_factor.*(abs(self.Ap).^2+abs(self.Am).^2);
@@ -353,13 +443,16 @@ classdef WVInternalGravityWaveMethods < handle
 
         end
 
-
-
-%%%%%%%%%%% HERE
-
-
         function initWithAlternativeSpectrum(self,options)
-        
+            % initialize with an alternative formulation of the GM spectrum in the wavenumber domain.
+            %
+            % This only initializes the wave components, A0 is left untouched.
+            %
+            % - Topic: Initial conditions — Waves
+            % - Declaration: initWithAlternativeSpectrum(options)
+            % - Parameter GMAmplitude: (optional) default 1
+            % - Parameter j_star: (optional) default 3
+            % - Parameter slope: (optional) default 1
             arguments (Input)
                 self WVTransform {mustBeNonempty}
                 options.GMAmplitude (1,1) double =1
@@ -367,7 +460,6 @@ classdef WVInternalGravityWaveMethods < handle
                 options.slope (1,1) double = 1
                 %options.shouldRandomizeAmplitude = 1
             end
-                
 
             j_star=options.j_star;
             slope=options.slope;
@@ -402,152 +494,13 @@ classdef WVInternalGravityWaveMethods < handle
             % for jind=(2:self.Nj)                
             %     integral(@(k) B(k, self.j(jind)), 0, 1)
             % end
-
-             
+      
             % Definir a função model_spectrum
             model_spectrum = @(k, j) (E_T) * B(k, j) * M(j);
-            
 
             [self.Ap,self.Am,~] = self.waveComponent.randomAmplitudesWithSpectrum(ApmSpectrum= model_spectrum,shouldOnlyRandomizeOrientations=1);
         end
 
-        
-
-
-
-        function initWithHorizontalWaveNumberSpectrum(self,options)
-            % initialize with a Alternative Interal Wave Spectrum in
-            % function of horizontal wave number and mode
-            %
-            % This only initializes the wave components, A0 is left untouched.
-            %
-            % - Topic: Initial conditions — Waves
-            % - Declaration: initWithHorizontalWaveNumberSpectrum(GMAmplitude,options)
-            % - Parameter GMAmplitude:
-            % - Parameter j_star: (optional)
-            % - Parameter slope: (optional)
-
-
-            arguments (Input)
-                self WVTransform {mustBeNonempty}
-                options.GMAmplitude (1,1) double =1
-                options.j_star (1,1) double = 3
-                options.slope (1,1) double = 1
-                % the next line is for future changes in this code
-                % i.e, having two separate codes:
-                % initWithHorizontalWaveNumberSpectrum(self,options) and
-                % initWithAlternativeSpectrum(self,options)
-                options.ApmSpectrum = @isempty 
-                options.shouldRandomizeAmplitude = 1
-            end
-
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            % Create a reasonable total wavenumber (Radial) axis
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            Kh= self.Kh;
-            kRadial = self.radialWavenumberAxis();
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            % Distribution of Energy
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            j_star=options.j_star;
-            slope=options.slope;
-
-            % GM Parameters
-            L_gm = 1.3e3; % thermocline exponential scale, meters
-            invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
-            E_gm = 6.3e-5; % non-dimensional energy parameter
-            E_T = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*GMAmplitude;
-            %  E = E*(self.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
-
-            % Compute the proper vertical function normalization
-            M = (j_star^2 +(2:1024).^2).^((-5/4));
-            M_norm = sum(M);
-
-            %Create the energy matrix 3D
-            TotalEnergy = zeros(size(Kh));
-            Energy_slice=zeros(size(Kh(:,:,1)));
-
-            %%%% Redistributing the energy %%%
-            for j=(2:length(self.j))
-                h=self.h(1,1,j);
-                Kh_2D = Kh(:,:,j);
-                LR= sqrt(self.g*h)/self.f;
-
-                fun = @(k) (1./(k.^2*LR^2 + 1).^(1*slope))*LR;
-                B_norm = integral(fun,kRadial(1),kRadial(end));
-
-                for i=(1:length(kRadial)-1)
-
-                    % Integrate the energy btw 2 Kh
-                    E = E_T*(integral(fun,kRadial(i),kRadial(i+1))/B_norm)*(((j^2 + j_star^2).^((-5/4)))/M_norm);
-
-                    % find all the kl point btw the two values of Kh
-                    ind = find(Kh_2D>=kRadial(i) & Kh_2D<kRadial(i+1));
-
-                    % Distribuite equally the energy btw all the points that are
-                    % btw the circles (values of Kh)
-                    n = length(ind);
-                    if n > 0
-                        Energy_slice(ind) = E/n;
-                    end
-                end
-                TotalEnergy(:,:,j)= Energy_slice;
-
-                %clear the slice but maintain the size
-                Energy_slice=zeros(size(Kh(:,:,1)));
-            end
-
-
-            disp([' Initial Total energy:',num2str(E_T), ', Total energy after distribution:',num2str(sum(TotalEnergy(:)))])
-            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*sum(TotalEnergy(:))/E_T);
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            % After comput the amplitude I insert that in the model
-            % to get the variables in real space
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-            %The amplitude is:
-
-            shouldRandomizeAmplitude=options.shouldRandomizeAmplitude;
-
-            A = sqrt((TotalEnergy./self.h)/2);
-
-            if shouldRandomizeAmplitude == 1
-                A_plus = A.*self.generateHermitianRandomMatrix( );
-                A_minus = A.*self.generateHermitianRandomMatrix(  );
-
-                %self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext).*randn( size(self.offgridModes.h_ext) );
-                %self.offgridModes.PrecomputeExternalWaveCoefficients();
-            else
-                % Randomize phases, but keep unit length
-                A_plus = self.generateHermitianRandomMatrix(shouldExcludeNyquist=1, allowMeanPhase=1 );
-                A_minus = self.generateHermitianRandomMatrix(shouldExcludeNyquist=1, allowMeanPhase=1 );
-
-                goodIndices = abs(A_plus) > 0;
-                A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
-                A_plus = A.*A_plus;
-
-                goodIndices = abs(A_minus) > 0;
-                A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
-                A_minus = A.*A_minus;
-
-                % Check this factor of 2!!! Is the correct? squared
-                % velocity to energy, I think.
-                %self.offgridModes.U_ext = sqrt(2*GM3Dext./self.offgridModes.h_ext);
-                %self.offgridModes.PrecomputeExternalWaveCoefficients();
-            end
-
-            self.Ap=A_plus;
-            self.Am=A_minus;
-
-        end
     end
 
     methods (Hidden=true)

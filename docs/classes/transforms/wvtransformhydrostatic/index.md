@@ -59,6 +59,16 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
   + Validation
     + [`isDensityInValidRange`](/classes/transforms/wvtransformhydrostatic/isdensityinvalidrange.html) checks if the density field is a valid adiabatic re-arrangement of the base state
 + Initial conditions
+  + Waves
+    + [`addGMSpectrum`](/classes/transforms/wvtransformhydrostatic/addgmspectrum.html) add waves following a Garrett-Munk spectrum
+    + [`addWaveModes`](/classes/transforms/wvtransformhydrostatic/addwavemodes.html) add amplitudes of the given wave modes
+    + [`addWavesWithFrequencySpectrum`](/classes/transforms/wvtransformhydrostatic/addwaveswithfrequencyspectrum.html) add waves with a specified frequency spectrum
+    + [`initWavesWithFrequencySpectrum`](/classes/transforms/wvtransformhydrostatic/initwaveswithfrequencyspectrum.html) initialize with waves of a specified frequency spectrum
+    + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithalternativespectrum.html) initialize with an alternative formulation of the GM spectrum in the wavenumber domain.
+    + [`initWithGMSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithgmspectrum.html) initialize the wave field following a Garrett-Munk spectrum
+    + [`initWithWaveModes`](/classes/transforms/wvtransformhydrostatic/initwithwavemodes.html) initialize with the given wave modes
+    + [`removeAllWaves`](/classes/transforms/wvtransformhydrostatic/removeallwaves.html) removes all wave from the model, including inertial oscillations
+    + [`setWaveModes`](/classes/transforms/wvtransformhydrostatic/setwavemodes.html) set amplitudes of the given wave modes
   + Geostrophic Motions
     + [`initWithGeostrophicStreamfunction`](/classes/transforms/wvtransformhydrostatic/initwithgeostrophicstreamfunction.html) initialize with a geostrophic streamfunction
     + [`setGeostrophicStreamfunction`](/classes/transforms/wvtransformhydrostatic/setgeostrophicstreamfunction.html) set a geostrophic streamfunction
@@ -76,12 +86,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
     + [`initWithMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/initwithmeandensityanomaly.html) initialize with inertial motions
     + [`removeAllMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/removeallmeandensityanomaly.html) remove all mean density anomalies
     + [`setMeanDensityAnomaly`](/classes/transforms/wvtransformhydrostatic/setmeandensityanomaly.html) set inertial motions
-  + Waves
-    + [`addWaveModes`](/classes/transforms/wvtransformhydrostatic/addwavemodes.html) add amplitudes of the given wave modes
-    + [`initWithHorizontalWaveNumberSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithhorizontalwavenumberspectrum.html) initialize with a Alternative Interal Wave Spectrum in
-    + [`initWithWaveModes`](/classes/transforms/wvtransformhydrostatic/initwithwavemodes.html) initialize with the given wave modes
-    + [`removeAllWaves`](/classes/transforms/wvtransformhydrostatic/removeallwaves.html) removes all wave from the model, including inertial oscillations
-    + [`setWaveModes`](/classes/transforms/wvtransformhydrostatic/setwavemodes.html) set amplitudes of the given wave modes
 + Energetics of flow components
   + [`geostrophicEnergy`](/classes/transforms/wvtransformhydrostatic/geostrophicenergy.html) total energy, geostrophic
   + [`waveEnergy`](/classes/transforms/wvtransformhydrostatic/waveenergy.html) total energy, waves
@@ -97,9 +101,6 @@ A class for disentangling hydrostatic waves and vortices in variable stratificat
 + Other
   + [`N2Function`](/classes/transforms/wvtransformhydrostatic/n2function.html) 
   + [`dLnN2Function`](/classes/transforms/wvtransformhydrostatic/dlnn2function.html) 
-  + [`initWithAlternativeSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithalternativespectrum.html) 
-  + [`initWithFrequencySpectrum`](/classes/transforms/wvtransformhydrostatic/initwithfrequencyspectrum.html) 
-  + [`initWithGMSpectrum`](/classes/transforms/wvtransformhydrostatic/initwithgmspectrum.html) 
   + [`maxFg`](/classes/transforms/wvtransformhydrostatic/maxfg.html) 
   + [`maxFw`](/classes/transforms/wvtransformhydrostatic/maxfw.html) 
   + [`rhoFunction`](/classes/transforms/wvtransformhydrostatic/rhofunction.html) function handles

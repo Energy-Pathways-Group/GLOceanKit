@@ -9,7 +9,7 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
         Nxyz = struct('Nx64Ny64Nz30',[64 64 40]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
         % transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'constant'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)
@@ -18,9 +18,9 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
                 case 'constant'
                     testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
                 case 'hydrostatic'
-                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=1);
+                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=0);
                 case 'boussinesq'
-                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=0);
             end
             testCase.solutionGroup = WVGeostrophicComponent(testCase.wvt);
         end

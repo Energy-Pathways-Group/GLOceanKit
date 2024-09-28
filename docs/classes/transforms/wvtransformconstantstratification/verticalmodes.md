@@ -3,7 +3,7 @@ layout: default
 title: verticalModes
 parent: WVTransformConstantStratification
 grand_parent: Classes
-nav_order: 60
+nav_order: 62
 mathjax: true
 ---
 
