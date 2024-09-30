@@ -602,7 +602,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
 
             if options.didBlowUp == 1
-                a = sprintf('%s: wrote %d time points to file. Terminated to do model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
             else
                 a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
             end

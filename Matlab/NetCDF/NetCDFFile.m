@@ -215,7 +215,7 @@ classdef NetCDFFile < handle
                     delete(self.path);
                     self.createNewFile();
                 else
-                    self.InitializeFromExistingFile();
+                    self.initializeFromExistingFile();
                 end
             else
                 self.createNewFile();
@@ -231,7 +231,7 @@ classdef NetCDFFile < handle
             netcdf.endDef(self.ncid);
         end
 
-        function InitializeFromExistingFile(self)
+        function initializeFromExistingFile(self)
             self.open();
 
             [ndims,nvars,ngatts,unlimdimid] = netcdf.inq(self.ncid);
