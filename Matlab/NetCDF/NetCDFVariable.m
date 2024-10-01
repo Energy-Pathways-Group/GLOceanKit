@@ -1,6 +1,6 @@
 classdef NetCDFVariable < handle
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Encapsulates variable data in a NetCDF file
+    % 
 
     properties
         group
@@ -9,6 +9,10 @@ classdef NetCDFVariable < handle
         dimensions
         attributes
         type
+    end
+
+    properties (Dependent)
+        value
     end
 
     properties (Constant)
@@ -31,6 +35,11 @@ classdef NetCDFVariable < handle
 
 
     methods
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function self = NetCDFVariable(group,options)
             % initialize a NetCDFVariable either from file or scratch
@@ -142,7 +151,24 @@ classdef NetCDFVariable < handle
             self.attributes = attributes;
         end
 
-        function value = value(self)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Add attributes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function addAttribute(self,key,value)
+            self.attributes(key) = value;
+            netcdf.putAtt(self.group.id,self.id, key, value);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Read/write data
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function value = get.value(self)
             arguments
                 self NetCDFVariable
             end
@@ -156,7 +182,7 @@ classdef NetCDFVariable < handle
             end
         end
 
-        function setValue(self,data)
+        function set.value(self,data)
             arguments
                 self NetCDFVariable {mustBeNonempty}
                 data {mustBeNonempty}
@@ -172,7 +198,7 @@ classdef NetCDFVariable < handle
             end
         end
 
-        function value = readValueAlongDimensionAtIndex(self,dimensionName,index)
+        function value = valueAlongDimensionAtIndex(self,dimensionName,index)
             arguments
                 self NetCDFVariable {mustBeNonempty} 
                 dimensionName char {mustBeNonempty}
@@ -193,7 +219,7 @@ classdef NetCDFVariable < handle
             value = netcdf.getVar(self.group.id, self.id, start, count);
         end
 
-        function concatenateValueAlongDimensionAtIndex(self,data,dimensionName,index)
+        function setValueAlongDimensionAtIndex(self,data,dimensionName,index)
             % append new data to an existing variable
             %
             % concatenates data along a variable dimension (such as a time
@@ -233,10 +259,6 @@ classdef NetCDFVariable < handle
             netcdf.putVar(self.group.id, self.id, start, count, data);
         end
 
-        function addAttribute(self,key,value)
-            self.attributes(key) = value;
-            netcdf.putAtt(self.group.id,self.id, key, value);
-        end
 
     end
 
