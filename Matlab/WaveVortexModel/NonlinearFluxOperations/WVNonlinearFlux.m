@@ -121,6 +121,11 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             self.buildDampingOperator();
         end
 
+        function set.nu_z(self,value)
+            self.nu_z = value;
+            self.buildDampingOperator();
+        end
+
         function set.uv_damp(self,uv_damp)
             self.nu_xy = self.wvt.effectiveHorizontalGridResolution*uv_damp/(pi^2);
         end
