@@ -89,7 +89,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.nu_z = options.nu_z;
             else
                 if isfield(options,'w_damp')
-                    if self.shouldAntialias == 1
+                    if self.wvt.shouldAntialias == 1
                         self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
                     else
                         self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
