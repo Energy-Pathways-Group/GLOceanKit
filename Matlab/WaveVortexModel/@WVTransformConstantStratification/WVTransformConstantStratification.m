@@ -77,6 +77,9 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 options.N0 (1,1) double {mustBePositive} = 5.2e-3
                 options.latitude (1,1) double {mustBeGreaterThanOrEqual(options.latitude,5),mustBeLessThanOrEqual(options.latitude,85)} = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                options.shouldAntialias double = 1
+                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
+
                 options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0
             end
             Nz = Nxyz(3);
@@ -99,7 +102,12 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
 
             self@WVStratifiedFlow(Lz,z,rho=rho,N2=N2,dLnN2=dLnN2,latitude=options.latitude,verticalModes=verticalModes)
 
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes);
+            if options.shouldAntialias == 1
+                Nj = floor(options.jAliasingFraction*nModes);
+            else
+                Nj = nModes;
+            end
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj);
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
 
