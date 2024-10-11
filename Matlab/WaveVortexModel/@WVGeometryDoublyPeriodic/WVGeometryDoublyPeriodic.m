@@ -872,7 +872,7 @@ classdef WVGeometryDoublyPeriodic
             % - Declaration: antialiasMask = WVGeometryDoublyPeriodic.maskForAliasedModes(Nx,Ny,Nz);
             % - Parameter Nx: grid points in the x-direction
             % - Parameter Ny: grid points in the y-direction
-            % - Parameter Nz: grid points in the z-direction (defuault 1)
+            % - Parameter Nz: grid points in the z-direction (default 1)
             % - Returns antialiasMask: mask aliased mode
             arguments (Input)
                 k (:,1) double
