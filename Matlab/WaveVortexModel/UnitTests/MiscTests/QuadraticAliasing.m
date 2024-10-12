@@ -1,7 +1,7 @@
 % https://math.jhu.edu/~feilu/notes/DealiasingFFT.pdf
 Lxyz = [2*pi 2*pi 1];
 Nxyz = [16 16 2];
-wvt = WVTransformConstantStratification(Lxyz, Nxyz,shouldAntialias=0);
+wvt = WVTransformConstantStratification(Lxyz, Nxyz,shouldAntialias=1);
 
 [X,Y,Z] = wvt.xyzGrid;
 
@@ -81,7 +81,8 @@ for m=1:wvt.Nkl
                 error('Returned two wavenumbers!')
             else
                 k_mn = wvt.k(quad_nm_index); l_mn = wvt.l(quad_nm_index);
-                if k_mn == wavenumberOperation{iOp}(k_m,k_n) && l_mn == wavenumberOperation{iOp}(l_m,l_n)
+                % be skeptical of these abs!
+                if abs(k_mn) == abs(wavenumberOperation{iOp}(k_m,k_n)) && abs(l_mn) == abs(wavenumberOperation{iOp}(l_m,l_n))
                     op_resolved(m) = op_resolved(m) + 1;
                 else
                     op_aliased(m) = op_aliased(m) + 1;
@@ -133,10 +134,14 @@ figure
 tiledlayout(1,3)
 nexttile
 jpcolor(wvt.kAxis,wvt.lAxis,op_resolved_kl.'), shading flat
+title('resolved')
 nexttile
 jpcolor(wvt.kAxis,wvt.lAxis,op_zero_kl.'), shading flat
+title('zero')
 nexttile
 jpcolor(wvt.kAxis,wvt.lAxis,op_aliased_kl.'), shading flat
+title('aliased')
+colorbar('eastoutside')
 
 %%
 k_n = 3;
