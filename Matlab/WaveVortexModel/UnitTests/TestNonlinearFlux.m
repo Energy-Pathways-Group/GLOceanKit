@@ -8,7 +8,7 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
         % Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
         %transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'hydrostatic'};
+        transform = {'constant'};
     end
 
     methods (TestClassSetup)

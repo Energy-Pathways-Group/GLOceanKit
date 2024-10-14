@@ -11,3 +11,6 @@ end
 
 k_dft = wvToDFT(wvg,wvg.k_wv);
 l_dft = wvToDFT(wvg,wvg.l_wv);
+
+k_dft = fftshift(fftshift(k_dft,1),2);
+l_dft = fftshift(fftshift(l_dft,1),2);

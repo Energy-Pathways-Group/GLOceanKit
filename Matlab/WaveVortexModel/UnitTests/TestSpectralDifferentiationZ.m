@@ -14,7 +14,7 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
         function classSetup(testCase,Lxyz,Nxyz,transform)
             switch transform
                 case 'constant'
-                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz, shouldAntialias=0);
                 case 'hydrostatic'
                     testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
                 case 'boussinesq'
