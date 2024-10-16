@@ -1,14 +1,26 @@
  % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [16 16 5], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5]);
-wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [32 32 10], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [32 32 10], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
-% wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [32 32 17]);
+wvt = WVTransformConstantStratification([15e3, 15e3, 1300], [16 16 9]);
 
 % try
 %     wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [8 8 5],latitude=90);
 % catch ME
 %     disp(ME)
 % end
+%%
+solutionIndex = 1;
+
+args = {wvt.X,wvt.Y,wvt.Z,wvt.t};
+for solutionIndex = 1:1 %wvt.flowComponent("wave").nModes
+    soln = wvt.flowComponent("wave").solutionForModeAtIndex(solutionIndex,amplitude='random');
+    wvt.initWithUVEta(soln.u(args{:}), soln.v(args{:}),soln.eta(args{:}));
+    [Fp,Fm,F0] = wvt.nonlinearFlux();
+    [Ep,Em,E0] = wvt.energyFluxFromNonlinearFlux(Fp,Fm,F0,deltaT=10);
+    fprintf('(Ep,Em,E0) = (%g, %g, %g), total %g\n', sum(Ep(:)), sum(Em(:)), sum(E0(:)), sum(Ep(:))+sum(Em(:))+sum(E0(:)));
+end
+
 %%
 U_io = 0.2;
 Ld = wvt.Lz/2;

@@ -5,9 +5,12 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
 
     properties (ClassSetupParameter)
         % transform = {'constant','hydrostatic','boussinesq'};
-        Lxyz = struct('Lxyz',[1 10 4]);
-        Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
-        transform = {'constant','hydrostatic','boussinesq'};
+        % Lxyz = struct('Lxyz',[1 10 4]);
+        % Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
+        % transform = {'constant','hydrostatic','boussinesq'};
+        Lxyz = struct('Lxyz',[1000, 500, 500]);
+        Nxyz = struct('Nx32N16Nz17',[32 16 17]);
+        transform = {'constant'};
     end
 
     methods (TestClassSetup)
@@ -40,8 +43,8 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
     end
 
     properties (TestParameter)
-        % derivative = struct('first',1,'second',2,'third',3,'fourth',4);
-        derivative = struct('first',1);
+        derivative = struct('first',1,'second',2,'third',3,'fourth',4);
+        %derivative = struct('first',1);
         k_n
         l_n
         m_n
@@ -104,7 +107,7 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
                     Df_analytical = (kz^4)*sin(kz*Z).*cos(kx*X+phix).*cos(ky*Y+phiy);
             end
 
-            if m_n==8 && (derivative == 1 || derivative == 3)
+            if m_n==16 && (derivative == 1 || derivative == 3)
                 % Nquist, cosine of m=8 is not resolved.
                 self.verifyNotEqual(self.wvt.diffZG(f,derivative),Df_analytical);
             else

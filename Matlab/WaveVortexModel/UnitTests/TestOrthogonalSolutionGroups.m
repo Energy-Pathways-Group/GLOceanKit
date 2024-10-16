@@ -8,8 +8,10 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         Lxyz = struct('Lxyz',[15e3, 15e3, 1300]);
         Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        % transform = {'hydrostatic'};
+        % transform = {'constant','hydrostatic','boussinesq'};
+        % Lxyz = struct('Lxyz',[1000, 500, 500]);
+        % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
+        transform = {'constant'};
         orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
         %orthogonalSolutionGroup = {'WVInertialOscillationComponent'}
     end
@@ -18,7 +20,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         function classSetup(testCase,Lxyz,Nxyz,transform,orthogonalSolutionGroup)
             switch transform
                 case 'constant'
-                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33.5);
                 case 'hydrostatic'
                     testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
@@ -43,7 +45,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             % have to do it here.
             switch transform
                 case 'constant'
-                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33.5);
                 case 'hydrostatic'
                     tmpwvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'

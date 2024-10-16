@@ -52,7 +52,7 @@ classdef WVModelFixedTimeStepMethods < handle
 
             self.integratorOptions = options;
 
-
+            self.createFixedTimeStepIntegrator();
             self.didSetupIntegrator = 1;
         end
 
@@ -63,6 +63,51 @@ classdef WVModelFixedTimeStepMethods < handle
             self.nSteps=inf;      % total number of expected RK4 increments to reach the model time requested by the user
             self.stepsPerOutput = [];      % number of RK4 steps between each output
             self.firstOutputStep = [];
+        end
+
+        function createFixedTimeStepIntegrator(self)
+            if ~isempty(self.outputInterval)
+                effectiveOutputInterval = self.outputInterval;
+            else
+                effectiveOutputInterval = self.finalIntegrationTime-self.t;
+            end
+
+            if isfield(self.integratorOptions,"deltaT")
+                if isfield(self.integratorOptions,"cfl")
+                    warning('deltaT was already set, ignoring cfl')
+                end
+                deltaT = effectiveOutputInterval/ceil(effectiveOutputInterval/self.integratorOptions.deltaT);
+                if self.integratorOptions.deltaT ~= deltaT
+                    warning('deltaT changed from %f to %f to match the outputInterval.',self.integratorOptions.deltaT,deltaT);
+                end
+            else
+                if ~isfield(self.integratorOptions,"cfl")
+                    self.integratorOptions.cfl = 0.25;
+                end
+                [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(self.integratorOptions.cfl,effectiveOutputInterval);
+                if strcmp(self.integratorOptions.timeStepConstraint,"advective")
+                    deltaT = advectiveDT;
+                    fprintf('Using the advective dt')        
+                elseif strcmp(self.integratorOptions.timeStepConstraint,"oscillatory")
+                    deltaT = oscillatoryDT;
+                    fprintf('Using the oscillatory dt')
+                elseif strcmp(self.integratorOptions.timeStepConstraint,"min")
+                    deltaT = min(oscillatoryDT,advectiveDT);
+                    fprintf('Using the min dt')
+                end
+                fprintf(': %.2f s (%d steps per output)\n',deltaT,round(effectiveOutputInterval/deltaT));
+            end
+
+            % Now set the initial conditions and point the integrator to
+            % the correct flux function
+            Y0 = self.initialConditionsCellArray();
+            if isempty(Y0{1})
+                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
+            end
+            self.rk4Integrator = WVArrayIntegrator(@(t,y0) self.fluxAtTimeCellArray(t,y0),Y0,deltaT,currentTime=self.t);
+
+            self.stepsPerOutput = round(effectiveOutputInterval/self.rk4Integrator.stepSize);
+            self.firstOutputStep = round((self.initialOutputTime-self.t)/self.rk4Integrator.stepSize);
         end
 
         function [deltaT,advectiveDT,oscillatoryDT] = timeStepForCFL(self, cfl, outputInterval)
@@ -116,50 +161,9 @@ classdef WVModelFixedTimeStepMethods < handle
                 self WVModel {mustBeNonempty}
                 finalTime (1,1) double
             end
+            self.createFixedTimeStepIntegrator();
+
             self.finalIntegrationTime = finalTime;
-
-            if ~isempty(self.outputInterval)
-                effectiveOutputInterval = self.outputInterval;
-            else
-                effectiveOutputInterval = self.finalIntegrationTime-self.t;
-            end
-
-            if isfield(self.integratorOptions,"deltaT")
-                if isfield(self.integratorOptions,"cfl")
-                    warning('deltaT was already set, ignoring cfl')
-                end
-                deltaT = effectiveOutputInterval/ceil(effectiveOutputInterval/self.integratorOptions.deltaT);
-                if self.integratorOptions.deltaT ~= deltaT
-                    warning('deltaT changed from %f to %f to match the outputInterval.',self.integratorOptions.deltaT,deltaT);
-                end
-            else
-                if ~isfield(self.integratorOptions,"cfl")
-                    self.integratorOptions.cfl = 0.25;
-                end
-                [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(self.integratorOptions.cfl,effectiveOutputInterval);
-                if strcmp(self.integratorOptions.timeStepConstraint,"advective")
-                    deltaT = advectiveDT;
-                    fprintf('Using the advective dt')        
-                elseif strcmp(self.integratorOptions.timeStepConstraint,"oscillatory")
-                    deltaT = oscillatoryDT;
-                    fprintf('Using the oscillatory dt')
-                elseif strcmp(self.integratorOptions.timeStepConstraint,"min")
-                    deltaT = min(oscillatoryDT,advectiveDT);
-                    fprintf('Using the min dt')
-                end
-                fprintf(': %.2f s (%d steps per output)\n',deltaT,round(effectiveOutputInterval/deltaT));
-            end
-
-            % Now set the initial conditions and point the integrator to
-            % the correct flux function
-            Y0 = self.initialConditionsCellArray();
-            if isempty(Y0{1})
-                error('Nothing to do! You must have set to linear dynamics, without floats, drifters or tracers.');
-            end
-            self.rk4Integrator = WVArrayIntegrator(@(t,y0) self.fluxAtTimeCellArray(t,y0),Y0,deltaT,currentTime=self.t);
-
-            self.stepsPerOutput = round(effectiveOutputInterval/self.rk4Integrator.stepSize);
-            self.firstOutputStep = round((self.initialOutputTime-self.t)/self.rk4Integrator.stepSize);
             self.nSteps = ceil((self.finalIntegrationTime-self.t)/self.rk4Integrator.stepSize);               
 
             self.showIntegrationStartDiagnostics(self.finalIntegrationTime);
