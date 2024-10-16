@@ -54,6 +54,8 @@ classdef NetCDFGroup < handle
         dimensionNameMap
         variableIDMap
         variableNameMap
+        groupIDMap
+        groupNameMap
     end
 
     methods
@@ -65,7 +67,7 @@ classdef NetCDFGroup < handle
 
         % TODO: complete initialization process, pass parentID?
 
-        function self = NetCDFGroup(name,id)
+        function self = NetCDFGroup(options)
             % NetCDFGroup
             %
             % - Topic: Initializing
@@ -74,14 +76,14 @@ classdef NetCDFGroup < handle
             % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
             % - Returns: a new NetCDFFile instance
             arguments
-                name char {mustBeNonempty}
-                id double {mustBeNonempty}
+                options.name char {mustBeNonempty}
+                options.id double {mustBeNonempty}
+                options.parentGroup = []
             end
-            self.name = name;
-            self.id = id;
-
+            
             self.dimensions = NetCDFDimension.empty(0,0);
             self.variables = NetCDFVariable.empty(0,0);
+            self.groups = NetCDFGroup.empty(0,0);
             self.attributes = containers.Map;
             self.complexVariables = NetCDFComplexVariable.empty(0,0);
 
@@ -91,35 +93,46 @@ classdef NetCDFGroup < handle
             self.variableIDMap = configureDictionary('double','NetCDFVariable');
             self.variableNameMap = configureDictionary('string','NetCDFVariable');
 
+            self.groupIDMap = configureDictionary('double','NetCDFGroup');
+            self.groupNameMap = configureDictionary('string','NetCDFGroup');
+
             if isfield(options,'id')
-                self.initializeGroupFromFile(group,options.id);
+                self.initializeGroupFromFile(options.parentGroup,options.id);
             else
                 requiredFields = {'name'};
                 for iField=1:length(requiredFields)
                     if ~isfield(options,requiredFields{iField})
-                        error('You must specify %s to initial a new variable.',requiredFields{iField});
+                        error('You must specify %s to initialize a new group.',requiredFields{iField});
                     end
                 end
-                self.initGroup(group,options.name);
+                self.initGroup(options.parentGroup,options.name);
             end
         end
 
-        function initializeGroupFromFile(self, parentGroup)
+        function initializeGroupFromFile(self,parentGroup,id)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                parentGroup
+                id (1,1) double {mustBeNonnegative,mustBeInteger}
+            end
+            self.id = id;
             self.parentGroup = parentGroup;
+            self.name = netcdf.inqGrpName(self.id);
 
             % Fetch all dimensions and convert to NetCDFDimension objects
+            if ~isempty(self.parentGroup)
+                self.dimensions = self.parentGroup.dimensions;
+            end
             dimensionIDs = netcdf.inqDimIDs(self.id);
             for iDim=1:length(dimensionIDs)
                 self.addDimensionPrimitive(NetCDFDimension(self,id=dimensionIDs(iDim)));
             end
-            self.dimensions = reshape(self.dimensions,[],1);
 
             % Fetch all variables and convert to NetCDFVariable objects
             variableIDs = netcdf.inqVarIDs(self.id);
             for iVar=1:length(variableIDs)
                 self.addVariablePrimitive(NetCDFVariable(self,id=variableIDs(iVar)));
             end
-            self.variables = reshape(self.variables,[],1);
 
             % Grab all the global attributes
             [~,~,ngatts,~] = netcdf.inq(self.id);
@@ -131,8 +144,10 @@ classdef NetCDFGroup < handle
             % Now check to see if any variables form a complex variable
             self.complexVariables = NetCDFComplexVariable.complexVariablesFromVariables(self.variables);
 
-            childGroupIDs = netcdf.inqGrps(self.id);
-
+            groupIDs = netcdf.inqGrps(self.id);
+            for iGrp=1:length(groupIDs)
+                self.addGroupPrimitive(NetCDFGroup(parentGroup=self,id=groupIDs(iGrp)));
+            end
         end
 
         function initGroup(parentGroup, name)
@@ -140,6 +155,7 @@ classdef NetCDFGroup < handle
         end
 
         function addDimension(self,name,options)
+            % This is how the user should add a new dimension to the group
             arguments
                 self (1,1) NetCDFDimension {mustBeNonempty}
                 name string {mustBeNonempty}
@@ -178,6 +194,8 @@ classdef NetCDFGroup < handle
             if ~isempty(options.value)
                 var.value = options.value;
             end
+
+            % TODO: This needs to pass this down to child groups
         end
 
         function addDimensionPrimitive(self,dimension)
@@ -186,7 +204,8 @@ classdef NetCDFGroup < handle
                 dimension (1,1) NetCDFDimension {mustBeNonempty}
             end
             self.dimensions(end+1) = dimension;
-            self.dimensionIDMap(dimension.varID) = dimension;
+            self.dimensions = reshape(self.dimensions,[],1);
+            self.dimensionIDMap(dimension.id) = dimension;
             self.dimensionNameMap(dimension.name) = dimension;
         end
 
@@ -196,8 +215,20 @@ classdef NetCDFGroup < handle
                 variable (1,1) NetCDFVariable {mustBeNonempty}
             end
             self.variables(end+1) = variable;
-            self.variableIDMap(variable.varID) = variable;
+            self.variables = reshape(self.variables,[],1);
+            self.variableIDMap(variable.id) = variable;
             self.variableNameMap(variable.name) = variable;
+        end
+
+        function addGroupPrimitive(self,group)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                group (1,1) NetCDFGroup {mustBeNonempty}
+            end
+            self.groups(end+1) = group;
+            self.groups = reshape(self.groups,[],1);
+            self.groupIDMap(group.id) = group;
+            self.groupNameMap(group.name) = group;
         end
 
 
@@ -247,6 +278,21 @@ classdef NetCDFGroup < handle
         % - Topic: Working with groups
         function g = groupWithName(self,name)
 
+        end
+
+        function dump(self)
+            for iVar=1:length(self.variables)
+                variable = self.variables(iVar);
+                fprintf('%s\t{',variable.name);
+                for iDim=1:length(variable.dimensions)
+                    if iDim==length(variable.dimensions)
+                        fprintf('%s',variable.dimensions(iDim).name);
+                    else
+                        fprintf('%s,',variable.dimensions(iDim).name);
+                    end
+                end
+                fprintf('}\n');
+            end
         end
     end
 end

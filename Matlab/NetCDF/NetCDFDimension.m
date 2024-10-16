@@ -18,6 +18,21 @@ classdef NetCDFDimension < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function self = NetCDFDimension(group,options)
+            % create a NetCDFDimension
+            %
+            % All dimensions must have a group to which they belong. If you
+            % initialize by passing an id, then the dimension will be
+            % intialized from file. If you initialize by passing the name
+            % and the number of points, then a new dimension will be
+            % created and added to file.
+            %
+            % - Topic: Working with dimensions
+            % - Declaration: self = NetCDFDimension(group,options)
+            % - Parameter group: a NetCDFGroup instance
+            % - Parameter name (optional): name of the dimension (string)
+            % - Parameter nPoints (optional): 0 or more, inf if unlimited
+            % - Parameter id (optional): id of an existing dimension
+            % - Returns self: a NetCDFDimension object
             arguments
                 group (1,1) NetCDFGroup
                 options.name string

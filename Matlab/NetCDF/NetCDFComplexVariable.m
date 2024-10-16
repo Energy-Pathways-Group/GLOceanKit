@@ -23,7 +23,7 @@ classdef NetCDFComplexVariable < handle
             for iVar=1:length(variables)
                 variable = variables(iVar);
                 if isKey(variable.attributes,{variable.GLNetCDFSchemaIsComplexKey,variable.GLNetCDFSchemaIsRealPartKey})
-                    if variable.attributes(self.GLNetCDFSchemaIsComplexKey) == 1 && variable.attributes(self.GLNetCDFSchemaIsRealPartKey) == 1
+                    if variable.attributes(variable.GLNetCDFSchemaIsComplexKey) == 1 && variable.attributes(variable.GLNetCDFSchemaIsRealPartKey) == 1
                         complexName = extractBefore(variable.name,"_realp");
                         imagName = strcat(complexName,"_imagp");
                         imagVariable = [];

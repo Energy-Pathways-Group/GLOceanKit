@@ -52,7 +52,7 @@ classdef NetCDFVariable < handle
             % and variable id, e.g.
             %
             % ```matlab
-            % aVariable = NetCDFVariable(group,varID=3);
+            % aVariable = NetCDFVariable(group,id=3);
             % ```
             %
             % To create a new variable, you must pass the group and the
@@ -263,8 +263,35 @@ classdef NetCDFVariable < handle
     end
 
     methods (Static)
-        function s = NetCDFSchemaIsComplexKey
-            s = "isComplex";
+        function val = netCDFTypeForData(data)
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            map = containers.Map(keys, values);
+            if ~isKey(map,class(data))
+                error('unknown data type');
+            end
+            val = map(class(data));
+        end
+
+        function val = netCDF3TypeForData(data)
+            keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_INT64','NC_INT','NC_INT','NC_SHORT','NC_SHORT','NC_BYTE','NC_BYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            map = containers.Map(keys, values);
+            if ~isKey(map,class(data))
+                error('unknown data type');
+            end
+            val = map(class(data));
+        end
+
+        function val = typeStringForTypeID(type)
+            types = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR'};
+            val = nan;
+            for i=1:length(types)
+                if netcdf.getConstant(types{i}) == type
+                    val = types{i};
+                    return
+                end
+            end
         end
     end
 end
