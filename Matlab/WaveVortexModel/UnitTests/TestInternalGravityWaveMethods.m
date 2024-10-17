@@ -5,11 +5,12 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
     end
 
     properties (ClassSetupParameter)
-        Lxyz = struct('Lxyz',[750e3, 750e3, 1300]);
-        Nxyz = struct('Nx64Ny64Nz30',[64 64 40]);
+        % Lxyz = struct('Lxyz',[750e0, 750e0, 375]);
+        Lxyz = struct('Lxyz',[750e2, 750e2, 1300]);
+        Nxyz = struct('Nx64Ny64Nz30',[64 64 32]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        % transform = {'constant','hydrostatic','boussinesq'};
-        transform = {'hydrostatic'};
+        transform = {'constant','hydrostatic','boussinesq'};
+        % transform = {'boussinesq'};
     end
 
     methods (TestClassSetup)
@@ -18,9 +19,9 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
                 case 'constant'
                     testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
                 case 'hydrostatic'
-                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=0);
+                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=1);
                 case 'boussinesq'
-                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=0);
+                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)), shouldAntialias=1);
             end
             testCase.solutionGroup = WVGeostrophicComponent(testCase.wvt);
         end
@@ -75,7 +76,7 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
         function testSetWaveModes(self)
             self.wvt.removeAll();
 
-            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.1; sign = +1;
+            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.05; sign = +1;
 
             self.wvt.t = 22654;
             self.wvt.setWaveModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u,sign=sign);
@@ -91,14 +92,14 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
             self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
 
-            self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
-            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-7);
         end
 
         function testAddWaveModes(self)
             self.wvt.removeAll();
 
-            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.1; sign = +1;
+            kMode = 3; lMode = 5; j=3; phi = pi*0.3; u=0.05; sign = +1;
             self.wvt.setWaveModes(kMode=kMode,lMode=lMode,j=j,phi=phi,u=u,sign=sign);
             soln1 = self.wvt.waveComponent.internalGravityWaveSolution(kMode,lMode,j,u,phi,sign,amplitudeIsMaxU=1,t=self.wvt.t);
 
@@ -116,7 +117,7 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln1.qgpv(args{:})+soln2.qgpv(args{:})),'qgpv');
 
             self.verifyEqual(self.wvt.totalEnergy,soln1.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic)+soln2.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
-            self.verifyEqual(self.wvt.totalEnstrophy,soln1.depthIntegratedTotalEnstrophy+soln2.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln1.depthIntegratedTotalEnstrophy+soln2.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-7);
         end
 
     end
