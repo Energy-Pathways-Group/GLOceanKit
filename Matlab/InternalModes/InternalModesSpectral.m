@@ -622,6 +622,10 @@ classdef InternalModesSpectral < InternalModesBase
                elseif self.upperBoundary == UpperBoundary.rigidLid
                    % n-th mode has n+1 zeros (including boundaries)
                    rootMode = nPoints-1;
+               elseif self.upperBoundary == UpperBoundary.freeSurface && self.lowerBoundary == LowerBoundary.noSlip
+                   % n-th mode has n zeros (including zero at lower
+                   % boundary, and not zero at upper)
+                   rootMode = nPoints-1;
                elseif self.upperBoundary == UpperBoundary.freeSurface
                    % n-th mode has n zeros (including zero at lower
                    % boundary, and not zero at upper)
