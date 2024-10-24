@@ -110,6 +110,8 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
             self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
+            self.z_int = dz*ones(Nz,1);
+            self.z_int(1) = dz/2; self.z_int(end) = dz/2;
 
             self.buildVerticalModeProjectionOperators();
 

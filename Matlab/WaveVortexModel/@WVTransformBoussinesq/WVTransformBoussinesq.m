@@ -214,7 +214,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         end
 
         function self = buildVerticalModeProjectionOperators(self)
-            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
+            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
 
             self.PFpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
             self.QGpmInv = zeros(self.Nz,self.Nj,self.nK2unique);

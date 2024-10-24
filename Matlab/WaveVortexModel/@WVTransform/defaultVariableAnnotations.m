@@ -39,9 +39,4 @@ annotation.isVariableWithLinearTimeStep = 0;
 annotation.isVariableWithNonlinearTimeStep = 1;
 variableAnnotations(end+1) = annotation;
 
-annotation = WVVariableAnnotation('totalHydrostaticEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy *without w* computed in the spatial domain');
-annotation.isVariableWithLinearTimeStep = 0;
-annotation.isVariableWithNonlinearTimeStep = 1;
-variableAnnotations(end+1) = annotation;
-
 end

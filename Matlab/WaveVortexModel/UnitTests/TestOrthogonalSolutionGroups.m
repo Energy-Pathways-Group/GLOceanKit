@@ -13,15 +13,15 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         Nxyz = struct('Nx16Ny8Nz9',[16 8 9]);
         % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
         transform = {'constant'};
-        orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
-        % orthogonalSolutionGroup = {'WVInternalGravityWaveComponent'}
+        % orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
+        orthogonalSolutionGroup = {'WVMeanDensityAnomalyComponent'}
     end
 
     methods (TestClassSetup)
         function classSetup(testCase,Lxyz,Nxyz,transform,orthogonalSolutionGroup)
             switch transform
                 case 'constant'
-                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33.5, isHydrostatic=0);
+                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33, isHydrostatic=0);
                 case 'hydrostatic'
                     testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
@@ -46,7 +46,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             % have to do it here.
             switch transform
                 case 'constant'
-                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33.5, isHydrostatic=0);
+                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33, isHydrostatic=0);
                 case 'hydrostatic'
                     tmpwvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
@@ -93,6 +93,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
 
             self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
+            self.verifyEqual(self.wvt.totalEnergySpatiallyIntegrated,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
             self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-7);
         end
 

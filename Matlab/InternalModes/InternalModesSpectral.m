@@ -946,8 +946,12 @@ classdef InternalModesSpectral < InternalModesBase
                     elseif ( strcmp(varargin{iArg}, 'geostrophicNorm') )
                         B = sqrt(self.GeostrophicNorm( Gj ));
                         varargout{iArg}(j) = abs(A/B);
-                    elseif ( strcmp(varargin{iArg}, 'weights') )
+                    elseif ( strcmp(varargin{iArg}, 'int_N2_G_dz/g') )
                         varargout{iArg}(j) = sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* (Gj/A)));
+                    elseif ( strcmp(varargin{iArg}, 'int_F_dz') )
+                        varargout{iArg}(j) = sum(self.Int_xCheb .*InternalModesSpectral.fct(Fj/A));
+                    elseif ( strcmp(varargin{iArg}, 'int_G_dz') )
+                        varargout{iArg}(j) = sum(self.Int_xCheb .*InternalModesSpectral.fct(Gj/A));
                     else
                         error('Invalid option. You may request F2, G2, N2G2');
                     end

@@ -130,7 +130,7 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
                 self.P0 = options.P;
                 self.Q0 = options.Q;
             else
-                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
+                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
 
             self.initializeStratifiedFlow();
