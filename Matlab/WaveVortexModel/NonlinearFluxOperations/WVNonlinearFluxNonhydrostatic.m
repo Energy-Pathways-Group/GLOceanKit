@@ -17,6 +17,11 @@ classdef WVNonlinearFluxNonhydrostatic < WVNonlinearFluxOperation
         sin_alpha
         ApmD
         ApmW
+
+        AwD
+        AwZ
+        AwW
+        AwN
     end
     methods
         function self = WVNonlinearFluxNonhydrostatic(wvt)
@@ -49,10 +54,16 @@ classdef WVNonlinearFluxNonhydrostatic < WVNonlinearFluxOperation
             self.sin_alpha(1) = 0;
 
             signNorm = -2*(mod(wvt.j,2) == 1)+1; % equivalent to (-1)^j
-            prefactor = -signNorm * sqrt((wvt.g*wvt.Lz)/(2*(wvt.N0*wvt.N0 - wvt.f*wvt.f)));
+            prefactor = signNorm * sqrt((wvt.g*wvt.Lz)/(2*(wvt.N0*wvt.N0 - wvt.f*wvt.f)));
             mj = (wvt.j*pi/wvt.Lz);
-            self.ApmD = (mj/2) .* prefactor;
+            self.ApmD = -(mj/2) .* prefactor;
             self.ApmW = sqrt(-1) * (kappa/2) .* prefactor;
+
+            prefactor = signNorm * sqrt((wvt.g*wvt.Lz)/(2*(wvt.N0*wvt.N0 - wvt.f*wvt.f)));
+            self.AwD = prefactor .* (-sqrt(-1)*mj./(2*kappa));
+            self.AwZ = prefactor .* (-mj * wvt.f)./(2*kappa.*wvt.Omega);
+            self.AwW = prefactor .* (sqrt(-1)*kappa./2);
+            self.AwN = prefactor .* (-(wvt.N0*wvt.N0)*kappa./(2*wvt.Omega));
         end
 
         function [uNL,vNL,wNL,nNL] = spatialFlux(self,wvt)
@@ -83,6 +94,13 @@ classdef WVNonlinearFluxNonhydrostatic < WVNonlinearFluxOperation
             nw_bar = wvt.transformWithG_wg(n_bar - A0);
             Ap = delta_bar + w_bar + wvt.ApmN .* nw_bar;
             Am = delta_bar + w_bar - wvt.ApmN .* nw_bar;
+
+            Dbar = wvt.DCT*(iK .* u_hat + iL .* v_hat);
+            Zbar = wvt.DCT*(iK .* v_hat - iL .* u_hat);
+            Wbar = wvt.DST*(w_hat);
+            Nbar = wvt.DST*(n_hat);
+            Ap = self.AwD .* Dbar + self.AwZ .* Zbar + self.AwW .* Wbar + self.AwN .* Nbar;
+            Am = self.AwD .* Dbar - self.AwZ .* Zbar + self.AwW .* Wbar - self.AwN .* Nbar;
 
             Ap(:,1) = wvt.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
             Am(:,1) = conj(Ap(:,1));
