@@ -21,7 +21,7 @@ end
 % wvt.initWithRandomFlow('mda',uvMax=0.1);
 wvt.initWithRandomFlow('wave',uvMax=0.1);
 % wvt.initWithRandomFlow('wave',uvMax=0.00001);
-% wvt.initWithRandomFlow(uvMax=0.1);
+wvt.initWithRandomFlow(uvMax=0.01);
 % wvt.initWithWaveModes(kMode=1,lMode=1,j=2,phi=0,u=0.05,sign=1);
 % wvt.addWaveModes(kMode=1,lMode=1,j=1,phi=0,u=0.05,sign=-1);
 % wvt.addWaveModes(kMode=2,lMode=2,j=1,phi=0,u=0.05,sign=1);
@@ -30,9 +30,9 @@ wvt.initWithRandomFlow('wave',uvMax=0.1);
 % wvt.Ap(2,1) = 5; wvt.Am(2,1) = conj(wvt.Ap(3,1));
 
 % A simple triad that proves the non-conservation of the flux
-wvt.initWithWaveModes(kMode=0,lMode=1,j=2,phi=0,u=0.05,sign=1);
-wvt.addWaveModes(kMode=1,lMode=1,j=1,phi=0,u=0.05,sign=1);
-wvt.addWaveModes(kMode=1,lMode=0,j=1,phi=0,u=0.05,sign=1);
+% wvt.initWithWaveModes(kMode=0,lMode=1,j=2,phi=0,u=0.05,sign=1);
+% wvt.addWaveModes(kMode=1,lMode=1,j=1,phi=0,u=0.05,sign=1);
+% wvt.addWaveModes(kMode=1,lMode=0,j=1,phi=0,u=0.05,sign=1);
 
 % Renormalize so that each wave-mode has the same total energy
 % renorm = 1./sqrt(wvt.Apm_TE_factor.*abs(wvt.Ap).^2);
