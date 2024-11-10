@@ -17,6 +17,8 @@ indexC = wvt.indexFromModeNumber(0,1,2); % (3,2)
 gamma = (wvt.N0^2 - wvt.f^2)/wvt.g;
 Aw = sqrt(2/(wvt.Lz*gamma));
 
+N2 = wvt.N0^2/wvt.f^2;
+
 % non-dimensional periods of each wave
 Ta = wvt.f/wvt.Omega(indexA);
 Tb = wvt.f/wvt.Omega(indexB);
@@ -114,3 +116,55 @@ nNL_C = (A*B/8/L/L/L/wvt.f)*(-Ta*Tb + sqrt(-1)*(3*Ta-4*Tb));
 error(nNL_bar(indexA),nNL_A)
 error(nNL_bar(indexB),nNL_B)
 error(nNL_bar(indexC),nNL_C)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Check the equivalent dNL and zNL
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+k = shiftdim(wvt.k,-1);
+l = shiftdim(wvt.l,-1);
+dNL_bar = sqrt(-1)*(k.*uNL_bar + l.*vNL_bar);
+zNL_bar = sqrt(-1)*(k.*vNL_bar - l.*uNL_bar);
+
+dNL_A = (B*C/8/L/L/L/L)*(1+4*Tb*Tc+sqrt(-1)*(8*Tc-Tb));
+dNL_B = (A*C/8/L/L/L/L)*(5+4*Ta*Tc+sqrt(-1)*(3*Ta-6*Tc));
+dNL_C = (A*B/8/L/L/L/L)*(-2*Ta*Tb-2+sqrt(-1)*(-2*Ta-2*Tb));
+
+error(dNL_bar(indexA),dNL_A)
+error(dNL_bar(indexB),dNL_B)
+error(dNL_bar(indexC),dNL_C)
+
+zNL_A = (B*C/8/L/L/L/L)*(7-2*Tb*Tc+sqrt(-1)*(2*Tc-Tb));
+zNL_B = (A*C/8/L/L/L/L)*(3+sqrt(-1)*(3*Ta+6*Tc));
+zNL_C = (A*B/8/L/L/L/L)*(-1-Ta*Tb-sqrt(-1)*(Ta+Tb));
+
+error(zNL_bar(indexA),zNL_A)
+error(zNL_bar(indexB),zNL_B)
+error(zNL_bar(indexC),zNL_C)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Check the prefactors that multiply the transform
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+signNorm = -2*(mod(wvt.j,2) == 1)+1;
+mj = (wvt.j*pi/wvt.Lz);
+kappa = sqrt(k.^2 + l.^2);
+prefactor = signNorm * sqrt((wvt.g*wvt.Lz)/(2*(wvt.N0*wvt.N0 - wvt.f*wvt.f)));
+AwD = prefactor .* (-sqrt(-1)*mj./(2*kappa));
+AwZ = prefactor .* (-mj * wvt.f)./(2*kappa.*wvt.Omega);
+AwW = prefactor .* (sqrt(-1)*kappa./2);
+AwN = prefactor .* (-(wvt.N0*wvt.N0)*kappa./(2*wvt.Omega));
+
+Fp = AwD .* dNL_bar + AwZ .* zNL_bar + AwW .* wNL_bar + AwN .* nNL_bar;
+Ep = 2*wvt.Apm_TE_factor.*real( Fp .* conj(wvt.Ap) );
+
+E_A = pi*(A*B*C/16/L/L/L)*(7*Ta - 4*Tc + (5*N2 - 2)*Ta*Tb*Tc);
+E_B = pi*(A*B*C/16/L/L/L)*(-5*Ta +3*Tb + 2*Tc - 6*N2*Ta*Tb*Tc);
+E_C = pi*(A*B*C/16/L/L/L)*(-2*Ta - 3*Tb + 2*Tc  +(N2+2)*Ta*Tb*Tc);
+error(Ep(indexA),E_A)
+error(Ep(indexB),E_B)
+error(Ep(indexC),E_C)

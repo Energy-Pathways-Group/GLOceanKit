@@ -35,9 +35,9 @@ wvt.addWaveModes(kMode=1,lMode=1,j=1,phi=0,u=0.05,sign=1);
 wvt.addWaveModes(kMode=1,lMode=0,j=1,phi=0,u=0.05,sign=1);
 
 % Renormalize so that each wave-mode has the same total energy
-renorm = 1./sqrt(wvt.Apm_TE_factor.*abs(wvt.Ap).^2);
-renorm(isinf(renorm))=0;
-wvt.Ap = wvt.Ap .* renorm;
+% renorm = 1./sqrt(wvt.Apm_TE_factor.*abs(wvt.Ap).^2);
+% renorm(isinf(renorm))=0;
+% wvt.Ap = wvt.Ap .* renorm;
 
 % For this test, the vertical momentum contributions sum to zero
 
