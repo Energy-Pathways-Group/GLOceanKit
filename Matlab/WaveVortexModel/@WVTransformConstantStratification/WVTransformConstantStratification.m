@@ -14,7 +14,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
     % - Topic: Initialization
     %
     % - Declaration: classdef WVTransformConstantStratification < [WVTransform](/classes/wvtransform/)
-    properties (Access=protected) %(GetAccess=public, SetAccess=protected)
+    properties %(Access=protected) %(GetAccess=public, SetAccess=protected)
         F_g,G_g
         F_wg, G_wg
 
@@ -77,6 +77,9 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 options.N0 (1,1) double {mustBePositive} = 5.2e-3
                 options.latitude (1,1) double {mustBeGreaterThanOrEqual(options.latitude,5),mustBeLessThanOrEqual(options.latitude,85)} = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                options.shouldAntialias double = 1
+                options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
+
                 options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0
             end
             Nz = Nxyz(3);
@@ -99,9 +102,16 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
 
             self@WVStratifiedFlow(Lz,z,rho=rho,N2=N2,dLnN2=dLnN2,latitude=options.latitude,verticalModes=verticalModes)
 
-            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=nModes);
+            if nModes > 2 && options.shouldAntialias == 1
+                Nj = floor(options.jAliasingFraction*nModes);
+            else
+                Nj = nModes;
+            end
+            self@WVTransform(Lxyz, Nxyz(1:2), z, latitude=options.latitude,rho0=options.rho0,Nj=Nj,shouldAntialias=options.shouldAntialias);
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = N0;
+            self.z_int = dz*ones(Nz,1);
+            self.z_int(1) = dz/2; self.z_int(end) = dz/2;
 
             self.buildVerticalModeProjectionOperators();
 
@@ -328,6 +338,82 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
         % Transformation matrices
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function Finv = FwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FwInvMatrix(wvt,kMode,lMode)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            Finv = shiftdim(self.F_g(iK)./self.F_wg(iK),1) .* self.iDCT; % 
+        end
+
+        function F = FwMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FwMatrix(wvt,kMode,lMode)
+            % - Returns F: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            F = self.DCT ./ reshape(self.F_g(iK)./self.F_wg(iK),[],1);
+        end
+
+        function Ginv = GwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GwInvMatrix(wvt,kMode,lMode)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            Ginv = shiftdim(self.G_g(iK)./self.G_wg(iK),1) .* self.iDST; %
+        end
+
+        function G = GwMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GwMatrix(wvt,kMode,lMode)
+            % - Returns G: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            G = self.DST ./ reshape(self.G_g(iK)./self.G_wg(iK),[],1);
+        end
 
         function Finv = get.FinvMatrix(wvt)
             % transformation matrix $$F^{-1}$$

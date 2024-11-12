@@ -130,6 +130,7 @@ classdef WVFlowComponent < handle
             if any(validModes(:))
                 A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
                 A0(~validModes) = 0;
+                A0(self.wvt.Kh == 0) = sqrt(2)*real(A0(self.wvt.Kh == 0));
                 if options.shouldOnlyRandomizeOrientations == 1
                     A0(logical(validModes)) = A0(logical(validModes)) ./ abs(A0(logical(validModes)));
                 end

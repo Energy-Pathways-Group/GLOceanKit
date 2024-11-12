@@ -89,7 +89,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.nu_z = options.nu_z;
             else
                 if isfield(options,'w_damp')
-                    if self.shouldAntialias == 1
+                    if self.wvt.shouldAntialias == 1
                         self.nu_z = (3/2)*(wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
                     else
                         self.nu_z = (wvt.z(2)-wvt.z(1))*options.w_damp/(pi^2);
@@ -107,17 +107,15 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 self.beta = 0;
                 self.betaA0 = 0;
             end
-
-            [K,L,J] = self.wvt.kljGrid;
-            M = J*pi/wvt.Lz;
-            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-
-            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
-            self.damp = Qkl.*self.damp;
         end
 
         function set.nu_xy(self,value)
             self.nu_xy = value;
+            self.buildDampingOperator();
+        end
+
+        function set.nu_z(self,value)
+            self.nu_z = value;
             self.buildDampingOperator();
         end
 
@@ -132,10 +130,11 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
         function buildDampingOperator(self)
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
-            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
+            % self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
             % do not assume anti-aliasing!
-            [Qkl,~,self.k_no_damp,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
-            self.damp = Qkl.*self.damp;
+            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            % self.damp = Qkl.*self.damp;
+            self.damp = -(self.nu_z*Qj.*M.^2 + self.nu_xy*Qkl.*(K.^2 +L.^2));
         end
 
         function dampingTimeScale = dampingTimeScale(self)

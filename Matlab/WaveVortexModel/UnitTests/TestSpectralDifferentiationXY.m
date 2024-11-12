@@ -5,9 +5,12 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
 
     properties (ClassSetupParameter)
         %transform = {'constant','hydrostatic','boussinesq'};
-        Lxyz = struct('Lxyz',[1 10 4]);
-        Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
-        transform = {'hydrostatic'};
+        % Lxyz = struct('Lxyz',[1 10 4]);
+        % Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
+        % transform = {'hydrostatic'};
+        Lxyz = struct('Lxyz',[1000, 500, 500]);
+        Nxyz = struct('Nx32N16Nz17',[32 16 17]);
+        transform = {'constant'};
     end
 
     methods (TestClassSetup)

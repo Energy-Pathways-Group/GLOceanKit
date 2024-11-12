@@ -32,7 +32,7 @@ if self.Nj > 2
     j_cutoff = dj*(j_max/dj)^(3/4);
     Qj = exp( - ((J-j_max)./(J-j_cutoff)).^2 );
     Qj(J<j_cutoff) = 0;
-    Qj(J>j_cutoff) = 1;
+    Qj(J>j_max) = 1;
 else
     Qj = ones(size(J));
 end

@@ -11,7 +11,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
     %    to specify the depths and modes yourself
     %       Init([Lx Ly Lz], [Nx Ny Nz], latitude, rho, 'zgrid', z)
 
-    properties (Access=protected) %(GetAccess=public, SetAccess=protected)
+    properties %(Access=protected) %(GetAccess=public, SetAccess=protected)
         % Geostrophic transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj x 1]
         PF0, QG0 % size(PF,PG)=[Nj x Nz x 1]
@@ -214,7 +214,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         end
 
         function self = buildVerticalModeProjectionOperators(self)
-            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
+            [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
 
             self.PFpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
             self.QGpmInv = zeros(self.Nz,self.Nj,self.nK2unique);
@@ -224,6 +224,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
             self.Ppm =     zeros(self.Nj,self.nK2unique);
             self.Qpm =     zeros(self.Nj,self.nK2unique);
             self.QGwg =    zeros(self.Nj,self.Nj,self.nK2unique);
+
             for iK=1:self.nK2unique
                 [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.verticalProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)),self.Nj);
                 self.QGwg(:,:,iK ) = self.QGpm(:,:,iK )*self.QG0inv;
@@ -443,6 +444,101 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
         % Transformation matrices
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function Finv = FwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FwInvMatrix(wvt,kMode,lMode)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            Finv = shiftdim(self.Ppm(:,iUnique),1) .* self.PFpmInv(:,:,iUnique ); % 
+        end
+
+        function F = FwMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FwMatrix(wvt,kMode,lMode)
+            % - Returns F: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            F = self.PFpm(:,:,iUnique )./self.Ppm(:,iUnique);
+        end
+
+        function Ginv = GwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GwInvMatrix(wvt,kMode,lMode)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            Ginv = shiftdim(self.Qpm(:,iUnique),1) .* self.QGpmInv(:,:,iUnique ); % 
+        end
+
+        function G = GwMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GwMatrix(wvt,kMode,lMode)
+            % - Returns G: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            G = self.QGpm(:,:,iUnique )./self.Qpm(:,iUnique);
+        end
 
         function Finv = get.FinvMatrix(wvt)
             % transformation matrix $$F^{-1}$$
@@ -524,7 +620,13 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (:,1) double
                 j (:,1) double
             end
-            ratio = self.P0(j+1);
+            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            ratio = self.Ppm(j+1,iUnique);
         end
 
         function ratio = maxFg(self,kMode,lMode,j)

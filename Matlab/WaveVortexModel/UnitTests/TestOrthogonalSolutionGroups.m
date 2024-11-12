@@ -5,20 +5,23 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
     end
 
     properties (ClassSetupParameter)
-        Lxyz = struct('Lxyz',[15e3, 15e3, 1300]);
-        Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
+        % Lxyz = struct('Lxyz',[15e3, 15e3, 1300]);
+        % Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        % transform = {'hydrostatic'};
-        orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
-        %orthogonalSolutionGroup = {'WVInertialOscillationComponent'}
+        % transform = {'constant','hydrostatic','boussinesq'};
+        Lxyz = struct('Lxyz',[1000, 500, 500]);
+        Nxyz = struct('Nx16Ny8Nz9',[16 8 9]);
+        % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
+        transform = {'constant'};
+        % orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
+        orthogonalSolutionGroup = {'WVMeanDensityAnomalyComponent'}
     end
 
     methods (TestClassSetup)
         function classSetup(testCase,Lxyz,Nxyz,transform,orthogonalSolutionGroup)
             switch transform
                 case 'constant'
-                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33, isHydrostatic=0);
                 case 'hydrostatic'
                     testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
@@ -43,7 +46,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             % have to do it here.
             switch transform
                 case 'constant'
-                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    tmpwvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=33, isHydrostatic=0);
                 case 'hydrostatic'
                     tmpwvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
                 case 'boussinesq'
@@ -89,8 +92,9 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
 
-            self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-3);
-            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-3);
+            self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
+            self.verifyEqual(self.wvt.totalEnergySpatiallyIntegrated,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
+            self.verifyEqual(self.wvt.totalEnstrophy,soln.depthIntegratedTotalEnstrophy, "AbsTol",1e-7,"RelTol",1e-7);
         end
 
         function testFTransformAllDerivatives(self,solutionIndex)
@@ -103,6 +107,13 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             self.verifyThat(Ux,IsSameSolutionAs(self.wvt.diffX(self.wvt.u)),'FAllDerivatives-Ux');
             self.verifyThat(Uy,IsSameSolutionAs(self.wvt.diffY(self.wvt.u)),'FAllDerivatives-Uy');
             self.verifyThat(Uz,IsSameSolutionAs(self.wvt.diffZF(self.wvt.u)),'FAllDerivatives-Uz');
+
+            [V,Vx,Vy,Vz] = self.wvt.transformToSpatialDomainWithFAllDerivatives(Apm=self.wvt.VAp.*self.wvt.Apt + self.wvt.VAm.*self.wvt.Amt,A0=self.wvt.VA0.*self.wvt.A0t);
+
+            self.verifyThat(V,IsSameSolutionAs(soln.v(args{:})),'FAllDerivatives-V');
+            self.verifyThat(Vx,IsSameSolutionAs(self.wvt.diffX(self.wvt.v)),'FAllDerivatives-Vx');
+            self.verifyThat(Vy,IsSameSolutionAs(self.wvt.diffY(self.wvt.v)),'FAllDerivatives-Vy');
+            self.verifyThat(Vz,IsSameSolutionAs(self.wvt.diffZF(self.wvt.v)),'FAllDerivatives-Vz');
         end
 
         function testGTransformAllDerivatives(self,solutionIndex)

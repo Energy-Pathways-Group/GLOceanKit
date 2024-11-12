@@ -16,17 +16,17 @@ end
 
 ncfile = NetCDFFile(path);
 
-requiredVariables = {'x','y','z','Lx','Ly','Lz','latitude','N0','rho0'};
+requiredVariables = {'x','y','z','Lx','Ly','Lz','latitude','N0','rho0','shouldAntialias'};
 if ~all(isKey(ncfile.variableWithName,requiredVariables) | isKey(ncfile.attributes,requiredVariables))
     error('This files is missing required variables or attributes to initialize a WVTransform.')
 end
 
-[x,y,z,Lx,Ly,Lz,latitude,N0,rho0] = ncfile.readVariables('x','y','z','Lx','Ly','Lz','latitude','N0','rho0');
+[x,y,z,Lx,Ly,Lz,latitude,N0,rho0,shouldAntialias] = ncfile.readVariables('x','y','z','Lx','Ly','Lz','latitude','N0','rho0','shouldAntialias');
 Nx = length(x);
 Ny = length(y);
 Nz = length(z);
 
-wvt = WVTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],N0=N0,latitude=latitude,rho0=rho0);
+wvt = WVTransformConstantStratification([Lx Ly Lz],[Nx Ny Nz],N0=N0,latitude=latitude,rho0=rho0,shouldAntialias=shouldAntialias);
 
 wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
 

@@ -57,7 +57,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly, Lz
         Nx, Ny, Nj, Nkl
-        k, l, j, z = 0
+        k, l, j, z = 0, z_int
         kAxis, lAxis, kRadial
         latitude
 
@@ -628,17 +628,17 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function energy = totalEnergySpatiallyIntegrated(self)
-            [u,v,w,eta] = self.variables('u','v','w','eta');
-            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+            if self.isHydrostatic == 1
+                [u,v,eta] = self.variables('u','v','eta');
+                energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+            else
+                [u,v,w,eta] = self.variables('u','v','w','eta');
+                energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+            end
         end
         
         function energy = totalEnergy(self)
             energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
-        end
-        
-        function energy = totalHydrostaticEnergy(self)
-            [u,v,eta] = self.variables('u','v','eta');
-            energy = trapz(self.z,mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
         function energy = totalEnergyOfFlowComponent(self,flowComponent)
