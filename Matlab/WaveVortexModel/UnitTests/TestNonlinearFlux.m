@@ -18,6 +18,7 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
                     testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz, isHydrostatic=1, shouldAntialias=0);
                 case 'constant-boussinesq'
                     testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz, isHydrostatic=0, shouldAntialias=0);
+                    testCase.wvt_.nonlinearFluxOperation = WVNonlinearFluxNonhydrostatic(testCase.wvt_);
                 case 'hydrostatic'
                     testCase.wvt_ = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
                 case 'boussinesq'
@@ -28,13 +29,14 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
 
     methods (Test)
         function testNonlinearFlux(self)
-            self.wvt.initWithRandomFlow();
-            spatialFlux = WVNonlinearFluxSpatial(self.wvt);
-            standardFlux = WVNonlinearFlux(self.wvt);
+            wvt = self.wvt_;
+            wvt.initWithRandomFlow();
+            spatialFlux = WVNonlinearFluxSpatial(wvt);
+            standardFlux = WVNonlinearFlux(wvt);
 
-            self.wvt.t = 6000;
-            [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(self.wvt);
-            [StandardFp,StandardFm,StandardF0] = standardFlux.compute(self.wvt);
+            wvt.t = 6000;
+            [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(wvt);
+            [StandardFp,StandardFm,StandardF0] = standardFlux.compute(wvt);
 
             self.verifyEqual(StandardFp,SpatialFp, "AbsTol",1e-7,"RelTol",1e-7);
             self.verifyEqual(StandardFm,SpatialFm, "AbsTol",1e-7,"RelTol",1e-7);
