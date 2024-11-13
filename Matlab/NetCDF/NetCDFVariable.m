@@ -79,7 +79,7 @@ classdef NetCDFVariable < handle
                         error('You must specify %s to initial a new variable.',requiredFields{iField});
                     end
                 end
-                self.initVariable(group,options.name,options.dimensions,options.attributes,options.type);
+                self.initVariable(group,options.name,options.dimensions,options.type,options.attributes);
             end
         end
 
@@ -106,7 +106,7 @@ classdef NetCDFVariable < handle
             self.dimensions = self.group.dimensionWithID(dimids);
         end
 
-        function initVariable(self,group,name,dimNames,ncType, attributes)
+        function initVariable(self,group,name,dimensions,ncType,attributes)
             % initialize a real-valued variable
             %
             % The basic work flow is that you need to first,
@@ -132,13 +132,16 @@ classdef NetCDFVariable < handle
                 self (1,1) NetCDFVariable {mustBeNonempty}
                 group (1,1) NetCDFGroup {mustBeNonempty}
                 name char {mustBeNonempty}
-                dimNames (:,1) cell
-                ncType char {mustBeNonempty}
-                attributes (1,1) containers.Map = containers.Map()
+                dimensions (:,1) NetCDFDimension
+                % dimNames (:,1) cell
+                ncType string {mustBeNonempty}
+                attributes containers.Map = containers.Map(KeyType='double',ValueType='any')         
             end
             self.group = group;
-            self.dimensions = group.dimensionWithName(dimNames);
-            self.id = netcdf.defVar(group.id, name, ncType, [self.dimensions.dimID]);     
+            self.dimensions = dimensions; %group.dimensionWithName(dimNames);
+            self.id = netcdf.defVar(group.id, name, ncType, [self.dimensions.id]);
+            self.name = name;
+            self.type = ncType;
 
             if ~isempty(attributes)
                 keyNames = keys(attributes);
@@ -188,7 +191,7 @@ classdef NetCDFVariable < handle
                 data {mustBeNonempty}
             end
             for iDim=1:length(self.dimensions)
-                if (nDims==1 && length(data) ~= self.dimensions(iDim).nPoints) || (nDims~=1 && size(data,iDim) ~= self.dimensions(iDim).nPoints)
+                if (length(self.dimensions)==1 && length(data) ~= self.dimensions(iDim).nPoints) || (length(self.dimensions)~=1 && size(data,iDim) ~= self.dimensions(iDim).nPoints)
                     error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,self.name,size(data,iDim),self.dimensions(iDim).name,self.dimensions(iDim).nPoints);
                 end
             end

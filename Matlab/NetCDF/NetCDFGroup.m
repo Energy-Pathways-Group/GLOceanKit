@@ -154,45 +154,41 @@ classdef NetCDFGroup < handle
 
         end
 
-        function addDimension(self,name,options)
+        function addDimension(self,name,value,options)
             % This is how the user should add a new dimension to the group
             arguments
-                self (1,1) NetCDFDimension {mustBeNonempty}
+                self (1,1) NetCDFGroup {mustBeNonempty}
                 name string {mustBeNonempty}
+                value = []
                 options.length = 0
-                options.value = []
-                options.attributes (1,1) containers.Map = containers.Map()
+                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
                 options.ncType char = []
             end
-            if ~isempty(group.dimensionWithName(name)) || ~isempty(group.variableWithName(name))
+            if isKey(self.dimensionNameMap,name) || isKey(self.variableNameMap,name)
                 error('A dimension with that name already exists.');
             end
-            if (options.length == 0 && isempty(options.value))
-                error('You must specify either the value or the length of the data');
-            end
-            if (isempty(options.value) && isempty(options.ncType))
-                error('If you do not specify the value during initialization, you must specify the ncType');
+            if ~( (options.length > 0 && ~isempty(options.ncType)) || ~isempty(value))
+                error('You must specify either the value of the data, or the length and data type (ncType).');
             end
 
-            % First create the dimension
-            if isinf(options.length)
-                n = inf;
+            if ~isempty(value)
+                n = length(value);
             else
-                n = length(options.data);
+                n = options.length;
             end
             dim = NetCDFDimension(self,name=name,nPoints=n);
             self.addDimensionPrimitive(dim)
 
             % Now create the associated coordinate variable
-            if isempty(options.value)
+            if isempty(value)
                 ncType = options.ncType;
             else
-                ncType = NetCDFFile.netCDFTypeForData(options.value);
+                ncType = NetCDFVariable.netCDFTypeForData(value);
             end
-            var = NetCDFVariable(self,name=name,dimensions={dim},attributes=options.attributes,type=ncType);
+            var = NetCDFVariable(self,name=name,dimensions=dim,attributes=options.attributes,type=ncType);
             self.addVariablePrimitive(var);
-            if ~isempty(options.value)
-                var.value = options.value;
+            if ~isempty(value)
+                var.value = value;
             end
 
             % TODO: This needs to pass this down to child groups
