@@ -161,8 +161,8 @@ classdef NetCDFGroup < handle
                 name string {mustBeNonempty}
                 value = []
                 options.length = 0
-                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
                 options.ncType char = []
+                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
             end
             if isKey(self.dimensionNameMap,name) || isKey(self.variableNameMap,name)
                 error('A dimension with that name already exists.');
@@ -192,6 +192,35 @@ classdef NetCDFGroup < handle
             end
 
             % TODO: This needs to pass this down to child groups
+        end
+
+        function addVariable(self,name,value,dimNames,options)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                name string {mustBeNonempty}
+                value = []
+                dimNames = {}
+                options.length = 0
+                options.ncType char = []
+                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
+            end
+            if isKey(self.variableNameMap,name)
+                error('A dimension with that name already exists.');
+            end
+            if ~( (options.length > 0 && ~isempty(options.ncType)) || ~isempty(value))
+                error('You must specify either the value of the data, or the length and data type (ncType).');
+            end
+
+            if isempty(value)
+                ncType = options.ncType;
+            else
+                ncType = NetCDFVariable.netCDFTypeForData(value);
+            end
+            var = NetCDFVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
+            self.addVariablePrimitive(var);
+            if ~isempty(value)
+                var.value = value;
+            end
         end
 
         function addDimensionPrimitive(self,dimension)
@@ -260,7 +289,7 @@ classdef NetCDFGroup < handle
         % key-value Map to retrieve a NetCDFVariable object by name
         % - Topic: Working with variables
         function v = variableWithName(self,name)
-
+            v = self.variableNameMap(name);
         end
 
 
@@ -284,6 +313,7 @@ classdef NetCDFGroup < handle
             indent0 = sprintf(repmat('   ',1,options.indentLevel));
             indent1 = sprintf(repmat('   ',1,options.indentLevel+1));
             indent2 = sprintf(repmat('   ',1,options.indentLevel+2));
+            indent3 = sprintf(repmat('   ',1,options.indentLevel+3));
 
             if isempty(self.parentGroup) && isa(self,'NetCDFFile')
                 [~,filename,~] = fileparts(self.path);
@@ -301,10 +331,10 @@ classdef NetCDFGroup < handle
             end
 
             if ~isempty(self.variables)
-                fprintf('%svariables: \n',indent1);
+                fprintf('\n%svariables: \n',indent1);
                 for iVar=1:length(self.variables)
                     variable = self.variables(iVar);
-                    fprintf('%s%s(',indent2,variable.name);
+                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.type),variable.name);
                     for iDim=1:length(variable.dimensions)
                         if iDim==length(variable.dimensions)
                             fprintf('%s',variable.dimensions(iDim).name);
@@ -313,6 +343,40 @@ classdef NetCDFGroup < handle
                         end
                     end
                     fprintf(')\n');
+                    for attName = string(variable.attributes.keys)
+                        if isa(variable.attributes(attName),'char') || isa(variable.attributes(attName),'string')
+                            fprintf('%s%s = \"%s\"\n',indent3,attName,variable.attributes(attName));
+                        elseif isa(variable.attributes(attName),'double') || isa(variable.attributes(attName),'single')
+                            fprintf('%s%s = %f\n',indent3,attName,variable.attributes(attName));
+                        else
+                            fprintf('%s%s = %d\n',indent3,attName,variable.attributes(attName));
+                        end
+                    end
+                end
+            end
+
+            if ~isempty(self.complexVariables)
+                fprintf('\n%scomplex variables: \n',indent1);
+                for iVar=1:length(self.complexVariables)
+                    variable = self.complexVariables(iVar);
+                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.realVar.type),variable.name);
+                    for iDim=1:length(variable.realVar.dimensions)
+                        if iDim==length(variable.realVar.dimensions)
+                            fprintf('%s',variable.realVar.dimensions(iDim).name);
+                        else
+                            fprintf('%s,',variable.realVar.dimensions(iDim).name);
+                        end
+                    end
+                    fprintf(')\n');
+                    % for attName = string(variable.attributes.keys)
+                    %     if isa(variable.attributes(attName),'char') || isa(variable.attributes(attName),'string')
+                    %         fprintf('%s%s = \"%s\"\n',indent3,attName,variable.attributes(attName));
+                    %     elseif isa(variable.attributes(attName),'double') || isa(variable.attributes(attName),'single')
+                    %         fprintf('%s%s = %f\n',indent3,attName,variable.attributes(attName));
+                    %     else
+                    %         fprintf('%s%s = %d\n',indent3,attName,variable.attributes(attName));
+                    %     end
+                    % end
                 end
             end
 
@@ -320,6 +384,19 @@ classdef NetCDFGroup < handle
                 for iGroup=1:length(self.groups)
                     group = self.groups(iGroup);
                     group.dump(indentLevel=options.indentLevel+1);
+                end
+            end
+
+            if self.attributes.Count > 0
+                fprintf('\n%sglobal attributes: \n',indent1);
+                for attName = string(self.attributes.keys)
+                    if isa(self.attributes(attName),'char') || isa(self.attributes(attName),'string')
+                        fprintf('%s%s = \"%s\"\n',indent2,attName,self.attributes(attName));
+                    elseif isa(self.attributes(attName),'double') || isa(self.attributes(attName),'single')
+                        fprintf('%s%s = %f\n',indent2,attName,self.attributes(attName));
+                    else
+                        fprintf('%s%s = %d\n',indent2,attName,self.attributes(attName));
+                    end
                 end
             end
 

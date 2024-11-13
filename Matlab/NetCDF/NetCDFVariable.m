@@ -266,9 +266,16 @@ classdef NetCDFVariable < handle
     end
 
     methods (Static)
+        function val = matlabTypeForNetCDFType(ncType)
+            values = ["double" "single" "int64" "uint64" "int32" "uint32" "int16" "uint16" "int8" "uint8" "char" "string" "logical"];
+            keys = ["NC_DOUBLE" "NC_FLOAT" "NC_INT64" "NC_UINT64" "NC_INT" "NC_UINT" "NC_SHORT" "NC_USHORT" "NC_BYTE" "NC_UBYTE" "NC_CHAR" "NC_STRING" "NC_BYTE"];
+            dict = dictionary(keys,values);
+            val = dict(ncType);
+        end
+
         function val = netCDFTypeForData(data)
             keys = {'double','single','int64','uint64','int32','uint32','int16','uint16','int8','uint8','char','string','logical'};
-            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_CHAR','NC_BYTE'};
+            values = {'NC_DOUBLE','NC_FLOAT','NC_INT64','NC_UINT64','NC_INT','NC_UINT','NC_SHORT','NC_USHORT','NC_BYTE','NC_UBYTE','NC_CHAR','NC_STRING','NC_BYTE'};
             map = containers.Map(keys, values);
             if ~isKey(map,class(data))
                 error('unknown data type');
