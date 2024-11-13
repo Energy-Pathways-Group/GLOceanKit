@@ -85,7 +85,7 @@ classdef NetCDFFile < NetCDFGroup
             
             self@NetCDFGroup(id=ncid);
             self.path = path;
-            self.format = netcdf.inqFormat(self.ncid);            
+            self.format = netcdf.inqFormat(self.id);            
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,19 +97,19 @@ classdef NetCDFFile < NetCDFGroup
 
         function self = sync(self)
             % - Topic: Accessing file properties
-            netcdf.sync(self.ncid);
+            netcdf.sync(self.id);
         end
 
-        function self = open(self)
-            % - Topic: Accessing file properties
-            self.ncid = netcdf.open(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
-            self.format = netcdf.inqFormat(self.ncid);
-        end
+        % function self = open(self)
+        %     % - Topic: Accessing file properties
+        %     self.ncid = netcdf.open(self.path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+        %     self.format = netcdf.inqFormat(self.ncid);
+        % end
 
         function self = close(self)
             % - Topic: Accessing file properties
-            netcdf.close(self.ncid);
-            self.ncid = [];
+            netcdf.close(self.id);
+            self.id = [];
         end
     end
 

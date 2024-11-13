@@ -280,18 +280,57 @@ classdef NetCDFGroup < handle
 
         end
 
-        function dump(self)
-            for iVar=1:length(self.variables)
-                variable = self.variables(iVar);
-                fprintf('%s\t{',variable.name);
-                for iDim=1:length(variable.dimensions)
-                    if iDim==length(variable.dimensions)
-                        fprintf('%s',variable.dimensions(iDim).name);
-                    else
-                        fprintf('%s,',variable.dimensions(iDim).name);
-                    end
+        function dump(self,options)
+            arguments
+                self NetCDFGroup
+                options.indentLevel = 0
+            end
+            indent0 = sprintf(repmat('   ',1,options.indentLevel));
+            indent1 = sprintf(repmat('   ',1,options.indentLevel+1));
+            indent2 = sprintf(repmat('   ',1,options.indentLevel+2));
+
+            if isempty(self.parentGroup) && isa(self,'NetCDFFile')
+                [~,filename,~] = fileparts(self.path);
+                fprintf('%snetcdf: %s {\n',indent0,filename);
+            else
+                fprintf('\n%sgroup: %s {\n',indent0,self.name);
+            end
+
+            if ~isempty(self.dimensions)
+                fprintf('%sdimensions: \n',indent1);
+                for iDim=1:length(self.dimensions)
+                    dimension = self.dimensions(iDim);
+                    fprintf('%s%s = %d\n',indent2,dimension.name,dimension.nPoints);
                 end
-                fprintf('}\n');
+            end
+
+            if ~isempty(self.variables)
+                fprintf('%svariables: \n',indent1);
+                for iVar=1:length(self.variables)
+                    variable = self.variables(iVar);
+                    fprintf('%s%s(',indent2,variable.name);
+                    for iDim=1:length(variable.dimensions)
+                        if iDim==length(variable.dimensions)
+                            fprintf('%s',variable.dimensions(iDim).name);
+                        else
+                            fprintf('%s,',variable.dimensions(iDim).name);
+                        end
+                    end
+                    fprintf(')\n');
+                end
+            end
+
+            if ~isempty(self.groups)
+                for iGroup=1:length(self.groups)
+                    group = self.groups(iGroup);
+                    group.dump(indentLevel=options.indentLevel+1);
+                end
+            end
+
+            if isempty(self.parentGroup) && isa(self,'NetCDFFile')
+                fprintf('%s}\n',indent0);
+            else
+                fprintf('%s} // group %s\n',indent0,self.name);
             end
         end
     end

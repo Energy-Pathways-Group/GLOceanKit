@@ -97,7 +97,7 @@ classdef NetCDFVariable < handle
             self.attributes = containers.Map;
 
             [self.name, xtype, dimids, numatts] = netcdf.inqVar(group.id,id);
-            self.type = NetCDFFile.typeStringForTypeID(xtype);
+            self.type = NetCDFVariable.typeStringForTypeID(xtype);
             
             for iAtt=0:(numatts-1)
                 gattname = netcdf.inqAttName(group.id,id,iAtt);
