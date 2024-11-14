@@ -54,6 +54,7 @@ classdef NetCDFGroup < handle
         dimensionNameMap
         variableIDMap
         variableNameMap
+        complexVariableNameMap
         groupIDMap
         groupNameMap
     end
@@ -82,7 +83,7 @@ classdef NetCDFGroup < handle
             end
             
             self.dimensions = NetCDFDimension.empty(0,0);
-            self.variables = NetCDFVariable.empty(0,0);
+            self.variables = NetCDFRealVariable.empty(0,0);
             self.groups = NetCDFGroup.empty(0,0);
             self.attributes = containers.Map;
             self.complexVariables = NetCDFComplexVariable.empty(0,0);
@@ -90,8 +91,9 @@ classdef NetCDFGroup < handle
             self.dimensionIDMap = configureDictionary('double','NetCDFDimension');
             self.dimensionNameMap = configureDictionary('string','NetCDFDimension');
 
-            self.variableIDMap = configureDictionary('double','NetCDFVariable');
-            self.variableNameMap = configureDictionary('string','NetCDFVariable');
+            self.variableIDMap = configureDictionary('double','NetCDFRealVariable');
+            self.variableNameMap = configureDictionary('string','NetCDFRealVariable');
+            self.complexVariableNameMap = configureDictionary('string','NetCDFComplexVariable');
 
             self.groupIDMap = configureDictionary('double','NetCDFGroup');
             self.groupNameMap = configureDictionary('string','NetCDFGroup');
@@ -128,10 +130,10 @@ classdef NetCDFGroup < handle
                 self.addDimensionPrimitive(NetCDFDimension(self,id=dimensionIDs(iDim)));
             end
 
-            % Fetch all variables and convert to NetCDFVariable objects
+            % Fetch all variables and convert to NetCDFRealVariable objects
             variableIDs = netcdf.inqVarIDs(self.id);
             for iVar=1:length(variableIDs)
-                self.addVariablePrimitive(NetCDFVariable(self,id=variableIDs(iVar)));
+                self.addVariablePrimitive(NetCDFRealVariable(self,id=variableIDs(iVar)));
             end
 
             % Grab all the global attributes
@@ -142,7 +144,8 @@ classdef NetCDFGroup < handle
             end
 
             % Now check to see if any variables form a complex variable
-            self.complexVariables = NetCDFComplexVariable.complexVariablesFromVariables(self.variables);
+            self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.variables));
+            self.removeVariablePrimitive([self.complexVariables.real self.complexVariables.imag]);
 
             groupIDs = netcdf.inqGrps(self.id);
             for iGrp=1:length(groupIDs)
@@ -154,21 +157,43 @@ classdef NetCDFGroup < handle
 
         end
 
-        function addDimension(self,name,value,options)
-            % This is how the user should add a new dimension to the group
+        function [dim,var] = addDimension(self,name,value,options)
+            % add a new dimension to the group
+            %
+            % This function add both a dimension and an associated
+            % coordinate variable.
+            %
+            % You may initialize directly with data, e.g.,
+            %
+            % ```matlab
+            % ncfile.addDimension('x',0:9);
+            % ```
+            %
+            % which will immediately add the dimension and variable data to
+            % file, OR you may initialize the dimension and an empty
+            % variable, e.g.,
+            %
+            % ```matlab
+            % ncfile.addDimension('t',length=10,ncType='double',isComplex=0);
+            % ```
+            % which may be useful when initializing an unlimited
+            % dimension. In this case you may also want to specify whether
+            % or not the variable will be complex valued (it will default
+            % to assuming the variable will be real valued).
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 name string {mustBeNonempty}
                 value = []
                 options.length = 0
                 options.ncType char = []
-                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
+                options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
+                options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
             if isKey(self.dimensionNameMap,name) || isKey(self.variableNameMap,name)
                 error('A dimension with that name already exists.');
             end
-            if ~( (options.length > 0 && ~isempty(options.ncType)) || ~isempty(value))
-                error('You must specify either the value of the data, or the length and data type (ncType).');
+            if ~( (options.length > 0 && ~isempty(options.ncType) && ~isempty(options.isComplex)) || ~isempty(value))
+                error('You must specify either the value of the data, or the length, ncType and isComplex.');
             end
 
             if ~isempty(value)
@@ -178,49 +203,57 @@ classdef NetCDFGroup < handle
             end
             dim = NetCDFDimension(self,name=name,nPoints=n);
             self.addDimensionPrimitive(dim)
+            % TODO: This needs to pass this down to child groups
 
-            % Now create the associated coordinate variable
             if isempty(value)
                 ncType = options.ncType;
+                isComplex = options.isComplex;
             else
                 ncType = NetCDFVariable.netCDFTypeForData(value);
+                isComplex = ~isreal(value);
             end
-            var = NetCDFVariable(self,name=name,dimensions=dim,attributes=options.attributes,type=ncType);
-            self.addVariablePrimitive(var);
-            if ~isempty(value)
-                var.value = value;
-            end
-
-            % TODO: This needs to pass this down to child groups
+            var = self.addVariable(name,value,{dim.name},ncType=ncType,isComplex=isComplex,attributes=options.attributes);           
         end
 
-        function addVariable(self,name,value,dimNames,options)
+        function var = addVariable(self,name,value,dimNames,options)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 name string {mustBeNonempty}
                 value = []
                 dimNames = {}
-                options.length = 0
                 options.ncType char = []
-                options.attributes containers.Map = containers.Map(KeyType='double',ValueType='any');
+                options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
+                options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
             if isKey(self.variableNameMap,name)
-                error('A dimension with that name already exists.');
+                error('A variable with that name already exists.');
             end
-            if ~( (options.length > 0 && ~isempty(options.ncType)) || ~isempty(value))
-                error('You must specify either the value of the data, or the length and data type (ncType).');
+            if ~( (~isempty(options.ncType) && ~isempty(options.isComplex)) || ~isempty(value))
+                error('You must specify either the value of the data, or the ncType and isComplex.');
             end
 
             if isempty(value)
                 ncType = options.ncType;
+                isComplex = options.isComplex;
             else
                 ncType = NetCDFVariable.netCDFTypeForData(value);
+                isComplex = ~isreal(value);
             end
-            var = NetCDFVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
-            self.addVariablePrimitive(var);
+
+            if isComplex==1
+                var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
+                self.addVariablePrimitive(var.real);
+                self.addVariablePrimitive(var.imag);
+                self.addComplexVariablePrimitive(var);
+            else
+                var = NetCDFVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
+                self.addVariablePrimitive(var);
+
+            end
             if ~isempty(value)
                 var.value = value;
             end
+
         end
 
         function addDimensionPrimitive(self,dimension)
@@ -237,12 +270,38 @@ classdef NetCDFGroup < handle
         function addVariablePrimitive(self,variable)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
-                variable (1,1) NetCDFVariable {mustBeNonempty}
+                variable (:,1) NetCDFRealVariable {mustBeNonempty}
             end
-            self.variables(end+1) = variable;
+            for iVar=1:length(variable)
+                self.variables(end+1) = variable(iVar);
+                self.variableIDMap(variable.id) = variable(iVar);
+                self.variableNameMap(variable.name) = variable(iVar);
+            end
             self.variables = reshape(self.variables,[],1);
-            self.variableIDMap(variable.id) = variable;
-            self.variableNameMap(variable.name) = variable;
+        end
+
+        function removeVariablePrimitive(self,variable)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                variable (:,1) NetCDFRealVariable {mustBeNonempty}
+            end
+            for iVar=1:length(variable)
+                self.variables(self.variables==variable(iVar)) = [];
+                self.variableIDMap(variable(iVar).id) = [];
+                self.variableNameMap(variable(iVar).name) = [];
+            end
+        end
+
+        function addComplexVariablePrimitive(self,variable)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                variable (:,1) NetCDFComplexVariable
+            end
+            for iVar=1:length(variable)
+                self.complexVariables(end+1) = variable(iVar);
+                self.complexVariableNameMap(variable(iVar).name) = variable(iVar);
+            end
+            self.complexVariables = reshape(self.complexVariables,[],1);
         end
 
         function addGroupPrimitive(self,group)
@@ -286,7 +345,7 @@ classdef NetCDFGroup < handle
         end
 
 
-        % key-value Map to retrieve a NetCDFVariable object by name
+        % key-value Map to retrieve a NetCDFRealVariable object by name
         % - Topic: Working with variables
         function v = variableWithName(self,name)
             v = self.variableNameMap(name);
@@ -359,12 +418,12 @@ classdef NetCDFGroup < handle
                 fprintf('\n%scomplex variables: \n',indent1);
                 for iVar=1:length(self.complexVariables)
                     variable = self.complexVariables(iVar);
-                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.realVar.type),variable.name);
-                    for iDim=1:length(variable.realVar.dimensions)
-                        if iDim==length(variable.realVar.dimensions)
-                            fprintf('%s',variable.realVar.dimensions(iDim).name);
+                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.real.type),variable.name);
+                    for iDim=1:length(variable.real.dimensions)
+                        if iDim==length(variable.real.dimensions)
+                            fprintf('%s',variable.real.dimensions(iDim).name);
                         else
-                            fprintf('%s,',variable.realVar.dimensions(iDim).name);
+                            fprintf('%s,',variable.real.dimensions(iDim).name);
                         end
                     end
                     fprintf(')\n');
