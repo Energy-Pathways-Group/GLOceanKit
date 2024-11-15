@@ -224,7 +224,7 @@ classdef NetCDFGroup < handle
                 options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
-            if isKey(self.realVariableNameMap,name)
+            if isKey(self.realVariableNameMap,name) || isKey(self.complexVariableNameMap,name)
                 error('A variable with that name already exists.');
             end
             if ~( (~isempty(options.type) && ~isempty(options.isComplex)) || ~isempty(value))
@@ -247,6 +247,38 @@ classdef NetCDFGroup < handle
                 var.value = value;
             end
 
+        end
+
+        function varargout = readVariables(self,variableNames)
+            % read variables from file
+            %
+            % Pass a list of variables to read and the data will be
+            % returned in the same order.
+            %
+            % ```matlab
+            % [x,y] = ncfile.readVariables('x','y');
+            % ```
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = readVariables(variableNames)
+            % - Parameter variableNames: (repeating) list of variable names
+            % - Returns varargout: (repeating) list of variable data
+            arguments
+                self NetCDFFile {mustBeNonempty}
+            end
+            arguments (Repeating)
+                variableNames char
+            end
+            varargout = cell(size(variableNames));
+            for iArg=1:length(variableNames)
+                if isKey(self.complexVariableNameMap,variableNames{iArg})
+                    varargout{iArg} = self.complexVariableNameMap(variableNames{iArg}).value;
+                elseif isKey(self.realVariableNameMap,variableNames{iArg})
+                    varargout{iArg} = self.realVariableNameMap(variableNames{iArg}).value;
+                else
+                    error('Unable to find a variable with the name %s',variableNames{iArg});
+                end
+            end
         end
 
         function addDimensionPrimitive(self,dimension)

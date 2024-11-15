@@ -18,5 +18,5 @@ ncfile.addVariable('b',logical(b),{'x'});
 ncfile.close();
 
 %%
-ncfile = NetCDFFile(path);
+ncfile = NetCDFFile("test.nc");
 a_back = ncfile.readVariables('a');
