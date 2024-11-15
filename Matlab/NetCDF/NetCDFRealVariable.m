@@ -211,11 +211,11 @@ classdef NetCDFRealVariable < NetCDFVariable
             % dimension).
             %
             % ```matlab
-            % variable.concatenateValueAlongDimensionAtIndex(data,dim,outputIndex);
+            % variable.setValueAlongDimensionAtIndex(data,dimensionName,index);
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: concatenateValueAlongDimensionAtIndex(data,dimension,index)
+            % - Declaration: setValueAlongDimensionAtIndex(data,dimension,index)
             % - Parameter data: variable data
             % - Parameter dimension: the variable dimension along which to concatenate
             % - Parameter index: index at which to write data
@@ -226,8 +226,8 @@ classdef NetCDFRealVariable < NetCDFVariable
                 index {mustBeNonnegative}
             end
             dimension = self.group.dimensionWithName(dimensionName);
-            if dimension.isMutable ~= 1
-                error('Cannot concatenate along a dimension that is not mutable');
+            if dimension.nPoints < index && dimension.isMutable ~= 1
+                error('Cannot increase the length of a dimension that is not mutable');
             end
 
             start = zeros(1,length(self.dimensions));
@@ -242,6 +242,9 @@ classdef NetCDFRealVariable < NetCDFVariable
                 end
             end
             netcdf.putVar(self.group.id, self.id, start, count, data);
+            if dimension.isMutable
+                dimension.updateLength;
+            end
         end
 
 

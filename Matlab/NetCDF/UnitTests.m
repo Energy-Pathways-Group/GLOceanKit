@@ -7,12 +7,12 @@ ncfile.addDimension('x',x);
 
 %%
 a = 4*x + sqrt(-1)*2*x;
-ncfile.addVariable('a',a,{'x'});
+ncfile.addVariable('a',{'x'},a);
 
 %%
 b = zeros(size(x));
 b(2) = 1;
-ncfile.addVariable('b',logical(b),{'x'});
+ncfile.addVariable('b',{'x'},logical(b));
 
 %%
 ncfile.close();

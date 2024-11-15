@@ -162,7 +162,7 @@ classdef NetCDFGroup < handle
         function [dim,var] = addDimension(self,name,value,options)
             % add a new dimension to the group
             %
-            % This function add both a dimension and an associated
+            % This function adds both a dimension and an associated
             % coordinate variable.
             %
             % You may initialize directly with data, e.g.,
@@ -176,8 +176,9 @@ classdef NetCDFGroup < handle
             % variable, e.g.,
             %
             % ```matlab
-            % ncfile.addDimension('t',length=10,ncType='double',isComplex=0);
+            % ncfile.addDimension('t',length=10,type='double');
             % ```
+            %
             % which may be useful when initializing an unlimited
             % dimension. In this case you may also want to specify whether
             % or not the variable will be complex valued (it will default
@@ -188,14 +189,13 @@ classdef NetCDFGroup < handle
                 value = []
                 options.length = 0
                 options.type char = []
-                options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
             if isKey(self.dimensionNameMap,name) || isKey(self.realVariableNameMap,name)
                 error('A dimension with that name already exists.');
             end
-            if ~( (options.length > 0 && ~isempty(options.type) && ~isempty(options.isComplex)) || ~isempty(value))
-                error('You must specify either the value of the data, or the length, type and isComplex.');
+            if ~( (options.length > 0 && ~isempty(options.type)) || ~isempty(value))
+                error('You must specify either the value of the data, or the length and type.');
             end
 
             if ~isempty(value)
@@ -211,15 +211,37 @@ classdef NetCDFGroup < handle
                 options.type = class(value);
                 options.isComplex = ~isreal(value);
             end
-            var = self.addVariable(name,value,{dim.name},type=options.type,isComplex=options.isComplex,attributes=options.attributes);           
+            var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=0,attributes=options.attributes);           
         end
 
-        function var = addVariable(self,name,value,dimNames,options)
+        function var = addVariable(self,name,dimNames,value,options)
+            % add a new (real or complex) variable to the file
+            %
+            % Immediately initializes and writes the given variable data to
+            % file, e.g.,
+            %
+            % ```matlab
+            % ncfile.addVariable('fluid-tracer', {'x','y','t'}, myVariableData);
+            % ```
+            %
+            % or intializes an variable without setting the data,
+            % ```matlab
+            % ncfile.addVariable('fluid-tracer', {'x','y','t'}, myVariableData);
+            % ```
+            %
+            % - Topic: Working with variables
+            % - Declaration: variable = addVariable(name,data,dimNames,properties,ncType)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter data: variable data
+            % - Parameter dimNames: cell array containing the dimension names
+            % - Parameter properties: (optional) `containers.Map`
+            % - Parameter properties: ncType
+            % - Returns variable: a NetCDFVariable object
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 name {mustBeText}
-                value = []
                 dimNames = {}
+                value {mustBeNumericOrLogical} = [] 
                 options.type char = []
                 options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
@@ -275,6 +297,42 @@ classdef NetCDFGroup < handle
                     varargout{iArg} = self.complexVariableNameMap(variableNames{iArg}).value;
                 elseif isKey(self.realVariableNameMap,variableNames{iArg})
                     varargout{iArg} = self.realVariableNameMap(variableNames{iArg}).value;
+                else
+                    error('Unable to find a variable with the name %s',variableNames{iArg});
+                end
+            end
+        end
+
+        function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,variableNames)
+            % read variables from file at a particular index (e.g., time)
+            %
+            % Pass a list of variables to read and the data will be
+            % returned in the same order.
+            %
+            % ```matlab
+            % [u,v] = ncfile.readVariablesAtIndexAlongDimension('t',100,'u','v');
+            % ```
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = readVariables(variableNames)
+            % - Parameter dimName: name of the dimension, character string
+            % - Parameter index: index at which to read the data, positive integer
+            % - Parameter variableNames: (repeating) list of variable names
+            % - Returns varargout: (repeating) list of variable data
+            arguments
+                self NetCDFFile {mustBeNonempty}
+                dimName char {mustBeNonempty}
+                index  (1,1) double {mustBePositive} = 1
+            end
+            arguments (Repeating)
+                variableNames char
+            end
+            varargout = cell(size(variableNames));
+            for iArg=1:length(variableNames)
+                if isKey(self.complexVariableNameMap,variableNames{iArg})
+                    varargout{iArg} = self.complexVariableNameMap(variableNames{iArg}).valueAlongDimensionAtIndex(dimName,index);
+                elseif isKey(self.realVariableNameMap,variableNames{iArg})
+                    varargout{iArg} = self.realVariableNameMap(variableNames{iArg}).valueAlongDimensionAtIndex(dimName,index);
                 else
                     error('Unable to find a variable with the name %s',variableNames{iArg});
                 end
@@ -338,16 +396,6 @@ classdef NetCDFGroup < handle
             self.groups = reshape(self.groups,[],1);
             self.groupIDMap(group.id) = group;
             self.groupNameMap(group.name) = group;
-        end
-
-
-        function variable = initVariable(self,name,dimNames,attributes,ncType)
-            if isKey(self.realVariableNameMap,name)
-                error('A variable with that name already exists.');
-            end
-
-            dims = self.dimensionWithName(dimNames);
-
         end
 
         % key-value Map to retrieve a NetCDFDimension object by name

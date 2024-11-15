@@ -36,7 +36,7 @@ classdef NetCDFDimension < handle
             arguments
                 group (1,1) NetCDFGroup
                 options.name string
-                options.nPoints (1,1) double {mustBeNonnegative,mustBeInteger}
+                options.nPoints (1,1) double {mustBeNonnegative}
                 options.id (1,1) double
             end
             if isfield(options,'id')
@@ -93,6 +93,10 @@ classdef NetCDFDimension < handle
                 self.nPoints = nPoints;
                 self.id = netcdf.defDim(self.group.id, name, self.nPoints);
             end 
+        end
+
+        function updateLength(self)
+            [~,self.nPoints] = netcdf.inqDim(self.group.id,self.id);
         end
 
     end
