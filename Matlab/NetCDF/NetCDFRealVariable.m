@@ -35,12 +35,13 @@ classdef NetCDFRealVariable < NetCDFVariable
             % other required parameters
             %
             % ```matlab
-            % aVariable = NetCDFVariable(group,name=aName,attributes=someAttributes,type='NC_DOUBLE');
+            % aVariable = NetCDFVariable(group,name=aName,attributes=someAttributes,type='double');
             % ```
             %
+            % class(data)
             arguments
                 group (1,1) NetCDFGroup
-                options.name string
+                options.name {mustBeText}
                 options.dimensions (:,1) NetCDFDimension
                 options.attributes containers.Map = containers.Map
                 options.type string
@@ -73,7 +74,7 @@ classdef NetCDFRealVariable < NetCDFVariable
             self.attributes = containers.Map;
 
             [self.name, xtype, dimids, numatts] = netcdf.inqVar(group.id,id);
-            self.type = NetCDFVariable.typeStringForTypeID(xtype);
+            self.type = NetCDFVariable.matlabTypeForNetCDFType(NetCDFVariable.typeStringForTypeID(xtype));
             
             for iAtt=0:(numatts-1)
                 gattname = netcdf.inqAttName(group.id,id,iAtt);
@@ -93,7 +94,7 @@ classdef NetCDFRealVariable < NetCDFVariable
             % which will both initialize and then set. The reason to
             %
             % ```matlab
-            % ncfile.initVariable('fluid-tracer', {'x','y','t'},'NC_DOUBLE',containers.Map({'isTracer'},{'1'}));
+            % ncfile.initVariable('fluid-tracer', {'x','y','t'},'double',containers.Map({'isTracer'},{'1'}));
             % ncfile.setVariable('fluid-tracer',myVariable);
             % ```
             %
@@ -107,17 +108,20 @@ classdef NetCDFRealVariable < NetCDFVariable
             arguments
                 self (1,1) NetCDFRealVariable {mustBeNonempty}
                 group (1,1) NetCDFGroup {mustBeNonempty}
-                name char {mustBeNonempty}
+                name {mustBeText}
                 dimensions (:,1) NetCDFDimension
-                % dimNames (:,1) cell
-                type string {mustBeNonempty}
+                type string {mustBeMember(type,["double" "single" "int64" "uint64" "int32" "uint32" "int16" "uint16" "int8" "uint8" "char" "string" "logical"])}
                 attributes containers.Map = containers.Map(KeyType='char',ValueType='any')         
             end
             self.group = group;
-            self.dimensions = dimensions; %group.dimensionWithName(dimNames);
-            self.id = netcdf.defVar(group.id, name, type, [self.dimensions.id]);
+            self.dimensions = dimensions;
+            self.id = netcdf.defVar(group.id, name, NetCDFVariable.ncTypeForMatlabType(type), [self.dimensions.id]);
             self.name = name;
             self.type = type;
+
+            if strcmp(type,"logical")
+                attributes(NetCDFVariable.GLNetCDFSchemaIsLogicalTypeKey) = uint8(1);
+            end
 
             keyNames = keys(attributes);
             for iKey = 1:length(keyNames)
@@ -155,6 +159,9 @@ classdef NetCDFRealVariable < NetCDFVariable
                     value=reshape(value,[],1);
                 end
             end
+            if isKey(self.attributes,self.GLNetCDFSchemaIsLogicalTypeKey) && self.attributes(self.GLNetCDFSchemaIsLogicalTypeKey) == 1
+                value = logical(value);
+            end
         end
 
         function set.value(self,data)
@@ -166,6 +173,9 @@ classdef NetCDFRealVariable < NetCDFVariable
                 if (length(self.dimensions)==1 && length(data) ~= self.dimensions(iDim).nPoints) || (length(self.dimensions)~=1 && size(data,iDim) ~= self.dimensions(iDim).nPoints)
                     error('Incorrect dimension size: dimension %d of the data of %s is length %d, but the dimension %s has length %d.',iDim,self.name,size(data,iDim),self.dimensions(iDim).name,self.dimensions(iDim).nPoints);
                 end
+            end
+            if isKey(self.attributes,self.GLNetCDFSchemaIsLogicalTypeKey) && self.attributes(self.GLNetCDFSchemaIsLogicalTypeKey) == 1
+                data = uint8(data);
             end
             netcdf.putVar(self.group.id, self.id, data);
             if isvector(data)

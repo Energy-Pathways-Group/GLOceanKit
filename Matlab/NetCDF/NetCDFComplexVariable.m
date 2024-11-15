@@ -3,8 +3,8 @@ classdef NetCDFComplexVariable < NetCDFVariable
     %   Detailed explanation goes here
 
     properties
-        real
-        imag
+        realp NetCDFRealVariable
+        imagp NetCDFRealVariable
     end
 
     properties (Dependent)
@@ -14,22 +14,22 @@ classdef NetCDFComplexVariable < NetCDFVariable
     methods
         function self = NetCDFComplexVariable(options)
             arguments
-                options.real NetCDFVariable = []
-                options.imag NetCDFVariable = []
+                options.real NetCDFRealVariable
+                options.imag NetCDFRealVariable
                 options.group (1,1) NetCDFGroup
-                options.name string
+                options.name {mustBeText}
                 options.dimensions (:,1) NetCDFDimension
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
                 options.type string
             end
-            if ~isempty(options.real) && ~isempty(options.imag)
+            if isfield(options,'real') && isfield(options,'imag')
                 % this means we are initializing from file
                 self.name = options.name;
-                self.real = options.real;
-                self.imag = options.imag;
-                self.dimensions = self.real.dimensions;
-                self.type = self.real.type;
-                self.attributes = containers.Map(self.real.attributes.keys,self.real.attributes.values);
+                self.realp = options.real;
+                self.imagp = options.imag;
+                self.dimensions = self.realp.dimensions;
+                self.type = self.realp.type;
+                self.attributes = containers.Map(self.realp.attributes.keys,self.realp.attributes.values);
                 self.attributes.remove(NetCDFVariable.GLNetCDFSchemaIsComplexKey);
                 self.attributes.remove(NetCDFVariable.GLNetCDFSchemaIsRealPartKey);
                 self.attributes.remove(NetCDFVariable.GLNetCDFSchemaIsImaginaryPartKey);
@@ -47,18 +47,23 @@ classdef NetCDFComplexVariable < NetCDFVariable
                 self.type = options.type;
                 self.attributes = options.attributes;
 
-                % Now initialize!!, e.g.,
-                realAttributes = containers.Map(self.attributes.keys,self.attributes.values);
+                if self.attributes.Count > 0
+                    realAttributes = containers.Map(self.attributes.keys,self.attributes.values);
+                    imagAttributes = containers.Map(self.attributes.keys,self.attributes.values);
+                else
+                    realAttributes = containers.Map(KeyType='char',ValueType='any');
+                    imagAttributes = containers.Map(KeyType='char',ValueType='any');
+                end
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsComplexKey) = uint8(1);
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsRealPartKey) = uint8(1);
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsImaginaryPartKey) = uint8(0);
-                self.real =  NetCDFVariable(self,name=strcat(name,"_real"),dimensions=dims,attributes=realAttributes,type=self.type);
+                self.realp =  NetCDFRealVariable(self.group,name=strcat(options.name,"_real"),dimensions=options.dimensions,attributes=realAttributes,type=options.type);
 
-                imagAttributes = containers.Map(self.attributes.keys,self.attributes.values);
+                
                 imagAttributes(NetCDFVariable.GLNetCDFSchemaIsComplexKey) = uint8(1);
                 imagAttributes(NetCDFVariable.GLNetCDFSchemaIsRealPartKey) = uint8(0);
                 imagAttributes(NetCDFVariable.GLNetCDFSchemaIsImaginaryPartKey) = uint8(1);
-                self.imag =  NetCDFVariable(self,name=strcat(name,"_imag"),dimensions=dims,attributes=imagAttributes,type=ncType);
+                self.imagp =  NetCDFRealVariable(self.group,name=strcat(options.name,"_imag"),dimensions=options.dimensions,attributes=imagAttributes,type=options.type);
             end
         end
 
@@ -70,8 +75,8 @@ classdef NetCDFComplexVariable < NetCDFVariable
 
         function addAttribute(self,key,value)
             self.attributes(key) = value;
-            self.real.addAttribute(key,value);
-            self.imag.addAttribute(key,value);
+            self.realp.addAttribute(key,value);
+            self.imagp.addAttribute(key,value);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +89,7 @@ classdef NetCDFComplexVariable < NetCDFVariable
             arguments
                 self NetCDFComplexVariable
             end
-            value = complex(self.real.value,self.imag.value);
+            value = complex(self.realp.value,self.imagp.value);
         end
 
         function set.value(self,data)
@@ -92,8 +97,8 @@ classdef NetCDFComplexVariable < NetCDFVariable
                 self NetCDFComplexVariable {mustBeNonempty}
                 data {mustBeNonempty}
             end
-            self.real.value = real(data);
-            self.imag.value = imag(data);
+            self.realp.value = real(data);
+            self.imagp.value = imag(data);
         end
 
         function value = valueAlongDimensionAtIndex(self,dimensionName,index)
@@ -102,7 +107,7 @@ classdef NetCDFComplexVariable < NetCDFVariable
                 dimensionName char {mustBeNonempty}
                 index {mustBeNonnegative}
             end
-            value = complex(self.real.valueAlongDimensionAtIndex(dimensionName,index),self.imag.valueAlongDimensionAtIndex(dimensionName,index));
+            value = complex(self.realp.valueAlongDimensionAtIndex(dimensionName,index),self.imagp.valueAlongDimensionAtIndex(dimensionName,index));
         end
 
         function setValueAlongDimensionAtIndex(self,data,dimensionName,index)
@@ -126,8 +131,8 @@ classdef NetCDFComplexVariable < NetCDFVariable
                 dimensionName char {mustBeNonempty}
                 index {mustBeNonnegative}
             end
-            self.real.setValueAlongDimensionAtIndex(real(data),dimensionName,index);
-            self.imag.setValueAlongDimensionAtIndex(imag(data),dimensionName,index);
+            self.realp.setValueAlongDimensionAtIndex(real(data),dimensionName,index);
+            self.imagp.setValueAlongDimensionAtIndex(imag(data),dimensionName,index);
         end
     end
 

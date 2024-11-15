@@ -52,8 +52,8 @@ classdef NetCDFGroup < handle
     properties (Access=private)
         dimensionIDMap
         dimensionNameMap
-        variableIDMap
-        variableNameMap
+        realVariableIDMap
+        realVariableNameMap
         complexVariableNameMap
         groupIDMap
         groupNameMap
@@ -91,8 +91,8 @@ classdef NetCDFGroup < handle
             self.dimensionIDMap = configureDictionary('double','NetCDFDimension');
             self.dimensionNameMap = configureDictionary('string','NetCDFDimension');
 
-            self.variableIDMap = configureDictionary('double','NetCDFRealVariable');
-            self.variableNameMap = configureDictionary('string','NetCDFRealVariable');
+            self.realVariableIDMap = configureDictionary('double','NetCDFRealVariable');
+            self.realVariableNameMap = configureDictionary('string','NetCDFRealVariable');
             self.complexVariableNameMap = configureDictionary('string','NetCDFComplexVariable');
 
             self.groupIDMap = configureDictionary('double','NetCDFGroup');
@@ -133,7 +133,7 @@ classdef NetCDFGroup < handle
             % Fetch all variables and convert to NetCDFRealVariable objects
             variableIDs = netcdf.inqVarIDs(self.id);
             for iVar=1:length(variableIDs)
-                self.addVariablePrimitive(NetCDFRealVariable(self,id=variableIDs(iVar)));
+                self.addRealVariablePrimitive(NetCDFRealVariable(self,id=variableIDs(iVar)));
             end
 
             % Grab all the global attributes
@@ -145,7 +145,9 @@ classdef NetCDFGroup < handle
 
             % Now check to see if any variables form a complex variable
             self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.variables));
-            self.removeVariablePrimitive([self.complexVariables.real self.complexVariables.imag]);
+            if ~isempty(self.complexVariables)
+                self.removeVariablePrimitive([self.complexVariables.realp self.complexVariables.imagp]);
+            end
 
             groupIDs = netcdf.inqGrps(self.id);
             for iGrp=1:length(groupIDs)
@@ -182,18 +184,18 @@ classdef NetCDFGroup < handle
             % to assuming the variable will be real valued).
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
-                name string {mustBeNonempty}
+                name {mustBeText}
                 value = []
                 options.length = 0
-                options.ncType char = []
+                options.type char = []
                 options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
-            if isKey(self.dimensionNameMap,name) || isKey(self.variableNameMap,name)
+            if isKey(self.dimensionNameMap,name) || isKey(self.realVariableNameMap,name)
                 error('A dimension with that name already exists.');
             end
-            if ~( (options.length > 0 && ~isempty(options.ncType) && ~isempty(options.isComplex)) || ~isempty(value))
-                error('You must specify either the value of the data, or the length, ncType and isComplex.');
+            if ~( (options.length > 0 && ~isempty(options.type) && ~isempty(options.isComplex)) || ~isempty(value))
+                error('You must specify either the value of the data, or the length, type and isComplex.');
             end
 
             if ~isempty(value)
@@ -205,50 +207,41 @@ classdef NetCDFGroup < handle
             self.addDimensionPrimitive(dim)
             % TODO: This needs to pass this down to child groups
 
-            if isempty(value)
-                ncType = options.ncType;
-                isComplex = options.isComplex;
-            else
-                ncType = NetCDFVariable.netCDFTypeForData(value);
-                isComplex = ~isreal(value);
+            if ~isempty(value)
+                options.type = class(value);
+                options.isComplex = ~isreal(value);
             end
-            var = self.addVariable(name,value,{dim.name},ncType=ncType,isComplex=isComplex,attributes=options.attributes);           
+            var = self.addVariable(name,value,{dim.name},type=options.type,isComplex=options.isComplex,attributes=options.attributes);           
         end
 
         function var = addVariable(self,name,value,dimNames,options)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
-                name string {mustBeNonempty}
+                name {mustBeText}
                 value = []
                 dimNames = {}
-                options.ncType char = []
+                options.type char = []
                 options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
-            if isKey(self.variableNameMap,name)
+            if isKey(self.realVariableNameMap,name)
                 error('A variable with that name already exists.');
             end
-            if ~( (~isempty(options.ncType) && ~isempty(options.isComplex)) || ~isempty(value))
+            if ~( (~isempty(options.type) && ~isempty(options.isComplex)) || ~isempty(value))
                 error('You must specify either the value of the data, or the ncType and isComplex.');
             end
 
-            if isempty(value)
-                ncType = options.ncType;
-                isComplex = options.isComplex;
-            else
-                ncType = NetCDFVariable.netCDFTypeForData(value);
-                isComplex = ~isreal(value);
+            if ~isempty(value)
+                options.type = class(value);
+                options.isComplex = ~isreal(value);
             end
 
-            if isComplex==1
-                var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
-                self.addVariablePrimitive(var.real);
-                self.addVariablePrimitive(var.imag);
+            if options.isComplex==1
+                var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=options.type);
                 self.addComplexVariablePrimitive(var);
             else
-                var = NetCDFVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=ncType);
-                self.addVariablePrimitive(var);
-
+                var = NetCDFRealVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=options.type);
+                self.addRealVariablePrimitive(var);
             end
             if ~isempty(value)
                 var.value = value;
@@ -267,15 +260,15 @@ classdef NetCDFGroup < handle
             self.dimensionNameMap(dimension.name) = dimension;
         end
 
-        function addVariablePrimitive(self,variable)
+        function addRealVariablePrimitive(self,variable)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 variable (:,1) NetCDFRealVariable {mustBeNonempty}
             end
             for iVar=1:length(variable)
                 self.variables(end+1) = variable(iVar);
-                self.variableIDMap(variable.id) = variable(iVar);
-                self.variableNameMap(variable.name) = variable(iVar);
+                self.realVariableIDMap(variable.id) = variable(iVar);
+                self.realVariableNameMap(variable.name) = variable(iVar);
             end
             self.variables = reshape(self.variables,[],1);
         end
@@ -283,12 +276,12 @@ classdef NetCDFGroup < handle
         function removeVariablePrimitive(self,variable)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
-                variable (:,1) NetCDFRealVariable {mustBeNonempty}
+                variable (:,1) NetCDFRealVariable
             end
             for iVar=1:length(variable)
                 self.variables(self.variables==variable(iVar)) = [];
-                self.variableIDMap(variable(iVar).id) = [];
-                self.variableNameMap(variable(iVar).name) = [];
+                self.realVariableIDMap(variable(iVar).id) = [];
+                self.realVariableNameMap(variable(iVar).name) = [];
             end
         end
 
@@ -317,7 +310,7 @@ classdef NetCDFGroup < handle
 
 
         function variable = initVariable(self,name,dimNames,attributes,ncType)
-            if isKey(self.variableNameMap,name)
+            if isKey(self.realVariableNameMap,name)
                 error('A variable with that name already exists.');
             end
 
@@ -348,7 +341,7 @@ classdef NetCDFGroup < handle
         % key-value Map to retrieve a NetCDFRealVariable object by name
         % - Topic: Working with variables
         function v = variableWithName(self,name)
-            v = self.variableNameMap(name);
+            v = self.realVariableNameMap(name);
         end
 
 
@@ -393,7 +386,7 @@ classdef NetCDFGroup < handle
                 fprintf('\n%svariables: \n',indent1);
                 for iVar=1:length(self.variables)
                     variable = self.variables(iVar);
-                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.type),variable.name);
+                    fprintf('%s%s %s(',indent2,variable.type,variable.name);
                     for iDim=1:length(variable.dimensions)
                         if iDim==length(variable.dimensions)
                             fprintf('%s',variable.dimensions(iDim).name);
@@ -418,24 +411,24 @@ classdef NetCDFGroup < handle
                 fprintf('\n%scomplex variables: \n',indent1);
                 for iVar=1:length(self.complexVariables)
                     variable = self.complexVariables(iVar);
-                    fprintf('%s%s %s(',indent2,NetCDFVariable.matlabTypeForNetCDFType(variable.real.type),variable.name);
-                    for iDim=1:length(variable.real.dimensions)
-                        if iDim==length(variable.real.dimensions)
-                            fprintf('%s',variable.real.dimensions(iDim).name);
+                    fprintf('%s%s %s(',indent2,variable.type,variable.name);
+                    for iDim=1:length(variable.dimensions)
+                        if iDim==length(variable.dimensions)
+                            fprintf('%s',variable.dimensions(iDim).name);
                         else
-                            fprintf('%s,',variable.real.dimensions(iDim).name);
+                            fprintf('%s,',variable.dimensions(iDim).name);
                         end
                     end
                     fprintf(')\n');
-                    % for attName = string(variable.attributes.keys)
-                    %     if isa(variable.attributes(attName),'char') || isa(variable.attributes(attName),'string')
-                    %         fprintf('%s%s = \"%s\"\n',indent3,attName,variable.attributes(attName));
-                    %     elseif isa(variable.attributes(attName),'double') || isa(variable.attributes(attName),'single')
-                    %         fprintf('%s%s = %f\n',indent3,attName,variable.attributes(attName));
-                    %     else
-                    %         fprintf('%s%s = %d\n',indent3,attName,variable.attributes(attName));
-                    %     end
-                    % end
+                    for attName = string(variable.attributes.keys)
+                        if isa(variable.attributes(attName),'char') || isa(variable.attributes(attName),'string')
+                            fprintf('%s%s = \"%s\"\n',indent3,attName,variable.attributes(attName));
+                        elseif isa(variable.attributes(attName),'double') || isa(variable.attributes(attName),'single')
+                            fprintf('%s%s = %f\n',indent3,attName,variable.attributes(attName));
+                        else
+                            fprintf('%s%s = %d\n',indent3,attName,variable.attributes(attName));
+                        end
+                    end
                 end
             end
 
