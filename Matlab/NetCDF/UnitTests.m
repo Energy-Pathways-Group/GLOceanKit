@@ -15,6 +15,9 @@ b(2) = 1;
 ncfile.addVariable('b',{'x'},logical(b));
 
 %%
+ncfile.addGroup("group-a");
+
+%%
 ncfile.close();
 
 %%

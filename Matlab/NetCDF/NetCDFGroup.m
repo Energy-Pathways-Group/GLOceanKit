@@ -112,6 +112,7 @@ classdef NetCDFGroup < handle
         end
 
         function initializeGroupFromFile(self,parentGroup,id)
+            % initialize an existing group from file
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 parentGroup
@@ -155,8 +156,29 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function initGroup(parentGroup, name)
+        function initGroup(self,parentGroup, name)
+            % initialize a new group
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty} 
+                parentGroup (1,1) NetCDFGroup {mustBeNonempty} 
+                name string {mustBeText}
+            end
+            self.parentGroup = parentGroup;
+            self.name = name;
+            self.id = netcdf.defGrp(self.parentGroup.id,self.name);
+            self.addDimensionPrimitive(self.parentGroup.dimensions);
+        end
 
+        function grp = addGroup(self, name)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty} 
+                name string {mustBeText}
+            end
+            if isKey(self.groupNameMap,name)
+                error('A group with that name already exists.');
+            end
+            grp = NetCDFGroup(parentGroup=self,name=name);
+            self.addGroupPrimitive(grp);
         end
 
         function [dim,var] = addDimension(self,name,value,options)
@@ -342,12 +364,14 @@ classdef NetCDFGroup < handle
         function addDimensionPrimitive(self,dimension)
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
-                dimension (1,1) NetCDFDimension {mustBeNonempty}
+                dimension (:,1) NetCDFDimension {mustBeNonempty}
             end
-            self.dimensions(end+1) = dimension;
+            for iDim=1:length(dimension)
+                self.dimensions(end+1) = dimension(iDim);
+                self.dimensionIDMap(dimension.id) = dimension(iDim);
+                self.dimensionNameMap(dimension.name) = dimension(iDim);
+            end
             self.dimensions = reshape(self.dimensions,[],1);
-            self.dimensionIDMap(dimension.id) = dimension;
-            self.dimensionNameMap(dimension.name) = dimension;
         end
 
         function addRealVariablePrimitive(self,variable)
