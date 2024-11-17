@@ -1,4 +1,15 @@
 classdef NetCDFGroup < handle
+    % A group of NetCDF variables and dimensions
+    %
+    %
+    % - Topic: Initializing
+    % - Topic: Accessing group properties
+    % - Topic: Working with dimensions
+    % - Topic: Working with variables
+    % - Topic: Working with groups
+    % - Topic: Working with global attributes
+    %
+    % - Declaration: classdef NetCDFGroup < handle
     properties
         % id of the group
         % - Topic: Accessing group properties
@@ -8,6 +19,8 @@ classdef NetCDFGroup < handle
         % - Topic: Accessing group properties
         name
 
+        % parent group (may be nil)
+        % - Topic: Accessing group properties
         parentGroup
 
         % array of NetCDFGroup objects
@@ -30,10 +43,10 @@ classdef NetCDFGroup < handle
         % - Topic: Working with variables
         variables
 
-        % key-value Map of global attributes
+        % key-value Map of group attributes
         %
         % A `containers.Map` type that contains the key-value pairs of all
-        % global attributes in the NetCDF file. This is intended to be
+        % attributes for this group. This is intended to be
         % *read only*. If you need to add a new attribute to file, use
         % [`addAttribute`](#addattribute).
         %
@@ -65,8 +78,6 @@ classdef NetCDFGroup < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        % TODO: complete initialization process, pass parentID?
 
         function self = NetCDFGroup(options)
             % NetCDFGroup
@@ -111,74 +122,29 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function initializeGroupFromFile(self,parentGroup,id)
-            % initialize an existing group from file
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                parentGroup
-                id (1,1) double {mustBeNonnegative,mustBeInteger}
-            end
-            self.id = id;
-            self.parentGroup = parentGroup;
-            self.name = netcdf.inqGrpName(self.id);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Dimensions
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            % Fetch all dimensions and convert to NetCDFDimension objects
-            if ~isempty(self.parentGroup)
-                self.addDimensionPrimitive(self.parentGroup.dimensions);
-            end
-            dimensionIDs = netcdf.inqDimIDs(self.id);
-            for iDim=1:length(dimensionIDs)
-                self.addDimensionPrimitive(NetCDFDimension(self,id=dimensionIDs(iDim)));
-            end
-
-            % Fetch all variables and convert to NetCDFRealVariable objects
-            variableIDs = netcdf.inqVarIDs(self.id);
-            for iVar=1:length(variableIDs)
-                self.addRealVariablePrimitive(NetCDFRealVariable(self,id=variableIDs(iVar)));
-            end
-
-            % Grab all the global attributes
-            [~,~,ngatts,~] = netcdf.inq(self.id);
-            for iAtt=0:(ngatts-1)
-                gattname = netcdf.inqAttName(self.id,netcdf.getConstant('NC_GLOBAL'),iAtt);
-                self.attributes(gattname) = netcdf.getAtt(self.id,netcdf.getConstant('NC_GLOBAL'),gattname);
-            end
-
-            % Now check to see if any variables form a complex variable
-            self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.variables));
-            if ~isempty(self.complexVariables)
-                self.removeVariablePrimitive([self.complexVariables.realp self.complexVariables.imagp]);
-            end
-
-            groupIDs = netcdf.inqGrps(self.id);
-            for iGrp=1:length(groupIDs)
-                self.addGroupPrimitive(NetCDFGroup(parentGroup=self,id=groupIDs(iGrp)));
-            end
+        function dims = dimensionWithName(self,name)
+            % retrieve a NetCDFDimension object by name
+            %
+            % Usage
+            % ```matlab
+            % xDim = ncfile.dimensionWithName('x');
+            % ```
+            %
+            % - Topic: Working with dimensions
+            dims = self.dimensionNameMap(name);
         end
 
-        function initGroup(self,parentGroup, name)
-            % initialize a new group
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty} 
-                parentGroup (1,1) NetCDFGroup {mustBeNonempty} 
-                name string {mustBeText}
-            end
-            self.parentGroup = parentGroup;
-            self.name = name;
-            self.id = netcdf.defGrp(self.parentGroup.id,self.name);
-            self.addDimensionPrimitive(self.parentGroup.dimensions);
-        end
-
-        function grp = addGroup(self, name)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty} 
-                name string {mustBeText}
-            end
-            if isKey(self.groupNameMap,name)
-                error('A group with that name already exists.');
-            end
-            grp = NetCDFGroup(parentGroup=self,name=name);
-            self.addGroupPrimitive(grp);
+        function dims = dimensionWithID(self,dimids)
+            % return the dimension IDs given the dimension names
+            %
+            % - Topic: Working with dimensions
+            dims = self.dimensionIDMap(dimids);
         end
 
         function [dim,var] = addDimension(self,name,value,options)
@@ -205,6 +171,15 @@ classdef NetCDFGroup < handle
             % dimension. In this case you may also want to specify whether
             % or not the variable will be complex valued (it will default
             % to assuming the variable will be real valued).
+            %
+            % - Topic: Working with dimensions
+            % - Declaration: [dim,var] = addDimension(name,value,options)
+            % - Parameter name: name of the dimension (a string)
+            % - Parameter value: (optional) value of the coordinate
+            % - Parameter type: (optional) data type, e.g., 'double'
+            % - Parameter length: (optional) length of the data, Inf, indicates an unlimited dimension
+            % - Parameter attributes: (optional) `containers.Map`
+            % - Returns variable: a NetCDFDimension and a NetCDFVariable object
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
                 name {mustBeText}
@@ -236,6 +211,12 @@ classdef NetCDFGroup < handle
             var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=0,attributes=options.attributes);           
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Variables
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function var = addVariable(self,name,dimNames,value,options)
             % add a new (real or complex) variable to the file
             %
@@ -248,16 +229,17 @@ classdef NetCDFGroup < handle
             %
             % or intializes an variable without setting the data,
             % ```matlab
-            % ncfile.addVariable('fluid-tracer', {'x','y','t'}, myVariableData);
+            % ncfile.addVariable('fluid-tracer', {'x','y','t'});
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: variable = addVariable(name,data,dimNames,properties,ncType)
+            % - Declaration: variable = addVariable(name,dimNames,value,options)
             % - Parameter name: name of the variable (a string)
-            % - Parameter data: variable data
             % - Parameter dimNames: cell array containing the dimension names
-            % - Parameter properties: (optional) `containers.Map`
-            % - Parameter properties: ncType
+            % - Parameter data: (optional) variable data
+            % - Parameter type: (optional) data type, e.g., 'double'
+            % - Parameter isComplex: (optional) boolean
+            % - Parameter attributes: (optional) `containers.Map`
             % - Returns variable: a NetCDFVariable object
             arguments
                 self (1,1) NetCDFGroup {mustBeNonempty}
@@ -293,56 +275,50 @@ classdef NetCDFGroup < handle
 
         end
 
-        function varargout = variable(self,variableNames)
+        function varargout = readVariable(self,variableNames)
             % read variables from file
             %
             % Pass a list of variables to read and the data will be
             % returned in the same order.
             %
             % ```matlab
-            % [x,y] = ncfile.variable('x','y');
+            % [x,y] = ncfile.readVariable('x','y');
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = variable(variableNames)
+            % - Declaration: varargout = readVariable(variableNames)
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
             arguments
-                self NetCDFFile {mustBeNonempty}
+                self NetCDFGroup {mustBeNonempty}
             end
             arguments (Repeating)
                 variableNames char
             end
             varargout = cell(size(variableNames));
             for iArg=1:length(variableNames)
-                if isKey(self.complexVariableNameMap,variableNames{iArg})
-                    varargout{iArg} = self.complexVariableNameMap(variableNames{iArg}).value;
-                elseif isKey(self.realVariableNameMap,variableNames{iArg})
-                    varargout{iArg} = self.realVariableNameMap(variableNames{iArg}).value;
-                else
-                    error('Unable to find a variable with the name %s',variableNames{iArg});
-                end
+                varargout{iArg} = self.variableWithName(variableNames{iArg}).value;
             end
         end
 
-        function varargout = variableAtIndexAlongDimension(self,dimName,index,variableNames)
+        function varargout = readVariableAtIndexAlongDimension(self,dimName,index,variableNames)
             % read variables from file at a particular index (e.g., time)
             %
             % Pass a list of variables to read and the data will be
             % returned in the same order.
             %
             % ```matlab
-            % [u,v] = ncfile.readVariablesAtIndexAlongDimension('t',100,'u','v');
+            % [u,v] = ncfile.readVariableAtIndexAlongDimension('t',100,'u','v');
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = readVariables(variableNames)
+            % - Declaration: varargout = readVariable(variableNames)
             % - Parameter dimName: name of the dimension, character string
             % - Parameter index: index at which to read the data, positive integer
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
             arguments
-                self NetCDFFile {mustBeNonempty}
+                self NetCDFGroup {mustBeNonempty}
                 dimName char {mustBeNonempty}
                 index  (1,1) double {mustBePositive} = 1
             end
@@ -351,114 +327,98 @@ classdef NetCDFGroup < handle
             end
             varargout = cell(size(variableNames));
             for iArg=1:length(variableNames)
-                if isKey(self.complexVariableNameMap,variableNames{iArg})
-                    varargout{iArg} = self.complexVariableNameMap(variableNames{iArg}).valueAlongDimensionAtIndex(dimName,index);
-                elseif isKey(self.realVariableNameMap,variableNames{iArg})
-                    varargout{iArg} = self.realVariableNameMap(variableNames{iArg}).valueAlongDimensionAtIndex(dimName,index);
+                varargout{iArg} = self.variableWithName(variableNames{iArg}).valueAlongDimensionAtIndex(dimName,index);
+            end
+        end
+
+        function var = variableWithName(self,variableName)
+            % return a variable with a given name
+            %
+            % Pass a variable name and the variable object will be
+            % returned.
+            %
+            % ```matlab
+            % var = ncfile.variable('x');
+            % ```
+            %
+            % var will be either NetCDFRealVariable or
+            % NetCDFComplexVariable.
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = variable(variableNames)
+            % - Parameter variableNames: variable name
+            % - Returns varargout: (repeating) variable objects
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+                variableName char
+            end
+            variablePath = split(variableName,"/");
+            if length(variablePath) > 1
+                grp = self;
+                for iGroup=1:(length(variablePath)-1)
+                    grp = grp.groupWithName(variablePath(iGroup));
+                end
+                var = grp.variableWithName(variablePath(end));
+            else
+                if isKey(self.complexVariableNameMap,variableName)
+                    var = self.complexVariableNameMap(variableName);
+                elseif isKey(self.realVariableNameMap,variableName)
+                    var = self.realVariableNameMap(variableName);
                 else
-                    error('Unable to find a variable with the name %s',variableNames{iArg});
+                    error('Unable to find a variable with the name %s',variableName);
                 end
             end
         end
 
-        function addDimensionPrimitive(self,dimension)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                dimension (:,1) NetCDFDimension {mustBeNonempty}
-            end
-            for iDim=1:length(dimension)
-                self.dimensions(end+1) = dimension(iDim);
-                self.dimensionIDMap(dimension.id) = dimension(iDim);
-                self.dimensionNameMap(dimension.name) = dimension(iDim);
-            end
-            self.dimensions = reshape(self.dimensions,[],1);
-        end
-
-        function addRealVariablePrimitive(self,variable)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                variable (:,1) NetCDFRealVariable {mustBeNonempty}
-            end
-            for iVar=1:length(variable)
-                self.variables(end+1) = variable(iVar);
-                self.realVariableIDMap(variable.id) = variable(iVar);
-                self.realVariableNameMap(variable.name) = variable(iVar);
-            end
-            self.variables = reshape(self.variables,[],1);
-        end
-
-        function removeVariablePrimitive(self,variable)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                variable (:,1) NetCDFRealVariable
-            end
-            for iVar=1:length(variable)
-                self.variables(self.variables==variable(iVar)) = [];
-                self.realVariableIDMap(variable(iVar).id) = [];
-                self.realVariableNameMap(variable(iVar).name) = [];
-            end
-        end
-
-        function addComplexVariablePrimitive(self,variable)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                variable (:,1) NetCDFComplexVariable
-            end
-            for iVar=1:length(variable)
-                self.complexVariables(end+1) = variable(iVar);
-                self.complexVariableNameMap(variable(iVar).name) = variable(iVar);
-            end
-            self.complexVariables = reshape(self.complexVariables,[],1);
-        end
-
-        function addGroupPrimitive(self,group)
-            arguments
-                self (1,1) NetCDFGroup {mustBeNonempty}
-                group (1,1) NetCDFGroup {mustBeNonempty}
-            end
-            self.groups(end+1) = group;
-            self.groups = reshape(self.groups,[],1);
-            self.groupIDMap(group.id) = group;
-            self.groupNameMap(group.name) = group;
-        end
-
-        % key-value Map to retrieve a NetCDFDimension object by name
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Usage
-        % ```matlab
-        % xDim = ncfile.dimensionWithName('x');
-        % ```
+        % Groups
         %
-        % - Topic: Working with dimensions
-        function dims = dimensionWithName(self,name)
-            dims = self.dimensionNameMap(name);
-        end
-
-        function dims = dimensionWithID(self,dimids)
-            % return the dimension IDs given the dimension names
-            %
-            % - Topic: Working with dimensions
-            dims = self.dimensionIDMap(dimids);
-        end
-
-
-        % key-value Map to retrieve a NetCDFRealVariable object by name
-        % - Topic: Working with variables
-        function v = variableWithName(self,name)
-            v = self.realVariableNameMap(name);
-        end
-
-
-        % key-value Map to retrieve a NetCDFComplexVariable object by name
-        % - Topic: Working with variables
-        function v = complexVariableWithName(self,name)
-
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         % key-value Map to retrieve a NetCDFGroup object by name
         % - Topic: Working with groups
-        function g = groupWithName(self,name)
+        function grp = groupWithName(self,name)
+            if ~isKey(self.groupNameMap,name)
+                error('A group with the name %s does not exist!',name{1});
+            end
+            grp = self.groupNameMap(name);
+        end
 
+        function grp = addGroup(self, name)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty} 
+                name string {mustBeText}
+            end
+            if isKey(self.groupNameMap,name)
+                error('A group with that name already exists.');
+            end
+            grp = NetCDFGroup(parentGroup=self,name=name);
+            self.addGroupPrimitive(grp);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Attributes
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function addAttribute(self,name,data)
+            % add a global attribute to the file
+            %
+            % - Topic: Working with global attributes
+            % - Declaration: addAttribute(name,data)
+            % - Parameter name: string of the attribute name
+            % - Parameter data: value
+            % if (strcmp(self.format,'FORMAT_CLASSIC') || strcmp(self.format,'FORMAT_64BIT')) && isa(data,'string') && numel(data) > 1
+            %     if iscolumn(data)
+            %         data = data.';
+            %     end
+            %     data = char(data+'~');
+            % end
+
+            netcdf.putAtt(self.id,netcdf.getConstant('NC_GLOBAL'), name, data);
+            self.attributes(name) = data;
         end
 
         function dump(self,options)
@@ -536,15 +496,8 @@ classdef NetCDFGroup < handle
                 end
             end
 
-            if ~isempty(self.groups)
-                for iGroup=1:length(self.groups)
-                    group = self.groups(iGroup);
-                    group.dump(indentLevel=options.indentLevel+1);
-                end
-            end
-
             if self.attributes.Count > 0
-                fprintf('\n%sglobal attributes: \n',indent1);
+                fprintf('\n%sattributes: \n',indent1);
                 for attName = string(self.attributes.keys)
                     if isa(self.attributes(attName),'char') || isa(self.attributes(attName),'string')
                         fprintf('%s%s = \"%s\"\n',indent2,attName,self.attributes(attName));
@@ -556,11 +509,140 @@ classdef NetCDFGroup < handle
                 end
             end
 
+            if ~isempty(self.groups)
+                for iGroup=1:length(self.groups)
+                    group = self.groups(iGroup);
+                    group.dump(indentLevel=options.indentLevel+1);
+                end
+            end
+
             if isempty(self.parentGroup) && isa(self,'NetCDFFile')
                 fprintf('%s}\n',indent0);
             else
                 fprintf('%s} // group %s\n',indent0,self.name);
             end
+        end
+    end
+
+    methods (Access=protected)
+
+        function initializeGroupFromFile(self,parentGroup,id)
+            % initialize an existing group from file
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                parentGroup
+                id (1,1) double {mustBeNonnegative,mustBeInteger}
+            end
+            self.id = id;
+            self.parentGroup = parentGroup;
+            self.name = netcdf.inqGrpName(self.id);
+
+            % Fetch all dimensions and convert to NetCDFDimension objects
+            if ~isempty(self.parentGroup)
+                self.addDimensionPrimitive(self.parentGroup.dimensions);
+            end
+            dimensionIDs = netcdf.inqDimIDs(self.id);
+            for iDim=1:length(dimensionIDs)
+                self.addDimensionPrimitive(NetCDFDimension(self,id=dimensionIDs(iDim)));
+            end
+
+            % Fetch all variables and convert to NetCDFRealVariable objects
+            variableIDs = netcdf.inqVarIDs(self.id);
+            for iVar=1:length(variableIDs)
+                self.addRealVariablePrimitive(NetCDFRealVariable(self,id=variableIDs(iVar)));
+            end
+
+            % Grab all the global attributes
+            [~,~,ngatts,~] = netcdf.inq(self.id);
+            for iAtt=0:(ngatts-1)
+                gattname = netcdf.inqAttName(self.id,netcdf.getConstant('NC_GLOBAL'),iAtt);
+                self.attributes(gattname) = netcdf.getAtt(self.id,netcdf.getConstant('NC_GLOBAL'),gattname);
+            end
+
+            % Now check to see if any variables form a complex variable
+            self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.variables));
+            if ~isempty(self.complexVariables)
+                self.removeVariablePrimitive([self.complexVariables.realp self.complexVariables.imagp]);
+            end
+
+            groupIDs = netcdf.inqGrps(self.id);
+            for iGrp=1:length(groupIDs)
+                self.addGroupPrimitive(NetCDFGroup(parentGroup=self,id=groupIDs(iGrp)));
+            end
+        end
+
+        function initGroup(self,parentGroup, name)
+            % initialize a new group
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty} 
+                parentGroup (1,1) NetCDFGroup {mustBeNonempty} 
+                name string {mustBeText}
+            end
+            self.parentGroup = parentGroup;
+            self.name = name;
+            self.id = netcdf.defGrp(self.parentGroup.id,self.name);
+            self.addDimensionPrimitive(self.parentGroup.dimensions);
+        end
+
+        function addDimensionPrimitive(self,dimension)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                dimension (:,1) NetCDFDimension {mustBeNonempty}
+            end
+            for iDim=1:length(dimension)
+                self.dimensions(end+1) = dimension(iDim);
+                self.dimensionIDMap(dimension(iDim).id) = dimension(iDim);
+                self.dimensionNameMap(dimension(iDim).name) = dimension(iDim);
+            end
+            self.dimensions = reshape(self.dimensions,[],1);
+        end
+
+        function addRealVariablePrimitive(self,variable)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                variable (:,1) NetCDFRealVariable {mustBeNonempty}
+            end
+            for iVar=1:length(variable)
+                self.variables(end+1) = variable(iVar);
+                self.realVariableIDMap(variable(iVar).id) = variable(iVar);
+                self.realVariableNameMap(variable(iVar).name) = variable(iVar);
+            end
+            self.variables = reshape(self.variables,[],1);
+        end
+
+        function removeVariablePrimitive(self,variable)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                variable (:,1) NetCDFRealVariable
+            end
+            for iVar=1:length(variable)
+                self.variables(self.variables==variable(iVar)) = [];
+                self.realVariableIDMap(variable(iVar).id) = [];
+                self.realVariableNameMap(variable(iVar).name) = [];
+            end
+        end
+
+        function addComplexVariablePrimitive(self,variable)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                variable (:,1) NetCDFComplexVariable
+            end
+            for iVar=1:length(variable)
+                self.complexVariables(end+1) = variable(iVar);
+                self.complexVariableNameMap(variable(iVar).name) = variable(iVar);
+            end
+            self.complexVariables = reshape(self.complexVariables,[],1);
+        end
+
+        function addGroupPrimitive(self,group)
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                group (1,1) NetCDFGroup {mustBeNonempty}
+            end
+            self.groups(end+1) = group;
+            self.groups = reshape(self.groups,[],1);
+            self.groupIDMap(group.id) = group;
+            self.groupNameMap(group.name) = group;
         end
     end
 end

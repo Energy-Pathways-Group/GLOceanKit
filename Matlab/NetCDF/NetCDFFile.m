@@ -25,12 +25,10 @@ classdef NetCDFFile < NetCDFGroup
     % - Topic: Accessing file properties
     % - Topic: Working with dimensions
     % - Topic: Working with variables
+    % - Topic: Working with groups
     % - Topic: Working with global attributes
-    % - Topic: Schema keys
-    % - Topic: Schema keys — Dimensions
-    % - Topic: Schema keys — Variables
     %
-    % - Declaration: classdef NetCDFFile < handle
+    % - Declaration: classdef NetCDFFile < NetCDFGroup
     properties
         % file path the NetCDF file
         % - Topic: Accessing file properties
@@ -112,8 +110,4 @@ classdef NetCDFFile < NetCDFGroup
             self.id = [];
         end
     end
-
-    % methods (Static)
-    %     function 
-    % end
 end

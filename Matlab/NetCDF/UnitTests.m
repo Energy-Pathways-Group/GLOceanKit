@@ -15,7 +15,11 @@ b(2) = 1;
 ncfile.addVariable('b',{'x'},logical(b));
 
 %%
-grp = ncfile.addGroup("group-a");
+ncfile.addAttribute('file-attribute',"Hello world!")
+
+%%
+grp = ncfile.addGroup("a");
+grp.addAttribute('MyAttribute',"Hello group!")
 
 %%
 y = 0:9;
@@ -27,4 +31,4 @@ ncfile.close();
 
 %%
 ncfile = NetCDFFile("test.nc");
-a_back = ncfile.variable('a');
+a_back = ncfile.readVariable('a');
