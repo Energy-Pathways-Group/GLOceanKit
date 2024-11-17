@@ -15,11 +15,16 @@ b(2) = 1;
 ncfile.addVariable('b',{'x'},logical(b));
 
 %%
-ncfile.addGroup("group-a");
+grp = ncfile.addGroup("group-a");
+
+%%
+y = 0:9;
+grp.addDimension('y',y);
+grp.addVariable('a',{'x'},4*x + sqrt(-1)*2*x);
 
 %%
 ncfile.close();
 
 %%
 ncfile = NetCDFFile("test.nc");
-a_back = ncfile.readVariables('a');
+a_back = ncfile.variable('a');

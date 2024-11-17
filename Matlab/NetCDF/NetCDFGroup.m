@@ -124,7 +124,7 @@ classdef NetCDFGroup < handle
 
             % Fetch all dimensions and convert to NetCDFDimension objects
             if ~isempty(self.parentGroup)
-                self.dimensions = self.parentGroup.dimensions;
+                self.addDimensionPrimitive(self.parentGroup.dimensions);
             end
             dimensionIDs = netcdf.inqDimIDs(self.id);
             for iDim=1:length(dimensionIDs)
@@ -293,18 +293,18 @@ classdef NetCDFGroup < handle
 
         end
 
-        function varargout = readVariables(self,variableNames)
+        function varargout = variable(self,variableNames)
             % read variables from file
             %
             % Pass a list of variables to read and the data will be
             % returned in the same order.
             %
             % ```matlab
-            % [x,y] = ncfile.readVariables('x','y');
+            % [x,y] = ncfile.variable('x','y');
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = readVariables(variableNames)
+            % - Declaration: varargout = variable(variableNames)
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
             arguments
@@ -325,7 +325,7 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,variableNames)
+        function varargout = variableAtIndexAlongDimension(self,dimName,index,variableNames)
             % read variables from file at a particular index (e.g., time)
             %
             % Pass a list of variables to read and the data will be
@@ -512,10 +512,10 @@ classdef NetCDFGroup < handle
             end
 
             if ~isempty(self.complexVariables)
-                fprintf('\n%scomplex variables: \n',indent1);
+                % fprintf('\n%scomplex variables: \n',indent1);
                 for iVar=1:length(self.complexVariables)
                     variable = self.complexVariables(iVar);
-                    fprintf('%s%s %s(',indent2,variable.type,variable.name);
+                    fprintf('%scomplex %s %s(',indent2,variable.type,variable.name);
                     for iDim=1:length(variable.dimensions)
                         if iDim==length(variable.dimensions)
                             fprintf('%s',variable.dimensions(iDim).name);
