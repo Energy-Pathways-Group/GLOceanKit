@@ -8,7 +8,7 @@ classdef WVSpectralVanishingViscosity < handle
     %
     %
     % - Topic: Initializing
-    % - Declaration: WVNonlinearFlux < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVNonlinearFlux < [WVForcingFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         wvt
         nu_xy = 0
@@ -89,10 +89,8 @@ classdef WVSpectralVanishingViscosity < handle
         function buildDampingOperator(self)
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
-            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-            % do not assume anti-aliasing!
-            [Qkl,~,self.k_no_damp,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
-            self.damp = Qkl.*self.damp;
+            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            self.damp = -(self.nu_z*Qj.*M.^2 + self.nu_xy*Qkl.*(K.^2 +L.^2));
         end
 
         function dampingTimeScale = dampingTimeScale(self)
@@ -105,42 +103,41 @@ classdef WVSpectralVanishingViscosity < handle
             F0 = F0 + self.damp .* wvt.A0;
         end
 
-        function writeToFile(self,ncfile,wvt)
+        function writeToFile(self,group,wvt)
             arguments
-                self WVNonlinearFluxOperation {mustBeNonempty}
-                ncfile NetCDFFile {mustBeNonempty}
+                self WVForcingFluxOperation {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            ncfile.addAttribute('nu_xy',self.nu_xy)
-            ncfile.addAttribute('nu_z',self.nu_z)
+            group.addAttribute('nu_xy',self.nu_xy)
+            group.addAttribute('nu_z',self.nu_z)
         end
 
-        function nlFlux = nonlinearFluxWithResolutionOfTransform(self,wvtX2)
+        function forcingFlux = forcingFluxWithResolutionOfTransform(self,wvtX2)
             ratio_h = self.wvt.effectiveHorizontalGridResolution/wvtX2.effectiveHorizontalGridResolution;
             ratio_v = self.wvt.effectiveVerticalGridResolution/wvtX2.effectiveVerticalGridResolution;
-            nlFlux = WVNonlinearFluxForced(wvtX2,r=self.r,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v,shouldUseBeta=(self.beta>0));
+            forcingFlux = WVSpectralVanishingViscosity(wvtX2,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v);
         end
 
         function flag = isequal(self,other)
             arguments
-                self WVNonlinearFluxOperation
-                other WVNonlinearFluxOperation
+                self WVForcingFluxOperation
+                other WVForcingFluxOperation
             end
-            flag = isequal@WVNonlinearFluxOperation(self,other);
+            flag = isequal@WVForcingFluxOperation(self,other);
             flag = flag & isequal(self.nu_xy, other.nu_xy);
             flag = flag & isequal(self.nu_z,other.nu_z);
-            flag = flag & isequal(self.r,other.r);
             flag = flag & isequal(self.damp, other.damp);
         end
     end
 
     methods (Static)
-        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
+        function forcingFlux = forcingFluxFromFile(ncfile,wvt)
             arguments
-                ncfile NetCDFFile {mustBeNonempty}
+                ncfile NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),r=ncfile.attributes('r') );
+            forcingFlux = WVSpectralVanishingViscosity(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z') );
         end
     end
 

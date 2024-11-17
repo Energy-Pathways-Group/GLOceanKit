@@ -4,6 +4,18 @@ classdef WVForcingFluxOperation < WVOperation
 % A WVForcingFluxOperation is an abstract class that defines how forcing
 % gets added to a WVTransform. You can use one the built-in forcing
 % operations, or make your own.
+%
+% Forcing can be applied at two stages:
+% 1. in the spatial domain to d/dt(u,v,w,eta) and/or
+% 2. in the spectral domain to d/dt(Ap,Am,A0)
+%
+% Each WVForcingFluxOperation must choose one of the two options and
+% override either,
+% 1. [Fu, Fv, Fw, Feta] = addSpatialForcing(wvt, Fu, Fv, Fw, Feta) or,
+% 2. [Fp, Fm, F0] = addSpectralForcing( wvt, Fp, Fm, F0)
+%
+% Regardless of which method is chosen, the energy flux from the forcing
+% can always be deduced at each moment in time.
 % 
 % - Declaration: classdef WVForcingFluxOperation < [WVOperation](/classes/wvoperation/)
 
