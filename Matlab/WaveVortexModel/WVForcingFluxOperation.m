@@ -5,8 +5,8 @@ classdef WVForcingFluxOperation < WVOperation
 % gets added to a WVTransform. You can use one the built-in forcing
 % operations, or make your own.
 %
-% Forcing can be applied at two stages:
-% 1. in the spatial domain to d/dt(u,v,w,eta) and/or
+% Forcing is applied at two stages:
+% 1. in the spatial domain to d/dt(u,v,w,eta) and
 % 2. in the spectral domain to d/dt(Ap,Am,A0)
 %
 % Each WVForcingFluxOperation must choose one of the two options and
@@ -16,6 +16,8 @@ classdef WVForcingFluxOperation < WVOperation
 %
 % Regardless of which method is chosen, the energy flux from the forcing
 % can always be deduced at each moment in time.
+%
+% How does this structure revert to barotropic, hydrostatic, and QG runs?
 % 
 % - Declaration: classdef WVForcingFluxOperation < [WVOperation](/classes/wvoperation/)
 
@@ -40,6 +42,8 @@ classdef WVForcingFluxOperation < WVOperation
         %
         % - Topic: Properties
         isAdditiveForcing double {mustBeMember(isAdditiveForcing,[0 1])} =  1
+
+        forcingDomain string {mustBeMember(forcingDomain,["spatial" "spectral"])}
     end
 
     methods
