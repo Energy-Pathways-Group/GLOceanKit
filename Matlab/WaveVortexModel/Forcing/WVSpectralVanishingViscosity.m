@@ -1,4 +1,4 @@
-classdef WVSpectralVanishingViscosity < handle
+classdef WVSpectralVanishingViscosity < WVForcing
     % Small-scale damping
     %
     % The damping is a simple Laplacian, but with a spectral vanishing
@@ -40,6 +40,9 @@ classdef WVSpectralVanishingViscosity < handle
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
             end
+            self@WVForcing("spectral vanishing viscosity");
+            self.doesSpectralForcing = 1;
+            self.doesSpectralA0Forcing = 1;
 
             if isfield(options,'nu_xy')
                 self.nu_xy = options.nu_xy;
@@ -97,9 +100,13 @@ classdef WVSpectralVanishingViscosity < handle
             dampingTimeScale = 1/max(abs(self.damp(:)));
         end
         
-        function [Fp, Fm, F0] = addForcing(self, wvt, Fp, Fm, F0)
+        function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
             Fp = Fp + self.damp .* wvt.Ap;
             Fm = Fm + self.damp .* wvt.Am;
+            F0 = F0 + self.damp .* wvt.A0;
+        end
+
+        function F0 = addSpectralA0Forcing(self, wvt, F0)
             F0 = F0 + self.damp .* wvt.A0;
         end
 
@@ -113,18 +120,18 @@ classdef WVSpectralVanishingViscosity < handle
             group.addAttribute('nu_z',self.nu_z)
         end
 
-        function forcingFlux = forcingFluxWithResolutionOfTransform(self,wvtX2)
+        function force = forcingWithResolutionOfTransform(self,wvtX2)
             ratio_h = self.wvt.effectiveHorizontalGridResolution/wvtX2.effectiveHorizontalGridResolution;
             ratio_v = self.wvt.effectiveVerticalGridResolution/wvtX2.effectiveVerticalGridResolution;
-            forcingFlux = WVSpectralVanishingViscosity(wvtX2,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v);
+            force = WVSpectralVanishingViscosity(wvtX2,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v);
         end
 
         function flag = isequal(self,other)
             arguments
-                self WVForcingFluxOperation
-                other WVForcingFluxOperation
+                self WVForcing
+                other WVForcing
             end
-            flag = isequal@WVForcingFluxOperation(self,other);
+            flag = isequal@WVForcing(self,other);
             flag = flag & isequal(self.nu_xy, other.nu_xy);
             flag = flag & isequal(self.nu_z,other.nu_z);
             flag = flag & isequal(self.damp, other.damp);
@@ -132,12 +139,12 @@ classdef WVSpectralVanishingViscosity < handle
     end
 
     methods (Static)
-        function forcingFlux = forcingFluxFromFile(ncfile,wvt)
+        function force = forcingFromFile(group,wvt)
             arguments
-                ncfile NetCDFGroup {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            forcingFlux = WVSpectralVanishingViscosity(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z') );
+            force = WVSpectralVanishingViscosity(wvt,nu_xy=group.attributes('nu_xy'),nu_z=group.attributes('nu_z') );
         end
     end
 
