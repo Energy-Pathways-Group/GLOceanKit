@@ -19,8 +19,22 @@ arguments
     options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1
     options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
 end
-variables = union(variables,{'rho_nm','N2','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h'});
+variables = union(variables,{'rho_nm','N2'});
 [ncfile,matFilePath] = writeToFile@WVTransform(wvt,path,variables{:},shouldAddDefaultVariables=options.shouldAddDefaultVariables,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
+
+% To keep things tidy, lets put the transform in a separate group
+group = ncfile.addGroup("WVTransformHydrostatic");
+variables = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h'};
+for iVar=1:length(variables)
+    if isKey(wvt.propertyAnnotationNameMap,variables{iVar})
+        varAnnotation = wvt.propertyAnnotationNameMap(variables{iVar});
+    elseif isKey(wvt.variableAnnotationWithName,variables{iVar})
+        varAnnotation = wvt.variableAnnotationWithName(variables{iVar});
+    end
+    varAnnotation.attributes('units') = varAnnotation.units;
+    varAnnotation.attributes('long_name') = varAnnotation.description;
+    group.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
+end
 
 rhoFunction = wvt.rhoFunction;
 N2Function = wvt.N2Function;

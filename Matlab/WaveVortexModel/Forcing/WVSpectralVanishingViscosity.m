@@ -41,6 +41,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
                 options.nu_z (1,1) double 
             end
             self@WVForcing("spectral vanishing viscosity");
+            self.wvt = wvt;
             self.doesSpectralForcing = 1;
             self.doesSpectralA0Forcing = 1;
 
@@ -112,7 +113,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
 
         function writeToFile(self,group,wvt)
             arguments
-                self WVForcingFluxOperation {mustBeNonempty}
+                self WVForcing {mustBeNonempty}
                 group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end

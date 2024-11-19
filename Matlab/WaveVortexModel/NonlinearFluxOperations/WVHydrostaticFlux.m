@@ -13,10 +13,6 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
     % - Declaration: WVNonlinearFluxSpatial < [WVNonlinearFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
         dLnN2 = 0
-
-        forcing = {}
-        spatialForcing = {}
-        spectralForcing = {}
     end
     methods
         function self = WVHydrostaticFlux(wvt)
@@ -27,7 +23,7 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
             fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am');
             fluxVar(3) = WVVariableAnnotation('F0',{'j','kl'},'m/s', 'non-linear flux into A0');
 
-            self@WVNonlinearFluxOperation('WVNonlinearFluxSpatial',fluxVar);
+            self@WVNonlinearFluxOperation('WVHydrostaticFlux',fluxVar);
 
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;
@@ -68,5 +64,37 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
             end
         end
 
+        function writeToFile(self,group,wvt)
+            arguments
+                self WVNonlinearFluxOperation {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+            end
+            
+            group.addAttribute("TotalForcingGroups",length(self.forcing))
+            for iForce=1:length(self.forcing)
+                forceGroup = group.addGroup("forcing-"+iForce);
+                forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
+                self.forcing{iForce}.writeToFile(forceGroup,wvt);
+            end
+        end
+
+    end
+
+    methods (Static)
+        function nlFlux = nonlinearFluxFromFile(ncfile,wvt)
+            arguments
+                ncfile NetCDFFile {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+            end
+            nlFlux = WVHydrostaticFlux(wvt);
+            totalForcingGroups = ncfile.attributes('TotalForcingGroups');
+            for iForce=1:totalForcingGroups
+                forceGroup = ncfile.groupWithName("forcing-"+iForce);
+                forcingClassName = forceGroup.attributes('WVForcing');
+                force = feval(strcat(forcingClassName,'.forcingFromFile'),forceGroup,wvt);
+                nlFlux.addForcing(force);
+            end
+        end
     end
 end

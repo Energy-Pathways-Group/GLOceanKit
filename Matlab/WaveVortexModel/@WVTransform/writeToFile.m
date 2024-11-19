@@ -95,7 +95,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         varAnnotation = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
         varAnnotation.attributes('units') = varAnnotation.units;
         varAnnotation.attributes('long_name') = varAnnotation.description;
-        ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes)
+        ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
     end
 
     % Any variables should be written with a possible time dimension to the
@@ -113,9 +113,9 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         varAnnotation = wvt.variableAnnotationWithName(variables{iVar});
         varAnnotation.attributes('units') = varAnnotation.units;
         varAnnotation.attributes('long_name') = varAnnotation.description;
-        group.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes)
+        group.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
     end
 
     ncfile.addAttribute('WVNonlinearFluxOperation',class(wvt.nonlinearFluxOperation));
-    % wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
+    wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
 end

@@ -244,7 +244,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.Nj (1,1) double {mustBePositive} = length(z)
-                options.shouldAntialias double = 1
+                options.shouldAntialias logical = true
             end
             
             % These first properties are directly set on initialization

@@ -132,7 +132,7 @@ classdef NetCDFGroup < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function dims = dimensionWithName(self,name)
+        function dim = dimensionWithName(self,name)  
             % retrieve a NetCDFDimension object by name
             %
             % Usage
@@ -141,7 +141,42 @@ classdef NetCDFGroup < handle
             % ```
             %
             % - Topic: Working with dimensions
-            dims = self.dimensionNameMap(name);
+            arguments (Input)
+                self NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Input, Repeating)
+                name char
+            end
+            
+            dim = NetCDFDimension.empty(0,0);
+            
+            % The logical here is a little complicated.
+            % If the user provides an exact path, but the variable isn't
+            % there, then we error.
+            for iArg=1:length(name)
+                namePath = split(name{iArg},"/");
+                if length(namePath) > 1
+                    grp = self;
+                    for iGroup=1:(length(namePath)-1)
+                        grp = grp.groupWithName(namePath(iGroup));
+                    end
+                    dim(end+1) = grp.dimensionWithName(namePath(end));
+                else
+                    if isKey(self.dimensionNameMap,name{iArg})
+                        dim(end+1) = self.dimensionNameMap(name{iArg});
+                    else
+                        dimPaths = self.dimensionPathWithName(name{iArg});
+                        numPaths = length(dimPaths);
+                        if numPaths == 0
+                            error('Unable to find a variable with the name %s',name{iArg});
+                        elseif numPaths == 1
+                            dim(end+1) = self.variableWithName(dimPaths);
+                        else
+                            error('Found more than one variable with the name %s',name{iArg});
+                        end
+                    end
+                end
+            end
         end
 
         function dims = dimensionWithID(self,dimids)
@@ -268,7 +303,7 @@ classdef NetCDFGroup < handle
             bool = zeros(length(dimName),1);
 
             for iArg=1:length(dimName)
-                bool(iArg) = any(~isempty(self.variablePathsWithName(dimName{iArg})));
+                bool(iArg) = any(~isempty(self.dimensionPathWithName(dimName{iArg})));
             end
             bool = logical(bool);
         end
@@ -327,10 +362,10 @@ classdef NetCDFGroup < handle
             end
 
             if options.isComplex==1
-                var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=options.type);
+                var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames{:}),attributes=options.attributes,type=options.type);
                 self.addComplexVariablePrimitive(var);
             else
-                var = NetCDFRealVariable(self,name=name,dimensions=self.dimensionWithName(dimNames),attributes=options.attributes,type=options.type);
+                var = NetCDFRealVariable(self,name=name,dimensions=self.dimensionWithName(dimNames{:}),attributes=options.attributes,type=options.type);
                 self.addRealVariablePrimitive(var);
             end
             if ~isempty(value)
@@ -419,7 +454,10 @@ classdef NetCDFGroup < handle
                 variableName char
             end
             varargout = cell(size(variableName));
-
+            
+            % The logical here is a little complicated.
+            % If the user provides an exact path, but the variable isn't
+            % there, then we error.
             for iArg=1:length(variableName)
                 variablePath = split(variableName{iArg},"/");
                 if length(variablePath) > 1
@@ -434,7 +472,15 @@ classdef NetCDFGroup < handle
                     elseif isKey(self.realVariableNameMap,variableName{iArg})
                         varargout{iArg} = self.realVariableNameMap(variableName{iArg});
                     else
-                        error('Unable to find a variable with the name %s',variableName{iArg});
+                        varPaths = self.variablePathsWithName(variableName{iArg});
+                        numPaths = length(varPaths);
+                        if numPaths == 0
+                            error('Unable to find a variable with the name %s',variableName{iArg});
+                        elseif numPaths == 1
+                            varargout{iArg} = self.variableWithName(varPaths);
+                        else
+                            error('Found more than one variable with the name %s',variableName{iArg});
+                        end
                     end
                 end
             end

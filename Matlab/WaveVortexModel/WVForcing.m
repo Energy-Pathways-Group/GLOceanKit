@@ -34,7 +34,7 @@ classdef WVForcing < handle
         % boolean indicating this class implements addHydrostaticSpatialForcing
         %
         % - Topic: Properties
-        name {mustBeText}
+        name
 
         % boolean indicating this class implements addHydrostaticSpatialForcing
         %

@@ -77,10 +77,10 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
                 options.N0 (1,1) double {mustBePositive} = 5.2e-3
                 options.latitude (1,1) double {mustBeGreaterThanOrEqual(options.latitude,5),mustBeLessThanOrEqual(options.latitude,85)} = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
-                options.shouldAntialias double = 1
+                options.shouldAntialias logical = true
                 options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
 
-                options.isHydrostatic double {mustBeMember(options.isHydrostatic,[0 1])} = 0
+                options.isHydrostatic logical = false
             end
             Nz = Nxyz(3);
             % if mod(log2(Nxyz(3)-1),1) == 0

@@ -79,7 +79,7 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
                 options.dLnN2func function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
-                options.shouldAntialias double = 1
+                options.shouldAntialias logical = true
                 options.jAliasingFraction double {mustBePositive(options.jAliasingFraction),mustBeLessThanOrEqual(options.jAliasingFraction,1)} = 2/3
 
                 % ALL of these must be set for direct initialization to
@@ -154,7 +154,7 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             % f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
             % self.addOperation(WVOperation('zeta_z',outputVar,f));
 
-            self.nonlinearFluxOperation = WVNonlinearFlux(self);
+            self.nonlinearFluxOperation = WVHydrostaticFlux(self);
 
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
@@ -410,12 +410,12 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             end
             flag = isequal@WVTransform(self,other);
             flag = flag & isequal(self.dLnN2, other.dLnN2);
-            flag = flag & isequal(self.PF0inv, other.PFinv);
-            flag = flag & isequal(self.QG0inv, other.QGinv);
-            flag = flag & isequal(self.PF0,other.PF);
-            flag = flag & isequal(self.QG0,other.QG);
-            flag = flag & isequal(self.P0, other.P);
-            flag = flag & isequal(self.Q0, other.Q);
+            flag = flag & isequal(self.PF0inv, other.PF0inv);
+            flag = flag & isequal(self.QG0inv, other.QG0inv);
+            flag = flag & isequal(self.PF0,other.PF0);
+            flag = flag & isequal(self.QG0,other.QG0);
+            flag = flag & isequal(self.P0, other.P0);
+            flag = flag & isequal(self.Q0, other.Q0);
             flag = flag & isequal(self.h, other.h);
         end
     end

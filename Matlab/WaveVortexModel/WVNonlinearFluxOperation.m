@@ -50,6 +50,14 @@ classdef WVNonlinearFluxOperation < WVOperation
         %
         % - Topic: Properties
         doesFluxA0 double {mustBeMember(doesFluxA0,[0 1])} =  1
+
+        forcing = {}
+        spatialForcing = {}
+        spectralForcing = {}
+    end
+
+    methods (Abstract)
+        addForcing(self,force)
     end
 
     methods
@@ -81,7 +89,7 @@ classdef WVNonlinearFluxOperation < WVOperation
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function writeToFile(self,ncfile,wvt)
+        function writeToFile(self,group,wvt)
             %write information about the nonlinear flux operation to file
             %
             % To enable model restarts, all subclass should override this
@@ -94,7 +102,7 @@ classdef WVNonlinearFluxOperation < WVOperation
             % - Parameter wvt: the WVTransform associated with the nonlinear flux
             arguments
                 self WVNonlinearFluxOperation {mustBeNonempty}
-                ncfile NetCDFFile {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
         end

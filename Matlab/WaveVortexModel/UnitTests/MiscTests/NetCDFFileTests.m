@@ -62,8 +62,8 @@ for iTransform=3
 
     wvt2 = WVTransform.waveVortexTransformFromFile('test.nc',iTime=1);
     if isequal(wvt,wvt2)
-        fprintf('Success!');
+        fprintf('Success!\n');
     else
-        fprintf('Failure!!!');
+        fprintf('Failure!!!\n');
     end
 end
