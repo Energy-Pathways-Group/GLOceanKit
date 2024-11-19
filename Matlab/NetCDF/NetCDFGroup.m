@@ -215,6 +215,64 @@ classdef NetCDFGroup < handle
             var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=0,attributes=options.attributes);           
         end
 
+        function dimPath = dimensionPathWithName(self,dimensionName)
+            % returns all variables paths with a given name from this group and any subgroups.
+            %
+            % Pass a variable name and zero or more paths will be
+            % returned.
+            %
+            % ```matlab
+            % var = ncfile.allVariablesWithName('x');
+            % ```
+            %
+            % var will be either NetCDFRealVariable or
+            % NetCDFComplexVariable.
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = allVariablesWithName(variableNames)
+            % - Parameter variableNames: variable name
+            % - Returns varargout: (repeating) variable objects
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+                dimensionName char
+            end
+            dimPath = string.empty(0,0);
+            if isKey(self.dimensionNameMap,dimensionName)
+                dimPath = cat(1,dimPath,self.dimensionNameMap(dimensionName).namePath);
+            end
+            for iGroup=1:length(self.groups)
+                dimPath = cat(1,dimPath,self.groups(iGroup).dimensionPathWithName(dimensionName));
+            end
+        end
+
+        function bool = hasDimensionWithName(self,dimName)
+            % determine whether a dimension exists in this group or any of
+            % its subgroups.
+            %
+            % Pass an array of dimension names.
+            %
+            % ```matlab
+            % bool = ncfile.hasDimensionWithName('x');
+            % ```
+            %
+            % - Topic: Working with variables
+            % - Declaration: bool = hasDimensionWithName(self,dimName)
+            % - Parameter dimName: dimension name
+            % - Returns varargout: (repeating) dimension name
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Repeating)
+                dimName char
+            end
+            bool = zeros(length(dimName),1);
+
+            for iArg=1:length(dimName)
+                bool(iArg) = any(~isempty(self.variablePathsWithName(dimName{iArg})));
+            end
+            bool = logical(bool);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Variables
@@ -382,7 +440,7 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function varPaths = allVariablesWithName(self,variableName)
+        function varPaths = variablePathsWithName(self,variableName)
             % returns all variables paths with a given name from this group and any subgroups.
             %
             % Pass a variable name and zero or more paths will be
@@ -410,7 +468,7 @@ classdef NetCDFGroup < handle
                 varPaths = cat(1,varPaths,self.realVariableNameMap(variableName).namePath);
             end
             for iGroup=1:length(self.groups)
-                varPaths = cat(1,varPaths,self.groups(iGroup).allVariablesWithName(variableName));
+                varPaths = cat(1,varPaths,self.groups(iGroup).variablePathsWithName(variableName));
             end
         end
 
@@ -440,7 +498,7 @@ classdef NetCDFGroup < handle
             bool = zeros(length(variableName),1);
 
             for iArg=1:length(variableName)
-                bool(iArg) = any(~isempty(self.allVariablesWithName(variableName{iArg})));
+                bool(iArg) = any(~isempty(self.variablePathsWithName(variableName{iArg})));
             end
             bool = logical(bool);
         end

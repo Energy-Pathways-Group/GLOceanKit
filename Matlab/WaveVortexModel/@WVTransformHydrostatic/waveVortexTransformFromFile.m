@@ -20,7 +20,7 @@ end
 ncfile = NetCDFFile(path);
 
 requiredVariables = {'x','y','z','Lx','Ly','Lz','latitude','t0','rho0','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h','shouldAntialias'};
-if ~all(ismember(requiredVariables,{ncfile.realVariables.name}))
+if ~all(ncfile.hasVariableWithName(requiredVariables{:}))
     error('This files is missing required variables or attributes to initialize a WVTransform.')
 end
 

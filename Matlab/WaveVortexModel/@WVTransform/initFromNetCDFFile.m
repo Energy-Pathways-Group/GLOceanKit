@@ -37,9 +37,9 @@ end
 wvt.t0 = ncfile.readVariables('t0');
 
 hasTimeDimension = 0;
-if isKey(ncfile.dimensionWithName,'t')
+if ncfile.hasDimensionWithName('t')
     hasTimeDimension = 1;
-    tDim = ncfile.readVariables('t');
+    tDim = ncfile.readVariables(ncfile.variablePathsWithName('t'));
     if isinf(options.iTime)
         iTime = length(tDim);
     elseif options.iTime > length(tDim)
@@ -52,7 +52,7 @@ else
     wvt.t = ncfile.readVariables('t');
 end
 
-if all(isKey(ncfile.complexVariableWithName,{'Ap','Am','A0'}))
+if all(ncfile.hasVariableWithName('Ap','Am','A0'))
     if hasTimeDimension == 1
         [wvt.A0,wvt.Ap,wvt.Am] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0','Ap','Am');
     else
@@ -61,7 +61,7 @@ if all(isKey(ncfile.complexVariableWithName,{'Ap','Am','A0'}))
     if options.shouldDisplayInit == 1
         fprintf('%s initialized from Ap, Am, A0.\n',ncfile.attributes('WVTransform'));
     end
-elseif all(isKey(ncfile.variableWithName,{'u','v','eta'}))
+elseif all(ncfile.hasVariableWithName('u','v','eta'))
     if hasTimeDimension == 1
         [u,v,eta] = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'u','v','eta');
     else
@@ -71,7 +71,7 @@ elseif all(isKey(ncfile.variableWithName,{'u','v','eta'}))
     if options.shouldDisplayInit == 1
         fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WVTransform'));
     end
-elseif all(isKey(ncfile.complexVariableWithName,{'A0'}))
+elseif all(ncfile.hasVariableWithName('A0'))
     if hasTimeDimension == 1
         wvt.A0 = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0');
     else

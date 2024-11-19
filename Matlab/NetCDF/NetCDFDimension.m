@@ -8,6 +8,7 @@ classdef NetCDFDimension < handle
         name
         nPoints
         isMutable = 0
+        namePath
     end
 
     methods
@@ -97,6 +98,14 @@ classdef NetCDFDimension < handle
 
         function updateLength(self)
             [~,self.nPoints] = netcdf.inqDim(self.group.id,self.id);
+        end
+        
+        function val = get.namePath(self)
+            if isequal(self.group.groupPath,"")
+                val = self.name;
+            else
+                val = self.group.groupPath + "/" + self.name;
+            end
         end
 
     end
