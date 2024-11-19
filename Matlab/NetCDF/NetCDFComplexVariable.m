@@ -25,6 +25,7 @@ classdef NetCDFComplexVariable < NetCDFVariable
             if isfield(options,'real') && isfield(options,'imag')
                 % this means we are initializing from file
                 self.name = options.name;
+                self.group = options.group;
                 self.realp = options.real;
                 self.imagp = options.imag;
                 self.dimensions = self.realp.dimensions;
@@ -47,13 +48,14 @@ classdef NetCDFComplexVariable < NetCDFVariable
                 self.type = options.type;
                 self.attributes = options.attributes;
 
-                if self.attributes.Count > 0
-                    realAttributes = containers.Map(self.attributes.keys,self.attributes.values);
-                    imagAttributes = containers.Map(self.attributes.keys,self.attributes.values);
-                else
-                    realAttributes = containers.Map(KeyType='char',ValueType='any');
-                    imagAttributes = containers.Map(KeyType='char',ValueType='any');
+                realAttributes = containers.Map(KeyType='char',ValueType='any');
+                imagAttributes = containers.Map(KeyType='char',ValueType='any');
+                keyNames = self.attributes.keys;
+                for iKey = 1:length(keyNames)
+                    realAttributes(keyNames{iKey})=self.attributes(keyNames{iKey});
+                    imagAttributes(keyNames{iKey})=self.attributes(keyNames{iKey});
                 end
+
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsComplexKey) = uint8(1);
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsRealPartKey) = uint8(1);
                 realAttributes(NetCDFVariable.GLNetCDFSchemaIsImaginaryPartKey) = uint8(0);
@@ -157,7 +159,7 @@ classdef NetCDFComplexVariable < NetCDFVariable
                             end
                         end
                         if ~isempty(imagVariable)
-                            complexVariable = NetCDFComplexVariable(name=complexName,real=variable,imag=imagVariable);
+                            complexVariable = NetCDFComplexVariable(name=complexName,real=variable,imag=imagVariable,group=variable.group);
                             complexVariables(end+1) = complexVariable;
                         end
                     end

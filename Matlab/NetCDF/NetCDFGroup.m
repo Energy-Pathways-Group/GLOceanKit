@@ -27,6 +27,10 @@ classdef NetCDFGroup < handle
         % - Topic: Working with groups
         groups
 
+        % path of group
+        % - Topic: Working with groups
+        groupPath = "";
+
         % array of NetCDFDimension objects
         %
         % An array of NetCDFDimension objects for each coordinate dimension
@@ -41,7 +45,7 @@ classdef NetCDFGroup < handle
 
         % array of NetCDFVariable objects
         % - Topic: Working with variables
-        variables
+        realVariables
 
         % key-value Map of group attributes
         %
@@ -94,7 +98,7 @@ classdef NetCDFGroup < handle
             end
             
             self.dimensions = NetCDFDimension.empty(0,0);
-            self.variables = NetCDFRealVariable.empty(0,0);
+            self.realVariables = NetCDFRealVariable.empty(0,0);
             self.groups = NetCDFGroup.empty(0,0);
             self.attributes = containers.Map;
             self.complexVariables = NetCDFComplexVariable.empty(0,0);
@@ -257,8 +261,10 @@ classdef NetCDFGroup < handle
                 error('You must specify either the value of the data, or the ncType and isComplex.');
             end
 
-            if ~isempty(value)
+            if ~isempty(value) && isempty(options.type)
                 options.type = class(value);
+            end
+            if ~isempty(value) && ~isfield(options,'isComplex')
                 options.isComplex = ~isreal(value);
             end
 
@@ -275,18 +281,18 @@ classdef NetCDFGroup < handle
 
         end
 
-        function varargout = readVariable(self,variableNames)
+        function varargout = readVariables(self,variableNames)
             % read variables from file
             %
             % Pass a list of variables to read and the data will be
             % returned in the same order.
             %
             % ```matlab
-            % [x,y] = ncfile.readVariable('x','y');
+            % [x,y] = ncfile.readVariables('x','y');
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = readVariable(variableNames)
+            % - Declaration: varargout = readVariables(variableNames)
             % - Parameter variableNames: (repeating) list of variable names
             % - Returns varargout: (repeating) list of variable data
             arguments
@@ -301,18 +307,18 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function varargout = readVariableAtIndexAlongDimension(self,dimName,index,variableNames)
+        function varargout = readVariablesAtIndexAlongDimension(self,dimName,index,variableNames)
             % read variables from file at a particular index (e.g., time)
             %
             % Pass a list of variables to read and the data will be
             % returned in the same order.
             %
             % ```matlab
-            % [u,v] = ncfile.readVariableAtIndexAlongDimension('t',100,'u','v');
+            % [u,v] = ncfile.readVariablesAtIndexAlongDimension('t',100,'u','v');
             % ```
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = readVariable(variableNames)
+            % - Declaration: varargout = readVariables(variableNames)
             % - Parameter dimName: name of the dimension, character string
             % - Parameter index: index at which to read the data, positive integer
             % - Parameter variableNames: (repeating) list of variable names
@@ -331,42 +337,80 @@ classdef NetCDFGroup < handle
             end
         end
 
-        function var = variableWithName(self,variableName)
-            % return a variable with a given name
+        function varargout = variableWithName(self,variableName)
+            % return a variable with a given name from this group
             %
             % Pass a variable name and the variable object will be
             % returned.
             %
             % ```matlab
-            % var = ncfile.variable('x');
+            % var = ncfile.variableWithName('x');
             % ```
             %
             % var will be either NetCDFRealVariable or
             % NetCDFComplexVariable.
             %
             % - Topic: Working with variables
-            % - Declaration: varargout = variable(variableNames)
+            % - Declaration: varargout = variableWithName(variableNames)
+            % - Parameter variableNames: variable name
+            % - Returns varargout: (repeating) variable objects
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Repeating)
+                variableName char
+            end
+            varargout = cell(size(variableName));
+
+            for iArg=1:length(variableName)
+                variablePath = split(variableName{iArg},"/");
+                if length(variablePath) > 1
+                    grp = self;
+                    for iGroup=1:(length(variablePath)-1)
+                        grp = grp.groupWithName(variablePath(iGroup));
+                    end
+                    varargout{iArg} = grp.variableWithName(variablePath(end));
+                else
+                    if isKey(self.complexVariableNameMap,variableName{iArg})
+                        varargout{iArg} = self.complexVariableNameMap(variableName{iArg});
+                    elseif isKey(self.realVariableNameMap,variableName{iArg})
+                        varargout{iArg} = self.realVariableNameMap(variableName{iArg});
+                    else
+                        error('Unable to find a variable with the name %s',variableName{iArg});
+                    end
+                end
+            end
+        end
+
+        function varPaths = allVariablesWithName(self,variableName)
+            % returns all variables paths with a given name from this group and any subgroups.
+            %
+            % Pass a variable name and zero or more paths will be
+            % returned.
+            %
+            % ```matlab
+            % var = ncfile.allVariablesWithName('x');
+            % ```
+            %
+            % var will be either NetCDFRealVariable or
+            % NetCDFComplexVariable.
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = allVariablesWithName(variableNames)
             % - Parameter variableNames: variable name
             % - Returns varargout: (repeating) variable objects
             arguments
                 self NetCDFGroup {mustBeNonempty}
                 variableName char
             end
-            variablePath = split(variableName,"/");
-            if length(variablePath) > 1
-                grp = self;
-                for iGroup=1:(length(variablePath)-1)
-                    grp = grp.groupWithName(variablePath(iGroup));
-                end
-                var = grp.variableWithName(variablePath(end));
-            else
-                if isKey(self.complexVariableNameMap,variableName)
-                    var = self.complexVariableNameMap(variableName);
-                elseif isKey(self.realVariableNameMap,variableName)
-                    var = self.realVariableNameMap(variableName);
-                else
-                    error('Unable to find a variable with the name %s',variableName);
-                end
+            varPaths = string.empty(0,0);
+            if isKey(self.complexVariableNameMap,variableName)
+                varPaths = cat(1,varPaths,self.complexVariableNameMap(variableName).namePath);
+            elseif isKey(self.realVariableNameMap,variableName)
+                varPaths = cat(1,varPaths,self.realVariableNameMap(variableName).namePath);
+            end
+            for iGroup=1:length(self.groups)
+                varPaths = cat(1,varPaths,self.groups(iGroup).allVariablesWithName(variableName));
             end
         end
 
@@ -446,10 +490,10 @@ classdef NetCDFGroup < handle
                 end
             end
 
-            if ~isempty(self.variables)
+            if ~isempty(self.realVariables)
                 fprintf('\n%svariables: \n',indent1);
-                for iVar=1:length(self.variables)
-                    variable = self.variables(iVar);
+                for iVar=1:length(self.realVariables)
+                    variable = self.realVariables(iVar);
                     fprintf('%s%s %s(',indent2,variable.type,variable.name);
                     for iDim=1:length(variable.dimensions)
                         if iDim==length(variable.dimensions)
@@ -536,6 +580,13 @@ classdef NetCDFGroup < handle
             self.id = id;
             self.parentGroup = parentGroup;
             self.name = netcdf.inqGrpName(self.id);
+            if ~isempty(self.parentGroup)
+                if isequal(self.parentGroup.groupPath,"")
+                    self.groupPath = self.name;
+                else
+                    self.groupPath = self.parentGroup.groupPath + "/" + self.name;
+                end
+            end
 
             % Fetch all dimensions and convert to NetCDFDimension objects
             if ~isempty(self.parentGroup)
@@ -560,7 +611,7 @@ classdef NetCDFGroup < handle
             end
 
             % Now check to see if any variables form a complex variable
-            self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.variables));
+            self.addComplexVariablePrimitive(NetCDFComplexVariable.complexVariablesFromVariables(self.realVariables));
             if ~isempty(self.complexVariables)
                 self.removeVariablePrimitive([self.complexVariables.realp self.complexVariables.imagp]);
             end
@@ -582,6 +633,13 @@ classdef NetCDFGroup < handle
             self.name = name;
             self.id = netcdf.defGrp(self.parentGroup.id,self.name);
             self.addDimensionPrimitive(self.parentGroup.dimensions);
+            if ~isempty(self.parentGroup)
+                if isequal(self.parentGroup.groupPath,"")
+                    self.groupPath = self.name;
+                else
+                    self.groupPath = self.parentGroup.groupPath + "/" + self.name;
+                end
+            end
         end
 
         function addDimensionPrimitive(self,dimension)
@@ -603,11 +661,11 @@ classdef NetCDFGroup < handle
                 variable (:,1) NetCDFRealVariable {mustBeNonempty}
             end
             for iVar=1:length(variable)
-                self.variables(end+1) = variable(iVar);
+                self.realVariables(end+1) = variable(iVar);
                 self.realVariableIDMap(variable(iVar).id) = variable(iVar);
                 self.realVariableNameMap(variable(iVar).name) = variable(iVar);
             end
-            self.variables = reshape(self.variables,[],1);
+            self.realVariables = reshape(self.realVariables,[],1);
         end
 
         function removeVariablePrimitive(self,variable)
@@ -616,7 +674,7 @@ classdef NetCDFGroup < handle
                 variable (:,1) NetCDFRealVariable
             end
             for iVar=1:length(variable)
-                self.variables(self.variables==variable(iVar)) = [];
+                self.realVariables(self.realVariables==variable(iVar)) = [];
                 self.realVariableIDMap(variable(iVar).id) = [];
                 self.realVariableNameMap(variable(iVar).name) = [];
             end

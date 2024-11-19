@@ -8,6 +8,7 @@ classdef NetCDFVariable < handle
         dimensions
         attributes
         type
+        namePath
     end
 
     properties (Abstract)
@@ -41,6 +42,16 @@ classdef NetCDFVariable < handle
         addAttribute(self,key,value)
         value = valueAlongDimensionAtIndex(self,dimensionName,index)
         setValueAlongDimensionAtIndex(self,data,dimensionName,index)
+    end
+
+    methods
+        function val = get.namePath(self)
+            if isequal(self.group.groupPath,"")
+                val = self.name;
+            else
+                val = self.group.groupPath + "/" + self.name;
+            end
+        end
     end
 
     methods (Static)

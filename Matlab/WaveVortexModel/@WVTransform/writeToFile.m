@@ -52,7 +52,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
             error('A file already exists with that name.')
         end
     end
-    ncfile = NetCDFFile(path,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
+    ncfile = NetCDFFile(path);
 
     if ~iscell(options.dimensions)
         if isempty(options.dimensions)
@@ -69,7 +69,7 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         dimAnnotation = wvt.dimensionAnnotationWithName(dims{iDim});
         dimAnnotation.attributes('units') = dimAnnotation.units;
         dimAnnotation.attributes('long_name') = dimAnnotation.description;
-        ncfile.addDimension(dimAnnotation.name,wvt.(dimAnnotation.name),dimAnnotation.attributes);
+        ncfile.addDimension(dimAnnotation.name,wvt.(dimAnnotation.name),attributes=dimAnnotation.attributes);
     end
 
     ncfile.addAttribute('source',sprintf('Created with the WaveVortexModel version %s',string(wvt.version)));
@@ -79,9 +79,27 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
     ncfile.addAttribute('references','Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995');
     ncfile.addAttribute('WVTransform',class(wvt));
 
-    attributesToWrite = {'latitude','t0','rho0','Lx','Ly','Lz','k','l','shouldAntialias'};
-    variables = union(variables,attributesToWrite);
+    % Pull out the user requested attributes that should be written to the
+    % global attributes of the ncfile
+    newAttributes = {};
+    for iVar=1:length(variables)
+        if isKey(wvt.propertyAnnotationNameMap,variables{iVar})
+            newAttributes{end+1} = variables{iVar};
+        end
+    end
+    variables = setdiff(variables,newAttributes);
 
+    % Write these attributes to the root group
+    attributesToWrite = union(newAttributes,{'latitude','t0','rho0','Lx','Ly','Lz','k','l','shouldAntialias'});
+    for iVar=1:length(attributesToWrite)
+        varAnnotation = wvt.propertyAnnotationWithName(attributesToWrite{iVar});
+        varAnnotation.attributes('units') = varAnnotation.units;
+        varAnnotation.attributes('long_name') = varAnnotation.description;
+        ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes)
+    end
+
+    % Any variables should be written with a possible time dimension to the
+    % "wv" group.
     if options.shouldAddDefaultVariables == 1
         if isempty(variables)
             variables = {'A0','Ap','Am','t'};
@@ -90,24 +108,14 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         end
     end
 
+    group = ncfile.addGroup("wv");
     for iVar=1:length(variables)
-        if isKey(wvt.variableAnnotationNameMap,variables{iVar})
-            varAnnotation = wvt.variableAnnotationWithName(variables{iVar});
-        elseif isKey(wvt.propertyAnnotationNameMap,variables{iVar})
-            varAnnotation = wvt.propertyAnnotationWithName(variables{iVar});
-        else
-            error('Unrecognized property or variable, %s',variables{iVar});
-        end
+        varAnnotation = wvt.variableAnnotationWithName(variables{iVar});
         varAnnotation.attributes('units') = varAnnotation.units;
         varAnnotation.attributes('long_name') = varAnnotation.description;
-        if varAnnotation.isComplex == 1
-            ncfile.initComplexVariable(varAnnotation.name,varAnnotation.dimensions,varAnnotation.attributes,'NC_DOUBLE');
-            ncfile.setVariable(varAnnotation.name,wvt.(varAnnotation.name));
-        else
-            ncfile.addVariable(varAnnotation.name,wvt.(varAnnotation.name),varAnnotation.dimensions,varAnnotation.attributes);
-        end
+        group.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes)
     end
 
     ncfile.addAttribute('WVNonlinearFluxOperation',class(wvt.nonlinearFluxOperation));
-    wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
+    % wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
 end

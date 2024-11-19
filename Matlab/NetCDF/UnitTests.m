@@ -31,4 +31,4 @@ ncfile.close();
 
 %%
 ncfile = NetCDFFile("test.nc");
-a_back = ncfile.readVariable('a');
+a_back = ncfile.readVariables('a');

@@ -28,7 +28,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
         end
 
         function testReadDimension(testCase)
-            x_back = testCase.ncfile.readVariable('x');
+            x_back = testCase.ncfile.readVariables('x');
             testCase.verifyEqual(x_back,testCase.x);
         end
 
@@ -37,7 +37,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
         end
 
         function testReadComplexVariable(testCase)
-            a_back = testCase.ncfile.readVariable('a');
+            a_back = testCase.ncfile.readVariables('a');
             testCase.verifyEqual(a_back,testCase.f_a(testCase.x));
         end
 
@@ -46,7 +46,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
         end
 
         function testReadLogicalVariable(testCase)
-            a_back = testCase.ncfile.readVariable('b');
+            a_back = testCase.ncfile.readVariables('b');
             testCase.verifyEqual(a_back,testCase.b);
         end
 
@@ -56,7 +56,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
 
         function testReadColumnVector(testCase)
             y = reshape(testCase.x,[],1);
-            y_back = testCase.ncfile.readVariable('y');
+            y_back = testCase.ncfile.readVariables('y');
             testCase.verifyEqual(y_back,y);
             testCase.verifyNotEqual(y_back,testCase.x);
         end
@@ -74,7 +74,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
                 testCase.verifyEqual(val,s(i));
             end
             for i=1:length(s)
-                val = testCase.ncfile.readVariableAtIndexAlongDimension({'t'},i,'t');
+                val = testCase.ncfile.readVariablesAtIndexAlongDimension({'t'},i,'t');
                 testCase.verifyEqual(val,s(i));
             end
             testCase.verifyEqual(var.value,s);
@@ -88,7 +88,7 @@ classdef TestNetCDF < matlab.unittest.TestCase
             func = 4*s + sqrt(-1)*2*s;
             grp.addVariable('AFunction',{'s'},func);
 
-            func_back = testCase.ncfile.readVariable('MyGroup/AFunction');
+            func_back = testCase.ncfile.readVariables('MyGroup/AFunction');
             testCase.verifyEqual(func_back,func);
         end
     end
