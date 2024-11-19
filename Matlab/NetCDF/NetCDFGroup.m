@@ -414,6 +414,37 @@ classdef NetCDFGroup < handle
             end
         end
 
+        function bool = hasVariableWithName(self,variableName)
+            % return a variable with a given name from this group
+            %
+            % Pass a variable name and the variable object will be
+            % returned.
+            %
+            % ```matlab
+            % var = ncfile.variableWithName('x');
+            % ```
+            %
+            % var will be either NetCDFRealVariable or
+            % NetCDFComplexVariable.
+            %
+            % - Topic: Working with variables
+            % - Declaration: varargout = variableWithName(variableNames)
+            % - Parameter variableNames: variable name
+            % - Returns varargout: (repeating) variable objects
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Repeating)
+                variableName char
+            end
+            bool = zeros(length(variableName),1);
+
+            for iArg=1:length(variableName)
+                bool(iArg) = any(~isempty(self.allVariablesWithName(variableName{iArg})));
+            end
+            bool = logical(bool);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Groups
