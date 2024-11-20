@@ -105,6 +105,13 @@ classdef WVNonlinearFluxOperation < WVOperation
                 group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
+
+            group.addAttribute("TotalForcingGroups",length(self.forcing))
+            for iForce=1:length(self.forcing)
+                forceGroup = group.addGroup("forcing-"+iForce);
+                forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
+                self.forcing{iForce}.writeToFile(forceGroup,wvt);
+            end
         end
 
         function nlFluxOp = nonlinearFluxWithResolutionOfTransform(self,wvtX2)

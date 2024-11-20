@@ -63,22 +63,6 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
                 self.spectralForcing{end+1} = force;
             end
         end
-
-        function writeToFile(self,group,wvt)
-            arguments
-                self WVNonlinearFluxOperation {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
-            
-            group.addAttribute("TotalForcingGroups",length(self.forcing))
-            for iForce=1:length(self.forcing)
-                forceGroup = group.addGroup("forcing-"+iForce);
-                forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
-                self.forcing{iForce}.writeToFile(forceGroup,wvt);
-            end
-        end
-
     end
 
     methods (Static)
