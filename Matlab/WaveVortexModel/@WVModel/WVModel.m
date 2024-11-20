@@ -28,15 +28,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
     % - Topic: Particles
     % - Topic: Tracer
     % - Topic: Writing to NetCDF files
-    
-    properties (GetAccess=public, SetAccess=public)
-            % The operation responsible for computing the nonlinear flux of the model
-            % - Topic: Model Properties
-            % If the nonlinearFlux is nil, then the model will advance using
-            % linear dynamics (i.e., the wave-vortex coefficients will not
-            % change).
-            nonlinearFluxOperation WVNonlinearFluxOperation
-    end
 
     properties (GetAccess=public,SetAccess=protected)
         % The WVTransform instance the represents the ocean state.
@@ -87,6 +78,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
         t % (1,1) double
+
+        % The operation responsible for computing the nonlinear flux of the model
+        % - Topic: Model Properties
+        % If the nonlinearFlux is nil, then the model will advance using
+        % linear dynamics (i.e., the wave-vortex coefficients will not
+        % change).
+        nonlinearFluxOperation WVNonlinearFluxOperation
     end
 
 
@@ -191,20 +189,17 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % 
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.nonlinearFlux WVNonlinearFluxOperation
+                options.nonlinearFlux
             end
 
             self.wvt = wvt; 
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
             if isfield(options,"nonlinearFlux")
-                self.nonlinearFluxOperation = options.nonlinearFlux;
                 self.wvt.nonlinearFluxOperation = options.nonlinearFlux;
-            else
-                self.nonlinearFluxOperation = self.wvt.nonlinearFluxOperation;
-                if self.nonlinearFluxOperation.nu_xy == 0
-                    warning('The nonlinear flux has no damping.');
-                end
+            end
+            if self.nonlinearFluxOperation.hasClosure == false
+                warning('The nonlinear flux has no damping and may not be stable.');
             end
 
             self.particleIndexWithName = containers.Map();
@@ -212,16 +207,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.netcdfVariableMapForParticleWithName = containers.Map();
         end
         
+        function value = get.nonlinearFluxOperation(self)
+            value = self.wvt.nonlinearFluxOperation;
+        end
 
         function value = get.linearDynamics(self)
             value = isempty(self.nonlinearFluxOperation);
-        end
-
-        function set.nonlinearFluxOperation(self,value)
-            if (self.didInitializeNetCDFFile == 1 || self.didSetupIntegrator == 1)
-                error('You cannot change the nonlinearFlux after the integrator has been setup or the NetCDFFile has been created.');
-            end
-            self.nonlinearFluxOperation = value;
         end
 
         function value = get.t(self)

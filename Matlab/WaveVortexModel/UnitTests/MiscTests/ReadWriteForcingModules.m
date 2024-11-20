@@ -25,4 +25,10 @@ wvt.initWithRandomFlow(uvMax=0.05);
 
 wvt.nonlinearFluxOperation.addForcing(WVSpectralVanishingViscosity(wvt,uv_damp=wvt.uvMax))
 
-wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
+model = WVModel(wvt);
+
+% wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
+% 
+% wvt2 = WVTransform.waveVortexTransformFromFile("test.nc");
+
+% wvt.nonlinearFluxOperation = WVHydrostaticFlux(wvt,WVSpectralVanishingViscosity(wvt,uv_damp=0.2));

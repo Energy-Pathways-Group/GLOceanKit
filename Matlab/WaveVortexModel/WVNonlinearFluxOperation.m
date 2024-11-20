@@ -56,8 +56,8 @@ classdef WVNonlinearFluxOperation < WVOperation
         spectralForcing = {}
     end
 
-    methods (Abstract)
-        addForcing(self,force)
+    properties (Dependent)
+        hasClosure
     end
 
     methods
@@ -83,6 +83,16 @@ classdef WVNonlinearFluxOperation < WVOperation
             self@WVOperation(name,outputVariables,options.f);
         end
 
+        function bool = get.hasClosure(self)
+            bool = false;
+            for iForce=1:length(self.forcing)
+                bool = bool | self.forcing{iForce}.isClosure;
+            end
+        end
+
+        function addForcing(self,force)
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Read and write to file
@@ -106,11 +116,53 @@ classdef WVNonlinearFluxOperation < WVOperation
                 wvt WVTransform {mustBeNonempty}
             end
 
+            self.writeForcingToFile(group,wvt);
+        end
+
+        function writeForcingToFile(self,group,wvt)
+            %writes all forcing objects to file.
+            %
+            % This should not be overridden, but simply called 
+            %
+            % - Topic: Write to file
+            % - Declaration: writeToFile(ncfile,wvt)
+            % - Parameter ncfile: NetCDFFile instance that should be written to
+            % - Parameter wvt: the WVTransform associated with the nonlinear flux
+            arguments
+                self WVNonlinearFluxOperation {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+            end
+
             group.addAttribute("TotalForcingGroups",length(self.forcing))
             for iForce=1:length(self.forcing)
                 forceGroup = group.addGroup("forcing-"+iForce);
                 forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
                 self.forcing{iForce}.writeToFile(forceGroup,wvt);
+            end
+        end
+
+        function initForcingFromFile(self,group,wvt)
+            %writes all forcing objects to file.
+            %
+            % This should not be overridden, but simply called.
+            %
+            % - Topic: Write to file
+            % - Declaration: writeToFile(ncfile,wvt)
+            % - Parameter ncfile: NetCDFFile instance that should be written to
+            % - Parameter wvt: the WVTransform associated with the nonlinear flux
+            arguments
+                self WVNonlinearFluxOperation {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+            end
+
+            totalForcingGroups = group.attributes('TotalForcingGroups');
+            for iForce=1:totalForcingGroups
+                forceGroup = group.groupWithName("forcing-"+iForce);
+                forcingClassName = forceGroup.attributes('WVForcing');
+                force = feval(strcat(forcingClassName,'.forcingFromFile'),forceGroup,wvt);
+                self.addForcing(force);
             end
         end
 

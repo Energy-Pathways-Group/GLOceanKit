@@ -39,22 +39,28 @@ classdef WVForcing < handle
         % boolean indicating this class implements addHydrostaticSpatialForcing
         %
         % - Topic: Properties
-        doesHydrostaticSpatialForcing double {mustBeMember(doesHydrostaticSpatialForcing,[0 1])} =  0
+        doesHydrostaticSpatialForcing logical =  false
 
         % boolean indicating this class implements addNonhydrostaticSpatialForcing
         %
         % - Topic: Properties
-        doesNonhydrostaticSpatialForcing double {mustBeMember(doesNonhydrostaticSpatialForcing,[0 1])} =  0
+        doesNonhydrostaticSpatialForcing logical =  false
 
         % boolean indicating this class implements addSpectralForcing
         %
         % - Topic: Properties
-        doesSpectralForcing double {mustBeMember(doesSpectralForcing,[0 1])} =  0
+        doesSpectralForcing logical =  false
 
         % boolean indicating this class implements addSpectralA0Forcing
         %
         % - Topic: Properties
-        doesSpectralA0Forcing double {mustBeMember(doesSpectralA0Forcing,[0 1])} =  0
+        doesSpectralA0Forcing logical =  false
+
+        % boolean indicating that this forcing is a turbulence closure
+        % scheme, capable of removing variance at the small scales.
+        %
+        % - Topic: Properties
+        isClosure logical =  false
     end
 
     methods

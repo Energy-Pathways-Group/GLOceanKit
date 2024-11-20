@@ -15,9 +15,12 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
         dLnN2 = 0
     end
     methods
-        function self = WVHydrostaticFlux(wvt)
+        function self = WVHydrostaticFlux(wvt,force)
             arguments
                 wvt WVTransform {mustBeNonempty}
+            end
+            arguments (Repeating)
+                force WVForcing
             end
             fluxVar(1) = WVVariableAnnotation('Fp',{'j','kl'},'m/s2', 'non-linear flux into Ap');
             fluxVar(2) = WVVariableAnnotation('Fm',{'j','kl'},'m/s2', 'non-linear flux into Am');
@@ -34,6 +37,9 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
             else
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
                 warning('WVTransform not recognized.')
+            end
+            for iForce=1:length(force)
+                self.addForcing(force{iForce});
             end
         end
 
@@ -72,13 +78,7 @@ classdef WVHydrostaticFlux < WVNonlinearFluxOperation
                 wvt WVTransform {mustBeNonempty}
             end
             nlFlux = WVHydrostaticFlux(wvt);
-            totalForcingGroups = ncfile.attributes('TotalForcingGroups');
-            for iForce=1:totalForcingGroups
-                forceGroup = ncfile.groupWithName("forcing-"+iForce);
-                forcingClassName = forceGroup.attributes('WVForcing');
-                force = feval(strcat(forcingClassName,'.forcingFromFile'),forceGroup,wvt);
-                nlFlux.addForcing(force);
-            end
+            nlFlux.initForcingFromFile(ncfile,wvt);
         end
     end
 end
