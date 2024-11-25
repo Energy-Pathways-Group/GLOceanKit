@@ -11,16 +11,16 @@
 % April 12th, 2018      Version 1.0
 
 % profile on
-% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
-wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [128 128 128]);
+% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [128 128 128]);
 % wvt = WVTransformSingleMode([2000e3 1000e3], 2*[256 128], h=0.8, latitude=25);
 % profile viewer
 
 %%
-profile on
-wvt.initWithRandomFlow();
-profile viewer
+% profile on
+% wvt.initWithRandomFlow();
+% profile viewer
 
 % wvt.removeEnergyFromAliasedModes();
 % spatialFlux = WVNonlinearFluxSpatial(wvt);
