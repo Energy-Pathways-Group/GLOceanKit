@@ -1,4 +1,4 @@
-classdef WVNonlinearFlux < WVNonlinearFluxOperation
+classdef WVNonlinearFluxParf < WVNonlinearFluxOperation
     % 3D nonlinear flux for Boussinesq flow, appropriate for numerical modeling
     %
     % Computes the nonlinear flux for a Boussinesq model, and has options
@@ -37,7 +37,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
     end
 
     methods
-        function self = WVNonlinearFlux(wvt,options)
+        function self = WVNonlinearFluxParf(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -157,7 +157,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
             % Apply operator S---defined in (C4) in the manuscript
             % Finishing applying S, but also compute derivatives at the
             % same time
-            if 1
+            if 0
                 [U,Ux,Uy,Uz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.UAp.*Apt + wvt.UAm.*Amt,A0=wvt.UA0.*A0t);
                 [V,Vx,Vy,Vz] = wvt.transformToSpatialDomainWithFAllDerivatives(Apm=wvt.VAp.*Apt + wvt.VAm.*Amt,A0=wvt.VA0.*A0t);
                 W = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*Apt + wvt.WAm.*Amt);
@@ -177,17 +177,20 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ETAy = wvt.diffY(ETA);
                 ETAz = wvt.diffZG(ETA);
             else
-                f_u = parfeval(backgroundPool,@() wvt.u, 0);
+                % https://www.mathworks.com/matlabcentral/answers/1881672-i-need-help-regarding-parfeval-implementation-with-object-handle-i-have-created-an-object-handle-t
+                % f_u = parfeval(backgroundPool,@transformToSpatialDomainWithF,1,wvt,"Apm",wvt.UAp.*Apt + wvt.UAm.*Amt,"A0",wvt.UA0.*A0t);
+                % seems like any call to self just doesn't work
+                f_u = parfeval(backgroundPool,@() wvt.u, 1);
                 f_ux = afterEach(f_u,@() wvt.diffX(wvt.u), 1);
                 f_uy = afterEach(f_u,@() wvt.diffY(wvt.u), 1);
                 f_uz = afterEach(f_u,@() wvt.diffZF(wvt.u), 1);
 
-                f_v = parfeval(backgroundPool,@() wvt.v, 0);
+                f_v = parfeval(backgroundPool,@() wvt.v, 1);
                 f_vx = afterEach(f_v,@() wvt.diffX(wvt.v), 1);
                 f_vy = afterEach(f_v,@() wvt.diffY(wvt.v), 1);
                 f_vz = afterEach(f_v,@() wvt.diffZF(wvt.v), 1);
 
-                f_eta = parfeval(backgroundPool,@() wvt.eta, 0);
+                f_eta = parfeval(backgroundPool,@() wvt.eta, 1);
                 f_etax = afterEach(f_eta,@() wvt.diffX(wvt.eta), 1);
                 f_etay = afterEach(f_eta,@() wvt.diffY(wvt.eta), 1);
                 f_etaz = afterEach(f_eta,@() wvt.diffZG(wvt.eta), 1);
@@ -276,7 +279,7 @@ classdef WVNonlinearFlux < WVNonlinearFluxOperation
                 ncfile NetCDFFile {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
             end
-            nlFlux = WVNonlinearFlux(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),r=ncfile.attributes('r') );
+            nlFlux = WVNonlinearFluxParf(wvt,nu_xy=ncfile.attributes('nu_xy'),nu_z=ncfile.attributes('nu_z'),r=ncfile.attributes('r') );
         end
     end
 
