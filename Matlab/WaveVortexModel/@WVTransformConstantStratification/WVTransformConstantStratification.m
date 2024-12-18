@@ -154,7 +154,7 @@ classdef WVTransformConstantStratification < WVTransform & WVStratifiedFlow & WV
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            wvtX2 = WVTransformConstantStratification([self.Lx self.Ly self.Lz],m, self.N0,latitude=self.latitude,rho0=self.rho0);
+            wvtX2 = WVTransformConstantStratification([self.Lx self.Ly self.Lz],m, N0=self.N0,latitude=self.latitude,rho0=self.rho0,shouldAntialias=self.shouldAntialias,isHydrostatic=self.isHydrostatic);
             wvtX2.t0 = self.t0;
             [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
             wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);

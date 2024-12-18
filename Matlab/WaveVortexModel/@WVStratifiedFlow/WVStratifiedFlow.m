@@ -48,9 +48,9 @@ classdef WVStratifiedFlow < handle
             % - Declaration: flag = effectiveVerticalGridResolution(other)
             % - Returns effectiveVerticalGridResolution: double
             arguments
-                self WVNonlinearFluxOperation
+                self WVTransform
             end
-            effectiveVerticalGridResolution = pi/max(max(abs(self.wvt.l(:)),abs(self.wvt.k(:))));
+            effectiveVerticalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
         end
 
         function throwErrorIfDensityViolation(self,options)
