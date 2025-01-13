@@ -116,6 +116,10 @@ function [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
         group.addVariable(varAnnotation.name,varAnnotation.dimensions,wvt.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
     end
 
-    ncfile.addAttribute('WVNonlinearFluxOperation',class(wvt.nonlinearFluxOperation));
-    wvt.nonlinearFluxOperation.writeToFile(ncfile,wvt);
+    ncfile.addAttribute("TotalForcingGroups",length(self.forcing))
+    for iForce=1:length(self.forcing)
+        forceGroup = ncfile.addGroup("forcing-"+iForce);
+        forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
+        self.forcing{iForce}.writeToFile(forceGroup,wvt);
+    end
 end

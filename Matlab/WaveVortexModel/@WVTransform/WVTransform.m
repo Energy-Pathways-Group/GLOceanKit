@@ -50,7 +50,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % - Topic: Nonlinear flux and energy transfers
         % This operation is performed when -nonlinearFlux is called. It is
         % used to compute the energyFlux as well.
-        nonlinearFluxOperation WVNonlinearFluxOperation
+        nonlinearAdvection WVNonlinearAdvection
     end
 
     % Public read-only properties
@@ -156,6 +156,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         K, L, J
 
         Nz
+
+        hasClosure
+        hasNonlinearAdvectionEnabled
     end
 
     properties %(Access=private)
@@ -171,6 +174,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         primaryFlowComponentNameMap
         flowComponentNameMap
         knownDynamicalVariables
+
+        forcing = {}
+        spatialForcing = {}
+        spectralForcing = {}
     end
 
     properties (Abstract,GetAccess=public) 
@@ -303,6 +310,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
+
+            self.nonlinearAdvection = WVNonlinearAdvection(self);
+            self.addForcing(self.nonlinearAdvection);
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -378,6 +388,36 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         clearVariableCache(self)
         clearVariableCacheOfTimeDependentVariables(self)
         varargout = fetchFromVariableCache(self,varargin)
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Forcing
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function bool = get.hasClosure(self)
+            bool = false;
+            for iForce=1:length(self.forcing)
+                bool = bool | self.forcing{iForce}.isClosure;
+            end
+        end
+
+        function bool = get.hasNonlinearAdvectionEnabled(self)
+            bool = false;
+            if length(self.forcing) > 1
+                bool = self.forcing{1} == self.nonlinearAdvection;
+            end
+        end
+
+        function addForcing(self,force)
+            self.forcing{end+1} = force;
+            if force.doesNonhydrostaticSpatialForcing == true || force.doesHydrostaticSpatialForcing == true
+                self.spatialForcing{end+1} = force;
+            end
+            if force.doesSpectralForcing == true || force.doesSpectralA0Forcing == true
+                self.spectralForcing{end+1} = force;
+            end
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -584,12 +624,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
             u_y = self.horizontalModes.diffY(u,n);
         end
-
-        function set.nonlinearFluxOperation(self,value)
-            self.nonlinearFluxOperation = value;
-            self.addOperation(value,overwriteExisting=1);
-        end
-        
 
         [Fp,Fm,F0] = nonlinearFlux(self)
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)

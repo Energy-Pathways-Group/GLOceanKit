@@ -154,8 +154,6 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             % f = @(wvt) wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
             % self.addOperation(WVOperation('zeta_z',outputVar,f));
 
-            self.nonlinearFluxOperation = WVHydrostaticFlux(self);
-
             self.dftBuffer = zeros(self.spatialMatrixSize);
             self.wvBuffer = zeros([self.Nz self.Nkl]);
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
@@ -171,7 +169,6 @@ classdef WVTransformHydrostatic < WVTransform & WVStratifiedFlow & WVInertialOsc
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
             [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
-            wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
 
 

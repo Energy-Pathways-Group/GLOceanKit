@@ -78,13 +78,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
         t % (1,1) double
-
-        % The operation responsible for computing the nonlinear flux of the model
-        % - Topic: Model Properties
-        % If the nonlinearFlux is nil, then the model will advance using
-        % linear dynamics (i.e., the wave-vortex coefficients will not
-        % change).
-        nonlinearFluxOperation WVNonlinearFluxOperation
     end
 
 
@@ -189,16 +182,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % 
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.nonlinearFlux
             end
 
             self.wvt = wvt; 
             self.initialOutputTime = self.t;
             self.initialTime = self.t;
-            if isfield(options,"nonlinearFlux")
-                self.wvt.nonlinearFluxOperation = options.nonlinearFlux;
-            end
-            if self.nonlinearFluxOperation.hasClosure == false
+            if self.wvt.hasClosure == false
                 warning('The nonlinear flux has no damping and may not be stable.');
             end
 
@@ -207,12 +196,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.netcdfVariableMapForParticleWithName = containers.Map();
         end
         
-        function value = get.nonlinearFluxOperation(self)
-            value = self.wvt.nonlinearFluxOperation;
-        end
-
         function value = get.linearDynamics(self)
-            value = isempty(self.nonlinearFluxOperation);
+            value = ~self.wvt.hasNonlinearAdvectionEnabled;
         end
 
         function value = get.t(self)
