@@ -14,8 +14,5 @@ flag = flag & isequal(self.l, other.l);
 flag = flag & isequal(self.t, other.t);
 flag = flag & isequal(self.t0, other.t0);
 flag = flag & isequal(self.rho0, other.rho0);
-flag = flag & isequal(self.Ap, other.Ap);
-flag = flag & isequal(self.Am, other.Am);
-flag = flag & isequal(self.A0, other.A0);
 flag = flag & isequal(self.conjugateDimension, other.conjugateDimension);
 end

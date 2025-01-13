@@ -2,10 +2,8 @@ classdef WVMeanDensityAnomalyMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (Abstract,GetAccess=public, SetAccess=public)
-        Ap,Am,A0
-    end
-    properties (Abstract,GetAccess=public, SetAccess=protected)
+    properties (GetAccess=private, SetAccess=private)
+        A0
         z
         A0N
         NA0,PA0
@@ -181,6 +179,11 @@ classdef WVMeanDensityAnomalyMethods < handle
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
         end
+        
+        function flag = hasEqualPVComponents(wvt1,wvt2)
+            flag = isequal(wvt1.A0, wvt2.A0);
+        end
+
     end
 
 end

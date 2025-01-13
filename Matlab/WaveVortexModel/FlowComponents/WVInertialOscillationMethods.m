@@ -2,10 +2,8 @@ classdef WVInertialOscillationMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (Abstract,GetAccess=public, SetAccess=public)
-        Ap,Am,A0
-    end
-    properties (Abstract,GetAccess=public, SetAccess=protected)
+    properties (GetAccess=private, SetAccess=private)
+        Ap,Am
         z
         UAp,VAp
         UAm,VAm
@@ -23,6 +21,9 @@ classdef WVInertialOscillationMethods < handle
         % - Returns flowComponent: subclass of WVPrimaryFlowComponent
         % - nav_order: 3
         inertialComponent
+    end
+    properties (Dependent)
+        h_pm  % [Nj 1]
     end
     methods (Access=protected)
         function initializeInertialOscillationComponent(self)
@@ -186,6 +187,11 @@ classdef WVInertialOscillationMethods < handle
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
+        end
+        
+        function flag = hasEqualWaveComponents(wvt1,wvt2)
+            flag = isequal(wvt1.Ap, wvt2.Ap);
+            flag = flag & isequal(wvt1.Am, wvt2.Am);
         end
     end
 

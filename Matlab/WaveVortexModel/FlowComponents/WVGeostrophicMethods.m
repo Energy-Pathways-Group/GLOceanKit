@@ -2,10 +2,8 @@ classdef WVGeostrophicMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (Abstract,GetAccess=public, SetAccess=public)
-        Ap,Am,A0
-    end
-    properties (Abstract,GetAccess=public, SetAccess=protected)
+    properties (GetAccess=private, SetAccess=private)
+        A0
         z
         UA0,VA0,NA0,PA0
         A0Z,A0N
@@ -19,6 +17,9 @@ classdef WVGeostrophicMethods < handle
         % - Returns flowComponent: subclass of WVPrimaryFlowComponent
         % - nav_order: 1
         geostrophicComponent
+    end
+    properties (Dependent)
+        h_0  % [Nj 1]
     end
     methods (Abstract)
         ratio = maxFg(self,kMode,lMode,jMode);
@@ -402,6 +403,10 @@ classdef WVGeostrophicMethods < handle
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
+        end
+        
+        function flag = hasEqualPVComponents(wvt1,wvt2)
+            flag = isequal(wvt1.A0, wvt2.A0);
         end
     end
 

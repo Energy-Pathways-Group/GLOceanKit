@@ -36,15 +36,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         t = 0
         t0 = 0
 
-        % positive wave coefficients at reference time t0 (m/s)
-        % Topic: Wave-vortex coefficients
-        Ap
-        % negative wave coefficients at reference time t0 (m/s)
-        % Topic: Wave-vortex coefficients
-        Am
-        % geostrophic coefficients at reference time t0 (m)
-        % Topic: Wave-vortex coefficients
-        A0
+        hasPotentialVorticityFlow = false
+        hasWaveFlow = false
 
         % The operation responsible for computing the nonlinear flux
         % - Topic: Nonlinear flux and energy transfers
@@ -147,7 +140,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         dk, dl
         K2, Kh
 
-        Omega
         Lr2
 
         f, inertialPeriod
@@ -182,9 +174,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     properties (Abstract,GetAccess=public) 
         h_0  % [Nj Nkl]
-        h_pm  % [Nj Nkl]
         isHydrostatic
-        iOmega
     end
     
     methods (Abstract)
@@ -469,10 +459,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function Kh = get.Kh(self)
             Kh = sqrt(self.K .* self.K + self.L .* self.L);
         end 
-        
-        function Omega = get.Omega(self)
-            Omega = sqrt(self.g*self.h_pm.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
-        end
 
         function Lr2 = get.Lr2(self)
             Lr2 = self.g*self.h_0/(self.f*self.f);
@@ -601,12 +587,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wz = self.diffZG(w);
         end
 
-        function [Apt,Amt] = waveCoefficientsAtTimeT(self)
-            phase = exp(self.iOmega*(self.t-self.t0));
-            Apt = self.Ap .* phase;
-            Amt = self.Am .* conj(phase);
-        end
-        
         function u_x = diffX(self,u,n)
             arguments
                 self         WVTransform

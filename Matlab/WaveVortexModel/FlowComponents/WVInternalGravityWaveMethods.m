@@ -2,16 +2,16 @@ classdef WVInternalGravityWaveMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (Abstract,GetAccess=public, SetAccess=public)
-        Ap,Am,A0
-    end
-    properties (Abstract,GetAccess=public, SetAccess=protected)
+    properties (GetAccess=private, SetAccess=private)
+        Ap,Am
         z
         UAp,VAp,WAp,NAp
         UAm,VAm,WAm,NAm
         ApmD,ApmN
         % Omega, iOmega
         Apm_TE_factor
+
+        iOmega
     end
     methods (Abstract)
         addPrimaryFlowComponent(self,primaryFlowComponent)
@@ -24,6 +24,11 @@ classdef WVInternalGravityWaveMethods < handle
         % - Returns flowComponent: subclass of WVPrimaryFlowComponent
         % - nav_order: 2
         waveComponent
+
+        Omega
+    end
+    properties (Dependent)
+        h_pm  % [Nj 1]
     end
     methods (Abstract)
         ratio = maxFw(self,kMode,lMode,j)
@@ -74,6 +79,16 @@ classdef WVInternalGravityWaveMethods < handle
     methods
         function flowComponent = get.waveComponent(self)
             flowComponent = self.flowComponent('wave');
+        end
+
+        function [Apt,Amt] = waveCoefficientsAtTimeT(self)
+            phase = exp(self.iOmega*(self.t-self.t0));
+            Apt = self.Ap .* phase;
+            Amt = self.Am .* conj(phase);
+        end
+
+        function Omega = get.Omega(self)
+            Omega = sqrt(self.g*self.h_pm.*(self.K .* self.K + self.L .* self.L) + self.f*self.f);
         end
 
         function energy = waveEnergy(self)
@@ -567,6 +582,11 @@ classdef WVInternalGravityWaveMethods < handle
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
+        end
+
+        function flag = hasEqualWaveComponents(wvt1,wvt2)
+            flag = isequal(wvt1.Ap, wvt2.Ap);
+            flag = flag & isequal(wvt1.Am, wvt2.Am);
         end
 
         function [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)
