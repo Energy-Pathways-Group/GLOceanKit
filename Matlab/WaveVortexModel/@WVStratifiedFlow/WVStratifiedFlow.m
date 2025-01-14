@@ -140,13 +140,15 @@ classdef WVStratifiedFlow < handle
 
         end
 
-        function initializeStratifiedFlow(self)
+        function initializeStratifiedFlow(wvt)
+            % After initializing the WVTransform, this method can be called
+            % and the WVStratifiedFlow will register.
             arguments
-                self WVTransform
+                wvt WVTransform
             end
-            self.addPropertyAnnotations(WVStratifiedFlow.propertyAnnotationsForStratifiedFlow);
-            self.addOperation(EtaTrueOperation());
-            self.addOperation(APVOperation());
+            wvt.addPropertyAnnotations(WVStratifiedFlow.propertyAnnotationsForStratifiedFlow);
+            wvt.addOperation(EtaTrueOperation());
+            wvt.addOperation(APVOperation());
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
