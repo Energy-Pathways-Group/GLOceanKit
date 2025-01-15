@@ -49,8 +49,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         Lx, Ly, Lz
-        Nx, Ny, Nj, Nkl
-        k, l, j, z = 0, z_int
+        Nx, Ny, Nkl
+        k, l,
         kAxis, lAxis, kRadial
         latitude
 
@@ -144,10 +144,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         f, inertialPeriod
 
-        X, Y, Z
-        K, L, J
-
-        Nz
+        X, Y
+        K, L
 
         hasClosure
         hasNonlinearAdvectionEnabled

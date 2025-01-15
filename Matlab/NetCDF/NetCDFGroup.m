@@ -555,6 +555,21 @@ classdef NetCDFGroup < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function bool = hasGroupWithName(self,groupName)
+            arguments
+                self NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Repeating)
+                groupName char
+            end
+            bool = zeros(length(groupName),1);
+
+            for iArg=1:length(groupName)
+                bool(iArg) = isKey(self.groupNameMap,groupName{iArg});
+            end
+            bool = logical(bool);
+        end
+
         % key-value Map to retrieve a NetCDFGroup object by name
         % - Topic: Working with groups
         function grp = groupWithName(self,name)

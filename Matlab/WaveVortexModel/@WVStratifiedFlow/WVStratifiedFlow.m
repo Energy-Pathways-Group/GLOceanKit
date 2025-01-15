@@ -4,8 +4,14 @@ classdef WVStratifiedFlow < handle
     properties (GetAccess=public, SetAccess=protected)
         rho_nm, N2, dLnN2
         verticalModes
+        z, j
     end
 
+    properties (Dependent, SetAccess=private)
+        % Z, J % No! these have to be implemented at the transform level
+        % because you have to know the full geometry
+        Nz, Nj
+    end
 
     properties %(GetAccess=protected) eta_true operation needs rhoFunction
         rhoFunction, N2Function, dLnN2Function = [] % function handles
@@ -17,6 +23,8 @@ classdef WVStratifiedFlow < handle
     end
 
     properties (Abstract)
+        z_int
+
         FinvMatrix
         GinvMatrix
 
@@ -83,17 +91,23 @@ classdef WVStratifiedFlow < handle
     end
 
     methods (Access=protected)
-        function self = WVStratifiedFlow(Lz,z,options)
+        function self = WVStratifiedFlow(Lz,Nz,options)
             % If you pass verticalModes directly, this is the most
             % efficient. If you pass z, then it is assumed you're passing
             % z-quadrature. Otherwise it all gets built from scratch.
+            %
+            % At the end of initialization, the verticalModes class is
+            % initialized with the quadrature point
             arguments
                 Lz (1,1) double {mustBePositive}
-                z (:,1) double {mustBeNonempty} % quadrature points!
+                Nz (1,1) double {mustBePositive}
+                options.z (:,1) double {mustBeNonempty} % quadrature points!
+                options.Nj (1,1) double {mustBePositive}
                 options.rho function_handle = @isempty
                 options.N2 function_handle = @isempty
                 options.dLnN2 function_handle = @isempty
                 options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
                 options.verticalModes = []
             end
 
@@ -105,7 +119,28 @@ classdef WVStratifiedFlow < handle
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
             % modes, but the boundaries.
-            Nz = length(z);
+            if isfield(options,'z')
+                self.z=options.z;
+            else
+                self.z = WVStratifiedFlow.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rho,N2=options.N2,latitude=options.latitude);
+            end
+            self.Nz = length(z);
+
+            if isfield(options,'Nj')
+                if options.Nj > self.Nz-1
+                    error('The number of modes must be no greater than Nz-1');
+                end
+                self.Nj = options.Nj;
+            else
+                self.Nj = self.Nz-1;
+            end
+
+            if self.Nj>1
+                self.j = (0:(self.Nj-1))';
+            else
+                self.j=1;
+            end
+
             nModes = Nz-1;
             if ~isempty(options.verticalModes)
                 self.verticalModes = options.verticalModes;
@@ -114,13 +149,13 @@ classdef WVStratifiedFlow < handle
                 self.rho_nm = self.rhoFunction(z);
                 self.N2 = self.N2Function(z);
             elseif ~isequal(options.N2,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
+                self.verticalModes = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = options.N2(z);
                 self.N2Function = options.N2;
                 self.rhoFunction = self.verticalModes.rho_function;
                 self.rho_nm = self.rhoFunction(z);
             elseif ~isequal(options.rho,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
+                self.verticalModes = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = self.verticalModes.N2;
                 self.N2Function = self.verticalModes.N2_function;
                 self.rhoFunction = options.rho;
@@ -301,16 +336,73 @@ classdef WVStratifiedFlow < handle
             Q = Q(1:Nj,1);
             h = h(1:Nj,1);
         end
+
+        function writeStratifiedFlowToFile(self,ncfile,matFilePath)
+            % write the WVStratifiedFlowHydrostatic to NetCDF and Matlab sidecar file.
+            %
+            % The NetCDF file must be already initialized and it is assumed
+            % that any existing Matlab file at the path is safe to
+            % overwrite. This method is designed to be used by the
+            % WVTransform classes.
+            %
+            % % For proper error checking and to write the file
+            % independently of the WVTransform classes, use the static
+            % method,
+            %   `WVStratifiedFlowHydrostatic.writeToFile`
+            %
+            %
+            % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
+            % - Parameter ncfile: a valid NetCDFFile instance
+            % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
+            arguments
+                self WVStratifiedFlow {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+                matFilePath char
+            end
+
+            dimensionAnnotation = WVStratifiedFlow.defaultDimensionAnnotationsForStratifiedFlow;
+            dimensionAnnotationNameMap = configureDictionary("string","WVDimensionAnnotation");
+            for i=1:length(dimensionAnnotation)
+                dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
+            end
+
+            dims = union(dimensions,{'z','j'});
+            for iDim=1:length(dims)
+                dimAnnotation = dimensionAnnotationNameMap(dims{iDim});
+                dimAnnotation.attributes('units') = dimAnnotation.units;
+                dimAnnotation.attributes('long_name') = dimAnnotation.description;
+                ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+            end
+        end
     end
     methods (Static, Hidden=true)
+        function dimensions = dimensionAnnotationsForStratifiedFlow()
+            % return array of WVDimensionAnnotation to annotate the
+            % dimensions
+            %
+            % This function returns annotations for all dimensions of the
+            % WVStratifiedFlow class.
+            %
+            % - Topic: Internal
+            % - Declaration: dimensionAnnotations = WVStratifiedFlow.dimensionAnnotationsForStratifiedFlow()
+            % - Returns dimensionAnnotations: array of WVDimensionAnnotation instances
+            dimensions = WVDimensionAnnotation.empty(0,0);
+
+            dimensions(end+1) = WVDimensionAnnotation('z', 'm', 'z coordinate');
+            dimensions(end).attributes('standard_name') = 'height_above_mean_sea_level';
+            dimensions(end).attributes('positive') = 'up';
+            dimensions(end).attributes('axis') = 'Z';
+
+            dimensions(end+1) = WVDimensionAnnotation('j', 'mode number', 'vertical mode number');
+        end
         function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
             % return array of WVPropertyAnnotation initialized by default
             %
-            % This function lets us efficiently annotate all the wave vortex transform
-            % properties
+            % This function returns annotations for all properties of the
+            % WVStratifiedFlow class.
             %
             % - Topic: Internal
-            % - Declaration: propertyAnnotations = defaultPropertyAnnotations()
+            % - Declaration: propertyAnnotations = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVPropertyAnnotation.empty(0,0);
             propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class');
@@ -326,11 +418,11 @@ classdef WVStratifiedFlow < handle
         function methodAnnotations = methodAnnotationsForStratifiedFlow()
             % return array of WVAnnotations to annotate the methods
             %
-            % This function lets us efficiently annotate all the wave vortex transform
-            % methods
+            % This function returns annotations for all methods of the
+            % WVStratifiedFlow class.
             %
             % - Topic: Internal
-            % - Declaration: methodAnnotations = defaultMethodAnnotations()
+            % - Declaration: methodAnnotations = WVStratifiedFlow.methodAnnotationsForStratifiedFlow()
             % - Returns methodAnnotations: array of WVAnnotations instances
             methodAnnotations = WVAnnotation.empty(0,0);
 
