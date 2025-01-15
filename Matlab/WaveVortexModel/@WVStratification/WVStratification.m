@@ -1,4 +1,4 @@
-classdef WVStratifiedFlow < handle
+classdef WVStratification < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     properties (GetAccess=public, SetAccess=protected)
@@ -91,10 +91,21 @@ classdef WVStratifiedFlow < handle
     end
 
     methods (Access=protected)
-        function self = WVStratifiedFlow(Lz,Nz,options)
-            % If you pass verticalModes directly, this is the most
-            % efficient. If you pass z, then it is assumed you're passing
-            % z-quadrature. Otherwise it all gets built from scratch.
+        function self = WVStratification(Lz,Nz,options)
+            % By assumption, the modes j=0:(Nj-1) --- because for now, we
+            % require completeness.
+            % 
+            % The required variables for a unique specification of the
+            % stratification are (Lz,Nz,N2,Nj,latitude,rho0). However, (Nj,
+            % latitude, rho0) all have defaults.
+            %
+            % To initialize:
+            % 1) Pass (Lz,Nz,N2) as a minimum set, and defaults will be
+            % chosen (or rho instead of N2).
+            % 2) You can also pass everything, and override the defaults,
+            % but the assumption is that z is the quadrature grid.
+            % 3) verticalModes is strictly optional, and will be created
+            % for you if you do not pass it.
             %
             % At the end of initialization, the verticalModes class is
             % initialized with the quadrature point
@@ -122,9 +133,15 @@ classdef WVStratifiedFlow < handle
             if isfield(options,'z')
                 self.z=options.z;
             else
-                self.z = WVStratifiedFlow.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rho,N2=options.N2,latitude=options.latitude);
+                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rho,N2=options.N2,latitude=options.latitude);
             end
             self.Nz = length(z);
+
+            if isfield(options,'Nj') && isfield(options,'j')
+                if options.Nj ~= length(options.j)
+                    error('You specified both Nj and j, but they are not compatible!');
+                end
+            end
 
             if isfield(options,'Nj')
                 if options.Nj > self.Nz-1
@@ -177,11 +194,11 @@ classdef WVStratifiedFlow < handle
 
         function initializeStratifiedFlow(wvt)
             % After initializing the WVTransform, this method can be called
-            % and the WVStratifiedFlow will register.
+            % and the WVStratification will register.
             arguments
                 wvt WVTransform
             end
-            wvt.addPropertyAnnotations(WVStratifiedFlow.propertyAnnotationsForStratifiedFlow);
+            wvt.addPropertyAnnotations(WVStratification.propertyAnnotationsForStratifiedFlow);
             wvt.addOperation(EtaTrueOperation());
             wvt.addOperation(APVOperation());
         end
@@ -192,7 +209,7 @@ classdef WVStratifiedFlow < handle
             self.verticalModes.normalization = Normalization.geostrophic;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv,h] = self.verticalModes.ModesAtFrequency(0);
-            [P,Q,PFinv,PF,QGinv,QG,h,w] = WVStratifiedFlow.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,self.verticalModes.Lz);
+            [P,Q,PFinv,PF,QGinv,QG,h,w] = WVStratification.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,self.verticalModes.Lz);
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsForIGWModes(self,k,Nj)
@@ -201,7 +218,7 @@ classdef WVStratifiedFlow < handle
             self.verticalModes.normalization = Normalization.kConstant;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
             [Finv,Ginv,h] = self.verticalModes.ModesAtWavenumber(k);
-            [P,Q,PFinv,PF,QGinv,QG,h] = WVStratifiedFlow.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,self.verticalModes.Lz);
+            [P,Q,PFinv,PF,QGinv,QG,h] = WVStratification.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,self.verticalModes.Lz);
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsWithFreeSurface(self,Finv,Ginv,h)
@@ -338,7 +355,7 @@ classdef WVStratifiedFlow < handle
         end
 
         function writeStratifiedFlowToFile(self,ncfile,matFilePath)
-            % write the WVStratifiedFlowHydrostatic to NetCDF and Matlab sidecar file.
+            % write the WVStratificationHydrostatic to NetCDF and Matlab sidecar file.
             %
             % The NetCDF file must be already initialized and it is assumed
             % that any existing Matlab file at the path is safe to
@@ -348,19 +365,19 @@ classdef WVStratifiedFlow < handle
             % % For proper error checking and to write the file
             % independently of the WVTransform classes, use the static
             % method,
-            %   `WVStratifiedFlowHydrostatic.writeToFile`
+            %   `WVStratificationHydrostatic.writeToFile`
             %
             %
             % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
             % - Parameter ncfile: a valid NetCDFFile instance
             % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
             arguments
-                self WVStratifiedFlow {mustBeNonempty}
+                self WVStratification {mustBeNonempty}
                 ncfile NetCDFFile {mustBeNonempty}
                 matFilePath char
             end
 
-            dimensionAnnotation = WVStratifiedFlow.defaultDimensionAnnotationsForStratifiedFlow;
+            dimensionAnnotation = WVStratification.defaultDimensionAnnotationsForStratifiedFlow;
             dimensionAnnotationNameMap = configureDictionary("string","WVDimensionAnnotation");
             for i=1:length(dimensionAnnotation)
                 dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
@@ -376,15 +393,24 @@ classdef WVStratifiedFlow < handle
         end
     end
     methods (Static, Hidden=true)
+        function matFilePath = matlabSidecarPathForNetCDFPath(path)
+            [filepath,name,~] = fileparts(path);
+            if isempty(filepath)
+                matFilePath = sprintf('%s.mat',name);
+            else
+                matFilePath = sprintf('%s/%s.mat',filepath,name);
+            end
+        end
+
         function dimensions = dimensionAnnotationsForStratifiedFlow()
             % return array of WVDimensionAnnotation to annotate the
             % dimensions
             %
             % This function returns annotations for all dimensions of the
-            % WVStratifiedFlow class.
+            % WVStratification class.
             %
             % - Topic: Internal
-            % - Declaration: dimensionAnnotations = WVStratifiedFlow.dimensionAnnotationsForStratifiedFlow()
+            % - Declaration: dimensionAnnotations = WVStratification.dimensionAnnotationsForStratifiedFlow()
             % - Returns dimensionAnnotations: array of WVDimensionAnnotation instances
             dimensions = WVDimensionAnnotation.empty(0,0);
 
@@ -399,10 +425,10 @@ classdef WVStratifiedFlow < handle
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function returns annotations for all properties of the
-            % WVStratifiedFlow class.
+            % WVStratification class.
             %
             % - Topic: Internal
-            % - Declaration: propertyAnnotations = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow()
+            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVPropertyAnnotation.empty(0,0);
             propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class');
@@ -419,10 +445,10 @@ classdef WVStratifiedFlow < handle
             % return array of WVAnnotations to annotate the methods
             %
             % This function returns annotations for all methods of the
-            % WVStratifiedFlow class.
+            % WVStratification class.
             %
             % - Topic: Internal
-            % - Declaration: methodAnnotations = WVStratifiedFlow.methodAnnotationsForStratifiedFlow()
+            % - Declaration: methodAnnotations = WVStratification.methodAnnotationsForStratifiedFlow()
             % - Returns methodAnnotations: array of WVAnnotations instances
             methodAnnotations = WVAnnotation.empty(0,0);
 
