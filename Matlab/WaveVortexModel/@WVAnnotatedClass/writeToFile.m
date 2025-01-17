@@ -1,4 +1,4 @@
-function [ncfile,matFilePath] = writeToFile(self,path,variables,options)
+function ncfile = writeToFile(self,path,variables,options)
     % Output the `WVTransform` to file.
     %
     % Writes the WVTransform instance to file, with enough information to
@@ -22,49 +22,32 @@ function [ncfile,matFilePath] = writeToFile(self,path,variables,options)
         variables char
     end
     arguments (Input)
-        options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0 
+        options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+        options.shouldAddDefaultDimensions double {mustBeMember(options.shouldAddDefaultDimensions,[0 1])} = 1 
         options.shouldAddDefaultVariables double {mustBeMember(options.shouldAddDefaultVariables,[0 1])} = 1 
-        options.dimensions = {}
+        options.dimensions {mustBeA(options.dimensions,"cell")} = {}
         options.attributes = configureDictionary("string","string")
     end
     arguments (Output)
         ncfile NetCDFFile
-        matFilePath char
-    end
-    % Will not add 't' by default to allow for alternative definitions. Do
-    % include 't' in the option input arguments if you want it written.
-    [filepath,name,~] = fileparts(path);
-    if isempty(filepath)
-        matFilePath = sprintf('%s.mat',name);
-    else
-        matFilePath = sprintf('%s/%s.mat',filepath,name);
     end
 
     if options.shouldOverwriteExisting == 1
         if isfile(path)
             delete(path);
         end
-        if isfile(matFilePath)
-            delete(matFilePath);
-        end
     else
-        if isfile(path) || isfile(matFilePath)
+        if isfile(path)
             error('A file already exists with that name.')
         end
     end
     ncfile = NetCDFFile(path);
 
-    if ~iscell(options.dimensions)
-        if isempty(options.dimensions)
-            dimensions = {};
-        else
-            dimensions = {options.dimensions};
-        end
+    if options.shouldAddDefaultDimensions == 1
+        dims = union(options.dimensions,self.requiredDimensions);
     else
-        dimensions = options.dimensions;
+        dims = options.dimensions;
     end
-
-    dims = union(dimensions,{'x','y','z','kl','j'});
     for iDim=1:length(dims)
         dimAnnotation = self.dimensionAnnotationWithName(dims{iDim});
         dimAnnotation.attributes('units') = dimAnnotation.units;
@@ -72,54 +55,23 @@ function [ncfile,matFilePath] = writeToFile(self,path,variables,options)
         ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
     end
 
-    ncfile.addAttribute('source',sprintf('Created with the WaveVortexModel version %s',string(self.version)));
-    ncfile.addAttribute('model_version',self.version);
-    ncfile.addAttribute('date_created',string(datetime('now')));
-    ncfile.addAttribute('history',string(strcat(string(datetime('now')),': file created.')));
-    ncfile.addAttribute('references','Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995');
-    ncfile.addAttribute('WVTransform',class(self));
+    attributeNames = keys(options.attributes);
+    for iKey=1:length(attributeNames)
+        ncfile.addAttribute(attributeNames{iKey},options.attributes(attributeNames{iKey}));
+    end
 
-    % Pull out the user requested attributes that should be written to the
-    % global attributes of the ncfile
-    newAttributes = {};
+    if options.shouldAddDefaultVariables == 1
+        variables = union(variables,self.requiredVariables);
+    end
     for iVar=1:length(variables)
         if isKey(self.propertyAnnotationNameMap,variables{iVar})
-            newAttributes{end+1} = variables{iVar};
+            varAnnotation = self.propertyAnnotationNameMap(variables{iVar});
+        elseif isKey(self.variableAnnotationWithName,variables{iVar})
+            varAnnotation = self.variableAnnotationWithName(variables{iVar});
         end
-    end
-    variables = setdiff(variables,newAttributes);
-
-    % Write these attributes to the root group
-    attributesToWrite = union(newAttributes,{'latitude','t0','rho0','Lx','Ly','Lz','k','l','shouldAntialias'});
-    for iVar=1:length(attributesToWrite)
-        varAnnotation = self.propertyAnnotationWithName(attributesToWrite{iVar});
+        % check for function_handle, and add group
         varAnnotation.attributes('units') = varAnnotation.units;
         varAnnotation.attributes('long_name') = varAnnotation.description;
         ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-    end
-
-    % Any variables should be written with a possible time dimension to the
-    % "wv" group.
-    if options.shouldAddDefaultVariables == 1
-        if isempty(variables)
-            variables = {'A0','Ap','Am','t'};
-        else
-            variables = union(variables,{'A0','Ap','Am','t'});
-        end
-    end
-
-    group = ncfile.addGroup("wv");
-    for iVar=1:length(variables)
-        varAnnotation = self.variableAnnotationWithName(variables{iVar});
-        varAnnotation.attributes('units') = varAnnotation.units;
-        varAnnotation.attributes('long_name') = varAnnotation.description;
-        group.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-    end
-
-    ncfile.addAttribute("TotalForcingGroups",length(self.forcing))
-    for iForce=1:length(self.forcing)
-        forceGroup = ncfile.addGroup("forcing-"+iForce);
-        forceGroup.addAttribute('WVForcing',class(self.forcing{iForce}));
-        self.forcing{iForce}.writeToFile(forceGroup,self);
     end
 end
