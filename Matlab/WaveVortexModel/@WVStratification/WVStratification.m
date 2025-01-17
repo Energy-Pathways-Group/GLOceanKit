@@ -1,4 +1,4 @@
-classdef WVStratification < handle
+classdef WVStratification < WVAnnotatedClass
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     properties (GetAccess=public, SetAccess=protected)
@@ -225,139 +225,12 @@ classdef WVStratification < handle
             [Finv,Ginv,h] = self.verticalModes.ModesAtWavenumber(k);
             [P,Q,PFinv,PF,QGinv,QG,h] = WVStratification.verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,self.verticalModes.Lz);
         end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h] = projectionOperatorsWithFreeSurface(self,Finv,Ginv,h)
-            % Make these matrices invertible by adding the barotropic mode
-            % to F, and removing the lower boundary of G.
-            Finv = cat(2,ones(self.Nz,1),Finv); % [Nz Nj+1]
-            Ginv = Ginv(2:end,:);  % [Nz-1 Nj]
-
-            % Compute the precondition matrices (really, diagonals)
-            P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
-
-            % Now create the actual transformation matrices
-            PFinv = Finv./P;
-            QGinv = Ginv./Q;
-            PF = inv(PFinv); % [Nj+1 Nz]
-            QG = inv(QGinv); % [Nj Nz-1]
-
-            maxCond = max([cond(PFinv), cond(QGinv), cond(PF), cond(QG)],[],2);
-            if maxCond > 1000
-                warning('Condition number is %f the vertical transformations.',maxCond);
-            end
-            % size(PFinv)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
-            % but, we will only multiply by vectors [Nj 1], so dump the
-            % last column. Now size(PFinv) = [Nz x Nj].
-            PFinv = PFinv(:,1:end-1);
-
-            % size(PF)=[Nj+1, Nz], but we don't care about the last mode
-            PF = PF(1:end-1,:);
-
-            % size(QGinv) = [Nz-1, Nj], need zeros for the lower boundaries
-            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = QGinv(:,1:end-1); % dump Nyquist
-            QGinv = cat(2,zeros(self.Nz-1,1),QGinv); % add barotropic mode
-            QGinv = cat(1,zeros(1,Nj),QGinv); % add zeros at along the bottom
-
-            % Now have to do the same thing to the condition matrix
-            Q = cat(2,0,Q(1:end-1));
-
-            % size(QG) = [Nj, Nz-1], need a zero for the barotropic
-            % mode, but also need zeros for the boundary
-            QG = cat(1,zeros(1,self.Nz-1),QG(1:end-1,:)); % dump the Nyquist mode, add a barotropic mode (all zeros)
-            QG = cat(2,zeros(Nj,1), QG); % add the bottom boundary
-
-            % want size(h)=[1 1 Nj]
-            h = shiftdim(h,-1);
-
-            P = shiftdim(P(1:end-1),-1);
-            Q = shiftdim(Q,-1);
-        end
     end
 
-    % methods (Static, Access=protected)
     methods (Static)
-        function z = quadraturePointsForStratifiedFlow(Lz,Nz,options)
-            % If you pass verticalModes directly, this is the most
-            % efficient. If you pass z, then it is assumed you're passing
-            % z-quadrature. Otherwise it all gets built from scratch.
-            arguments
-                Lz (1,1) double {mustBePositive}
-                Nz (1,1) double {mustBePositive}
-                options.rho function_handle = @isempty
-                options.N2 function_handle = @isempty
-                options.latitude (1,1) double = 33
-            end
-            
-            z = linspace(-Lz,0,Nz*10)';
-            if ~isequal(options.N2,@isempty)
-                im = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude, nEVP=max(256,floor(2.1*Nz)));
-            elseif ~isequal(options.rho,@isempty)
-                im = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude);
-            end
-            im.normalization = Normalization.geostrophic;
-            im.upperBoundary = UpperBoundary.rigidLid;
-            z = im.GaussQuadraturePointsForModesAtFrequency(Nz,0);
-        end
-
-        function [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,Lz)
-            Nz = size(Finv,1);
-            nModes = size(Finv,2);
-
-            % Make these matrices invertible by adding the barotropic mode
-            % to F, and removing the boundaries of G.
-            Finv = cat(2,ones(Nz,1),Finv);
-            Ginv = Ginv(2:end-1,1:end-1);
-
-            % Compute the precondition matrices (really, diagonals)
-            P = max(abs(Finv),[],1); % ones(1,size(Finv,1)); %
-            Q = max(abs(Ginv),[],1); % ones(1,size(Ginv,1)); %
-
-            % Now create the actual transformation matrices
-            PFinv = Finv./P;
-            QGinv = Ginv./Q;
-            PF = inv(PFinv);
-            QG = inv(QGinv);
-
-            b = zeros(Nz,1);
-            b(1) = Lz;
-            w = (PFinv.')\b;
-
-            maxCond = max([cond(PFinv), cond(QGinv), cond(PF), cond(QG)],[],2);
-            if maxCond > 1000
-                warning('Condition number is %f the vertical transformations.',maxCond);
-            end
-            % size(F)=[Nz x Nj+1], barotropic mode AND extra Nyquist mode
-            % but, we will only multiply by vectors [Nj 1], so dump the
-            % last column. Now size(Fp) = [Nz x Nj].
-            PFinv = PFinv(:,1:end-1);
-
-            % size(Finv)=[Nj+1, Nz], but we don't care about the last mode
-            PF = PF(1:end-1,:);
-
-            % size(G) = [Nz-2, Nj-1], need zeros for the boundaries
-            % and add the 0 barotropic mode, so size(G) = [Nz, Nj],
-            QGinv = cat(2,zeros(Nz,1),cat(1,zeros(1,nModes-1),QGinv,zeros(1,nModes-1)));
-
-            % size(Ginv) = [Nj-1, Nz-2], need a zero for the barotropic
-            % mode, but also need zeros for the boundary
-            QG = cat(2,zeros(nModes,1), cat(1,zeros(1,Nz-2),QG),zeros(nModes,1));
-
-            % want size(h)=[Nj 1]
-            h = cat(1,1,reshape(h(1:end-1),[],1)); % remove the extra mode at the end
-
-            P = reshape(P(1:end-1),[],1);
-            Q = reshape(cat(2,1,Q),[],1);
-
-            PFinv = PFinv(:,1:Nj);
-            PF = PF(1:Nj,:);
-            P = P(1:Nj,1);
-            QGinv = QGinv(:,1:Nj);
-            QG = QG(1:Nj,:);
-            Q = Q(1:Nj,1);
-            h = h(1:Nj,1);
-        end
+        z = quadraturePointsForStratifiedFlow(Lz,Nz,options);
+        [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,Lz);
+        [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsWithFreeSurface(Finv,Ginv,h,Nj,Lz);
 
         function writeStratificationToFile(self,ncfile,matFilePath)
             % write the WVStratification to NetCDF and Matlab sidecar file.
@@ -382,11 +255,7 @@ classdef WVStratification < handle
                 matFilePath char
             end
 
-            dimensionAnnotation = WVStratification.defaultDimensionAnnotationsForStratifiedFlow;
-            dimensionAnnotationNameMap = configureDictionary("string","WVDimensionAnnotation");
-            for i=1:length(dimensionAnnotation)
-                dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
-            end
+
 
             dims = union(dimensions,{'z','j'});
             for iDim=1:length(dims)
@@ -396,7 +265,7 @@ classdef WVStratification < handle
                 ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
             end
 
-            propertyAnnotation = WVStratificationConstant.defaultPropertyAnnotations;
+            propertyAnnotation = WVStratification.propertyAnnotationsForStratification;
             propertyAnnotationNameMap = configureDictionary("string","WVPropertyAnnotation");
             for i=1:length(propertyAnnotation)
                 propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
@@ -410,25 +279,41 @@ classdef WVStratification < handle
                 ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
             end
         end
-    end
-    methods (Static, Hidden=true)
-        function matFilePath = matlabSidecarPathForNetCDFPath(path)
-            [filepath,name,~] = fileparts(path);
-            if isempty(filepath)
-                matFilePath = sprintf('%s.mat',name);
-            else
-                matFilePath = sprintf('%s/%s.mat',filepath,name);
+
+        function dimensionAnnotationNameMap = dimensionAnnotationNameMapForStratification(self)
+            dimensionAnnotation = WVStratification.dimensionAnnotationsForStratification;
+            dimensionAnnotationNameMap = configureDictionary("string","WVDimensionAnnotation");
+            for i=1:length(dimensionAnnotation)
+                dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
             end
         end
 
-        function dimensions = dimensionAnnotationsForStratifiedFlow()
+
+    end
+    methods (Static, Hidden=true)
+        % All the metadata has to be defined at the class level---so static
+        % methods. Thus we have,
+        % -dimensionAnnotationsForStratification
+        % -propertyAnnotationsForStratification
+        % -methodAnnotationsForStratification
+        % -requiredDimensionsForStratification
+        % -requiredVariablesForStratification
+        function vars = requiredVariablesForStratification()
+            vars = {'rho0','rho_nm','N2'};
+        end
+
+        function dims = requiredDimensionsForStratification()
+            dims = {'z','j'};
+        end
+
+        function dimensions = dimensionAnnotationsForStratification()
             % return array of WVDimensionAnnotation to annotate the
             % dimensions
             %
             % This function returns annotations for all dimensions of the
             % WVStratification class.
             %
-            % - Topic: Internal
+            % - Topic: Developer
             % - Declaration: dimensionAnnotations = WVStratification.dimensionAnnotationsForStratifiedFlow()
             % - Returns dimensionAnnotations: array of WVDimensionAnnotation instances
             dimensions = WVDimensionAnnotation.empty(0,0);
@@ -440,13 +325,13 @@ classdef WVStratification < handle
 
             dimensions(end+1) = WVDimensionAnnotation('j', 'mode number', 'vertical mode number');
         end
-        function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
+        function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function returns annotations for all properties of the
             % WVStratification class.
             %
-            % - Topic: Internal
+            % - Topic: Developer
             % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVPropertyAnnotation.empty(0,0);
@@ -463,13 +348,13 @@ classdef WVStratification < handle
             propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
         end
 
-        function methodAnnotations = methodAnnotationsForStratifiedFlow()
+        function methodAnnotations = methodAnnotationsForStratification()
             % return array of WVAnnotations to annotate the methods
             %
             % This function returns annotations for all methods of the
             % WVStratification class.
             %
-            % - Topic: Internal
+            % - Topic: Developer
             % - Declaration: methodAnnotations = WVStratification.methodAnnotationsForStratifiedFlow()
             % - Returns methodAnnotations: array of WVAnnotations instances
             methodAnnotations = WVAnnotation.empty(0,0);

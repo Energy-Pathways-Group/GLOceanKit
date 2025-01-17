@@ -152,11 +152,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     properties %(Access=private)
-        variableAnnotationNameMap
-        timeDependentVariablesNameMap
-        propertyAnnotationNameMap
-        dimensionAnnotationNameMap
-
         operationNameMap
         operationVariableNameMap
         variableCache
@@ -275,11 +270,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.A0 = zeros(self.spectralMatrixSize);  
             
             self.clearVariableCache();
-
-            self.dimensionAnnotationNameMap =    configureDictionary("string","WVDimensionAnnotation"); %containers.Map();
-            self.propertyAnnotationNameMap =     configureDictionary("string","WVPropertyAnnotation"); %containers.Map();
-            self.variableAnnotationNameMap =     configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of *all* variables
-            self.timeDependentVariablesNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map();
             self.operationVariableNameMap =      configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
             self.operationNameMap =              configureDictionary("string","cell"); containers.Map(); % cannot use a dictionary, because dictionaries cannot take subclasses of the defined type
 
@@ -334,23 +324,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         val = flowComponent(self,name)
 
         operations = operationForDynamicalVariable(self,variableName,options)
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Metadata
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        addDimensionAnnotations(self,dimensionAnnotation)
-        val = dimensionAnnotationWithName(self,name)
-
-        addPropertyAnnotations(self,propertyAnnotation)
-        val = propertyAnnotationWithName(self,name)
-
-        addVariableAnnotations(self,variableAnnotation)
-        removeVariableAnnotations(self,variableAnnotation)
-        val = variableAnnotationWithName(self,name)
-        names = variableNames(self)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

@@ -121,37 +121,35 @@ classdef WVStratificationConstant < WVStratification
     end
 
     methods (Access=protected)
-        function vars = requiredVariables(self)
-            vars = WVStratificationConstant.requiredVariables();
+        function vars = requiredVariablesForStratification(self)
+            vars = {'N0'};
         end
-        function dims = requiredDimensions(self)
-            dims = WVStratificationConstant.requiredDimensions();
+        function dims = requiredDimensionsForStratification(self)
+            dims = {'z','j'};
         end
     end
 
     methods (Static)
-        function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
+        % All the metadata has to be defined at the class level---so static
+        % methods. Thus we have,
+        % -dimensionAnnotationsForStratification
+        % -propertyAnnotationsForStratification
+        % -methodAnnotationsForStratification
+        % -requiredDimensionsForStratification
+        % -requiredVariablesForStratification
+        function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function returns annotations for all properties of the
-            % WVStratificationHydrostatic class (as well as its
+            % WVStratificationConstant class (as well as its
             % superclass).
             %
             % - Topic: Internal
-            % - Declaration: propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow()
+            % - Declaration: propertyAnnotations = WVStratificationConstant.propertyAnnotationsForStratification()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-            propertyAnnotations = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow();
+            propertyAnnotations = WVStratification.propertyAnnotationsForStratification();
             propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
         end
-
-        function vars = requiredVariables()
-            vars = {'N0'};
-        end
-
-        function dims = requiredDimensions()
-            dims = {'z','j'};
-        end
-
 
         function [bool, errorString] = canInitializeDirectlyFromFile(ncfile)
             bool = false;
