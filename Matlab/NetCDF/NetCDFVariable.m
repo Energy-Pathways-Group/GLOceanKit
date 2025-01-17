@@ -35,6 +35,10 @@ classdef NetCDFVariable < handle
         % A Boolean value that indicates whether the variable was defined as a logical type
         % - Topic: Schema keys — Variables
         GLNetCDFSchemaIsLogicalTypeKey = "isLogicalType";
+
+        % A Boolean value that indicates whether the variable was defined to hold a function_handle type
+        % - Topic: Schema keys — Variables
+        GLNetCDFSchemaIsFunctionHandleTypeKey = "isFunctionHandleType";
     end
 
 

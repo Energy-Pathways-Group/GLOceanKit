@@ -162,6 +162,16 @@ classdef NetCDFRealVariable < NetCDFVariable
             if isKey(self.attributes,self.GLNetCDFSchemaIsLogicalTypeKey) && self.attributes(self.GLNetCDFSchemaIsLogicalTypeKey) == 1
                 value = logical(value);
             end
+            if isKey(self.attributes,self.GLNetCDFSchemaIsFunctionHandleTypeKey) && self.attributes(self.GLNetCDFSchemaIsFunctionHandleTypeKey) == 1
+                binaryData = uint8(value);
+                tmpfile = strcat(tempname,'.mat');
+                fileID = fopen(tmpfile, 'w');
+                fwrite(fileID,binaryData, '*uint8');
+                fclose(fileID);
+                matFile = load(tmpfile);
+                value = matFile.(self.name);
+                delete(tmpfile);
+            end
         end
 
         function set.value(self,data)

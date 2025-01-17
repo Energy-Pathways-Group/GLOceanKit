@@ -247,7 +247,7 @@ classdef NetCDFGroup < handle
                 options.type = class(value);
                 options.isComplex = ~isreal(value);
             end
-            var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=0,attributes=options.attributes);           
+            var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=options.isComplex,attributes=options.attributes);           
         end
 
         function dimPath = dimensionPathWithName(self,dimensionName)
@@ -373,6 +373,55 @@ classdef NetCDFGroup < handle
             end
 
         end
+
+        function var = addFunctionHandle(self,name,value,options)
+            % add a function_handle type to the file
+            %
+            % Immediately initializes and writes the given variable data to
+            % file, e.g.,
+            %
+            % ```matlab
+            % m = 1; b = 2;
+            % f = @(x) m*x + b;
+            % ncfile.addFunctionHandle('f',f);
+            % ```
+            %
+            % - Topic: Working with variables
+            % - Declaration: variable = addFunctionHandle(name,dimNames,value,options)
+            % - Parameter name: name of the variable (a string)
+            % - Parameter value: function_handle
+            % - Parameter attributes: (optional) `containers.Map`
+            % - Returns variable: a NetCDFVariable object
+            arguments
+                self (1,1) NetCDFGroup {mustBeNonempty}
+                name {mustBeText}
+                value function_handle
+                options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
+            end
+            if isKey(self.realVariableNameMap,name) || isKey(self.complexVariableNameMap,name)
+                error('A variable with that name already exists.');
+            end
+
+            % write the function_handle to a .mat file, and read in as
+            % binary
+            tmpfile = strcat(tempname,'.mat');
+            tmpstruct.(name) = value;
+            save(tmpfile,"-struct","tmpstruct");
+            fileID = fopen(tmpfile, 'rb');
+            binaryData = fread(fileID, '*uint8');
+            fclose(fileID);
+            delete(tmpfile);
+
+            dim = NetCDFDimension(self,name=name,nPoints=length(binaryData));
+            self.addDimensionPrimitive(dim)
+            options.attributes(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey) = uint8(1);
+            options.attributes("format") = "The function_handle object is saved in a .mat file, which is then written as binary data to this variable.";
+
+            var = NetCDFRealVariable(self,name=name,dimensions=dim,attributes=options.attributes,type=class(binaryData));
+            self.addRealVariablePrimitive(var);
+            var.value = binaryData;
+        end
+
 
         function varargout = readVariables(self,variableNames)
             % read variables from file
