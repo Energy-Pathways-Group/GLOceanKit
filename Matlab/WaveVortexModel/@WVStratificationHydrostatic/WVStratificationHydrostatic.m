@@ -201,7 +201,6 @@ classdef WVStratificationHydrostatic < WVStratification
             propertyAnnotations(end+1) = WVPropertyAnnotation('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat');
             propertyAnnotations(end+1) = WVPropertyAnnotation('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. ');
             propertyAnnotations(end+1) = WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
         end
 
         function vars = requiredVariables()

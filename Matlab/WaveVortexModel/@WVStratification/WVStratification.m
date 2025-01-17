@@ -2,29 +2,26 @@ classdef WVStratification < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     properties (GetAccess=public, SetAccess=protected)
-        rho_nm, N2, dLnN2
-        verticalModes
+        % eta_true operation needs rhoFunction
+        rhoFunction, N2Function%, dLnN2Function = []
+        rho0, rho_nm, N2%, dLnN2
         z, j
+        z_int
     end
 
-    properties (Dependent, SetAccess=private)
+    properties (Dependent)
         % Z, J % No! these have to be implemented at the transform level
         % because you have to know the full geometry
         Nz, Nj
     end
 
-    properties %(GetAccess=protected) eta_true operation needs rhoFunction
-        rhoFunction, N2Function, dLnN2Function = [] % function handles
-    end
-
     methods (Abstract)
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
+        vm = verticalModes(self);
     end
 
     properties (Abstract)
-        z_int
-
         FinvMatrix
         GinvMatrix
 
@@ -33,6 +30,14 @@ classdef WVStratification < handle
     end
 
     methods
+        function value = get.Nz(self)
+            value=length(self.z);
+        end
+
+        function value = get.Nj(self)
+            value=length(self.j);
+        end
+
         function flag = isDensityInValidRange(self)
             % checks if the density field is a valid adiabatic re-arrangement of the base state
             %
@@ -354,8 +359,8 @@ classdef WVStratification < handle
             h = h(1:Nj,1);
         end
 
-        function writeStratifiedFlowToFile(self,ncfile,matFilePath)
-            % write the WVStratificationHydrostatic to NetCDF and Matlab sidecar file.
+        function writeStratificationToFile(self,ncfile,matFilePath)
+            % write the WVStratification to NetCDF and Matlab sidecar file.
             %
             % The NetCDF file must be already initialized and it is assumed
             % that any existing Matlab file at the path is safe to
@@ -368,7 +373,7 @@ classdef WVStratification < handle
             %   `WVStratificationHydrostatic.writeToFile`
             %
             %
-            % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
+            % - Declaration: writeStratificationToFile(ncfile,matFilePath)
             % - Parameter ncfile: a valid NetCDFFile instance
             % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
             arguments
@@ -389,6 +394,20 @@ classdef WVStratification < handle
                 dimAnnotation.attributes('units') = dimAnnotation.units;
                 dimAnnotation.attributes('long_name') = dimAnnotation.description;
                 ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+            end
+
+            propertyAnnotation = WVStratificationConstant.defaultPropertyAnnotations;
+            propertyAnnotationNameMap = configureDictionary("string","WVPropertyAnnotation");
+            for i=1:length(propertyAnnotation)
+                propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
+            end
+
+            requiredVariables = {'rho0','rho_nm','N2'};
+            for iVar=1:length(requiredVariables)
+                varAnnotation = propertyAnnotationNameMap(requiredVariables{iVar});
+                varAnnotation.attributes('units') = varAnnotation.units;
+                varAnnotation.attributes('long_name') = varAnnotation.description;
+                ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
             end
         end
     end
@@ -439,6 +458,9 @@ classdef WVStratification < handle
             propertyAnnotations(end+1) = WVPropertyAnnotation('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
             propertyAnnotations(end+1) = WVPropertyAnnotation('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
             propertyAnnotations(end+1) = WVPropertyAnnotation('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
+            propertyAnnotations(end+1) = WVPropertyAnnotation('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
         end
 
         function methodAnnotations = methodAnnotationsForStratifiedFlow()
