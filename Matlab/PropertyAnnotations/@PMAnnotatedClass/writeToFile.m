@@ -1,4 +1,4 @@
-function ncfile = writeToFile(self,path,variables,options)
+function ncfile = writeToFile(self,path,properties,options)
     % Output the `WVTransform` to file.
     %
     % Writes the WVTransform instance to file, with enough information to
@@ -19,7 +19,7 @@ function ncfile = writeToFile(self,path,variables,options)
         path char {mustBeNonempty}
     end
     arguments (Input,Repeating)
-        variables char
+        properties char
     end
     arguments (Input)
         options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
@@ -48,35 +48,10 @@ function ncfile = writeToFile(self,path,variables,options)
     else
         dims = options.dimensions;
     end
-    for iDim=1:length(dims)
-        dimAnnotation = self.dimensionAnnotationWithName(dims{iDim});
-        dimAnnotation.attributes('units') = dimAnnotation.units;
-        dimAnnotation.attributes('long_name') = dimAnnotation.description;
-        ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
-    end
-    ncfile.addAttribute('PMAnnotatedClass',class(self));
-
-    attributeNames = keys(options.attributes);
-    for iKey=1:length(attributeNames)
-        ncfile.addAttribute(attributeNames{iKey},options.attributes(attributeNames{iKey}));
-    end
 
     if options.shouldAddRequiredVariables == 1
-        variables = union(variables,self.requiredVariables);
+        properties = union(properties,self.requiredProperties);
     end
-    for iVar=1:length(variables)
-        % check for function_handle, and add group
-        varAnnotation = self.variableAnnotationWithName(variables{iVar});
-        if ~isempty(varAnnotation.units)
-            varAnnotation.attributes('units') = varAnnotation.units;
-        end
-        if ~isempty(varAnnotation.description)
-            varAnnotation.attributes('long_name') = varAnnotation.description;
-        end
-        if isa(self.(varAnnotation.name),'function_handle')
-            ncfile.addFunctionHandle(varAnnotation.name,self.(varAnnotation.name),attributes=varAnnotation.attributes);
-        else
-            ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-        end
-    end
+
+    PMAnnotatedClass.writeToGroup(self,ncfile,dims=dims,properties=properties,dimAnnotations=self.dimensionAnnotations,propAnnotations=self.propertyAnnotations,attributes=options.attributes);
 end

@@ -1,4 +1,4 @@
-function variableAnnotations = classDefinedVariableAnnotations()
+function propertyAnnotations = classDefinedPropertyAnnotations()
 % return array of WVPropertyAnnotation initialized by default
 %
 % This function returns annotations for all properties of the
@@ -7,5 +7,5 @@ function variableAnnotations = classDefinedVariableAnnotations()
 % - Topic: Developer
 % - Declaration: propertyAnnotations = PMAnnotatedClass.classVariableAnnotations()
 % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-variableAnnotations = PMVariableAnnotation.empty(0,0);
+propertyAnnotations = PMPropertyAnnotation.empty(0,0);
 end

@@ -13,11 +13,11 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
                 options.myVar
             end
             className = class(self);
-            requiredVariables = union(feval(strcat(className,'.classRequiredDimensions')),feval(strcat(className,'.classRequiredVariables')));
-            canInitializeDirectly = all(isfield(options,requiredVariables));
+            requiredProperties = union(feval(strcat(className,'.classRequiredDimensions')),feval(strcat(className,'.classRequiredProperties')));
+            canInitializeDirectly = all(isfield(options,requiredProperties));
             if canInitializeDirectly
-                for iVar = 1:length(requiredVariables)
-                    name = requiredVariables{iVar};
+                for iVar = 1:length(requiredProperties)
+                    name = requiredProperties{iVar};
                     self.(name) = options.(name);
                 end
             else
@@ -33,7 +33,7 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
             dims = {'z'};
         end
 
-        function vars = classRequiredVariables()
+        function vars = classRequiredProperties()
             vars = {'f','myVar'};
         end
 
@@ -46,10 +46,10 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
             dimensions(end).attributes('axis') = 'Z';
         end
 
-        function variableAnnotations = classDefinedVariableAnnotations()
-            variableAnnotations = PMVariableAnnotation.empty(0,0);
-            variableAnnotations(end+1) = PMVariableAnnotation('myVar',{'z'},'', 'A variable quadratic in z.');
-            variableAnnotations(end+1) = PMVariableAnnotation('f',{},'', 'A function handle that does something!');
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            propertyAnnotations = PMPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = PMPropertyAnnotation('myVar',{'z'},'', 'A variable quadratic in z.');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('f',{},'', 'A function handle that does something!');
         end
         
         function atc = annotatedTestClassFromFile(path)

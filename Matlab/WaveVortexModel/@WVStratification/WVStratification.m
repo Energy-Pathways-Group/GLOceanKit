@@ -298,13 +298,13 @@ classdef WVStratification < WVAnnotatedClass
         % -methodAnnotationsForStratification
         % -requiredDimensionsForStratification
         % -requiredVariablesForStratification
-        function vars = requiredVariablesForStratification()
-            vars = {'rho0','rho_nm','N2'};
-        end
-
-        function dims = requiredDimensionsForStratification()
-            dims = {'z','j'};
-        end
+        % function vars = requiredVariablesForStratification()
+        %     vars = {'rho0','rho_nm','N2'};
+        % end
+        % 
+        % function dims = requiredDimensionsForStratification()
+        %     dims = {'z','j'};
+        % end
 
         function dimensions = dimensionAnnotationsForStratification()
             % return array of WVDimensionAnnotation to annotate the
@@ -316,14 +316,14 @@ classdef WVStratification < WVAnnotatedClass
             % - Topic: Developer
             % - Declaration: dimensionAnnotations = WVStratification.dimensionAnnotationsForStratifiedFlow()
             % - Returns dimensionAnnotations: array of WVDimensionAnnotation instances
-            dimensions = WVDimensionAnnotation.empty(0,0);
+            dimensions = PMDimensionAnnotation.empty(0,0);
 
-            dimensions(end+1) = WVDimensionAnnotation('z', 'm', 'z coordinate');
+            dimensions(end+1) = PMDimensionAnnotation('z', 'm', 'z coordinate');
             dimensions(end).attributes('standard_name') = 'height_above_mean_sea_level';
             dimensions(end).attributes('positive') = 'up';
             dimensions(end).attributes('axis') = 'Z';
 
-            dimensions(end+1) = WVDimensionAnnotation('j', 'mode number', 'vertical mode number');
+            dimensions(end+1) = PMDimensionAnnotation('j', 'mode number', 'vertical mode number');
         end
         function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
@@ -334,34 +334,34 @@ classdef WVStratification < WVAnnotatedClass
             % - Topic: Developer
             % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-            propertyAnnotations = WVPropertyAnnotation.empty(0,0);
-            propertyAnnotations(end+1) = WVPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', '$$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', '$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations = PMPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = PMPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', '$$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('dLnN2',{'z'},'', '$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
         end
 
-        function methodAnnotations = methodAnnotationsForStratification()
-            % return array of WVAnnotations to annotate the methods
-            %
-            % This function returns annotations for all methods of the
-            % WVStratification class.
-            %
-            % - Topic: Developer
-            % - Declaration: methodAnnotations = WVStratification.methodAnnotationsForStratifiedFlow()
-            % - Returns methodAnnotations: array of WVAnnotations instances
-            methodAnnotations = WVAnnotation.empty(0,0);
-
-            methodAnnotations(end+1) = WVAnnotation('diffZF', 'differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)');
-            methodAnnotations(end+1) = WVAnnotation('diffZG', 'differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)');
-        end
+        % function methodAnnotations = methodAnnotationsForStratification()
+        %     % return array of WVAnnotations to annotate the methods
+        %     %
+        %     % This function returns annotations for all methods of the
+        %     % WVStratification class.
+        %     %
+        %     % - Topic: Developer
+        %     % - Declaration: methodAnnotations = WVStratification.methodAnnotationsForStratifiedFlow()
+        %     % - Returns methodAnnotations: array of WVAnnotations instances
+        %     methodAnnotations = WVAnnotation.empty(0,0);
+        % 
+        %     methodAnnotations(end+1) = WVAnnotation('diffZF', 'differentiates a variable of (x,y,z) by projecting onto the F-modes, differentiating, and transforming back to (x,y,z)');
+        %     methodAnnotations(end+1) = WVAnnotation('diffZG', 'differentiates a variable of (x,y,z) by projecting onto the G-modes, differentiating, and transforming back to (x,y,z)');
+        % end
     end
 
 end

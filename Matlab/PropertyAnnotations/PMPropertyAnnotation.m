@@ -1,4 +1,4 @@
-classdef PMVariableAnnotation < PMAnnotation
+classdef PMPropertyAnnotation < PMAnnotation
     %Describes a property of the WVTransform
     %
     % In addition to adding a name, description and detailed description of
@@ -36,7 +36,7 @@ classdef PMVariableAnnotation < PMAnnotation
     end
 
     methods
-        function self = PMVariableAnnotation(name,dimensions,units,description,options)
+        function self = PMPropertyAnnotation(name,dimensions,units,description,options)
             % create a new instance of WVPropertyAnnotation
             %
             % If a markdown file of the same name is in the same directory

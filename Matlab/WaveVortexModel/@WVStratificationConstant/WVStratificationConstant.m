@@ -121,12 +121,7 @@ classdef WVStratificationConstant < WVStratification
     end
 
     methods (Access=protected)
-        function vars = requiredVariablesForStratification(self)
-            vars = {'N0'};
-        end
-        function dims = requiredDimensionsForStratification(self)
-            dims = {'z','j'};
-        end
+
     end
 
     methods (Static)
@@ -148,56 +143,56 @@ classdef WVStratificationConstant < WVStratification
             % - Declaration: propertyAnnotations = WVStratificationConstant.propertyAnnotationsForStratification()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVStratification.propertyAnnotationsForStratification();
-            propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
+            propertyAnnotations(end+1) = PMPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
         end
 
-        function [bool, errorString] = canInitializeDirectlyFromFile(ncfile)
-            bool = false;
-            errorString = "";
-            requiredDimensions = WVStratificationConstant.requiredDimensions();
-            if ~all(ncfile.hasVariableWithName(requiredDimensions{:}))
-                errorString = "The NetCDF file is missing a required dimension.";
-                return;
-            end
-
-            if ~ncfile.hasGroupWithName("WVStratificationConstant")
-                errorString = "The NetCDF is missing the group WVStratificationHydrostatic.";
-                return;
-            end
-
-            group = ncfile.groupWithName("WVStratificationConstant");
-            requiredVariables = WVStratificationConstant.requiredVariables();
-            if ~all(group.hasVariableWithName(requiredVariables{:}))
-                errorString = "The NetCDF group WVStratificationConstant is missing a required variable.";
-                return;
-            end
-
-            bool = true;
+        function vars = requiredVariablesForStratification()
+            vars = {'N0','latitude','rho0'};
         end
-
-        function var = requiredVariablesFromFile(ncfile)
-            requiredDimensions = WVStratificationConstant.requiredDimensions();
-            for iDim = 1:length(requiredDimensions)
-                name = requiredDimensions{iDim};
-                var.(name) = ncfile.readVariables(name);
-            end
-            requiredVariables = WVStratificationConstant.requiredVariables();
-            for iDim = 1:length(requiredVariables)
-                name = requiredVariables{iDim};
-                var.(name) = ncfile.readVariables(name);
-            end
+        function dims = requiredDimensionsForStratification()
+            dims = {'z','j'};
         end
 
         % 1) instance method to write to NetCDF group
         % 2) static method declaring all required variables
         % 3) init methods takes group as argument, reads required variables
         % 4) static method can read netcdf file
-        function flow = stratifiedFlowFromFile(group,wvt)
-            arguments
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
+        function stratification = stratificationFromFile(path)
+            arguments (Input)
+                path char {mustBeNonempty}
             end
-            flow = WVSpectralVanishingViscosity(wvt,nu_xy=group.attributes('nu_xy'),nu_z=group.attributes('nu_z') );
+            arguments (Output)
+                stratification WVStratificationConstant {mustBeNonempty}
+            end
+            ncfile = NetCDFFile(path);
+            stratification = WVStratificationConstant.stratificationFromGroup(ncfile);
+        end
+
+        function stratification = stratificationFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                stratification WVStratificationConstant {mustBeNonempty}
+            end
+            requiredVariables = WVStratificationConstant.requiredVariablesForStratification;
+            requiredDimensions = WVStratificationConstant.requiredDimensionsForStratification;
+            [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredDimensions,requiredVariables);
+            if ~canInit
+                error(errorString);
+            end
+
+            requiredVariables = union(requiredVariables,requiredDimensions);
+            vars = PMAnnotatedClass.variablesFromGroup(group,requiredVariables);
+            
+            Nz = length(vars.z);
+            Lz = vars.z(end) - vars.z(1);
+            options.Nj = length(vars.j);
+            options.latitude = vars.latitude;
+            options.rho0 = vars.rho0;
+            options.N0 = vars.N0;
+            optionCell = namedargs2cell(options);
+            stratification = WVStratificationConstant(Lz,Nz,optionCell{:});
         end
         
     end
