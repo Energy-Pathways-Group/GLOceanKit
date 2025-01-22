@@ -21,7 +21,7 @@ function addDimensionAnnotation(self,dimensionAnnotation)
 % - Parameter dimensionAnnotation: one or more WVDimensionAnnotation objects
 arguments
     self PMAnnotatedClass {mustBeNonempty}
-    dimensionAnnotation (1,:) PMDimensionAnnotation {mustBeNonempty}
+    dimensionAnnotation (1,:) PMDimensionAnnotation
 end
 for i=1:length(dimensionAnnotation)
     self.dimensionAnnotationNameMap{dimensionAnnotation(i).name} = dimensionAnnotation(i);

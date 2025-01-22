@@ -139,6 +139,7 @@ classdef NetCDFRealVariable < NetCDFVariable
         function addAttribute(self,key,value)
             self.attributes(key) = value;
             netcdf.putAtt(self.group.id,self.id, key, value);
+            netcdf.sync(self.group.id);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,6 +192,7 @@ classdef NetCDFRealVariable < NetCDFVariable
             if isvector(data)
                 self.addAttribute(self.GLNetCDFSchemaIsRowVectorKey, uint8(isrow(data)));
             end
+            netcdf.sync(self.group.id);
         end
 
         function value = valueAlongDimensionAtIndex(self,dimensionName,index)
@@ -255,6 +257,7 @@ classdef NetCDFRealVariable < NetCDFVariable
             if dimension.isMutable
                 dimension.updateLength;
             end
+            netcdf.sync(self.group.id);
         end
 
 

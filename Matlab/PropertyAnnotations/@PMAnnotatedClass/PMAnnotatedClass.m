@@ -13,16 +13,9 @@ classdef PMAnnotatedClass < handle
     % static methods) and,
     % 2) initialize the superclass during init, self@PMAnnotatedClass()
     % 
-    properties %(Access=private)
+    properties (Access=private)
         variableAnnotationNameMap
         dimensionAnnotationNameMap
-    end
-
-    methods (Abstract)
-        dims = requiredDimensions(self);
-        vars = requiredVariables(self);
-        dimAnnotations = dimensionAnnotations(self);
-        varAnnotations = variableAnnotations(self);
     end
 
     methods
@@ -32,15 +25,13 @@ classdef PMAnnotatedClass < handle
             self.dimensionAnnotationNameMap = configureDictionary("string","cell");
             self.variableAnnotationNameMap = configureDictionary("string","cell");
 
-            self.addDimensionAnnotation(self.dimensionAnnotations);
-            self.addVariableAnnotation(self.variableAnnotations);
+            className = class(self);
+            self.addDimensionAnnotation(feval(strcat(className,'.classDefinedDimensionAnnotations')));
+            self.addVariableAnnotation(feval(strcat(className,'.classDefinedVariableAnnotations')));
         end
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Metadata
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        dims = requiredDimensions(self);
+        vars = requiredVariables(self);
 
         addDimensionAnnotation(self,dimensionAnnotation)
         val = dimensionAnnotationWithName(self,name)
@@ -52,57 +43,14 @@ classdef PMAnnotatedClass < handle
 
     end
 
+    methods (Static,Abstract)
+        dims = classRequiredDimensions()
+        vars = classRequiredVariables()
+    end
+
     methods (Static)
-        function dims = classRequiredDimensions()
-            dims = {};
-        end
-
-        function vars = classRequiredVariables()
-            vars = {};
-        end
-
-        function dimensions = classDimensionAnnotations()
-            % return array of PMDimensionAnnotation to annotate the
-            % dimensions
-            %
-            % This function returns annotations for all dimensions of the
-            % PMAnnotatedClass class.
-            %
-            % - Topic: Developer
-            % - Declaration: dimensionAnnotations = PMAnnotatedClass.classDimensionAnnotations()
-            % - Returns dimensionAnnotations: array of PMDimensionAnnotation instances
-            arguments (Output)
-                dimensions PMDimensionAnnotation
-            end
-            dimensions = PMDimensionAnnotation.empty(0,0);
-        end
-
-        function variableAnnotations = classVariableAnnotations()
-            % return array of WVPropertyAnnotation initialized by default
-            %
-            % This function returns annotations for all properties of the
-            % PMAnnotatedClass class.
-            %
-            % - Topic: Developer
-            % - Declaration: propertyAnnotations = PMAnnotatedClass.classVariableAnnotations()
-            % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-            variableAnnotations = PMVariableAnnotation.empty(0,0);
-        end
-
-        function atc = annotatedClassFromFile(path)
-            ncfile = NetCDFFile(path);
-            if isKey(ncfile.attributes,'PMAnnotatedClass')
-                className = ncfile.attributes('PMAnnotatedClass');
-                requiredVariables = union(feval(strcat(className,'.classRequiredDimensions')),feval(strcat(className,'.classRequiredVariables')));
-                for iVar = 1:length(requiredVariables)
-                    name = requiredVariables{iVar};
-                    var.(name) = ncfile.readVariables(name);
-                end
-                varCell = namedargs2cell(var);
-                atc = feval(className,varCell{:});
-            else
-                error('Unable to find the attribute PMAnnotatedClass');
-            end
-        end
+        dimensionAnnotations = classDefinedDimensionAnnotations()
+        variableAnnotations = classDefinedVariableAnnotations()
+        atc = annotatedClassFromFile(path)
     end
 end

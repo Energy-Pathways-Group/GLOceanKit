@@ -26,21 +26,6 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
                 self.myVar = self.z.^2;
             end
         end
-
-        function dims = requiredDimensions(self)
-            dims = AnnotationTestClass.classRequiredDimensions();
-        end
-
-        function vars = requiredVariables(self)
-            vars = AnnotationTestClass.classRequiredVariables();
-        end
-
-        function dimAnnotations = dimensionAnnotations(self)
-            dimAnnotations = AnnotationTestClass.classDimensionAnnotations;
-        end
-        function varAnnotations = variableAnnotations(self)
-            varAnnotations = AnnotationTestClass.classVariableAnnotations;
-        end
     end
 
     methods (Static)
@@ -52,7 +37,7 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
             vars = {'f','myVar'};
         end
 
-        function dimensions = classDimensionAnnotations()
+        function dimensions = classDefinedDimensionAnnotations()
             dimensions = PMDimensionAnnotation.empty(0,0);
 
             dimensions(end+1) = PMDimensionAnnotation('z', 'm', 'z coordinate');
@@ -61,7 +46,7 @@ classdef AnnotationTestClass < handle & PMAnnotatedClass
             dimensions(end).attributes('axis') = 'Z';
         end
 
-        function variableAnnotations = classVariableAnnotations()
+        function variableAnnotations = classDefinedVariableAnnotations()
             variableAnnotations = PMVariableAnnotation.empty(0,0);
             variableAnnotations(end+1) = PMVariableAnnotation('myVar',{'z'},'', 'A variable quadratic in z.');
             variableAnnotations(end+1) = PMVariableAnnotation('f',{},'', 'A function handle that does something!');

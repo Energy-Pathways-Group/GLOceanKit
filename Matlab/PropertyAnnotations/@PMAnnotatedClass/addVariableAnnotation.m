@@ -4,7 +4,7 @@ function addVariableAnnotation(self,variableAnnotation)
 % - Topic: Utility function — Metadata
 arguments
     self PMAnnotatedClass {mustBeNonempty}
-    variableAnnotation (1,:) PMVariableAnnotation {mustBeNonempty}
+    variableAnnotation (1,:) PMVariableAnnotation
 end
 for i=1:length(variableAnnotation)
     self.variableAnnotationNameMap{variableAnnotation(i).name} = variableAnnotation(i);
