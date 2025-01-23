@@ -24,7 +24,7 @@ function ncfile = writeToFile(self,path,properties,options)
     arguments (Input)
         options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
         options.shouldAddRequiredDimensions double {mustBeMember(options.shouldAddRequiredDimensions,[0 1])} = 1 
-        options.shouldAddRequiredVariables double {mustBeMember(options.shouldAddRequiredVariables,[0 1])} = 1 
+        options.shouldAddRequiredProperties double {mustBeMember(options.shouldAddRequiredProperties,[0 1])} = 1 
         options.dimensions {mustBeA(options.dimensions,"cell")} = {}
         options.attributes = configureDictionary("string","string")
     end
@@ -32,26 +32,15 @@ function ncfile = writeToFile(self,path,properties,options)
         ncfile NetCDFFile
     end
 
-    if options.shouldOverwriteExisting == 1
-        if isfile(path)
-            delete(path);
-        end
-    else
-        if isfile(path)
-            error('A file already exists with that name.')
-        end
-    end
-    ncfile = NetCDFFile(path);
-
     if options.shouldAddRequiredDimensions == 1
         dims = union(options.dimensions,self.requiredDimensions);
     else
         dims = options.dimensions;
     end
 
-    if options.shouldAddRequiredVariables == 1
+    if options.shouldAddRequiredProperties == 1
         properties = union(properties,self.requiredProperties);
     end
 
-    PMAnnotatedClass.writeToGroup(self,ncfile,dims=dims,properties=properties,dimAnnotations=self.dimensionAnnotations,propAnnotations=self.propertyAnnotations,attributes=options.attributes);
+    ncfile = PMAnnotatedClass.writeToPath(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting, dims=dims,properties=properties,dimAnnotations=self.dimensionAnnotations,propAnnotations=self.propertyAnnotations,attributes=options.attributes);
 end

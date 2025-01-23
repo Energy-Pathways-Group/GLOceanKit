@@ -127,8 +127,8 @@ classdef PMAnnotatedClass < handle
             canInit = true;
         end
 
-        function writeToPath(ac,path,options)
-            arguments
+        function ncfile = writeToPath(ac,path,options)
+            arguments (Input)
                 ac PMAnnotatedClass {mustBeNonempty}
                 path char {mustBeNonempty}
                 options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
@@ -137,6 +137,9 @@ classdef PMAnnotatedClass < handle
                 options.dimAnnotations PMDimensionAnnotation = PMDimensionAnnotation.empty(0,0);
                 options.propAnnotations PMPropertyAnnotation = PMPropertyAnnotation.empty(0,0);
                 options.attributes = configureDictionary("string","string")
+            end
+            arguments (Output)
+                ncfile NetCDFFile
             end
 
             if options.shouldOverwriteExisting == 1

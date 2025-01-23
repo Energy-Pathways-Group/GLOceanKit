@@ -65,7 +65,7 @@ classdef WVStratificationConstant < WVStratification
             vm = InternalModesConstantStratification(N0=self.N0, rho0=self.rho0, zIn=[self.z(1) 0], zOut=self.z, latitude=self.latitude);
         end
 
-        function writeStratifiedFlowToFile(self,ncfile,matFilePath)
+        function ncfile = writeStratificationToFile(self,path,options)
             % write the WVStratificationHydrostatic to NetCDF and Matlab sidecar file.
             %
             % The NetCDF file must be already initialized and it is assumed
@@ -82,30 +82,20 @@ classdef WVStratificationConstant < WVStratification
             % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
             % - Parameter ncfile: a valid NetCDFFile instance
             % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
-            arguments
+            arguments (Input)
                 self WVStratificationConstant {mustBeNonempty}
-                ncfile NetCDFFile {mustBeNonempty}
-                matFilePath char
+                path char {mustBeNonempty}
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
             end
-            % This will add the dimensions to the root of the file
-            writeStratifiedFlowToFile@WVStratifiedFlow(self,ncfile,matFilePath);
-
-            % To keep things tidy, lets put the transform pieces in a separate group
-            group = ncfile.addGroup("WVStratificationConstant");
-
-            propertyAnnotation = WVStratificationConstant.defaultPropertyAnnotations;
-            propertyAnnotationNameMap = configureDictionary("string","WVPropertyAnnotation");
-            for i=1:length(propertyAnnotation)
-                propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
+            arguments (Output)
+                ncfile NetCDFFile
             end
-
-            requiredVariables = {'N0'};
-            for iVar=1:length(requiredVariables)
-                varAnnotation = propertyAnnotationNameMap(requiredVariables{iVar});
-                varAnnotation.attributes('units') = varAnnotation.units;
-                varAnnotation.attributes('long_name') = varAnnotation.description;
-                group.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-            end
+            options.dims = WVStratificationConstant.requiredDimensionsForStratification();
+            options.properties = WVStratificationConstant.requiredPropertiesForStratification();
+            options.dimAnnotations = WVStratificationConstant.dimensionAnnotationsForStratification();
+            options.propAnnotations = WVStratificationConstant.propertyAnnotationsForStratification();
+            namedOptions = namedargs2cell(options);
+            ncfile = PMAnnotatedClass.writeToPath(self,path,namedOptions{:});
         end
 
         function initializeStratifiedFlow(wvt)
@@ -114,7 +104,7 @@ classdef WVStratificationConstant < WVStratification
             arguments
                 wvt WVTransform
             end
-            wvt.addPropertyAnnotations(WVStratificationConstant.propertyAnnotationsForStratifiedFlow);
+            % wvt.addPropertyAnnotations(WVStratificationConstant.propertyAnnotationsForStratifiedFlow);
             wvt.addOperation(EtaTrueOperation());
             wvt.addOperation(APVOperation());
         end
@@ -146,7 +136,7 @@ classdef WVStratificationConstant < WVStratification
             propertyAnnotations(end+1) = PMPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
         end
 
-        function vars = requiredVariablesForStratification()
+        function vars = requiredPropertiesForStratification()
             vars = {'N0','latitude','rho0'};
         end
         function dims = requiredDimensionsForStratification()
@@ -175,7 +165,7 @@ classdef WVStratificationConstant < WVStratification
             arguments (Output)
                 stratification WVStratificationConstant {mustBeNonempty}
             end
-            requiredVariables = WVStratificationConstant.requiredVariablesForStratification;
+            requiredVariables = WVStratificationConstant.requiredPropertiesForStratification;
             requiredDimensions = WVStratificationConstant.requiredDimensionsForStratification;
             [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredDimensions,requiredVariables);
             if ~canInit
