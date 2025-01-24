@@ -65,44 +65,11 @@ classdef WVStratificationConstant < WVStratification
             vm = InternalModesConstantStratification(N0=self.N0, rho0=self.rho0, zIn=[self.z(1) 0], zOut=self.z, latitude=self.latitude);
         end
 
-        function ncfile = writeStratificationToFile(self,path,options)
-            % write the WVStratificationHydrostatic to NetCDF and Matlab sidecar file.
-            %
-            % The NetCDF file must be already initialized and it is assumed
-            % that any existing Matlab file at the path is safe to
-            % overwrite. This method is designed to be used by the
-            % WVTransform classes.
-            % 
-            % % For proper error checking and to write the file
-            % independently of the WVTransform classes, use the static
-            % method,
-            %   `WVStratificationHydrostatic.writeToFile`
-            % 
-            %
-            % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
-            % - Parameter ncfile: a valid NetCDFFile instance
-            % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
-            arguments (Input)
-                self WVStratificationConstant {mustBeNonempty}
-                path char {mustBeNonempty}
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-            end
-            arguments (Output)
-                ncfile NetCDFFile
-            end
-            options.dims = WVStratificationConstant.requiredDimensionsForStratification();
-            options.properties = WVStratificationConstant.requiredPropertiesForStratification();
-            options.dimAnnotations = WVStratificationConstant.dimensionAnnotationsForStratification();
-            options.propAnnotations = WVStratificationConstant.propertyAnnotationsForStratification();
-            namedOptions = namedargs2cell(options);
-            ncfile = PMAnnotatedClass.writeToPath(self,path,namedOptions{:});
-        end
-
         function initializeStratifiedFlow(wvt)
             % After initializing the WVTransform, this method can be called
             % and the WVStratifiedFlow will register.
             arguments
-                wvt WVTransform
+                wvt WVStratification
             end
             % wvt.addPropertyAnnotations(WVStratificationConstant.propertyAnnotationsForStratifiedFlow);
             wvt.addOperation(EtaTrueOperation());
@@ -115,15 +82,16 @@ classdef WVStratificationConstant < WVStratification
     end
 
     methods (Static)
-        % All the metadata has to be defined at the class level---so static
-        % methods. Thus we have,
-        % -dimensionAnnotationsForStratification
-        % -propertyAnnotationsForStratification
-        % -methodAnnotationsForStratification
-        % -requiredDimensionsForStratification
-        % -requiredVariablesForStratification
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            propertyAnnotations = WVStratificationConstant.propertyAnnotationsForStratification();
+        end
+        function vars = classRequiredProperties()
+            vars = WVStratificationConstant.requiredPropertiesForStratification();
+        end
+
         function propertyAnnotations = propertyAnnotationsForStratification()
-            % return array of WVPropertyAnnotation initialized by default
+            % return array of property annotations initialized by default
             %
             % This function returns annotations for all properties of the
             % WVStratificationConstant class (as well as its
@@ -133,20 +101,13 @@ classdef WVStratificationConstant < WVStratification
             % - Declaration: propertyAnnotations = WVStratificationConstant.propertyAnnotationsForStratification()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVStratification.propertyAnnotationsForStratification();
-            propertyAnnotations(end+1) = PMPropertyAnnotation('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
+            propertyAnnotations(end+1) = CANumericProperty('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density');
         end
 
         function vars = requiredPropertiesForStratification()
-            vars = {'N0','latitude','rho0'};
-        end
-        function dims = requiredDimensionsForStratification()
-            dims = {'z','j'};
+            vars = {'z','j','N0','latitude','rho0'};
         end
 
-        % 1) instance method to write to NetCDF group
-        % 2) static method declaring all required variables
-        % 3) init methods takes group as argument, reads required variables
-        % 4) static method can read netcdf file
         function stratification = stratificationFromFile(path)
             arguments (Input)
                 path char {mustBeNonempty}
@@ -165,15 +126,13 @@ classdef WVStratificationConstant < WVStratification
             arguments (Output)
                 stratification WVStratificationConstant {mustBeNonempty}
             end
-            requiredVariables = WVStratificationConstant.requiredPropertiesForStratification;
-            requiredDimensions = WVStratificationConstant.requiredDimensionsForStratification;
-            [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredDimensions,requiredVariables);
+            requiredProperties = WVStratificationConstant.requiredPropertiesForStratification;
+            [canInit, errorString] = CAAnnotedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
             if ~canInit
                 error(errorString);
             end
 
-            requiredVariables = union(requiredVariables,requiredDimensions);
-            vars = PMAnnotatedClass.variablesFromGroup(group,requiredVariables);
+            vars = CAAnnotedClass.variablesFromGroup(group,requiredProperties);
             
             Nz = length(vars.z);
             Lz = vars.z(end) - vars.z(1);

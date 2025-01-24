@@ -1,4 +1,4 @@
-classdef PMPropertyAnnotation < PMAnnotation
+classdef CANumericProperty < CAPropertyAnnotation
     %Describes a property of the WVTransform
     %
     % In addition to adding a name, description and detailed description of
@@ -36,7 +36,7 @@ classdef PMPropertyAnnotation < PMAnnotation
     end
 
     methods
-        function self = PMPropertyAnnotation(name,dimensions,units,description,options)
+        function self = CANumericProperty(name,dimensions,units,description,options)
             % create a new instance of WVPropertyAnnotation
             %
             % If a markdown file of the same name is in the same directory
@@ -61,7 +61,7 @@ classdef PMPropertyAnnotation < PMAnnotation
                 options.detailedDescription char = ''
             end
 
-            self@PMAnnotation(name,description,detailedDescription=options.detailedDescription);
+            self@CAPropertyAnnotation(name,description,detailedDescription=options.detailedDescription);
             if ~iscell(dimensions)
                 if isempty(dimensions)
                     dimensions = {};

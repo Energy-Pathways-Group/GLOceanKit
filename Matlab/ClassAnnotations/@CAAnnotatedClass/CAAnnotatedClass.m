@@ -1,5 +1,5 @@
-classdef PMAnnotatedClass < handle
-    %PMAnnotatedClass A class with metadata describing its properties
+classdef CAAnnotatedClass < handle
+    %CAAnnotatedClass A class with metadata describing its properties
     %
     % An `annotated class' has metadata describing its properties as either
     % dimensions or properties (which may have dimensions). This metadata
@@ -12,7 +12,7 @@ classdef PMAnnotatedClass < handle
     % A subclass must do two things:
     % 1) implement the required methods (perhaps by simply calling the
     % static methods) and,
-    % 2) initialize the superclass during init, self@PMAnnotatedClass()
+    % 2) initialize the superclass during init, self@CAAnnotatedClass()
     % 
     properties (Access=private)
         propertyAnnotationNameMap
@@ -20,28 +20,25 @@ classdef PMAnnotatedClass < handle
     end
 
     methods
-        function self = PMAnnotatedClass()
+        function self = CAAnnotatedClass()
             % Matlab dictionaries do not allow a subclass type; the
             % work-around is to use a cell.
             self.dimensionAnnotationNameMap = configureDictionary("string","cell");
             self.propertyAnnotationNameMap = configureDictionary("string","cell");
 
             className = class(self);
-            self.addDimensionAnnotation(feval(strcat(className,'.classDefinedDimensionAnnotations')));
             self.addPropertyAnnotation(feval(strcat(className,'.classDefinedPropertyAnnotations')));
         end
         
-        dims = requiredDimensions(self);
         vars = requiredProperties(self);
 
-        addDimensionAnnotation(self,dimensionAnnotation)
         val = dimensionAnnotationWithName(self,name)
         function dimAnnotations = dimensionAnnotations(self)
             arguments (Input)
-                self PMAnnotatedClass
+                self CAAnnotatedClass
             end
             arguments (Output)
-                dimAnnotations PMDimensionAnnotation
+                dimAnnotations CADimensionProperty
             end
             dimAnnotations = [self.dimensionAnnotationNameMap{self.dimensionAnnotationNameMap.keys}];
         end
@@ -49,13 +46,13 @@ classdef PMAnnotatedClass < handle
         addPropertyAnnotation(self,variableAnnotation)
         removePropertyAnnotation(self,variableAnnotation)
         val = propertyAnnotationWithName(self,name)
-        names = propertyNames(self)
+        names = annotatedPropertyNames(self)
         function propAnnotations = propertyAnnotations(self)
             arguments (Input)
-                self PMAnnotatedClass
+                self CAAnnotatedClass
             end
             arguments (Output)
-                propAnnotations PMPropertyAnnotation
+                propAnnotations CAPropertyAnnotation
             end
             propAnnotations = [self.propertyAnnotationNameMap{self.propertyAnnotationNameMap.keys}];
         end
@@ -65,12 +62,10 @@ classdef PMAnnotatedClass < handle
     end
 
     methods (Static,Abstract)
-        dims = classRequiredDimensions()
         vars = classRequiredProperties()
     end
 
     methods (Static)
-        dimensionAnnotations = classDefinedDimensionAnnotations()
         propertyAnnotations = classDefinedPropertyAnnotations()
         atc = annotatedClassFromFile(path)
 
@@ -91,8 +86,8 @@ classdef PMAnnotatedClass < handle
                     error('Unable to find the attribute AnnotatedClass');
                 end
             end
-            requiredProperties = union(feval(strcat(className,'.classRequiredDimensions')),feval(strcat(className,'.classRequiredProperties')));
-            var = PMAnnotatedClass.variablesFromGroup(group,requiredProperties);
+            requiredProperties = feval(strcat(className,'.classRequiredProperties'));
+            var = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
         end
 
         function var = variablesFromGroup(group,variables)
@@ -109,15 +104,9 @@ classdef PMAnnotatedClass < handle
             end
         end
 
-        function [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredDimensions,requiredProperties)
+        function [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredProperties)
             canInit = false;
             errorString = "";
-            hasDim = group.hasVariableWithName(requiredDimensions{:});
-            if ~all(hasDim)
-                errorString = "The NetCDF file is missing required dimensions: " + join(string(requiredDimensions(~hasDim)),', ');
-                return;
-            end
-
             hasVar = group.hasVariableWithName(requiredProperties{:});
             if ~all(hasVar)
                 errorString = "The NetCDF file is missing required variables: " + join(string(requiredProperties(~hasVar)),', ');
@@ -129,15 +118,13 @@ classdef PMAnnotatedClass < handle
 
         function ncfile = writeToPath(ac,path,options)
             arguments (Input)
-                ac PMAnnotatedClass {mustBeNonempty}
+                ac CAAnnotatedClass {mustBeNonempty}
                 path char {mustBeNonempty}
                 options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-                options.dims {mustBeA(options.dims,"cell")} = {}
-                options.properties {mustBeA(options.properties,"cell")} = {}
-                options.dimAnnotations PMDimensionAnnotation = PMDimensionAnnotation.empty(0,0);
-                options.propAnnotations PMPropertyAnnotation = PMPropertyAnnotation.empty(0,0);
+                options.propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
                 options.attributes = configureDictionary("string","string")
             end
+
             arguments (Output)
                 ncfile NetCDFFile
             end
@@ -152,51 +139,48 @@ classdef PMAnnotatedClass < handle
                 end
             end
             ncfile = NetCDFFile(path);
-            PMAnnotatedClass.writeToGroup(ac,ncfile,dims=options.dims,properties=options.properties,dimAnnotations=options.dimAnnotations,propAnnotations=options.propAnnotations,attributes=options.attributes);
+            CAAnnotatedClass.writeToGroup(ac,ncfile,options.propertyAnnotations,options.attributes);
         end
 
-        function writeToGroup(ac,group,options)
+        function writeToGroup(ac,group,propertyAnnotations,attributes)
             arguments
-                ac PMAnnotatedClass
+                ac CAAnnotatedClass
                 group NetCDFGroup
-                options.dims {mustBeA(options.dims,"cell")} = {}
-                options.properties {mustBeA(options.properties,"cell")} = {}
-                options.dimAnnotations PMDimensionAnnotation = PMDimensionAnnotation.empty(0,0);
-                options.propAnnotations PMPropertyAnnotation = PMPropertyAnnotation.empty(0,0);
-                options.attributes = configureDictionary("string","string")
+                propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
+                attributes = configureDictionary("string","string")
             end
-
             group.addAttribute('AnnotatedClass',class(ac));
 
-            attributeNames = keys(options.attributes);
+            attributeNames = keys(attributes);
             for iKey=1:length(attributeNames)
-                group.addAttribute(attributeNames{iKey},options.attributes(attributeNames{iKey}));
+                group.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
             end
 
-            dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
-            for iDim=1:length(options.dims)
-                dimAnnotation = dimensionAnnotationDictionary{options.dims{iDim}};
-                dimAnnotation.attributes('units') = dimAnnotation.units;
-                dimAnnotation.attributes('long_name') = dimAnnotation.description;
-                group.addDimension(dimAnnotation.name,ac.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+            for i=1:length(propertyAnnotations)
+                if isa(propertyAnnotations(i),'CADimensionProperty')
+                    dimAnnotation = propertyAnnotations(i);
+                    dimAnnotation.attributes('units') = dimAnnotation.units;
+                    dimAnnotation.attributes('long_name') = dimAnnotation.description;
+                    group.addDimension(dimAnnotation.name,ac.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+                end
             end
 
-            propertyAnnotationDictionary = dictionary(string({options.propAnnotations.name}),num2cell(options.propAnnotations));
-            for iVar=1:length(options.properties)
-                % check for function_handle, and add group
-                propAnnotation = propertyAnnotationDictionary{options.properties{iVar}};
-                if ~isempty(propAnnotation.units)
-                    propAnnotation.attributes('units') = propAnnotation.units;
-                end
-                if ~isempty(propAnnotation.description)
-                    propAnnotation.attributes('long_name') = propAnnotation.description;
-                end
-                if isa(ac.(propAnnotation.name),'function_handle')
-                    group.addFunctionHandle(propAnnotation.name,ac.(propAnnotation.name),attributes=propAnnotation.attributes);
-                else
-                    group.addVariable(propAnnotation.name,propAnnotation.dimensions,ac.(propAnnotation.name),isComplex=propAnnotation.isComplex,attributes=propAnnotation.attributes);
+            for i=1:length(propertyAnnotations)
+                if isa(propertyAnnotations(i),'CAFunctionProperty')
+                    group.addFunctionHandle(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name),attributes=propertyAnnotations(i).attributes);
+                elseif isa(propertyAnnotations(i),'CANumericProperty')
+                    propAttributes = propertyAnnotations(i).attributes;
+                    if ~isempty(propertyAnnotations(i).units)
+                        propAttributes('units') = propertyAnnotations(i).units;
+                    end
+                    if ~isempty(propertyAnnotations(i).description)
+                        propAttributes('long_name') = propertyAnnotations(i).description;
+                    end
+                    group.addVariable(propertyAnnotations(i).name,propertyAnnotations(i).dimensions,ac.(propertyAnnotations(i).name),isComplex=propertyAnnotations(i).isComplex,attributes=propAttributes);
                 end
             end
+
+            % dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
         end
     end
 end

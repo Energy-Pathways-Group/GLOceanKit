@@ -23,6 +23,7 @@ classdef WVGeostrophicMethods < handle
     end
     methods (Abstract)
         ratio = maxFg(self,kMode,lMode,jMode);
+        u_bar = transformFromSpatialDomainWithFg(self, u)
     end
 
     methods (Access=protected)

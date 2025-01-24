@@ -2,10 +2,13 @@ function propertyAnnotations = classDefinedPropertyAnnotations()
 % return array of WVPropertyAnnotation initialized by default
 %
 % This function returns annotations for all properties of the
-% PMAnnotatedClass class.
+% CAAnnotatedClass class.
 %
 % - Topic: Developer
-% - Declaration: propertyAnnotations = PMAnnotatedClass.classVariableAnnotations()
+% - Declaration: propertyAnnotations = CAAnnotatedClass.classVariableAnnotations()
 % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-propertyAnnotations = PMPropertyAnnotation.empty(0,0);
+arguments (Output)
+    propertyAnnotations CAPropertyAnnotation
+end
+propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 end

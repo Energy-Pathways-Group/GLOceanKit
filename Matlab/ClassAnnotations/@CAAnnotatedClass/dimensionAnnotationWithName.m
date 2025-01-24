@@ -15,9 +15,12 @@ function val = dimensionAnnotationWithName(self,name)
 % - Declaration: dimensionAnnotationWithName(name)
 % - Parameter name: string of dimension name
 % - Returns dimension: object of WVDimensionAnnotation type
-arguments
-    self PMAnnotatedClass {mustBeNonempty}
+arguments (Input)
+    self CAAnnotatedClass {mustBeNonempty}
     name char {mustBeNonempty}
+end
+arguments (Output)
+    val CADimensionProperty
 end
 val = self.dimensionAnnotationNameMap{name};
 end

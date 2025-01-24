@@ -1,4 +1,4 @@
-classdef PMAnnotation < handle
+classdef CAMethodAnnotation < handle
     % annotates properties
     %
     % The purpose of this class is twofold. First, it lets us add
@@ -47,7 +47,7 @@ classdef PMAnnotation < handle
     end
 
     methods
-        function self = PMAnnotation(name,description,options)
+        function self = CAMethodAnnotation(name,description,options)
             % create a new instance of WVAnnotation
             %
             % Creates a new instance of WVAnnotation with a name,

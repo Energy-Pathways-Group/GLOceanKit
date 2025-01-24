@@ -3,7 +3,7 @@ function vars = requiredProperties(self)
 %
 % - Topic: Utility function — Metadata
 arguments
-    self PMAnnotatedClass {mustBeNonempty}
+    self CAAnnotatedClass {mustBeNonempty}
 end
 className = class(self);
 vars = feval(strcat(className,'.classRequiredProperties'));

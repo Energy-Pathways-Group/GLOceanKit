@@ -1,4 +1,4 @@
-classdef WVStratification < WVAnnotatedClass
+classdef WVStratification < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     properties (GetAccess=public, SetAccess=protected)
@@ -7,6 +7,7 @@ classdef WVStratification < WVAnnotatedClass
         rho0, rho_nm, N2%, dLnN2
         z, j
         z_int
+        verticalModes
     end
 
     properties (Dependent)
@@ -18,7 +19,6 @@ classdef WVStratification < WVAnnotatedClass
     methods (Abstract)
         u_z = diffZF(self,u,n);
         w_z = diffZG(self,w,n);
-        vm = verticalModes(self);
     end
 
     properties (Abstract)
@@ -61,9 +61,9 @@ classdef WVStratification < WVAnnotatedClass
             % - Declaration: flag = effectiveVerticalGridResolution(other)
             % - Returns effectiveVerticalGridResolution: double
             arguments
-                self WVTransform
+                self WVStratification
             end
-            effectiveVerticalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
+            effectiveVerticalGridResolution = min(diff(self.z));
         end
 
         function throwErrorIfDensityViolation(self,options)
@@ -73,7 +73,7 @@ classdef WVStratification < WVAnnotatedClass
             % the fluid state violate our density condition? If yes, then
             % throw an error and tell the user about it.
             arguments
-                self WVGeostrophicMethods
+                self WVStratification
                 options.Ap double = 0
                 options.Am double = 0
                 options.A0 double = 0
@@ -118,13 +118,12 @@ classdef WVStratification < WVAnnotatedClass
                 Lz (1,1) double {mustBePositive}
                 Nz (1,1) double {mustBePositive}
                 options.z (:,1) double {mustBeNonempty} % quadrature points!
+                options.j (:,1) double {mustBeNonempty}
                 options.Nj (1,1) double {mustBePositive}
-                options.rho function_handle = @isempty
-                options.N2 function_handle = @isempty
-                options.dLnN2 function_handle = @isempty
+                options.rhoFunction function_handle = @isempty
+                options.N2Function function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
-                options.verticalModes = []
             end
 
             % For rigid lid:
@@ -138,63 +137,39 @@ classdef WVStratification < WVAnnotatedClass
             if isfield(options,'z')
                 self.z=options.z;
             else
-                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rho,N2=options.N2,latitude=options.latitude);
+                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=options.latitude);
             end
             self.Nz = length(z);
 
-            if isfield(options,'Nj') && isfield(options,'j')
-                if options.Nj ~= length(options.j)
-                    error('You specified both Nj and j, but they are not compatible!');
-                end
-            end
-
-            if isfield(options,'Nj')
-                if options.Nj > self.Nz-1
-                    error('The number of modes must be no greater than Nz-1');
-                end
-                self.Nj = options.Nj;
+            if isfield(options,'j')
+                self.j=options.j;
             else
-                self.Nj = self.Nz-1;
-            end
-
-            if self.Nj>1
-                self.j = (0:(self.Nj-1))';
-            else
-                self.j=1;
+                if isfield(options,'Nj')
+                    Nj = options.Nj;
+                else
+                    Nj = self.Nz-1;
+                end
+                self.j = (0:(Nj-1))';
             end
 
             nModes = Nz-1;
-            if ~isempty(options.verticalModes)
-                self.verticalModes = options.verticalModes;
-                self.N2Function = options.N2;
-                self.rhoFunction = options.rho;
-                self.rho_nm = self.rhoFunction(z);
-                self.N2 = self.N2Function(z);
-            elseif ~isequal(options.N2,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(N2=options.N2,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
-                self.N2 = options.N2(z);
-                self.N2Function = options.N2;
+            if ~isequal(options.N2Function,@isempty)
+                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
+                self.N2 = options.N2Function(z);
+                self.N2Function = options.N2Function;
                 self.rhoFunction = self.verticalModes.rho_function;
                 self.rho_nm = self.rhoFunction(z);
-            elseif ~isequal(options.rho,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(rho=options.rho,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
+            elseif ~isequal(options.rhoFunction,@isempty)
+                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
                 self.N2 = self.verticalModes.N2;
                 self.N2Function = self.verticalModes.N2_function;
-                self.rhoFunction = options.rho;
+                self.rhoFunction = options.rhoFunction;
                 self.rho_nm = self.rhoFunction(z);
             else
                 error('You must specify either rho or N2.');
             end
             self.verticalModes.normalization = Normalization.kConstant;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
-
-            if isequal(options.dLnN2,@isempty)
-                self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
-            else
-                self.dLnN2 = options.dLnN2(z);
-                self.dLnN2Function = options.dLnN2;
-            end
-
         end
 
         function initializeStratifiedFlow(wvt)
@@ -231,64 +206,6 @@ classdef WVStratification < WVAnnotatedClass
         z = quadraturePointsForStratifiedFlow(Lz,Nz,options);
         [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsWithRigidLid(Finv,Ginv,h,Nj,Lz);
         [P,Q,PFinv,PF,QGinv,QG,h] = verticalProjectionOperatorsWithFreeSurface(Finv,Ginv,h,Nj,Lz);
-
-        function writeStratificationToFile(self,ncfile,matFilePath)
-            % write the WVStratification to NetCDF and Matlab sidecar file.
-            %
-            % The NetCDF file must be already initialized and it is assumed
-            % that any existing Matlab file at the path is safe to
-            % overwrite. This method is designed to be used by the
-            % WVTransform classes.
-            %
-            % % For proper error checking and to write the file
-            % independently of the WVTransform classes, use the static
-            % method,
-            %   `WVStratificationHydrostatic.writeToFile`
-            %
-            %
-            % - Declaration: writeStratificationToFile(ncfile,matFilePath)
-            % - Parameter ncfile: a valid NetCDFFile instance
-            % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
-            arguments
-                self WVStratification {mustBeNonempty}
-                ncfile NetCDFFile {mustBeNonempty}
-                matFilePath char
-            end
-
-
-
-            dims = union(dimensions,{'z','j'});
-            for iDim=1:length(dims)
-                dimAnnotation = dimensionAnnotationNameMap(dims{iDim});
-                dimAnnotation.attributes('units') = dimAnnotation.units;
-                dimAnnotation.attributes('long_name') = dimAnnotation.description;
-                ncfile.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
-            end
-
-            propertyAnnotation = WVStratification.propertyAnnotationsForStratification;
-            propertyAnnotationNameMap = configureDictionary("string","WVPropertyAnnotation");
-            for i=1:length(propertyAnnotation)
-                propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
-            end
-
-            requiredVariables = {'rho0','rho_nm','N2'};
-            for iVar=1:length(requiredVariables)
-                varAnnotation = propertyAnnotationNameMap(requiredVariables{iVar});
-                varAnnotation.attributes('units') = varAnnotation.units;
-                varAnnotation.attributes('long_name') = varAnnotation.description;
-                ncfile.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-            end
-        end
-
-        function dimensionAnnotationNameMap = dimensionAnnotationNameMapForStratification(self)
-            dimensionAnnotation = WVStratification.dimensionAnnotationsForStratification;
-            dimensionAnnotationNameMap = configureDictionary("string","WVDimensionAnnotation");
-            for i=1:length(dimensionAnnotation)
-                dimensionAnnotationNameMap(dimensionAnnotation(i).name) = dimensionAnnotation(i);
-            end
-        end
-
-
     end
     methods (Static, Hidden=true)
         % All the metadata has to be defined at the class level---so static
@@ -306,45 +223,36 @@ classdef WVStratification < WVAnnotatedClass
         %     dims = {'z','j'};
         % end
 
-        function dimensions = dimensionAnnotationsForStratification()
-            % return array of WVDimensionAnnotation to annotate the
-            % dimensions
-            %
-            % This function returns annotations for all dimensions of the
-            % WVStratification class.
-            %
-            % - Topic: Developer
-            % - Declaration: dimensionAnnotations = WVStratification.dimensionAnnotationsForStratifiedFlow()
-            % - Returns dimensionAnnotations: array of WVDimensionAnnotation instances
-            dimensions = PMDimensionAnnotation.empty(0,0);
-
-            dimensions(end+1) = PMDimensionAnnotation('z', 'm', 'z coordinate');
-            dimensions(end).attributes('standard_name') = 'height_above_mean_sea_level';
-            dimensions(end).attributes('positive') = 'up';
-            dimensions(end).attributes('axis') = 'Z';
-
-            dimensions(end+1) = PMDimensionAnnotation('j', 'mode number', 'vertical mode number');
-        end
         function propertyAnnotations = propertyAnnotationsForStratification()
-            % return array of WVPropertyAnnotation initialized by default
+            % return array of CAPropertyAnnotations initialized by default
             %
             % This function returns annotations for all properties of the
             % WVStratification class.
             %
             % - Topic: Developer
-            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratifiedFlow()
-            % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-            propertyAnnotations = PMPropertyAnnotation.empty(0,0);
-            propertyAnnotations(end+1) = PMPropertyAnnotation('verticalModes',{},'', 'instance of the InternalModes class');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('rho_nm',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', '$$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('dLnN2',{'z'},'', '$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
-            propertyAnnotations(end+1) = PMPropertyAnnotation('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
+            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratification()
+            % - Returns propertyAnnotations: array of CAPropertyAnnotation instances
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+
+            propertyAnnotations(end+1) = CADimensionProperty('z', 'm', 'z coordinate');
+            propertyAnnotations(end).attributes('standard_name') = 'height_above_mean_sea_level';
+            propertyAnnotations(end).attributes('positive') = 'up';
+            propertyAnnotations(end).attributes('axis') = 'Z';
+
+            propertyAnnotations(end+1) = CADimensionProperty('j', 'mode number', 'vertical mode number');
+
+            propertyAnnotations(end+1) = CAFunctionProperty('rhoFunction', 'takes $$z$$ values and returns the no-motion density.');
+            propertyAnnotations(end+1) = CAFunctionProperty('N2Function', 'takes $$z$$ values and returns the squared buoyancy frequency of the no-motion density.');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('verticalModes', 'instance of the InternalModes class');
+            propertyAnnotations(end+1) = CANumericProperty('rho_nm',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density');
+            propertyAnnotations(end+1) = CANumericProperty('N2',{'z'},'rad^2 s^{-2}', '$$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$');
+            propertyAnnotations(end+1) = CANumericProperty('dLnN2',{'z'},'', '$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency');
+            propertyAnnotations(end+1) = CANumericProperty('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
+            propertyAnnotations(end+1) = CANumericProperty('FMatrix',{'j','z'},'', 'transformation matrix $$F_g$$');
+            propertyAnnotations(end+1) = CANumericProperty('GinvMatrix',{'z','j'},'', 'transformation matrix $$G_g^{-1}$$');
+            propertyAnnotations(end+1) = CANumericProperty('GMatrix',{'j','z'},'', 'transformation matrix $$G_g$$');
+            propertyAnnotations(end+1) = CANumericProperty('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
+            propertyAnnotations(end+1) = CANumericProperty('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
         end
 

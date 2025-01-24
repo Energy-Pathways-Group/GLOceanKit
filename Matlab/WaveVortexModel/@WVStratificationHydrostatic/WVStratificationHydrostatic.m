@@ -1,9 +1,11 @@
 classdef WVStratificationHydrostatic < WVStratification
     properties (Hidden=true) %(GetAccess=public, SetAccess=protected) %(Access=private)
+        dLnN2
+        
         % Transformation matrices
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
         PF0, QG0 % size(PF,PG)=[Nj x Nz]
-        h % [Nj 1]
+        h_0 % [Nj 1]
 
         P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
         Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
@@ -12,12 +14,7 @@ classdef WVStratificationHydrostatic < WVStratification
         PFinvInterp, QGinvInterp
     end
 
-    properties (GetAccess=private, SetAccess=private)
-        Nj
-    end
-
     properties (Dependent)
-        isHydrostatic
         FinvMatrix
         GinvMatrix
         FMatrix
@@ -25,7 +22,7 @@ classdef WVStratificationHydrostatic < WVStratification
     end
 
     methods
-        function self = WVStratificationHydrostatic(Lz, Nz, options)
+        function self = WVStratificationHydrostatic(Lz, Nz, options, directInit)
             % create matrices for hydrostatics in variable stratification
             %
             % To initialize:
@@ -48,126 +45,47 @@ classdef WVStratificationHydrostatic < WVStratification
                 Lz (1,1) double {mustBePositive}
                 Nz (1,1) double {mustBePositive}
                 options.z (:,1) double {mustBeNonempty} % quadrature points!
+                options.j (:,1) double {mustBeNonempty}
                 options.Nj (1,1) double {mustBePositive}
-                options.rho function_handle = @isempty
-                options.N2 function_handle = @isempty
-                options.dLnN2 function_handle = @isempty
+                options.rhoFunction function_handle = @isempty
+                options.N2Function function_handle = @isempty
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
-                options.verticalModes = []
-                options.ncfile NetCDFFile
-                options.matFilePath
+
+                % ALL of these must be set for direct initialization to
+                % avoid actually computing the modes.
+                directInit.dLnN2 (:,1) double
+                directInit.PF0inv
+                directInit.QG0inv
+                directInit.PF0
+                directInit.QG0
+                directInit.h_0 (:,1) double
+                directInit.P0 (:,1) double
+                directInit.Q0 (:,1) double
+                directInit.z_int (:,1) double
             end
-            canInitializeDirectly = false;
-            if isfield(options,'ncfile')
-                requiredDimensions = {'z','j'};
-                requiredVariables = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h','z_int'};
-                if ncfile.hasVariableWithName(requiredDimensions{:}) && ncfile.hasGroupWithName("WVStratificationHydrostatic")
-                    group = ncfile.groupWithName("WVStratificationHydrostatic");
-                    if group.hasVariableWithName(requiredVariables{:})
-                        canInitializeDirectly = true;
-                    end
-                end
-            end
+            self@WVStratification(Lz,Nz,options{:});
+            allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
+            canInitializeDirectly = all(isfield(allFields, WVStratificationHydrostatic.requiredPropertiesForStratification));
 
             if canInitializeDirectly == true
-
+                self.dLnN2 = directInit.dLnN2;
+                self.PF0inv = directInit.PF0inv;
+                self.QG0inv = directInit.QG0inv;
+                self.PF0 = directInit.PF0;
+                self.QG0 = directInit.QG0;
+                self.P0 = directInit.P0;
+                self.Q0 = directInit.Q0;
+                self.h_0 = directInit.h_0;
+                self.z_int = directInit.z_int;
             else
-                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
+                self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
+                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
 
-            % First we need to initialize the WVStratifiedFlow.
-            if isfield(options,'z')
-                z = options.z;
-            else
-                z = WVStratifiedFlow.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rho,N2=options.N2,latitude=options.latitude);
-            end
-            self@WVStratifiedFlow(Lz,z,rho=options.rho,N2=options.N2,dLnN2=options.dLnN2func,latitude=options.latitude)
-
-            % if all of these things are set initially (presumably read
-            % from file), then we can initialize without computing modes.
-            canInitializeDirectly = all(isfield(options,{'N2','latitude','rho0','dLnN2','PFinv','QGinv','PF','QG','h','P','Q','z'}));
-
-            if canInitializeDirectly
-                fprintf('Initialize the WVTransformHydrostatic directly from matrices.\n');
-                self.Nj = size(options.PF,1);
-            else
-                nModes = Nxyz(3)-1;
-                if options.shouldAntialias == 1
-                    self.Nj = floor(options.jAliasingFraction*nModes);
-                else
-                    self.Nj = nModes;
-                end
-            end
-
-            if canInitializeDirectly
-                self.PF0inv = options.PFinv;
-                self.QG0inv = options.QGinv;
-                self.PF0 = options.PF;
-                self.QG0 = options.QG;
-                self.h = options.h;
-                self.P0 = options.P;
-                self.Q0 = options.Q;
-            else
-                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
-            end
-
-
-            % self.offgridModes = WVOffGridTransform(im,self.latitude, self.N2Function,1);
-
-            self.dftBuffer = zeros(self.spatialMatrixSize);
-            self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
-        end
-
-        function writeStratifiedFlowToFile(self,ncfile,matFilePath)
-            % write the WVStratificationHydrostatic to NetCDF and Matlab sidecar file.
-            %
-            % The NetCDF file must be already initialized and it is assumed
-            % that any existing Matlab file at the path is safe to
-            % overwrite. This method is designed to be used by the
-            % WVTransform classes.
-            % 
-            % % For proper error checking and to write the file
-            % independently of the WVTransform classes, use the static
-            % method,
-            %   `WVStratificationHydrostatic.writeToFile`
-            % 
-            %
-            % - Declaration: writeStratifiedFlowToFile(ncfile,matFilePath)
-            % - Parameter ncfile: a valid NetCDFFile instance
-            % - Parameter matFilePath: path to an appropriate location to create a new matlab sidecar file, if needed
-            arguments
-                self WVStratificationHydrostatic {mustBeNonempty}
-                ncfile NetCDFFile {mustBeNonempty}
-                matFilePath char
-            end
-            % This will add the dimensions to the root of the file
-            writeStratifiedFlowToFile@WVStratifiedFlow(self,ncfile,matFilePath);
-
-            % To keep things tidy, lets put the transform pieces in a separate group
-            group = ncfile.addGroup("WVStratificationHydrostatic");
-
-            propertyAnnotation = WVStratificationHydrostatic.defaultPropertyAnnotations;
-            propertyAnnotationNameMap = configureDictionary("string","WVPropertyAnnotation");
-            for i=1:length(propertyAnnotation)
-                propertyAnnotationNameMap(propertyAnnotation(i).name) = propertyAnnotation(i);
-            end
-
-            requiredVariables = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h','z_int'};
-            for iVar=1:length(requiredVariables)
-                varAnnotation = propertyAnnotationNameMap(requiredVariables{iVar});
-                varAnnotation.attributes('units') = varAnnotation.units;
-                varAnnotation.attributes('long_name') = varAnnotation.description;
-                group.addVariable(varAnnotation.name,varAnnotation.dimensions,self.(varAnnotation.name),isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
-            end
-            
-            rhoFunction = self.rhoFunction;
-            N2Function = self.N2Function;
-            dLnN2Function = self.dLnN2Function;
-            date_created = ncfile.attributes('date_created');
-            save(matFilePath,'rhoFunction','N2Function','dLnN2Function','date_created');
-            fprintf('In addition to the NetCDF file, a .mat sidecar file was created at the same path.\n');
+            % self.dftBuffer = zeros(self.spatialMatrixSize);
+            % self.wvBuffer = zeros([self.Nz self.Nkl]);
+            % [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function initializeStratifiedFlow(wvt)
@@ -179,6 +97,72 @@ classdef WVStratificationHydrostatic < WVStratification
             wvt.addPropertyAnnotations(WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow);
             wvt.addOperation(EtaTrueOperation());
             wvt.addOperation(APVOperation());
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function Finv = get.FinvMatrix(wvt)
+            % transformation matrix $$F^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            Finv = shiftdim(wvt.P0,1) .* wvt.PF0inv;
+        end
+
+        function F = get.FMatrix(wvt)
+            % transformation matrix $$F$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            F = wvt.PF0 ./ shiftdim(wvt.P0,2);
+        end
+
+        function Ginv = get.GinvMatrix(wvt)
+            % transformation matrix $$G^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            Ginv = shiftdim(wvt.Q0,1) .* wvt.QG0inv;
+        end
+
+        function G = get.GMatrix(wvt)
+            % transformation matrix $$G$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GMatrix(wvt)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            G = wvt.QG0 ./ shiftdim(wvt.Q0,2);
         end
     end
 
@@ -194,134 +178,49 @@ classdef WVStratificationHydrostatic < WVStratification
             % - Declaration: propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow();
-            propertyAnnotations(end+1) = WVPropertyAnnotation('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('PF0',{'j','z'},'','Preconditioned F-mode forward transformation');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('QG0',{'j','z'},'','Preconditioned G-mode forward transformation');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. ');
-            propertyAnnotations(end+1) = WVPropertyAnnotation('h',{'j'},'m', 'equivalent depth of each mode', detailedDescription='- topic: Domain Attributes — Stratification');
+            propertyAnnotations(end+1) = CANumericProperty('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation');
+            propertyAnnotations(end+1) = CANumericProperty('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation');
+            propertyAnnotations(end+1) = CANumericProperty('PF0',{'j','z'},'','Preconditioned F-mode forward transformation');
+            propertyAnnotations(end+1) = CANumericProperty('QG0',{'j','z'},'','Preconditioned G-mode forward transformation');
+            propertyAnnotations(end+1) = CANumericProperty('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat');
+            propertyAnnotations(end+1) = CANumericProperty('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. ');
+            propertyAnnotations(end+1) = CANumericProperty('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification');
         end
 
-        function vars = requiredVariables()
-            vars = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h','z_int'};
+        function vars = requiredPropertiesForStratification()
+            vars = {'z','j','latitude','rho0','N2Function','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
         end
 
-        function dims = requiredDimensions()
-            dims = {'z','j'};
-        end
-
-        function [ncfile,matFilePath] = writeToFile(stratifiedFlow,path,options)
-            % Output the WVStratificationHydrostatic to file.
-            %
-            % Writes the WVStratificationHydrostatic instance to file, with enough information to
-            % re-initialize.
-            %
-            % - Topic: Write to file
-            % - Declaration: [ncfile,matFilePath] = WVStratificationHydrostatic.writeToFile(stratifiedFlow,path,options)
-            % - Parameter stratifiedFlow: instance of WVStratificationHydrostatic
-            % - Parameter path: path to write the file.
-            % - Parameter shouldOverwriteExisting: (optional) boolean indicating whether or not to overwrite an existing file at the path. Default 0.
+        function stratification = stratificationFromFile(path)
             arguments (Input)
-                stratifiedFlow WVStratificationHydrostatic {mustBeNonempty}
                 path char {mustBeNonempty}
             end
-            arguments (Input)
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-            end
             arguments (Output)
-                ncfile NetCDFFile
-                matFilePath char
-            end
-
-            matFilePath = WVStratifiedFlow.matlabSidecarPathForNetCDFPath(path);
-
-            if options.shouldOverwriteExisting == 1
-                if isfile(path)
-                    delete(path);
-                end
-                if isfile(matFilePath)
-                    delete(matFilePath);
-                end
-            else
-                if isfile(path) || isfile(matFilePath)
-                    error('A file already exists with that name.')
-                end
+                stratification WVStratificationHydrostatic {mustBeNonempty}
             end
             ncfile = NetCDFFile(path);
-            stratifiedFlow.writeStratifiedFlowToFile(ncfile,matFilePath);
+            stratification = WVStratificationHydrostatic.stratificationFromGroup(ncfile);
         end
 
-        function [bool, errorString] = canInitializeDirectlyFromFile(ncfile)
-            bool = false;
-            errorString = "";
-            matFilePath = WVStratifiedFlow.matlabSidecarPathForNetCDFPath(ncfile.path);
-            if ~isfile(matFilePath)
-                errorString = "The .mat sidecar file is missing, which is necessary for direct initialization.";
-                return;
-            end
-            matFile = load(matFilePath);
-            if isa(matFile.N2Function,'function_handle') == false && isa(matFile.rhoFunction,'function_handle') == false
-                errorString = "The .mat sidecar file does not contain either an N2 or a rho function_handle object.";
-                return;
-            end
-            requiredDimensions = WVStratificationHydrostatic.requiredDimensions();
-            if ~all(ncfile.hasVariableWithName(requiredDimensions{:}))
-                errorString = "The NetCDF file is missing a required dimension.";
-                return;
-            end
-
-            if ~ncfile.hasGroupWithName("WVStratificationHydrostatic")
-                errorString = "The NetCDF is missing the group WVStratificationHydrostatic.";
-                return;
-            end
-
-            group = ncfile.groupWithName("WVStratificationHydrostatic");
-            requiredVariables = WVStratificationHydrostatic.requiredVariables();
-            if ~all(group.hasVariableWithName(requiredVariables{:}))
-                errorString = "The NetCDF group WVStratificationHydrostatic is missing a required variable.";
-                return;
-            end
-
-            bool = true;
-        end
-
-        function var = requiredVariablesFromFile(ncfile)
-            requiredDimensions = WVStratificationHydrostatic.requiredDimensions();
-            for iDim = 1:length(requiredDimensions)
-                name = requiredDimensions{iDim};
-                var.(name) = ncfile.readVariables(name);
-            end
-            requiredVariables = WVStratificationHydrostatic.requiredVariables();
-            for iDim = 1:length(requiredVariables)
-                name = requiredVariables{iDim};
-                var.(name) = ncfile.readVariables(name);
-            end
-
-            matFilePath = WVStratifiedFlow.matlabSidecarPathForNetCDFPath(ncfile.path);
-            matFile = load(matFilePath);
-            if isa(matFile.N2Function,'function_handle') == true
-                var.N2 = matFile.N2Function;
-            else
-                var.N2 = @isempty;
-            end
-            if isa(matFile.rhoFunction,'function_handle') == true
-                var.rho = matFile.rhoFunction;
-            else
-                var.rho = @isempty;
-            end
-        end
-
-        % 1) instance method to write to NetCDF group
-        % 2) static method declaring all required variables
-        % 3) init methods takes group as argument, reads required variables
-        % 4) static method can read netcdf file
-        function flow = stratifiedFlowFromFile(group,wvt)
-            arguments
+        function stratification = stratificationFromGroup(group)
+            arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
             end
-            flow = WVSpectralVanishingViscosity(wvt,nu_xy=group.attributes('nu_xy'),nu_z=group.attributes('nu_z') );
+            arguments (Output)
+                stratification WVStratificationHydrostatic {mustBeNonempty}
+            end
+            requiredProperties = WVStratificationHydrostatic.requiredPropertiesForStratification;
+            [canInit, errorString] = CAAnnotedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+            if ~canInit
+                error(errorString);
+            end
+
+            vars = CAAnnotedClass.variablesFromGroup(group,requiredProperties);
+
+            Nz = length(vars.z);
+            Lz = vars.z(end) - vars.z(1);
+            optionCell = namedargs2cell(vars);
+            stratification = WVStratificationHydrostatic(Lz,Nz,optionCell{:});
         end
         
     end
