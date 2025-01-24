@@ -11,8 +11,6 @@ propertyAnnotations = WVPropertyAnnotation.empty(0,0);
 
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('t0',{},'s', 'reference time of Ap, Am, A0');
-propertyAnnotations(end+1) = WVPropertyAnnotation('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
-propertyAnnotations(end).attributes('standard_name') = 'latitude';
 propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis parameter', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('inertialPeriod',{},'s', 'inertial period');
 propertyAnnotations(end+1) = WVPropertyAnnotation('g',{},'m s^{-2}', 'gravity of Earth', detailedDescription='- topic: Domain Attributes');
@@ -39,8 +37,6 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('Nj',{},'', 'points in the j-c
 propertyAnnotations(end+1) = WVPropertyAnnotation('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Lz',{},'m', 'domain size in the z-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('ApU',{'j','kl'},'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.',isComplex=1);
 propertyAnnotations(end+1) = WVPropertyAnnotation('ApV',{'j','kl'},'', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.',isComplex=1);

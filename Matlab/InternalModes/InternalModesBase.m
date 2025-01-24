@@ -40,6 +40,7 @@ classdef (Abstract) InternalModesBase < handle
     properties (Access = public)
         shouldShowDiagnostics = 0 % flag to show diagnostic information, default = 0
         
+        rotationRate % rotation rate of the planetary body
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         Lz % Depth of the ocean.
@@ -130,6 +131,7 @@ classdef (Abstract) InternalModesBase < handle
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.nModes (1,1) double = 0
+                options.rotationRate (1,1) double = 7.2921e-5;
             end
             if isempty(options.zIn)
                 error('You must specify zIn');
@@ -139,7 +141,8 @@ classdef (Abstract) InternalModesBase < handle
             self.zDomain = [min(options.zIn) max(options.zIn)];
             self.Lz = self.zDomain(2)-self.zDomain(1);
             self.latitude = options.latitude;
-            self.f0 = 2*(7.2921e-5)*sin(self.latitude*pi/180);
+            self.rotationRate = options.rotationRate;
+            self.f0 = 2*(self.rotationRate)*sin(self.latitude*pi/180);
             self.rho0 = options.rho0;
             self.nModes = options.nModes;
 

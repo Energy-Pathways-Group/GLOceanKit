@@ -1,4 +1,4 @@
-classdef WVStratificationHydrostatic < WVStratification
+classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
     properties (Hidden=true) %(GetAccess=public, SetAccess=protected) %(Access=private)
         dLnN2
         
@@ -49,6 +49,7 @@ classdef WVStratificationHydrostatic < WVStratification
                 options.Nj (1,1) double {mustBePositive}
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
+                options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
 
@@ -64,7 +65,8 @@ classdef WVStratificationHydrostatic < WVStratification
                 directInit.Q0 (:,1) double
                 directInit.z_int (:,1) double
             end
-            self@WVStratification(Lz,Nz,options{:});
+            superclassOptions = namedargs2cell(options);
+            self@WVStratification(Lz,Nz,superclassOptions{:});
             allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
             canInitializeDirectly = all(isfield(allFields, WVStratificationHydrostatic.requiredPropertiesForStratification));
 
@@ -88,16 +90,16 @@ classdef WVStratificationHydrostatic < WVStratification
             % [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
-        function initializeStratifiedFlow(wvt)
-            % After initializing the WVTransform, this method can be called
-            % and the WVStratifiedFlow will register.
-            arguments
-                wvt WVTransform
-            end
-            wvt.addPropertyAnnotations(WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow);
-            wvt.addOperation(EtaTrueOperation());
-            wvt.addOperation(APVOperation());
-        end
+        % function initializeStratifiedFlow(wvt)
+        %     % After initializing the WVTransform, this method can be called
+        %     % and the WVStratifiedFlow will register.
+        %     arguments
+        %         wvt WVTransform
+        %     end
+        %     wvt.addPropertyAnnotations(WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow);
+        %     wvt.addOperation(EtaTrueOperation());
+        %     wvt.addOperation(APVOperation());
+        % end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -167,7 +169,14 @@ classdef WVStratificationHydrostatic < WVStratification
     end
 
     methods (Static)
-        function propertyAnnotations = propertyAnnotationsForStratifiedFlow()
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratification();
+        end
+        function vars = classRequiredProperties()
+            vars = WVStratificationHydrostatic.requiredPropertiesForStratification();
+        end
+
+        function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function returns annotations for all properties of the
@@ -177,7 +186,7 @@ classdef WVStratificationHydrostatic < WVStratification
             % - Topic: Internal
             % - Declaration: propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
-            propertyAnnotations = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow();
+            propertyAnnotations = WVStratification.propertyAnnotationsForStratification();
             propertyAnnotations(end+1) = CANumericProperty('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation');
             propertyAnnotations(end+1) = CANumericProperty('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation');
             propertyAnnotations(end+1) = CANumericProperty('PF0',{'j','z'},'','Preconditioned F-mode forward transformation');
@@ -188,7 +197,7 @@ classdef WVStratificationHydrostatic < WVStratification
         end
 
         function vars = requiredPropertiesForStratification()
-            vars = {'z','j','latitude','rho0','N2Function','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
+            vars = {'z','Lz','j','latitude','rotationRate','rho0','N2Function','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
         end
 
         function stratification = stratificationFromFile(path)
@@ -210,15 +219,16 @@ classdef WVStratificationHydrostatic < WVStratification
                 stratification WVStratificationHydrostatic {mustBeNonempty}
             end
             requiredProperties = WVStratificationHydrostatic.requiredPropertiesForStratification;
-            [canInit, errorString] = CAAnnotedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
             if ~canInit
                 error(errorString);
             end
 
-            vars = CAAnnotedClass.variablesFromGroup(group,requiredProperties);
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
 
             Nz = length(vars.z);
-            Lz = vars.z(end) - vars.z(1);
+            Lz = vars.Lz;
+            vars = rmfield(vars,{'Lz'});
             optionCell = namedargs2cell(vars);
             stratification = WVStratificationHydrostatic(Lz,Nz,optionCell{:});
         end

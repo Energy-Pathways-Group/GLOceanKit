@@ -8,6 +8,21 @@ classdef WVStratification < handle
         z, j
         z_int
         verticalModes
+
+        % length of the z-dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Lz
+
+        % rotation rate of the planetary body
+        %
+        % - Topic: Domain attributes
+        rotationRate
+
+        % central latitude of the simulation
+        %
+        % - Topic: Domain attributes
+        latitude
     end
 
     properties (Dependent)
@@ -122,6 +137,7 @@ classdef WVStratification < handle
                 options.Nj (1,1) double {mustBePositive}
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
+                options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
             end
@@ -133,13 +149,15 @@ classdef WVStratification < handle
             % complete.
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
-            % modes, but the boundaries.
+            % modes, but the boundaries.            
             if isfield(options,'z')
                 self.z=options.z;
             else
-                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=options.latitude);
+                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=options.latitude,rotationRate=options.rotationRate);
             end
-            self.Nz = length(z);
+            self.Lz = Lz;
+            self.latitude = options.latitude;
+            self.rotationRate = options.rotationRate;
 
             if isfield(options,'j')
                 self.j=options.j;
@@ -153,18 +171,19 @@ classdef WVStratification < handle
             end
 
             nModes = Nz-1;
+            self.rho0 = options.rho0;
             if ~isequal(options.N2Function,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
-                self.N2 = options.N2Function(z);
+                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=self.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate);
+                self.N2 = options.N2Function(self.z);
                 self.N2Function = options.N2Function;
                 self.rhoFunction = self.verticalModes.rho_function;
-                self.rho_nm = self.rhoFunction(z);
+                self.rho_nm = self.rhoFunction(self.z);
             elseif ~isequal(options.rhoFunction,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)));
+                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=self.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate);
                 self.N2 = self.verticalModes.N2;
                 self.N2Function = self.verticalModes.N2_function;
                 self.rhoFunction = options.rhoFunction;
-                self.rho_nm = self.rhoFunction(z);
+                self.rho_nm = self.rhoFunction(self.z);
             else
                 error('You must specify either rho or N2.');
             end
@@ -172,16 +191,16 @@ classdef WVStratification < handle
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
         end
 
-        function initializeStratifiedFlow(wvt)
-            % After initializing the WVTransform, this method can be called
-            % and the WVStratification will register.
-            arguments
-                wvt WVTransform
-            end
-            wvt.addPropertyAnnotations(WVStratification.propertyAnnotationsForStratifiedFlow);
-            wvt.addOperation(EtaTrueOperation());
-            wvt.addOperation(APVOperation());
-        end
+        % function initializeStratifiedFlow(wvt)
+        %     % After initializing the WVTransform, this method can be called
+        %     % and the WVStratification will register.
+        %     arguments
+        %         wvt WVTransform
+        %     end
+        %     wvt.addPropertyAnnotations(WVStratification.propertyAnnotationsForStratifiedFlow);
+        %     wvt.addOperation(EtaTrueOperation());
+        %     wvt.addOperation(APVOperation());
+        % end
 
         function [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
             % Now go compute the appropriate number of modes at the
@@ -254,6 +273,13 @@ classdef WVStratification < handle
             propertyAnnotations(end+1) = CANumericProperty('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
             propertyAnnotations(end+1) = CANumericProperty('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
+            propertyAnnotations(end+1) = CANumericProperty('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations(end).attributes('standard_name') = 'latitude';
+            propertyAnnotations(end+1) = CANumericProperty('rotationRate',{},'rad/s', 'rotation rate of the planetary body', detailedDescription='- topic: Domain Attributes');
+
+
+            propertyAnnotations(end+1) = CANumericProperty('Lz',{},'m', 'domain size in the z-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
         end
 
         % function methodAnnotations = methodAnnotationsForStratification()
