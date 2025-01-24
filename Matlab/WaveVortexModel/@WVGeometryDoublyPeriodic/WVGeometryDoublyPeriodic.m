@@ -1,4 +1,4 @@
-classdef WVGeometryDoublyPeriodic
+classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
     % A domain periodic in both x and y.
     %
     % The WVGeometryDoublyPeriodic encapsulates the transformations and
@@ -103,12 +103,12 @@ classdef WVGeometryDoublyPeriodic
         % k-wavenumber dimension on the WV grid
         %
         % - Topic: Domain attributes — WV grid
-        k_wv
+        k
         
         % l-wavenumber dimension on the WV grid
         %
         % - Topic: Domain attributes — WV grid
-        l_wv
+        l
     end
 
     properties (Dependent, SetAccess=private)
@@ -156,7 +156,7 @@ classdef WVGeometryDoublyPeriodic
         % length of the combined kl-wavenumber dimension on the WV grid
         %
         % - Topic: Domain attributes — WV grid
-        Nkl_wv
+        Nkl
       
         % k mode number on the WV grid
         %
@@ -171,7 +171,19 @@ classdef WVGeometryDoublyPeriodic
         % radial (k,l) wavenumber on the WV grid
         %
         % - Topic: Domain attributes — WV grid
-        kRadial_wv
+        kRadial
+
+        % wavenumber spacing of the $$k$$ axis
+        %
+        % - Topic: Domain attributes — WV grid
+        dk
+
+        % wavenumber spacing of the $$l$$ axis
+        %
+        % - Topic: Domain attributes — WV grid
+        dl
+
+        kAxis, lAxis
     end
 
     methods
@@ -191,9 +203,9 @@ classdef WVGeometryDoublyPeriodic
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
                 options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
-                options.shouldAntialias (1,1) double {mustBeMember(options.shouldAntialias,[0 1])} = 1
-                options.shouldExcludeNyquist (1,1) double {mustBeMember(options.shouldExcludeNyquist,[0 1])} = 1
-                options.shouldExludeConjugates (1,1) double {mustBeMember(options.shouldExludeConjugates,[0 1])} = 1
+                options.shouldAntialias (1,1) logical = true
+                options.shouldExcludeNyquist (1,1) logical = true
+                options.shouldExludeConjugates (1,1) logical = true
             end
             self.Lx = Lxy(1);
             self.Ly = Lxy(2);
@@ -242,8 +254,8 @@ classdef WVGeometryDoublyPeriodic
 
             self.dftConjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
             self.dftConjugateIndices = self.dftConjugateIndices(self.dftPrimaryIndices);
-            self.k_wv = K(self.dftPrimaryIndices);
-            self.l_wv = L(self.dftPrimaryIndices);
+            self.k = K(self.dftPrimaryIndices);
+            self.l = L(self.dftPrimaryIndices);
         end
 
         function x = get.x(self)
@@ -257,6 +269,13 @@ classdef WVGeometryDoublyPeriodic
             y = dy*(0:self.Ny-1)';
         end
 
+        function dk = get.dk(self)
+            dk = 2*pi/self.Lx;
+        end
+        function dl = get.dl(self)
+            dl = 2*pi/self.Ly;
+        end
+
         function value = get.Nk_dft(self)
             value=self.Nx;
         end
@@ -265,40 +284,46 @@ classdef WVGeometryDoublyPeriodic
             value=self.Ny;
         end
 
-        function k = get.k_dft(self)
-            dk = 1/self.Lx;
-            k = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]*dk)';
+        function k_dft = get.k_dft(self)
+            k_dft = 2*pi*([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1]/self.Lx)';
         end
 
-        function l = get.l_dft(self)
-            dl = 1/self.Ly;
-            l = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]*dl)';
+        function l_dft = get.l_dft(self)
+            l_dft = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]/self.Ly)';
         end
 
-        function k = get.kMode_dft(self)
-            k = ([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1])';
+        function kAxis = get.kAxis(self)
+            kAxis = fftshift(self.k_dft);
         end
 
-        function l = get.lMode_dft(self)
-            l = ([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1])';
+        function lAxis = get.lAxis(self)
+            lAxis = fftshift(self.l_dft);
         end
 
-        function k = get.kMode_wv(self)
+        function kMode_dft = get.kMode_dft(self)
+            kMode_dft = ([0:ceil(self.Nx/2)-1 -floor(self.Nx/2):-1])';
+        end
+
+        function lMode_dft = get.lMode_dft(self)
+            lMode_dft = ([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1])';
+        end
+
+        function kMode_wv = get.kMode_wv(self)
             [K,~] = ndgrid(self.kMode_dft,self.lMode_dft);
-            k = K(self.dftPrimaryIndices);
+            kMode_wv = K(self.dftPrimaryIndices);
         end
 
-        function l = get.lMode_wv(self)
+        function lMode_wv = get.lMode_wv(self)
             [~,L] = ndgrid(self.kMode_dft,self.lMode_dft);
-            l = L(self.dftPrimaryIndices);
+            lMode_wv = L(self.dftPrimaryIndices);
         end
 
-        function N = get.Nkl_wv(self)
-            N = length(self.k_wv);
+        function N = get.Nkl(self)
+            N = length(self.k);
         end
 
-        function kRadial = get.kRadial_wv(self)
-            Kh = sqrt(self.k_wv.^2 + self.l_wv.^2);
+        function kRadial = get.kRadial(self)
+            Kh = sqrt(self.k.^2 + self.l.^2);
             allKs = unique(reshape(abs(Kh),[],1),'sorted');
             deltaK = max(diff(allKs));
             kAxis = 0:deltaK:(max(allKs)+deltaK/2);
@@ -415,11 +440,11 @@ classdef WVGeometryDoublyPeriodic
                 bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
             [K,L] = ndgrid(self.kMode_dft,self.lMode_dft);
-            k = K(self.dftConjugateIndices);
-            l = L(self.dftConjugateIndices);
+            k_ = K(self.dftConjugateIndices);
+            l_ = L(self.dftConjugateIndices);
             bool = zeros(size(kMode));
             for iMode=1:length(kMode)
-                bool(iMode) = any(k == kMode(iMode) & l == lMode(iMode));
+                bool(iMode) = any(k_ == kMode(iMode) & l_ == lMode(iMode));
             end
         end
 
@@ -510,7 +535,7 @@ classdef WVGeometryDoublyPeriodic
             if ~self.isValidWVModeNumber(kMode,lMode)
                 error('Invalid WV mode number!');
             end
-            indices = 1:self.Nkl_wv;
+            indices = 1:self.Nkl;
             index = indices(self.kMode_wv == kMode & self.lMode_wv == lMode);
         end
 
@@ -562,8 +587,8 @@ classdef WVGeometryDoublyPeriodic
             end
             Nz = size(Aklz,3);
             Aklz = reshape(Aklz,[self.Nx*self.Ny Nz]);
-            Azkl = zeros(Nz,self.Nkl_wv);
-            for iK=1:self.Nkl_wv
+            Azkl = zeros(Nz,self.Nkl);
+            for iK=1:self.Nkl
                 Azkl(:,iK) = Aklz(self.dftPrimaryIndices(iK),:);
             end
         end
@@ -591,17 +616,17 @@ classdef WVGeometryDoublyPeriodic
             arguments (Output)
                 dftToWVIndices double
             end
-            dftToWVIndices = zeros(Nz*self.Nkl_wv,1);
+            dftToWVIndices = zeros(Nz*self.Nkl,1);
             index=1;
             % the loop ordering is important here: Nz is the fastest moving
             % dimension in the WV grid, hence it is the inner-loop.
-            for iK=1:self.Nkl_wv
+            for iK=1:self.Nkl
                 for iZ=1:Nz
                     dftToWVIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
                     index = index+1;
                 end
             end
-            dftToWVIndices = reshape(dftToWVIndices,[Nz,self.Nkl_wv]);
+            dftToWVIndices = reshape(dftToWVIndices,[Nz,self.Nkl]);
         end
 
         function Aklz = transformFromWVGridToDFTGrid(self,Azkl,options)
@@ -629,7 +654,7 @@ classdef WVGeometryDoublyPeriodic
             Aklz = zeros(self.Nx*self.Ny,Nz);
 
             if options.isHalfComplex == 1
-                for iK=1:self.Nkl_wv
+                for iK=1:self.Nkl
                     Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
                 end
                 Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
@@ -637,7 +662,7 @@ classdef WVGeometryDoublyPeriodic
                     Aklz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(Aklz(iK,1,:));
                 end
             else
-                for iK=1:self.Nkl_wv
+                for iK=1:self.Nkl
                     Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
                     Aklz(self.dftConjugateIndices(iK),:) = conj(Azkl(:,iK));
                 end
@@ -674,11 +699,11 @@ classdef WVGeometryDoublyPeriodic
                 wvConjugateIndices (:,1) double
             end
 
-            dftPrimaryIndices = zeros(Nz*self.Nkl_wv,1);
-            wvPrimaryIndices = zeros(Nz*self.Nkl_wv,1);
+            dftPrimaryIndices = zeros(Nz*self.Nkl,1);
+            wvPrimaryIndices = zeros(Nz*self.Nkl,1);
             index=1;
             for iZ=1:Nz
-                for iK=1:self.Nkl_wv
+                for iK=1:self.Nkl
                     dftPrimaryIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
                     wvPrimaryIndices(index) = iZ + (iK-1)*Nz;
                     index = index+1;
@@ -721,10 +746,10 @@ classdef WVGeometryDoublyPeriodic
                     end
                 end
             else
-                dftConjugateIndices = zeros(Nz*self.Nkl_wv,1);
-                wvConjugateIndices = zeros(Nz*self.Nkl_wv,1);
+                dftConjugateIndices = zeros(Nz*self.Nkl,1);
+                wvConjugateIndices = zeros(Nz*self.Nkl,1);
                 for iZ=1:Nz
-                    for iK=1:self.Nkl_wv
+                    for iK=1:self.Nkl
                         dftConjugateIndices(index) = self.dftConjugateIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
                         wvConjugateIndices(index) = iZ + (iK-1)*Nz;
                         index = index+1;
@@ -739,6 +764,90 @@ classdef WVGeometryDoublyPeriodic
     end
 
     methods (Static)
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
+        end
+        function vars = classRequiredProperties()
+            vars = WVGeometryDoublyPeriodic.requiredPropertiesForGeometry();
+        end
+
+        function geometry = geometryFromFile(path)
+            arguments (Input)
+                path char {mustBeNonempty}
+            end
+            arguments (Output)
+                geometry WVGeometryDoublyPeriodic {mustBeNonempty}
+            end
+            ncfile = NetCDFFile(path);
+            geometry = WVGeometryDoublyPeriodic.geometryFromGroup(ncfile);
+        end
+
+        function geometry = geometryFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                geometry WVGeometryDoublyPeriodic {mustBeNonempty}
+            end
+            requiredProperties = WVGeometryDoublyPeriodic.requiredPropertiesForGeometry;
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+            if ~canInit
+                error(errorString);
+            end
+
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
+
+            Nxy(1) = length(vars.x);
+            Nxy(2) = length(vars.y);
+            Lxy(1) = vars.Lx;
+            Lxy(2) = vars.Ly;
+            vars = rmfield(vars,{'x','y','Lx','Ly'});
+            optionCell = namedargs2cell(vars);
+            geometry = WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:});
+        end
+
+        function vars = requiredPropertiesForGeometry()
+            vars = {'x','y','Lx','Ly','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+        end
+
+        function propertyAnnotations = propertyAnnotationsForGeometry()
+            % return array of CAPropertyAnnotations initialized by default
+            %
+            % This function returns annotations for all properties of the
+            % WVStratification class.
+            %
+            % - Topic: Developer
+            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratification()
+            % - Returns propertyAnnotations: array of CAPropertyAnnotation instances
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+
+            propertyAnnotations(end+1) = CADimensionProperty('x', 'm', 'x coordinate');
+            propertyAnnotations(end).attributes('standard_name') = 'projection_x_coordinate';
+            propertyAnnotations(end).attributes('axis') = 'X';
+
+            propertyAnnotations(end+1) = CADimensionProperty('y', 'm', 'y coordinate');
+            propertyAnnotations(end).attributes('standard_name') = 'projection_y_coordinate';
+            propertyAnnotations(end).attributes('axis') = 'Y';
+
+            propertyAnnotations(end+1) = CADimensionProperty('kAxis', 'rad m^{-1}', 'k coordinate');
+            propertyAnnotations(end+1) = CADimensionProperty('lAxis', 'rad m^{-1}', 'l coordinate');
+
+            propertyAnnotations(end+1) = CADimensionProperty('kl', 'unitless', 'dimension of the interleaved k-l wavenumber coordinate');
+            propertyAnnotations(end+1) = CADimensionProperty('kRadial', 'rad/m', 'isotropic wavenumber dimension');
+
+            propertyAnnotations(end+1) = CANumericProperty('conjugateDimension',{},'', 'assumed conjugate dimension in the horizontal geometry', detailedDescription='- topic: Domain Attributes — Grid');
+            propertyAnnotations(end+1) = CANumericProperty('shouldAntialias',{},'bool', 'whether the horizontal grid includes quadratically aliased wavenumbers', detailedDescription='- topic: Domain Attributes — Grid');
+            propertyAnnotations(end+1) = CANumericProperty('shouldExcludeNyquist',{},'bool', 'whether the horizontal grid includes Nyquist wavenumbers', detailedDescription='- topic: Domain Attributes — Grid');
+            propertyAnnotations(end+1) = CANumericProperty('shouldExludeConjugates',{},'bool', 'whether the horizontal grid includes wavenumbers that are Hermitian conjugates', detailedDescription='- topic: Domain Attributes — Grid');
+            propertyAnnotations(end+1) = CANumericProperty('Nkl',{},'', 'points in the kl-coordinate, `length(k)`', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('k', {'kl'}, 'rad/m', 'wavenumber coordinate in the x-direction', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('l', {'kl'}, 'rad/m', 'wavenumber coordinate in the y-direction', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+
+            propertyAnnotations(end+1) = CANumericProperty('Lx',{},'m', 'domain size in the x-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Ly',{},'m', 'domain size in the y-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Nx',{},'', 'points in the x-coordinate, `length(x)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Ny',{},'', 'points in the y-coordinate, `length(y)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+        end
 
         function matrix = indicesOfFourierConjugates(Nx,Ny,Nz)
             % a matrix of linear indices of the conjugate

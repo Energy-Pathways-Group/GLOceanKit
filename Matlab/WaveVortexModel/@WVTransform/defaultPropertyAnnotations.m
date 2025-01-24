@@ -27,25 +27,19 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('g',{},'m s^{-2}', 'gravity of
 propertyAnnotations(end+1) = WVPropertyAnnotation('Omega',{'k','l','j'},'rad s^{-1}', 'frequency of oscillation of the linear waves', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lr2',{'j'},'m^2', 'squared Rossby radius');
 
-propertyAnnotations(end+1) = WVPropertyAnnotation('shouldAntialias',{},'bool', 'whether antialiasing is enabled', detailedDescription='- topic: Domain Attributes — Grid');
 
-propertyAnnotations(end+1) = WVPropertyAnnotation('k', {'kl'}, 'rad/m', 'wavenumber coordinate in the x-direction', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('l', {'kl'}, 'rad/m', 'wavenumber coordinate in the y-direction', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+
+
 propertyAnnotations(end+1) = WVPropertyAnnotation('K',{'j','kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 propertyAnnotations(end+1) = WVPropertyAnnotation('L',{'j','kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 propertyAnnotations(end+1) = WVPropertyAnnotation('J',{'j','kl'},'rad/m', 'j-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Kh',{'j','kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Nkl',{},'', 'points in the kl-coordinate, `length(k)`', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Nj',{},'', 'points in the j-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Lx',{},'m', 'domain size in the x-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Ly',{},'m', 'domain size in the y-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lz',{},'m', 'domain size in the z-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Nx',{},'', 'points in the x-coordinate, `length(x)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Ny',{},'', 'points in the y-coordinate, `length(y)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('ApU',{'j','kl'},'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.',isComplex=1);
