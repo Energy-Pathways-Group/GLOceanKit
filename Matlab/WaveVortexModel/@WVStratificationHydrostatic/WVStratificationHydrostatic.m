@@ -68,7 +68,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             superclassOptions = namedargs2cell(options);
             self@WVStratification(Lz,Nz,superclassOptions{:});
             allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
-            canInitializeDirectly = all(isfield(allFields, WVStratificationHydrostatic.requiredPropertiesForStratification));
+            canInitializeDirectly = all(isfield(allFields, WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification));
 
             if canInitializeDirectly == true
                 self.dLnN2 = directInit.dLnN2;
@@ -169,12 +169,25 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
     end
 
     methods (Static)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % CAAnnotatedClass required methods, which enables writeToFile
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function propertyAnnotations = classDefinedPropertyAnnotations()
             propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratification();
         end
-        function vars = classRequiredProperties()
-            vars = WVStratificationHydrostatic.requiredPropertiesForStratification();
+
+        function vars = classRequiredPropertyNames()
+            vars = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification();
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Stratification specific property annotations and initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
@@ -196,8 +209,31 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             propertyAnnotations(end+1) = CANumericProperty('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification');
         end
 
-        function vars = requiredPropertiesForStratification()
+        function vars = namesOfRequiredPropertiesForStratification()
             vars = {'z','Lz','j','latitude','rotationRate','rho0','N2Function','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
+        end
+
+        function [Lz,Nz,options] = requiredPropertiesForStratificationFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lz (1,1) double {mustBePositive}
+                Nz (1,1) double {mustBePositive}
+                options
+            end
+            requiredPropertyNames = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification;
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredPropertyNames);
+            if ~canInit
+                error(errorString);
+            end
+
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredPropertyNames);
+
+            Nz = length(vars.z);
+            Lz = vars.Lz;
+            vars = rmfield(vars,{'Lz'});
+            options = namedargs2cell(vars);
         end
 
         function stratification = stratificationFromFile(path)
@@ -218,19 +254,8 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             arguments (Output)
                 stratification WVStratificationHydrostatic {mustBeNonempty}
             end
-            requiredProperties = WVStratificationHydrostatic.requiredPropertiesForStratification;
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
-            if ~canInit
-                error(errorString);
-            end
-
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
-
-            Nz = length(vars.z);
-            Lz = vars.Lz;
-            vars = rmfield(vars,{'Lz'});
-            optionCell = namedargs2cell(vars);
-            stratification = WVStratificationHydrostatic(Lz,Nz,optionCell{:});
+            [Lz,Nz,options] = WVStratificationHydrostatic.requiredPropertiesForStratificationFromGroup(group);
+            stratification = WVStratificationHydrostatic(Lz,Nz,options{:});
         end
         
     end

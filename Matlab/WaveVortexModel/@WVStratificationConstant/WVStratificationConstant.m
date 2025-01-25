@@ -86,7 +86,7 @@ classdef WVStratificationConstant < WVStratification
         function propertyAnnotations = classDefinedPropertyAnnotations()
             propertyAnnotations = WVStratificationConstant.propertyAnnotationsForStratification();
         end
-        function vars = classRequiredProperties()
+        function vars = classRequiredPropertyNames()
             vars = WVStratificationConstant.requiredPropertiesForStratification();
         end
 

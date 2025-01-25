@@ -1,15 +1,15 @@
-classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
+classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStratificationHydrostatic
 
     properties (Dependent, SetAccess=private)
         spatialMatrixSize
         spectralMatrixSize
         K2, Kh
-        X, Y
-        K, L
+        X, Y, Z
+        K, L, J
     end
 
     methods
-        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, options)
+        function self = WVGeometryDoublyPeriodicStratified(Lxy, Nxy, options)
             % create geometry for 2D barotropic flow
             %
             % ```matlab
@@ -38,29 +38,34 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
 
         function sz = get.spatialMatrixSize(self)
             % size of any real-valued field variable
-            sz = [self.Nx self.Ny];
+            sz = [self.Nx self.Ny self.Nz];
         end
 
         function sz = get.spectralMatrixSize(self)
             % size of any spectral matrix, Ap, Am, A0
-            sz = [self.Nkl 1];
+            sz = [self.Nj self.Nkl];
         end
 
-        function [X,Y] = xyGrid(self)
-            X = self.X; Y = self.Y;
+        function [X,Y,Z] = xyzGrid(self)
+            X = self.X; Y = self.Y; Z = self.Z;
         end
 
-        function [K,L] = klGrid(self)
-            K = self.k;
-            L = self.l;
+        function [K,L,J] = kljGrid(self)
+            K = repmat(shiftdim(self.k,-1),self.Nj,1);
+            L = repmat(shiftdim(self.l,-1),self.Nj,1);
+            J = repmat(self.j,1,self.Nkl);
         end
 
         function value = get.K(self)
-            value = self.k;
+            value = repmat(shiftdim(self.k,-1),self.Nj,1);
         end
 
         function value = get.L(self)
-            value = self.l;
+            value = repmat(shiftdim(self.l,-1),self.Nj,1);
+        end
+
+        function value = get.J(self)
+            value = repmat(self.j,1,self.Nkl);
         end
 
         function K2 = get.K2(self)
@@ -72,20 +77,25 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
         end 
 
         function value = get.X(self)
-            [value,~,~] = ndgrid(self.x,self.y);
+            [value,~,~] = ndgrid(self.x,self.y,self.z);
         end
 
         function value = get.Y(self)
-            [~,value,~] = ndgrid(self.x,self.y);
+            [~,value,~] = ndgrid(self.x,self.y,self.z);
         end
+
+        function value = get.Z(self)
+            [~,~,value] = ndgrid(self.x,self.y,self.z);
+        end
+
     end
 
     methods (Static)
         function propertyAnnotations = classDefinedPropertyAnnotations()
-            propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
+            propertyAnnotations = WVGeometryDoublyPeriodicStratified.propertyAnnotationsForGeometry();
         end
         function vars = classRequiredPropertyNames()
-            vars = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
+            vars = WVGeometryDoublyPeriodic.requiredPropertiesForGeometry();
         end
 
         function geometry = geometryFromFile(path)
@@ -93,10 +103,10 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
                 path char {mustBeNonempty}
             end
             arguments (Output)
-                geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
+                geometry WVGeometryDoublyPeriodicStratified {mustBeNonempty}
             end
             ncfile = NetCDFFile(path);
-            geometry = WVGeometryDoublyPeriodicBarotropic.geometryFromGroup(ncfile);
+            geometry = WVGeometryDoublyPeriodicStratified.geometryFromGroup(ncfile);
         end
 
         function geometry = geometryFromGroup(group)
@@ -104,14 +114,47 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
                 group NetCDFGroup {mustBeNonempty}
             end
             arguments (Output)
-                geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
+                geometry WVGeometryDoublyPeriodicStratified {mustBeNonempty}
             end
-            [Lxy, Nxy, options] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
-            geometry = WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,options{:});
+            requiredProperties = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometry;
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+            if ~canInit
+                error(errorString);
+            end
+
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
+
+            Nxy(1) = length(vars.x);
+            Nxy(2) = length(vars.y);
+            Lxy(1) = vars.Lx;
+            Lxy(2) = vars.Ly;
+            vars = rmfield(vars,{'x','y','Lx','Ly'});
+            optionCell = namedargs2cell(vars);
+            geometry = WVGeometryDoublyPeriodicStratified(Lxy,Nxy,optionCell{:});
+        end
+
+        function [Lxyz, Nxyz, options] = requiredPropertiesForGeometryFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lxyz (1,3) double {mustBePositive}
+                Nxyz (1,3) double {mustBePositive}
+                options
+            end
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
+            [Lz, Nz, stratOptions] = WVStratificationHydrostatic.requiredPropertiesForStratificationFromGroup(group);
+        end
+
+        function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
+            requiredPropertyNames = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry());
         end
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
             propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
+            propertyAnnotations = union(propertyAnnotations,WVStratificationHydrostatic.propertyAnnotationsForStratification());
+
             propertyAnnotations(end+1) = CANumericProperty('K',{'kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
             propertyAnnotations(end+1) = CANumericProperty('L',{'kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
             propertyAnnotations(end+1) = CANumericProperty('Kh',{'kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');

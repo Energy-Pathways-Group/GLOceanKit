@@ -6,5 +6,5 @@ arguments
     self CAAnnotatedClass {mustBeNonempty}
 end
 className = class(self);
-vars = feval(strcat(className,'.classRequiredProperties'));
+vars = feval(strcat(className,'.classRequiredPropertyNames'));
 end

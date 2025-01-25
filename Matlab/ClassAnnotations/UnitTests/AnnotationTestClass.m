@@ -13,7 +13,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
                 options.myVar
             end
             className = class(self);
-            requiredProperties = feval(strcat(className,'.classRequiredProperties'));
+            requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
             canInitializeDirectly = all(isfield(options,requiredProperties));
             if canInitializeDirectly
                 for iVar = 1:length(requiredProperties)
@@ -30,7 +30,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
 
     methods (Static)
 
-        function vars = classRequiredProperties()
+        function vars = classRequiredPropertyNames()
             vars = {'z','f','myVar'};
         end
 

@@ -767,8 +767,8 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         function propertyAnnotations = classDefinedPropertyAnnotations()
             propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
         end
-        function vars = classRequiredProperties()
-            vars = WVGeometryDoublyPeriodic.requiredPropertiesForGeometry();
+        function vars = classRequiredPropertyNames()
+            vars = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
         end
 
         function geometry = geometryFromFile(path)
@@ -789,7 +789,24 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 geometry WVGeometryDoublyPeriodic {mustBeNonempty}
             end
-            requiredProperties = WVGeometryDoublyPeriodic.requiredPropertiesForGeometry;
+            [Lxy, Nxy, options] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
+            geometry = WVGeometryDoublyPeriodic(Lxy,Nxy,options{:});
+        end
+
+        function vars = namesOfRequiredPropertiesForGeometry()
+            vars = {'x','y','Lx','Ly','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+        end
+
+        function [Lxy, Nxy, options] = requiredPropertiesForGeometryFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lxy (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                options
+            end
+            requiredProperties = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry;
             [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
             if ~canInit
                 error(errorString);
@@ -802,12 +819,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             Lxy(1) = vars.Lx;
             Lxy(2) = vars.Ly;
             vars = rmfield(vars,{'x','y','Lx','Ly'});
-            optionCell = namedargs2cell(vars);
-            geometry = WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:});
-        end
-
-        function vars = requiredPropertiesForGeometry()
-            vars = {'x','y','Lx','Ly','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+            options = namedargs2cell(vars);
         end
 
         function propertyAnnotations = propertyAnnotationsForGeometry()

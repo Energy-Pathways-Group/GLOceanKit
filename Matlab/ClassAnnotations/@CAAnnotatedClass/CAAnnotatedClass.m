@@ -62,7 +62,7 @@ classdef CAAnnotatedClass < handle
     end
 
     methods (Static,Abstract)
-        vars = classRequiredProperties()
+        vars = classRequiredPropertyNames()
     end
 
     methods (Static)
@@ -86,7 +86,7 @@ classdef CAAnnotatedClass < handle
                     error('Unable to find the attribute AnnotatedClass');
                 end
             end
-            requiredProperties = feval(strcat(className,'.classRequiredProperties'));
+            requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
             var = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
         end
 
