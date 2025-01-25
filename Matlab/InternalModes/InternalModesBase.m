@@ -71,7 +71,7 @@ classdef (Abstract) InternalModesBase < handle
     end
     
     properties (Access = protected)
-        g = 9.81 % 9.81 meters per second.
+        g % 9.81 meters per second.
         omegaFromK % function handle to compute omega(h,k)
         kFromOmega % function handle to compute k(h,omega)
     end
@@ -131,7 +131,8 @@ classdef (Abstract) InternalModesBase < handle
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.nModes (1,1) double = 0
-                options.rotationRate (1,1) double = 7.2921e-5;
+                options.rotationRate (1,1) double = 7.2921e-5
+                options.g (1,1) double = 9.81
             end
             if isempty(options.zIn)
                 error('You must specify zIn');
@@ -145,6 +146,7 @@ classdef (Abstract) InternalModesBase < handle
             self.f0 = 2*(self.rotationRate)*sin(self.latitude*pi/180);
             self.rho0 = options.rho0;
             self.nModes = options.nModes;
+            self.g = options.g;
 
             if isempty(options.zOut)
                 self.z = options.zIn;

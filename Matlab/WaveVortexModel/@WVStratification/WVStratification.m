@@ -1,4 +1,4 @@
-classdef WVStratification < handle
+classdef WVStratification < WVRotatingFPlane
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     properties (GetAccess=public, SetAccess=protected)
@@ -13,16 +13,6 @@ classdef WVStratification < handle
         %
         % - Topic: Domain attributes — Spatial grid
         Lz
-
-        % rotation rate of the planetary body
-        %
-        % - Topic: Domain attributes
-        rotationRate
-
-        % central latitude of the simulation
-        %
-        % - Topic: Domain attributes
-        latitude
     end
 
     properties (Dependent)
@@ -111,7 +101,7 @@ classdef WVStratification < handle
     end
 
     methods (Access=protected)
-        function self = WVStratification(Lz,Nz,options)
+        function self = WVStratification(Lz,Nz,options,rotatingOptions)
             % By assumption, the modes j=0:(Nj-1) --- because for now, we
             % require completeness.
             % 
@@ -137,11 +127,15 @@ classdef WVStratification < handle
                 options.Nj (1,1) double {mustBePositive}
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
-                options.rotationRate (1,1) double = 7.2921E-5
-                options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                rotatingOptions.rotationRate (1,1) double = 7.2921E-5
+                rotatingOptions.latitude (1,1) double = 33
+                rotatingOptions.g (1,1) double = 9.81
             end
 
+            if isequal(options.N2Function,@isempty) && isequal(options.rhoFunction,@isempty)
+                error('You must specify either rho or N2.');
+            end
             % For rigid lid:
             % - There is one barotropic mode that appears in F
             % - There are nModes-1 *internal modes* for G and F.
@@ -149,15 +143,16 @@ classdef WVStratification < handle
             % complete.
             % This is nModes+1 grid points necessary to make this happen.
             % This should make sense because there are nModes-1 internal
-            % modes, but the boundaries.            
+            % modes, but the boundaries.
+            optionCell = namedargs2cell(rotatingOptions);
+            self@WVRotatingFPlane(optionCell{:});
+
             if isfield(options,'z')
                 self.z=options.z;
             else
-                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=options.latitude,rotationRate=options.rotationRate);
+                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=self.latitude,rotationRate=self.rotationRate);
             end
             self.Lz = Lz;
-            self.latitude = options.latitude;
-            self.rotationRate = options.rotationRate;
 
             if isfield(options,'j')
                 self.j=options.j;
@@ -173,19 +168,17 @@ classdef WVStratification < handle
             nModes = Nz-1;
             self.rho0 = options.rho0;
             if ~isequal(options.N2Function,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=self.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate);
+                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=self.z,latitude=self.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate,g=self.g);
                 self.N2 = options.N2Function(self.z);
                 self.N2Function = options.N2Function;
                 self.rhoFunction = self.verticalModes.rho_function;
                 self.rho_nm = self.rhoFunction(self.z);
             elseif ~isequal(options.rhoFunction,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=self.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate);
+                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=self.z,latitude=self.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate,g=self.g);
                 self.N2 = self.verticalModes.N2;
                 self.N2Function = self.verticalModes.N2_function;
                 self.rhoFunction = options.rhoFunction;
-                self.rho_nm = self.rhoFunction(self.z);
-            else
-                error('You must specify either rho or N2.');
+                self.rho_nm = self.rhoFunction(self.z);       
             end
             self.verticalModes.normalization = Normalization.kConstant;
             self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
@@ -242,6 +235,11 @@ classdef WVStratification < handle
         %     dims = {'z','j'};
         % end
 
+        function requiredPropertyNames = namesOfRequiredPropertiesForStratification()
+            requiredPropertyNames = WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane();
+            requiredPropertyNames = union(requiredPropertyNames,{'z','Lz','j','rho0','N2Function'});
+        end
+
         function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of CAPropertyAnnotations initialized by default
             %
@@ -251,7 +249,7 @@ classdef WVStratification < handle
             % - Topic: Developer
             % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratification()
             % - Returns propertyAnnotations: array of CAPropertyAnnotation instances
-            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations = WVRotatingFPlane.propertyAnnotationsForRotatingFPlane();
 
             propertyAnnotations(end+1) = CADimensionProperty('z', 'm', 'z coordinate');
             propertyAnnotations(end).attributes('standard_name') = 'height_above_mean_sea_level';
@@ -259,6 +257,7 @@ classdef WVStratification < handle
             propertyAnnotations(end).attributes('axis') = 'Z';
 
             propertyAnnotations(end+1) = CADimensionProperty('j', 'mode number', 'vertical mode number');
+            propertyAnnotations(end+1) = CANumericProperty('Nj',{},'', 'points in the j-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 
             propertyAnnotations(end+1) = CAFunctionProperty('rhoFunction', 'takes $$z$$ values and returns the no-motion density.');
             propertyAnnotations(end+1) = CAFunctionProperty('N2Function', 'takes $$z$$ values and returns the squared buoyancy frequency of the no-motion density.');
@@ -273,13 +272,32 @@ classdef WVStratification < handle
             propertyAnnotations(end+1) = CANumericProperty('z_int',{'z'},'', 'Quadrature weights for the vertical grid');
             propertyAnnotations(end+1) = CANumericProperty('rho0',{},'kg m^{-3}', 'density of $$\rho_\textrm{nm}$$ at the surface (z=0)', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end).attributes('standard_name') = 'sea_surface_density';
-            propertyAnnotations(end+1) = CANumericProperty('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
-            propertyAnnotations(end).attributes('standard_name') = 'latitude';
-            propertyAnnotations(end+1) = CANumericProperty('rotationRate',{},'rad/s', 'rotation rate of the planetary body', detailedDescription='- topic: Domain Attributes');
-
 
             propertyAnnotations(end+1) = CANumericProperty('Lz',{},'m', 'domain size in the z-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
             propertyAnnotations(end+1) = CANumericProperty('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+        end
+
+        function [Lz,Nz,options] = requiredPropertiesForStratificationFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lz (1,1) double {mustBePositive}
+                Nz (1,1) double {mustBePositive}
+                options
+            end
+            requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification;
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredPropertyNames);
+            if ~canInit
+                error(errorString);
+            end
+
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredPropertyNames);
+
+            Nz = length(vars.z);
+            Lz = vars.Lz;
+            vars = rmfield(vars,{'Lz'});
+            options = namedargs2cell(vars);
         end
 
         % function methodAnnotations = methodAnnotationsForStratification()

@@ -1,15 +1,19 @@
-classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
+classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotatingFPlane
 
+    properties
+        h
+    end
     properties (Dependent, SetAccess=private)
         spatialMatrixSize
         spectralMatrixSize
         K2, Kh
         X, Y
         K, L
+        Lr2
     end
 
     methods
-        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, options)
+        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, geomOptions,rotatingOptions,options)
             % create geometry for 2D barotropic flow
             %
             % ```matlab
@@ -27,13 +31,26 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
-                options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
-                options.shouldAntialias (1,1) logical = true
-                options.shouldExcludeNyquist (1,1) logical = true
-                options.shouldExludeConjugates (1,1) logical = true
+                geomOptions.conjugateDimension (1,1) double {mustBeMember(geomOptions.conjugateDimension,[1 2])} = 2
+                geomOptions.shouldAntialias (1,1) logical = true
+                geomOptions.shouldExcludeNyquist (1,1) logical = true
+                geomOptions.shouldExludeConjugates (1,1) logical = true
+                rotatingOptions.rotationRate (1,1) double = 7.2921E-5
+                rotatingOptions.latitude (1,1) double = 33
+                rotatingOptions.g (1,1) double = 9.81
+                options.h (1,1) double = 0.8
             end
-            optionCell = namedargs2cell(options);
+            optionCell = namedargs2cell(geomOptions);
             self@WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:});
+
+            optionCell = namedargs2cell(rotatingOptions);
+            self@WVRotatingFPlane(optionCell{:});
+
+            self.h = options.h;
+        end
+
+        function Lr2 = get.Lr2(self)
+            Lr2 = self.g*self.h/(self.f*self.f);
         end
 
         function sz = get.spatialMatrixSize(self)
@@ -72,20 +89,75 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
         end 
 
         function value = get.X(self)
-            [value,~,~] = ndgrid(self.x,self.y);
+            [value,~] = ndgrid(self.x,self.y);
         end
 
         function value = get.Y(self)
-            [~,value,~] = ndgrid(self.x,self.y);
+            [~,value] = ndgrid(self.x,self.y);
         end
     end
 
     methods (Static)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % CAAnnotatedClass required methods, which enables writeToFile
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function propertyAnnotations = classDefinedPropertyAnnotations()
             propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
         end
         function vars = classRequiredPropertyNames()
-            vars = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
+            vars = WVGeometryDoublyPeriodicBarotropic.namesOfRequiredPropertiesForGeometry();
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Stratification specific property annotations and initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
+            requiredPropertyNames = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
+            requiredPropertyNames = union(requiredPropertyNames,WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane);
+            requiredPropertyNames = union(requiredPropertyNames,{'h'});
+        end
+
+        function propertyAnnotations = propertyAnnotationsForGeometry()
+            propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
+            propertyAnnotations = cat(2,propertyAnnotations,WVRotatingFPlane.propertyAnnotationsForRotatingFPlane());
+
+            propertyAnnotations(end+1) = CANumericProperty('K',{'kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('L',{'kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('Kh',{'kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('K2',{'kl'},'rad/m', 'squared horizontal wavenumber, $$K2=K^2+L^2$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
+            propertyAnnotations(end+1) = CANumericProperty('X',{'x','y'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Y',{'x','y'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+
+            propertyAnnotations(end+1) = CANumericProperty('h',{},'m', 'equivalent depth', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations(end+1) = CANumericProperty('Lr2',{'j'},'m^2', 'squared Rossby radius');
+        end
+
+        function [Lxy, Nxy, options] = requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lxy (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                options
+            end
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
+            rotatingOptions = WVRotatingFPlane.requiredPropertiesForRotatingFPlaneFromGroup(group);
+
+            newRequiredProperties = {'h'};
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
+            if ~canInit
+                error(errorString);
+            end
+            vars = CAAnnotatedClass.variablesFromGroup(group,newRequiredProperties);
+            newOptions = namedargs2cell(vars);
+            options = cat(2,geomOptions,rotatingOptions,newOptions);
         end
 
         function geometry = geometryFromFile(path)
@@ -106,19 +178,11 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic
             arguments (Output)
                 geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
             end
-            [Lxy, Nxy, options] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
+            [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group);
             geometry = WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,options{:});
         end
 
-        function propertyAnnotations = propertyAnnotationsForGeometry()
-            propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
-            propertyAnnotations(end+1) = CANumericProperty('K',{'kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('L',{'kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('Kh',{'kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
 
-            propertyAnnotations(end+1) = CANumericProperty('X',{'x','y'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-            propertyAnnotations(end+1) = CANumericProperty('Y',{'x','y'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-        end
 
     end
 end

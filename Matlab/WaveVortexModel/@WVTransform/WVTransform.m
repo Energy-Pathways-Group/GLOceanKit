@@ -48,39 +48,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
-        Lx, Ly, Lz
-        Nx, Ny, Nkl
-        k, l,
-        kAxis, lAxis, kRadial
         latitude
-
-        % Boolean indicating whether there is a single (equivalent barotropic) mode
-        % - Topic: Domain attributes
-        % This indicates that the simulation is 2D.
-        isBarotropic = 0
-
-        horizontalModes
-
-        rho0
-
         version = 3.0;
-
-        A0Z=0, ApmD=0, ApmN=0, A0N=0
-        
-        UAp=0, UAm=0, UA0=0
-        VAp=0, VAm=0, VA0=0
-        WAp=0, WAm=0
-        NAp=0, NAm=0, NA0=0
-        PA0=0
-
-        % These convert the coefficients to their depth integrated energies
-        Apm_TE_factor=0
-        A0_TE_factor=0
-        A0_TZ_factor=0
-        A0_QGPV_factor=0
-
-        conjugateDimension = 2
-        shouldAntialias = 1
 
         dftBuffer, wvBuffer
         dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
@@ -134,19 +103,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         maskA0Conj = 0
     end
 
+    properties (Abstract)
+        spatialMatrixSize
+        spectralMatrixSize
+    end
+
     properties (Dependent, SetAccess=private)
-        x, y
-        kl
-        dk, dl
-        K2, Kh
-
         Lr2
-
         f, inertialPeriod
-
-        X, Y
-        K, L
-
         hasClosure
         hasNonlinearAdvectionEnabled
     end
@@ -163,11 +127,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         forcing = {}
         spatialForcing = {}
         spectralForcing = {}
-    end
-
-    properties (Abstract,GetAccess=public) 
-        h_0  % [Nj Nkl]
-        isHydrostatic
     end
     
     methods (Abstract)
@@ -222,48 +181,15 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     end
 
     methods
-        function self = WVTransform(Lxyz, Nxy, z, options)
+        function self = WVTransform()
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
             % - Topic: Internal
             arguments
-                Lxyz (1,3) double {mustBePositive}
-                Nxy (1,2) double {mustBePositive}
-                z (:,1) double
-                options.latitude (1,1) double = 33
-                options.rho0 (1,1) double {mustBePositive} = 1025
-                options.Nj (1,1) double {mustBePositive} = length(z)
-                options.shouldAntialias logical = true
-            end
-            
-            % These first properties are directly set on initialization
-            self.Lx = Lxyz(1);
-            self.Ly = Lxyz(2);
-            self.Lz = Lxyz(3);
 
-            self.Nx = Nxy(1);
-            self.Ny = Nxy(2);
-            self.Nj = options.Nj;
-            self.z = z;
-            if length(z)>1
-                self.j = (0:(self.Nj-1))';
-            else
-                self.j=1;
             end
 
-            self.latitude = options.latitude;
-            self.rho0 = options.rho0;
-            self.shouldAntialias = options.shouldAntialias;
-            
-            self.horizontalModes = WVGeometryDoublyPeriodic([self.Lx self.Ly],[self.Nx self.Ny],shouldAntialias=options.shouldAntialias,conjugateDimension=self.conjugateDimension);
-            self.Nkl = self.horizontalModes.Nkl_wv;
-            self.k = self.horizontalModes.k_wv;
-            self.l = self.horizontalModes.l_wv;
-            self.kRadial = self.horizontalModes.kRadial_wv;
-            self.kAxis = fftshift(self.horizontalModes.k_dft); %(min(self.k):self.dk:max(self.k)).';
-            self.lAxis = fftshift(self.horizontalModes.l_dft); %(min(self.l):self.dl:max(self.l)).';
-            
             % Now set the initial conditions to zero
             self.Ap = zeros(self.spectralMatrixSize);
             self.Am = zeros(self.spectralMatrixSize);
@@ -391,93 +317,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.clearVariableCacheOfTimeDependentVariables();
         end
 
-        function sz = spatialMatrixSize(self)
-            % size of any real-valued field variable
-            sz = [self.Nx self.Ny self.Nz];
-        end
-
-        function sz = spectralMatrixSize(self)
-            % size of any spectral matrix, Ap, Am, A0
-            sz = [self.Nj self.Nkl];
-        end
-
-        function [X,Y,Z] = xyzGrid(self)
-            X = self.X; Y = self.Y; Z = self.Z;
-        end
-
-        function [K,L,J] = kljGrid(self)
-            K = repmat(shiftdim(self.k,-1),self.Nj,1);
-            L = repmat(shiftdim(self.l,-1),self.Nj,1);
-            J = repmat(self.j,1,self.Nkl);
-        end
-
-        function value = get.K(self)
-            value = repmat(shiftdim(self.k,-1),self.Nj,1);
-        end
-
-        function value = get.L(self)
-            value = repmat(shiftdim(self.l,-1),self.Nj,1);
-        end
-
-        function value = get.J(self)
-            value = repmat(self.j,1,self.Nkl);
-        end
-
-        function K2 = get.K2(self)
-            K2 = self.K .* self.K + self.L .* self.L;
-        end
-
-        function Kh = get.Kh(self)
-            Kh = sqrt(self.K .* self.K + self.L .* self.L);
-        end 
-
-        function Lr2 = get.Lr2(self)
-            Lr2 = self.g*self.h_0/(self.f*self.f);
-        end
-
-        function value = get.inertialPeriod(self)
-            value = (2*pi/(2 * 7.2921E-5 * sin( self.latitude*pi/180 )));
-        end
-
-        function value = get.f(self)
-            value = 2 * 7.2921E-5 * sin( self.latitude*pi/180 );
-        end
-
-        function value = get.X(self)
-            [value,~,~] = ndgrid(self.x,self.y,self.z);
-        end
-
-        function value = get.Y(self)
-            [~,value,~] = ndgrid(self.x,self.y,self.z);
-        end
-
-        function value = get.Z(self)
-            [~,~,value] = ndgrid(self.x,self.y,self.z);
-        end
-
-        function x = get.x(self)
-            dx = self.Lx/self.Nx;
-            x = dx*(0:self.Nx-1)';
-        end
-
-        function y = get.y(self)
-            dy = self.Ly/self.Ny;   
-            y = dy*(0:self.Ny-1)';
-        end
-        function dk = get.dk(self)
-            dk = 2*pi/self.Lx;
-        end
-        function dl = get.dl(self)
-            dl = 2*pi/self.Ly;
-        end
-
-        function kl = get.kl(self)
-            kl = (0:(self.Nkl-1))';
-        end
-
-        function value = get.Nz(self)
-            value=length(self.z);
-        end        
+  
 
         function set.Ap(self,value)
             self.Ap = value;
@@ -492,23 +332,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         function set.A0(self,value)
             self.A0 = value;
             self.clearVariableCache();
-        end
-
-        function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
-            %returns the effective grid resolution in meters
-            %
-            % The effective grid resolution is the highest fully resolved
-            % wavelength in the model. This value takes into account
-            % anti-aliasing, and is thus appropriate for setting damping
-            % operators.
-            %
-            % - Topic: Properties
-            % - Declaration: flag = effectiveHorizontalGridResolution(other)
-            % - Returns effectiveHorizontalGridResolution: double
-            arguments
-                self WVTransform
-            end
-            effectiveHorizontalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
         end
 
         self = initializePrimaryFlowComponents(self)
@@ -556,24 +379,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             wx = self.diffX(w);
             wy = self.diffY(w);
             wz = self.diffZG(w);
-        end
-
-        function u_x = diffX(self,u,n)
-            arguments
-                self         WVTransform
-                u (:,:,:)   double
-                n (1,1)     double = 1
-            end
-            u_x = self.horizontalModes.diffX(u,n);
-        end
-
-        function u_y = diffY(self,u,n)
-            arguments
-                self         WVTransform
-                u (:,:,:)   double
-                n (1,1)     double = 1
-            end
-            u_y = self.horizontalModes.diffY(u,n);
         end
 
         [Fp,Fm,F0] = nonlinearFlux(self)

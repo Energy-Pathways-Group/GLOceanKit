@@ -15,28 +15,9 @@ propertyAnnotations(end+1) = WVPropertyAnnotation('f',{},'rad/s', 'Coriolis para
 propertyAnnotations(end+1) = WVPropertyAnnotation('inertialPeriod',{},'s', 'inertial period');
 propertyAnnotations(end+1) = WVPropertyAnnotation('g',{},'m s^{-2}', 'gravity of Earth', detailedDescription='- topic: Domain Attributes');
 
-
-% propertyAnnotations(end+1) = WVPropertyAnnotation('N0',{},'rad s^{-1}', 'interior buoyancy frequency at the surface (z=0)', detailedDescription='- topic: Domain Attributes — Stratification');
-% propertyAnnotations(end+1) = WVPropertyAnnotation('Nmax',{},'rad s^{-1}', 'maximum buoyancy frequency', detailedDescription='- topic: Domain Attributes — Stratification');
-% propertyAnnotations(end+1) = WVPropertyAnnotation('rhobar',{'z'},'kg m^{-3}', 'mean density', detailedDescription='- topic: Domain Attributes — Stratification');
-% propertyAnnotations(end+1) = WVPropertyAnnotation('N2',{'z'},'rad^2 s^{-2}', 'buoyancy frequency of the mean density', detailedDescription='- topic: Domain Attributes — Stratification');
-% propertyAnnotations(end+1) = WVPropertyAnnotation('dLnN2',{'z'},'', 'd/dz ln N2', detailedDescription='- topic: Domain Attributes — Stratification');
-
 propertyAnnotations(end+1) = WVPropertyAnnotation('Omega',{'k','l','j'},'rad s^{-1}', 'frequency of oscillation of the linear waves', detailedDescription='- topic: Domain Attributes');
 propertyAnnotations(end+1) = WVPropertyAnnotation('Lr2',{'j'},'m^2', 'squared Rossby radius');
 
-
-
-
-propertyAnnotations(end+1) = WVPropertyAnnotation('K',{'j','kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('L',{'j','kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('J',{'j','kl'},'rad/m', 'j-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Kh',{'j','kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Nj',{},'', 'points in the j-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-
-propertyAnnotations(end+1) = WVPropertyAnnotation('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-propertyAnnotations(end+1) = WVPropertyAnnotation('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('ApU',{'j','kl'},'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.',isComplex=1);
 propertyAnnotations(end+1) = WVPropertyAnnotation('ApV',{'j','kl'},'', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.',isComplex=1);

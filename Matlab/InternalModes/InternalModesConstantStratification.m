@@ -16,15 +16,16 @@ classdef InternalModesConstantStratification < InternalModesBase
                 options.latitude (1,1) double = 33
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.nModes (1,1) double = 0
+                options.rotationRate (1,1) double = 7.2921e-5
+                options.g (1,1) double = 9.81
             end
-            g = 9.81;
             rho0 = options.rho0;
             N0 = options.N0;
-            rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
+            rhoFunction = @(z) -(N0*N0*rho0/options.g)*z + rho0;
             N2Function = @(z) N0*N0*ones(size(z));
             
             
-            self@InternalModesBase(rho=rhoFunction,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=rho0,nModes=options.nModes);
+            self@InternalModesBase(rho=rhoFunction,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=rho0,nModes=options.nModes,rotationRate=options.rotationRate,g=options.g);
             self.N0 = N0;
             self.rho = rhoFunction(self.z);
             self.N2 = N2Function(self.z);

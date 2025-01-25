@@ -761,6 +761,22 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             dftConjugateIndices = dftConjugateIndices(indices);
         end
         
+        function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
+            %returns the effective grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Properties
+            % - Declaration: flag = effectiveHorizontalGridResolution(other)
+            % - Returns effectiveHorizontalGridResolution: double
+            arguments
+                self WVGeometryDoublyPeriodic
+            end
+            effectiveHorizontalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
+        end
     end
 
     methods (Static)

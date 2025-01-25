@@ -135,9 +135,10 @@ classdef InternalModesSpectral < InternalModesBase
                 options.rho0 (1,1) double {mustBePositive} = 1025
                 options.nModes (1,1) double = 0
                 options.nEVP = 512;
-                options.rotationRate (1,1) double = 7.2921e-5;
+                options.rotationRate (1,1) double = 7.2921e-5
+                options.g (1,1) double = 9.81
             end
-            self@InternalModesBase(rho=options.rho,N2=options.N2,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes,rotationRate=options.rotationRate);
+            self@InternalModesBase(rho=options.rho,N2=options.N2,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes,rotationRate=options.rotationRate,g=options.g);
             self.nEVP = options.nEVP;
             self.SetupEigenvalueProblem();            
         end

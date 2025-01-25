@@ -19,6 +19,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
         GinvMatrix
         FMatrix
         GMatrix
+        Lr2
     end
 
     methods
@@ -49,9 +50,10 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 options.Nj (1,1) double {mustBePositive}
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
+                options.rho0 (1,1) double {mustBePositive} = 1025
                 options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
-                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.g (1,1) double = 9.81
 
                 % ALL of these must be set for direct initialization to
                 % avoid actually computing the modes.
@@ -100,6 +102,10 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
         %     wvt.addOperation(EtaTrueOperation());
         %     wvt.addOperation(APVOperation());
         % end
+
+        function Lr2 = get.Lr2(self)
+            Lr2 = self.g*self.h_0/(self.f*self.f);
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -189,6 +195,11 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function requiredPropertyNames = namesOfRequiredPropertiesForStratification()
+            requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = union(requiredPropertyNames,{'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'});
+        end
+
         function propertyAnnotations = propertyAnnotationsForStratification()
             % return array of WVPropertyAnnotation initialized by default
             %
@@ -206,11 +217,9 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             propertyAnnotations(end+1) = CANumericProperty('QG0',{'j','z'},'','Preconditioned G-mode forward transformation');
             propertyAnnotations(end+1) = CANumericProperty('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat');
             propertyAnnotations(end+1) = CANumericProperty('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. ');
-            propertyAnnotations(end+1) = CANumericProperty('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification');
-        end
 
-        function vars = namesOfRequiredPropertiesForStratification()
-            vars = {'z','Lz','j','latitude','rotationRate','rho0','N2Function','dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
+            propertyAnnotations(end+1) = CANumericProperty('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification');
+            propertyAnnotations(end+1) = CANumericProperty('Lr2',{'j'},'m^2', 'squared Rossby radius');
         end
 
         function [Lz,Nz,options] = requiredPropertiesForStratificationFromGroup(group)
@@ -222,18 +231,15 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 Nz (1,1) double {mustBePositive}
                 options
             end
-            requiredPropertyNames = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification;
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredPropertyNames);
+            [Lz,Nz,stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group);
+            newRequiredProperties = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
             if ~canInit
                 error(errorString);
             end
-
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredPropertyNames);
-
-            Nz = length(vars.z);
-            Lz = vars.Lz;
-            vars = rmfield(vars,{'Lz'});
-            options = namedargs2cell(vars);
+            vars = CAAnnotatedClass.variablesFromGroup(group,newRequiredProperties);
+            newOptions = namedargs2cell(vars);
+            options = cat(2,stratOptions,newOptions);
         end
 
         function stratification = stratificationFromFile(path)
