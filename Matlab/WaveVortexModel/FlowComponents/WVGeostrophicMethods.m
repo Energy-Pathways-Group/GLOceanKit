@@ -18,12 +18,13 @@ classdef WVGeostrophicMethods < handle
         % - nav_order: 1
         geostrophicComponent
     end
-    properties (Dependent)
+    properties (Abstract)
         h_0  % [Nj 1]
     end
     methods (Abstract)
         ratio = maxFg(self,kMode,lMode,jMode);
         u_bar = transformFromSpatialDomainWithFg(self, u)
+        removeAll(self)
     end
 
     methods (Access=protected)
@@ -159,9 +160,7 @@ classdef WVGeostrophicMethods < handle
             % - Declaration: initWithGeostrophicStreamfunction(psi)
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 1
-            self.Ap = zeros(self.spectralMatrixSize);
-            self.Am = zeros(self.spectralMatrixSize);
-            self.A0 = zeros(self.spectralMatrixSize);
+            self.removeAll();
             self.setGeostrophicStreamfunction(psi);
         end
 
@@ -388,7 +387,7 @@ classdef WVGeostrophicMethods < handle
        
     end
     methods (Static, Hidden=true)
-        function variableAnnotations = variableAnnotationsForGeostrophicComponent()
+        function propertyAnnotations = propertyAnnotationsForGeostrophicComponent()
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by
@@ -398,12 +397,23 @@ classdef WVGeostrophicMethods < handle
             % - Declaration: operations = defaultVariableAnnotations()
             % - Returns operations: array of WVVariableAnnotation instances
             
-            variableAnnotations = WVVariableAnnotation.empty(0,0);
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
+            annotation = CANumericProperty('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
-            variableAnnotations(end+1) = annotation;
+            propertyAnnotations(end+1) = annotation;
+
+            propertyAnnotations(end+1) = CANumericProperty('A0U',{'j','kl'},'s', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('A0V',{'j','kl'},'s', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('A0N',{'j','kl'},'', 'matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('UA0',{'j','kl'},'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('VA0',{'j','kl'},'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('NA0',{'j','kl'},'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_TE_factor',{'j','kl'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_QGPV_factor',{'j','kl'},'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_TZ_factor',{'j','kl'},'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
+
         end
         
         function flag = hasEqualPVComponents(wvt1,wvt2)
