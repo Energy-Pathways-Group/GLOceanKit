@@ -93,12 +93,32 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         % index into the DFT grid of each WV mode
         %
         % - Topic: Domain attributes — WV grid      
-        dftPrimaryIndices
+        dftPrimaryIndices2D uint64
     
         % index into the DFT grid of the conjugate of each WV mode
         %
         % - Topic: Domain attributes — WV grid
-        dftConjugateIndices
+        dftConjugateIndices2D uint64
+
+        % index into the DFT grid of each WV mode
+        %
+        % - Topic: Domain attributes — WV grid      
+        dftPrimaryIndex uint64
+    
+        % index into the DFT grid of the conjugate of each WV mode
+        %
+        % - Topic: Domain attributes — WV grid
+        dftConjugateIndex uint64
+
+        % index into the WV mode that matches the dftConjugateIndices
+        %
+        % - Topic: Domain attributes — WV grid
+        wvConjugateIndex uint64
+
+        % memory buffer to hold the dft matrices
+        %
+        % - Topic: Domain attributes — WV grid
+        dftBuffer
  
         % k-wavenumber dimension on the WV grid
         %
@@ -109,6 +129,13 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — WV grid
         l
+    end
+
+    properties (GetAccess=private,SetAccess=private)
+        % number of grid points in the third, non-transformed, dimension
+        %
+        % - Topic: Domain attributes — Spatial grid
+        Nz
     end
 
     properties (Dependent, SetAccess=private)
@@ -198,20 +225,24 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % - Parameter shouldAntialias: (optional) set whether the WV grid excludes the quadratically aliased modes [0 1] (default 1)
             % - Parameter shouldExcludeNyquist: (optional) set whether the WV grid excludes Nyquist modes[0 1] (default 1)
             % - Parameter shouldExludeConjugates: (optional) set whether the WV grid excludes conjugate modes [0 1] (default 1)
+            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
             % - Returns geom: a new WVGeometryDoublyPeriodic instance
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
+                options.Nz (1,1) double {mustBePositive} = 1
                 options.conjugateDimension (1,1) double {mustBeMember(options.conjugateDimension,[1 2])} = 2
                 options.shouldAntialias (1,1) logical = true
                 options.shouldExcludeNyquist (1,1) logical = true
                 options.shouldExludeConjugates (1,1) logical = true
+                options.isHalfComplex (1,1) logical = true
             end
             self.Lx = Lxy(1);
             self.Ly = Lxy(2);
 
             self.Nx = Nxy(1);
             self.Ny = Nxy(2);
+            self.Nz = options.Nz;
             self.conjugateDimension = options.conjugateDimension;
             self.shouldAntialias = options.shouldAntialias;
             self.shouldExcludeNyquist = options.shouldExcludeNyquist;
@@ -247,15 +278,18 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             Kh = sqrt(K.*K + L.*L);
 
             multiIndex = cat(2,notPrimaryCoeffs(:),Kh(:),K(:),L(:));
-            [sortedMultiIndex,self.dftPrimaryIndices] = sortrows(multiIndex);
+            [sortedMultiIndex,self.dftPrimaryIndices2D] = sortrows(multiIndex);
 
             % Now remove all the coefficients that we didn't want
-            self.dftPrimaryIndices = self.dftPrimaryIndices(sortedMultiIndex(:,1) == 0);
+            self.dftPrimaryIndices2D = self.dftPrimaryIndices2D(sortedMultiIndex(:,1) == 0);
 
-            self.dftConjugateIndices = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
-            self.dftConjugateIndices = self.dftConjugateIndices(self.dftPrimaryIndices);
-            self.k = K(self.dftPrimaryIndices);
-            self.l = L(self.dftPrimaryIndices);
+            self.dftConjugateIndices2D = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
+            self.dftConjugateIndices2D = self.dftConjugateIndices2D(self.dftPrimaryIndices2D);
+            self.k = K(self.dftPrimaryIndices2D);
+            self.l = L(self.dftPrimaryIndices2D);
+
+            self.dftBuffer = zeros([self.Nx self.Ny options.Nz]);
+            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
 
         function x = get.x(self)
@@ -310,12 +344,12 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
 
         function kMode_wv = get.kMode_wv(self)
             [K,~] = ndgrid(self.kMode_dft,self.lMode_dft);
-            kMode_wv = K(self.dftPrimaryIndices);
+            kMode_wv = K(self.dftPrimaryIndices2D);
         end
 
         function lMode_wv = get.lMode_wv(self)
             [~,L] = ndgrid(self.kMode_dft,self.lMode_dft);
-            lMode_wv = L(self.dftPrimaryIndices);
+            lMode_wv = L(self.dftPrimaryIndices2D);
         end
 
         function N = get.Nkl(self)
@@ -326,39 +360,39 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             Kh = sqrt(self.k.^2 + self.l.^2);
             allKs = unique(reshape(abs(Kh),[],1),'sorted');
             deltaK = max(diff(allKs));
-            kAxis = 0:deltaK:(max(allKs)+deltaK/2);
+            kAxis_ = 0:deltaK:(max(allKs)+deltaK/2);
 
             % Thi is the final output axis for wavenumber
-            kRadial = reshape(kAxis,[],1);
+            kRadial = reshape(kAxis_,[],1);
         end
 
-        function u_bar = transformFromSpatialDomain(self,u)
+        function u_bar = transformFromSpatialDomainToDFTGrid(self,u)
             % transform from $$(x,y,z)$$ to $$(k,l,z)$$ on the DFT grid
             %
             % Performs a Fourier transform in the x and y direction. The
             % resulting matrix is on the DFT grid.
             %
             % - Topic: Operations — Fourier transformation
-            % - Declaration: u_bar = transformFromSpatialDomain(u)
+            % - Declaration: u_bar = transformFromSpatialDomainToDFTGrid(u)
             % - Parameter u: a real-valued matrix of size [Nx Ny Nz]
             % - Returns u_bar: a complex-valued matrix of size [Nk_dft Nl_dft Nz]
             u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
         end
 
-        function u = transformToSpatialDomain(self,u_bar)
+        function u = transformToSpatialDomainFromDFTGrid(self,u_bar)
             % transform from $$(k,l,z)$$ on the DFT grid to $$(x,y,z)$$
             %
             % Performs an inverse Fourier transform to take a matrix from
             % the DFT grid back to the spatial domain.
             %
             % - Topic: Operations — Fourier transformation
-            % - Declaration: u = transformToSpatialDomain(u_bar)  
+            % - Declaration: u = transformToSpatialDomainFromDFTGrid(u_bar)  
             % - Parameter u_bar: a complex-valued matrix of size [Nk_dft Nl_dft Nz]
             % - Returns u: a real-valued matrix of size [Nx Ny Nz]
             u = ifft(ifft(u_bar,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
         end
 
-        function u = transformToSpatialDomainAtPosition(self,u_bar,x,y)
+        function u = transformToSpatialDomainFromDFTGridAtPosition(self,u_bar,x,y)
             % transform from $$(k,l)$$ on the DFT grid to $$(x,y)$$ at any position
             %
             % Performs an inverse non-uniform Fourier transform to take a
@@ -366,7 +400,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % set of points (x,y).
             %
             % - Topic: Operations — Fourier transformation
-            % - Declaration: u = transformToSpatialDomainAtPosition(u_bar)
+            % - Declaration: u = transformToSpatialDomainFromDFTGridAtPosition(u_bar)
             % - Parameter u_bar: a complex-valued matrix of size [Nk_dft Nl_dft]
             % - Returns u: a real-valued matrix of size [length(x) length(y)]
             arguments (Output)
@@ -382,10 +416,27 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             u = real(plan.execute(u_bar));
         end
 
+        function u_bar = transformFromSpatialDomainWithFourier(self,u)
+            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
+            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
+        end
+
+        function u = transformToSpatialDomainWithFourier(self,u_bar)
+            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
+            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
+            u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+        end
+
+        function u = transformToSpatialDomainWithFourierAtPosition(self,u_bar,x,y)
+            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
+            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
+            u = self.transformToSpatialDomainAtPosition(self.dftBuffer,x,y);
+        end
+
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
 
-        function bool = isValidPrimaryWVModeNumber(self,kMode,lMode)
+        function bool = isValidPrimaryModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid primary (non-conjugate) WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid
@@ -396,7 +447,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % The result is affected by the chosen conjugateDimension.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidPrimaryWVModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidPrimaryModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -414,7 +465,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             end
         end
 
-        function bool = isValidConjugateWVModeNumber(self,kMode,lMode)
+        function bool = isValidConjugateModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid conjugate WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid
@@ -427,7 +478,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidConjugateWVModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidConjugateModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -440,15 +491,15 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
             [K,L] = ndgrid(self.kMode_dft,self.lMode_dft);
-            k_ = K(self.dftConjugateIndices);
-            l_ = L(self.dftConjugateIndices);
+            k_ = K(self.dftConjugateIndices2D);
+            l_ = L(self.dftConjugateIndices2D);
             bool = zeros(size(kMode));
             for iMode=1:length(kMode)
                 bool(iMode) = any(k_ == kMode(iMode) & l_ == lMode(iMode));
             end
         end
 
-        function bool = isValidWVModeNumber(self,kMode,lMode)
+        function bool = isValidModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid WV mode
@@ -461,7 +512,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % conjugateDimension.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidWVModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -474,7 +525,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
 
-            bool = self.isValidPrimaryWVModeNumber(kMode,lMode) | self.isValidConjugateWVModeNumber(kMode,lMode);
+            bool = self.isValidPrimaryModeNumber(kMode,lMode) | self.isValidConjugateModeNumber(kMode,lMode);
         end
 
         function [kMode,lMode] = primaryModeNumberFromWVModeNumber(self,kMode,lMode)
@@ -502,8 +553,8 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 lMode (:,1) double {mustBeInteger}
             end
 
-            isValidPrimary = self.isValidPrimaryWVModeNumber(kMode,lMode);
-            isValidConjugate = self.isValidConjugateWVModeNumber(kMode,lMode);
+            isValidPrimary = self.isValidPrimaryModeNumber(kMode,lMode);
+            isValidConjugate = self.isValidConjugateModeNumber(kMode,lMode);
             if ~all(isValidConjugate | isValidPrimary)
                 error('One or more mode numbers are not valid WV mode numbers.');
             end
@@ -511,7 +562,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             lMode(isValidConjugate) = -lMode(isValidConjugate);
         end
 
-        function index = wvIndexFromModeNumber(self,kMode,lMode)
+        function index = indexFromModeNumber(self,kMode,lMode)
             % return the linear index into k_wv and l_wv from a mode number
             %
             % This function will return the linear index into the (k_wv,l_wv) arrays,
@@ -520,7 +571,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % throw an error.
             %
             % - Topic: Index gymnastics
-            % - Declaration: index = wvIndexFromModeNumber(kMode,lMode,jMode)
+            % - Declaration: index = indexFromModeNumber(kMode,lMode,jMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns linearIndex: a non-negative integer number
@@ -532,21 +583,21 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 index (:,1) double {mustBeInteger,mustBePositive}
             end
-            if ~self.isValidWVModeNumber(kMode,lMode)
+            if ~self.isValidModeNumber(kMode,lMode)
                 error('Invalid WV mode number!');
             end
             indices = 1:self.Nkl;
             index = indices(self.kMode_wv == kMode & self.lMode_wv == lMode);
         end
 
-        function [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
+        function [kMode,lMode] = modeNumberFromIndex(self,linearIndex)
             % return mode number from a linear index into a WV matrix
             %
             % This function will return the mode numbers (kMode,lMode)
             % given some linear index into a WV structured matrix.
             %
             % - Topic: Index gymnastics
-            % - Declaration: [kMode,lMode] = modeNumberFromWVIndex(self,linearIndex)
+            % - Declaration: [kMode,lMode] = modeNumberFromIndex(self,linearIndex)
             % - Parameter linearIndex: a non-negative integer number
             % - Returns kMode: integer
             % - Returns lMode: integer
@@ -585,11 +636,11 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 Azkl (:,:) double
             end
-            Nz = size(Aklz,3);
-            Aklz = reshape(Aklz,[self.Nx*self.Ny Nz]);
-            Azkl = zeros(Nz,self.Nkl);
+            Nz_ = size(Aklz,3);
+            Aklz = reshape(Aklz,[self.Nx*self.Ny Nz_]);
+            Azkl = zeros(Nz_,self.Nkl);
             for iK=1:self.Nkl
-                Azkl(:,iK) = Aklz(self.dftPrimaryIndices(iK),:);
+                Azkl(:,iK) = Aklz(self.dftPrimaryIndices2D(iK),:);
             end
         end
 
@@ -622,7 +673,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % dimension in the WV grid, hence it is the inner-loop.
             for iK=1:self.Nkl
                 for iZ=1:Nz
-                    dftToWVIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    dftToWVIndices(index) = self.dftPrimaryIndices2D(iK) + (iZ-1)*(self.Nx*self.Ny);
                     index = index+1;
                 end
             end
@@ -650,28 +701,28 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 Aklz (:,:,:) double
             end
-            Nz = size(Azkl,1);
-            Aklz = zeros(self.Nx*self.Ny,Nz);
+            Nz_ = size(Azkl,1);
+            Aklz = zeros(self.Nx*self.Ny,Nz_);
 
             if options.isHalfComplex == 1
                 for iK=1:self.Nkl
-                    Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
+                    Aklz(self.dftPrimaryIndices2D(iK),:) = Azkl(:,iK);
                 end
-                Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
+                Aklz = reshape(Aklz,[self.Nx self.Ny Nz_]);
                 for iK=1:(self.Nx/2-1)
                     Aklz(mod(self.Nx-iK+1, self.Nx) + 1,1,:)=conj(Aklz(iK,1,:));
                 end
             else
                 for iK=1:self.Nkl
-                    Aklz(self.dftPrimaryIndices(iK),:) = Azkl(:,iK);
-                    Aklz(self.dftConjugateIndices(iK),:) = conj(Azkl(:,iK));
+                    Aklz(self.dftPrimaryIndices2D(iK),:) = Azkl(:,iK);
+                    Aklz(self.dftConjugateIndices2D(iK),:) = conj(Azkl(:,iK));
                 end
-                Aklz = reshape(Aklz,[self.Nx self.Ny Nz]);
+                Aklz = reshape(Aklz,[self.Nx self.Ny Nz_]);
             end
         end
 
 
-        function [dftPrimaryIndices, dftConjugateIndices, wvConjugateIndices] = indicesFromWVGridToDFTGrid(self,Nz,options)
+        function [dftPrimaryIndices_, dftConjugateIndices_, wvConjugateIndices_] = indicesFromWVGridToDFTGrid(self,Nz,options)
             % indices to convert from WV to DFT grid
             %
             % This function returns indices to quickly reformat the memory
@@ -691,21 +742,21 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Input)
                 self (1,1) WVGeometryDoublyPeriodic
                 Nz (1,1) double {mustBeInteger,mustBePositive}
-                options.isHalfComplex (1,1) double {mustBeMember(options.isHalfComplex,[0 1])} = 1
+                options.isHalfComplex (1,1) logical = true
             end
             arguments (Output)
-                dftPrimaryIndices (:,1) double
-                dftConjugateIndices (:,1) double
-                wvConjugateIndices (:,1) double
+                dftPrimaryIndices_ (:,1) double
+                dftConjugateIndices_ (:,1) double
+                wvConjugateIndices_ (:,1) double
             end
 
-            dftPrimaryIndices = zeros(Nz*self.Nkl,1);
-            wvPrimaryIndices = zeros(Nz*self.Nkl,1);
+            dftPrimaryIndices_ = zeros(Nz*self.Nkl,1);
+            wvPrimaryIndices_ = zeros(Nz*self.Nkl,1);
             index=1;
             for iZ=1:Nz
                 for iK=1:self.Nkl
-                    dftPrimaryIndices(index) = self.dftPrimaryIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                    wvPrimaryIndices(index) = iZ + (iK-1)*Nz;
+                    dftPrimaryIndices_(index) = self.dftPrimaryIndices2D(iK) + (iZ-1)*(self.Nx*self.Ny);
+                    wvPrimaryIndices_(index) = iZ + (iK-1)*Nz;
                     index = index+1;
                 end
             end
@@ -726,39 +777,39 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             %   wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
             % runs the absolute fastest. So, that's a no-brainer!
 
-            [~,indices] = sort(wvPrimaryIndices);
-            dftPrimaryIndices = dftPrimaryIndices(indices);
+            [~,indices] = sort(wvPrimaryIndices_);
+            dftPrimaryIndices_ = dftPrimaryIndices_(indices);
 
             index=1;
             if options.isHalfComplex == 1
-                wvConjugateIndices2D = find(self.lMode_wv == 0 & self.kMode_wv ~= 0);
-                dftConjugateIndices2D = self.dftConjugateIndices(wvConjugateIndices2D);
-                dftConjugateIndices = zeros(Nz*length(wvConjugateIndices2D),1);
-                wvConjugateIndices = zeros(Nz*length(wvConjugateIndices2D),1);
+                wvConjugateIndices2D_ = find(self.lMode_wv == 0 & self.kMode_wv ~= 0);
+                dftConjugateIndices2D_ = self.dftConjugateIndices2D(wvConjugateIndices2D_);
+                dftConjugateIndices_ = zeros(Nz*length(wvConjugateIndices2D_),1);
+                wvConjugateIndices_ = zeros(Nz*length(wvConjugateIndices2D_),1);
 
-                for iIndex=1:length(wvConjugateIndices2D)
-                    wvIndex = wvConjugateIndices2D(iIndex);
-                    dftIndex = dftConjugateIndices2D(iIndex);
+                for iIndex=1:length(wvConjugateIndices2D_)
+                    wvIndex = wvConjugateIndices2D_(iIndex);
+                    dftIndex = dftConjugateIndices2D_(iIndex);
                     for iZ=1:Nz
-                        dftConjugateIndices(index) = dftIndex + (iZ-1)*(self.Nx*self.Ny);
-                        wvConjugateIndices(index) = iZ + (wvIndex-1)*Nz;
+                        dftConjugateIndices_(index) = dftIndex + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndices_(index) = iZ + (wvIndex-1)*Nz;
                         index = index+1;
                     end
                 end
             else
-                dftConjugateIndices = zeros(Nz*self.Nkl,1);
-                wvConjugateIndices = zeros(Nz*self.Nkl,1);
+                dftConjugateIndices_ = zeros(Nz*self.Nkl,1);
+                wvConjugateIndices_ = zeros(Nz*self.Nkl,1);
                 for iZ=1:Nz
                     for iK=1:self.Nkl
-                        dftConjugateIndices(index) = self.dftConjugateIndices(iK) + (iZ-1)*(self.Nx*self.Ny);
-                        wvConjugateIndices(index) = iZ + (iK-1)*Nz;
+                        dftConjugateIndices_(index) = self.dftConjugateIndices2D(iK) + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndices_(index) = iZ + (iK-1)*Nz;
                         index = index+1;
                     end
                 end
             end
 
-            [wvConjugateIndices,indices] = sort(wvConjugateIndices);
-            dftConjugateIndices = dftConjugateIndices(indices);
+            [wvConjugateIndices_,indices] = sort(wvConjugateIndices_);
+            dftConjugateIndices_ = dftConjugateIndices_(indices);
         end
         
         function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
@@ -777,6 +828,9 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             end
             effectiveHorizontalGridResolution = pi/max(max(abs(self.l(:)),abs(self.k(:))));
         end
+
+        [varargout] = transformToKLAxes(self,varargin);
+        [varargout] = transformToRadialWavenumber(self,varargin);
     end
 
     methods (Static)
@@ -810,12 +864,13 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         end
 
         function vars = namesOfRequiredPropertiesForGeometry()
-            vars = {'x','y','Lx','Ly','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+            vars = {'x','y','Lx','Ly','Nz','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
         end
 
-        function [Lxy, Nxy, options] = requiredPropertiesForGeometryFromGroup(group)
+        function [Lxy, Nxy, options] = requiredPropertiesForGeometryFromGroup(group,options)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
+                options.shouldIgnoreMissingVariables logical = false
             end
             arguments (Output)
                 Lxy (1,2) double {mustBePositive}
@@ -823,12 +878,14 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 options
             end
             requiredProperties = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry;
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
-            if ~canInit
-                error(errorString);
+            if options.shouldIgnoreMissingVariables == false
+                [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+                if ~canInit
+                    error(errorString);
+                end
             end
 
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
+            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties,shouldIgnoreMissingVariables=options.shouldIgnoreMissingVariables);
 
             Nxy(1) = length(vars.x);
             Nxy(2) = length(vars.y);
@@ -875,6 +932,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             propertyAnnotations(end+1) = CANumericProperty('Ly',{},'m', 'domain size in the y-direction', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
             propertyAnnotations(end+1) = CANumericProperty('Nx',{},'', 'points in the x-coordinate, `length(x)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
             propertyAnnotations(end+1) = CANumericProperty('Ny',{},'', 'points in the y-coordinate, `length(y)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('Nz',{},'', 'points in the third, untransformed, dimension', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
         end
 
         function matrix = indicesOfFourierConjugates(Nx,Ny,Nz)

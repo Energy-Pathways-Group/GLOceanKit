@@ -13,7 +13,7 @@ classdef CANumericProperty < CAPropertyAnnotation
     % that is used on the website.
     %
     % - Declaration: classdef WVPropertyAnnotation < [WVAnnotation](/classes/wvannotation/)
-    properties (GetAccess=public, SetAccess=private)
+    properties (GetAccess=public, SetAccess=public)
         % ordered cell array with the names of the dimensions
         % 
         % If the property has no dimensions, and empty cell array should be

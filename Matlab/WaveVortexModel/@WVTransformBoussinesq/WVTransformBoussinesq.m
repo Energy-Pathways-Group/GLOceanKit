@@ -459,7 +459,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (1,1) double
             end
 
-            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            iK = self.horizontalModes.indexFromModeNumber(kMode,lMode);
             for iUnique=1:length(self.K2unique)
                 if ismember(iK, self.K2uniqueK2Map{iUnique})
                     break
@@ -483,7 +483,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (1,1) double
             end
 
-            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            iK = self.horizontalModes.indexFromModeNumber(kMode,lMode);
             for iUnique=1:length(self.K2unique)
                 if ismember(iK, self.K2uniqueK2Map{iUnique})
                     break
@@ -507,7 +507,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (1,1) double
             end
 
-            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            iK = self.horizontalModes.indexFromModeNumber(kMode,lMode);
             for iUnique=1:length(self.K2unique)
                 if ismember(iK, self.K2uniqueK2Map{iUnique})
                     break
@@ -531,7 +531,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (1,1) double
             end
 
-            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            iK = self.horizontalModes.indexFromModeNumber(kMode,lMode);
             for iUnique=1:length(self.K2unique)
                 if ismember(iK, self.K2uniqueK2Map{iUnique})
                     break
@@ -620,7 +620,7 @@ classdef WVTransformBoussinesq < WVTransform & WVStratifiedFlow & WVInertialOsci
                 lMode (:,1) double
                 j (:,1) double
             end
-            iK = self.horizontalModes.wvIndexFromModeNumber(kMode,lMode);
+            iK = self.horizontalModes.indexFromModeNumber(kMode,lMode);
             for iUnique=1:length(self.K2unique)
                 if ismember(iK, self.K2uniqueK2Map{iUnique})
                     break

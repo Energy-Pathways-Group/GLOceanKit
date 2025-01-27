@@ -47,7 +47,7 @@ FwInv_a = cat(2,ones(wvt_b.Nz,1),Finv);
 GwInv_a = cat(2,zeros(wvt_b.Nz,1),Ginv);
 
 %%
-[kMode,lMode] = wvt_c.horizontalModes.modeNumberFromWVIndex(iK);
+[kMode,lMode] = wvt_c.horizontalModes.modeNumberFromIndex(iK);
 FwInv_b = wvt_b.FwInvMatrix(kMode,lMode);
 FwInv_c = wvt_c.FwInvMatrix(kMode,lMode);
 Fw_b = wvt_b.FwMatrix(kMode,lMode);

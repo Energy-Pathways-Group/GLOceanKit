@@ -121,8 +121,7 @@ classdef WVModelFixedTimeStepMethods < handle
 
             omega = self.wvt.Omega;
             period = 2*pi/max(abs(omega(:)));
-            [u,v] = self.wvt.velocityField();
-            U = max(max(max( sqrt(u.*u + v.*v) )));
+            U = self.wvt.uvMax;
             dx = (3/2)*(self.wvt.x(2)-self.wvt.x(1));
 
             advectiveDT = cfl*dx/U;

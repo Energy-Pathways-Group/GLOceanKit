@@ -2,9 +2,7 @@ classdef WVGeostrophicMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (GetAccess=private, SetAccess=private)
-        A0
-        z
+    properties (GetAccess=public, SetAccess=private) 
         UA0,VA0,NA0,PA0
         A0Z,A0N
         A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
@@ -19,6 +17,7 @@ classdef WVGeostrophicMethods < handle
         geostrophicComponent
     end
     properties (Abstract)
+        A0
         h_0  % [Nj 1]
     end
     methods (Abstract)
@@ -59,7 +58,6 @@ classdef WVGeostrophicMethods < handle
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
-            self.addVariableAnnotations(WVGeostrophicMethods.variableAnnotationsForGeostrophicComponent);
             self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
         end
 
@@ -384,7 +382,29 @@ classdef WVGeostrophicMethods < handle
             self.A0(logical(self.geostrophicComponent.maskA0)) = 0;
         end
 
-       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Enstrophy
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function Fqgpv = qgpvFluxFromF0(self,F0)
+            Fqgpv = self.A0_QGPV_factor .* F0;
+        end
+
+        function Z0 = enstrophyFluxFromF0(self,F0)
+            Fqgpv = self.A0_QGPV_factor .* F0;    
+            Z0 = self.A0_QGPV_factor.*real( Fqgpv .* conj(self.A0) );
+        end
+
+        function enstrophy = totalEnstrophySpatiallyIntegrated(self)
+            enstrophy = 0.5*trapz(self.z,squeeze(mean(mean((self.qgpv).^2,1),2)) );
+        end
+
+        function enstrophy = totalEnstrophy(self)
+            enstrophy = sum(sum(sum(self.A0_TZ_factor.* (self.A0.*conj(self.A0)))));
+        end
+
     end
     methods (Static, Hidden=true)
         function propertyAnnotations = propertyAnnotationsForGeostrophicComponent()

@@ -90,16 +90,20 @@ classdef CAAnnotatedClass < handle
             var = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
         end
 
-        function var = variablesFromGroup(group,variables)
+        function var = variablesFromGroup(group,variables,options)
             arguments (Input)
                 group NetCDFGroup
                 variables {mustBeA(variables,"cell")} = {}
+                options.shouldIgnoreMissingVariables logical = false
             end
             arguments (Output)
                 var struct
             end
             for iVar = 1:length(variables)
                 name = variables{iVar};
+                if options.shouldIgnoreMissingVariables == true && group.hasVariableWithName(name) == false
+                    continue;
+                end
                 var.(name) = group.readVariables(name);
             end
         end

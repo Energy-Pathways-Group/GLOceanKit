@@ -13,7 +13,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
     end
 
     methods
-        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, geomOptions,rotatingOptions,options)
+        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, rotatingOptions,options)
             % create geometry for 2D barotropic flow
             %
             % ```matlab
@@ -31,17 +31,12 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
-                geomOptions.conjugateDimension (1,1) double {mustBeMember(geomOptions.conjugateDimension,[1 2])} = 2
-                geomOptions.shouldAntialias (1,1) logical = true
-                geomOptions.shouldExcludeNyquist (1,1) logical = true
-                geomOptions.shouldExludeConjugates (1,1) logical = true
                 rotatingOptions.rotationRate (1,1) double = 7.2921E-5
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8
             end
-            optionCell = namedargs2cell(geomOptions);
-            self@WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:});
+            self@WVGeometryDoublyPeriodic(Lxy,Nxy,Nz=1,shouldAntialias=true,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
 
             optionCell = namedargs2cell(rotatingOptions);
             self@WVRotatingFPlane(optionCell{:});
@@ -120,7 +115,16 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
             requiredPropertyNames = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
             requiredPropertyNames = union(requiredPropertyNames,WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane);
-            requiredPropertyNames = union(requiredPropertyNames,{'h'});
+            requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newRequiredPropertyNames);
+            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newNonrequiredPropertyNames);
+        end
+
+        function newRequiredPropertyNames = newRequiredPropertyNames()
+            newRequiredPropertyNames = {'h'};
+        end
+
+        function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
+            newNonrequiredPropertyNames = {'Nz','conjugateDimension','shouldAntialias','shouldExcludeNyquist','shouldExludeConjugates'};
         end
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
@@ -147,10 +151,12 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
                 Nxy (1,2) double {mustBePositive}
                 options
             end
-            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
+            % This guy ignores Nz, because we will just use the default
+            % value of Nz=1.
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingVariables=true);
             rotatingOptions = WVRotatingFPlane.requiredPropertiesForRotatingFPlaneFromGroup(group);
 
-            newRequiredProperties = {'h'};
+            newRequiredProperties = WVGeometryDoublyPeriodicBarotropic.newRequiredPropertyNames;
             [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
             if ~canInit
                 error(errorString);

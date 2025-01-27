@@ -10,7 +10,7 @@ function propertyAnnotations = defaultPropertyAnnotations()
 propertyAnnotations = WVPropertyAnnotation.empty(0,0);
 
 
-propertyAnnotations(end+1) = WVPropertyAnnotation('t0',{},'s', 'reference time of Ap, Am, A0');
+
 
 propertyAnnotations(end+1) = WVPropertyAnnotation('Omega',{'k','l','j'},'rad s^{-1}', 'frequency of oscillation of the linear waves', detailedDescription='- topic: Domain Attributes');
 

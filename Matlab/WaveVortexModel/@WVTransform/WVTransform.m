@@ -35,9 +35,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (GetAccess=public, SetAccess=public)
         t = 0
         t0 = 0
-
-        hasPotentialVorticityFlow = false
-        hasWaveFlow = false
+        
+        % positive wave coefficients at reference time t0 (m/s)
+        % Topic: Wave-vortex coefficients
+        Ap = 0
+        % negative wave coefficients at reference time t0 (m/s)
+        % Topic: Wave-vortex coefficients
+        Am = 0
+        % geostrophic coefficients at reference time t0 (m)
+        % Topic: Wave-vortex coefficients
+        A0 = 0
 
         % The operation responsible for computing the nonlinear flux
         % - Topic: Nonlinear flux and energy transfers
@@ -48,11 +55,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
-        latitude
         version = 3.0;
 
-        dftBuffer, wvBuffer
-        dftPrimaryIndex, dftConjugateIndex, wvConjugateIndex;
+        hasPotentialVorticityFlow = false
+        hasWaveFlow = false
 
         % returns a mask indicating where primary solutions live in the Ap matrix.
         %
@@ -106,11 +112,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     properties (Abstract)
         spatialMatrixSize
         spectralMatrixSize
+        totalEnergySpatiallyIntegrated
+        totalEnergy
     end
 
     properties (Dependent, SetAccess=private)
-        Lr2
-        f, inertialPeriod
         hasClosure
         hasNonlinearAdvectionEnabled
     end
@@ -141,10 +147,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         % Required for transformWaveVortexToUVEta
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
-    end
-    
-    properties (Constant)
-        g = 9.81;
     end
     
     methods (Access=protected)
@@ -211,10 +213,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % must use double quotes, and these need to match the cases in operationForDynamicalVariable
             self.knownDynamicalVariables = ["u","v","w","eta","p","psi","qgpv"];
 
-            self.dftBuffer = zeros(self.spatialMatrixSize);
-            self.wvBuffer = zeros([self.Nz self.Nkl]);
-            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
-
             self.nonlinearAdvection = WVNonlinearAdvection(self);
             self.addForcing(self.nonlinearAdvection);
         end
@@ -225,18 +223,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         wvtX2 = waveVortexTransformWithDoubleResolution(self)
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Mode numbers and indices
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
-        bool = isValidConjugateModeNumber(self,kMode,lMode,jMode)
-        bool = isValidModeNumber(self,kMode,lMode,jMode)
-        index = indexFromModeNumber(self,kMode,lMode,jMode)
-        [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -317,8 +303,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             self.clearVariableCacheOfTimeDependentVariables();
         end
 
-  
-
         function set.Ap(self,value)
             self.Ap = value;
             self.clearVariableCache();
@@ -338,78 +322,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
-        function u_bar = transformFromSpatialDomainWithFourier(self,u)
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            % u_bar = fft2(u)/(self.Nx*self.Ny);
-            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
-        end
-
-        function u = transformToSpatialDomainWithFourier(self,u_bar)
-            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
-            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
-            u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
-            % u = ifft2(self.dftBuffer,'symmetric')*(self.Nx*self.Ny);
-        end
-
-        function u = transformToSpatialDomainWithFourierAtPosition(self,u_bar,x,y)
-            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
-            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
-            u = self.horizontalModes.transformToSpatialDomainAtPosition(self.dftBuffer,x,y);
-        end
-
-        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double = []
-            end
-            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
-            ux = self.diffX(u);
-            uy = self.diffY(u);
-            uz = self.diffZF(u);
-        end
-
-        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = []
-                options.A0 double = []
-            end
-            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
-            wx = self.diffX(w);
-            wy = self.diffY(w);
-            wz = self.diffZG(w);
-        end
-
         [Fp,Fm,F0] = nonlinearFlux(self)
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
         [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
         [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)
 
         [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
- 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Enstrophy
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function Fqgpv = qgpvFluxFromF0(self,F0)
-            Fqgpv = self.A0_QGPV_factor .* F0;
-        end
-
-        function Z0 = enstrophyFluxFromF0(self,F0)
-            Fqgpv = self.A0_QGPV_factor .* F0;    
-            Z0 = self.A0_QGPV_factor.*real( Fqgpv .* conj(self.A0) );
-        end
-
-        function enstrophy = totalEnstrophySpatiallyIntegrated(self)
-            enstrophy = 0.5*trapz(self.z,squeeze(mean(mean((self.qgpv).^2,1),2)) );
-        end
-
-        function enstrophy = totalEnstrophy(self)
-            enstrophy = sum(sum(sum(self.A0_TZ_factor.* (self.A0.*conj(self.A0)))));
-        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -417,19 +335,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function energy = totalEnergySpatiallyIntegrated(self)
-            if self.isHydrostatic == 1
-                [u,v,eta] = self.variables('u','v','eta');
-                energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
-            else
-                [u,v,w,eta] = self.variables('u','v','w','eta');
-                energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
-            end
-        end
-        
-        function energy = totalEnergy(self)
-            energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
-        end
+        % function energy = totalEnergySpatiallyIntegrated(self)
+        %     if self.isHydrostatic == 1
+        %         [u,v,eta] = self.variables('u','v','eta');
+        %         energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+        %     else
+        %         [u,v,w,eta] = self.variables('u','v','w','eta');
+        %         energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+        %     end
+        % end
+        % 
+        % function energy = totalEnergy(self)
+        %     energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
+        % end
 
         function energy = totalEnergyOfFlowComponent(self,flowComponent)
             arguments (Input)
@@ -462,8 +380,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
                     variableName{iVar} = append(variableName{iVar},'_',options.flowComponent.abbreviatedName);
                 end
             end
-
-            % energy = sum( self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2) );
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -545,9 +461,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
 
         % Primary method for accessing the dynamical variables
         [varargout] = variables(self, varargin);
-                        
-        % Same as calling variables('u','v','w')
-        [u,v,w] = velocityField(self);
         
         % Primary method for accessing the dynamical variables on the at
         % any position or time.
@@ -559,16 +472,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
         
         flag = isequal(self,other)
- 
-        [Qkl,Qj,kl_cutoff,kl_damp] = spectralVanishingViscosityFilter(self,options);
-        
-
-        % [Qk,Ql,Qj] = ExponentialFilter(self,nDampedModes);
 
         [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
-
-        [varargout] = transformToKLAxes(self,varargin);
-        [varargout] = transformToRadialWavenumber(self,varargin);
 
         function flag = hasMeanPressureDifference(self)
             % checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
@@ -591,16 +496,50 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
     methods (Static)
         % Initialize the a transform from file
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
-    end
 
-    methods (Static, Hidden=true)
-        dimensions = defaultDimensionAnnotations()
-        transformProperties = defaultPropertyAnnotations()
-        transformOperations = defaultOperations()
-        variableAnnotations = defaultVariableAnnotations()
-        transformMethods = defaultMethodAnnotations()
-    end
-        
+        function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform()
+            % return array of CAPropertyAnnotations initialized by default
+            %
+            % This function returns annotations for all properties of the
+            % WVStratification class.
+            %
+            % - Topic: Developer
+            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratification()
+            % - Returns propertyAnnotations: array of CAPropertyAnnotation instances
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+
+            propertyAnnotations(end+1) = CANumericProperty('t',{}, 's', 'time of observations');
+            propertyAnnotations(end).attributes('standard_name') = 'time';
+            propertyAnnotations(end).attributes('axis') = 'T';
+
+            propertyAnnotations(end+1) = CANumericProperty('t0',{},'s', 'reference time of Ap, Am, A0');
+
+            annotation = CANumericProperty('totalEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
+            annotation.isVariableWithLinearTimeStep = 0;
+            annotation.isVariableWithNonlinearTimeStep = 1;
+            propertyAnnotations(end+1) = annotation;
+
+            annotation = CANumericProperty('totalEnergySpatiallyIntegrated',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed in the spatial domain');
+            annotation.isVariableWithLinearTimeStep = 0;
+            annotation.isVariableWithNonlinearTimeStep = 1;
+            propertyAnnotations(end+1) = annotation;
+
+            A0Prop = CANumericProperty('A0',{'j','kl'},'m', 'geostrophic coefficients at reference time t0');
+            A0Prop.isComplex = 1;
+            A0Prop.isVariableWithLinearTimeStep = 0;
+            A0Prop.isVariableWithNonlinearTimeStep = 1;
+
+            ApProp = CANumericProperty('Ap',{'j','kl'},'m/s', 'positive wave coefficients at reference time t0');
+            ApProp.isComplex = 1;
+            ApProp.isVariableWithLinearTimeStep = 0;
+            ApProp.isVariableWithNonlinearTimeStep = 1;
+
+            AmProp = CANumericProperty('Am',{'j','kl'},'m/s', 'negative wave coefficients at reference time t0');
+            AmProp.isComplex = 1;
+            AmProp.isVariableWithLinearTimeStep = 0;
+            AmProp.isVariableWithNonlinearTimeStep = 1;
+        end
+    end        
         
 end 
 
