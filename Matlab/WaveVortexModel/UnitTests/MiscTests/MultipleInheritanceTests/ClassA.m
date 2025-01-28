@@ -7,5 +7,9 @@ classdef ClassA < handle
         function self = ClassA
             self.commonProperty = 2;
         end
+
+        function c = foo(self,a)
+            c = a+a;
+        end
     end
 end
