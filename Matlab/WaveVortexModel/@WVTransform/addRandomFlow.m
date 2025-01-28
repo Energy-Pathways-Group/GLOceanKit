@@ -41,11 +41,11 @@ Ap = zeros(self.spectralMatrixSize);
 Am = zeros(self.spectralMatrixSize);
 A0 = zeros(self.spectralMatrixSize);
 if isempty(flowComponentNames)
-    flowComponentNames = keys(self.primaryFlowComponentNameMap);
+    flowComponentNames = self.primaryFlowComponentNames;
 end
 
 for name = flowComponentNames
-    flowComponent = self.flowComponentNameMap(name{1});
+    flowComponent = self.flowComponent{name{1}};
     [Ap_,Am_,A0_] = flowComponent.randomAmplitudesWithSpectrum(A0Spectrum=options.A0Spectrum,ApmSpectrum=options.ApmSpectrum,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
     u = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap_+self.UAm.*Am_,A0=self.UA0.*A0_);
     v = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap_+self.VAm.*Am_,A0=self.VA0.*A0_);

@@ -43,7 +43,7 @@ classdef TestRandomFlow < matlab.unittest.TestCase
                     tmpwvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
             end
             
-            flowComponent = tmpwvt.flowComponentNameMap.keys;
+            flowComponent = tmpwvt.flowComponentNames;
         end
     end
 

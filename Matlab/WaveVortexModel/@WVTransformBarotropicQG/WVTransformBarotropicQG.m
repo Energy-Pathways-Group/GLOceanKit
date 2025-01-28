@@ -94,7 +94,7 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function energy = totalEnergySpatiallyIntegrated(self)
-            [u,v,eta] = self.variables('u','v','eta');
+            [u,v,eta] = self.variableWithName('u','v','eta');
             energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 

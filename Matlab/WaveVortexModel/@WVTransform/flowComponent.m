@@ -6,5 +6,5 @@ arguments
     self WVTransform {mustBeNonempty}
     name char {mustBeNonempty}
 end
-val = self.flowComponentNameMap(name);
+val = self.flowComponentNameMap{name};
 end

@@ -1,4 +1,4 @@
-function [varargout] = variables(self, variableNames)
+function [varargout] = variableWithName(self, variableNames)
 % Primary method for accessing the dynamical variables
 %
 % Computes (or retrieves from cache) any known state variables.
@@ -14,7 +14,23 @@ arguments (Repeating)
 end
 
 varargout = cell(size(variableNames));
-[varargout{:}] = self.stateVariables(variableNames{:});
+didFetchAll = 0;
+while didFetchAll ~= 1
+    [varargout{:}] = self.fetchFromVariableCache(variableNames{:});
+
+    for iVar=1:length(varargout)
+        if isempty(varargout{iVar})
+            % now go compute it, and then try fetching from
+            % cach
+            modelVar = self.variableAnnotationNameMap(variableNames{iVar});
+            self.performOperationWithName(modelVar.modelOp.name);
+            didFetchAll = 0;
+            break;
+        else
+            didFetchAll = 1;
+        end
+    end
+end
 
 % % External variables may not all be supported.
 % if ~isempty(self.offgridModes) && ~isempty(self.offgridModes.k_ext)

@@ -1,4 +1,4 @@
-classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
+classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
     %
     %
@@ -155,13 +155,13 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             % but sometimes it will be for a variable that can only be
             % produced as a bi-product of some operation.
             if isKey(self.operationVariableNameMap,indexOp(1).Name)
-                varargout{1} = self.stateVariables(indexOp(1).Name);
+                varargout{1} = self.variableWithName(indexOp(1).Name);
                 if length(indexOp) > 1
                     varargout{1} = varargout{1}.(indexOp(2:end));
                 end
             elseif isKey(self.operationNameMap,indexOp(1).Name)
-                op = self.operationNameMap(indexOp(1).Name);
-                [varargout{:}] = self.performOperation(op{1});
+                op = self.operationNameMap{indexOp(1).Name};
+                [varargout{:}] = self.performOperation(op);
             else
                 error("WVTransform:UnknownVariable","The variable %s does not exist",indexOp(1).Name);
             end
@@ -193,16 +193,16 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             end
 
             % Now set the initial conditions to zero
-            self.Ap = zeros(self.spectralMatrixSize);
-            self.Am = zeros(self.spectralMatrixSize);
-            self.A0 = zeros(self.spectralMatrixSize);  
+            % self.Ap = zeros(self.spectralMatrixSize);
+            % self.Am = zeros(self.spectralMatrixSize);
+            % self.A0 = zeros(self.spectralMatrixSize);  
             
             self.clearVariableCache();
-            self.operationVariableNameMap =      configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
-            self.operationNameMap =              configureDictionary("string","cell"); containers.Map(); % cannot use a dictionary, because dictionaries cannot take subclasses of the defined type
+            self.operationVariableNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
+            self.operationNameMap = configureDictionary("string","cell");
 
-            self.primaryFlowComponentNameMap = containers.Map();
-            self.flowComponentNameMap = containers.Map();
+            self.primaryFlowComponentNameMap = configureDictionary("string","cell");
+            self.flowComponentNameMap = configureDictionary("string","cell");
 
             self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
             self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
@@ -231,8 +231,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         addPrimaryFlowComponent(self,primaryFlowComponent)
+        names = primaryFlowComponentNames(self)
         val = primaryFlowComponent(self,name)
+
         addFlowComponent(self,flowComponent)
+        names = flowComponentNames(self)
         val = flowComponent(self,name)
 
         operations = operationForDynamicalVariable(self,variableName,options)
@@ -243,13 +246,24 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        addOperation(self,transformOperation,options)
+        addOperation(self,operation,options)
         removeOperation(self,transformOperation)
         val = operationWithName(self,name)
 
-        [varargout] = stateVariables(self, varargin)
-        varargout = performOperation(self,modelOp,varargin)
-        varargout = performOperationWithName(self,opName,varargin)
+        varargout = performOperation(self,modelOp)
+        varargout = performOperationWithName(self,opName)
+
+        % Primary method for accessing the dynamical variables
+        [varargout] = variableWithName(self, variableNames);
+        
+        % Primary method for accessing the dynamical variables on the at
+        % any position or time.
+        %
+        % The method argument specifies how off-grid values should be
+        % interpolated: linear, spline or exact. Use 'exact' for the slow,
+        % but accurate, spectral interpolation.
+        % - Topic: Lagrangian
+        [varargout] = variableAtPositionWithName(self,x,y,z,variableNames,options)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -337,10 +351,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         
         % function energy = totalEnergySpatiallyIntegrated(self)
         %     if self.isHydrostatic == 1
-        %         [u,v,eta] = self.variables('u','v','eta');
+        %         [u,v,eta] = self.variableWithName('u','v','eta');
         %         energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         %     else
-        %         [u,v,w,eta] = self.variables('u','v','w','eta');
+        %         [u,v,w,eta] = self.variableWithName('u','v','w','eta');
         %         energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         %     end
         % end
@@ -361,26 +375,26 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         end
 
 
-        function variable = dynamicalVariable(self,variableName,options)
-            arguments(Input)
-                self WVTransform {mustBeNonempty}
-            end
-            arguments (Input,Repeating)
-                variableName char
-            end
-            arguments (Input)
-                options.flowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
-            end
-            arguments (Output)
-                variable (:,1) cell
-            end
-            variable = cell(size(variableName));
-            if ~isempty(options.flowComponent)
-                for iVar=1:length(variableName)
-                    variableName{iVar} = append(variableName{iVar},'_',options.flowComponent.abbreviatedName);
-                end
-            end
-        end
+        % function variable = dynamicalVariable(self,variableName,options)
+        %     arguments(Input)
+        %         self WVTransform {mustBeNonempty}
+        %     end
+        %     arguments (Input,Repeating)
+        %         variableName char
+        %     end
+        %     arguments (Input)
+        %         options.flowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
+        %     end
+        %     arguments (Output)
+        %         variable (:,1) cell
+        %     end
+        %     variable = cell(size(variableName));
+        %     if ~isempty(options.flowComponent)
+        %         for iVar=1:length(variableName)
+        %             variableName{iVar} = append(variableName{iVar},'_',options.flowComponent.abbreviatedName);
+        %         end
+        %     end
+        % end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Major constituents
@@ -418,12 +432,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
             FullName = cell(self.flowComponentNameMap.length,1);
             AbbreviatedName = cell(self.flowComponentNameMap.length,1);
             iVar = 0;
-            for name = keys(self.flowComponentNameMap)
+            for name = self.flowComponentNames
                 iVar = iVar+1;
                 Name{iVar} = name{1};
                 isPrimary{iVar} = isKey(self.primaryFlowComponentNameMap,name{1});
-                FullName{iVar} = self.flowComponentNameMap(name{1}).name;
-                AbbreviatedName{iVar} = self.flowComponentNameMap(name{1}).abbreviatedName;
+                FullName{iVar} = self.flowComponent(name{1}).name;
+                AbbreviatedName{iVar} = self.flowComponent(name{1}).abbreviatedName;
             end
             Name = string(Name);
             isPrimary = string(isPrimary);
@@ -458,18 +472,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        % Primary method for accessing the dynamical variables
-        [varargout] = variables(self, varargin);
-        
-        % Primary method for accessing the dynamical variables on the at
-        % any position or time.
-        %
-        % The method argument specifies how off-grid values should be
-        % interpolated: linear, spline or exact. Use 'exact' for the slow,
-        % but accurate, spectral interpolation.
-        % - Topic: Lagrangian
-        [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
         
         flag = isequal(self,other)
 

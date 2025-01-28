@@ -1,15 +1,15 @@
-function removeOperation(self,transformOperation)
+function removeOperation(self,operation)
 % remove an existing WVOperation
 %
 % - Topic: Utility function — Metadata
 arguments
     self WVTransform {mustBeNonempty}
-    transformOperation (1,1) WVOperation {mustBeNonempty}
+    operation (1,1) WVOperation {mustBeNonempty}
 end
-self.removeVariableAnnotations(transformOperation.outputVariables);
-for iVar=1:transformOperation.nVarOut
-    self.operationVariableNameMap(transformOperation.outputVariables(iVar).name) = [];
+self.removePropertyAnnotation(operation.outputVariables);
+for iVar=1:operation.nVarOut
+    self.operationVariableNameMap(operation.outputVariables(iVar).name) = [];
 end
-self.operationNameMap(transformOperation.name) = [];
+self.operationNameMap{operation.name} = [];
 self.clearVariableCache();
 end

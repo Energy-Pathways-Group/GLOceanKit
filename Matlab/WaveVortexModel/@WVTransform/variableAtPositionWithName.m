@@ -1,4 +1,4 @@
-function [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
+function [varargout] = variableAtPositionWithName(self,x,y,z,variableNames,options)
 % Primary method for accessing the dynamical variables on the at any
 % position in the domain.
 %
@@ -10,7 +10,7 @@ function [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
 % use 'spline' or some other method used by Matlab's interp function.
 %
 % - Topic: State Variables
-% - Declaration: [varargout] = variablesAtPosition(self,x,y,z,variableNames,options)
+% - Declaration: [varargout] = variableAtPositionWithName(self,x,y,z,variableNames,options)
 % - Parameter x: array of x-positions
 % - Parameter y: array of y-positions
 % - Parameter z: array of z-positions
@@ -39,7 +39,7 @@ if strcmp(options.interpolationMethod,"exact")
     end
     [varargout{:}] = self.ongridModes.externalVariablesAtTimePosition(t,x,y,z, variableNames{:});
 else
-    [varargout{:}] = self.stateVariables(variableNames{:});
+    [varargout{:}] = self.variableWithName(variableNames{:});
     [varargout{:}] = self.interpolatedFieldAtPosition(x,y,z,options.interpolationMethod,varargout{:});
 end
 

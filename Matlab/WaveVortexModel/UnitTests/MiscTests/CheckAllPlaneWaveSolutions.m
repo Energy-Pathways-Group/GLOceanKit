@@ -173,7 +173,7 @@ for iLat = 1:length(latitude)
 %                         [u,v,w,zeta,rho_prime] = wavemodel.VariableFieldsAtTime(t,'u','v','w','eta','rho_prime');
 
 wavemodel.t = t;
-[u,v,w,zeta,rho_prime] = wavemodel.variables('u','v','w','eta','rho_prime');
+[u,v,w,zeta,rho_prime] = wavemodel.variableWithName('u','v','w','eta','rho_prime');
 
 %                         rho = wavemodel.DensityFieldAtTime(t);
                         

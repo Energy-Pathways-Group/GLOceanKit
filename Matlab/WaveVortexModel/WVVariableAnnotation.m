@@ -1,4 +1,4 @@
-classdef WVVariableAnnotation < WVAnnotation
+classdef WVVariableAnnotation < CANumericProperty
     % Describes a variable computed from the WVTransform
     % 
     % In addition to adding a name, description and detailed description of
@@ -17,32 +17,12 @@ classdef WVVariableAnnotation < WVAnnotation
     %
     % - Declaration: classdef WVVariableAnnotation < [WVAnnotation](/classes/wvannotation/)
     properties
-        % ordered cell array with the names of the dimensions
-        %
-        % If the variable has no dimensions, and empty cell array should be
-        % passed. The dimension names must correspond to existing
-        % dimensions.
-        % - Topic: Properties
-        dimensions
-
-        % units of the variable
-        %
-        % All units should be abbreviated SI units, e.g., 'm', or 'rad'.
-        % - Topic: Properties
-        units
-
         % WVOperation responsible for computing this variable
         %
         % This property will be automatically populated when the variable
         % annotation is passed to the WVOperation.
         % - Topic: Properties
         modelOp
-
-        % boolean indicating whether or not the variable may have an imaginary part
-        %
-        % This information is used when allocating space in a NetCDF file.
-        % - Topic: Properties
-        isComplex = 0
 
         % boolean indicating whether the variable changes value with a linear time step
         %
@@ -84,20 +64,7 @@ classdef WVVariableAnnotation < WVAnnotation
                 options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
                 options.detailedDescription char = ''
             end
-            self@WVAnnotation(name,description,detailedDescription=options.detailedDescription);
-            if ~iscell(dimensions)
-                if isempty(dimensions)
-                    dimensions = {};
-                else
-                    dimensions = {dimensions};
-                end
-            end
-            self.dimensions = dimensions;
-            self.units = units;
-            self.isComplex = options.isComplex;
-            if isempty(self.detailedDescription)
-                self.detailedDescription = "- Topic: State Variables";
-            end
+            self@CANumericProperty(name,dimensions,units,description,isComplex=options.isComplex,detailedDescription=options.detailedDescription);
         end
 
     end

@@ -347,7 +347,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
             end
-            floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
+            floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
             self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
@@ -398,7 +398,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
             end
-            drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variablesAtPosition(x,y,z,'u','v',interpolationMethod=options.advectionInterpolation),isXYOnly=1);
+            drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v',interpolationMethod=options.advectionInterpolation),isXYOnly=1);
             self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
         end
 
@@ -683,7 +683,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 if ~isempty(trackedFieldNames)
                     varLagrangianValues = cell(1,length(trackedFieldNames));
                     p = self.particle{iParticle};
-                    [varLagrangianValues{:}] = self.wvt.variablesAtPosition(p.x,p.y,p.z,trackedFieldNames{:},interpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
+                    [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(p.x,p.y,p.z,trackedFieldNames{:},interpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
                     for i=1:length(trackedFieldNames)
                         self.particle{iParticle}.trackedFields.(trackedFieldNames{i}) = varLagrangianValues{i};
                     end

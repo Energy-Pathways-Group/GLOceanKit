@@ -7,6 +7,6 @@ arguments
     flowComponent (1,:) WVFlowComponent {mustBeNonempty}
 end
 for i=1:length(flowComponent)
-    self.flowComponentNameMap(flowComponent(i).shortName) = flowComponent(i);
+    self.flowComponentNameMap{flowComponent(i).shortName} = flowComponent(i);
 end
 end

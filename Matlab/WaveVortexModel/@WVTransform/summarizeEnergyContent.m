@@ -5,7 +5,7 @@ function summarizeEnergyContent(self)
 total = self.totalEnergy;
 pctString = sprintf('(');
 nameString = sprintf('(');
-for name = keys(self.primaryFlowComponentNameMap)
+for name = self.primaryFlowComponentNames
     pctString = [pctString,sprintf('%.1f,',100*self.totalEnergyOfFlowComponent(self.flowComponent(name{1}))/total)];
     nameString = [nameString,sprintf('%s, ',name{1})];
 end

@@ -61,7 +61,7 @@ $$
 where the coefficients $$\alpha_{jkl}$$ and $$\beta_{jkl}$$ are simply precomputed constant coefficients. In code, $$\alpha_{jkl}$$ is denoted the `total energy factor` and is accessed with `wvt.Apm\_TE\_factor` and similarly $$\beta_{jkl}$$ with `wvt.A0\_TE\_factor`. To check this version of Plancherel's theorem in code, you can compute the depth integrated energy with,
 
 ```matlab
-[u,v,w,eta] = wvt.variables('u','v','w','eta');
+[u,v,w,eta] = wvt.variableWithName('u','v','w','eta');
 E = trapz(wvt.z,mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(wvt.N2,-2).*eta.*eta, 1 ),2 ) )/2;
 ```
 

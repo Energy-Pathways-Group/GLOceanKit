@@ -38,8 +38,8 @@ else
     fullAp = zeros(self.spectralMatrixSize);
     fullAm = zeros(self.spectralMatrixSize);
     fullA0 = zeros(self.spectralMatrixSize);
-    for name = keys(self.primaryFlowComponentNameMap)
-        primaryFowComponent = self.primaryFlowComponentNameMap(name{1});
+    for name = self.primaryFlowComponentNames
+        primaryFowComponent = self.primaryFlowComponent(name{1});
         fullAp = fullAp + primaryFowComponent.maskAp;
         fullAm = fullAm + primaryFowComponent.maskAm;
         fullA0 = fullA0 + primaryFowComponent.maskA0;

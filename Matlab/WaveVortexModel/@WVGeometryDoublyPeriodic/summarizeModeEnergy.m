@@ -17,8 +17,8 @@ function summarizeModeEnergy(self,options)
     
     totalEnergy = self.totalEnergy;
 
-    for name = keys(self.flowComponentNameMap)
-        flowComponent = self.flowComponentNameMap(name{1});
+    for name = self.flowComponentNames
+        flowComponent = self.flowComponent(name{1});
         flowEnergy = self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2);
         [sortedFlowEnergy,indices] = sort(flowEnergy,'descend');
 
@@ -43,7 +43,7 @@ function summarizeModeEnergy(self,options)
             T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);
         end
 
-        fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponentNameMap(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
+        fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponent(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
         disp(T);
     end
 end

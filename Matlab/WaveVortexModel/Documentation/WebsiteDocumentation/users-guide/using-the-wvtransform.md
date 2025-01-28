@@ -107,8 +107,8 @@ where the properties of the WVTransform `wvt.y` and `wvt.z` refer to those dimen
 
 The other way to access variables is to query them in a list using the [`variables`](/classes/wvtransform/variables.html) method,
  ```matlab
-[u,v,w] = wvt.variables('u','v','w');
+[u,v,w] = wvt.variableWithName('u','v','w');
 ```
-this returns all the variables requested at the grid points. However, you can also the [`variablesAtPosition`](/classes/wvtransform/variablesatposition.html) method to return the value of any variable at *any* set of points in the domain. This method is used to do particle advection by the `WVModel`.
+this returns all the variables requested at the grid points. However, you can also the [`variableAtPositionWithName`](/classes/wvtransform/variablesatposition.html) method to return the value of any variable at *any* set of points in the domain. This method is used to do particle advection by the `WVModel`.
 
 

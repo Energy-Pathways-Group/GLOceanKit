@@ -18,10 +18,10 @@ In code,
 
 ```matlab
 if self.isHydrostatic == 1
-    [u,v,eta] = self.variables('u','v','eta');
+    [u,v,eta] = self.variableWithName('u','v','eta');
     energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
 else
-    [u,v,w,eta] = self.variables('u','v','w','eta');
+    [u,v,w,eta] = self.variableWithName('u','v','w','eta');
     energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + w.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
 end
 ```

@@ -133,7 +133,7 @@ nexttile, plot(wvt.j,sum(Ekj,1))
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[u,v,eta] = wvt.variables('u','v','eta');
+[u,v,eta] = wvt.variableWithName('u','v','eta');
 rv = wvt.diffX(wvt.v) - wvt.diffY(wvt.u);
 
 % Let's plot a slice through domain

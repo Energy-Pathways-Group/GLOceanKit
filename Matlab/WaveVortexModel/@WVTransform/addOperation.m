@@ -1,4 +1,4 @@
-function addOperation(self,transformOperation,options)
+function addOperation(self,operation,options)
 % add a WVOperation
 %
 % Several things happen when adding an operation.
@@ -20,19 +20,19 @@ function addOperation(self,transformOperation,options)
 % - Topic: Utility function — Metadata
 arguments
     self WVTransform {mustBeNonempty}
-    transformOperation (1,:) WVOperation {mustBeNonempty}
-    options.overwriteExisting double = 0
+    operation (1,:) WVOperation {mustBeNonempty}
+    options.shouldOverwriteExisting logical = false
 end
-for iOp=1:length(transformOperation)
+for iOp=1:length(operation)
     isExisting = 0;
-    for iVar=1:length(transformOperation(iOp).outputVariables)
-        if any(~isKey(self.dimensionAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).dimensions))
-            error("Unable to find at least one of the dimensions for variable %s",transformOperation(iOp).outputVariables(iVar).name);
+    for iVar=1:length(operation(iOp).outputVariables)
+        if any(~isKey(self.dimensionAnnotationNameMap,operation(iOp).outputVariables(iVar).dimensions))
+            error("Unable to find at least one of the dimensions for variable %s",operation(iOp).outputVariables(iVar).name);
         end
 
-        if isKey(self.variableAnnotationNameMap,transformOperation(iOp).outputVariables(iVar).name)
+        if isKey(self.variableAnnotationNameMap,operation(iOp).outputVariables(iVar).name)
             isExisting = 1;
-            existingVar = self.variableAnnotationWithName(transformOperation(iOp).outputVariables(iVar).name);
+            existingVar = self.variableAnnotationWithName(operation(iOp).outputVariables(iVar).name);
         end
     end
 
@@ -43,12 +43,12 @@ for iOp=1:length(transformOperation)
         end
         message1 = strcat(message1,'}');
 
-        message2 = strcat(transformOperation(iOp).name,' with variables {');
-        for jVar=1:transformOperation(iOp).nVarOut
-            message2 = strcat(message2,transformOperation(iOp).outputVariables(jVar).name,',');
+        message2 = strcat(operation(iOp).name,' with variables {');
+        for jVar=1:operation(iOp).nVarOut
+            message2 = strcat(message2,operation(iOp).outputVariables(jVar).name,',');
         end
         message2 = strcat(message2,'}');
-        if options.overwriteExisting == 0
+        if options.shouldOverwriteExisting == 0
             error('A variable with the same name already exists! You attempted to replace the operation %s with the operation %s. If you are sure you want to do this, call wvt.addOperation(newOp,overwriteExisting=1).', message1,message2);
         else
             self.removeOperation(existingVar.modelOp);
@@ -57,11 +57,11 @@ for iOp=1:length(transformOperation)
     end
 
     % Now go ahead and actually add the operation and its variables
-    self.addVariableAnnotations(transformOperation(iOp).outputVariables);
-    for iVar=1:length(transformOperation(iOp).outputVariables)
-        self.operationVariableNameMap(transformOperation(iOp).outputVariables(iVar).name) = transformOperation(iOp).outputVariables(iVar);
+    self.addPropertyAnnotation(operation(iOp).outputVariables);
+    for iVar=1:length(operation(iOp).outputVariables)
+        self.operationVariableNameMap(operation(iOp).outputVariables(iVar).name) = operation(iOp).outputVariables(iVar);
     end
-    self.operationNameMap(transformOperation(iOp).name) = {transformOperation(iOp)};
+    self.operationNameMap{operation(iOp).name} = operation(iOp);
 
 end
 end

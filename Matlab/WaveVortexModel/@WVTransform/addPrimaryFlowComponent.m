@@ -10,8 +10,8 @@ arguments
     primaryFlowComponent (1,:) WVPrimaryFlowComponent {mustBeNonempty}
 end
 for i=1:length(primaryFlowComponent)
-    self.primaryFlowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
-    self.flowComponentNameMap(primaryFlowComponent(i).shortName) = primaryFlowComponent(i);
+    self.primaryFlowComponentNameMap{primaryFlowComponent(i).shortName} = primaryFlowComponent(i);
+    self.flowComponentNameMap{primaryFlowComponent(i).shortName} = primaryFlowComponent(i);
 
     self.maskApPrimary = self.maskApPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
     self.maskAmPrimary = self.maskAmPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
