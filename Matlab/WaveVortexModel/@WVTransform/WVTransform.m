@@ -59,6 +59,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
         hasPotentialVorticityFlow = false
         hasWaveFlow = false
+        isHydrostatic = true
 
         % returns a mask indicating where primary solutions live in the Ap matrix.
         %
@@ -500,14 +501,19 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 
         function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform()
-            % return array of CAPropertyAnnotations initialized by default
+            % return array of CAPropertyAnnotations for the WVTransform
             %
-            % This function returns annotations for all properties of the
-            % WVStratification class.
+            % This function returns annotations for all properties defined
+            % by the WVTransform. It selectively returns annotations for
+            % the wave-vortex coefficients, as not all subclass will handle
+            % these coefficients in the same way.
             %
             % - Topic: Developer
-            % - Declaration: propertyAnnotations = WVStratification.propertyAnnotationsForStratification()
+            % - Declaration: [propertyAnnotations,A0Prop,ApProp,AmProp] = WVTransform.propertyAnnotationsForTransform()
             % - Returns propertyAnnotations: array of CAPropertyAnnotation instances
+            % - Returns A0Prop: CANumericProperty instance for A0
+            % - Returns ApProp: CANumericProperty instance for Ap
+            % - Returns AmProp: CANumericProperty instance for Am
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
             propertyAnnotations(end+1) = CANumericProperty('t',{}, 's', 'time of observations');

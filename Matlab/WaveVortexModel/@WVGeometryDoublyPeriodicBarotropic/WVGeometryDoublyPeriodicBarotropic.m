@@ -10,10 +10,18 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         X, Y
         K, L
         Lr2
+        
+    end
+    properties (GetAccess=protected,SetAccess=private)
+        z=0, j=1
+    end
+
+    properties (Dependent,GetAccess=protected)
+        J
     end
 
     methods
-        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, rotatingOptions,options)
+        function self = WVGeometryDoublyPeriodicBarotropic(Lxy, Nxy, geomOptions, rotatingOptions,options)
             % create geometry for 2D barotropic flow
             %
             % ```matlab
@@ -31,17 +39,23 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
+                geomOptions.shouldAntialias (1,1) logical = true
                 rotatingOptions.rotationRate (1,1) double = 7.2921E-5
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8
             end
-            self@WVGeometryDoublyPeriodic(Lxy,Nxy,Nz=1,shouldAntialias=true,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
+            optionCell = namedargs2cell(geomOptions);
+            self@WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:},Nz=1,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
 
             optionCell = namedargs2cell(rotatingOptions);
             self@WVRotatingFPlane(optionCell{:});
 
             self.h = options.h;
+        end
+
+        function val = get.J(self)
+            val = self.j*ones(self.spectralMatrixSize);
         end
 
         function Lr2 = get.Lr2(self)
@@ -124,7 +138,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         end
 
         function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
-            newNonrequiredPropertyNames = {'Nz','conjugateDimension','shouldAntialias','shouldExcludeNyquist','shouldExludeConjugates'};
+            newNonrequiredPropertyNames = {'Nz','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
         end
 
         function propertyAnnotations = propertyAnnotationsForGeometry()

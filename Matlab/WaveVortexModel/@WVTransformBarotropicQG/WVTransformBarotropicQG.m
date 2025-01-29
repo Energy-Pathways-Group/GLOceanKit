@@ -46,6 +46,7 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,optionCell{:});
             self.initializeGeostrophicComponent();
+            self.j = 1;
         end
 
         function val = get.h_0(self)
