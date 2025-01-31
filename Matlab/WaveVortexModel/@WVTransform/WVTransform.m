@@ -500,7 +500,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         % Initialize the a transform from file
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 
-        function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform()
+        function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform(options)
             % return array of CAPropertyAnnotations for the WVTransform
             %
             % This function returns annotations for all properties defined
@@ -514,6 +514,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             % - Returns A0Prop: CANumericProperty instance for A0
             % - Returns ApProp: CANumericProperty instance for Ap
             % - Returns AmProp: CANumericProperty instance for Am
+            arguments
+                options.spectralDimensionNames = {'j','kl'}
+            end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
             propertyAnnotations(end+1) = CANumericProperty('t',{}, 's', 'time of observations');
@@ -532,17 +535,17 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
 
-            A0Prop = CANumericProperty('A0',{'j','kl'},'m', 'geostrophic coefficients at reference time t0');
+            A0Prop = CANumericProperty('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
             A0Prop.isComplex = 1;
             A0Prop.isVariableWithLinearTimeStep = 0;
             A0Prop.isVariableWithNonlinearTimeStep = 1;
 
-            ApProp = CANumericProperty('Ap',{'j','kl'},'m/s', 'positive wave coefficients at reference time t0');
+            ApProp = CANumericProperty('Ap',options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t0');
             ApProp.isComplex = 1;
             ApProp.isVariableWithLinearTimeStep = 0;
             ApProp.isVariableWithNonlinearTimeStep = 1;
 
-            AmProp = CANumericProperty('Am',{'j','kl'},'m/s', 'negative wave coefficients at reference time t0');
+            AmProp = CANumericProperty('Am',options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t0');
             AmProp.isComplex = 1;
             AmProp.isVariableWithLinearTimeStep = 0;
             AmProp.isVariableWithNonlinearTimeStep = 1;

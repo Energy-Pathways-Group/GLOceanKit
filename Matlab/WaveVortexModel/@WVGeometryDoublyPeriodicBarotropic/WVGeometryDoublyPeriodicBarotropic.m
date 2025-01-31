@@ -69,7 +69,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
 
         function sz = get.spectralMatrixSize(self)
             % size of any spectral matrix, Ap, Am, A0
-            sz = [self.Nkl 1];
+            sz = [1 self.Nkl];
         end
 
         function [X,Y] = xyGrid(self)
@@ -153,7 +153,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             propertyAnnotations(end+1) = CANumericProperty('Y',{'x','y'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 
             propertyAnnotations(end+1) = CANumericProperty('h',{},'m', 'equivalent depth', detailedDescription='- topic: Domain Attributes');
-            propertyAnnotations(end+1) = CANumericProperty('Lr2',{'j'},'m^2', 'squared Rossby radius');
+            propertyAnnotations(end+1) = CANumericProperty('Lr2',{},'m^2', 'squared Rossby radius');
         end
 
         function [Lxy, Nxy, options] = requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group)

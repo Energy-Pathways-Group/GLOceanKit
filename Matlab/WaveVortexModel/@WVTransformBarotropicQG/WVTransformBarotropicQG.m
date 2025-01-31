@@ -114,8 +114,7 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         function propertyAnnotations = classDefinedPropertyAnnotations()
             propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
             propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent());
-            [transformProperties,A0Prop,~,~] = WVTransform.propertyAnnotationsForTransform();
-            A0Prop.dimensions = {'kl'};
+            [transformProperties,A0Prop,~,~] = WVTransform.propertyAnnotationsForTransform(spectralDimensionNames = {'kl'});
             cat(2,propertyAnnotations,transformProperties,A0Prop);
         end
 
@@ -129,10 +128,10 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
+        function requiredPropertyNames = namesOfRequiredPropertiesForTransform()
             requiredPropertyNames = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
             requiredPropertyNames = union(requiredPropertyNames,WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane);
-            requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newRequiredPropertyNames);
+            requiredPropertyNames = union(requiredPropertyNames,WVTransform.namesOfRequiredPropertiesForGeometry);
             requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newNonrequiredPropertyNames);
         end
 
