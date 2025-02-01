@@ -156,7 +156,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             propertyAnnotations(end+1) = CANumericProperty('Lr2',{},'m^2', 'squared Rossby radius');
         end
 
-        function [Lxy, Nxy, options] = requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group)
+        function [Lxy, Nxy, options] = requiredPropertiesForGeometryFromGroup(group)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
             end
@@ -167,15 +167,9 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             end
             % This guy ignores Nz, because we will just use the default
             % value of Nz=1.
-            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingVariables=true);
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingProperties=true);
             rotatingOptions = WVRotatingFPlane.requiredPropertiesForRotatingFPlaneFromGroup(group);
-
-            newRequiredProperties = WVGeometryDoublyPeriodicBarotropic.newRequiredPropertyNames;
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
-            if ~canInit
-                error(errorString);
-            end
-            vars = CAAnnotatedClass.variablesFromGroup(group,newRequiredProperties);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVGeometryDoublyPeriodicBarotropic.newRequiredPropertyNames);
             newOptions = namedargs2cell(vars);
             options = cat(2,geomOptions,rotatingOptions,newOptions);
         end
@@ -198,7 +192,8 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             arguments (Output)
                 geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
             end
-            [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group);
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVGeometryDoublyPeriodicBarotropic.namesOfRequiredPropertiesForGeometry);
+            [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryFromGroup(group);
             geometry = WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,options{:});
         end
 

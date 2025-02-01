@@ -70,7 +70,7 @@ To support intialization, the root class must read the properties from file and 
 - `+[rootClassName]FromGroup` which calls the above, and returns a newly constructed instance, and finally
 - `+[rootClassName]FromFile` which calls the above, and returns a newly constructed instance.
 
-Implementation of `+[rootClassName]FromGroup` should use `CAAnnotatedClass.canInitializeDirectlyFromGroup` to confirm that the required properties are present, followed by `CAAnnotatedClass.variablesFromGroup` to fetch the properties. 
+Implementation of `+[rootClassName]FromGroup` should use `CAAnnotatedClass.canInitializeDirectlyFromGroup` or `CAAnnotatedClass.throwErrorIfMissingProperties` to confirm that the required properties are present, followed by `CAAnnotatedClass.propertyValuesFromGroup` to fetch the properties. 
 
 These are all fairly trivial to implement using the supported functions, but they must be implemented.
 

@@ -87,21 +87,21 @@ classdef CAAnnotatedClass < handle
                 end
             end
             requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
-            var = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
+            var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
         end
 
-        function var = variablesFromGroup(group,variables,options)
+        function var = propertyValuesFromGroup(group,propertyNames,options)
             arguments (Input)
                 group NetCDFGroup
-                variables {mustBeA(variables,"cell")} = {}
-                options.shouldIgnoreMissingVariables logical = false
+                propertyNames {mustBeA(propertyNames,"cell")} = {}
+                options.shouldIgnoreMissingProperties logical = false
             end
             arguments (Output)
                 var struct
             end
-            for iVar = 1:length(variables)
-                name = variables{iVar};
-                if options.shouldIgnoreMissingVariables == true && group.hasVariableWithName(name) == false
+            for iVar = 1:length(propertyNames)
+                name = propertyNames{iVar};
+                if options.shouldIgnoreMissingProperties == true && group.hasVariableWithName(name) == false
                     continue;
                 end
                 var.(name) = group.readVariables(name);
@@ -118,6 +118,17 @@ classdef CAAnnotatedClass < handle
             end
 
             canInit = true;
+        end
+
+        function throwErrorIfMissingProperties(group,requiredProperties)
+            arguments (Input)
+                group NetCDFGroup
+                requiredProperties {mustBeA(requiredProperties,"cell")} = {}
+            end
+            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
+            if ~canInit
+                error(errorString);
+            end
         end
 
         function ncfile = writeToPath(ac,path,options)

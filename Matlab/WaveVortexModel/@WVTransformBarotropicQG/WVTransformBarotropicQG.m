@@ -17,6 +17,8 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
     % - Declaration: classdef WVTransformBarotropicQG < [WVTransform](/classes/wvtransform/)
     properties (Dependent)
         h_0
+        totalEnergySpatiallyIntegrated
+        totalEnergy
     end
 
     methods
@@ -88,18 +90,30 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
             w = self.transformToSpatialDomainWithFourier(options.A0);
         end
 
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
+            wvtX2 = WVTransformBarotropicQG([self.Lx self.Ly],m,h=self.h,latitude=self.latitude,rotationRate=self.rotationRate,g=self.g);
+            wvtX2.t0 = self.t0;
+            wvtX2.t = self.t;
+            [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+            % wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
+        end
+
+        function ratio = maxFg(self,k0, l0, j0)
+            ratio = 1;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Energetics (total)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function energy = totalEnergySpatiallyIntegrated(self)
+        function energy = get.totalEnergySpatiallyIntegrated(self)
             [u,v,eta] = self.variableWithName('u','v','eta');
             energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
         end
 
-        function energy = totalEnergy(self)
+        function energy = get.totalEnergy(self)
             energy = sum( self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
         end
     end
@@ -112,14 +126,11 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
-            propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
-            propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent());
-            [transformProperties,A0Prop,~,~] = WVTransform.propertyAnnotationsForTransform(spectralDimensionNames = {'kl'});
-            cat(2,propertyAnnotations,transformProperties,A0Prop);
+            propertyAnnotations = WVTransformBarotropicQG.propertyAnnotationsForTransform();
         end
 
         function vars = classRequiredPropertyNames()
-            vars = WVGeometryDoublyPeriodicBarotropic.namesOfRequiredPropertiesForGeometry();
+            vars = WVTransformBarotropicQG.namesOfRequiredPropertiesForTransform();
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,59 +140,71 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForTransform()
-            requiredPropertyNames = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry();
-            requiredPropertyNames = union(requiredPropertyNames,WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane);
-            requiredPropertyNames = union(requiredPropertyNames,WVTransform.namesOfRequiredPropertiesForGeometry);
-            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newNonrequiredPropertyNames);
+            requiredPropertyNames = WVGeometryDoublyPeriodicBarotropic.namesOfRequiredPropertiesForGeometry();
+            requiredPropertyNames = union(requiredPropertyNames,WVTransformBarotropicQG.newRequiredPropertyNames);
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
             newRequiredPropertyNames = {'A0'};
         end
 
-        % function [Lxy, Nxy, options] = requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group)
-        %     arguments (Input)
-        %         group NetCDFGroup {mustBeNonempty}
-        %     end
-        %     arguments (Output)
-        %         Lxy (1,2) double {mustBePositive}
-        %         Nxy (1,2) double {mustBePositive}
-        %         options
-        %     end
-        %     % This guy ignores Nz, because we will just use the default
-        %     % value of Nz=1.
-        %     [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group);
-        % 
-        %     newRequiredProperties = WVTransformBarotropicQG.newRequiredPropertyNames;
-        %     [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
-        %     if ~canInit
-        %         error(errorString);
-        %     end
-        %     vars = CAAnnotatedClass.variablesFromGroup(group,newRequiredProperties);
-        %     newOptions = namedargs2cell(vars);
-        %     options = cat(2,geomOptions,rotatingOptions,newOptions);
-        % end
-        % 
-        % function geometry = geometryFromFile(path)
-        %     arguments (Input)
-        %         path char {mustBeNonempty}
-        %     end
-        %     arguments (Output)
-        %         geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
-        %     end
-        %     ncfile = NetCDFFile(path);
-        %     geometry = WVGeometryDoublyPeriodicBarotropic.geometryFromGroup(ncfile);
-        % end
-        % 
-        % function geometry = geometryFromGroup(group)
-        %     arguments (Input)
-        %         group NetCDFGroup {mustBeNonempty}
-        %     end
-        %     arguments (Output)
-        %         geometry WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
-        %     end
-        %     [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryDoublyPeriodicBarotropicFromGroup(group);
-        %     geometry = WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,options{:});
-        % end
+        function propertyAnnotations = propertyAnnotationsForTransform()
+            propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
+            propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = {'kl'}));
+            [transformProperties,A0Prop,~,~] = WVTransform.propertyAnnotationsForTransform(spectralDimensionNames = {'kl'});
+            cat(2,propertyAnnotations,transformProperties,A0Prop);
+        end
+
+        function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lxy (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                options
+            end
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryFromGroup(group);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
+            newOptions = namedargs2cell(vars);
+            options = cat(2,geomOptions,newOptions);
+        end
+
+        function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
+            % Initialize a WVTransformHydrostatic instance from an existing file
+            %
+            % This static method is called by WVTransform.waveVortexTransformFromFile
+            % and should not need to be called directly.
+            %
+            % - Topic: Initialization (Static)
+            % - Declaration: wvt = waveVortexTransformFromFile(path,options)
+            % - Parameter path: path to a NetCDF file
+            % - Parameter iTime: (optional) time index to initialize from (default 1)
+            arguments (Input)
+                path char {mustBeFile}
+                options.iTime (1,1) double {mustBePositive} = 1
+            end
+            arguments (Output)
+                wvt WVTransform
+                ncfile NetCDFFile
+            end
+            ncfile = NetCDFFile(path);
+            wvt = WVTransformBarotropicQG.transformFromGroup(ncfile);
+            wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
+        end
+
+
+        function wvt = transformFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                wvt WVTransform {mustBeNonempty}
+            end
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.namesOfRequiredPropertiesForTransform);
+            [Lxy, Nxy, options] = WVTransformBarotropicQG.requiredPropertiesForTransformFromGroup(group);
+            wvt = WVTransformBarotropicQG(Lxy,Nxy,options{:});
+        end
+
     end
 end

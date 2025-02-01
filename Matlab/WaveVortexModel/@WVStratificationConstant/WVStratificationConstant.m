@@ -132,7 +132,7 @@ classdef WVStratificationConstant < WVStratification
                 error(errorString);
             end
 
-            vars = CAAnnotedClass.variablesFromGroup(group,requiredProperties);
+            vars = CAAnnotedClass.propertyValuesFromGroup(group,requiredProperties);
             
             Nz = length(vars.z);
             Lz = vars.z(end) - vars.z(1);

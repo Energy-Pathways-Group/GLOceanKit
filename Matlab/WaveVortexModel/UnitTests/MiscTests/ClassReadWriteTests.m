@@ -31,3 +31,8 @@ N2 = @(z) N0*N0*exp(2*z/L_gm);
 stratGeom = WVGeometryDoublyPeriodicStratified([10e3 10e3 4000], [64 64 30],N2Function=N2);
 ncfile = stratGeom.writeToFile('test.nc',shouldOverwriteExisting=1);
 stratGeom_b = WVGeometryDoublyPeriodicStratified.geometryFromFile('test.nc');
+
+%%
+Lxy = [10e3 10e3];
+Nxy = [64 64];
+WVTransformBarotropicQG(Lxy,Nxy);

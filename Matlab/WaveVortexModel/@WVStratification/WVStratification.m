@@ -286,13 +286,7 @@ classdef WVStratification < WVRotatingFPlane
                 Nz (1,1) double {mustBePositive}
                 options
             end
-            requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification;
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredPropertyNames);
-            if ~canInit
-                error(errorString);
-            end
-
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredPropertyNames);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratification.namesOfRequiredPropertiesForStratification);
 
             Nz = length(vars.z);
             Lz = vars.Lz;

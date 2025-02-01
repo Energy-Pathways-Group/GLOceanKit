@@ -56,7 +56,7 @@ classdef WVRotatingFPlane < handle
                 error(errorString);
             end
 
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
             rotatingOptions = namedargs2cell(vars);
         end
     end

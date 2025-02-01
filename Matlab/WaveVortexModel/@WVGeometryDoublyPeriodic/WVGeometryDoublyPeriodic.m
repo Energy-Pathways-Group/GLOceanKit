@@ -859,33 +859,28 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 geometry WVGeometryDoublyPeriodic {mustBeNonempty}
             end
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry);
             [Lxy, Nxy, options] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group);
             geometry = WVGeometryDoublyPeriodic(Lxy,Nxy,options{:});
         end
 
         function vars = namesOfRequiredPropertiesForGeometry()
-            vars = {'x','y','Lx','Ly','Nz','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+            vars = {'x','y','Lx','Ly','shouldAntialias','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
         end
 
         function [Lxy, Nxy, options] = requiredPropertiesForGeometryFromGroup(group,options)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
-                options.shouldIgnoreMissingVariables logical = false
+                options.shouldIgnoreMissingProperties logical = false
             end
             arguments (Output)
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
                 options
             end
-            requiredProperties = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry;
-            if options.shouldIgnoreMissingVariables == false
-                [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,requiredProperties);
-                if ~canInit
-                    error(errorString);
-                end
-            end
 
-            vars = CAAnnotatedClass.variablesFromGroup(group,requiredProperties,shouldIgnoreMissingVariables=options.shouldIgnoreMissingVariables);
+            requiredProperties = WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry;
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties,shouldIgnoreMissingProperties=options.shouldIgnoreMissingProperties);
 
             Nxy(1) = length(vars.x);
             Nxy(2) = length(vars.y);

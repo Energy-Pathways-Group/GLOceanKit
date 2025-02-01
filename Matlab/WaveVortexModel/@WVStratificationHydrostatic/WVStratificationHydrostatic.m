@@ -197,7 +197,11 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
 
         function requiredPropertyNames = namesOfRequiredPropertiesForStratification()
             requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
-            requiredPropertyNames = union(requiredPropertyNames,{'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'});
+            requiredPropertyNames = union(requiredPropertyNames,WVStratificationHydrostatic.newRequiredPropertyNames());
+        end
+
+        function newRequiredPropertyNames = newRequiredPropertyNames()
+            newRequiredPropertyNames = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
         end
 
         function propertyAnnotations = propertyAnnotationsForStratification()
@@ -232,12 +236,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 options
             end
             [Lz,Nz,stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group);
-            newRequiredProperties = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
-            [canInit, errorString] = CAAnnotatedClass.canInitializeDirectlyFromGroup(group,newRequiredProperties);
-            if ~canInit
-                error(errorString);
-            end
-            vars = CAAnnotatedClass.variablesFromGroup(group,newRequiredProperties);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratificationHydrostatic.newRequiredPropertyNames);
             newOptions = namedargs2cell(vars);
             options = cat(2,stratOptions,newOptions);
         end
@@ -260,6 +259,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             arguments (Output)
                 stratification WVStratificationHydrostatic {mustBeNonempty}
             end
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification);
             [Lz,Nz,options] = WVStratificationHydrostatic.requiredPropertiesForStratificationFromGroup(group);
             stratification = WVStratificationHydrostatic(Lz,Nz,options{:});
         end

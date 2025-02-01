@@ -3,7 +3,6 @@ classdef WVInternalGravityWaveMethods < handle
     %   Detailed explanation goes here
 
     properties (GetAccess=private, SetAccess=private)
-        Ap,Am
         z
         UAp,VAp,WAp,NAp
         UAm,VAm,WAm,NAm
@@ -12,6 +11,9 @@ classdef WVInternalGravityWaveMethods < handle
         Apm_TE_factor
 
         iOmega
+    end
+    properties (Abstract)
+        Ap,Am
     end
     methods (Abstract)
         addPrimaryFlowComponent(self,primaryFlowComponent)
@@ -566,7 +568,7 @@ classdef WVInternalGravityWaveMethods < handle
     end
 
     methods (Static, Hidden=true)
-        function variableAnnotations = variableAnnotationsForInternalGravityWaveComponent()
+        function propertyAnnotations = propertyAnnotationsForInternalGravityWaveComponent(options)
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by
@@ -575,13 +577,37 @@ classdef WVInternalGravityWaveMethods < handle
             % - Topic: Internal
             % - Declaration: operations = defaultVariableAnnotations()
             % - Returns operations: array of WVVariableAnnotation instances
-
-            variableAnnotations = WVVariableAnnotation.empty(0,0);
+            arguments
+                options.spectralDimensionNames = {'j','kl'}
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
             annotation = WVVariableAnnotation('waveEnergy',{},'m3/s2', 'total energy, waves');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
-            variableAnnotations(end+1) = annotation;
+            propertyAnnotations(end+1) = annotation;
+
+            propertyAnnotations(end+1) = WVPropertyAnnotation('Omega',{'k','l','j'},'rad s^{-1}', 'frequency of oscillation of the linear waves', detailedDescription='- topic: Domain Attributes');
+
+
+            propertyAnnotations(end+1) = CANumericProperty('ApU',options.spectralDimensionNames,'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_p$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('ApV',options.spectralDimensionNames,'', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_p$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('ApN',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_p$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('AmU',options.spectralDimensionNames,'', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_m$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('AmV',options.spectralDimensionNames,'', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_m$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('AmN',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_m$$.',isComplex=0);
+
+
+            propertyAnnotations(end+1) = CANumericProperty('UAp',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{u}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('UAm',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{u}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('VAp',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{v}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('VAm',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{v}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('WAp',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{w}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('WAm',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{w}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('NAp',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('NAm',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.',isComplex=0);
+
+            propertyAnnotations(end+1) = CANumericProperty('Apm_TE_factor',options.spectralDimensionNames,'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
         end
 
         function flag = hasEqualWaveComponents(wvt1,wvt2)

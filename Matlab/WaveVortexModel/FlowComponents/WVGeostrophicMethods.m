@@ -407,7 +407,7 @@ classdef WVGeostrophicMethods < handle
 
     end
     methods (Static, Hidden=true)
-        function propertyAnnotations = propertyAnnotationsForGeostrophicComponent()
+        function propertyAnnotations = propertyAnnotationsForGeostrophicComponent(options)
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by
@@ -416,23 +416,25 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Internal
             % - Declaration: operations = defaultVariableAnnotations()
             % - Returns operations: array of WVVariableAnnotation instances
-            
+            arguments
+                options.spectralDimensionNames = {'j','kl'}
+            end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
-            annotation = CANumericProperty('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
+            annotation = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
 
-            propertyAnnotations(end+1) = CANumericProperty('A0U',{'j','kl'},'s', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.',isComplex=1);
-            propertyAnnotations(end+1) = CANumericProperty('A0V',{'j','kl'},'s', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.',isComplex=1);
-            propertyAnnotations(end+1) = CANumericProperty('A0N',{'j','kl'},'', 'matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('UA0',{'j','kl'},'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.',isComplex=1);
-            propertyAnnotations(end+1) = CANumericProperty('VA0',{'j','kl'},'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.',isComplex=1);
-            propertyAnnotations(end+1) = CANumericProperty('NA0',{'j','kl'},'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_TE_factor',{'j','kl'},'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_QGPV_factor',{'j','kl'},'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_TZ_factor',{'j','kl'},'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0U',options.spectralDimensionNames,'s', 'matrix component that multiplies $$\tilde{u}$$ to compute $$A_0$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('A0V',options.spectralDimensionNames,'s', 'matrix component that multiplies $$\tilde{v}$$ to compute $$A_0$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('A0N',options.spectralDimensionNames,'', 'matrix component that multiplies $$\tilde{\eta}$$ to compute $$A_0$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('UA0',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('VA0',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.',isComplex=1);
+            propertyAnnotations(end+1) = CANumericProperty('NA0',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+            propertyAnnotations(end+1) = CANumericProperty('A0_TZ_factor',options.spectralDimensionNames,'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
 
         end
         

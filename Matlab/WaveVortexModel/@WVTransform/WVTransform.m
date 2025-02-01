@@ -111,8 +111,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
     end
 
     properties (Abstract)
-        spatialMatrixSize
-        spectralMatrixSize
         totalEnergySpatiallyIntegrated
         totalEnergy
     end
@@ -140,10 +138,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         wvtX2 = waveVortexTransformWithResolution(self,m)
         
         % Required for transformUVEtaToWaveVortex 
-        u_bar = transformFromSpatialDomainWithFio(self,u)
+        % u_bar = transformFromSpatialDomainWithFio(self,u)
         u_bar = transformFromSpatialDomainWithFg(self, u)
         w_bar = transformFromSpatialDomainWithGg(self, w)
-        w_bar = transformWithG_wg(self, w_bar )
+        % w_bar = transformWithG_wg(self, w_bar )
 
         % Required for transformWaveVortexToUVEta
         u = transformToSpatialDomainWithF(self, options)
@@ -205,9 +203,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
 
-            self.addDimensionAnnotations(WVTransform.defaultDimensionAnnotations);
-            self.addPropertyAnnotations(WVTransform.defaultPropertyAnnotations);
-            self.addVariableAnnotations(WVTransform.defaultVariableAnnotations);
             self.addOperation(WVTransform.defaultOperations);
             self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p','psi','qgpv'));
 
@@ -238,8 +233,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         addFlowComponent(self,flowComponent)
         names = flowComponentNames(self)
         val = flowComponent(self,name)
-
-        operations = operationForDynamicalVariable(self,variableName,options)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -403,7 +396,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)
-        summarizeModeEnergy(self)
+        summarizeModeEnergy(self,options)
 
         function summarizeDynamicalVariables(self)
             Dimension = cell(self.variableAnnotationNameMap.numEntries,1);
@@ -500,6 +493,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         % Initialize the a transform from file
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 
+        operations = operationForKnownVariable(variableName)
+
         function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform(options)
             % return array of CAPropertyAnnotations for the WVTransform
             %
@@ -525,27 +520,27 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
             propertyAnnotations(end+1) = CANumericProperty('t0',{},'s', 'reference time of Ap, Am, A0');
 
-            annotation = CANumericProperty('totalEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
+            annotation = WVVariableAnnotation('totalEnergy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
 
-            annotation = CANumericProperty('totalEnergySpatiallyIntegrated',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed in the spatial domain');
+            annotation = WVVariableAnnotation('totalEnergySpatiallyIntegrated',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed in the spatial domain');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
 
-            A0Prop = CANumericProperty('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
+            A0Prop = WVVariableAnnotation('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
             A0Prop.isComplex = 1;
             A0Prop.isVariableWithLinearTimeStep = 0;
             A0Prop.isVariableWithNonlinearTimeStep = 1;
 
-            ApProp = CANumericProperty('Ap',options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t0');
+            ApProp = WVVariableAnnotation('Ap',options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t0');
             ApProp.isComplex = 1;
             ApProp.isVariableWithLinearTimeStep = 0;
             ApProp.isVariableWithNonlinearTimeStep = 1;
 
-            AmProp = CANumericProperty('Am',options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t0');
+            AmProp = WVVariableAnnotation('Am',options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t0');
             AmProp.isComplex = 1;
             AmProp.isVariableWithLinearTimeStep = 0;
             AmProp.isVariableWithNonlinearTimeStep = 1;
