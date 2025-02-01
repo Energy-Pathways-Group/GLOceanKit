@@ -8,12 +8,16 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
     methods
         function self = WVGeostrophicComponent(wvt)
             arguments
-                wvt WVTransform {mustBeNonempty}
+                wvt {mustBeDoulbyPeriodicFPlane}
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "geostrophic";
             self.shortName = "geostrophic";
             self.abbreviatedName = "g";
+        end
+
+        function mustBeDoulbyPeriodicFPlane(a)
+            assert( isa(a,'WVGeometryDoublyPeriodic') && isa(a,'WVRotatingFPlane'),'mustBeDoulbyPeriodicFPlane::invalidClass','This geostrophic component is only valid for double periodic geometry on a rotating f-plane.');
         end
 
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)

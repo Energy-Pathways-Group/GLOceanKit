@@ -5,7 +5,6 @@ classdef WVGeostrophicMethods < handle
     properties (GetAccess=public, SetAccess=private) 
         UA0,VA0,NA0,PA0
         A0Z,A0N
-        A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
     end
     properties (Dependent,GetAccess=public, SetAccess=protected)
         % returns the geostrophic flow component
@@ -24,9 +23,13 @@ classdef WVGeostrophicMethods < handle
         ratio = maxFg(self,kMode,lMode,jMode);
         u_bar = transformFromSpatialDomainWithFg(self, u)
         removeAll(self)
+        addPrimaryFlowComponent
     end
 
     methods (Access=protected)
+        function self = WVGeostrophicMethods(self)
+
+        end
         function initializeGeostrophicComponent(self)
             % After the WVStratifiedFlow and WVTransform constructors have
             % finishes, this should be called to finish initialization of
@@ -432,10 +435,7 @@ classdef WVGeostrophicMethods < handle
             propertyAnnotations(end+1) = CANumericProperty('UA0',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{u}$$.',isComplex=1);
             propertyAnnotations(end+1) = CANumericProperty('VA0',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.',isComplex=1);
             propertyAnnotations(end+1) = CANumericProperty('NA0',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
-            propertyAnnotations(end+1) = CANumericProperty('A0_TZ_factor',options.spectralDimensionNames,'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
-
+            
         end
         
         function flag = hasEqualPVComponents(wvt1,wvt2)

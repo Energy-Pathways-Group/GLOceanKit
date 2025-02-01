@@ -26,8 +26,7 @@ classdef CAAnnotatedClass < handle
             self.dimensionAnnotationNameMap = configureDictionary("string","cell");
             self.propertyAnnotationNameMap = configureDictionary("string","cell");
 
-            className = class(self);
-            self.addPropertyAnnotation(feval(strcat(className,'.classDefinedPropertyAnnotations')));
+            self.addPropertyAnnotation(feval(strcat(class(self),'.classDefinedPropertyAnnotations')));
         end
         
         vars = requiredProperties(self);
@@ -61,13 +60,12 @@ classdef CAAnnotatedClass < handle
         
     end
 
-    methods (Static,Abstract)
-        vars = classRequiredPropertyNames()
-    end
-
     methods (Static)
         propertyAnnotations = classDefinedPropertyAnnotations()
         atc = annotatedClassFromFile(path)
+        function vars = classRequiredPropertyNames()
+            vars = {};
+        end
 
         function var = requiredPropertiesFromGroup(group,options)
             arguments (Input)

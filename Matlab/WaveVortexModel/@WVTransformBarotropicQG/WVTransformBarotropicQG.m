@@ -47,8 +47,14 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
             end
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,optionCell{:});
+            self@WVTransform();
+
             self.initializeGeostrophicComponent();
             self.j = 1;
+
+            % the property annotations for these variables will already
+            % have beena added, but that is okay, they will be replaced.
+            self.addOperation(WVTransform.operationForKnownVariable(WVTransformBarotropicQG.namesOfTransformVariables()));
         end
 
         function val = get.h_0(self)
@@ -148,11 +154,17 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
             newRequiredPropertyNames = {'A0'};
         end
 
+        function names = namesOfTransformVariables()
+            names = {'uvMax','zeta_z','ssu','ssv','ssh','u','v','eta','p','psi','qgpv'};
+        end
+
         function propertyAnnotations = propertyAnnotationsForTransform()
             propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
             propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = {'kl'}));
-            [transformProperties,A0Prop,~,~] = WVTransform.propertyAnnotationsForTransform(spectralDimensionNames = {'kl'});
-            cat(2,propertyAnnotations,transformProperties,A0Prop);
+            transformProperties = WVTransform.propertyAnnotationsForTransform('A0','A0_TE_factor','A0_QGPV_factor','A0_TZ_factor',spectralDimensionNames = {'kl'});
+            varNames = WVTransformBarotropicQG.namesOfTransformVariables();
+            varAnnotations = WVTransform.propertyAnnotationForKnownVariable(varNames{:});
+            cat(2,propertyAnnotations,transformProperties,varAnnotations);
         end
 
         function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)

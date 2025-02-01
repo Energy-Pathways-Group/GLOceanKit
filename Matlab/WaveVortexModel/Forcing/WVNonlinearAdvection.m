@@ -19,7 +19,6 @@ classdef WVNonlinearAdvection < WVForcing
                 wvt WVTransform {mustBeNonempty}
             end
             self@WVForcing("nonlinear advection");
-            self.wvt = wvt;
             self.doesHydrostaticSpatialForcing = true;
             self.doesNonhydrostaticSpatialForcing = true;
 
@@ -30,7 +29,7 @@ classdef WVNonlinearAdvection < WVForcing
             elseif isa(wvt,'WVTransformBoussinesq')
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             else
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
+                self.dLnN2 = 0;
                 warning('WVTransform not recognized.')
             end
         end

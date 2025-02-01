@@ -14,9 +14,15 @@ arguments (Output)
     operations WVOperation
 end
 
-[transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = WVTransform.transformsForFlowComponent(primaryFlowComponents,flowComponent);
+[transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = WVTransform.optimizedTransformsForFlowComponent(options.primaryFlowComponents,options.flowComponent);
 
 operations = WVOperation.empty(length(variableName),0);
+
+knownMaskableVariables = ["u","v","w","eta","p","psi","qgpv","energy"];
+d = setdiff(variableName,knownMaskableVariables);
+if isMasked && ~isempty(d)
+    error("The variables %s cannot be masked.",strjoin(d,", "));
+end
 
 for iOp = 1:length(variableName)
     name = variableName{iOp};
@@ -99,7 +105,7 @@ for iOp = 1:length(variableName)
             error('There is no variable named %s.',name)
     end
 
-    if isMasked == 1
+    if isMasked
         newName = strcat(varAnnotation.name,'_',options.flowComponent.abbreviatedName);
         newDescription = append(varAnnotation.description,', ',options.flowComponent.name,' component');
         varAnnotation = WVVariableAnnotation(newName,varAnnotation.dimensions,varAnnotation.units, newDescription);

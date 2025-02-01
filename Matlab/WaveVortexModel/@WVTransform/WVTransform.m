@@ -61,6 +61,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         hasWaveFlow = false
         isHydrostatic = true
 
+        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
+
         % returns a mask indicating where primary solutions live in the Ap matrix.
         %
         % Returns a 'mask' (matrix with 1s or 0s) indicating where
@@ -127,7 +129,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
         primaryFlowComponentNameMap
         flowComponentNameMap
-        knownDynamicalVariables
 
         forcing = {}
         spatialForcing = {}
@@ -190,11 +191,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             arguments
 
             end
-
-            % Now set the initial conditions to zero
-            % self.Ap = zeros(self.spectralMatrixSize);
-            % self.Am = zeros(self.spectralMatrixSize);
-            % self.A0 = zeros(self.spectralMatrixSize);  
             
             self.clearVariableCache();
             self.operationVariableNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
@@ -202,12 +198,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
-
-            self.addOperation(WVTransform.defaultOperations);
-            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p','psi','qgpv'));
-
-            % must use double quotes, and these need to match the cases in operationForDynamicalVariable
-            self.knownDynamicalVariables = ["u","v","w","eta","p","psi","qgpv"];
 
             self.nonlinearAdvection = WVNonlinearAdvection(self);
             self.addForcing(self.nonlinearAdvection);
@@ -326,7 +316,6 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             self.clearVariableCache();
         end
 
-        self = initializePrimaryFlowComponents(self)
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
@@ -494,8 +483,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 
         operations = operationForKnownVariable(variableName)
-
-        function [propertyAnnotations,A0Prop,ApProp,AmProp] = propertyAnnotationsForTransform(options)
+        propertyAnnotations = propertyAnnotationForKnownVariable(variableName,options)
+        [transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = optimizedTransformsForFlowComponent(primaryFlowComponents,flowComponent)
+        
+        function [propertyAnnotations] = propertyAnnotationsForTransform(variableName,options)
             % return array of CAPropertyAnnotations for the WVTransform
             %
             % This function returns annotations for all properties defined
@@ -509,8 +500,14 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             % - Returns A0Prop: CANumericProperty instance for A0
             % - Returns ApProp: CANumericProperty instance for Ap
             % - Returns AmProp: CANumericProperty instance for Am
-            arguments
+            arguments (Input,Repeating)
+                variableName char
+            end
+            arguments (Input)
                 options.spectralDimensionNames = {'j','kl'}
+            end
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
@@ -530,23 +527,40 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
 
-            A0Prop = WVVariableAnnotation('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
-            A0Prop.isComplex = 1;
-            A0Prop.isVariableWithLinearTimeStep = 0;
-            A0Prop.isVariableWithNonlinearTimeStep = 1;
+            for iVar = 1:length(variableName)
+                name = variableName{iVar};
+                switch name
+                    case 'A0'
+                        prop = WVVariableAnnotation('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
+                        prop.isComplex = 1;
+                        prop.isVariableWithLinearTimeStep = 0;
+                        prop.isVariableWithNonlinearTimeStep = 1;
+                    case 'Ap'
+                        prop = WVVariableAnnotation('Ap',options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t0');
+                        prop.isComplex = 1;
+                        prop.isVariableWithLinearTimeStep = 0;
+                        prop.isVariableWithNonlinearTimeStep = 1;
+                    case 'Am'
+                        prop = WVVariableAnnotation('Am',options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t0');
+                        prop.isComplex = 1;
+                        prop.isVariableWithLinearTimeStep = 0;
+                        prop.isVariableWithNonlinearTimeStep = 1;
+                    case 'A0_TE_factor'
+                        prop = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+                    case 'A0_QGPV_factor'
+                        prop = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+                    case 'A0_TZ_factor'
+                        prop = CANumericProperty('A0_TZ_factor',options.spectralDimensionNames,'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
+                    case 'Apm_TE_factor'
+                        prop = CANumericProperty('Apm_TE_factor',options.spectralDimensionNames,'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
 
-            ApProp = WVVariableAnnotation('Ap',options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t0');
-            ApProp.isComplex = 1;
-            ApProp.isVariableWithLinearTimeStep = 0;
-            ApProp.isVariableWithNonlinearTimeStep = 1;
-
-            AmProp = WVVariableAnnotation('Am',options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t0');
-            AmProp.isComplex = 1;
-            AmProp.isVariableWithLinearTimeStep = 0;
-            AmProp.isVariableWithNonlinearTimeStep = 1;
+                    otherwise
+                        error('There is no variable named %s.',name)
+                end
+                propertyAnnotations(end+1) = prop;
+            end
         end
-    end        
-        
+    end
 end 
 
 

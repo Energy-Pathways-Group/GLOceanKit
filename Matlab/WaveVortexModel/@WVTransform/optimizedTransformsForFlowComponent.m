@@ -1,4 +1,4 @@
-function [transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = transformsForFlowComponent(primaryFlowComponents,flowComponent)
+function [transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = optimizedTransformsForFlowComponent(primaryFlowComponents,flowComponent)
 % returns optimized transforms that avoid unnecessary computation
 arguments (Input)
     primaryFlowComponents WVFlowComponent = WVFlowComponent.empty(0,0)

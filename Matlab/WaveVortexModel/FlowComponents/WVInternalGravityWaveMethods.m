@@ -8,7 +8,6 @@ classdef WVInternalGravityWaveMethods < handle
         UAm,VAm,WAm,NAm
         ApmD,ApmN
         % Omega, iOmega
-        Apm_TE_factor
 
         iOmega
     end
@@ -607,7 +606,6 @@ classdef WVInternalGravityWaveMethods < handle
             propertyAnnotations(end+1) = CANumericProperty('NAp',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.',isComplex=0);
             propertyAnnotations(end+1) = CANumericProperty('NAm',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 
-            propertyAnnotations(end+1) = CANumericProperty('Apm_TE_factor',options.spectralDimensionNames,'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
         end
 
         function flag = hasEqualWaveComponents(wvt1,wvt2)
