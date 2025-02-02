@@ -1,4 +1,4 @@
-classdef WVGeostrophicMethods < handle
+classdef WVGeostrophicMethods < WVTransform
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -15,16 +15,16 @@ classdef WVGeostrophicMethods < handle
         % - nav_order: 1
         geostrophicComponent
     end
-    properties (Abstract)
-        A0
-        h_0  % [Nj 1]
-    end
-    methods (Abstract)
-        ratio = maxFg(self,kMode,lMode,jMode);
-        u_bar = transformFromSpatialDomainWithFg(self, u)
-        removeAll(self)
-        addPrimaryFlowComponent
-    end
+    % properties (Abstract)
+    %     A0
+    %     h_0  % [Nj 1]
+    % end
+    % methods (Abstract)
+    %     ratio = maxFg(self,kMode,lMode,jMode);
+    %     u_bar = transformFromSpatialDomainWithFg(self, u)
+    %     removeAll(self)
+    %     addPrimaryFlowComponent
+    % end
 
     methods (Access=protected)
         function self = WVGeostrophicMethods(self)
@@ -61,7 +61,7 @@ classdef WVGeostrophicMethods < handle
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
-            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
+            % self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
         end
 
         function throwErrorIfMeanPressureViolation(self,psi_xyz)
@@ -82,7 +82,7 @@ classdef WVGeostrophicMethods < handle
 
     methods
         function flowComponent = get.geostrophicComponent(self)
-            flowComponent = self.flowComponent('geostrophic');
+            flowComponent = self.flowComponentWithName('geostrophic');
         end
 
         function energy = geostrophicEnergy(self)

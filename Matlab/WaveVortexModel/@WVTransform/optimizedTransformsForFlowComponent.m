@@ -5,7 +5,7 @@ arguments (Input)
     flowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
 end
 
-% These will be empty if +operationForKnownVariable is called when building
+% These will be empty if +classDefinedOperationForKnownVariable is called when building
 % documentation.
 if isempty(flowComponent) && isempty(primaryFlowComponents)
     transformToSpatialDomainWithF = @(wvt,Ap,Am,A0) wvt.transformToSpatialDomainWithF(Apm=Ap(wvt)+Am(wvt),A0=A0(wvt));
@@ -19,13 +19,13 @@ end
 
 % What are the default masks. They won't always be 1, because QG models
 % won't have Ap, Am
-unmask.Ap = 0;
-unmask.Am = 0;
-unmask.A0 = 0;
+unmasked.Ap = 0;
+unmasked.Am = 0;
+unmasked.A0 = 0;
 for i = 1:length(primaryFlowComponents)
-    unmask.Ap = unmask.Ap | any(primaryFlowComponents(i).maskAp(:));
-    unmask.Am = unmask.Am | any(primaryFlowComponents(i).maskAm(:));
-    unmask.A0 = unmask.A0 | any(primaryFlowComponents(i).maskA0(:));
+    unmasked.Ap = unmasked.Ap | any(primaryFlowComponents(i).maskAp(:));
+    unmasked.Am = unmasked.Am | any(primaryFlowComponents(i).maskAm(:));
+    unmasked.A0 = unmasked.A0 | any(primaryFlowComponents(i).maskA0(:));
 end
 
 % The goal here to to take the masks that we are given, which are of
@@ -35,13 +35,16 @@ if isempty(flowComponent)
 else
     % There can be zeros in a mask if there aren't any degrees of freedom
     % there, so we need to check for that.
-    fullAp = zeros(self.spectralMatrixSize);
-    fullAm = zeros(self.spectralMatrixSize);
-    fullA0 = zeros(self.spectralMatrixSize);
     for i = 1:length(primaryFlowComponents)
-        fullAp = fullAp + primaryFlowComponents(i).maskAp;
-        fullAm = fullAm + primaryFlowComponents(i).maskAm;
-        fullA0 = fullA0 + primaryFlowComponents(i).maskA0;
+        if i==1
+            fullAp = primaryFlowComponents(i).maskAp;
+            fullAm = primaryFlowComponents(i).maskAm;
+            fullA0 = primaryFlowComponents(i).maskA0;
+        else
+            fullAp = fullAp + primaryFlowComponents(i).maskAp;
+            fullAm = fullAm + primaryFlowComponents(i).maskAm;
+            fullA0 = fullA0 + primaryFlowComponents(i).maskA0;
+        end
     end
 
     if ~any(flowComponent.maskAp(:))

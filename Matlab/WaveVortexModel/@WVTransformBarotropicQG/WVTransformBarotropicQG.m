@@ -1,4 +1,4 @@
-classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotropic & WVGeostrophicMethods
+classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostrophicMethods
     % A transform for modeling single-layer quasigeostrophic flow
     %
     % This is a two-dimensional, single-layer which may be interpreted as
@@ -40,21 +40,26 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
             arguments
                 Lxy (1,2) double {mustBePositive}
                 Nxy (1,2) double {mustBePositive}
+                options.shouldAntialias (1,1) logical = true
                 options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
                 options.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8
+                options.j (1,1) double {mustBeMember(options.j,[0 1])} = 1
             end
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,optionCell{:});
-            self@WVTransform();
-
+            self@WVGeostrophicMethods();
+            
             self.initializeGeostrophicComponent();
-            self.j = 1;
 
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.
-            self.addOperation(WVTransform.operationForKnownVariable(WVTransformBarotropicQG.namesOfTransformVariables()));
+            varNames = WVTransformBarotropicQG.namesOfTransformVariables();
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+
+            self.A0 = zeros(self.spectralMatrixSize);
+            %self.addOperation(self.operationForKnownVariable('u','v','eta','p',flowComponent=self.geostrophicComponent));
         end
 
         function val = get.h_0(self)
@@ -125,6 +130,36 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
     end
 
     methods (Static)
+
+        function names = classDefinedSpectralDimensionNames()
+            % return a cell array of property names required by the class
+            %
+            % This function returns an array of property names required to be written
+            % by the class, in order to restore its state.
+            %
+            % - Topic: Developer
+            % - Declaration:  names = classRequiredPropertyNames()
+            % - Returns names: array strings
+            arguments (Output)
+                names cell
+            end
+            names = {'kl'};
+        end
+
+        function names = classDefinedSpatialDimensionNames()
+            % return a cell array of the spatial dimension names
+            %
+            % This function returns an array of dimension names
+            %
+            % - Topic: Developer
+            % - Declaration:  names = classDefinedSpatialDimensionNames()
+            % - Returns names: array strings
+            arguments (Output)
+                names cell
+            end
+            names = {'x','y'};
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % CAAnnotatedClass required methods, which enables writeToFile
@@ -151,7 +186,7 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
-            newRequiredPropertyNames = {'A0'};
+            newRequiredPropertyNames = {'A0','kl','t0','t'};
         end
 
         function names = namesOfTransformVariables()
@@ -159,12 +194,16 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()
+            spectralDimensionNames = WVTransformBarotropicQG.classDefinedSpectralDimensionNames();
+            spatialDimensionNames = WVTransformBarotropicQG.classDefinedSpatialDimensionNames();
+
             propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
-            propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = {'kl'}));
-            transformProperties = WVTransform.propertyAnnotationsForTransform('A0','A0_TE_factor','A0_QGPV_factor','A0_TZ_factor',spectralDimensionNames = {'kl'});
+            propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = spectralDimensionNames));
+            transformProperties = WVTransform.propertyAnnotationsForTransform('A0','A0_TE_factor','A0_QGPV_factor','A0_TZ_factor',spectralDimensionNames = spectralDimensionNames);
+
             varNames = WVTransformBarotropicQG.namesOfTransformVariables();
-            varAnnotations = WVTransform.propertyAnnotationForKnownVariable(varNames{:});
-            cat(2,propertyAnnotations,transformProperties,varAnnotations);
+            varAnnotations = WVTransform.propertyAnnotationForKnownVariable(varNames{:},spectralDimensionNames = spectralDimensionNames,spatialDimensionNames = spatialDimensionNames);
+            propertyAnnotations = cat(2,propertyAnnotations,transformProperties,varAnnotations);
         end
 
         function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)
@@ -214,7 +253,7 @@ classdef WVTransformBarotropicQG < WVTransform & WVGeometryDoublyPeriodicBarotro
                 wvt WVTransform {mustBeNonempty}
             end
             CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.namesOfRequiredPropertiesForTransform);
-            [Lxy, Nxy, options] = WVTransformBarotropicQG.requiredPropertiesForTransformFromGroup(group);
+            [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryFromGroup(group);
             wvt = WVTransformBarotropicQG(Lxy,Nxy,options{:});
         end
 

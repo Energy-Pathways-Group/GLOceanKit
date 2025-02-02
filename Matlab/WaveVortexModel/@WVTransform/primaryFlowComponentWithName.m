@@ -1,4 +1,4 @@
-function val = primaryFlowComponent(self,name)
+function val = primaryFlowComponentWithName(self,name)
 % retrieve a WVPrimaryFlowComponent by name
 %
 % - Topic: Flow components

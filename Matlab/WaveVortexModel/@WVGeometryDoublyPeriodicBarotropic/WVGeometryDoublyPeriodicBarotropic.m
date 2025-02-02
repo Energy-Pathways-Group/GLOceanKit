@@ -12,12 +12,15 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         Lr2
         
     end
-    properties (GetAccess=protected,SetAccess=private)
-        z=0, j=1
+    properties (GetAccess=protected,SetAccess=protected)
+        z=0
     end
 
-    properties (Dependent,GetAccess=protected)
-        J
+    properties (GetAccess=public,SetAccess=protected)
+        j=1
+    end
+    properties (Dependent,GetAccess=public)
+        J, Lz
     end
 
     methods
@@ -44,6 +47,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8
+                options.j (1,1) double {mustBeMember(options.j,[0 1])} = 1
             end
             optionCell = namedargs2cell(geomOptions);
             self@WVGeometryDoublyPeriodic(Lxy,Nxy,optionCell{:},Nz=1,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
@@ -52,10 +56,15 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             self@WVRotatingFPlane(optionCell{:});
 
             self.h = options.h;
+            self.j = options.j;
         end
 
         function val = get.J(self)
             val = self.j*ones(self.spectralMatrixSize);
+        end
+
+        function val = get.Lz(self)
+            val = self.h;
         end
 
         function Lr2 = get.Lr2(self)
@@ -77,16 +86,16 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         end
 
         function [K,L] = klGrid(self)
-            K = self.k;
-            L = self.l;
+            K = shiftdim(self.k,-1);
+            L = shiftdim(self.l,-1);
         end
 
         function value = get.K(self)
-            value = self.k;
+            value = shiftdim(self.k,-1);
         end
 
         function value = get.L(self)
-            value = self.l;
+            value = shiftdim(self.l,-1);
         end
 
         function K2 = get.K2(self)
@@ -134,7 +143,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
-            newRequiredPropertyNames = {'h'};
+            newRequiredPropertyNames = {'h','j'};
         end
 
         function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
@@ -153,6 +162,8 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             propertyAnnotations(end+1) = CANumericProperty('Y',{'x','y'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
 
             propertyAnnotations(end+1) = CANumericProperty('h',{},'m', 'equivalent depth', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations(end+1) = CANumericProperty('j',{},'', 'mode number', detailedDescription='- topic: Domain Attributes');
+
             propertyAnnotations(end+1) = CANumericProperty('Lr2',{},'m^2', 'squared Rossby radius');
         end
 

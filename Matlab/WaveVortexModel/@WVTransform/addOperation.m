@@ -26,13 +26,17 @@ end
 for iOp=1:length(operation)
     isExisting = 0;
     for iVar=1:length(operation(iOp).outputVariables)
-        if any(~isKey(self.dimensionAnnotationNameMap,operation(iOp).outputVariables(iVar).dimensions))
-            error("Unable to find at least one of the dimensions for variable %s",operation(iOp).outputVariables(iVar).name);
+        isKnownDimension = ismember(operation(iOp).outputVariables(iVar).dimensions,self.annotatedDimensionNames);
+        if any(~isKnownDimension)
+            error("Unable to find dimension (%s) for the numeric property %s",strjoin(string(operation(iOp).outputVariables(iVar).dimensions(~isKnownDimension)),","),operation(iOp).outputVariables(iVar).name);
         end
 
-        if isKey(self.variableAnnotationNameMap,operation(iOp).outputVariables(iVar).name)
-            isExisting = 1;
-            existingVar = self.variableAnnotationWithName(operation(iOp).outputVariables(iVar).name);
+        isKnownProperty = ismember(operation(iOp).outputVariables(iVar).name,self.annotatedPropertyNames);
+        if any(isKnownProperty)
+            existingVar = self.propertyAnnotationWithName(operation(iOp).outputVariables(iVar).name);
+            if isa(existingVar,'WVVariableAnnotation')
+                isExisting = 1;
+            end
         end
     end
 

@@ -179,7 +179,12 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — DFT grid
         Nl_dft
-      
+
+        % kl-wavenumber dimension
+        %
+        % - Topic: Domain attributes — WV grid
+        kl
+
         % length of the combined kl-wavenumber dimension on the WV grid
         %
         % - Topic: Domain attributes — WV grid
@@ -303,6 +308,9 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             y = dy*(0:self.Ny-1)';
         end
 
+        function kl = get.kl(self)
+            kl = (0:(self.Nkl-1))';
+        end
         function dk = get.dk(self)
             dk = 2*pi/self.Lx;
         end

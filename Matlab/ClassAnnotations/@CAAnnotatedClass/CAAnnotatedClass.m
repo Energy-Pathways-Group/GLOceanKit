@@ -31,6 +31,7 @@ classdef CAAnnotatedClass < handle
         
         vars = requiredProperties(self);
 
+        names = annotatedDimensionNames(self)
         val = dimensionAnnotationWithName(self,name)
         function dimAnnotations = dimensionAnnotations(self)
             arguments (Input)
@@ -63,9 +64,6 @@ classdef CAAnnotatedClass < handle
     methods (Static)
         propertyAnnotations = classDefinedPropertyAnnotations()
         atc = annotatedClassFromFile(path)
-        function vars = classRequiredPropertyNames()
-            vars = {};
-        end
 
         function var = requiredPropertiesFromGroup(group,options)
             arguments (Input)

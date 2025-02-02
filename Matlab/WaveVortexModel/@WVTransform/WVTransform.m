@@ -1,4 +1,4 @@
-classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
+classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     % Represents the state of the ocean in terms of energetically orthogonal wave and geostrophic (vortex) solutions
     %
     %
@@ -53,6 +53,9 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         nonlinearAdvection WVNonlinearAdvection
     end
 
+    properties (GetAccess=public, SetAccess=public)
+        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
+    end
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         version = 3.0;
@@ -61,7 +64,7 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         hasWaveFlow = false
         isHydrostatic = true
 
-        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
+        
 
         % returns a mask indicating where primary solutions live in the Ap matrix.
         %
@@ -149,6 +152,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         w = transformToSpatialDomainWithG(self, options )
     end
     
+    methods (Static,Abstract)
+        names = classDefinedSpatialDimensionNames()
+        names = classDefinedSpectralDimensionNames()
+    end
+
     methods (Access=protected)
         function varargout = dotReference(self,indexOp)
             % Typically the request will be directly for a WVOperation,
@@ -218,11 +226,12 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
 
         addPrimaryFlowComponent(self,primaryFlowComponent)
         names = primaryFlowComponentNames(self)
-        val = primaryFlowComponent(self,name)
+        val = primaryFlowComponentWithName(self,name)
+        components = primaryFlowComponents(self)
 
         addFlowComponent(self,flowComponent)
         names = flowComponentNames(self)
-        val = flowComponent(self,name)
+        val = flowComponentWithName(self,name)
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -419,8 +428,8 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
                 iVar = iVar+1;
                 Name{iVar} = name{1};
                 isPrimary{iVar} = isKey(self.primaryFlowComponentNameMap,name{1});
-                FullName{iVar} = self.flowComponent(name{1}).name;
-                AbbreviatedName{iVar} = self.flowComponent(name{1}).abbreviatedName;
+                FullName{iVar} = self.flowComponentWithName(name{1}).name;
+                AbbreviatedName{iVar} = self.flowComponentWithName(name{1}).abbreviatedName;
             end
             Name = string(Name);
             isPrimary = string(isPrimary);
@@ -456,9 +465,11 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+        % should go in the CAAnnotatedClass and compare the required
+        % variables.
         flag = isequal(self,other)
 
-        [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
+        % [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
 
         function flag = hasMeanPressureDifference(self)
             % checks if there is a non-zero mean pressure difference between the top and bottom of the fluid
@@ -482,10 +493,10 @@ classdef WVTransform < handle & matlab.mixin.indexing.RedefinesDot & CAAnnotated
         % Initialize the a transform from file
         [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 
-        operations = operationForKnownVariable(variableName)
+        operations = classDefinedOperationForKnownVariable(variableName)
         propertyAnnotations = propertyAnnotationForKnownVariable(variableName,options)
         [transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = optimizedTransformsForFlowComponent(primaryFlowComponents,flowComponent)
-        
+
         function [propertyAnnotations] = propertyAnnotationsForTransform(variableName,options)
             % return array of CAPropertyAnnotations for the WVTransform
             %

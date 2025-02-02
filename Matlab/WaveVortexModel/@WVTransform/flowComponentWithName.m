@@ -1,4 +1,4 @@
-function val = flowComponent(self,name)
+function val = flowComponentWithName(self,name)
 % retrieve a WVFlowComponent by name
 %
 % - Topic: Flow components

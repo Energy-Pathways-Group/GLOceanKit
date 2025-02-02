@@ -16,10 +16,6 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             self.abbreviatedName = "g";
         end
 
-        function mustBeDoulbyPeriodicFPlane(a)
-            assert( isa(a,'WVGeometryDoublyPeriodic') && isa(a,'WVRotatingFPlane'),'mustBeDoulbyPeriodicFPlane::invalidClass','This geostrophic component is only valid for double periodic geometry on a rotating f-plane.');
-        end
-
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
             % returns a mask indicating where the primary (non-conjugate) solutions live in the requested coefficient matrix.
             %
@@ -353,7 +349,8 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
         end
         
         function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)
-            [K,L,~] = self.wvt.kljGrid;
+            K = self.wvt.K;
+            L = self.wvt.L;
             f = self.wvt.f;
             g = self.wvt.g;
 

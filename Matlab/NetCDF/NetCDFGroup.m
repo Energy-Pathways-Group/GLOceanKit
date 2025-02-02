@@ -168,11 +168,11 @@ classdef NetCDFGroup < handle
                         dimPaths = self.dimensionPathWithName(name{iArg});
                         numPaths = length(dimPaths);
                         if numPaths == 0
-                            error('Unable to find a variable with the name %s',name{iArg});
+                            error('Unable to find a dimension with the name %s',name{iArg});
                         elseif numPaths == 1
                             dim(end+1) = self.variableWithName(dimPaths);
                         else
-                            error('Found more than one variable with the name %s',name{iArg});
+                            error('Found more than one dimension with the name %s',name{iArg});
                         end
                     end
                 end

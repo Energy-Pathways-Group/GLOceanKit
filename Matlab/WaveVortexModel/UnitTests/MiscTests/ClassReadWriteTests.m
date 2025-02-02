@@ -35,4 +35,6 @@ stratGeom_b = WVGeometryDoublyPeriodicStratified.geometryFromFile('test.nc');
 %%
 Lxy = [10e3 10e3];
 Nxy = [64 64];
-WVTransformBarotropicQG(Lxy,Nxy);
+wvt = WVTransformBarotropicQG(Lxy,Nxy);
+ncfile = wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
+wvt_b = WVTransformBarotropicQG.waveVortexTransformFromFile('test.nc');
