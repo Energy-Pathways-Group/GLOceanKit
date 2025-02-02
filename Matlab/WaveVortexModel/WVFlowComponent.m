@@ -174,13 +174,14 @@ classdef WVFlowComponent < handle
             maskApConj = 0;
             maskAmConj = 0;
             maskA0Conj = 0;
-            for i=1:length(self.wvt.primaryFlowComponent)
-                maskApPrimary = maskApPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                maskAmPrimary = maskAmPrimary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-                maskA0Primary = maskA0Primary | primaryFlowComponent(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-                maskApConj = maskApConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                maskAmConj = maskAmConj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-                maskA0Conj = maskA0Conj | primaryFlowComponent(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            primaryFlowComponents = self.wvt.primaryFlowComponents;
+            for i=1:length(primaryFlowComponents)
+                maskApPrimary = maskApPrimary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+                maskAmPrimary = maskAmPrimary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+                maskA0Primary = maskA0Primary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+                maskApConj = maskApConj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+                maskAmConj = maskAmConj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+                maskA0Conj = maskA0Conj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             end
         end
 

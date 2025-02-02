@@ -213,7 +213,7 @@ classdef WVGeostrophicMethods < WVTransform
             % - nav_order: 3
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
-            if isa(self,'WVStratifiedFlow')
+            if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
                 self.throwErrorIfDensityViolation(A0=self.A0 + A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
             end
@@ -268,7 +268,7 @@ classdef WVGeostrophicMethods < WVTransform
             % - nav_order: 2
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
             A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
-            if isa(self,'WVStratifiedFlow')
+            if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
             end
             self.A0 = A0_;
@@ -317,7 +317,7 @@ classdef WVGeostrophicMethods < WVTransform
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
             A0_(indices) = A0_indices;
-            if isa(self,'WVStratifiedFlow')
+            if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
             end
 
@@ -359,7 +359,7 @@ classdef WVGeostrophicMethods < WVTransform
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
             A0_(indices) = A0_(indices) + A0_indices;
-            if isa(self,'WVStratifiedFlow')
+            if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are adding will cause the fluid state to violate this condition.\n'));
             end
 

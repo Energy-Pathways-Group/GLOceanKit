@@ -414,18 +414,25 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         summarizeModeEnergy(self,options)
 
         function summarizeDynamicalVariables(self)
-            Dimension = cell(self.variableAnnotationNameMap.numEntries,1);
-            Units = cell(self.variableAnnotationNameMap.numEntries,1);
-            Description = cell(self.variableAnnotationNameMap.numEntries,1);
-            Name = keys(self.variableAnnotationNameMap,'cell');
+            annotations = self.propertyAnnotations;
+            variableAnnotationNameMap = configureDictionary("string","cell");
+            for i=1:length(annotations)
+                if isa(annotations(i),'WVVariableAnnotation')
+                    variableAnnotationNameMap{annotations(i).name} = annotations(i);
+                end
+            end
+            Dimension = cell(variableAnnotationNameMap.numEntries,1);
+            Units = cell(variableAnnotationNameMap.numEntries,1);
+            Description = cell(variableAnnotationNameMap.numEntries,1);
+            Name = keys(variableAnnotationNameMap,'cell');
             for iVar=1:length(Name)
-                if isempty(self.variableAnnotationNameMap(Name{iVar}).dimensions)
+                if isempty(variableAnnotationNameMap{Name{iVar}}.dimensions)
                     Dimension{iVar} = "()";
                 else
-                    Dimension{iVar} = join(["(",join(string(self.variableAnnotationNameMap(Name{iVar}).dimensions),', '),")"]) ;
+                    Dimension{iVar} = join(["(",join(string(variableAnnotationNameMap{Name{iVar}}.dimensions),', '),")"]) ;
                 end
-                Units{iVar} = self.variableAnnotationNameMap(Name{iVar}).units;
-                Description{iVar} = self.variableAnnotationNameMap(Name{iVar}).description;
+                Units{iVar} = variableAnnotationNameMap{Name{iVar}}.units;
+                Description{iVar} = variableAnnotationNameMap{Name{iVar}}.description;
             end
             Name = string(Name);
             Dimension = string(Dimension);

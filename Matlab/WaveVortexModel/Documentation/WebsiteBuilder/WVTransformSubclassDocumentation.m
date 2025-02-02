@@ -21,7 +21,7 @@ classdef WVTransformSubclassDocumentation < ClassDocumentation
             for iClass=1:length(classMetadata.SuperclassList)
                 variableAnnotations = WVVariableAnnotation.empty(0,0);
                 switch classMetadata.SuperclassList(iClass).Name
-                    case 'WVStratifiedFlow'
+                    case 'WVStratification'
                         props = WVStratifiedFlow.propertyAnnotationsForStratifiedFlow();
                         for iDim=1:length(props)
                             metadata = MethodDocumentation(props(iDim).name);

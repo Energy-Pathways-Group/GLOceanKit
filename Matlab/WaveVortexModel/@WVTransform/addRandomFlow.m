@@ -45,7 +45,7 @@ if isempty(flowComponentNames)
 end
 
 for name = flowComponentNames
-    flowComponent = self.flowComponent{name{1}};
+    flowComponent = self.flowComponentWithName(name);
     [Ap_,Am_,A0_] = flowComponent.randomAmplitudesWithSpectrum(A0Spectrum=options.A0Spectrum,ApmSpectrum=options.ApmSpectrum,shouldOnlyRandomizeOrientations=options.shouldOnlyRandomizeOrientations);
     u = self.transformToSpatialDomainWithF(Apm=self.UAp.*Ap_+self.UAm.*Am_,A0=self.UA0.*A0_);
     v = self.transformToSpatialDomainWithF(Apm=self.VAp.*Ap_+self.VAm.*Am_,A0=self.VA0.*A0_);
@@ -67,7 +67,7 @@ if length(flowComponentNames) > 1
     A0 = ratio*A0;
 end
 
-if isa(self, 'WVStratifiedFlow')
+if isa(self, 'WVStratification')
     self.throwErrorIfDensityViolation(A0=self.A0+A0,Ap=self.Ap+Ap,Am=self.Am+Am)
 end
 

@@ -17,6 +17,6 @@ end
 operations = WVTransform.classDefinedOperationForKnownVariable(variableName{:},spectralDimensionNames=options.spectralDimensionNames,spatialDimensionNames=options.spatialDimensionNames);
 propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 for iOp = 1:length(operations)
-    propertyAnnotations(iOp) = operations.outputVariables;
+    propertyAnnotations(iOp) = operations(iOp).outputVariables;
 end
 end
