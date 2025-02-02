@@ -128,6 +128,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     properties %(Access=private)
         operationNameMap
         operationVariableNameMap
+        timeDependentVariablesNameMap
         variableCache
 
         primaryFlowComponentNameMap
@@ -203,12 +204,28 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.clearVariableCache();
             self.operationVariableNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
             self.operationNameMap = configureDictionary("string","cell");
+            self.timeDependentVariablesNameMap = configureDictionary("string","cell");
+            
+            self.updateTimeDependentVariablesNameMap([],[]);
+            addlistener(self,'propertyAnnotationsDidChange',@self.updateTimeDependentVariablesNameMap);
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
 
             self.nonlinearAdvection = WVNonlinearAdvection(self);
             self.addForcing(self.nonlinearAdvection);
+        end
+
+        function updateTimeDependentVariablesNameMap(self,~,~)
+            self.timeDependentVariablesNameMap = configureDictionary("string","cell");
+            annotations = self.propertyAnnotations;
+            for i=1:length(annotations)
+                if isa(annotations(i),'WVVariableAnnotation')
+                    if annotations(i).isVariableWithLinearTimeStep == 1 && ~isKey(self.timeDependentVariablesNameMap,annotations(i).name)
+                        self.timeDependentVariablesNameMap{annotations(i).name} = annotations(i);
+                    end
+                end
+            end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

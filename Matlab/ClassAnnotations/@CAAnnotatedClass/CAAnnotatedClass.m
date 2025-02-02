@@ -19,6 +19,10 @@ classdef CAAnnotatedClass < handle
         dimensionAnnotationNameMap
     end
 
+    events
+        propertyAnnotationsDidChange
+    end
+
     methods
         function self = CAAnnotatedClass()
             % Matlab dictionaries do not allow a subclass type; the

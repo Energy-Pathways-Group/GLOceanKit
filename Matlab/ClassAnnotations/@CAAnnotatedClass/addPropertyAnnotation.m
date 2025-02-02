@@ -18,4 +18,5 @@ for i=1:length(propertyAnnotation)
         self.dimensionAnnotationNameMap{propertyAnnotation(i).name} = propertyAnnotation(i);
     end
 end
+notify(self,'propertyAnnotationsDidChange')
 end
