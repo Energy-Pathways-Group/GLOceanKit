@@ -35,7 +35,7 @@ arguments
     options.uvMax (1,1) double = 0.2
     options.A0Spectrum = @isempty
     options.ApmSpectrum = @isempty
-    options.shouldOnlyRandomizeOrientations (1,1) double {mustBeMember(options.shouldOnlyRandomizeOrientations,[0 1])} = 0
+    options.shouldOnlyRandomizeOrientations (1,1) logical = false
 end
 Ap = zeros(self.spectralMatrixSize);
 Am = zeros(self.spectralMatrixSize);
