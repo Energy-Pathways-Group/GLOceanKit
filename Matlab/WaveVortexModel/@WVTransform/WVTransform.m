@@ -123,6 +123,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     properties (Dependent, SetAccess=private)
         hasClosure
         hasNonlinearAdvectionEnabled
+        primaryFlowComponents
     end
 
     properties %(Access=private)
@@ -133,6 +134,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
         primaryFlowComponentNameMap
         flowComponentNameMap
+        totalFlowComponent
 
         forcing = {}
         spatialForcing = {}
@@ -244,7 +246,15 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         addPrimaryFlowComponent(self,primaryFlowComponent)
         names = primaryFlowComponentNames(self)
         val = primaryFlowComponentWithName(self,name)
-        components = primaryFlowComponents(self)
+        function components = get.primaryFlowComponents(self)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Output)
+                components WVPrimaryFlowComponent
+            end
+            components = [self.primaryFlowComponentNameMap{self.primaryFlowComponentNameMap.keys}];
+        end
 
         addFlowComponent(self,flowComponent)
         names = flowComponentNames(self)

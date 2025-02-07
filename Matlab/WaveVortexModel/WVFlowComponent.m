@@ -125,9 +125,8 @@ classdef WVFlowComponent < handle
             Ap = zeros(self.wvt.spectralMatrixSize);
             Am = zeros(self.wvt.spectralMatrixSize);
             A0 = zeros(self.wvt.spectralMatrixSize);
-            [maskApPrimary,maskAmPrimary,maskA0Primary,~, maskAmConj, ~] = self.primaryAndConjugateMasks();
 
-            validModes = self.maskA0 & maskA0Primary;
+            validModes = self.maskA0 & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             if any(validModes(:))
                 A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
                 A0(~validModes) = 0;
@@ -137,7 +136,7 @@ classdef WVFlowComponent < handle
                 end
             end
 
-            validModes = self.maskAp & maskApPrimary;
+            validModes = self.maskAp & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
             if any(validModes(:))
                 Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
                 Ap(~validModes) = 0;
@@ -145,43 +144,19 @@ classdef WVFlowComponent < handle
                     Ap(logical(validModes)) = Ap(logical(validModes)) ./ abs(Ap(logical(validModes)));
                 end
 
-                conjugateModes = self.maskAm & maskAmConj;
+                conjugateModes = self.maskAm & self.wvt.totalFlowComponent.maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
                 if any(conjugateModes(:))
                     Am(logical(conjugateModes)) = conj(Ap(logical(validModes)));
                 end
             end
 
-            validModes = self.maskAm & maskAmPrimary;
+            validModes = self.maskAm & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
             if any(validModes(:))
                 Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
                 Am(~validModes) = 0;
                 if options.shouldOnlyRandomizeOrientations == 1
                     Am(logical(validModes)) = Am(logical(validModes)) ./ abs(Am(logical(validModes)));
                 end
-            end
-        end
-
-        function [maskApPrimary,maskAmPrimary,maskA0Primary,maskApConj, maskAmConj, maskA0Conj] = primaryAndConjugateMasks(self)
-            % returns a mask indicating where conjugate solutions live in
-            % the Ap matrix, etc. These could be converted back into
-            % dependent properties on the WVTransform
-            %
-            % Returns a 'mask' (matrix with 1s or 0s) indicating where
-            % conjugate solutions live in the Ap matrix.
-            maskApPrimary = 0;
-            maskAmPrimary = 0;
-            maskA0Primary = 0;
-            maskApConj = 0;
-            maskAmConj = 0;
-            maskA0Conj = 0;
-            primaryFlowComponents = self.wvt.primaryFlowComponents;
-            for i=1:length(primaryFlowComponents)
-                maskApPrimary = maskApPrimary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                maskAmPrimary = maskAmPrimary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-                maskA0Primary = maskA0Primary | primaryFlowComponents(i).maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-                maskApConj = maskApConj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-                maskAmConj = maskAmConj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-                maskA0Conj = maskA0Conj | primaryFlowComponents(i).maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             end
         end
 

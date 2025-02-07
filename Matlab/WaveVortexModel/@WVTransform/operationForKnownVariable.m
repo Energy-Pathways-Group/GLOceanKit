@@ -13,5 +13,5 @@ end
 arguments (Output)
     operations WVOperation
 end
-operations = WVTransform.classDefinedOperationForKnownVariable(variableName{:},flowComponent=options.flowComponent,spatialDimensionNames=self.spatialDimensionNames,spectralDimensionNames=self.spectralDimensionNames,primaryFlowComponents=self.primaryFlowComponents);
+operations = WVTransform.classDefinedOperationForKnownVariable(variableName{:},flowComponent=options.flowComponent,spatialDimensionNames=self.spatialDimensionNames,spectralDimensionNames=self.spectralDimensionNames,totalFlowComponent=self.totalFlowComponent);
 end

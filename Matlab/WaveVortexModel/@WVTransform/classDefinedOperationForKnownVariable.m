@@ -7,14 +7,14 @@ end
 arguments (Input)
     options.spectralDimensionNames = {'j','kl'}
     options.spatialDimensionNames = {'x','y','z'}
-    options.primaryFlowComponents WVFlowComponent = WVFlowComponent.empty(0,0)
+    options.totalFlowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
     options.flowComponent WVFlowComponent = WVFlowComponent.empty(0,0)
 end
 arguments (Output)
     operations WVOperation
 end
 
-[transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = WVTransform.optimizedTransformsForFlowComponent(options.primaryFlowComponents,options.flowComponent);
+[transformToSpatialDomainWithF,transformToSpatialDomainWithG,mask,isMasked] = WVTransform.optimizedTransformsForFlowComponent(options.totalFlowComponent,options.flowComponent);
 
 operations = WVOperation.empty(length(variableName),0);
 

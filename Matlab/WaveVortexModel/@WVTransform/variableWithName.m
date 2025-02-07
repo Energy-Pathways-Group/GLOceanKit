@@ -22,7 +22,7 @@ while didFetchAll ~= 1
         if isempty(varargout{iVar})
             % now go compute it, and then try fetching from
             % cach
-            modelVar = self.variableAnnotationNameMap(variableNames{iVar});
+            modelVar = self.operationVariableNameMap(variableNames{iVar});
             self.performOperationWithName(modelVar.modelOp.name);
             didFetchAll = 0;
             break;
