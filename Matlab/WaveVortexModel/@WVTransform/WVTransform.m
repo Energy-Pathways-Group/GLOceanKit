@@ -59,60 +59,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         version = 3.0;
-
-        hasPotentialVorticityFlow = false
-        hasWaveFlow = false
         isHydrostatic = true
-
-        
-
-        % returns a mask indicating where primary solutions live in the Ap matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % primary solutions live in the Ap matrix.
-        %
-        % - Topic: Masks
-        maskApPrimary = 0
-
-        % returns a mask indicating where primary solutions live in the Am matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % primary solutions live in the Am matrix.
-        %
-        % - Topic: Masks
-        maskAmPrimary = 0
-
-        % returns a mask indicating where primary solutions live in the A0 matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % primary solutions live in the A0 matrix.
-        %
-        % - Topic: Masks
-        maskA0Primary = 0
-
-        % returns a mask indicating where conjugate solutions live in the Ap matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % conjugate solutions live in the Ap matrix.
-        %
-        % - Topic: Masks
-        maskApConj = 0
-
-        % returns a mask indicating where conjugate solutions live in the Am matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % conjugate solutions live in the Am matrix.
-        %
-        % - Topic: Masks
-        maskAmConj = 0
-
-        % returns a mask indicating where conjugate solutions live in the A0 matrix.
-        %
-        % Returns a 'mask' (matrix with 1s or 0s) indicating where
-        % conjugate solutions live in the A0 matrix.
-        %
-        % - Topic: Masks
-        maskA0Conj = 0
     end
 
     properties (Abstract)
@@ -124,6 +71,8 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         hasClosure
         hasNonlinearAdvectionEnabled
         primaryFlowComponents
+        hasPVComponent logical
+        hasWaveComponent logical
     end
 
     properties %(Access=private)
@@ -259,6 +208,14 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         addFlowComponent(self,flowComponent)
         names = flowComponentNames(self)
         val = flowComponentWithName(self,name)
+
+        function bool = get.hasPVComponent(self)
+            bool = self.totalFlowComponent.hasPVComponent;
+        end
+
+        function bool = get.hasWaveComponent(self)
+            bool = self.totalFlowComponent.hasWaveComponent;
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

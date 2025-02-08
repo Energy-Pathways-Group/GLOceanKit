@@ -18,8 +18,14 @@ function summarizeModeEnergy(self,options)
     totalEnergy = self.totalEnergy;
 
     for name = self.flowComponentNames
-        flowComponent = self.flowComponent(name{1});
-        flowEnergy = self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2);
+        flowComponent = self.flowComponentWithName(name{1});
+        flowEnergy = 0;
+        if flowComponent.hasWaveComponent
+            flowEnergy = flowEnergy + self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 );
+        end
+        if flowComponent.hasPVComponent
+            flowEnergy = flowEnergy +  self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2);
+        end
         [sortedFlowEnergy,indices] = sort(flowEnergy,'descend');
 
         Mode = cell(n,1);
@@ -43,7 +49,7 @@ function summarizeModeEnergy(self,options)
             T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);
         end
 
-        fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponent(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
+        fprintf('\nThe <strong>%s</strong> flow constituent contains %.3f pct of total energy\n', self.flowComponentWithName(name{1}).name,sum(flowEnergy(:))*100/totalEnergy)
         disp(T);
     end
 end

@@ -68,7 +68,8 @@ classdef WVFlowComponent < handle
     end
 
     properties (Dependent)
-
+        hasPVComponent logical
+        hasWaveComponent logical
     end
 
     methods
@@ -101,6 +102,26 @@ classdef WVFlowComponent < handle
             h.maskA0 = f.maskA0 | g.maskA0;
         end
 
+        function bool = get.hasPVComponent(self)
+            arguments (Input)
+                self WVFlowComponent
+            end
+            arguments (Output)
+                bool logical
+            end
+            bool = any(self.maskA0(:));
+        end
+
+        function bool = get.hasWaveComponent(self)
+            arguments (Input)
+                self WVFlowComponent
+            end
+            arguments (Output)
+                bool logical
+            end
+            bool = any(self.maskAp(:)) | any(self.maskAm(:));
+        end
+
         function [Ap,Am,A0] = randomAmplitudes(self,options)
             % returns random amplitude for a valid flow state
             %
@@ -122,41 +143,51 @@ classdef WVFlowComponent < handle
                 Am double
                 A0 double
             end
-            Ap = zeros(self.wvt.spectralMatrixSize);
-            Am = zeros(self.wvt.spectralMatrixSize);
-            A0 = zeros(self.wvt.spectralMatrixSize);
-
-            validModes = self.maskA0 & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-            if any(validModes(:))
-                A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
-                A0(~validModes) = 0;
-                A0(self.wvt.Kh == 0) = sqrt(2)*real(A0(self.wvt.Kh == 0));
-                if options.shouldOnlyRandomizeOrientations == 1
-                    A0(logical(validModes)) = A0(logical(validModes)) ./ abs(A0(logical(validModes)));
+            
+            if self.hasPVComponent
+                A0 = zeros(self.wvt.spectralMatrixSize);
+                validModes = self.maskA0 & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+                if any(validModes(:))
+                    A0 = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                    A0(~validModes) = 0;
+                    A0(self.wvt.Kh == 0) = sqrt(2)*real(A0(self.wvt.Kh == 0));
+                    if options.shouldOnlyRandomizeOrientations == 1
+                        A0(logical(validModes)) = A0(logical(validModes)) ./ abs(A0(logical(validModes)));
+                    end
                 end
+            else
+                A0 = 0;
             end
 
-            validModes = self.maskAp & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
-            if any(validModes(:))
-                Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
-                Ap(~validModes) = 0;
-                if options.shouldOnlyRandomizeOrientations == 1
-                    Ap(logical(validModes)) = Ap(logical(validModes)) ./ abs(Ap(logical(validModes)));
-                end
+            if self.hasWaveComponent
+                Ap = zeros(self.wvt.spectralMatrixSize);
+                Am = zeros(self.wvt.spectralMatrixSize);
 
-                conjugateModes = self.maskAm & self.wvt.totalFlowComponent.maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-                if any(conjugateModes(:))
-                    Am(logical(conjugateModes)) = conj(Ap(logical(validModes)));
-                end
-            end
+                validModes = self.maskAp & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Ap);
+                if any(validModes(:))
+                    Ap = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                    Ap(~validModes) = 0;
+                    if options.shouldOnlyRandomizeOrientations == 1
+                        Ap(logical(validModes)) = Ap(logical(validModes)) ./ abs(Ap(logical(validModes)));
+                    end
 
-            validModes = self.maskAm & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
-            if any(validModes(:))
-                Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
-                Am(~validModes) = 0;
-                if options.shouldOnlyRandomizeOrientations == 1
-                    Am(logical(validModes)) = Am(logical(validModes)) ./ abs(Am(logical(validModes)));
+                    conjugateModes = self.maskAm & self.wvt.totalFlowComponent.maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+                    if any(conjugateModes(:))
+                        Am(logical(conjugateModes)) = conj(Ap(logical(validModes)));
+                    end
                 end
+                
+                validModes = self.maskAm & self.wvt.totalFlowComponent.maskOfPrimaryModesForCoefficientMatrix(WVCoefficientMatrix.Am);
+                if any(validModes(:))
+                    Am = ((randn(self.wvt.spectralMatrixSize) + sqrt(-1)*randn(self.wvt.spectralMatrixSize))/sqrt(2));
+                    Am(~validModes) = 0;
+                    if options.shouldOnlyRandomizeOrientations == 1
+                        Am(logical(validModes)) = Am(logical(validModes)) ./ abs(Am(logical(validModes)));
+                    end
+                end
+            else
+                Ap = 0;
+                Am = 0;
             end
         end
 
