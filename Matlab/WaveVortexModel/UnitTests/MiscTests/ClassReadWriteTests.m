@@ -38,3 +38,8 @@ Nxy = [64 64];
 wvt = WVTransformBarotropicQG(Lxy,Nxy);
 ncfile = wvt.writeToFile('test.nc',shouldOverwriteExisting=1);
 wvt_b = WVTransformBarotropicQG.waveVortexTransformFromFile('test.nc');
+
+%%
+wvt.initWithRandomFlow()
+figure, pcolor(wvt.ssh)
+figure, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.ssh)

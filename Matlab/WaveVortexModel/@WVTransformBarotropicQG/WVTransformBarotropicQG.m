@@ -190,7 +190,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         end
 
         function names = namesOfTransformVariables()
-            names = {'A0t','uvMax','zeta_z','ssh','u','v','eta','p','psi','qgpv'};
+            names = {'A0t','uvMax','zeta_z','ssh','u','v','eta','pi','psi','qgpv'};
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()

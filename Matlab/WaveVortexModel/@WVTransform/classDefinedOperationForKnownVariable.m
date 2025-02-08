@@ -51,6 +51,10 @@ for iOp = 1:length(variableName)
             varAnnotation = WVVariableAnnotation(name,options.spatialDimensionNames,'m', 'approximate isopycnal deviation');
             f = @(wvt) transformToSpatialDomainWithG(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.NA0.*wvt.A0t);
 
+        case 'pi'
+            varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'m', 'height anomaly');
+            f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.PA0.*wvt.A0t);
+
         case 'p'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'kg/m/s2', 'pressure anomaly');
             f = @(wvt) wvt.rho0*wvt.g*transformToSpatialDomainWithF(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.PA0.*wvt.A0t);
@@ -104,7 +108,7 @@ for iOp = 1:length(variableName)
 
         case 'ssh'
             varAnnotation = WVVariableAnnotation('ssh',{'x','y'},'m', 'sea-surface height');
-            f = @(wvt) wvt.p(:,:,end)/(wvt.rho0*wvt.g);
+            f = @(wvt) wvt.pi(:,:,end);
 
         otherwise
             error('There is no variable named %s.',name)
