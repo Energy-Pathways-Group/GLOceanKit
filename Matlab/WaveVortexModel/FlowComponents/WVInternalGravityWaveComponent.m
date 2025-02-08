@@ -67,6 +67,10 @@ classdef WVInternalGravityWaveComponent < WVPrimaryFlowComponent
             end
         end
 
+        function dof = degreesOfFreedomPerMode(self)
+            dof = 2;
+        end
+
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %

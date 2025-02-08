@@ -267,6 +267,10 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             n=sum(mask0(:)) + sum(maskP(:)) + sum(maskM(:));
         end
 
+        function dof = degreesOfFreedomPerMode(self)
+            dof = 0;
+        end
+
         function solution = solutionForModeAtIndex(self,index,options)
             % return the analytical solution for the mode at this index
             %

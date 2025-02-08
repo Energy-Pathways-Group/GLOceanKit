@@ -153,6 +153,10 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             % need to double the total energy
             enstrophyFactor = enstrophyFactor*2;
         end
+        
+        function dof = degreesOfFreedomPerMode(self)
+            dof = 2;
+        end
 
         function solutions = solutionForModeAtIndex(self,index,options)
             % return the analytical solution at this index

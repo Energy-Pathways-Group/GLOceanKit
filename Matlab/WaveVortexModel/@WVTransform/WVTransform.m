@@ -347,7 +347,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             arguments (Output)
                 energy (1,1) double
             end
-            energy = sum( self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2) );
+            energy = 0;
+            if flowComponent.hasWaveComponent
+                energy = energy + sum(self.Apm_TE_factor(:).*( flowComponent.maskAp(:).*abs(self.Ap(:)).^2 + flowComponent.maskAm(:).*abs(self.Am(:)).^2 ));
+            end
+            if flowComponent.hasPVComponent
+                energy = energy +  sum(self.A0_TE_factor(:).*( flowComponent.maskA0(:).*abs(self.A0(:)).^2));
+            end   
         end
 
 

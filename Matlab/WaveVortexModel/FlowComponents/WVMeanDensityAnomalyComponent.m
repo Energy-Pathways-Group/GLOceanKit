@@ -91,6 +91,10 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             enstrophyFactor = (self.wvt.g./(2*self.wvt.Lr2)).*self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
+        function dof = degreesOfFreedomPerMode(self)
+            dof = 1;
+        end
+
         function solutions = solutionForModeAtIndex(self,solutionIndex,options)
             % return the analytical solution at this index
             %

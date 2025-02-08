@@ -6,7 +6,7 @@ total = self.totalEnergy;
 pctString = sprintf('(');
 nameString = sprintf('(');
 for name = self.primaryFlowComponentNames
-    pctString = [pctString,sprintf('%.1f,',100*self.totalEnergyOfFlowComponent(self.flowComponent(name{1}))/total)];
+    pctString = [pctString,sprintf('%.1f,',100*self.totalEnergyOfFlowComponent(self.flowComponentWithName(name{1}))/total)];
     nameString = [nameString,sprintf('%s, ',name{1})];
 end
 

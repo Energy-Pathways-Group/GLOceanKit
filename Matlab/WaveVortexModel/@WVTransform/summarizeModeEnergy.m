@@ -31,19 +31,21 @@ function summarizeModeEnergy(self,options)
         Mode = cell(n,1);
         ConstituentEnergyPct = cell(n,1);
         OverallEnergyPct = cell(n,1);
-        Frequency = cell(n,1);
         for iMode=1:n
             [kMode,lMode,jMode] = self.modeNumberFromIndex(indices(iMode));
             Mode{iMode} = sprintf('(%d,%d,%d)',kMode,lMode,jMode);
             ConstituentEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/sum(flowEnergy(:)))*100);
-            OverallEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/totalEnergy)*100);
-            Frequency{iMode} = sprintf('%.2f f',self.Omega(indices(iMode))/self.f);
+            OverallEnergyPct{iMode} = sprintf('%.3f',(sortedFlowEnergy(iMode)/totalEnergy)*100);            
         end
         Mode = string(Mode);
         ConstituentEnergyPct = string(ConstituentEnergyPct);
         OverallEnergyPct = string(OverallEnergyPct);
-        Frequency = string(Frequency);
         if strcmp(name{1},'wave')
+            Frequency = cell(n,1);
+            for iMode=1:n
+                Frequency{iMode} = sprintf('%.2f f',self.Omega(indices(iMode))/self.f);
+            end
+            Frequency = string(Frequency);
             T = table(Mode,Frequency,ConstituentEnergyPct,OverallEnergyPct);
         else
             T = table(Mode,ConstituentEnergyPct,OverallEnergyPct);

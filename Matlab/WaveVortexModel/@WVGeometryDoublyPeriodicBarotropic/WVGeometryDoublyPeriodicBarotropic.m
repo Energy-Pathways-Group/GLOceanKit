@@ -113,6 +113,32 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         function value = get.Y(self)
             [~,value] = ndgrid(self.x,self.y);
         end
+
+        function index = indexFromModeNumber(self,kMode,lMode,jMode)
+            arguments (Input)
+                self WVGeometryDoublyPeriodicBarotropic {mustBeNonempty}
+                kMode (:,1) double {mustBeInteger}
+                lMode (:,1) double {mustBeInteger}
+                jMode (:,1) double {mustBeInteger}
+            end
+            arguments (Output)
+                index (:,1) double {mustBeInteger,mustBePositive}
+            end
+            index = self.indexFromModeNumber(kMode,lMode);
+        end
+        function [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
+            arguments (Input)
+                self WVGeometryDoublyPeriodic {mustBeNonempty}
+                linearIndex (1,1) double {mustBeInteger,mustBePositive}
+            end
+            arguments (Output)
+                kMode (1,1) double {mustBeInteger}
+                lMode (1,1) double {mustBeInteger}
+                jMode (1,1) double {mustBeInteger}
+            end
+            [kMode,lMode] = modeNumberFromIndex@WVGeometryDoublyPeriodic(self,linearIndex);
+            jMode = self.j;
+        end
     end
 
     methods (Static)

@@ -127,6 +127,8 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         function energy = get.totalEnergy(self)
             energy = sum( self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
         end
+
+        summarizeDegreesOfFreedom(self)
     end
 
     methods (Static)

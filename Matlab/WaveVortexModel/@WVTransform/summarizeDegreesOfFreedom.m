@@ -1,4 +1,7 @@
 function summarizeDegreesOfFreedom(self)
+fprintf('Not implemented for this particular transform.\n');
+
+return
 fprintf('----------Spatial domain----------\n');
 fprintf('The spatial domain has a grid of (Nx, Ny, Nz)=(%d, %d, %d).\n',self.Nx,self.Ny,self.Nz);
 if self.isBarotropic == 1
