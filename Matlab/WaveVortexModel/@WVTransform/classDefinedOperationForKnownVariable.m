@@ -27,6 +27,11 @@ end
 for iOp = 1:length(variableName)
     name = variableName{iOp};
     switch name
+        case 'A0t'
+            varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'m', 'geostrophic coefficients time t');
+            varAnnotation.isComplex = 1;
+            f = @(wvt) wvt.A0;
+            
         case 'u'
             varAnnotation = WVVariableAnnotation(name,options.spatialDimensionNames,'m/s', 'x-component of the fluid velocity');
             varAnnotation.attributes('standard_name') = 'eastward_sea_water_velocity';
