@@ -73,6 +73,16 @@ classdef CAAnnotatedClass < handle
             for name = names
                 if isa(self.(name{1}),"function_handle")
                     flag = flag & isequal(func2str(self.(name{1})), func2str(other.(name{1})));
+                elseif isa(self.(name{1}),"CAAnnotatedClass")
+                    myObjs = self.(name{1});
+                    otherObjs = other.(name{1});
+                    if length(myObjs) == length(otherObjs)
+                        for iObj=1:length(myObjs)
+                            flag = flag & isequal(myObjs(iObj),otherObjs(iObj));
+                        end
+                    else
+                        flag = false;
+                    end
                 else
                     flag = flag & isequal(self.(name{1}), other.(name{1}));
                 end
@@ -132,8 +142,22 @@ classdef CAAnnotatedClass < handle
                 targetGroupName = join( [string(group.name),string(name)],"-");
                 if group.parentGroup.hasGroupWithName(targetGroupName) == true
                     targetGroup = group.parentGroup.groupWithName(targetGroupName);
-                    if isKey(targetGroup.attributes,'AnnotatedClass')
-                        var.(name) = CAAnnotatedClass.annotatedClassFromGroup(targetGroup);
+                    if isempty(targetGroup.groups)
+                        if isKey(targetGroup.attributes,'AnnotatedClass')
+                            var.(name) = CAAnnotatedClass.annotatedClassFromGroup(targetGroup);
+                            continue;
+                        end
+                    else
+                        for iObj=1:length(targetGroup.groups)
+                            subGroupName = join( [string(name),string(iObj)],"-");
+                            if targetGroup.hasGroupWithName(subGroupName)
+                                subGroup = targetGroup.groupWithName(subGroupName);
+                                if isKey(subGroup.attributes,'AnnotatedClass')
+                                    tmp(iObj) = CAAnnotatedClass.annotatedClassFromGroup(subGroup);
+                                end
+                            end
+                        end
+                        var.(name) = tmp;
                         continue;
                     end
                 end
@@ -242,8 +266,16 @@ classdef CAAnnotatedClass < handle
                     obj = ac.(propertyAnnotations(i).name);
                     assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
                     objGroup = targetGroup.addGroup(join( [string(class(ac)),string(propertyAnnotations(i).name)],"-"));
-                    objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
-                    CAAnnotatedClass.writeToGroup(ac.(propertyAnnotations(i).name),objGroup,objPropertyAnnotations);
+                    if isscalar(obj)
+                        objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
+                        CAAnnotatedClass.writeToGroup(obj,objGroup,objPropertyAnnotations);
+                    else
+                        for iObj=1:length(obj)
+                            sGroup = objGroup.addGroup(join( [string(propertyAnnotations(i).name),string(iObj)],"-"));
+                            objPropertyAnnotations = obj(iObj).propertyAnnotationWithName(obj(iObj).requiredProperties);
+                            CAAnnotatedClass.writeToGroup(obj(iObj),sGroup,objPropertyAnnotations);
+                        end
+                    end
                 elseif isa(propertyAnnotations(i),'CANumericProperty')
                     propAttributes = propertyAnnotations(i).attributes;
                     if ~isempty(propertyAnnotations(i).units)
