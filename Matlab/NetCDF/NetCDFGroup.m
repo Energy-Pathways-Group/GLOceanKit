@@ -788,7 +788,7 @@ classdef NetCDFGroup < handle
             end
 
             % Fetch all dimensions and convert to NetCDFDimension objects
-            if ~isempty(self.parentGroup)
+            if ~isempty(self.parentGroup) && ~isempty(self.parentGroup.dimensions)
                 self.addDimensionPrimitive(self.parentGroup.dimensions);
             end
             dimensionIDs = netcdf.inqDimIDs(self.id);
@@ -831,7 +831,9 @@ classdef NetCDFGroup < handle
             self.parentGroup = parentGroup;
             self.name = name;
             self.id = netcdf.defGrp(self.parentGroup.id,self.name);
-            self.addDimensionPrimitive(self.parentGroup.dimensions);
+            if ~isempty(self.parentGroup.dimensions)
+                self.addDimensionPrimitive(self.parentGroup.dimensions);
+            end
             if ~isempty(self.parentGroup)
                 if isequal(self.parentGroup.groupPath,"")
                     self.groupPath = self.name;

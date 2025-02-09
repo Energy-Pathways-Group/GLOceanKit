@@ -2,13 +2,12 @@ function atc = annotatedClassFromFile(path)
 ncfile = NetCDFFile(path);
 if isKey(ncfile.attributes,'AnnotatedClass')
     className = ncfile.attributes('AnnotatedClass');
-    requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
-    for iVar = 1:length(requiredProperties)
-        name = requiredProperties{iVar};
-        var.(name) = ncfile.readVariables(name);
+    if ncfile.hasGroupWithName(className)
+        group = ncfile.groupWithName(className);
+    else
+        group = ncfile;
     end
-    varCell = namedargs2cell(var);
-    atc = feval(className,varCell{:});
+    atc = CAAnnotatedClass.annotatedClassFromGroup(group);
 else
     error('Unable to find the attribute AnnotatedClass');
 end

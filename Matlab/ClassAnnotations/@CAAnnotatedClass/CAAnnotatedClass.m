@@ -84,6 +84,14 @@ classdef CAAnnotatedClass < handle
         propertyAnnotations = classDefinedPropertyAnnotations()
         atc = annotatedClassFromFile(path)
 
+        function atc = annotatedClassFromGroup(group)
+            className = group.attributes('AnnotatedClass');
+            requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
+            var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
+            varCell = namedargs2cell(var);
+            atc = feval(className,varCell{:});
+        end
+
         function var = requiredPropertiesFromGroup(group,options)
             arguments (Input)
                 group NetCDFGroup
@@ -116,10 +124,25 @@ classdef CAAnnotatedClass < handle
             end
             for iVar = 1:length(propertyNames)
                 name = propertyNames{iVar};
-                if options.shouldIgnoreMissingProperties == true && group.hasVariableWithName(name) == false
+                if group.hasVariableWithName(name) == true
+                    var.(name) = group.readVariables(name);
                     continue;
                 end
-                var.(name) = group.readVariables(name);
+                
+                targetGroupName = join( [string(group.name),string(name)],"-");
+                if group.parentGroup.hasGroupWithName(targetGroupName) == true
+                    targetGroup = group.parentGroup.groupWithName(targetGroupName);
+                    if isKey(targetGroup.attributes,'AnnotatedClass')
+                        var.(name) = CAAnnotatedClass.annotatedClassFromGroup(targetGroup);
+                        continue;
+                    end
+                end
+
+                if options.shouldIgnoreMissingProperties == true
+                    continue;
+                else
+                    error('Unable to find the property %s',name);
+                end
             end
         end
 
@@ -172,14 +195,31 @@ classdef CAAnnotatedClass < handle
             CAAnnotatedClass.writeToGroup(ac,ncfile,options.propertyAnnotations,options.attributes);
         end
 
-        function writeToGroup(ac,group,propertyAnnotations,attributes)
+        function writeToGroup(ac,targetGroup,propertyAnnotations,attributes,options)
             arguments
                 ac CAAnnotatedClass
-                group NetCDFGroup
+                targetGroup NetCDFGroup
                 propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
                 attributes = configureDictionary("string","string")
+                options.shouldAlwaysUseSubgroup logical = false
             end
-            group.addAttribute('AnnotatedClass',class(ac));
+            targetGroup.addAttribute('AnnotatedClass',class(ac));
+
+            % if one or more of the properties are other CAAnnotatedClass
+            % objects, then we have to stuff this group into its own
+            % subgroup to prevent dimensions from cascading down.
+            requiresSubgroup = false | options.shouldAlwaysUseSubgroup;
+            for i=1:length(propertyAnnotations)
+                if isa(propertyAnnotations(i),'CAObjectProperty')
+                    requiresSubgroup = true;
+                end
+            end
+            if requiresSubgroup
+                group = targetGroup.addGroup(class(ac));
+                group.addAttribute('AnnotatedClass',class(ac));
+            else
+                group = targetGroup;
+            end
 
             attributeNames = keys(attributes);
             for iKey=1:length(attributeNames)
@@ -198,6 +238,12 @@ classdef CAAnnotatedClass < handle
             for i=1:length(propertyAnnotations)
                 if isa(propertyAnnotations(i),'CAFunctionProperty')
                     group.addFunctionHandle(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name),attributes=propertyAnnotations(i).attributes);
+                elseif isa(propertyAnnotations(i),'CAObjectProperty')
+                    obj = ac.(propertyAnnotations(i).name);
+                    assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
+                    objGroup = targetGroup.addGroup(join( [string(class(ac)),string(propertyAnnotations(i).name)],"-"));
+                    objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
+                    CAAnnotatedClass.writeToGroup(ac.(propertyAnnotations(i).name),objGroup,objPropertyAnnotations);
                 elseif isa(propertyAnnotations(i),'CANumericProperty')
                     propAttributes = propertyAnnotations(i).attributes;
                     if ~isempty(propertyAnnotations(i).units)

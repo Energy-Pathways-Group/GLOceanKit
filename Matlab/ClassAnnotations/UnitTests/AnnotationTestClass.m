@@ -3,6 +3,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
         z
         f
         myVar
+        myObjs
     end
 
     methods
@@ -11,6 +12,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
                 options.z
                 options.f
                 options.myVar
+                options.myObjs
             end
             requiredProperties = feval(strcat(class(self),'.classRequiredPropertyNames'));
             canInitializeDirectly = all(isfield(options,requiredProperties));
@@ -23,6 +25,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
                 self.z = linspace(-100,0,101);
                 self.f = @(z) exp(z/20);
                 self.myVar = self.z.^2;
+                self.myObjs = AnnotationTestClassB();
             end
         end
     end
@@ -30,7 +33,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
     methods (Static)
 
         function vars = classRequiredPropertyNames()
-            vars = {'z','f','myVar'};
+            vars = {'z','f','myVar','myObjs'};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -46,6 +49,7 @@ classdef AnnotationTestClass < handle & CAAnnotatedClass
 
             propertyAnnotations(end+1) = CANumericProperty('myVar',{'z'},'', 'A variable quadratic in z.');
             propertyAnnotations(end+1) = CAFunctionProperty('f', 'A function handle that does something!');
+            propertyAnnotations(end+1) = CAObjectProperty('myObjs', 'A bunch of objects');
         end
         
         function atc = annotatedTestClassFromFile(path)
