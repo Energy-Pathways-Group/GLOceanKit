@@ -1,17 +1,19 @@
 classdef WVRotatingFPlane < handle
     properties
+        planetaryRadius
         rotationRate
         latitude
         g
     end
     properties (Dependent, SetAccess=private)
-        inertialPeriod, f
+        inertialPeriod, f, beta
     end
 
     methods
         function self = WVRotatingFPlane(rotatingOptions)
             arguments
                 rotatingOptions.rotationRate (1,1) double = 7.2921E-5
+                rotatingOptions.planetaryRadius (1,1) double = 6.371e6
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
             end
@@ -26,6 +28,10 @@ classdef WVRotatingFPlane < handle
         function value = get.f(self)
             value = 2 * self.rotationRate * sin( self.latitude*pi/180 );
         end
+
+        function value = get.beta(self)
+            value = 2 * self.rotationRate * cos( self.latitude*pi/180 ) / self.planetaryRadius;
+        end
     end
 
     methods (Static)
@@ -38,6 +44,7 @@ classdef WVRotatingFPlane < handle
             propertyAnnotations(end+1) = CANumericProperty('latitude',{},'degrees_north', 'central latitude of the simulation', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end).attributes('standard_name') = 'latitude';
             propertyAnnotations(end+1) = CANumericProperty('rotationRate',{},'rad/s', 'rotation rate of the planetary body', detailedDescription='- topic: Domain Attributes');
+            propertyAnnotations(end+1) = CANumericProperty('planetaryRadius',{},'m', 'radius of the planetary body', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end+1) = CANumericProperty('f',{},'rad/s', 'Coriolis parameter', detailedDescription='- topic: Domain Attributes');
             propertyAnnotations(end+1) = CANumericProperty('inertialPeriod',{},'s', 'inertial period');
             propertyAnnotations(end+1) = CANumericProperty('g',{},'m s^{-2}', 'gravity of Earth', detailedDescription='- topic: Domain Attributes');

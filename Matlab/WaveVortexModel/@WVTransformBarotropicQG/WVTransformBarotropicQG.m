@@ -129,6 +129,22 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         end
 
         summarizeDegreesOfFreedom(self)
+
+        function setSSH(self,ssh,options)
+            arguments
+                self WVTransformBarotropicQG
+                ssh
+                options.shouldRemoveMeanPressure double {mustBeMember(options.shouldRemoveMeanPressure,[0 1])} = 0
+            end
+            if options.shouldRemoveMeanPressure == 1
+                sshbar = mean(mean(ssh(self.X,self.Y)));
+            else
+                sshbar = 0;
+            end
+            psi = @(X,Y,Z) (self.g/self.f)*(ssh(X,Y)-sshbar);
+
+            self.setGeostrophicStreamfunction(psi);
+        end
     end
 
     methods (Static)

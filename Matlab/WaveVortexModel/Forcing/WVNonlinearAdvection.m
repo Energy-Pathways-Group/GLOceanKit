@@ -7,6 +7,7 @@ classdef WVNonlinearAdvection < WVForcing
     % - Declaration: WVAdvectiveFlux < [WVForcing](/classes/wvforcing/)
     properties
         dLnN2 = 0
+        beta = 0
     end
 
     methods
@@ -21,6 +22,7 @@ classdef WVNonlinearAdvection < WVForcing
             self@WVForcing("nonlinear advection");
             self.doesHydrostaticSpatialForcing = true;
             self.doesNonhydrostaticSpatialForcing = true;
+            self.doesPotentialVorticitySpatialForcing = true;
 
             if isa(wvt,'WVTransformConstantStratification')
                 self.dLnN2 = 0;
@@ -32,6 +34,7 @@ classdef WVNonlinearAdvection < WVForcing
                 self.dLnN2 = 0;
                 warning('WVTransform not recognized.')
             end
+            self.beta = wvt.beta;
         end
         
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
@@ -45,6 +48,10 @@ classdef WVNonlinearAdvection < WVForcing
             Fv = Fv - (wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v));
             Fw = Fw - (wvt.u .* wvt.diffX(wvt.w)   + wvt.v .* wvt.diffY(wvt.w)   + wvt.w .*  wvt.diffZG(wvt.w));
             Feta = Feta - (wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* self.dLnN2));
+        end
+
+        function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
+            Fpv = Fpv - wvt.u.*wvt.diffX(wvt.qgpv) + wvt.v.*(wvt.diffY(wvt.qgpv)+self.beta);
         end
 
         function writeToFile(self,group,wvt)

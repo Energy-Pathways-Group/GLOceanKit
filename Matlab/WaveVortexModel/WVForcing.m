@@ -51,10 +51,15 @@ classdef WVForcing < handle
         % - Topic: Properties
         doesSpectralForcing logical =  false
 
-        % boolean indicating this class implements addSpectralA0Forcing
+        % boolean indicating this class implements addPotentialVorticitySpatialForcing
         %
         % - Topic: Properties
-        doesSpectralA0Forcing logical =  false
+        doesPotentialVorticitySpatialForcing logical =  false
+
+        % boolean indicating this class implements addPotentialVorticitySpectralForcing
+        %
+        % - Topic: Properties
+        doesPotentialVorticitySpectralForcing logical =  false
 
         % boolean indicating that this forcing is a turbulence closure
         % scheme, capable of removing variance at the small scales.
@@ -92,7 +97,10 @@ classdef WVForcing < handle
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
         end
 
-        function F0 = addSpectralA0Forcing(self, wvt, F0)
+        function F0 = addPotentialVorticitySpatialForcing(self, wvt, F0)
+        end
+
+        function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

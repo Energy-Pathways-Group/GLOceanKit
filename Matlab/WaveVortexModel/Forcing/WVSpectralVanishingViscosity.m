@@ -149,7 +149,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
             F0 = F0 + self.damp .* wvt.A0;
         end
 
-        function F0 = addSpectralA0Forcing(self, wvt, F0)
+        function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
             F0 = F0 + self.damp .* wvt.A0;
         end
 
