@@ -469,10 +469,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        % should go in the CAAnnotatedClass and compare the required
-        % variables.
-        flag = isequal(self,other)
 
         % [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
 

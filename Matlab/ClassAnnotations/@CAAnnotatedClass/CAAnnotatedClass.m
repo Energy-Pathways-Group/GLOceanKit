@@ -63,6 +63,21 @@ classdef CAAnnotatedClass < handle
 
         ncfile = writeToFile(self,path,variables,options)
         
+        function flag = isequal(self,other)
+            arguments
+                self CAAnnotatedClass
+                other CAAnnotatedClass
+            end
+            flag = isequal(class(self),class(other));
+            names = self.requiredProperties();
+            for name = names
+                if isa(self.(name{1}),"function_handle")
+                    flag = flag & isequal(func2str(self.(name{1})), func2str(other.(name{1})));
+                else
+                    flag = flag & isequal(self.(name{1}), other.(name{1}));
+                end
+            end
+        end
     end
 
     methods (Static)
