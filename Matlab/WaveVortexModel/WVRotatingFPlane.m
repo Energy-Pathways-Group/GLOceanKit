@@ -17,6 +17,7 @@ classdef WVRotatingFPlane < handle
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
             end
+            self.planetaryRadius = rotatingOptions.planetaryRadius;
             self.rotationRate = rotatingOptions.rotationRate;
             self.latitude = rotatingOptions.latitude;
             self.g = rotatingOptions.g;

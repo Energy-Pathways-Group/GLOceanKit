@@ -73,6 +73,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         primaryFlowComponents
         hasPVComponent logical
         hasWaveComponent logical
+        nFluxedComponents
     end
 
     properties %(Access=private)
@@ -102,6 +103,8 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         % Required for transformWaveVortexToUVEta
         u = transformToSpatialDomainWithF(self, options)
         w = transformToSpatialDomainWithG(self, options )
+
+        [Fp,Fm,F0] = nonlinearFlux(self)
     end
     
     methods (Static,Abstract)
@@ -217,6 +220,10 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             bool = self.totalFlowComponent.hasWaveComponent;
         end
 
+        function n = get.nFluxedComponents(self)
+            n = 2*self.hasWaveComponent + self.hasPVComponent;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Operations
@@ -275,13 +282,15 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
         function addForcing(self,force)
             self.forcing{end+1} = force;
-            if force.doesNonhydrostaticSpatialForcing == true || force.doesHydrostaticSpatialForcing == true
+            if force.doesNonhydrostaticSpatialForcing == true || force.doesHydrostaticSpatialForcing == true || force.doesPotentialVorticitySpatialForcing == true
                 self.spatialForcing{end+1} = force;
             end
-            if force.doesSpectralForcing == true || force.doesSpectralA0Forcing == true
+            if force.doesSpectralForcing == true || force.doesPotentialVorticitySpectralForcing == true
                 self.spectralForcing{end+1} = force;
             end
         end
+
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -312,7 +321,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
-        [Fp,Fm,F0] = nonlinearFlux(self)
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)
         [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
         [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)

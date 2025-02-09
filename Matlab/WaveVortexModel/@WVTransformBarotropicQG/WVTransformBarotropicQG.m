@@ -21,6 +21,10 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         totalEnergy
     end
 
+    properties (GetAccess=private,SetAccess=private)
+        Fpv, F0, A0PV
+    end
+
     methods
         function self = WVTransformBarotropicQG(Lxy, Nxy, options)
             % create geometry for 2D barotropic flow
@@ -59,11 +63,33 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
 
             self.A0 = zeros(self.spectralMatrixSize);
+            self.F0 = zeros(self.spectralMatrixSize);
+            self.Fpv = zeros(self.spatialMatrixSize);
+            self.A0PV = 1./self.A0_QGPV_factor;
+            self.A0PV(isinf(self.A0PV))=0;
             %self.addOperation(self.operationForKnownVariable('u','v','eta','p',flowComponent=self.geostrophicComponent));
         end
 
         function val = get.h_0(self)
             val = self.h;
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Nonlinear flux computation
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function F0 = nonlinearFlux(self)
+            self.Fpv = 0*self.Fpv;
+            for i=1:length(self.spatialForcing)
+               self.Fpv = self.spatialForcing{i}.addPotentialVorticitySpatialForcing(self,self.Fpv);
+            end
+            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
+            for i=1:length(self.spectralForcing)
+               self.F0 = self.spectralForcing{i}.addPotentialVorticitySpectralForcing(self,self.F0);
+            end
+            F0 = self.F0;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -43,7 +43,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
             self@WVForcing("spectral vanishing viscosity");
             self.wvt = wvt;
             self.doesSpectralForcing = true;
-            self.doesSpectralA0Forcing = true;
+            self.doesPotentialVorticitySpectralForcing = true;
             self.isClosure = true;
 
             if isfield(options,'nu_xy')
@@ -69,13 +69,6 @@ classdef WVSpectralVanishingViscosity < WVForcing
                     self.nu_z = 0;
                 end
             end
-
-            [K,L,J] = self.wvt.kljGrid;
-            M = J*pi/wvt.Lz;
-            self.damp = -(self.nu_z*M.^2 + self.nu_xy*(K.^2 +L.^2));
-
-            Qkl = wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
-            self.damp = Qkl.*self.damp;
         end
 
         function set.nu_xy(self,value)
@@ -94,7 +87,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
         function buildDampingOperator(self)
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
-            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.wvt.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
             self.damp = -(self.nu_z*Qj.*M.^2 + self.nu_xy*Qkl.*(K.^2 +L.^2));
         end
 
@@ -103,11 +96,11 @@ classdef WVSpectralVanishingViscosity < WVForcing
                 self WVSpectralVanishingViscosity {mustBeNonempty}
                 options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
             end
-            wvt = self.wvt;
+            wvt_ = self.wvt;
             % Builds the spectral vanishing viscosity operator
-            k_max = max(wvt.k);
-            l_max = max(wvt.l);
-            j_max = max(wvt.j);
+            k_max = max(wvt_.k);
+            l_max = max(wvt_.l);
+            j_max = max(wvt_.j);
             if options.shouldAssumeAntialiasing == 1
                 k_max = 2*k_max/3;
                 l_max = 2*l_max/3;
@@ -115,21 +108,21 @@ classdef WVSpectralVanishingViscosity < WVForcing
             end
 
             kl_max = min(k_max,l_max);
-            dkl_min = min(wvt.dk, wvt.dl);
+            dkl_min = min(wvt_.dk, wvt_.dl);
             kl_cutoff = dkl_min*(kl_max/dkl_min)^(3/4);
 
             b = sqrt(-log(0.1));
             kl_damp = (kl_max+b*kl_cutoff)/(1+b); % approximately
 
-            [K,L,J] = wvt.kljGrid;
+            [K,L,J] = wvt_.kljGrid;
             Kh = sqrt(K.^2 + L.^2);
 
             Qkl = exp( - ((abs(Kh)-kl_max)./(abs(Kh)-kl_cutoff)).^2 );
             Qkl(abs(Kh)<kl_cutoff) = 0;
             Qkl(abs(Kh)>kl_max) = 1;
 
-            if wvt.Nj > 2
-                dj = wvt.j(2)-wvt.j(1);
+            if wvt_.Nj > 2
+                dj = wvt_.j(2)-wvt_.j(1);
                 j_cutoff = dj*(j_max/dj)^(3/4);
                 Qj = exp( - ((J-j_max)./(J-j_cutoff)).^2 );
                 Qj(J<j_cutoff) = 0;

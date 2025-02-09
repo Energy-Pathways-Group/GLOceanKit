@@ -62,13 +62,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
 
                 n = 0;
                 if self.linearDynamics == 0
-                    if self.nonlinearFluxOperation.doesFluxAp == 1
+                    if self.wvt.hasWaveComponent == true
+                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceApm;
                         n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceApm;
                     end
-                    if self.nonlinearFluxOperation.doesFluxAm == 1
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceApm;
-                    end
-                    if self.nonlinearFluxOperation.doesFluxA0 == 1
+                    if self.wvt.hasPVComponent == true
                         n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceA0;
                     end
                 end
@@ -96,13 +94,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
 
                 n = 0;
                 if self.linearDynamics == 0
-                    if self.nonlinearFluxOperation.doesFluxAp == 1
+                    if self.wvt.hasWaveComponent == true
+                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alphapm;
                         n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alphapm;
                     end
-                    if self.nonlinearFluxOperation.doesFluxAm == 1
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alphapm;
-                    end
-                    if self.nonlinearFluxOperation.doesFluxA0 == 1
+                    if self.wvt.hasPVComponent == true
                         n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alpha0;
                     end
                 end
@@ -207,13 +203,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
 
         function nArray = lengthOfFluxComponents(self)
             n = 0;
-            if self.nonlinearFluxOperation.doesFluxAp == 1
+            if self.wvt.hasWaveComponent == true
                 n=n+1; nArray(n) = numel(self.wvt.Ap);
-            end
-            if self.nonlinearFluxOperation.doesFluxAm == 1
                 n=n+1; nArray(n) = numel(self.wvt.Am);
             end
-            if self.nonlinearFluxOperation.doesFluxA0 == 1
+            if self.wvt.hasPVComponent == true
                 n=n+1; nArray(n) = numel(self.wvt.A0);
             end
 
@@ -236,13 +230,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
 
             n = 0;
             if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                if self.wvt.hasWaveComponent == true
                     n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.Ap(:);
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.Am(:);
                 end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.A0(:);
                 end
             end
@@ -267,15 +259,13 @@ classdef WVModelAdapativeTimeStepMethods < handle
             F = zeros(self.arrayLength,1);
             n = 0;
             if self.linearDynamics == 0
-                nlF = cell(1,self.nonlinearFluxOperation.nVarOut);
-                [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                nlF = cell(1,self.wvt.nFluxedComponents);
+                [nlF{:}] = self.wvt.nonlinearFlux();
+                if self.wvt.hasWaveComponent == true
+                    n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
                     n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
                 end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
                 end
             else
@@ -307,13 +297,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
             n=0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                if self.wvt.hasWaveComponent == true
                     n=n+1; self.wvt.Ap(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1; self.wvt.Am(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
                 end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1; self.wvt.A0(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
                 end
             end

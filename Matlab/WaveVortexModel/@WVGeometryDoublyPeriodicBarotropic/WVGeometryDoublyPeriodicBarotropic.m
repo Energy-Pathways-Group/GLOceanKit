@@ -20,7 +20,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
         j=1
     end
     properties (Dependent,GetAccess=public)
-        J, Lz, Z
+        J, Lz, Z, Nj
     end
 
     methods
@@ -63,12 +63,21 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             val = self.j*ones(self.spectralMatrixSize);
         end
 
+        function val = get.Nj(self)
+            val = 1;
+        end
+
         function val = get.Lz(self)
             val = self.h;
         end
 
         function val = get.Z(self)
             val = zeros(self.spatialMatrixSize);
+        end
+
+        function [K,L,J] = kljGrid(self)
+            [K,L] = self.klGrid;
+            J = self.J;
         end
 
         function Lr2 = get.Lr2(self)

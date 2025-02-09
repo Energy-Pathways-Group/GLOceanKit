@@ -14,7 +14,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
     % By default the model only takes a linear time-step. To specify a
     % nonlinear flux on initialization, for example,
     %```matlab
-    % model = WVModel(wvt,nonlinearFlux=QGPVE(wvt,u_damp=wvt.uvMax));
+    % model = WVModel(wvt);
     %```
     %
     % You can also initialize a model from existing output,
@@ -171,13 +171,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WVModel(wvt,options)
+        function self = WVModel(wvt)
             % Initialize a model from a WVTransform instance
             %
             % - Topic: Initialization
             % - Declaration: WVModel(wvt,options)
             % - Parameter wvt: a WaveVortexTranform instance
-            % - Parameter nonlinearFlux: (optional) a WVNonlinearFluxOperation used to time-step the WVTransform forward in time.
             %
             % 
             arguments

@@ -51,7 +51,7 @@ classdef WVNonlinearAdvection < WVForcing
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            Fpv = Fpv - wvt.u.*wvt.diffX(wvt.qgpv) + wvt.v.*(wvt.diffY(wvt.qgpv)+self.beta);
+            Fpv = Fpv - (wvt.u.*wvt.diffX(wvt.qgpv) + wvt.v.*(wvt.diffY(wvt.qgpv)+self.beta));
         end
 
         function writeToFile(self,group,wvt)

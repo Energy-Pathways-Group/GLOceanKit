@@ -181,13 +181,11 @@ classdef WVModelFixedTimeStepMethods < handle
             Y0 = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                if self.wvt.hasWaveComponent == true
                     n=n+1;Y0{n} = self.wvt.Ap;
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1;Y0{n} = self.wvt.Am;
                 end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1;Y0{n} = self.wvt.A0;
                 end
             end
@@ -213,15 +211,13 @@ classdef WVModelFixedTimeStepMethods < handle
             F = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                nlF = cell(1,self.nonlinearFluxOperation.nVarOut);
+                nlF = self.wvt.nFluxedComponents;
                 [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                if self.wvt.hasWaveComponent == true
+                    n=n+1; F{n} = nlF{n};
                     n=n+1; F{n} = nlF{n};
                 end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1; F{n} = nlF{n};
                 end
             else
@@ -252,13 +248,11 @@ classdef WVModelFixedTimeStepMethods < handle
             n=0;
             self.wvt.t = t;
             if self.linearDynamics == 0
-                if self.nonlinearFluxOperation.doesFluxAp == 1
+                if self.wvt.hasWaveComponent == true
                     n=n+1; self.wvt.Ap = y0{n};
-                end
-                if self.nonlinearFluxOperation.doesFluxAm == 1
                     n=n+1; self.wvt.Am = y0{n};
                 end
-                if self.nonlinearFluxOperation.doesFluxA0 == 1
+                if self.wvt.hasPVComponent == true
                     n=n+1; self.wvt.A0 = y0{n};
                 end
             end
