@@ -86,9 +86,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         flowComponentNameMap
         totalFlowComponent
 
-        forcing = {}
-        spatialForcing = {}
-        spectralForcing = {}
+        forcing WVForcing = WVForcing.empty(0,0)
+        spatialForcing WVForcing = WVForcing.empty(0,0)
+        spectralForcing WVForcing = WVForcing.empty(0,0)
     end
     
     methods (Abstract)
@@ -269,24 +269,24 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         function bool = get.hasClosure(self)
             bool = false;
             for iForce=1:length(self.forcing)
-                bool = bool | self.forcing{iForce}.isClosure;
+                bool = bool | self.forcing(iForce).isClosure;
             end
         end
 
         function bool = get.hasNonlinearAdvectionEnabled(self)
             bool = false;
             if length(self.forcing) > 1
-                bool = self.forcing{1} == self.nonlinearAdvection;
+                bool = self.forcing(1) == self.nonlinearAdvection;
             end
         end
 
         function addForcing(self,force)
-            self.forcing{end+1} = force;
+            self.forcing(end+1) = force;
             if force.doesNonhydrostaticSpatialForcing == true || force.doesHydrostaticSpatialForcing == true || force.doesPotentialVorticitySpatialForcing == true
-                self.spatialForcing{end+1} = force;
+                self.spatialForcing(end+1) = force;
             end
             if force.doesSpectralForcing == true || force.doesPotentialVorticitySpectralForcing == true
-                self.spectralForcing{end+1} = force;
+                self.spectralForcing(end+1) = force;
             end
         end
 

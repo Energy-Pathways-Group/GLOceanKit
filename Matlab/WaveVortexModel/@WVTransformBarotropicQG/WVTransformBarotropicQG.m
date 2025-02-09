@@ -83,11 +83,11 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         function F0 = nonlinearFlux(self)
             self.Fpv = 0*self.Fpv;
             for i=1:length(self.spatialForcing)
-               self.Fpv = self.spatialForcing{i}.addPotentialVorticitySpatialForcing(self,self.Fpv);
+               self.Fpv = self.spatialForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
             end
             self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
             for i=1:length(self.spectralForcing)
-               self.F0 = self.spectralForcing{i}.addPotentialVorticitySpectralForcing(self,self.F0);
+               self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
             end
             F0 = self.F0;
         end

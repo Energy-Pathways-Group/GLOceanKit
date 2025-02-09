@@ -1,4 +1,4 @@
-classdef WVForcing < handle
+classdef WVForcing < handle & matlab.mixin.Heterogeneous
     % Computes a forcing
     %
     % A WVForcingFluxOperation is an abstract class that defines how forcing
