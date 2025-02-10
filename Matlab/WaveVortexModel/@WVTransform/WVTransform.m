@@ -146,13 +146,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
 
     methods
-        function self = WVTransform()
+        function self = WVTransform(options)
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
             % - Topic: Internal
             arguments
-
+                options.forcing WVForcing = WVForcing.empty(0,0)
             end
             
             self.clearVariableCache();
@@ -167,6 +167,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.flowComponentNameMap = configureDictionary("string","cell");
 
             self.nonlinearAdvection = WVNonlinearAdvection(self);
+            if ~isempty(options.forcing)
+                self.addForcing(options.forcing);
+            end
             self.addForcing(self.nonlinearAdvection);
         end
 
@@ -281,12 +284,18 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         end
 
         function addForcing(self,force)
-            self.forcing(end+1) = force;
-            if force.doesNonhydrostaticSpatialForcing == true || force.doesHydrostaticSpatialForcing == true || force.doesPotentialVorticitySpatialForcing == true
-                self.spatialForcing(end+1) = force;
+            arguments
+                self WVTransform {mustBeNonempty}
+                force WVForcing
             end
-            if force.doesSpectralForcing == true || force.doesPotentialVorticitySpectralForcing == true
-                self.spectralForcing(end+1) = force;
+            for iForce = 1:length(force)
+                self.forcing(end+1) = force(iForce);
+                if force(iForce).doesNonhydrostaticSpatialForcing == true || force(iForce).doesHydrostaticSpatialForcing == true || force(iForce).doesPotentialVorticitySpatialForcing == true
+                    self.spatialForcing(end+1) = force(iForce);
+                end
+                if force(iForce).doesSpectralForcing == true || force(iForce).doesPotentialVorticitySpectralForcing == true
+                    self.spectralForcing(end+1) = force(iForce);
+                end
             end
         end
 
@@ -444,6 +453,19 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             disp(T);
         end
 
+        function summarizeForcing(self)
+            Name = cell(length(self.forcing),1);
+            IsClosure = cell(length(self.forcing),1);
+            for iForce=1:length(self.forcing)
+                Name{iForce} = self.forcing(iForce).name;
+                IsClosure{iForce} = self.forcing(iForce).isClosure;
+            end
+            Name = string(Name);
+            IsClosure = string(IsClosure);
+            T = table(Name,IsClosure);
+            disp(T);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Initializing, adding and removing dynamical features
@@ -456,6 +478,17 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         %   removeAll – remove all features of given type       
 
         initFromNetCDFFile(self,ncfile,options)
+
+        function initForcingFromNetCDFFile(self,ncfile)
+            arguments
+                self WVTransform {mustBeNonempty}
+                ncfile NetCDFFile {mustBeNonempty}
+            end
+            group = ncfile.groupWithName(class(self));
+            f = @(className,group) feval(strcat(className,'.forcingFromGroup'),group, self);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"forcing"},classConstructor=f);
+            self.addForcing(vars.forcing);
+        end
 
         initWithUVRho(self,u,v,rho,t)
         initWithUVEta(self,U,V,N)
@@ -522,6 +555,8 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 propertyAnnotations CAPropertyAnnotation
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+
+            propertyAnnotations(end+1) = CAObjectProperty('forcing','array of WVForcing objects');
 
             propertyAnnotations(end+1) = CANumericProperty('t',{}, 's', 'time of observations');
             propertyAnnotations(end).attributes('standard_name') = 'time';

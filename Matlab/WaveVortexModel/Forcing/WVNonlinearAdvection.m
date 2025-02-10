@@ -7,7 +7,6 @@ classdef WVNonlinearAdvection < WVForcing
     % - Declaration: WVAdvectiveFlux < [WVForcing](/classes/wvforcing/)
     properties
         dLnN2 = 0
-        beta = 0
     end
 
     methods
@@ -24,17 +23,9 @@ classdef WVNonlinearAdvection < WVForcing
             self.doesNonhydrostaticSpatialForcing = true;
             self.doesPotentialVorticitySpatialForcing = true;
 
-            if isa(wvt,'WVTransformConstantStratification')
-                self.dLnN2 = 0;
-            elseif isa(wvt,'WVTransformHydrostatic')
+            if isa(wvt,'WVStratificationVariable')
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-            elseif isa(wvt,'WVTransformBoussinesq')
-                self.dLnN2 = shiftdim(wvt.dLnN2,-2);
-            else
-                self.dLnN2 = 0;
-                warning('WVTransform not recognized.')
             end
-            self.beta = wvt.beta;
         end
         
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
@@ -51,38 +42,24 @@ classdef WVNonlinearAdvection < WVForcing
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            Fpv = Fpv - (wvt.u.*wvt.diffX(wvt.qgpv) + wvt.v.*(wvt.diffY(wvt.qgpv)+self.beta));
-        end
-
-        function writeToFile(self,group,wvt)
-            arguments
-                self WVForcing {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
+            Fpv = Fpv - (wvt.u.*wvt.diffX(wvt.qgpv) + wvt.v.*wvt.diffY(wvt.qgpv));
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
             force = WVNonlinearAdvection(wvtX2);
         end
-
-        function flag = isequal(self,other)
-            arguments
-                self WVForcing
-                other WVForcing
-            end
-            flag = isequal@WVForcing(self,other);
-            flag = flag & isequal(self.dLnN2, other.dLnN2);
-        end
     end
 
     methods (Static)
-        function force = forcingFromFile(group,wvt)
-            arguments
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
+        function vars = classRequiredPropertyNames()
+            vars = {};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
             end
-            force = WVNonlinearAdvection(wvt);
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
         end
     end
 

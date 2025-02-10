@@ -23,9 +23,9 @@ N0 = 3*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
 L_gm = 1300; % thermocline exponential scale, meters
 N2 = @(z) N0*N0*exp(2*z/L_gm);
 
-strat = WVStratificationHydrostatic(Lz,Nz,N2Function=N2);
+strat = WVStratificationVariable(Lz,Nz,N2Function=N2);
 ncfile = strat.writeToFile('test.nc',shouldOverwriteExisting=1);
-strat_b = WVStratificationHydrostatic.stratificationFromFile('test.nc');
+strat_b = WVStratificationVariable.stratificationFromFile('test.nc');
 
 assert(strat.isequal(strat_b),"Objects not equal");
 

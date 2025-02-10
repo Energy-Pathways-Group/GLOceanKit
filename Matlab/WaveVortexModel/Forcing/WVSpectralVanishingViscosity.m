@@ -146,41 +146,25 @@ classdef WVSpectralVanishingViscosity < WVForcing
             F0 = F0 + self.damp .* wvt.A0;
         end
 
-        function writeToFile(self,group,wvt)
-            arguments
-                self WVForcing {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
-            group.addAttribute('nu_xy',self.nu_xy)
-            group.addAttribute('nu_z',self.nu_z)
-        end
-
         function force = forcingWithResolutionOfTransform(self,wvtX2)
             ratio_h = self.wvt.effectiveHorizontalGridResolution/wvtX2.effectiveHorizontalGridResolution;
             ratio_v = self.wvt.effectiveVerticalGridResolution/wvtX2.effectiveVerticalGridResolution;
             force = WVSpectralVanishingViscosity(wvtX2,nu_xy=self.nu_xy/ratio_h,nu_z=self.nu_z/ratio_v);
         end
-
-        function flag = isequal(self,other)
-            arguments
-                self WVForcing
-                other WVForcing
-            end
-            flag = isequal@WVForcing(self,other);
-            flag = flag & isequal(self.nu_xy, other.nu_xy);
-            flag = flag & isequal(self.nu_z,other.nu_z);
-            flag = flag & isequal(self.damp, other.damp);
-        end
     end
 
     methods (Static)
-        function force = forcingFromFile(group,wvt)
-            arguments
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
+        function vars = classRequiredPropertyNames()
+            vars = {'nu_xy','nu_z'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
             end
-            force = WVSpectralVanishingViscosity(wvt,nu_xy=group.attributes('nu_xy'),nu_z=group.attributes('nu_z') );
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CANumericProperty('nu_xy', {}, 'm^2 s^{-1}','horizontal viscosity');
+            propertyAnnotations(end+1) = CANumericProperty('nu_z', {}, 'm^2 s^{-1}','vertical viscosity');
         end
     end
 

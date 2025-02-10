@@ -1,4 +1,4 @@
-classdef WVForcing < handle & matlab.mixin.Heterogeneous
+classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     % Computes a forcing
     %
     % A WVForcingFluxOperation is an abstract class that defines how forcing
@@ -140,32 +140,32 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous
             force = WVForcing(self.name);
         end
 
-        function flag = isequal(self,other)
-            %check for equality with another force
-            %
-            % Subclasses to should override this method to implement
-            % additional logic.
-            %
-            % - Topic: Equality
-            % - Declaration: flag = isequal(other)
-            % - Parameter other: another WVForcing instance
-            % - Returns flag: boolean indicating equality
-            arguments
-                self WVForcing
-                other WVForcing
-            end
-            flag = (self.doesHydrostaticSpatialForcing == other.doesHydrostaticSpatialForcing);
-            flag = flag & (self.doesNonhydrostaticSpatialForcing == other.doesNonhydrostaticSpatialForcing);
-            flag = flag & (self.doesSpectralForcing == other.doesSpectralForcing);
-            flag = flag & (self.doesSpectralA0Forcing == other.doesSpectralA0Forcing);
-            flag = flag & strcmp(self.name,other.name);
-        end
+        % function flag = isequal(self,other)
+        %     %check for equality with another force
+        %     %
+        %     % Subclasses to should override this method to implement
+        %     % additional logic.
+        %     %
+        %     % - Topic: Equality
+        %     % - Declaration: flag = isequal(other)
+        %     % - Parameter other: another WVForcing instance
+        %     % - Returns flag: boolean indicating equality
+        %     arguments
+        %         self WVForcing
+        %         other WVForcing
+        %     end
+        %     flag = (self.doesHydrostaticSpatialForcing == other.doesHydrostaticSpatialForcing);
+        %     flag = flag & (self.doesNonhydrostaticSpatialForcing == other.doesNonhydrostaticSpatialForcing);
+        %     flag = flag & (self.doesSpectralForcing == other.doesSpectralForcing);
+        %     flag = flag & (self.doesSpectralA0Forcing == other.doesSpectralA0Forcing);
+        %     flag = flag & strcmp(self.name,other.name);
+        % end
 
     end
 
     methods (Static)
 
-        function force = forcingFromFile(group,wvt)
+        function force = forcingFromGroup(group,wvt)
             %initialize a WVForcing instance from NetCDF file
             %
             % Subclasses to should override this method to enable model
@@ -179,6 +179,14 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous
             arguments
                 group NetCDFGroup {mustBeNonempty}
                 wvt WVTransform {mustBeNonempty}
+            end
+            className = group.attributes('AnnotatedClass');
+            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+            if isempty(vars)
+                force = feval(className,wvt);
+            else
+                options = namedargs2cell(vars);
+                force = feval(className,wvt,options{:});
             end
         end
     end

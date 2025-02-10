@@ -78,10 +78,10 @@ elseif all(ncfile.hasVariableWithName('A0'))
         wvt.A0 = ncfile.readVariables('A0');
     end
     if options.shouldDisplayInit == 1
-        fprintf('%s initialized from A0.\n',ncfile.attributes('WVTransform'));
+        fprintf('%s initialized from A0.\n',ncfile.attributes('AnnotatedClass'));
     end
 else
-    warning('%s initialized without data.\n',ncfile.attributes('WVTransform'));
+    warning('%s initialized without data.\n',ncfile.attributes('AnnotatedClass'));
 end
 
 end

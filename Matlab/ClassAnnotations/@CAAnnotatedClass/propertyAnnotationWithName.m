@@ -4,7 +4,7 @@ function val = propertyAnnotationWithName(self,name)
 % - Topic: Utility function — Metadata
 arguments (Input)
     self CAAnnotatedClass {mustBeNonempty}
-    name string {mustBeNonempty}
+    name string
 end
 arguments (Output)
     val CAPropertyAnnotation

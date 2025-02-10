@@ -11,7 +11,7 @@ The WaveVortexModel code uses Class Annotations to add metadata about class prop
 
 Matlab classes have two primary functionality groups, property and methods, which are annotated using the `CAPropertyAnnotation` and `CAMethodAnnotation`. Both of these annotations have a `detailedDescription` method that returns text from a markdown file that can be included in online documentation.
 
-`CAPropertyAnnotation` has several useful subclasses, including `CAFunctionProperty` to annotate properties that return function handles, `CADimensionProperty` to annotate properties that should be interpreted as dimensions (such as  $$x$$, $$t$$, or $$k$$), and `CANumericProperty` to annotation properties like maybe multi-dimensional arrays or scalar values.
+`CAPropertyAnnotation` has several useful subclasses, including `CAFunctionProperty` to annotate properties that return function handles, `CADimensionProperty` to annotate properties that should be interpreted as dimensions (such as  $$x$$, $$t$$, or $$k$$), `CANumericProperty` to annotation properties like maybe multi-dimensional arrays or scalar values, and `CAObjectProperty` which annotates properties that are array's of other objects that also inherit from `CAAnnotatedClass`.
 
 The WaveVortexModel makes a special subclass of `CANumericProperty` called `WVVariableAnnotation` which annotated the results of `WVOperation` instances. These properties are not properties that have been declared in the class, but are computed on demand by a `WVOperation`. 
 
@@ -37,7 +37,7 @@ The basic class constructor pattern used for the WaveVortexModel is to have unna
  end
 ```
 
-requires the size and number of grid points, but everything else can be set by a default value. This is create when creating a new model, however, to recover an instance with the exact same *state* requires all properties, including optional properties, to be specified. Hence, this class would need to list `Lx`, `Ly`, `Nx`, `Ny`, `shouldAntialias`, etc. as `+classRequiredPropertyNames` in order to save and then restore the state from those saved values. Additionally, because the class constructor follows a specialized pattern, the class needs to define a static method `+waveVortexTransformFromFile()` with a custom implementation.
+requires the size and number of grid points, but everything else can be set by a default value. This works when creating a new model, however, to recover an instance with the exact same *state* requires all properties, including optional properties, to be specified. Hence, this class would need to list `Lx`, `Ly`, `Nx`, `Ny`, `shouldAntialias`, etc. as `+classRequiredPropertyNames` in order to save and then restore the state from those saved values. Additionally, because the class constructor follows a specialized pattern, the class needs to define a static method `+waveVortexTransformFromFile()` with a custom implementation.
 
 Where this gets complicated is with multiple inheritance. A class inheriting annotations from multiple classes is one thing, but then it also has to initialize each of the super classes correctly. The rules are as follows:
 

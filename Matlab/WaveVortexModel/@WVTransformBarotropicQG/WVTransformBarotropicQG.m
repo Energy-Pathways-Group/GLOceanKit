@@ -230,7 +230,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
-            newRequiredPropertyNames = {'A0','kl','t0','t'};
+            newRequiredPropertyNames = {'A0','kl','t0','t','forcing'};
         end
 
         function names = namesOfTransformVariables()
@@ -260,9 +260,11 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
                 options
             end
             [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryFromGroup(group);
-            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
-            newOptions = namedargs2cell(vars);
-            options = cat(2,geomOptions,newOptions);
+            % CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.newRequiredPropertyNames);
+            % vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
+            % newOptions = namedargs2cell(vars);
+            % options = cat(2,geomOptions,newOptions);
+            options = geomOptions;
         end
 
         function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
@@ -286,6 +288,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             ncfile = NetCDFFile(path);
             wvt = WVTransformBarotropicQG.transformFromGroup(ncfile);
             wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
+            wvt.initForcingFromNetCDFFile(ncfile);
         end
 
 
@@ -295,9 +298,8 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             end
             arguments (Output)
                 wvt WVTransform {mustBeNonempty}
-            end
-            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.namesOfRequiredPropertiesForTransform);
-            [Lxy, Nxy, options] = WVGeometryDoublyPeriodicBarotropic.requiredPropertiesForGeometryFromGroup(group);
+            end  
+            [Lxy, Nxy, options] = WVTransformBarotropicQG.requiredPropertiesForTransformFromGroup(group);
             wvt = WVTransformBarotropicQG(Lxy,Nxy,options{:});
         end
 

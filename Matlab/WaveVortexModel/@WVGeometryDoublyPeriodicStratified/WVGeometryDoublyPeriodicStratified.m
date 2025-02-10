@@ -1,4 +1,4 @@
-classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStratificationHydrostatic
+classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStratificationVariable
 
     properties (Dependent, SetAccess=private)
         spatialMatrixSize
@@ -51,7 +51,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldAntialias=true,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
 
             statOptionCell = namedargs2cell(stratOptions);
-            self@WVStratificationHydrostatic(Lxyz(3),Nxyz(3),statOptionCell{:});
+            self@WVStratificationVariable(Lxyz(3),Nxyz(3),statOptionCell{:});
         end
 
         function sz = get.spatialMatrixSize(self)
@@ -142,7 +142,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
-            requiredPropertyNames = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = WVStratificationVariable.namesOfRequiredPropertiesForStratification();
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry());
             requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newNonrequiredPropertyNames);
         end
@@ -153,7 +153,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
             propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
-            propertyAnnotations = cat(2,propertyAnnotations,WVStratificationHydrostatic.propertyAnnotationsForStratification());
+            propertyAnnotations = cat(2,propertyAnnotations,WVStratificationVariable.propertyAnnotationsForStratification());
 
             propertyAnnotations(end+1) = CANumericProperty('K',{'j','kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
             propertyAnnotations(end+1) = CANumericProperty('L',{'j','kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
@@ -175,7 +175,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 options
             end
             [Lxyz(1:2), Nxyz(1:2), geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingProperties=true);
-            [Lxyz(3), Nxyz(3), stratOptions] = WVStratificationHydrostatic.requiredPropertiesForStratificationFromGroup(group);
+            [Lxyz(3), Nxyz(3), stratOptions] = WVStratificationVariable.requiredPropertiesForStratificationFromGroup(group);
             options = cat(2,stratOptions,geomOptions);
         end
 

@@ -110,6 +110,7 @@ classdef CAAnnotatedClass < handle
             arguments (Output)
                 var struct
             end
+            var = struct([]);
             if isfield(options,'className')
                 className = options.className;
             else
@@ -120,7 +121,9 @@ classdef CAAnnotatedClass < handle
                 end
             end
             requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
-            var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
+            if ~isempty(requiredProperties)
+                var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
+            end
         end
 
         function var = propertyValuesFromGroup(group,propertyNames,options)
@@ -128,9 +131,13 @@ classdef CAAnnotatedClass < handle
                 group NetCDFGroup
                 propertyNames {mustBeA(propertyNames,"cell")} = {}
                 options.shouldIgnoreMissingProperties logical = false
+                options.classConstructor function_handle
             end
             arguments (Output)
                 var struct
+            end
+            if ~isfield(options,"classConstructor")
+                options.classConstructor = @(className,group) feval(strcat(className,'.annotatedClassFromGroup'),group);
             end
             for iVar = 1:length(propertyNames)
                 name = propertyNames{iVar};
@@ -140,11 +147,12 @@ classdef CAAnnotatedClass < handle
                 end
                 
                 targetGroupName = join( [string(group.name),string(name)],"-");
-                if group.parentGroup.hasGroupWithName(targetGroupName) == true
+                if ~isempty(group.parentGroup) && group.parentGroup.hasGroupWithName(targetGroupName) == true
                     targetGroup = group.parentGroup.groupWithName(targetGroupName);
                     if isempty(targetGroup.groups)
                         if isKey(targetGroup.attributes,'AnnotatedClass')
-                            var.(name) = CAAnnotatedClass.annotatedClassFromGroup(targetGroup);
+                            className = targetGroup.attributes('AnnotatedClass');
+                            var.(name) = options.classConstructor(className,targetGroup);
                             continue;
                         end
                     else
@@ -153,7 +161,8 @@ classdef CAAnnotatedClass < handle
                             if targetGroup.hasGroupWithName(subGroupName)
                                 subGroup = targetGroup.groupWithName(subGroupName);
                                 if isKey(subGroup.attributes,'AnnotatedClass')
-                                    tmp(iObj) = CAAnnotatedClass.annotatedClassFromGroup(subGroup);
+                                    className = subGroup.attributes('AnnotatedClass');
+                                    tmp(iObj) = options.classConstructor(className,subGroup);
                                 end
                             end
                         end

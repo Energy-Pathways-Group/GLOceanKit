@@ -1,4 +1,4 @@
-classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
+classdef WVStratificationVariable < WVStratification & CAAnnotatedClass
     properties (Hidden=true) %(GetAccess=public, SetAccess=protected) %(Access=private)
         dLnN2
         
@@ -23,7 +23,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
     end
 
     methods
-        function self = WVStratificationHydrostatic(Lz, Nz, options, directInit)
+        function self = WVStratificationVariable(Lz, Nz, options, directInit)
             % create matrices for hydrostatics in variable stratification
             %
             % To initialize:
@@ -70,7 +70,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             superclassOptions = namedargs2cell(options);
             self@WVStratification(Lz,Nz,superclassOptions{:});
             allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
-            canInitializeDirectly = all(isfield(allFields, WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification));
+            canInitializeDirectly = all(isfield(allFields, WVStratificationVariable.namesOfRequiredPropertiesForStratification));
 
             if canInitializeDirectly == true
                 self.dLnN2 = directInit.dLnN2;
@@ -98,7 +98,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
         %     arguments
         %         wvt WVTransform
         %     end
-        %     wvt.addPropertyAnnotations(WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow);
+        %     wvt.addPropertyAnnotations(WVStratificationVariable.propertyAnnotationsForStratifiedFlow);
         %     wvt.addOperation(EtaTrueOperation());
         %     wvt.addOperation(APVOperation());
         % end
@@ -182,11 +182,11 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function propertyAnnotations = classDefinedPropertyAnnotations()
-            propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratification();
+            propertyAnnotations = WVStratificationVariable.propertyAnnotationsForStratification();
         end
 
         function vars = classRequiredPropertyNames()
-            vars = WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification();
+            vars = WVStratificationVariable.namesOfRequiredPropertiesForStratification();
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,7 +197,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
 
         function requiredPropertyNames = namesOfRequiredPropertiesForStratification()
             requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
-            requiredPropertyNames = union(requiredPropertyNames,WVStratificationHydrostatic.newRequiredPropertyNames());
+            requiredPropertyNames = union(requiredPropertyNames,WVStratificationVariable.newRequiredPropertyNames());
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
@@ -208,11 +208,11 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
             % return array of WVPropertyAnnotation initialized by default
             %
             % This function returns annotations for all properties of the
-            % WVStratificationHydrostatic class (as well as its
+            % WVStratificationVariable class (as well as its
             % superclass).
             %
             % - Topic: Internal
-            % - Declaration: propertyAnnotations = WVStratificationHydrostatic.propertyAnnotationsForStratifiedFlow()
+            % - Declaration: propertyAnnotations = WVStratificationVariable.propertyAnnotationsForStratifiedFlow()
             % - Returns propertyAnnotations: array of WVPropertyAnnotation instances
             propertyAnnotations = WVStratification.propertyAnnotationsForStratification();
             propertyAnnotations(end+1) = CANumericProperty('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation');
@@ -236,7 +236,7 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 options
             end
             [Lz,Nz,stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group);
-            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratificationHydrostatic.newRequiredPropertyNames);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratificationVariable.newRequiredPropertyNames);
             newOptions = namedargs2cell(vars);
             options = cat(2,stratOptions,newOptions);
         end
@@ -246,10 +246,10 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 path char {mustBeNonempty}
             end
             arguments (Output)
-                stratification WVStratificationHydrostatic {mustBeNonempty}
+                stratification WVStratificationVariable {mustBeNonempty}
             end
             ncfile = NetCDFFile(path);
-            stratification = WVStratificationHydrostatic.stratificationFromGroup(ncfile);
+            stratification = WVStratificationVariable.stratificationFromGroup(ncfile);
         end
 
         function stratification = stratificationFromGroup(group)
@@ -257,11 +257,11 @@ classdef WVStratificationHydrostatic < WVStratification & CAAnnotatedClass
                 group NetCDFGroup {mustBeNonempty}
             end
             arguments (Output)
-                stratification WVStratificationHydrostatic {mustBeNonempty}
+                stratification WVStratificationVariable {mustBeNonempty}
             end
-            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVStratificationHydrostatic.namesOfRequiredPropertiesForStratification);
-            [Lz,Nz,options] = WVStratificationHydrostatic.requiredPropertiesForStratificationFromGroup(group);
-            stratification = WVStratificationHydrostatic(Lz,Nz,options{:});
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVStratificationVariable.namesOfRequiredPropertiesForStratification);
+            [Lz,Nz,options] = WVStratificationVariable.requiredPropertiesForStratificationFromGroup(group);
+            stratification = WVStratificationVariable(Lz,Nz,options{:});
         end
         
     end
