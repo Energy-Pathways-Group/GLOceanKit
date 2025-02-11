@@ -40,10 +40,8 @@ classdef WVSpectralVanishingViscosity < WVForcing
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
             end
-            self@WVForcing("spectral vanishing viscosity");
+            self@WVForcing("spectral vanishing viscosity",WVForcingType(["Spectral","PVSpectral"]));
             self.wvt = wvt;
-            self.doesSpectralForcing = true;
-            self.doesPotentialVorticitySpectralForcing = true;
             self.isClosure = true;
 
             if isfield(options,'nu_xy')

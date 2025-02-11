@@ -196,7 +196,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
         
         function value = get.linearDynamics(self)
-            value = ~self.wvt.hasNonlinearAdvectionEnabled;
+            value = isempty(self.wvt.forcing);
         end
 
         function value = get.t(self)

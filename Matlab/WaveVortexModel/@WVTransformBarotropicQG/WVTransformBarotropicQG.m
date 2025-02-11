@@ -54,6 +54,11 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,optionCell{:});
             self@WVGeostrophicMethods();
+
+            % This is not good, I think this should go in the constructor.
+            self.forcingType = WVForcingType(["PVSpectral","PVSpatial"]);
+            self.nonlinearAdvection = WVNonlinearAdvection(self);
+            self.addForcing(self.nonlinearAdvection);
             
             self.initializeGeostrophicComponent();
 

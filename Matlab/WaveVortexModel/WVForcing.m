@@ -36,30 +36,21 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         % - Topic: Properties
         name
 
-        % boolean indicating this class implements addHydrostaticSpatialForcing
+        % Array of supported forcing types
+        %
+        % If the class supports a given forcing type, that indicates that
+        % the class implements a particular methods. The correspondence is
+        % as follows:
+        % WVForcingType                 Method
+        % -------------                 ------
+        % HydrostaticSpatial            addHydrostaticSpatialForcing
+        % NonhydrostaticSpatial         addNonhydrostaticSpatialForcing
+        % PVSpatial                     addPotentialVorticitySpatialForcing
+        % Spectral                      addSpectralForcing
+        % PVSpectral                    addPotentialVorticitySpectralForcing
         %
         % - Topic: Properties
-        doesHydrostaticSpatialForcing logical =  false
-
-        % boolean indicating this class implements addNonhydrostaticSpatialForcing
-        %
-        % - Topic: Properties
-        doesNonhydrostaticSpatialForcing logical =  false
-
-        % boolean indicating this class implements addSpectralForcing
-        %
-        % - Topic: Properties
-        doesSpectralForcing logical =  false
-
-        % boolean indicating this class implements addPotentialVorticitySpatialForcing
-        %
-        % - Topic: Properties
-        doesPotentialVorticitySpatialForcing logical =  false
-
-        % boolean indicating this class implements addPotentialVorticitySpectralForcing
-        %
-        % - Topic: Properties
-        doesPotentialVorticitySpectralForcing logical =  false
+        forcingType WVForcingType = WVForcingType.empty(0,0)
 
         % boolean indicating that this forcing is a turbulence closure
         % scheme, capable of removing variance at the small scales.
@@ -70,7 +61,7 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
 
     methods
 
-        function self = WVForcing(name)
+        function self = WVForcing(name,forcingType)
             %create a new nonlinear flux operation
             %
             % This class is intended to be subclassed, so it generally
@@ -84,8 +75,10 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
             % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
             arguments
                 name {mustBeText}
+                forcingType WVForcingType {mustBeNonempty}
             end
             self.name = name;
+            self.forcingType = forcingType;
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)

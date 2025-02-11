@@ -13,16 +13,15 @@ classdef WVBetaPlanePVAdvection < WVForcing
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVForcing("beta-plane advection of qgpv");
-            warning('Not implemented for stratified flow!');
-            
-            self.doesSpectralForcing = true;
-            self.doesPotentialVorticitySpectralForcing = true;
-            self.doesPotentialVorticitySpatialForcing = true;
+            self@WVForcing("beta-plane advection of qgpv",WVForcingType(["Spectral" "PVSpatial"]));
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
             Fpv = Fpv - wvt.beta * wvt.v;
+        end
+
+        function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
+            error("Not yet implemented. Look at WVNonlinearFlux.m and copy from there.");
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)

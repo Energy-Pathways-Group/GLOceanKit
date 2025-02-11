@@ -60,6 +60,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     properties (GetAccess=public, SetAccess=protected)
         version = 3.0;
         isHydrostatic = true
+        forcingType
     end
 
     properties (Abstract)
@@ -69,7 +70,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
     properties (Dependent, SetAccess=private)
         hasClosure
-        hasNonlinearAdvectionEnabled
         primaryFlowComponents
         hasPVComponent logical
         hasWaveComponent logical
@@ -146,13 +146,12 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
 
     methods
-        function self = WVTransform(options)
+        function self = WVTransform()
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
             % - Topic: Internal
             arguments
-                options.forcing WVForcing = WVForcing.empty(0,0)
             end
             
             self.clearVariableCache();
@@ -165,12 +164,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
-
-            self.nonlinearAdvection = WVNonlinearAdvection(self);
-            if ~isempty(options.forcing)
-                self.addForcing(options.forcing);
-            end
-            self.addForcing(self.nonlinearAdvection);
         end
 
         function updateTimeDependentVariablesNameMap(self,~,~)
@@ -269,6 +262,19 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function set.forcingType(self,forcingType)
+            % This should be passed as part of the constructor!!!!
+            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
+            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
+            if length(intersect(spatialTypes,forcingType)) > 1
+                error("A WVTransform cannot have more than one spatial forcing type.")
+            end
+            if length(intersect(spectralTypes,forcingType)) > 1
+                error("A WVTransform cannot have more than one spectral forcing type.")
+            end
+            self.forcingType = forcingType;
+        end
+
         function bool = get.hasClosure(self)
             bool = false;
             for iForce=1:length(self.forcing)
@@ -276,11 +282,15 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             end
         end
 
-        function bool = get.hasNonlinearAdvectionEnabled(self)
-            bool = false;
-            if length(self.forcing) > 1
-                bool = self.forcing(1) == self.nonlinearAdvection;
+        function setForcing(self,force)
+            arguments
+                self WVTransform {mustBeNonempty}
+                force WVForcing
             end
+            self.forcing = WVForcing.empty(0,0);
+            self.spatialForcing = WVForcing.empty(0,0);
+            self.spectralForcing = WVForcing.empty(0,0);
+            self.addForcing(force);
         end
 
         function addForcing(self,force)
@@ -288,14 +298,23 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 self WVTransform {mustBeNonempty}
                 force WVForcing
             end
+            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
+            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
+            didAddForcing = false;
             for iForce = 1:length(force)
-                self.forcing(end+1) = force(iForce);
-                if force(iForce).doesNonhydrostaticSpatialForcing == true || force(iForce).doesHydrostaticSpatialForcing == true || force(iForce).doesPotentialVorticitySpatialForcing == true
-                    self.spatialForcing(end+1) = force(iForce);
+                aForce = force(iForce);
+                if ismember(intersect(aForce.forcingType,self.forcingType),spatialTypes)
+                    self.spatialForcing(end+1) = aForce;
+                    didAddForcing = true;
                 end
-                if force(iForce).doesSpectralForcing == true || force(iForce).doesPotentialVorticitySpectralForcing == true
-                    self.spectralForcing(end+1) = force(iForce);
+                if ismember(intersect(aForce.forcingType,self.forcingType),spectralTypes)
+                    self.spectralForcing(end+1) = aForce;
+                    didAddForcing = true;
                 end
+            end
+            self.forcing = cat(2,self.spatialForcing,self.spectralForcing);
+            if didAddForcing == false
+                error("This WVTransform does not support this type of forcing!!!");
             end
         end
 
@@ -487,7 +506,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             group = ncfile.groupWithName(class(self));
             f = @(className,group) feval(strcat(className,'.forcingFromGroup'),group, self);
             vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"forcing"},classConstructor=f);
-            self.addForcing(vars.forcing);
+            self.setForcing(vars.forcing);
         end
 
         initWithUVRho(self,u,v,rho,t)
