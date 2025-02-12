@@ -92,11 +92,16 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             % This is not good, I think this should go in the constructor.
             self.nonlinearAdvection = WVNonlinearAdvection(self);
             self.addForcing(self.nonlinearAdvection);
-            
+
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.
             varNames = self.namesOfTransformVariables();
             self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+
+            self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
+            self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
+            self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.inertialComponent));
+            self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.mdaComponent));
 
             self.A0 = zeros(self.spectralMatrixSize);
             self.Ap = zeros(self.spectralMatrixSize);
