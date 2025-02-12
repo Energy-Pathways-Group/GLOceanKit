@@ -2,8 +2,7 @@ classdef WVInternalGravityWaveMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (GetAccess=private, SetAccess=private)
-        z
+    properties %(GetAccess=public, SetAccess=protected)
         UAp,VAp,WAp,NAp
         UAm,VAm,WAm,NAm
         ApmD,ApmN
@@ -11,12 +10,7 @@ classdef WVInternalGravityWaveMethods < handle
 
         iOmega
     end
-    properties (Abstract)
-        Ap,Am
-    end
-    methods (Abstract)
-        addPrimaryFlowComponent(self,primaryFlowComponent)
-    end
+
     properties (Dependent,GetAccess=public, SetAccess=protected)
         % returns the internal gravity wave flow component
         %
@@ -28,11 +22,15 @@ classdef WVInternalGravityWaveMethods < handle
 
         Omega
     end
-    properties (Dependent)
-        h_pm  % [Nj 1]
+    properties (Abstract)
+        % z
+        Ap,Am
+        h_pm
     end
-    methods (Abstract)
+    methods (Abstract)        
+        removeAll(self)
         ratio = maxFw(self,kMode,lMode,j)
+        addPrimaryFlowComponent(self,primaryFlowComponent)
     end
 
     methods (Access=protected)
@@ -72,8 +70,7 @@ classdef WVInternalGravityWaveMethods < handle
 
             initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
 
-            self.addVariableAnnotations(WVInternalGravityWaveMethods.variableAnnotationsForInternalGravityWaveComponent);
-            self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
+            % self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
         end
     end
 
@@ -129,9 +126,7 @@ classdef WVInternalGravityWaveMethods < handle
                 options.u (:,1) double
                 options.sign (:,1) double
             end
-            self.Ap = zeros(self.spectralMatrixSize);
-            self.Am = zeros(self.spectralMatrixSize);
-            self.A0 = zeros(self.spectralMatrixSize);
+            self.removeAll();
 
             [omega,k,l] = self.setWaveModes(kMode=options.kMode,lMode=options.lMode,j=options.j,phi=options.phi,u=options.u,sign=options.sign);
         end
@@ -539,17 +534,16 @@ classdef WVInternalGravityWaveMethods < handle
             A_m(1,1,:) = 0*A_m(1,1,:);
 
             [K,L,J] = self.kljGrid;
-            Omega = self.Omega;
 
             [A_plus,phi_plus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_p);
-            omega_plus = Omega(linearIndex);
+            omega_plus = self.Omega(linearIndex);
             mode_plus = J(linearIndex);
             alpha_plus = atan2(L(linearIndex),K(linearIndex));
             k_plus = K(linearIndex);
             l_plus = L(linearIndex);
 
             [A_minus,phi_minus,linearIndex] = WVTransform.extractNonzeroWaveProperties(A_m);
-            omega_minus = -Omega(linearIndex);
+            omega_minus = -self.Omega(linearIndex);
             mode_minus = J(linearIndex);
             alpha_minus = atan2(L(linearIndex),K(linearIndex));
             k_minus = K(linearIndex);
@@ -581,7 +575,7 @@ classdef WVInternalGravityWaveMethods < handle
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('waveEnergy',{},'m3/s2', 'total energy, waves');
+            annotation = WVVariableAnnotation('waveEnergy',{},'m^3 s^{-2}', 'total energy, waves');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
@@ -606,11 +600,6 @@ classdef WVInternalGravityWaveMethods < handle
             propertyAnnotations(end+1) = CANumericProperty('NAp',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_p$$ to compute $$\tilde{\eta}$$.',isComplex=0);
             propertyAnnotations(end+1) = CANumericProperty('NAm',options.spectralDimensionNames,'s', 'matrix component that multiplies $$A_m$$ to compute $$\tilde{\eta}$$.',isComplex=0);
 
-        end
-
-        function flag = hasEqualWaveComponents(wvt1,wvt2)
-            flag = isequal(wvt1.Ap, wvt2.Ap);
-            flag = flag & isequal(wvt1.Am, wvt2.Am);
         end
 
         function [A,phi,linearIndex] = extractNonzeroWaveProperties(Matrix)

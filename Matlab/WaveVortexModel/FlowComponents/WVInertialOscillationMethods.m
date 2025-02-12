@@ -2,17 +2,6 @@ classdef WVInertialOscillationMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (GetAccess=private, SetAccess=private)
-        Ap,Am
-        z
-        UAp,VAp
-        UAm,VAm
-        Apm_TE_factor
-    end
-    methods (Abstract)
-        addPrimaryFlowComponent(self,primaryFlowComponent)
-        u_bar = transformFromSpatialDomainWithFio(self,u)
-    end
     properties (Dependent,GetAccess=public, SetAccess=protected)
         % returns the inertial oscillation flow component
         %
@@ -22,8 +11,16 @@ classdef WVInertialOscillationMethods < handle
         % - nav_order: 3
         inertialComponent
     end
-    properties (Dependent)
-        h_pm  % [Nj 1]
+
+    methods (Abstract)
+        % Ap,Am
+        % UAp,VAp
+        % UAm,VAm
+        % h_pm
+        removeAll(self)
+        ratio = maxFw(self,kMode,lMode,j)
+        addPrimaryFlowComponent(self,primaryFlowComponent)
+        u_bar = transformFromSpatialDomainWithFio(self,u)
     end
     methods (Access=protected)
         function initializeInertialOscillationComponent(self)
@@ -53,8 +50,8 @@ classdef WVInertialOscillationMethods < handle
 
             initVariable("Apm_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.Ap));
 
-            self.addVariableAnnotations(WVInertialOscillationMethods.variableAnnotationsForInertialOscillationComponent);
-            self.addOperation(self.operationForDynamicalVariable('u','v',flowComponent=self.inertialComponent));
+            % self.addVariableAnnotations(WVInertialOscillationMethods.variableAnnotationsForInertialOscillationComponent);
+            % self.addOperation(self.operationForDynamicalVariable('u','v',flowComponent=self.inertialComponent));
         end
     end
 
@@ -183,15 +180,10 @@ classdef WVInertialOscillationMethods < handle
             
             variableAnnotations = WVVariableAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('inertialEnergy',{},'m3/s2', 'total energy, inertial oscillations');
+            annotation = WVVariableAnnotation('inertialEnergy',{},'m^3 s^{-2}', 'total energy, inertial oscillations');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
-        end
-        
-        function flag = hasEqualWaveComponents(wvt1,wvt2)
-            flag = isequal(wvt1.Ap, wvt2.Ap);
-            flag = flag & isequal(wvt1.Am, wvt2.Am);
         end
     end
 

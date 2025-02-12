@@ -460,13 +460,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         end
 
         function summarizeFlowComponents(self)
-            Name = cell(self.flowComponentNameMap.length,1);
-            isPrimary = cell(self.flowComponentNameMap.length,1);
-            FullName = cell(self.flowComponentNameMap.length,1);
-            AbbreviatedName = cell(self.flowComponentNameMap.length,1);
-            iVar = 0;
-            for name = self.flowComponentNames
-                iVar = iVar+1;
+            Name = cell(self.flowComponentNameMap.numEntries,1);
+            isPrimary = cell(self.flowComponentNameMap.numEntries,1);
+            FullName = cell(self.flowComponentNameMap.numEntries,1);
+            AbbreviatedName = cell(self.flowComponentNameMap.numEntries,1);
+            flowComponentNames_ = self.flowComponentNames;
+            for iVar = 1:length(flowComponentNames_)
+                name = flowComponentNames_(iVar);
                 Name{iVar} = name{1};
                 isPrimary{iVar} = isKey(self.primaryFlowComponentNameMap,name{1});
                 FullName{iVar} = self.flowComponentWithName(name{1}).name;

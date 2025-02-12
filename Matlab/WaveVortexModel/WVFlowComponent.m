@@ -1,4 +1,4 @@
-classdef WVFlowComponent < handle
+classdef WVFlowComponent < handle & matlab.mixin.Heterogeneous
     %Orthogonal solution group
     %
     % Each degree-of-freedom in the model is associated with an analytical

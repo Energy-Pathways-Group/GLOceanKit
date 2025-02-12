@@ -2,7 +2,7 @@ classdef WVGeostrophicMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (GetAccess=public, SetAccess=private) 
+    properties %(GetAccess=public, SetAccess=private) 
         UA0,VA0,NA0,PA0
         A0Z,A0N
     end
@@ -20,6 +20,7 @@ classdef WVGeostrophicMethods < handle
         h_0  % [Nj 1]
     end
     methods (Abstract)
+
         ratio = maxFg(self,kMode,lMode,jMode);
         u_bar = transformFromSpatialDomainWithFg(self, u)
         removeAll(self)
@@ -424,7 +425,7 @@ classdef WVGeostrophicMethods < handle
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('geostrophicEnergy',{},'m3/s2', 'total energy, geostrophic');
+            annotation = WVVariableAnnotation('geostrophicEnergy',{},'m^3 s^{-2}', 'total energy, geostrophic');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             propertyAnnotations(end+1) = annotation;
@@ -436,10 +437,6 @@ classdef WVGeostrophicMethods < handle
             propertyAnnotations(end+1) = CANumericProperty('VA0',options.spectralDimensionNames,'s^{-1}', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{v}$$.',isComplex=1);
             propertyAnnotations(end+1) = CANumericProperty('NA0',options.spectralDimensionNames,'', 'matrix component that multiplies $$A_0$$ to compute $$\tilde{\eta}$$.',isComplex=0);
             
-        end
-        
-        function flag = hasEqualPVComponents(wvt1,wvt2)
-            flag = isequal(wvt1.A0, wvt2.A0);
         end
     end
 

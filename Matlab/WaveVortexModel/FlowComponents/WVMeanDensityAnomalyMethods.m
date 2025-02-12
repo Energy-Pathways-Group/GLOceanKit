@@ -1,17 +1,6 @@
 classdef WVMeanDensityAnomalyMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
-
-    properties (GetAccess=private, SetAccess=private)
-        A0
-        z
-        A0N
-        NA0,PA0
-        A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
-    end
-    methods (Abstract)
-        addPrimaryFlowComponent(self,primaryFlowComponent)
-    end
     properties (Dependent,GetAccess=public, SetAccess=protected)
         % returns the mean density anomaly component
         %
@@ -20,6 +9,16 @@ classdef WVMeanDensityAnomalyMethods < handle
         % - Returns flowComponent: subclass of WVPrimaryFlowComponent
         % - nav_order: 4
         mdaComponent
+    end
+    methods (Abstract)
+        w_bar = transformFromSpatialDomainWithGg(self, w)
+        removeAll(self)
+        addPrimaryFlowComponent
+        % z
+        % A0
+        % h_0  % [Nj 1]
+        % A0N
+        % NA0,PA0
     end
     methods (Access=protected)
         function initializeMeanDensityAnomalyComponent(self)
@@ -50,8 +49,8 @@ classdef WVMeanDensityAnomalyMethods < handle
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
-            self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);
-            self.addOperation(self.operationForDynamicalVariable('eta','p',flowComponent=self.mdaComponent));
+            % self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);
+            % self.addOperation(self.operationForDynamicalVariable('eta','p',flowComponent=self.mdaComponent));
         end
     end
 
@@ -118,9 +117,7 @@ classdef WVMeanDensityAnomalyMethods < handle
             % - Topic: Initial conditions — Mean density anomaly
             % - Declaration: initWithMeanDensityAnomaly(eta)
             % - Parameter eta: function handle that takes a single argument, eta(Z)
-            self.Ap = zeros(size(self.Ap));
-            self.Am = zeros(size(self.Am));
-            self.A0 = zeros(size(self.A0));
+            self.removeAll();
             self.setMeanDensityAnomaly(eta);
         end
 
@@ -162,7 +159,7 @@ classdef WVMeanDensityAnomalyMethods < handle
     end
     methods (Static, Hidden=true)
 
-        function variableAnnotations = variableAnnotationsForMeanDensityAnomalyComponent()
+        function variableAnnotations = variableAnnotationsForMeanDensityAnomalyComponent(options)
             % return array of WVVariableAnnotation instances initialized by default
             %
             % This function creates annotations for the built-in variables supported by
@@ -171,19 +168,16 @@ classdef WVMeanDensityAnomalyMethods < handle
             % - Topic: Internal
             % - Declaration: operations = defaultVariableAnnotations()
             % - Returns operations: array of WVVariableAnnotation instances
-            
+            arguments
+                options.spectralDimensionNames = {'j','kl'}
+            end
             variableAnnotations = WVVariableAnnotation.empty(0,0);
 
-            annotation = WVVariableAnnotation('mdaEnergy',{},'m3/s2', 'total energy, mean density anomaly');
+            annotation = WVVariableAnnotation('mdaEnergy',{},'m^3 s^{-2}', 'total energy, mean density anomaly');
             annotation.isVariableWithLinearTimeStep = 0;
             annotation.isVariableWithNonlinearTimeStep = 1;
             variableAnnotations(end+1) = annotation;
         end
-        
-        function flag = hasEqualPVComponents(wvt1,wvt2)
-            flag = isequal(wvt1.A0, wvt2.A0);
-        end
-
     end
 
 end

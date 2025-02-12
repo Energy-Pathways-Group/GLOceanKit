@@ -53,3 +53,16 @@ assert(wvt.isequal(wvt_b),"Objects not equal");
 wvt.initWithRandomFlow()
 figure, pcolor(wvt.ssh)
 figure, pcolor(wvt.x/1e3,wvt.y/1e3,wvt.ssh)
+
+%%
+L = 400e3;
+Lz = 4000;
+
+N = 64;
+Nz = 30;
+
+N0 = 3*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
+L_gm = 1300; % thermocline exponential scale, meters
+N2 = @(z) N0*N0*exp(2*z/L_gm);
+
+wvt = WVTransformHydrostatic([L, L, Lz], [N, N, Nz], N2=N2,latitude=31);

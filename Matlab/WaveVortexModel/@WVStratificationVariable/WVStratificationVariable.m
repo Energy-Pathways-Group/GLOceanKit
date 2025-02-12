@@ -1,5 +1,5 @@
 classdef WVStratificationVariable < WVStratification & CAAnnotatedClass
-    properties (Hidden=true) %(GetAccess=public, SetAccess=protected) %(Access=private)
+    properties (Access=public) %(GetAccess=private, SetAccess=private) %(Access=private)
         dLnN2
         
         % Transformation matrices
