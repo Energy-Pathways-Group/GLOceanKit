@@ -32,7 +32,7 @@ classdef CANumericProperty < CAPropertyAnnotation
         %
         % This information is used when allocating space in a NetCDF file.
         % - Topic: Properties
-        isComplex = 0
+        isComplex logical = false
     end
 
     methods
@@ -57,7 +57,7 @@ classdef CANumericProperty < CAPropertyAnnotation
                 dimensions
                 units char
                 description char {mustBeNonempty}
-                options.isComplex double {mustBeMember(options.isComplex,[0 1])} = 0
+                options.isComplex logical = false
                 options.detailedDescription char = ''
             end
 

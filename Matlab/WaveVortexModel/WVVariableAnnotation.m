@@ -29,14 +29,21 @@ classdef WVVariableAnnotation < CANumericProperty
         % This information is used when caching variables and when writing
         % to NetCDF file.
         % - Topic: Properties
-        isVariableWithLinearTimeStep = 1
+        isVariableWithLinearTimeStep logical = true
 
         % boolean indicating whether the variable changes value with a non-linear time step
         %
         % This information is used when caching variables and when writing
         % to NetCDF file.
         % - Topic: Properties
-        isVariableWithNonlinearTimeStep = 1
+        isVariableWithNonlinearTimeStep logical = true
+
+        % boolean indicating whether the variable depends on Ap, Am, or A0
+        %
+        % This information is used when caching variables and when writing
+        % to NetCDF file.
+        % - Topic: Properties
+        isDependentOnApAmA0 logical = true
     end
 
     methods

@@ -80,6 +80,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         operationNameMap
         operationVariableNameMap
         timeDependentVariablesNameMap
+        wvCoefficientDependentVariablesNameMap
         variableCache
 
         primaryFlowComponentNameMap
@@ -155,13 +156,14 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 forcingType WVForcingType {mustBeNonempty}
             end
             
-            self.clearVariableCache();
+            self.variableCache = configureDictionary("string","cell");
             self.operationVariableNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
             self.operationNameMap = configureDictionary("string","cell");
             self.timeDependentVariablesNameMap = configureDictionary("string","cell");
+            self.wvCoefficientDependentVariablesNameMap = configureDictionary("string","cell");
             
-            self.updateTimeDependentVariablesNameMap([],[]);
-            addlistener(self,'propertyAnnotationsDidChange',@self.updateTimeDependentVariablesNameMap);
+            self.updateDependentVariablesNameMap([],[]);
+            addlistener(self,'propertyAnnotationsDidChange',@self.updateDependentVariablesNameMap);
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
@@ -177,13 +179,16 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.forcingType = forcingType;
         end
 
-        function updateTimeDependentVariablesNameMap(self,~,~)
+        function updateDependentVariablesNameMap(self,~,~)
             self.timeDependentVariablesNameMap = configureDictionary("string","cell");
             annotations = self.propertyAnnotations;
             for i=1:length(annotations)
                 if isa(annotations(i),'WVVariableAnnotation')
-                    if annotations(i).isVariableWithLinearTimeStep == 1 && ~isKey(self.timeDependentVariablesNameMap,annotations(i).name)
+                    if annotations(i).isVariableWithLinearTimeStep && ~isKey(self.timeDependentVariablesNameMap,annotations(i).name)
                         self.timeDependentVariablesNameMap{annotations(i).name} = annotations(i);
+                    end
+                    if annotations(i).isDependentOnApAmA0 && ~isKey(self.wvCoefficientDependentVariablesNameMap,annotations(i).name)
+                        self.wvCoefficientDependentVariablesNameMap{annotations(i).name} = annotations(i);
                     end
                 end
             end
@@ -263,7 +268,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         addToVariableCache(self,name,var)
-        clearVariableCache(self)
+        clearVariableCacheOfApAmA0DependentVariables(self)
         clearVariableCacheOfTimeDependentVariables(self)
         varargout = fetchFromVariableCache(self,varargin)
 
@@ -331,17 +336,17 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
         function set.Ap(self,value)
             self.Ap = value;
-            self.clearVariableCache();
+            self.clearVariableCacheOfApAmA0DependentVariables();
         end
 
         function set.Am(self,value)
             self.Am = value;
-            self.clearVariableCache();
+            self.clearVariableCacheOfApAmA0DependentVariables();
         end
 
         function set.A0(self,value)
             self.A0 = value;
-            self.clearVariableCache();
+            self.clearVariableCacheOfApAmA0DependentVariables();
         end
 
         [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
@@ -442,6 +447,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             Units = cell(variableAnnotationNameMap.numEntries,1);
             Description = cell(variableAnnotationNameMap.numEntries,1);
             Name = keys(variableAnnotationNameMap,'cell');
+            Cached = cell(variableAnnotationNameMap.numEntries,1); %variableCache
             for iVar=1:length(Name)
                 if isempty(variableAnnotationNameMap{Name{iVar}}.dimensions)
                     Dimension{iVar} = "()";
@@ -450,12 +456,14 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 end
                 Units{iVar} = variableAnnotationNameMap{Name{iVar}}.units;
                 Description{iVar} = variableAnnotationNameMap{Name{iVar}}.description;
+                Cached{iVar} = isKey(self.variableCache,Name{iVar});
             end
             Name = string(Name);
             Dimension = string(Dimension);
             Units = string(Units);
+            Cached = string(Cached);
             Description = string(Description);
-            T = table(Name,Dimension,Units,Description);
+            T = table(Name,Dimension,Units,Cached,Description);
             disp(T);
         end
 
@@ -530,7 +538,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         % Add and remove internal waves from the model
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        % [ncfile,matFilePath] = writeToFile(self,netcdfFile,variables,options);
+        ncfile = writeToFile(self,path,props,options)
 
         function flag = hasMeanPressureDifference(self)
             % checks if there is a non-zero mean pressure difference between the top and bottom of the fluid

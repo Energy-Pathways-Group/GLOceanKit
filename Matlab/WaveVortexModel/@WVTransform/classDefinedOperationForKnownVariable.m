@@ -27,10 +27,30 @@ end
 for iOp = 1:length(variableName)
     name = variableName{iOp};
     switch name
+        case 'phase'
+            varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'radians', 'phase of the Ap wave modes');
+            varAnnotation.isDependentOnApAmA0 = false;
+            f = @(wvt) exp(-wvt.iOmega*(wvt.t-wvt.t0));
+
+        case 'conjPhase'
+            varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'radians', 'phase of the Am wave modes');
+            varAnnotation.isDependentOnApAmA0 = false;
+            f = @(wvt) conj(wvt.phase);
+
         case 'A0t'
             varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'m', 'geostrophic coefficients time t');
-            varAnnotation.isComplex = 1;
+            varAnnotation.isComplex = true;
             f = @(wvt) wvt.A0;
+
+        case 'Apt'
+            varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'m/s', 'positive wave coefficients at reference time t');
+            varAnnotation.isComplex = true;
+            f = @(wvt) wvt.Ap .* wvt.phase;
+
+        case 'Amt'
+            varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'m/s', 'negative wave coefficients at reference time t');
+            varAnnotation.isComplex = true;
+            f = @(wvt) wvt.Am .* wvt.conjPhase;
             
         case 'u'
             varAnnotation = WVVariableAnnotation(name,options.spatialDimensionNames,'m/s', 'x-component of the fluid velocity');
@@ -61,20 +81,20 @@ for iOp = 1:length(variableName)
 
         case 'psi'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'m^2/s', 'geostrophic streamfunction');
-            varAnnotation.isVariableWithLinearTimeStep = 0;
-            varAnnotation.isVariableWithNonlinearTimeStep = 1;
+            varAnnotation.isVariableWithLinearTimeStep = false;
+            varAnnotation.isVariableWithNonlinearTimeStep = true;
             f = @(wvt) (wvt.g/wvt.f) *transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.PA0.*wvt.A0t);
 
         case 'qgpv'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'1/s', 'quasigeostrophic potential vorticity');
-            varAnnotation.isVariableWithLinearTimeStep = 0;
-            varAnnotation.isVariableWithNonlinearTimeStep = 1;
+            varAnnotation.isVariableWithLinearTimeStep = false;
+            varAnnotation.isVariableWithNonlinearTimeStep = true;
             f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.A0_QGPV_factor .*wvt.A0t);
 
         case 'energy'
             varAnnotation = WVVariableAnnotation('energy',{},'m3/s2', 'horizontally-averaged depth-integrated energy computed spectrally from wave-vortex coefficients');
-            varAnnotation.isVariableWithLinearTimeStep = 0;
-            varAnnotation.isVariableWithNonlinearTimeStep = 1;
+            varAnnotation.isVariableWithLinearTimeStep = false;
+            varAnnotation.isVariableWithNonlinearTimeStep = true;
             f = @(wvt) sum( wvt.Apm_TE_factor(:).*( mask.Ap(:).*abs(wvt.Ap(:)).^2 + mask.Am(:).*abs(wvt.Am(:)).^2 ) + wvt.A0_TE_factor(:).*( mask.A0(:).*abs(wvt.A0(:)).^2) );
 
         case 'uvMax'

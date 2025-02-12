@@ -239,7 +239,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 warning('The nonlinear flux has no damping and may not be stable.');
             end
             defaultGroup = self.addOutputGroup(self.defaultOutputGroupName);
-            defaultGroup.setNetCDFOutputVariables(intersect({'Ap','Am','A0'},wvt.variableNames));
+            outVars = intersect({'Ap','Am','A0'},wvt.variableNames);
+            defaultGroup.setNetCDFOutputVariables(outVars{:});
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
         end

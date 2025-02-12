@@ -64,6 +64,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
                 options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
                 options.g (1,1) double = 9.81
+                
                 options.dLnN2 (:,1) double
                 options.PF0inv
                 options.QG0inv
@@ -87,6 +88,19 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             self.initializeMeanDensityAnomalyComponent();
             self.initializeInternalGravityWaveComponent();
             self.initializeInertialOscillationComponent();
+
+            % This is not good, I think this should go in the constructor.
+            self.nonlinearAdvection = WVNonlinearAdvection(self);
+            self.addForcing(self.nonlinearAdvection);
+            
+            % the property annotations for these variables will already
+            % have beena added, but that is okay, they will be replaced.
+            varNames = self.namesOfTransformVariables();
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+
+            self.A0 = zeros(self.spectralMatrixSize);
+            self.Ap = zeros(self.spectralMatrixSize);
+            self.Am = zeros(self.spectralMatrixSize);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -124,16 +138,15 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function F0 = nonlinearFlux(self)
-            self.Fpv = 0*self.Fpv;
+        function [Fp,Fm,F0] = nonlinearFlux(self)
+            Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
             for i=1:length(self.spatialForcing)
-               self.Fpv = self.spatialForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+               [Fu, Fv, Feta] = self.spatialForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
-            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
             for i=1:length(self.spectralForcing)
-               self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
-            end
-            F0 = self.F0;
+               [Fp,Fm,F0] = self.spectralForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+            end            
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -227,8 +240,6 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             ratio = self.P0(j+1);
         end
 
-        [ncfile,matFilePath] = writeToFile(wvt,path,variables,options)
-
         function flag = isequal(self,other)
             arguments
                 self WVTransform
@@ -302,7 +313,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         end
 
         function names = namesOfTransformVariables()
-            names = {'A0t','uvMax','zeta_z','ssh','u','v','eta','pi','psi','qgpv'};
+            names = {'phase','conjPhase','A0t','Apt','Amt','uvMax','wMax','zeta_z','ssh','ssu','ssv','u','v','w','eta','pi','p','psi','qgpv','rho_e','rho_total'};
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()
