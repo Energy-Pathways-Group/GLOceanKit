@@ -57,7 +57,7 @@ classdef WVInertialOscillationMethods < handle
 
     methods
         function flowComponent = get.inertialComponent(self)
-            flowComponent = self.flowComponent('inertial');
+            flowComponent = self.flowComponentWithName('inertial');
         end
 
         function energy = inertialEnergy(self)
@@ -66,7 +66,7 @@ classdef WVInertialOscillationMethods < handle
             % - Topic: Energetics
             % - Declaration: inertialEnergy
             % - nav_order: 1
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('inertial'));
+            energy = self.totalEnergyOfFlowComponent(self.flowComponentWithName('inertial'));
         end
 
         function addInertialMotions(self,u,v)

@@ -9,6 +9,6 @@ arguments (Output)
     jMode (:,1) double {mustBeInteger,mustBeNonnegative}
 end
 [jIndex,klIndex] = ind2sub(self.spectralMatrixSize,linearIndex);
-[kMode,lMode] = modeNumberFromIndex@WVGeometryDoublyPeriodic(klIndex);
+[kMode,lMode] = self.klModeNumberFromIndex(klIndex);
 jMode = jIndex - 1;
 end

@@ -76,7 +76,7 @@ classdef WVInternalGravityWaveMethods < handle
 
     methods
         function flowComponent = get.waveComponent(self)
-            flowComponent = self.flowComponent('wave');
+            flowComponent = self.flowComponentWithName('wave');
         end
 
         function [Apt,Amt] = waveCoefficientsAtTimeT(self)
@@ -95,7 +95,7 @@ classdef WVInternalGravityWaveMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicEnergy
             % - nav_order: 2
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('wave'));
+            energy = self.totalEnergyOfFlowComponent(self.flowComponentWithName('wave'));
         end
 
         function [omega,k,l] = initWithWaveModes(self, options)

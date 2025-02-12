@@ -19,7 +19,5 @@ end
 arguments (Output)
     bool (:,1) logical {mustBeMember(bool,[0 1])}
 end
-klCheck = isValidModeNumber@WVGeometryDoublyPeriodic(kMode,lMode);
-jCheck = jMode >= 0 & jMode <= self.Nj;
-bool = klCheck & jCheck;
+bool = self.isValidPrimaryModeNumber(kMode,lMode,jMode) | self.isValidConjugateModeNumber(kMode,lMode,jMode);
 end

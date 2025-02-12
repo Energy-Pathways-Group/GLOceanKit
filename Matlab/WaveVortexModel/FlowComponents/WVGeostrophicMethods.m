@@ -92,7 +92,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicEnergy
             % - nav_order: 1
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('geostrophic'));
+            energy = self.totalEnergyOfFlowComponent(self.flowComponentWithName('geostrophic'));
         end
 
         function energy = geostrophicKineticEnergy(self)

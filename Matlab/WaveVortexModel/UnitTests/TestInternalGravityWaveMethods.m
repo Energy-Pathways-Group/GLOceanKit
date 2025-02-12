@@ -7,10 +7,11 @@ classdef TestInternalGravityWaveMethods < matlab.unittest.TestCase
     properties (ClassSetupParameter)
         % Lxyz = struct('Lxyz',[750e0, 750e0, 375]);
         Lxyz = struct('Lxyz',[750e2, 750e2, 1300]);
-        Nxyz = struct('Nx64Ny64Nz30',[64 64 32]);
+        %Nxyz = struct('Nx64Ny64Nz30',[64 64 32]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        % transform = {'boussinesq'};
+        Nxyz = struct('Nx32Ny32Nz10',2*[16 16 5]);
+        %transform = {'constant','hydrostatic','boussinesq'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)

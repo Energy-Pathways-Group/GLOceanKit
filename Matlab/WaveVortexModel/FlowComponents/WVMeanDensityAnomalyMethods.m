@@ -56,7 +56,7 @@ classdef WVMeanDensityAnomalyMethods < handle
 
     methods
         function flowComponent = get.mdaComponent(self)   
-            flowComponent = self.flowComponent('mda');
+            flowComponent = self.flowComponentWithName('mda');
         end
 
         function energy = mdaEnergy(self)

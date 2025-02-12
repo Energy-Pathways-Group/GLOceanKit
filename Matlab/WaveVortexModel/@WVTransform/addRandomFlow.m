@@ -42,7 +42,7 @@ if isempty(flowComponentNames)
     flowComponent = self.totalFlowComponent;
 else
     flowComponent = self.flowComponentWithName(flowComponentNames{1});
-    for i=2:length(flowComponentWithName)
+    for i=2:length(flowComponentNames)
         flowComponent = flowComponent + self.flowComponentWithName(flowComponentNames{i});
     end
 end

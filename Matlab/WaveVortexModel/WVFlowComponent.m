@@ -173,7 +173,7 @@ classdef WVFlowComponent < handle & matlab.mixin.Heterogeneous
 
                     conjugateModes = self.maskAm & self.wvt.totalFlowComponent.maskOfConjugateModesForCoefficientMatrix(WVCoefficientMatrix.Am);
                     if any(conjugateModes(:))
-                        Am(logical(conjugateModes)) = conj(Ap(logical(validModes)));
+                        Am(logical(conjugateModes)) = conj(Ap(logical(conjugateModes)));
                     end
                 end
                 

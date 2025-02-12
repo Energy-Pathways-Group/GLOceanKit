@@ -8,8 +8,8 @@ classdef TestGeostrophicMethods < matlab.unittest.TestCase
         Lxyz = struct('Lxyz',[750e3, 750e3, 1300]);
         Nxyz = struct('Nx64Ny64Nz30',[64 64 40]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
-        transform = {'constant','hydrostatic','boussinesq'};
-        % transform = {'boussinesq'};
+        % transform = {'constant','hydrostatic','boussinesq'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)

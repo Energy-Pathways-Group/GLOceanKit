@@ -444,7 +444,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         u_x = diffX(self,u,n);
         u_y = diffY(self,u,n);
 
-        function bool = isValidPrimaryModeNumber(self,kMode,lMode)
+        function bool = isValidPrimaryKLModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid primary (non-conjugate) WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid
@@ -455,7 +455,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % The result is affected by the chosen conjugateDimension.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidPrimaryModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidPrimaryKLModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -473,7 +473,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             end
         end
 
-        function bool = isValidConjugateModeNumber(self,kMode,lMode)
+        function bool = isValidConjugateKLModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid conjugate WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid
@@ -486,7 +486,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % Any valid self-conjugate modes (i.e., k=l=0) will return 1.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidConjugateModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidConjugateKLModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -507,7 +507,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             end
         end
 
-        function bool = isValidModeNumber(self,kMode,lMode)
+        function bool = isValidKLModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid WV mode number
             %
             % returns a boolean indicating whether (k,l) is a valid WV mode
@@ -520,7 +520,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % conjugateDimension.
             %
             % - Topic: Index gymnastics
-            % - Declaration: bool = isValidModeNumber(kMode,lMode)
+            % - Declaration: bool = isValidKLModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns bool: [0 1]
@@ -533,10 +533,10 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 bool (:,1) logical {mustBeMember(bool,[0 1])}
             end
 
-            bool = self.isValidPrimaryModeNumber(kMode,lMode) | self.isValidConjugateModeNumber(kMode,lMode);
+            bool = self.isValidPrimaryKLModeNumber(kMode,lMode) | self.isValidConjugateKLModeNumber(kMode,lMode);
         end
 
-        function [kMode,lMode] = primaryModeNumberFromWVModeNumber(self,kMode,lMode)
+        function [kMode,lMode] = primaryKLModeNumberFromKLModeNumber(self,kMode,lMode)
             % takes any valid WV mode number and returns the primary mode number
             %
             % The function first confirms that the mode numbers are valid,
@@ -546,7 +546,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % The result is affected by the chosen conjugateDimension.
             %
             % - Topic: Index gymnastics
-            % - Declaration: [kMode,lMode] = primaryModeNumberFromWVModeNumber(kMode,lMode)
+            % - Declaration: [kMode,lMode] = primaryKLModeNumberFromKLModeNumber(kMode,lMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns kMode: integer
@@ -561,8 +561,8 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 lMode (:,1) double {mustBeInteger}
             end
 
-            isValidPrimary = self.isValidPrimaryModeNumber(kMode,lMode);
-            isValidConjugate = self.isValidConjugateModeNumber(kMode,lMode);
+            isValidPrimary = self.isValidPrimaryKLModeNumber(kMode,lMode);
+            isValidConjugate = self.isValidConjugateKLModeNumber(kMode,lMode);
             if ~all(isValidConjugate | isValidPrimary)
                 error('One or more mode numbers are not valid WV mode numbers.');
             end
@@ -570,7 +570,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             lMode(isValidConjugate) = -lMode(isValidConjugate);
         end
 
-        function index = indexFromModeNumber(self,kMode,lMode)
+        function index = indexFromKLModeNumber(self,kMode,lMode)
             % return the linear index into k_wv and l_wv from a mode number
             %
             % This function will return the linear index into the (k_wv,l_wv) arrays,
@@ -579,7 +579,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % throw an error.
             %
             % - Topic: Index gymnastics
-            % - Declaration: index = indexFromModeNumber(kMode,lMode,jMode)
+            % - Declaration: index = indexFromKLModeNumber(kMode,lMode,jMode)
             % - Parameter kMode: integer
             % - Parameter lMode: integer
             % - Returns linearIndex: a non-negative integer number
@@ -591,21 +591,21 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             arguments (Output)
                 index (:,1) double {mustBeInteger,mustBePositive}
             end
-            if ~self.isValidModeNumber(kMode,lMode)
+            if ~self.isValidKLModeNumber(kMode,lMode)
                 error('Invalid WV mode number!');
             end
             indices = 1:self.Nkl;
             index = indices(self.kMode_wv == kMode & self.lMode_wv == lMode);
         end
 
-        function [kMode,lMode] = modeNumberFromIndex(self,linearIndex)
+        function [kMode,lMode] = klModeNumberFromIndex(self,linearIndex)
             % return mode number from a linear index into a WV matrix
             %
             % This function will return the mode numbers (kMode,lMode)
             % given some linear index into a WV structured matrix.
             %
             % - Topic: Index gymnastics
-            % - Declaration: [kMode,lMode] = modeNumberFromIndex(self,linearIndex)
+            % - Declaration: [kMode,lMode] = klModeNumberFromIndex(self,linearIndex)
             % - Parameter linearIndex: a non-negative integer number
             % - Returns kMode: integer
             % - Returns lMode: integer
