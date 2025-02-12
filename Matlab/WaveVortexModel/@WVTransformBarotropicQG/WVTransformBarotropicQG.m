@@ -1,4 +1,4 @@
-classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostrophicMethods
+classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransform & WVGeostrophicMethods
     % A transform for modeling single-layer quasigeostrophic flow
     %
     % This is a two-dimensional, single-layer which may be interpreted as
@@ -53,10 +53,10 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             end
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicBarotropic(Lxy,Nxy,optionCell{:});
+            self@WVTransform(WVForcingType(["PVSpectral","PVSpatial"]));
             self@WVGeostrophicMethods();
 
             % This is not good, I think this should go in the constructor.
-            self.forcingType = WVForcingType(["PVSpectral","PVSpatial"]);
             self.nonlinearAdvection = WVNonlinearAdvection(self);
             self.addForcing(self.nonlinearAdvection);
             
@@ -177,17 +177,22 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             self.setGeostrophicStreamfunction(psi);
         end
     end
+    
+    methods (Access=protected)
+        % protected — Access from methods in class or subclasses
+        varargout = interpolatedFieldAtPosition(self,x,y,z,method,varargin);
+    end
 
     methods (Static)
 
-        function names = classDefinedSpectralDimensionNames()
+        function names = spectralDimensionNames()
             % return a cell array of property names required by the class
             %
             % This function returns an array of property names required to be written
             % by the class, in order to restore its state.
             %
             % - Topic: Developer
-            % - Declaration:  names = classRequiredPropertyNames()
+            % - Declaration:  names = spectralDimensionNames()
             % - Returns names: array strings
             arguments (Output)
                 names cell
@@ -195,13 +200,13 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
             names = {'kl'};
         end
 
-        function names = classDefinedSpatialDimensionNames()
+        function names = spatialDimensionNames()
             % return a cell array of the spatial dimension names
             %
             % This function returns an array of dimension names
             %
             % - Topic: Developer
-            % - Declaration:  names = classDefinedSpatialDimensionNames()
+            % - Declaration:  names = spatialDimensionNames()
             % - Returns names: array strings
             arguments (Output)
                 names cell
@@ -243,8 +248,8 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVGeostr
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()
-            spectralDimensionNames = WVTransformBarotropicQG.classDefinedSpectralDimensionNames();
-            spatialDimensionNames = WVTransformBarotropicQG.classDefinedSpatialDimensionNames();
+            spectralDimensionNames = WVTransformBarotropicQG.spectralDimensionNames();
+            spatialDimensionNames = WVTransformBarotropicQG.spatialDimensionNames();
 
             propertyAnnotations = WVGeometryDoublyPeriodicBarotropic.propertyAnnotationsForGeometry();
             propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = spectralDimensionNames));

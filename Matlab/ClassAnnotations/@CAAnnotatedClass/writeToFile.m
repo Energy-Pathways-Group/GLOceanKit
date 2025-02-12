@@ -23,8 +23,8 @@ function ncfile = writeToFile(self,path,properties,options)
         properties char
     end
     arguments (Input)
-        options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-        options.shouldAddRequiredProperties double {mustBeMember(options.shouldAddRequiredProperties,[0 1])} = 1 
+        options.shouldOverwriteExisting logical = false
+        options.shouldAddRequiredProperties logical = true
         options.attributes = configureDictionary("string","string")
     end
     arguments (Output)

@@ -41,20 +41,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Writing to NetCDF files
         % Empty indicates no file output.
         ncfile NetCDFFile
-        
-        % List of all StateVariables being written to NetCDF file
-        % - Topic: Writing to NetCDF files
-        % The default list includes 'Ap', 'Am', and 'A0' which is the
-        % minimum set of variables required for a restart.
-        netCDFOutputVariables = {'Ap','Am','A0'}
-
-        % Model output interval (seconds)
-        % - Topic: Integration
-        % This property is optionally set when calling setupIntegrator. If
-        % set, it will allow you to call -integrateToNextOutputTime and, if
-        % a NetCDF file is set for output, it will set the interval at
-        % which time steps are written to file.
-        outputInterval = [] % (1,1) double
 
         % output index of the current/most recent step.
         % - Topic: Integration
@@ -78,16 +64,66 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
         t % (1,1) double
+
+        outputGroups
     end
 
+    properties (Access=private)
+        outputGroupNameMap = configureDictionary("string","WVModelOutputGroup")
+    end
 
     methods (Static)
         model = modelFromFile(path,options)
+
+        function name = defaultOutputGroupName()
+            name = "wave-vortex";
+        end
     end
 
     methods
+        function outputGroups = get.outputGroups(self)
+            outputGroups = [self.outputGroupNameMap(self.outputGroupNameMap.keys)];
+        end
+        function names = outputGroupNames(self)
+            % retrieve the names of all output group names
+            %
+            % - Topic: Utility function — Metadata
+            arguments (Input)
+                self WVModel {mustBeNonempty}
+            end
+            arguments (Output)
+                names string
+            end
+            names = self.outputGroupNameMap.keys;
+        end
 
-        function addNetCDFOutputVariables(self,variables)
+        function val = outputGroupWithName(self,name)
+            % retrieve a WVModelOutputGroup by name
+            arguments (Input)
+                self WVModel {mustBeNonempty}
+                name char {mustBeNonempty}
+            end
+            arguments (Output)
+                val WVModelOutputGroup
+            end
+            val = self.outputGroupNameMap(name);
+        end
+
+        function outputGroup = addOutputGroup(self,name,options)
+            arguments
+                self WVModel {mustBeNonempty}
+                name {mustBeText}
+                options.outputInterval
+            end
+            if isfield(options,"outputInterval")
+                outputGroup = WVModelOutputGroup(self,name,outputInterval=options.outputInterval);
+            else
+                outputGroup = WVModelOutputGroup(self,name);
+            end
+            self.outputGroupNameMap(name) = outputGroup;
+        end
+
+        function addNetCDFOutputVariables(self,variables,options)
             % Add variables to list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -108,14 +144,17 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            unknownVars = setdiff(variables,self.wvt.variableNames);
-            if ~isempty(unknownVars)
-               error('The WVTransform does not have a variable named %s',unknownVars{1}) ;
+            arguments
+                options.outputGroupName
             end
-            self.netCDFOutputVariables = union(self.netCDFOutputVariables,variables);
+            if ~isfield(options,"outputGroupName")
+                options.outputGroupName = self.defaultOutputGroupName;
+            end
+            outputGroup = self.outputGroupWithName(options.outputGroupName);
+            outputGroup.addNetCDFOutputVariables(variables{:});
         end
 
-        function setNetCDFOutputVariables(self,variables)
+        function setNetCDFOutputVariables(self,variables,options)
             % Set list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -135,14 +174,17 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            unknownVars = setdiff(variables,self.wvt.variableNames);
-            if ~isempty(unknownVars)
-                error('The WVTransform does not have a variable named %s',unknownVars{1}) ;
+            arguments
+                options.outputGroupName
             end
-            self.netCDFOutputVariables = variables;
+            if ~isfield(options,"outputGroupName")
+                options.outputGroupName = self.defaultOutputGroupName;
+            end
+            outputGroup = self.outputGroupWithName(options.outputGroupName);
+            outputGroup.setNetCDFOutputVariables(variables{:});
         end
 
-        function removeNetCDFOutputVariables(self,variables)
+        function removeNetCDFOutputVariables(self,variables,options)
             % Remove variables from the list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -162,7 +204,14 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            self.netCDFOutputVariables = setdiff(self.netCDFOutputVariables,variables);
+            arguments
+                options.outputGroupName
+            end
+            if ~isfield(options,"outputGroupName")
+                options.outputGroupName = self.defaultOutputGroupName;
+            end
+            outputGroup = self.outputGroupWithName(options.outputGroupName);
+            outputGroup.removeNetCDFOutputVariables(variables{:});
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,10 +238,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             if self.wvt.hasClosure == false
                 warning('The nonlinear flux has no damping and may not be stable.');
             end
-
+            defaultGroup = self.addOutputGroup(self.defaultOutputGroupName);
+            defaultGroup.setNetCDFOutputVariables(intersect({'Ap','Am','A0'},wvt.variableNames));
             self.particleIndexWithName = containers.Map();
             self.tracerIndexWithName = containers.Map();
-            self.netcdfVariableMapForParticleWithName = containers.Map();
         end
         
         function value = get.linearDynamics(self)
@@ -229,6 +278,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
             arguments
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "spline"
+                options.outputGroupName = "wave-vortex"
             end
 
             if self.didSetupIntegrator == 1
@@ -240,8 +290,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 if ~any(ismember(self.wvt.variableNames,trackedFieldNames{iVar}))
                     error('Unable to find a WVVariableAnnotation named %s.', trackedFieldNames{iVar});
                 end
-                transformVar = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
-                if self.wvt.isBarotropic == 1
+                transformVar = self.wvt.propertyAnnotationWithName(trackedFieldNames{iVar});
+                if isequal(self.wvt.spatialDimensionNames,{'x','y'})
                     if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
                         error('The WVVariableAnnotation %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
                     end
@@ -269,6 +319,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.particle{n}.trackedFieldInterpMethod = options.trackedVarInterpolation;
 
             self.updateParticleTrackedFields();
+
+            outputGroup = self.outputGroupWithName(options.outputGroupName);
+            outputGroup.addNetCDFOutputParticles(name);
         end
 
         function [x,y,z,trackedFields] = particlePositions(self,name)
@@ -345,9 +398,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.outputGroupName = "wave-vortex"
             end
             floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
-            self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
+            self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
         end
 
         function [x,y,z,tracked] = floatPositions(self)
@@ -396,9 +450,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.outputGroupName = "wave-vortex"
             end
             drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v',interpolationMethod=options.advectionInterpolation),isXYOnly=1);
-            self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation);
+            self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
         end
 
         function [x,y,z,tracked] = drifterPositions(self)
@@ -542,29 +597,31 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 self WVModel {mustBeNonempty}
                 netcdfFile char {mustBeNonempty}
-                options.outputInterval (1,1) double {mustBePositive} = 86400
-                options.Nt (1,1) double {mustBePositive} = Inf
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-                options.shouldUseClassicNetCDF double {mustBeMember(options.shouldUseClassicNetCDF,[0 1])} = 1 
+                options.outputInterval (1,1) double {mustBePositive}
+                options.shouldOverwriteExisting logical = false
             end
 
-            self.outputInterval = options.outputInterval;
-            ncfile = self.wvt.writeToFile(netcdfFile,shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddDefaultVariables=0,shouldUseClassicNetCDF=options.shouldUseClassicNetCDF);
+            defaultGroup = self.outputGroupWithName(self.defaultOutputGroupName);
+            if isempty(defaultGroup.outputInterval)
+                if ~isfield(options,"outputInterval")
+                    error("You must set an output interval");
+                end
+                defaultGroup.outputInterval = options.outputInterval;
+            end
 
-            % Now add a time dimension
-            varAnnotation = self.wvt.variableAnnotationWithName('t');
-            varAnnotation.attributes('units') = varAnnotation.units;
-            varAnnotation.attributes('long_name') = varAnnotation.description;
-            varAnnotation.attributes('standard_name') = 'time';
-            varAnnotation.attributes('long_name') = 'time';
-            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
-            varAnnotation.attributes('axis') = 'T';
-            varAnnotation.attributes('calendar') = 'standard';
-            ncfile.addDimension(varAnnotation.name,[],varAnnotation.attributes,options.Nt);
+            hasOutputInterval = true;
+            for iGroup =1:length(self.outputGroups)
+                hasOutputInterval = hasOutputInterval & ~isempty(self.outputGroups(iGroup).outputInterval);
+            end
+            if ~hasOutputInterval
+                error("One or more groups is missing an output interval");
+            end
 
-            ncfile.addAttribute('shouldUseLinearDynamics',uint8(self.linearDynamics));
+            properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
 
+            ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
             self.ncfile = ncfile;
+            self.didInitializeNetCDFFile = 0;
         end
 
         function recordNetCDFFileHistory(self,options)
@@ -602,11 +659,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
         didSetupIntegrator=0
         didInitializeNetCDFFile=0
-        
-        initialConditionOnlyVariables = {}
-        timeSeriesVariables = {}
-
-        netcdfVariableMapForParticleWithName % map to a map containing the particle variables, e.g. particlesWithName('float') returns a map containing keys ('x','y','z') at minimum
 
         integrationStartTime
         integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
@@ -695,55 +747,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self WVModel {mustBeNonempty}
             end
             if ~isempty(self.ncfile) && self.didInitializeNetCDFFile == 0
-                % Sort through which variables we will record a time series
-                % for, and which we will only write initial conditions.
-                self.initialConditionOnlyVariables = {};
-                self.timeSeriesVariables = {};
-                for iVar = 1:length(self.netCDFOutputVariables)
-                    if isKey(self.ncfile.variableWithName,self.netCDFOutputVariables{iVar}) || isKey(self.ncfile.complexVariableWithName,self.netCDFOutputVariables{iVar})
-                        continue;
-                    end
-
-                    varAnnotation = self.wvt.variableAnnotationWithName(self.netCDFOutputVariables{iVar});
-                    varAnnotation.attributes('units') = varAnnotation.units;
-                    varAnnotation.attributes('long_name') = varAnnotation.description;
-
-                    if (self.linearDynamics == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.linearDynamics == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
-                        self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
-                        if varAnnotation.isComplex == 1
-                            self.ncfile.initComplexVariable(varAnnotation.name,horzcat(varAnnotation.dimensions,'t'),varAnnotation.attributes,'NC_DOUBLE');
-                        else
-                            self.ncfile.initVariable(varAnnotation.name,horzcat(varAnnotation.dimensions,'t'),varAnnotation.attributes,'NC_DOUBLE');
-                        end
-                    else
-                        self.initialConditionOnlyVariables{end+1} = self.netCDFOutputVariables{iVar};
-                        if varAnnotation.isComplex == 1
-                            self.ncfile.initComplexVariable(varAnnotation.name,varAnnotation.dimensions,varAnnotation.attributes,'NC_DOUBLE');
-                            self.ncfile.setVariable(varAnnotation.name,self.wvt.(varAnnotation.name));
-                        else
-                            self.ncfile.addVariable(varAnnotation.name,self.wvt.(varAnnotation.name),varAnnotation.dimensions,varAnnotation.attributes);
-                        end
-                    end
+                for iGroup =1:length(self.outputGroups)
+                    self.outputGroups(iGroup).openNetCDFFileForTimeStepping(self.ncfile);
                 end
-
-                for iTracer = 1:length(self.tracerArray)
-                    if isKey(self.ncfile.variableWithName,self.tracerNames{iTracer})
-                        continue;
-                    end
-                    if self.wvt.isBarotropic
-                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
-                    else
-                        self.ncfile.initVariable(self.tracerNames{iTracer}, {'x','y','z','t'},containers.Map({'isTracer'},{'1'}),'NC_DOUBLE');
-                    end
-                end
-
-                for iParticle = 1:length(self.particle)
-                    if isKey(self.ncfile.variableWithName,self.particle{iParticle}.name)
-                        continue;
-                    end
-                    self.initializeParticleStorage(self.particle{iParticle}.name,size(self.particle{iParticle}.x,2),self.particle{iParticle}.trackedFieldNames{:});
-                end
-
                 self.didInitializeNetCDFFile = 1;
                 self.incrementsWrittenToFile = 0;
                 self.writeTimeStepToNetCDFFile();
@@ -754,99 +760,19 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         function writeTimeStepToNetCDFFile(self)
             if ( ~isempty(self.ncfile) && self.t > self.timeOfLastIncrementWrittenToFile )
                 self.updateParticleTrackedFields();
-
-                outputIndex = self.incrementsWrittenToFile + 1;
-
-                self.ncfile.concatenateVariableAlongDimension('t',self.t,'t',outputIndex);
-
-                for iVar=1:length(self.timeSeriesVariables)
-                    self.ncfile.concatenateVariableAlongDimension(self.timeSeriesVariables{iVar},self.wvt.(self.timeSeriesVariables{iVar}),'t',outputIndex);
+                for iGroup =1:length(self.outputGroups)
+                    self.outputGroups(iGroup).writeTimeStepToNetCDFFile(self.t);
                 end
-
-                for iParticle = 1:length(self.particle)
-                    [x,y,z,trackedFields] = self.particlePositions(self.particle{iParticle}.name);
-                    self.writeParticleDataAtTimeIndex(self.particle{iParticle}.name,outputIndex,x,y,z,trackedFields);
-                end
-
-                for iTracer = 1:length(self.tracerArray)
-                    self.ncfile.WriteTracerWithNameTimeAtIndex(outputIndex,self.tracerNames{iTracer},self.tracerArray{iTracer});
-                end
-
-                self.incrementsWrittenToFile = outputIndex;
                 self.timeOfLastIncrementWrittenToFile = self.t;
             end
         end
 
         function closeNetCDFFile(self)
             if ~isempty(self.ncfile)
-                fprintf('Ending simulation. Wrote %d time points to file\n',self.incrementsWrittenToFile);
-                self.ncfile.close();
-            end
-        end
-
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Particles
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function initializeParticleStorage(self,particleName, nParticles, trackedFieldNames)
-            arguments
-                self WVModel
-                particleName char
-                nParticles (1,1) double {mustBePositive}
-            end
-            arguments (Repeating)
-                trackedFieldNames char
-            end
-
-            variables = containers.Map();
-
-            commonKeys = {'isParticle','particleName'};
-            commonVals = {1,particleName};
-            attributes = containers.Map(commonKeys,commonVals);
-            attributes('units') = 'unitless id number';
-            attributes('particleVariableName') = 'id';
-            [dim,var] = self.ncfile.addDimension(strcat(particleName,'_id'),(1:nParticles).',attributes);
-            variables('id') = var;
-            
-            % careful to create a new object each time we init
-            if self.wvt.isBarotropic == 1
-                dimVars = {'x','y'};
-            else
-                dimVars = {'x','y','z'};
-            end
-            for iVar=1:length(dimVars)
-                attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = self.wvt.dimensionAnnotationWithName(dimVars{iVar}).units;
-                attributes('long_name') = strcat(self.wvt.dimensionAnnotationWithName(dimVars{iVar}).description,', recorded along the particle trajectory');
-                attributes('particleVariableName') = dimVars{iVar};
-                variables(dimVars{iVar}) = self.ncfile.initVariable(strcat(particleName,'_',dimVars{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
-            end
-
-            for iVar=1:length(trackedFieldNames)
-                varAnnotation = self.wvt.variableAnnotationWithName(trackedFieldNames{iVar});
-                attributes = containers.Map(commonKeys,commonVals);
-                attributes('units') = varAnnotation.units;
-                attributes('long_name') = strcat(varAnnotation.description,', recorded along the particle trajectory');
-                attributes('particleVariableName') = trackedFieldNames{iVar};
-                variables(trackedFieldNames{iVar}) = self.ncfile.initVariable(strcat(particleName,'_',trackedFieldNames{iVar}),{dim.name,'t'},attributes,'NC_DOUBLE');
-            end
- 
-            self.netcdfVariableMapForParticleWithName(particleName) = variables;
-        end
-
-        function writeParticleDataAtTimeIndex(self,particleName,iTime,x,y,z,trackedFields)
-            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_x'),x,'t',iTime);
-            self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_y'),y,'t',iTime);
-            if ~self.wvt.isBarotropic
-                self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_z'),z,'t',iTime);
-            end
-
-            if ~isempty(trackedFields)
-                trackedFieldNames = fieldnames(trackedFields);
-                for iField=1:length(trackedFieldNames)
-                    self.ncfile.concatenateVariableAlongDimension(strcat(particleName,'_',trackedFieldNames{iField}),trackedFields.(trackedFieldNames{iField}),'t',iTime);
+                for iGroup =1:length(self.outputGroups)
+                    self.outputGroups(iGroup).closeNetCDFFile();
                 end
+                self.ncfile.close();
             end
         end
     end

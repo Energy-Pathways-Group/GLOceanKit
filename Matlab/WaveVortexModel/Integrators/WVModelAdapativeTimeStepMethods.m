@@ -151,7 +151,12 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 finalTime (1,1) double
             end
             if ~isempty(self.ncfile)
-                self.outputTimes = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
+                if length(self.outputGroups) > 1
+                    error('As a temporary measure, only one output group is supported.');
+                end
+                outputInterval = self.outputGroupWithName(self.defaultOutputGroupName).outputInterval;
+
+                self.outputTimes = ((self.timeOfLastIncrementWrittenToFile+outputInterval):outputInterval:finalTime).';
                 integratorTimes = self.outputTimes;
                 if integratorTimes(1) ~= self.t
                     integratorTimes = cat(1,self.t,integratorTimes);

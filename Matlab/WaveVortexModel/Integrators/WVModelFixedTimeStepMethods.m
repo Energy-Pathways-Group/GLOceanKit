@@ -14,6 +14,7 @@ classdef WVModelFixedTimeStepMethods < handle
         t
         didSetupIntegrator
         finalIntegrationTime
+        outputGroups
     end
     properties
         integratorOptions
@@ -24,6 +25,14 @@ classdef WVModelFixedTimeStepMethods < handle
 
         stepsPerOutput      % number of RK4 steps between each output
         firstOutputStep     % first RK4 step that should be output. 0 indicates the initial conditions should be output
+
+        % Model output interval (seconds)
+        % - Topic: Integration
+        % This property is optionally set when calling setupIntegrator. If
+        % set, it will allow you to call -integrateToNextOutputTime and, if
+        % a NetCDF file is set for output, it will set the interval at
+        % which time steps are written to file.
+        outputInterval
     end
 
     methods (Abstract)
@@ -31,6 +40,10 @@ classdef WVModelFixedTimeStepMethods < handle
         showIntegrationStartDiagnostics(self,finalTime)
         showIntegrationTimeDiagnostics(self,finalTime)
         showIntegrationFinishDiagnostics(self)
+        outputGroupWithName(self,name)
+    end
+    methods (Static,Abstract)
+        name = defaultOutputGroupName()
     end
 
     methods
@@ -66,6 +79,10 @@ classdef WVModelFixedTimeStepMethods < handle
         end
 
         function createFixedTimeStepIntegrator(self)
+            if length(self.outputGroups) > 1
+                error('The fixed time step integrator only supports a single output interval; you can only have one output group.');
+            end
+            self.outputInterval = self.outputGroupWithName(self.defaultOutputGroupName).outputInterval;
             if ~isempty(self.outputInterval)
                 effectiveOutputInterval = self.outputInterval;
             else

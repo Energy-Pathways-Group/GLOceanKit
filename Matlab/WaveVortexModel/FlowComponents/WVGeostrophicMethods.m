@@ -1,4 +1,4 @@
-classdef WVGeostrophicMethods < WVTransform
+classdef WVGeostrophicMethods < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -15,16 +15,16 @@ classdef WVGeostrophicMethods < WVTransform
         % - nav_order: 1
         geostrophicComponent
     end
-    % properties (Abstract)
-    %     A0
-    %     h_0  % [Nj 1]
-    % end
-    % methods (Abstract)
-    %     ratio = maxFg(self,kMode,lMode,jMode);
-    %     u_bar = transformFromSpatialDomainWithFg(self, u)
-    %     removeAll(self)
-    %     addPrimaryFlowComponent
-    % end
+    properties (Abstract)
+        A0
+        h_0  % [Nj 1]
+    end
+    methods (Abstract)
+        ratio = maxFg(self,kMode,lMode,jMode);
+        u_bar = transformFromSpatialDomainWithFg(self, u)
+        removeAll(self)
+        addPrimaryFlowComponent
+    end
 
     methods (Access=protected)
         function self = WVGeostrophicMethods(self)

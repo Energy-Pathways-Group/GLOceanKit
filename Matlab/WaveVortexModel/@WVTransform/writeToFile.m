@@ -23,8 +23,8 @@ function ncfile = writeToFile(self,path,properties,options)
         properties char
     end
     arguments (Input)
-        options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-        options.shouldAddRequiredProperties double {mustBeMember(options.shouldAddRequiredProperties,[0 1])} = 1 
+        options.shouldOverwriteExisting logical = false
+        options.shouldAddRequiredProperties logical = true
         options.attributes = configureDictionary("string","string")
     end
     arguments (Output)
@@ -36,7 +36,6 @@ function ncfile = writeToFile(self,path,properties,options)
     options.attributes('date_created') = string(datetime('now'));
     options.attributes('history') = string(strcat(string(datetime('now')),': file created.'));
     options.attributes('references') = 'Early, J., Lelong, M., & Sundermeyer, M. (2021). A generalized wave-vortex decomposition for rotating Boussinesq flows with arbitrary stratification. Journal of Fluid Mechanics, 912, A32. doi:10.1017/jfm.2020.995';
-    options.attributes('WVTransform') = class(self);
 
     optionCell = namedargs2cell(options);
     ncfile = writeToFile@CAAnnotatedClass(self,path,properties{:},optionCell{:});

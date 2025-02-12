@@ -58,7 +58,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
-        version = 3.0;
+        version = "3.1.0";
         isHydrostatic = true
         forcingType
     end
@@ -108,8 +108,8 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
     
     methods (Static,Abstract)
-        names = classDefinedSpatialDimensionNames()
-        names = classDefinedSpectralDimensionNames()
+        names = spatialDimensionNames()
+        names = spectralDimensionNames()
     end
 
     methods (Access=protected)
@@ -146,12 +146,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
 
     methods
-        function self = WVTransform()
+        function self = WVTransform(forcingType)
             % initialize a WVTransform instance
             %
             % This must be called from a subclass.
             % - Topic: Internal
             arguments
+                forcingType WVForcingType {mustBeNonempty}
             end
             
             self.clearVariableCache();
@@ -164,6 +165,16 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
+
+            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
+            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
+            if length(intersect(spatialTypes,forcingType)) > 1
+                error("A WVTransform cannot have more than one spatial forcing type.")
+            end
+            if length(intersect(spectralTypes,forcingType)) > 1
+                error("A WVTransform cannot have more than one spectral forcing type.")
+            end
+            self.forcingType = forcingType;
         end
 
         function updateTimeDependentVariablesNameMap(self,~,~)
@@ -261,19 +272,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         % Forcing
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function set.forcingType(self,forcingType)
-            % This should be passed as part of the constructor!!!!
-            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
-            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
-            if length(intersect(spatialTypes,forcingType)) > 1
-                error("A WVTransform cannot have more than one spatial forcing type.")
-            end
-            if length(intersect(spectralTypes,forcingType)) > 1
-                error("A WVTransform cannot have more than one spectral forcing type.")
-            end
-            self.forcingType = forcingType;
-        end
 
         function bool = get.hasClosure(self)
             bool = false;
@@ -418,11 +416,21 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function names = variableNames(self)
+            annotations = self.propertyAnnotations;
+            names = {};
+            for i=1:length(annotations)
+                if isa(annotations(i),'WVVariableAnnotation')
+                    names{end+1} = annotations(i).name;
+                end
+            end
+        end
+
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)
         summarizeModeEnergy(self,options)
 
-        function summarizeDynamicalVariables(self)
+        function summarizeVariables(self)
             annotations = self.propertyAnnotations;
             variableAnnotationNameMap = configureDictionary("string","cell");
             for i=1:length(annotations)

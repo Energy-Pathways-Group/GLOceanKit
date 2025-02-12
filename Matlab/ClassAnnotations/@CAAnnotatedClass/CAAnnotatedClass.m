@@ -254,9 +254,11 @@ classdef CAAnnotatedClass < handle
                 group = targetGroup;
             end
 
+            % Attributes are added to the targetGroup, not the (potential)
+            % subgroup.
             attributeNames = keys(attributes);
             for iKey=1:length(attributeNames)
-                group.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
+                targetGroup.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
             end
 
             for i=1:length(propertyAnnotations)

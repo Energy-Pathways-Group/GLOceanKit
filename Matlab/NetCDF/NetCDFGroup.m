@@ -246,6 +246,8 @@ classdef NetCDFGroup < handle
             if ~isempty(value)
                 options.type = class(value);
                 options.isComplex = ~isreal(value);
+            else
+                options.isComplex = false;
             end
             var = self.addVariable(name,{dim.name},value,type=options.type,isComplex=options.isComplex,attributes=options.attributes);           
         end
@@ -344,7 +346,7 @@ classdef NetCDFGroup < handle
                 dimNames = {}
                 value {mustBeNumericOrLogical} = [] 
                 options.type char = []
-                options.isComplex logical {mustBeMember(options.isComplex,[0 1])}
+                options.isComplex logical
                 options.attributes containers.Map = containers.Map(KeyType='char',ValueType='any');
             end
             if isKey(self.realVariableNameMap,name) || isKey(self.complexVariableNameMap,name)
