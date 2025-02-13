@@ -244,17 +244,6 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             end
             ratio = self.P0(j+1);
         end
-
-        function flag = isequal(self,other)
-            arguments
-                self WVTransform
-                other WVTransform
-            end
-            flag = isequal@WVTransformAbstractHydrostatic(self,other);
-            flag = flag & isequal(self.Ap, other.Ap);
-            flag = flag & isequal(self.Am, other.Am);
-            flag = flag & isequal(self.A0, other.A0);
-        end
     end
 
     methods (Static)

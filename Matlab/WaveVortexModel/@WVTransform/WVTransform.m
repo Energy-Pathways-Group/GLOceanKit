@@ -417,6 +417,30 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         %     end
         % end
 
+        function [u,ux,uy,uz] = transformToSpatialDomainWithFAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            u = self.transformToSpatialDomainWithF(Apm=options.Apm,A0=options.A0);
+            ux = self.diffX(u);
+            uy = self.diffY(u);
+            uz = self.diffZF(u);
+        end
+
+        function [w,wx,wy,wz] = transformToSpatialDomainWithGAllDerivatives(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = []
+                options.A0 double = []
+            end
+            w = self.transformToSpatialDomainWithG(Apm=options.Apm,A0=options.A0);
+            wx = self.diffX(w);
+            wy = self.diffY(w);
+            wz = self.diffZG(w);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Major constituents
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
