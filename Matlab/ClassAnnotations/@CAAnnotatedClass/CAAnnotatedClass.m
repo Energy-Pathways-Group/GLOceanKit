@@ -146,20 +146,19 @@ classdef CAAnnotatedClass < handle
                     continue;
                 end
                 
-                targetGroupName = join( [string(group.name),string(name)],"-");
-                if ~isempty(group.parentGroup) && group.parentGroup.hasGroupWithName(targetGroupName) == true
-                    targetGroup = group.parentGroup.groupWithName(targetGroupName);
-                    if isempty(targetGroup.groups)
-                        if isKey(targetGroup.attributes,'AnnotatedClass')
-                            className = targetGroup.attributes('AnnotatedClass');
-                            var.(name) = options.classConstructor(className,targetGroup);
+                if group.hasGroupWithName(name) == true
+                    objGroup = group.groupWithName(name);
+                    if isempty(objGroup.groups)
+                        if isKey(objGroup.attributes,'AnnotatedClass')
+                            className = objGroup.attributes('AnnotatedClass');
+                            var.(name) = options.classConstructor(className,objGroup);
                             continue;
                         end
                     else
-                        for iObj=1:length(targetGroup.groups)
+                        for iObj=1:length(objGroup.groups)
                             subGroupName = join( [string(name),string(iObj)],"-");
-                            if targetGroup.hasGroupWithName(subGroupName)
-                                subGroup = targetGroup.groupWithName(subGroupName);
+                            if objGroup.hasGroupWithName(subGroupName)
+                                subGroup = objGroup.groupWithName(subGroupName);
                                 if isKey(subGroup.attributes,'AnnotatedClass')
                                     className = subGroup.attributes('AnnotatedClass');
                                     tmp(iObj) = options.classConstructor(className,subGroup);
@@ -228,37 +227,20 @@ classdef CAAnnotatedClass < handle
             CAAnnotatedClass.writeToGroup(ac,ncfile,options.propertyAnnotations,options.attributes);
         end
 
-        function writeToGroup(ac,targetGroup,propertyAnnotations,attributes,options)
+        function writeToGroup(ac,group,propertyAnnotations,attributes)
             arguments
                 ac CAAnnotatedClass
-                targetGroup NetCDFGroup
+                group NetCDFGroup
                 propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
                 attributes = configureDictionary("string","string")
-                options.shouldAlwaysUseSubgroup logical = false
             end
-            targetGroup.addAttribute('AnnotatedClass',class(ac));
-
-            % if one or more of the properties are other CAAnnotatedClass
-            % objects, then we have to stuff this group into its own
-            % subgroup to prevent dimensions from cascading down.
-            requiresSubgroup = false | options.shouldAlwaysUseSubgroup;
-            for i=1:length(propertyAnnotations)
-                if isa(propertyAnnotations(i),'CAObjectProperty')
-                    requiresSubgroup = true;
-                end
-            end
-            if requiresSubgroup
-                group = targetGroup.addGroup(class(ac));
-                group.addAttribute('AnnotatedClass',class(ac));
-            else
-                group = targetGroup;
-            end
+            group.addAttribute('AnnotatedClass',class(ac));
 
             % Attributes are added to the targetGroup, not the (potential)
             % subgroup.
             attributeNames = keys(attributes);
             for iKey=1:length(attributeNames)
-                targetGroup.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
+                group.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
             end
 
             for i=1:length(propertyAnnotations)
@@ -276,7 +258,7 @@ classdef CAAnnotatedClass < handle
                 elseif isa(propertyAnnotations(i),'CAObjectProperty')
                     obj = ac.(propertyAnnotations(i).name);
                     assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
-                    objGroup = targetGroup.addGroup(join( [string(class(ac)),string(propertyAnnotations(i).name)],"-"));
+                    objGroup = group.addGroup(propertyAnnotations(i).name);
                     if isscalar(obj)
                         objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
                         CAAnnotatedClass.writeToGroup(obj,objGroup,objPropertyAnnotations);
@@ -301,5 +283,138 @@ classdef CAAnnotatedClass < handle
 
             % dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
         end
+
+
+        % This was a previous implementation of writeToGroup which placed
+        % the CAObjectProperty groups parallel to this classes group, so as
+        % not to have dimensions inherited. But ultimately, I backed away
+        % form that.
+        % function writeToGroup(ac,targetGroup,propertyAnnotations,attributes,options)
+        %     arguments
+        %         ac CAAnnotatedClass
+        %         targetGroup NetCDFGroup
+        %         propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
+        %         attributes = configureDictionary("string","string")
+        %         options.shouldAlwaysUseSubgroup logical = false
+        %     end
+        %     targetGroup.addAttribute('AnnotatedClass',class(ac));
+        % 
+        %     % if one or more of the properties are other CAAnnotatedClass
+        %     % objects, then we have to stuff this group into its own
+        %     % subgroup to prevent dimensions from cascading down.
+        %     requiresSubgroup = false | options.shouldAlwaysUseSubgroup;
+        %     for i=1:length(propertyAnnotations)
+        %         if isa(propertyAnnotations(i),'CAObjectProperty')
+        %             requiresSubgroup = true;
+        %         end
+        %     end
+        %     if requiresSubgroup
+        %         group = targetGroup.addGroup(class(ac));
+        %         group.addAttribute('AnnotatedClass',class(ac));
+        %     else
+        %         group = targetGroup;
+        %     end
+        % 
+        %     % Attributes are added to the targetGroup, not the (potential)
+        %     % subgroup.
+        %     attributeNames = keys(attributes);
+        %     for iKey=1:length(attributeNames)
+        %         targetGroup.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
+        %     end
+        % 
+        %     for i=1:length(propertyAnnotations)
+        %         if isa(propertyAnnotations(i),'CADimensionProperty')
+        %             dimAnnotation = propertyAnnotations(i);
+        %             dimAnnotation.attributes('units') = dimAnnotation.units;
+        %             dimAnnotation.attributes('long_name') = dimAnnotation.description;
+        %             group.addDimension(dimAnnotation.name,ac.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+        %         end
+        %     end
+        % 
+        %     for i=1:length(propertyAnnotations)
+        %         if isa(propertyAnnotations(i),'CAFunctionProperty')
+        %             group.addFunctionHandle(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name),attributes=propertyAnnotations(i).attributes);
+        %         elseif isa(propertyAnnotations(i),'CAObjectProperty')
+        %             obj = ac.(propertyAnnotations(i).name);
+        %             assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
+        %             objGroup = targetGroup.addGroup(join( [string(class(ac)),string(propertyAnnotations(i).name)],"-"));
+        %             if isscalar(obj)
+        %                 objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
+        %                 CAAnnotatedClass.writeToGroup(obj,objGroup,objPropertyAnnotations);
+        %             else
+        %                 for iObj=1:length(obj)
+        %                     sGroup = objGroup.addGroup(join( [string(propertyAnnotations(i).name),string(iObj)],"-"));
+        %                     objPropertyAnnotations = obj(iObj).propertyAnnotationWithName(obj(iObj).requiredProperties);
+        %                     CAAnnotatedClass.writeToGroup(obj(iObj),sGroup,objPropertyAnnotations);
+        %                 end
+        %             end
+        %         elseif isa(propertyAnnotations(i),'CANumericProperty')
+        %             propAttributes = propertyAnnotations(i).attributes;
+        %             if ~isempty(propertyAnnotations(i).units)
+        %                 propAttributes('units') = propertyAnnotations(i).units;
+        %             end
+        %             if ~isempty(propertyAnnotations(i).description)
+        %                 propAttributes('long_name') = propertyAnnotations(i).description;
+        %             end
+        %             group.addVariable(propertyAnnotations(i).name,propertyAnnotations(i).dimensions,ac.(propertyAnnotations(i).name),isComplex=propertyAnnotations(i).isComplex,attributes=propAttributes);
+        %         end
+        %     end
+        % 
+        %     % dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
+        % end
+
+        % Corresponding read function (not a static method)
+        % function var = propertyValuesFromGroup(group,propertyNames,options)
+        %     arguments (Input)
+        %         group NetCDFGroup
+        %         propertyNames {mustBeA(propertyNames,"cell")} = {}
+        %         options.shouldIgnoreMissingProperties logical = false
+        %         options.classConstructor function_handle
+        %     end
+        %     arguments (Output)
+        %         var struct
+        %     end
+        %     if ~isfield(options,"classConstructor")
+        %         options.classConstructor = @(className,group) feval(strcat(className,'.annotatedClassFromGroup'),group);
+        %     end
+        %     for iVar = 1:length(propertyNames)
+        %         name = propertyNames{iVar};
+        %         if group.hasVariableWithName(name) == true
+        %             var.(name) = group.readVariables(name);
+        %             continue;
+        %         end
+        % 
+        %         targetGroupName = join( [string(group.name),string(name)],"-");
+        %         if ~isempty(group.parentGroup) && group.parentGroup.hasGroupWithName(targetGroupName) == true
+        %             targetGroup = group.parentGroup.groupWithName(targetGroupName);
+        %             if isempty(targetGroup.groups)
+        %                 if isKey(targetGroup.attributes,'AnnotatedClass')
+        %                     className = targetGroup.attributes('AnnotatedClass');
+        %                     var.(name) = options.classConstructor(className,targetGroup);
+        %                     continue;
+        %                 end
+        %             else
+        %                 for iObj=1:length(targetGroup.groups)
+        %                     subGroupName = join( [string(name),string(iObj)],"-");
+        %                     if targetGroup.hasGroupWithName(subGroupName)
+        %                         subGroup = targetGroup.groupWithName(subGroupName);
+        %                         if isKey(subGroup.attributes,'AnnotatedClass')
+        %                             className = subGroup.attributes('AnnotatedClass');
+        %                             tmp(iObj) = options.classConstructor(className,subGroup);
+        %                         end
+        %                     end
+        %                 end
+        %                 var.(name) = tmp;
+        %                 continue;
+        %             end
+        %         end
+        % 
+        %         if options.shouldIgnoreMissingProperties == true
+        %             continue;
+        %         else
+        %             error('Unable to find the property %s',name);
+        %         end
+        %     end
+        % end
     end
 end

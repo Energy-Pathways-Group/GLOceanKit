@@ -625,7 +625,7 @@ classdef NetCDFGroup < handle
         % - Topic: Working with groups
         function grp = groupWithName(self,name)
             if ~isKey(self.groupNameMap,name)
-                error('A group with the name %s does not exist!',name{1});
+                error('A group with the name %s does not exist!',name);
             end
             grp = self.groupNameMap(name);
         end
