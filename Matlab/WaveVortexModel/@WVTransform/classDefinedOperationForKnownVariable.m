@@ -30,7 +30,7 @@ for iOp = 1:length(variableName)
         case 'phase'
             varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'radians', 'phase of the Ap wave modes');
             varAnnotation.isDependentOnApAmA0 = false;
-            f = @(wvt) exp(-wvt.iOmega*(wvt.t-wvt.t0));
+            f = @(wvt) exp(wvt.iOmega*(wvt.t-wvt.t0));
 
         case 'conjPhase'
             varAnnotation = WVVariableAnnotation(name,options.spectralDimensionNames,'radians', 'phase of the Am wave modes');
