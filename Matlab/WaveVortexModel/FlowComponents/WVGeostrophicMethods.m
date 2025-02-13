@@ -319,7 +319,11 @@ classdef WVGeostrophicMethods < handle
             A0_ = self.A0;
             A0_(indices) = A0_indices;
             if isa(self,'WVStratification')
-                self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
+                if self.hasWaveComponent
+                    self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
+                else
+                    self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo=sprintf('The modes you are setting cause the fluid state to violate this condition.\n'));
+                end
             end
 
             % If we made it this far, then things must be okay.

@@ -1,0 +1,341 @@
+classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransform & WVGeostrophicMethods
+    % A class for disentangling hydrostatic waves and vortices in variable stratification
+    %
+    % To initialization an instance of the WVTransformHydrostatic class you
+    % must specific the domain size, the number of grid points and *either*
+    % the density profile or the stratification profile.
+    %
+    % ```matlab
+    % N0 = 3*2*pi/3600;
+    % L_gm = 1300;
+    % N2 = @(z) N0*N0*exp(2*z/L_gm);
+    % wvt = WVTransformHydrostatic([100e3, 100e3, 4000],[64, 64, 65], N2=N2,latitude=30);
+    % ```
+    %
+    % - Topic: Initialization
+    % - Topic: Primary flow components
+    % - Topic: Stratification
+    % - Topic: Stratification — Vertical modes
+    % - Topic: Stratification — Validation
+    % - Topic: Initial conditions
+    % - Topic: Energetics of flow components
+    % - Topic: Operations
+    %
+    % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
+    properties (Dependent)
+        totalEnergySpatiallyIntegrated
+        totalEnergy
+    end
+
+    properties (GetAccess=private,SetAccess=private)
+        Fpv, F0, A0PV
+    end
+
+    methods
+        function self = WVTransformStratifiedQG(Lxyz, Nxyz, options)
+            % create a wave-vortex transform for variable stratification
+            %
+            % Creates a new instance of the WVTransformHydrostatic class
+            % appropriate for disentangling hydrostatic waves and vortices
+            % in variable stratification
+            %
+            % You must initialization by passing *either* the density
+            % profile or the stratification profile.
+            %
+            % - Topic: Initialization
+            % - Declaration: wvt = WVTransformHydrostatic(Lxyz, Nxyz, options)
+            % - Parameter Lxyz: length of the domain (in meters) in the three coordinate directions, e.g. [Lx Ly Lz]
+            % - Parameter Nxyz: number of grid points in the three coordinate directions, e.g. [Nx Ny Nz]
+            % - Parameter rho:  (optional) function_handle specifying the density as a function of depth on the domain [-Lz 0]
+            % - Parameter stratification:  (optional) function_handle specifying the stratification as a function of depth on the domain [-Lz 0]
+            % - Parameter latitude: (optional) latitude of the domain (default is 33 degrees north)
+            % - Parameter rho0: (optional) density at the surface z=0 (default is 1025 kg/m^3)
+            % - Returns wvt: a new WVTransformHydrostatic instance
+            arguments
+                Lxyz (1,3) double {mustBePositive}
+                Nxyz (1,3) double {mustBePositive}
+                options.shouldAntialias (1,1) logical = true
+                options.z (:,1) double {mustBeNonempty} % quadrature points!
+                options.j (:,1) double {mustBeNonempty}
+                options.Nj (1,1) double {mustBePositive}
+                options.rhoFunction function_handle = @isempty
+                options.N2Function function_handle = @isempty
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.rotationRate (1,1) double = 7.2921E-5
+                options.latitude (1,1) double = 33
+                options.g (1,1) double = 9.81
+                
+                options.dLnN2 (:,1) double
+                options.PF0inv
+                options.QG0inv
+                options.PF0
+                options.QG0
+                options.h_0 (:,1) double
+                options.P0 (:,1) double
+                options.Q0 (:,1) double
+                options.z_int (:,1) double
+            end
+
+            optionArgs = namedargs2cell(options);
+            self@WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, optionArgs{:})
+            self@WVTransform(WVForcingType(["PVSpectral","PVSpatial"]));
+            self@WVGeostrophicMethods();
+
+            self.initializeGeostrophicComponent();
+
+            % This is not good, I think this should go in the constructor.
+            self.nonlinearAdvection = WVNonlinearAdvection(self);
+            self.addForcing(self.nonlinearAdvection);
+
+            % the property annotations for these variables will already
+            % have beena added, but that is okay, they will be replaced.
+            varNames = self.namesOfTransformVariables();
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+
+            self.A0 = zeros(self.spectralMatrixSize);
+            self.F0 = zeros(self.spectralMatrixSize);
+            self.Fpv = zeros(self.spatialMatrixSize);
+            self.A0PV = 1./self.A0_QGPV_factor;
+            self.A0PV(isinf(self.A0PV))=0;
+        end
+
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
+            if ~isempty(self.dLnN2Function)
+                wvtX2 = WVTransformStratifiedQG([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
+            else
+                wvtX2 = WVTransformStratifiedQG([self.Lx self.Ly self.Lz],m,latitude=self.latitude,rho0=self.rho0, N2=self.N2Function);
+            end
+
+            wvtX2.t0 = self.t0;
+            wvtX2.t = self.t;
+            [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+        end
+
+        function energy = get.totalEnergySpatiallyIntegrated(self)
+            [u,v,eta] = self.variableWithName('u','v','eta');
+            energy = sum(shiftdim(self.z_int,-2).*mean(mean( u.^2 + v.^2 + shiftdim(self.N2,-2).*eta.*eta, 1 ),2 ) )/2;
+        end
+
+        function energy = get.totalEnergy(self)
+            energy = sum( self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Nonlinear flux computation
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function F0 = nonlinearFlux(self)
+            self.Fpv = 0*self.Fpv;
+            for i=1:length(self.spatialForcing)
+               self.Fpv = self.spatialForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+            end
+            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
+            for i=1:length(self.spectralForcing)
+               self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
+            end
+            F0 = self.F0;
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations FROM the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function u_bar = transformFromSpatialDomainWithFg(self, u)
+            u_bar = (self.PF0*u)./self.P0;
+        end
+
+        function w_bar = transformFromSpatialDomainWithGg(self, w)
+            w_bar = (self.QG0*w)./self.Q0;
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations TO the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function u = transformToSpatialDomainWithF(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* options.A0));
+        end
+
+        function w = transformToSpatialDomainWithG(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.A0));
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Needed to add and remove internal waves from the model
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ratio = maxFw(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
+        end
+
+        function ratio = maxFg(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
+        end
+    end
+
+    methods (Static)
+
+        function names = spectralDimensionNames()
+            % return a cell array of property names required by the class
+            %
+            % This function returns an array of property names required to be written
+            % by the class, in order to restore its state.
+            %
+            % - Topic: Developer
+            % - Declaration:  names = spectralDimensionNames()
+            % - Returns names: array strings
+            arguments (Output)
+                names cell
+            end
+            names = {'j','kl'};
+        end
+
+        function names = spatialDimensionNames()
+            % return a cell array of the spatial dimension names
+            %
+            % This function returns an array of dimension names
+            %
+            % - Topic: Developer
+            % - Declaration:  names = spatialDimensionNames()
+            % - Returns names: array strings
+            arguments (Output)
+                names cell
+            end
+            names = {'x','y','z'};
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % CAAnnotatedClass required methods, which enables writeToFile
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            propertyAnnotations = WVTransformStratifiedQG.propertyAnnotationsForTransform();
+        end
+
+        function vars = classRequiredPropertyNames()
+            vars = WVTransformStratifiedQG.namesOfRequiredPropertiesForTransform();
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Stratification specific property annotations and initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function requiredPropertyNames = namesOfRequiredPropertiesForTransform()
+            requiredPropertyNames = WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForGeometry();
+            requiredPropertyNames = union(requiredPropertyNames,WVTransformStratifiedQG.newRequiredPropertyNames);
+        end
+
+        function newRequiredPropertyNames = newRequiredPropertyNames()
+            newRequiredPropertyNames = {'A0','kl','t0','t','forcing'};
+        end
+
+        function names = namesOfTransformVariables()
+            names = {'A0t','uvMax','zeta_z','ssh','ssu','ssv','u','v','eta','pi','p','psi','qgpv','rho_e','rho_total'};
+        end
+
+        function propertyAnnotations = propertyAnnotationsForTransform()
+            spectralDimensionNames = WVTransformStratifiedQG.spectralDimensionNames();
+            spatialDimensionNames = WVTransformStratifiedQG.spatialDimensionNames();
+
+            propertyAnnotations = WVGeometryDoublyPeriodicStratified.propertyAnnotationsForGeometry();
+            propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = spectralDimensionNames));
+            transformProperties = WVTransform.propertyAnnotationsForTransform('A0','A0_TE_factor','A0_QGPV_factor','A0_TZ_factor',spectralDimensionNames = spectralDimensionNames);
+
+            varNames = WVTransformStratifiedQG.namesOfTransformVariables();
+            varAnnotations = WVTransform.propertyAnnotationForKnownVariable(varNames{:},spectralDimensionNames = spectralDimensionNames,spatialDimensionNames = spatialDimensionNames);
+            propertyAnnotations = cat(2,propertyAnnotations,transformProperties,varAnnotations);
+        end
+
+        function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                Lxy (1,2) double {mustBePositive}
+                Nxy (1,2) double {mustBePositive}
+                options
+            end
+            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
+            % CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.newRequiredPropertyNames);
+            % vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
+            % newOptions = namedargs2cell(vars);
+            % options = cat(2,geomOptions,newOptions);
+            options = geomOptions;
+        end
+
+        function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
+            % Initialize a WVTransformHydrostatic instance from an existing file
+            %
+            % This static method is called by WVTransform.waveVortexTransformFromFile
+            % and should not need to be called directly.
+            %
+            % - Topic: Initialization (Static)
+            % - Declaration: wvt = waveVortexTransformFromFile(path,options)
+            % - Parameter path: path to a NetCDF file
+            % - Parameter iTime: (optional) time index to initialize from (default 1)
+            arguments (Input)
+                path char {mustBeFile}
+                options.iTime (1,1) double {mustBePositive} = 1
+            end
+            arguments (Output)
+                wvt WVTransform
+                ncfile NetCDFFile
+            end
+            ncfile = NetCDFFile(path);
+            wvt = WVTransformStratifiedQG.transformFromGroup(ncfile);
+            wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
+            wvt.initForcingFromNetCDFFile(ncfile);
+        end
+
+
+        function wvt = transformFromGroup(group)
+            arguments (Input)
+                group NetCDFGroup {mustBeNonempty}
+            end
+            arguments (Output)
+                wvt WVTransform {mustBeNonempty}
+            end  
+            [Lxy, Nxy, options] = WVTransformStratifiedQG.requiredPropertiesForTransformFromGroup(group);
+            wvt = WVTransformStratifiedQG(Lxy,Nxy,options{:});
+        end
+
+    end
+
+end
+
+
+
