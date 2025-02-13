@@ -119,9 +119,11 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
             % actual forward transforms. That said, they're never actually
             % implemented in this form, so maybe this is the best we can
             % do?!
-            DCT = WVTransformConstantStratification.CosineTransformForwardMatrix(wvt.Nz);
+            % DCT = WVTransformConstantStratification.CosineTransformForwardMatrix(wvt.Nz);
+            DCT = CosineTransformForwardMatrix(wvt.Nz);
             DCT = DCT(1:wvt.Nj,:); % dump the Nyquist mode
-            DST = WVTransformConstantStratification.SineTransformForwardMatrix(wvt.Nz);
+            % DST = WVTransformConstantStratification.SineTransformForwardMatrix(wvt.Nz);
+            DST = SineTransformForwardMatrix(wvt.Nz);
             DST = cat(1,zeros(1,wvt.Nz),DST);
             DST = DST(1:wvt.Nj,:);
 

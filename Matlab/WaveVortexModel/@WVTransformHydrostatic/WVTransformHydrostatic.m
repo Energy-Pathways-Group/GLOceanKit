@@ -148,7 +148,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             for i=1:length(self.spatialForcing)
                [Fu, Fv, Feta] = self.spatialForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
-            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
             for i=1:length(self.spectralForcing)
                [Fp,Fm,F0] = self.spectralForcing(i).addSpectralForcing(self,Fp, Fm, F0);
             end            

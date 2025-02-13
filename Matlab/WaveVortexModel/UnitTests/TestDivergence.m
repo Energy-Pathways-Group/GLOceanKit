@@ -5,7 +5,8 @@ classdef TestDivergence < matlab.unittest.TestCase
             Lxyz = [1000, 500, 500];
             Nxyz = [16 8 9];
             latitude = 33;
-            wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=latitude, isHydrostatic=0,shouldAntialias=0);
+            % wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=latitude, isHydrostatic=0,shouldAntialias=0);
+            wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),latitude=latitude);
 
             wvt.initWithRandomFlow(uvMax=0.1);
 
@@ -21,8 +22,9 @@ classdef TestDivergence < matlab.unittest.TestCase
             Lxyz = [1000, 500, 500];
             Nxyz = [16 8 9];
             latitude = 33;
-            wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=latitude, isHydrostatic=0,shouldAntialias=0);
-
+            % wvt = WVTransformConstantStratification(Lxyz, Nxyz, latitude=latitude, isHydrostatic=0,shouldAntialias=0);
+            wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),latitude=latitude);
+            
             wvt.initWithRandomFlow(uvMax=0.1);
 
             [ApNL,AmNL,A0NL] = wvt.transformUVEtaToWaveVortex(wvt.u,wvt.v,wvt.eta);
