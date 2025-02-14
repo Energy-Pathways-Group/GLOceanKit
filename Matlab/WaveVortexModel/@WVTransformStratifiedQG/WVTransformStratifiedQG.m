@@ -120,7 +120,22 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
         end
 
         function wvt = hydrostaticTransform(self)
-            
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+            end
+            wvt = WVTransformHydrostatic([self.Lx self.Ly self.Lz],[self.Nx self.Ny self.Nz],optionArgs{:});
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvt);
+            end
+            wvt.setForcing(forcing);
+
+            wvt.t0 = self.t0;
+            wvt.t = self.t;
+            wvt.A0 = self.spectralVariableWithResolution(wvt,self.A0);
         end
 
         function energy = get.totalEnergySpatiallyIntegrated(self)
