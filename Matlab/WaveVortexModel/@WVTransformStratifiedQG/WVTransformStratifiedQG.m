@@ -61,6 +61,7 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                options.planetaryRadius (1,1) double = 6.371e6
                 options.rotationRate (1,1) double = 7.2921E-5
                 options.latitude (1,1) double = 33
                 options.g (1,1) double = 9.81
@@ -100,15 +101,26 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            if ~isempty(self.dLnN2Function)
-                wvtX2 = WVTransformStratifiedQG([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
-            else
-                wvtX2 = WVTransformStratifiedQG([self.Lx self.Ly self.Lz],m,latitude=self.latitude,rho0=self.rho0, N2=self.N2Function);
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
             end
+            wvtX2 = WVTransformStratifiedQG([self.Lx self.Ly self.Lz],m,optionArgs{:});
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvtX2);
+            end
+            wvtX2.setForcing(forcing);
 
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
-            [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+            [wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.A0);
+        end
+
+        function wvt = hydrostaticTransform(self)
+            
         end
 
         function energy = get.totalEnergySpatiallyIntegrated(self)
@@ -280,16 +292,16 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
             propertyAnnotations = cat(2,propertyAnnotations,transformProperties,varAnnotations);
         end
 
-        function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)
+        function [Lxyz,Nxyz,options] = requiredPropertiesForTransformFromGroup(group)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
             end
             arguments (Output)
-                Lxy (1,2) double {mustBePositive}
-                Nxy (1,2) double {mustBePositive}
+                Lxyz (1,3) double {mustBePositive}
+                Nxyz (1,3) double {mustBePositive}
                 options
             end
-            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
+            [Lxyz, Nxyz, geomOptions] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
             % CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.newRequiredPropertyNames);
             % vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
             % newOptions = namedargs2cell(vars);

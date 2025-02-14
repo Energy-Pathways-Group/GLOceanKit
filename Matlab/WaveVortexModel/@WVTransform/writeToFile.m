@@ -30,7 +30,7 @@ function ncfile = writeToFile(self,path,properties,options)
     arguments (Output)
         ncfile NetCDFFile
     end
-
+    options.attributes('WVTransform') = class(self);
     options.attributes('source') = sprintf('Created with the WaveVortexModel version %s',string(self.version));
     options.attributes('model_version') = self.version;
     options.attributes('date_created') = string(datetime('now'));

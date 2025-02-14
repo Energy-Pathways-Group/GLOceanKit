@@ -6,11 +6,8 @@ classdef WVBottomFriction < WVForcing
     % - Topic: Initializing
     % - Declaration: WVBottomFriction < [WVForcing](/classes/wvforcing/)
     properties
-        wvt
         r
-    end
-    properties (Dependent)
-        uv_damp
+        RVA0
     end
 
     methods
@@ -25,11 +22,9 @@ classdef WVBottomFriction < WVForcing
                 wvt WVTransform {mustBeNonempty}
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
             end
-            self@WVForcing("bottom friction");
-            self.wvt = wvt;
-            self.doesHydrostaticSpatialForcing = true;
-            self.doesNonhydrostaticSpatialForcing = true;
+            self@WVForcing(wvt,"bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.r = options.r;
+            self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
@@ -42,36 +37,31 @@ classdef WVBottomFriction < WVForcing
             Fv(:,:,1) = Fv(:,:,1) - self.r*wvt.v(:,:,1);
         end
 
-        function writeToFile(self,group,wvt)
-            arguments
-                self WVForcing {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
-            group.addAttribute('r',self.r)
+        function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
+            mask = zeros(wvt.spatialMatrixSize);
+            mask(:,:,1) = 1;
+            Fpv = Fpv - self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
+        end
+
+        function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
+            F0 = F0 + self.damp .* wvt.A0;
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
             force = WVBottomFriction(wvtX2,r=self.r);
         end
-
-        function flag = isequal(self,other)
-            arguments
-                self WVForcing
-                other WVForcing
-            end
-            flag = isequal@WVForcing(self,other);
-            flag = flag & isequal(self.r, other.r);
-        end
     end
-
     methods (Static)
-        function force = forcingFromFile(group,wvt)
-            arguments
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
+        function vars = classRequiredPropertyNames()
+            vars = {'r'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
             end
-            force = WVBottomFriction(wvt,r=group.attributes('r'));
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CANumericProperty('r', {}, 's^{-1}','bottom friction');
         end
     end
 

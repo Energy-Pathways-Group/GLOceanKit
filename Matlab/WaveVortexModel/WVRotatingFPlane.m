@@ -37,7 +37,7 @@ classdef WVRotatingFPlane < handle
 
     methods (Static)
         function requiredPropertyNames = namesOfRequiredPropertiesForRotatingFPlane()
-            requiredPropertyNames = {'rotationRate','g','latitude'};
+            requiredPropertyNames = {'planetaryRadius','rotationRate','g','latitude'};
         end
 
         function propertyAnnotations = propertyAnnotationsForRotatingFPlane()

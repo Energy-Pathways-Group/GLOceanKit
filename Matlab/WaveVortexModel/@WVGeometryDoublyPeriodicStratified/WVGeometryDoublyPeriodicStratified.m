@@ -34,6 +34,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 stratOptions.rhoFunction function_handle = @isempty
                 stratOptions.N2Function function_handle = @isempty
                 stratOptions.rho0 (1,1) double {mustBePositive} = 1025
+                stratOptions.planetaryRadius (1,1) double = 6.371e6
                 stratOptions.rotationRate (1,1) double = 7.2921E-5
                 stratOptions.latitude (1,1) double = 33
                 stratOptions.g (1,1) double = 9.81

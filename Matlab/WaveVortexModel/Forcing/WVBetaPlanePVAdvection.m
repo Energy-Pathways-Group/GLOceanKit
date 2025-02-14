@@ -13,7 +13,7 @@ classdef WVBetaPlanePVAdvection < WVForcing
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
-            self@WVForcing("beta-plane advection of qgpv",WVForcingType(["Spectral" "PVSpatial"]));
+            self@WVForcing(wvt,"beta-plane advection of qgpv",WVForcingType(["Spectral" "PVSpatial"]));
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)

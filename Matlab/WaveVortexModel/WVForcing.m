@@ -31,6 +31,8 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     % - Declaration: classdef WVForcing < handle
 
     properties (GetAccess=public, SetAccess=protected)
+        wvt
+
         % boolean indicating this class implements addHydrostaticSpatialForcing
         %
         % - Topic: Properties
@@ -61,7 +63,7 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
 
     methods
 
-        function self = WVForcing(name,forcingType)
+        function self = WVForcing(wvt,name,forcingType)
             %create a new nonlinear flux operation
             %
             % This class is intended to be subclassed, so it generally
@@ -74,9 +76,12 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
             % - Parameter f: (optional) directly pass a function handle, rather than override the compute method
             % - Returns nlFluxOp: a new instance of WVNonlinearFluxOperation
             arguments
+                wvt WVTransform
                 name {mustBeText}
                 forcingType WVForcingType {mustBeNonempty}
             end
+            self@CAAnnotatedClass(inheritedClassName=class(wvt));
+            self.wvt = wvt;
             self.name = name;
             self.forcingType = forcingType;
         end
@@ -102,23 +107,23 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function writeToFile(self,group,wvt)
-            %write information about the forcing to file
-            %
-            % To enable model restarts, all subclass should override this
-            % method to write variables or parameters to file necessary to
-            % re-initialize directly from file.
-            %
-            % - Topic: Write to file
-            % - Declaration: writeToFile(group,wvt)
-            % - Parameter group: NetCDFGroup instance that should be written to
-            % - Parameter wvt: the WVTransform associated with the nonlinear flux
-            arguments
-                self WVForcingFluxOperation {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
-        end
+        % function writeToFile(self,group,wvt)
+        %     %write information about the forcing to file
+        %     %
+        %     % To enable model restarts, all subclass should override this
+        %     % method to write variables or parameters to file necessary to
+        %     % re-initialize directly from file.
+        %     %
+        %     % - Topic: Write to file
+        %     % - Declaration: writeToFile(group,wvt)
+        %     % - Parameter group: NetCDFGroup instance that should be written to
+        %     % - Parameter wvt: the WVTransform associated with the nonlinear flux
+        %     arguments
+        %         self WVForcingFluxOperation {mustBeNonempty}
+        %         group NetCDFGroup {mustBeNonempty}
+        %         wvt WVTransform {mustBeNonempty}
+        %     end
+        % end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
             %create a new WVForcing with double the resolution
@@ -130,7 +135,7 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
             % - Declaration: force = forcingWithResolutionOfTransform(wvtX2)
             % - Parameter wvtX2: the WVTransform with increased resolution
             % - Returns force: a new instance of WVForcing
-            force = WVForcing(self.name);
+            force = WVForcing(wvtX2,self.name);
         end
 
         % function flag = isequal(self,other)

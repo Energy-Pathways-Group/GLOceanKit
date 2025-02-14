@@ -10,7 +10,6 @@ classdef WVSpectralVanishingViscosity < WVForcing
     % - Topic: Initializing
     % - Declaration: WVNonlinearFlux < [WVForcingFluxOperation](/classes/wvnonlinearfluxoperation/)
     properties
-        wvt
         nu_xy = 0
         nu_z = 0
         damp
@@ -40,7 +39,7 @@ classdef WVSpectralVanishingViscosity < WVForcing
                 options.nu_xy (1,1) double
                 options.nu_z (1,1) double 
             end
-            self@WVForcing("spectral vanishing viscosity",WVForcingType(["Spectral","PVSpectral"]));
+            self@WVForcing(wvt,"spectral vanishing viscosity",WVForcingType(["Spectral","PVSpectral"]));
             self.wvt = wvt;
             self.isClosure = true;
 

@@ -323,16 +323,16 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             propertyAnnotations = cat(2,propertyAnnotations,transformProperties,varAnnotations);
         end
 
-        function [Lxy,Nxy,options] = requiredPropertiesForTransformFromGroup(group)
+      function [Lxyz, Nxyz, options] = requiredPropertiesForTransformFromGroup(group)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
             end
             arguments (Output)
-                Lxy (1,2) double {mustBePositive}
-                Nxy (1,2) double {mustBePositive}
+                Lxyz (1,3) double {mustBePositive}
+                Nxyz (1,3) double {mustBePositive}
                 options
             end
-            [Lxy, Nxy, geomOptions] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
+            [Lxyz, Nxyz, geomOptions] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
             % CAAnnotatedClass.throwErrorIfMissingProperties(group,WVTransformBarotropicQG.newRequiredPropertyNames);
             % vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVTransformBarotropicQG.newRequiredPropertyNames);
             % newOptions = namedargs2cell(vars);

@@ -24,12 +24,23 @@ classdef CAAnnotatedClass < handle
     end
 
     methods
-        function self = CAAnnotatedClass()
+        function self = CAAnnotatedClass(options)
+            arguments
+                options.inheritedClassName string
+            end
             % Matlab dictionaries do not allow a subclass type; the
             % work-around is to use a cell.
             self.dimensionAnnotationNameMap = configureDictionary("string","cell");
             self.propertyAnnotationNameMap = configureDictionary("string","cell");
 
+            if isfield(options,"inheritedClassName")
+                inheritedPropertyAnnotations = feval(strcat(options.inheritedClassName,'.classDefinedPropertyAnnotations'));
+                for i=1:length(inheritedPropertyAnnotations)
+                    if isa(inheritedPropertyAnnotations(i),'CADimensionProperty')
+                        self.addPropertyAnnotation(inheritedPropertyAnnotations(i));
+                    end
+                end
+            end
             self.addPropertyAnnotation(feval(strcat(class(self),'.classDefinedPropertyAnnotations')));
         end
         
@@ -169,6 +180,11 @@ classdef CAAnnotatedClass < handle
                         continue;
                     end
                 end
+                
+                if isKey(group.attributes,name)
+                    var.(name) = group.attributes(name);
+                    continue;
+                end
 
                 if options.shouldIgnoreMissingProperties == true
                     continue;
@@ -278,6 +294,9 @@ classdef CAAnnotatedClass < handle
                         propAttributes('long_name') = propertyAnnotations(i).description;
                     end
                     group.addVariable(propertyAnnotations(i).name,propertyAnnotations(i).dimensions,ac.(propertyAnnotations(i).name),isComplex=propertyAnnotations(i).isComplex,attributes=propAttributes);
+                elseif isa(propertyAnnotations(i),'CADimensionProperty')
+                else
+                    group.addAttribute(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name));
                 end
             end
 

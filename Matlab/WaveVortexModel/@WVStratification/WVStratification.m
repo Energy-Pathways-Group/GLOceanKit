@@ -132,6 +132,7 @@ classdef WVStratification < WVRotatingFPlane
                 options.rhoFunction function_handle = @isempty
                 options.N2Function function_handle = @isempty
                 options.rho0 (1,1) double {mustBePositive} = 1025
+                rotatingOptions.planetaryRadius (1,1) double = 6.371e6
                 rotatingOptions.rotationRate (1,1) double = 7.2921E-5
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
