@@ -110,15 +110,22 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            if ~isempty(self.dLnN2Function)
-                wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m, self.rhoFunction,latitude=self.latitude,rho0=self.rho0, N2func=self.N2Function, dLnN2func=self.dLnN2Function);
-            else
-                wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m,latitude=self.latitude,rho0=self.rho0, N2=self.N2Function);
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
             end
+            wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m,optionArgs{:});
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvtX2);
+            end
+            wvtX2.setForcing(forcing);
 
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
-            [wvtX2.Ap,wvtX2.Am,wvtX2.A0] = self.spectralVariableWithResolution(wvtX2,self.Ap,self.Am,self.A0);
+            [wvtX2.A0,wvtX2.Ap,wvtX2.Am] = self.spectralVariableWithResolution(wvtX2,self.A0,self.Ap,self.Am);
         end
 
         function h_pm = get.h_pm(self)

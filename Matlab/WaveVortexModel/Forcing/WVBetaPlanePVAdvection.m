@@ -7,13 +7,17 @@ classdef WVBetaPlanePVAdvection < WVForcing
     %
     % - Topic: Initializing
     % - Declaration: WVBetaPlanePVAdvection < [WVForcing](/classes/wvforcing/)
-
+    properties
+        betaA0
+    end
     methods
         function self = WVBetaPlanePVAdvection(wvt)
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
             self@WVForcing(wvt,"beta-plane advection of qgpv",WVForcingType(["Spectral" "PVSpatial"]));
+            self.betaA0 = -wvt.beta * (wvt.VA0 ./ wvt.A0_QGPV_factor);
+            self.betaA0(1,1,1) = 0;
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
@@ -21,7 +25,7 @@ classdef WVBetaPlanePVAdvection < WVForcing
         end
 
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
-            error("Not yet implemented. Look at WVNonlinearFlux.m and copy from there.");
+            F0 = F0 + self.betaA0 .* wvt.A0;
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)

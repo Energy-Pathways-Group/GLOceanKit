@@ -87,7 +87,7 @@ classdef WVStratification < WVRotatingFPlane
             % Trying to be extra careful here, so we include the wave part
             % of the flow because we do not really know how everything will
             % add together in the end.
-            if options.Am ~= 0 || options.Ap ~=0
+            if ~isscalar(options.Am) || ~isscalar(options.Ap)
                 rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0,Apm=self.NAp.*options.Ap + self.NAm.*options.Am);
             else
                 rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0);
