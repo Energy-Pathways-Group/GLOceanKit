@@ -91,8 +91,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             self.initializeInertialOscillationComponent();
 
             % This is not good, I think this should go in the constructor.
-            self.nonlinearAdvection = WVNonlinearAdvection(self);
-            self.addForcing(self.nonlinearAdvection);
+            self.addForcing(WVNonlinearAdvection(self));
 
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.

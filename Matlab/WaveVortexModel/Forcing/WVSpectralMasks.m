@@ -127,13 +127,16 @@ classdef WVSpectralMasks < WVForcing
                 options.tauP (1,1) double = 0
                 options.tauM (1,1) double = 0
             end
-            % dampedIndicesAp = options.MAp(self.wvt.Kh > self.k_damp);
-            % dampedIndicesAm = options.MAm(self.wvt.Kh > self.k_damp);
-            % warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesAp(:))+sum(dampedIndicesAm(:)));
-            % Apbar(self.wvt.Kh > self.k_damp) = 0;
-            % options.MAp(self.wvt.Kh > self.k_damp) = 0;
-            % Ambar(self.wvt.Kh > self.k_damp) = 0;
-            % options.MAm(self.wvt.Kh > self.k_damp) = 0;
+            if self.wvt.hasForcingWithName("spectral vanishing viscosity")
+                svv = self.wvt.forcingWithName("spectral vanishing viscosity");
+                dampedIndicesAp = options.MAp(self.wvt.Kh > svv.k_damp);
+                dampedIndicesAm = options.MAm(self.wvt.Kh > svv.k_damp);
+                warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesAp(:))+sum(dampedIndicesAm(:)));
+                Apbar(self.wvt.Kh > svv.k_damp) = 0;
+                options.MAp(self.wvt.Kh > svv.k_damp) = 0;
+                Ambar(self.wvt.Kh > svv.k_damp) = 0;
+                options.MAm(self.wvt.Kh > svv.k_damp) = 0;
+            end
 
             self.Apbar = Apbar;
             self.MAp = options.MAp;

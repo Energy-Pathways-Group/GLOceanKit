@@ -57,8 +57,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
             self@WVGeostrophicMethods();
 
             % This is not good, I think this should go in the constructor.
-            self.nonlinearAdvection = WVNonlinearAdvection(self);
-            self.addForcing(self.nonlinearAdvection);
+            self.addForcing(WVNonlinearAdvection(self));
             
             self.initializeGeostrophicComponent();
 

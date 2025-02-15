@@ -45,12 +45,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         % geostrophic coefficients at reference time t0 (m)
         % Topic: Wave-vortex coefficients
         A0 = 0
-
-        % The operation responsible for computing the nonlinear flux
-        % - Topic: Nonlinear flux and energy transfers
-        % This operation is performed when -nonlinearFlux is called. It is
-        % used to compute the energyFlux as well.
-        nonlinearAdvection WVNonlinearAdvection
     end
 
     properties (GetAccess=public, SetAccess=public)
@@ -74,6 +68,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         hasPVComponent logical
         hasWaveComponent logical
         nFluxedComponents
+        forcing
     end
 
     properties %(Access=private)
@@ -87,7 +82,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         flowComponentNameMap
         totalFlowComponent
 
-        forcing WVForcing = WVForcing.empty(0,0)
+        forcingNameMap
         spatialForcing WVForcing = WVForcing.empty(0,0)
         spectralForcing WVForcing = WVForcing.empty(0,0)
     end
@@ -167,6 +162,8 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
             self.primaryFlowComponentNameMap = configureDictionary("string","cell");
             self.flowComponentNameMap = configureDictionary("string","cell");
+
+            self.forcingNameMap = configureDictionary("string","cell");
 
             spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
             spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
@@ -290,7 +287,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 self WVTransform {mustBeNonempty}
                 force WVForcing
             end
-            self.forcing = WVForcing.empty(0,0);
+            self.forcingNameMap = configureDictionary("string","cell");
             self.spatialForcing = WVForcing.empty(0,0);
             self.spectralForcing = WVForcing.empty(0,0);
             self.addForcing(force);
@@ -301,26 +298,90 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 self WVTransform {mustBeNonempty}
                 force WVForcing
             end
+
             spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
             spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
             didAddForcing = false;
             for iForce = 1:length(force)
                 aForce = force(iForce);
+                if isKey(self.forcingNameMap,aForce.name)
+                    otherForce = self.forcingNameMap{aForce.name};
+                    if ~aForce.isequal(otherForce)
+                        sprintf('A forcing named %s already exists. It will be removed and replaced.\n',aForce.name)
+                    end
+                    self.removeForcing(aForce);
+                end
                 if ismember(intersect(aForce.forcingType,self.forcingType),spatialTypes)
                     self.spatialForcing(end+1) = aForce;
+                    self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
                 if ismember(intersect(aForce.forcingType,self.forcingType),spectralTypes)
                     self.spectralForcing(end+1) = aForce;
+                    self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
             end
-            self.forcing = cat(2,self.spatialForcing,self.spectralForcing);
             if didAddForcing == false
                 error("This WVTransform does not support this type of forcing!!!");
             end
         end
 
+        function removeForcing(self,force)
+            arguments
+                self WVTransform {mustBeNonempty}
+                force WVForcing
+            end
+            for iForce = 1:length(force)
+                aForce = force(iForce);
+                self.spatialForcing = setdiff(self.spatialForcing,aForce,'stable');
+                self.spectralForcing = setdiff(self.spectralForcing,aForce,'stable');
+                self.forcingNameMap{aForce.name} = [];
+            end
+        end
+
+        function forcing = get.forcing(self)
+            forcing = cat(2,self.spatialForcing,self.spectralForcing);
+        end
+
+        function bool = hasForcingWithName(self,name)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Input,Repeating)
+                name char
+            end
+            arguments (Output)
+                bool logical
+            end
+            bool = isKey(self.forcingNameMap,string(name));
+        end
+
+        function names = forcingNames(self)
+            % retrieve the names of all available variables
+            %
+            % - Topic: Utility function — Metadata
+            arguments (Input)
+                self WVTransform {mustBeNonempty}
+            end
+            arguments (Output)
+                names string
+            end
+            names = self.forcingNameMap.keys;
+        end
+
+        function forcing = forcingWithName(self,name)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Input,Repeating)
+                name char
+            end
+            arguments (Output)
+                forcing WVForcing
+            end
+            forcing = [self.forcingNameMap{name}];
+        end
 
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
