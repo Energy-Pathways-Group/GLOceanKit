@@ -44,6 +44,7 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
                 Nxy (1,2) double {mustBePositive}
                 geomOptions.shouldAntialias (1,1) logical = true
                 rotatingOptions.rotationRate (1,1) double = 7.2921E-5
+                rotatingOptions.planetaryRadius (1,1) double = 6.371e6
                 rotatingOptions.latitude (1,1) double = 33
                 rotatingOptions.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8

@@ -46,6 +46,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
                 Nxy (1,2) double {mustBePositive}
                 options.shouldAntialias (1,1) logical = true
                 options.rotationRate (1,1) double = 7.2921E-5
+                options.planetaryRadius (1,1) double = 6.371e6
                 options.latitude (1,1) double = 33
                 options.g (1,1) double = 9.81
                 options.h (1,1) double = 0.8
@@ -94,6 +95,28 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
                self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
             end
             F0 = self.F0;
+        end
+
+        function F0 = fluxForForcing(self)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Output)
+                F0 dictionary
+            end
+            F0 = configureDictionary("string","cell");
+            self.Fpv = 0*self.Fpv;
+            for i=1:length(self.spatialForcing)
+               Fpv0 = self.Fpv;
+               self.Fpv = self.spatialForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+               F0{self.spatialForcing(i).name} = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0);
+            end
+            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
+            for i=1:length(self.spectralForcing)
+                F0_i = self.F0;
+               self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
+               F0{self.spectralForcing(i).name} = self.F0 - F0_i;
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

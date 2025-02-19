@@ -196,6 +196,90 @@ classdef WVSpectralMasks < WVForcing
 
             fprintf('You are forcing at %d geostrophic modes.\n',length(self.A0_indices));
         end
+
+        function [model_spectrum, r] = setNarrowBandGeostrophicForcing(self, options)
+            arguments
+                self WVSpectralMasks {mustBeNonempty}
+                options.r (1,1) double
+                options.k_r (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*2
+                options.k_f (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*20
+                options.j_f (1,1) double = 1
+                options.u_rms (1,1) double = 0.2 % set the *total* energy (not just kinetic) equal to 0.5*u_rms^2
+                options.initialPV {mustBeMember(options.initialPV,{'none','narrow-band','full-spectrum'})} = 'narrow-band'
+            end
+
+            if ~isa(self.wvt,"WVGeometryDoublyPeriodicBarotropic")
+                % the idea is to set the energy at the sea-surface and
+                % so we need to know the relative amplitude of this
+                % mode at the surface.
+                F = self.wvt.FinvMatrix;
+                surfaceMag = 1/F(end,options.j_f+1);
+                sbRatio = abs(F(end,options.j_f+1)/F(1,options.j_f+1));
+                % sbRatio = 1; % should we change the damping scale? Or no?
+                h = self.wvt.h(options.j_f+1);
+                magicNumber = 2.25;
+            else
+                surfaceMag = 1;
+                sbRatio = 1;
+                h = self.wvt.h;
+                magicNumber = 0.0225;
+            end
+
+
+            if isfield(options,"r")
+                r = options.r;
+                k_r = self.r/(magicNumber*options.u_rms);
+            else
+                r = magicNumber*sbRatio*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
+                % fprintf('1/r is %.1f days, switching to %.1f days\n',1/(self.r*86400),1/(r*86400));
+                k_r = options.k_r;
+            end
+            k_f = options.k_f;
+            j_f = options.j_f;
+            wvt = self.wvt;
+
+            % smallDampIndex = find(abs(self.damp(:,1)) > 1.1*abs(self.r),1,'first');
+            % fprintf('(k_r=%.2f dk, k_f=%d dk, k_nu=%d dk.\n',k_r/wvt.dk,round(k_f/wvt.dk),round(self.k_damp/wvt.dk));
+            % fprintf('Small scale damping begins around k=%d dk. You have k_f=%d dk.\n',smallDampIndex-1,round(k_f/(wvt.k(2)-wvt.k(1))));
+
+
+            deltaK = wvt.kRadial(2)-wvt.kRadial(1);
+            MA0 = zeros(wvt.spectralMatrixSize);
+            MA0(wvt.Kh > k_f-deltaK/2 & wvt.Kh < k_f+deltaK/2 & wvt.J == j_f) = 1;
+
+            if strcmp(options.initialPV,'narrow-band') || strcmp(options.initialPV,'full-spectrum')
+                u_rms = surfaceMag * options.u_rms;
+
+                m = 3/2; % We don't really know what this number is.
+                kappa_epsilon = 0.5 * u_rms^2 / ( ((3*m+5)/(2*m+2))*k_r^(-2/3) - k_f^(-2/3) );
+                model_viscous = @(k) kappa_epsilon * k_r^(-5/3 - m) * k.^m;
+                model_inverse = @(k) kappa_epsilon * k.^(-5/3);
+                model_forward = @(k) kappa_epsilon * k_f^(4/3) * k.^(-3);
+                model_spectrum = @(k) model_viscous(k) .* (k<k_r) + model_inverse(k) .* (k >= k_r & k<=k_f) + model_forward(k) .* (k>k_f);
+
+                [~,~,wvt.A0] = wvt.geostrophicComponent.randomAmplitudesWithSpectrum(A0Spectrum= @(k,j) model_spectrum(k),shouldOnlyRandomizeOrientations=1);
+
+                if strcmp(options.initialPV,'narrow-band')
+                    wvt.A0 = MA0 .* wvt.A0;
+                else
+                    if isa(self.wvt,"WVGeometryDoublyPeriodicBarotropic")
+                        u = wvt.u;
+                        v = wvt.v;
+                    else
+                        u = wvt.ssu;
+                        v = wvt.ssv;
+                    end
+                    zeta = wvt.ssh;
+                    KE = mean(mean(0.5*(u.^2+v.^2)));
+                    PE = mean(mean(0.5*(9.81*zeta.^2)/h));
+                    u_rms_surface = mean(mean(sqrt(u.^2+v.^2)));
+                    fprintf("surface u_rms: %.2g cm/s\n",100*u_rms_surface);
+                    fprintf("surface energy, %g.\n",KE+PE);
+                    fprintf('desired energy: %g, actual energy %g\n',0.5 * u_rms^2,wvt.geostrophicEnergy/h);
+                end
+            end
+            self.setGeostrophicForcingCoefficients(MA0 .* wvt.A0,MA0=MA0,tau0=0);
+        end
         
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
             if self.tauP > 0

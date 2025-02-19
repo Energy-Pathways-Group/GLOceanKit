@@ -73,7 +73,7 @@ elseif all(ncfile.hasVariableWithName('u','v','eta'))
     end
 elseif all(ncfile.hasVariableWithName('A0'))
     if hasTimeDimension == 1
-        wvt.A0 = ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0');
+        wvt.A0 = reshape(ncfile.readVariablesAtIndexAlongDimension('t',iTime,'A0'),wvt.spectralMatrixSize);
     else
         wvt.A0 = ncfile.readVariables('A0');
     end

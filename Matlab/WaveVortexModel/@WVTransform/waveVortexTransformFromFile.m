@@ -44,12 +44,12 @@ if isKey(ncfile.attributes,'WVTransform')
     wvt = feval(strcat(wvtClassName,'.waveVortexTransformFromFile'),path,'iTime',options.iTime);
 end
 
-totalForcingGroups = ncfile.attributes('TotalForcingGroups');
-for iForce=1:totalForcingGroups
-    forceGroup = ncfile.groupWithName("forcing-"+iForce);
-    forcingClassName = forceGroup.attributes('WVForcing');
-    force = feval(strcat(forcingClassName,'.forcingFromFile'),forceGroup,wvt);
-    self.addForcing(force);
-end
+% totalForcingGroups = ncfile.attributes('TotalForcingGroups');
+% for iForce=1:totalForcingGroups
+%     forceGroup = ncfile.groupWithName("forcing-"+iForce);
+%     forcingClassName = forceGroup.attributes('WVForcing');
+%     force = feval(strcat(forcingClassName,'.forcingFromFile'),forceGroup,wvt);
+%     self.addForcing(force);
+% end
 
 end
