@@ -173,17 +173,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            if isscalar(options.Apm) && isscalar(options.A0)
-                u = zeros(self.spatialMatrixSize);
-            else
-                if ~isscalar(options.Apm) && ~isscalar(options.A0)
-                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
-                elseif ~isscalar(options.Apm)
-                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* options.Apm ));
-                else
-                    u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* options.A0));
-                end
-            end
+            u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
         end
 
         function w = transformToSpatialDomainWithG(self, options)
@@ -192,17 +182,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
                 options.Apm double = 0
                 options.A0 double = 0
             end
-            if isscalar(options.Apm) && isscalar(options.A0)
-                w = zeros(self.spatialMatrixSize);
-            else
-                if ~isscalar(options.Apm) && ~isscalar(options.A0)
-                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
-                elseif ~isscalar(options.Apm)
-                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.Apm));
-                else
-                    w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.A0));
-                end
-            end
+            w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

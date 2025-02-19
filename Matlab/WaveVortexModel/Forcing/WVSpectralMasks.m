@@ -1,5 +1,5 @@
 classdef WVSpectralMasks < WVForcing
-    % 3D forced nonlinear flux for Boussinesq flow
+    % Resonant forcing at the natural frequency of each mode
     %
     % The unforced model basically looks likes like this,
     %
@@ -31,9 +31,9 @@ classdef WVSpectralMasks < WVForcing
     % - Topic: Initializing
     % - Declaration: WVNonlinearFluxForced < [WVNonlinearFlux](/classes/wvnonlinearflux/)
     properties
-        MA0 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
-        MAp = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
-        MAm = []    % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
+        A0_indices uint64 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
+        Ap_indices uint64 = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
+        Am_indices uint64 = []    % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
 
         A0bar = []  % A0 'mean' value to relax to
         Apbar = []  % Ap 'mean' value to relax to
@@ -57,38 +57,35 @@ classdef WVSpectralMasks < WVForcing
             % - Returns nlFlux: a WVNonlinearFlux instance
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.name {mustBeText} = "spectral masks"
+                options.name {mustBeText}
 
-                options.Apbar (:,:) double
-                options.Ambar (:,:) double
-                options.A0bar (:,:) double
-                options.MAp   (:,:) logical
-                options.MAm   (:,:) logical
-                options.MA0   (:,:) logical 
-                options.tauP (1,1) double
-                options.tauM (1,1) double
-                options.tau0 (1,1) double
+                options.Apbar (:,1) double = []
+                options.Ambar (:,1) double = []
+                options.A0bar (:,1) double = []
+                options.A0_indices (:,1) uint64 = []
+                options.Ap_indices (:,1) uint64 = []
+                options.Am_indices (:,1) uint64 = []
+                options.tauP (1,1) double = 0
+                options.tauM (1,1) double = 0
+                options.tau0 (1,1) double = 0
             end
             self@WVForcing(wvt,options.name,WVForcingType(["Spectral","PVSpectral"]));
 
-            canInitializeDirectly = all(isfield(options, self.classRequiredPropertyNames));
+            if ~isfield(options,"name")
+                error("You must specify a unique name for these spectral masks, e.g., geostrophic mean flow, or M2 tide.")
+            end
+
+            canInitializeDirectly = any(options.A0_indices(:)) | any(options.Ap_indices(:)) | any(options.Am_indices(:));
             if canInitializeDirectly == true
                 self.Apbar= options.Apbar;
                 self.Ambar= options.Ambar;
                 self.A0bar= options.A0bar;
-                self.MAp  = options.MAp;
-                self.MAm  = options.MAm;
-                self.MA0  = options.MA0;
+                self.A0_indices  = options.A0_indices;
+                self.Ap_indices  = options.Ap_indices;
+                self.Am_indices  = options.Am_indices;
                 self.tauP = options.tauP;
                 self.tauM = options.tauM;
                 self.tau0 = options.tau0;
-            else
-                self.Apbar= zeros(wvt.spectralMatrixSize);
-                self.Ambar= zeros(wvt.spectralMatrixSize);
-                self.A0bar= zeros(wvt.spectralMatrixSize);
-                self.MAp  = false(wvt.spectralMatrixSize);
-                self.MAm  = false(wvt.spectralMatrixSize);
-                self.MA0  = false(wvt.spectralMatrixSize);
             end
         end
         function setWaveForcingCoefficients(self,Apbar,Ambar,options)
@@ -122,8 +119,8 @@ classdef WVSpectralMasks < WVForcing
                 self WVSpectralMasks {mustBeNonempty}
                 Apbar (:,:) double {mustBeNonempty}
                 Ambar (:,:) double {mustBeNonempty}
-                options.MAp (:,:) logical = abs(Apbar) > 0
-                options.MAm (:,:) logical = abs(Ambar) > 0
+                options.MAp (:,:) logical = abs(Apbar) > 1e-6*max(abs(Apbar(:)))
+                options.MAm (:,:) logical = abs(Ambar) > 1e-6*max(abs(Ambar(:)))
                 options.tauP (1,1) double = 0
                 options.tauM (1,1) double = 0
             end
@@ -131,22 +128,24 @@ classdef WVSpectralMasks < WVForcing
                 svv = self.wvt.forcingWithName("spectral vanishing viscosity");
                 dampedIndicesAp = options.MAp(self.wvt.Kh > svv.k_damp);
                 dampedIndicesAm = options.MAm(self.wvt.Kh > svv.k_damp);
-                warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesAp(:))+sum(dampedIndicesAm(:)));
-                Apbar(self.wvt.Kh > svv.k_damp) = 0;
-                options.MAp(self.wvt.Kh > svv.k_damp) = 0;
-                Ambar(self.wvt.Kh > svv.k_damp) = 0;
-                options.MAm(self.wvt.Kh > svv.k_damp) = 0;
+                if any(dampedIndicesAp(:) | dampedIndicesAm(:))
+                    warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesAp(:))+sum(dampedIndicesAm(:)));
+                    Apbar(self.wvt.Kh > svv.k_damp) = 0;
+                    options.MAp(self.wvt.Kh > svv.k_damp) = 0;
+                    Ambar(self.wvt.Kh > svv.k_damp) = 0;
+                    options.MAm(self.wvt.Kh > svv.k_damp) = 0;
+                end
             end
 
-            self.Apbar = Apbar;
-            self.MAp = options.MAp;
+            self.Ap_indices = find(options.MAp);
+            self.Apbar = Apbar(self.Ap_indices);
             self.tauP = options.tauP;
 
-            self.Ambar = Ambar;
-            self.MAm = options.MAm;
+            self.Am_indices = find(options.MAm);
+            self.Ambar = Ambar(self.Am_indices);
             self.tauM = options.tauM;
 
-            fprintf('You are forcing at %d wave modes.\n',sum(options.MAp(:))+sum(options.MAm(:)));
+            fprintf('You are forcing at %d wave modes.\n',length(self.Ap_indices) + length(self.Am_indices));
         end
 
         function setGeostrophicForcingCoefficients(self,A0bar,options)
@@ -176,38 +175,66 @@ classdef WVSpectralMasks < WVForcing
             arguments
                 self WVSpectralMasks {mustBeNonempty}
                 A0bar (:,:) double {mustBeNonempty}
-                options.MA0 (:,:) logical = abs(A0bar) > 0
+                options.MA0 (:,:) logical = abs(A0bar) > 1e-6*max(abs(A0bar(:)))
                 options.tau0 (1,1) double = 0
             end
 
-            self.A0bar = A0bar;
-            self.MA0 = options.MA0;
+            if self.wvt.hasForcingWithName("spectral vanishing viscosity")
+                svv = self.wvt.forcingWithName("spectral vanishing viscosity");
+                dampedIndicesA0 = options.MA0(self.wvt.Kh > svv.k_damp);
+
+                if any(dampedIndicesA0(:))
+                    warning('You have set %d forcing modes in the damping region. These will be removed.',sum(dampedIndicesA0(:)));
+                    A0bar(self.wvt.Kh > svv.k_damp) = 0;
+                    options.MA0(self.wvt.Kh > svv.k_damp) = 0;
+                end
+            end
+
+            self.A0_indices = find(options.MA0);
+            self.A0bar = A0bar(self.A0_indices);
             self.tau0 = options.tau0;
+
+            fprintf('You are forcing at %d geostrophic modes.\n',length(self.A0_indices));
         end
         
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
             if self.tauP > 0
-                Fp = self.MAp.*(self.Apbar - wvt.Ap)/self.tauP + Fp;
-            elseif ~isempty(self.MAp)
-                Fp = (~self.MAp) .* Fp;
+                Fp(self.Ap_indices) = (self.Apbar - wvt.Ap(self.Ap_indices))/self.tauP + Fp(self.Ap_indices);
+            elseif ~isempty(self.Ap_indices)
+                Fp(self.Ap_indices) = 0;
+                if ~isequal(wvt.Ap(self.Ap_indices),self.Apbar)
+                    wvt.Ap(self.Ap_indices) = self.Apbar;
+                end
             end
             if self.tauM > 0
-                Fm = self.MAm.*(self.Ambar - wvt.Am)/self.tauM + Fm;
-            elseif ~isempty(self.MAm)
-                Fm = (~self.MAm) .* Fm;
+                Fm(self.Am_indices) = (self.Ambar - wvt.Am(self.Am_indices))/self.tauM + Fm(self.Am_indices);
+            elseif ~isempty(self.Am_indices)
+                Fm(self.Am_indices) = 0;
+                if ~isequal(wvt.Am(self.Am_indices),self.Ambar)
+                    wvt.Am(self.Am_indices) = self.Ambar;
+                end
             end
             if self.tau0 > 0
-                F0 = self.MA0.*(self.A0bar - wvt.A0)/self.tau0 + F0;
-            elseif ~isempty(self.MA0)
-                F0 = (~self.MA0) .* F0;
+                F0(self.A0_indices) = (self.A0bar - wvt.A0(self.A0_indices))/self.tau0 + F0(self.A0_indices);
+            elseif ~isempty(self.A0_indices)
+                F0(self.A0_indices) = 0;
+                if ~isequal(wvt.A0(self.A0_indices),self.A0bar)
+                    wvt.A0(self.A0_indices) = self.A0bar;
+                end
             end
         end
 
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
             if self.tau0 > 0
-                F0 = self.MA0.*(self.A0bar - wvt.A0)/self.tau0 + F0;
-            elseif ~isempty(self.MA0)
-                F0 = (~self.MA0) .* F0;
+                F0(self.A0_indices) = (self.A0bar - wvt.A0(self.A0_indices))/self.tau0 + F0(self.A0_indices);
+            else
+                F0(self.A0_indices) = 0;
+                % This if-statement is a performance gain, given the
+                % tradeoffs, and it will ensure the flux is doing as
+                % expected.
+                if ~isequal(wvt.A0(self.A0_indices),self.A0bar)
+                    wvt.A0(self.A0_indices) = self.A0bar;
+                end
             end
         end
 
@@ -215,17 +242,55 @@ classdef WVSpectralMasks < WVForcing
             options.tauP = self.tauP;
             options.tauM = self.tauM;
             options.tau0 = self.tau0;
-            [options.MAp, options.Apbar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MAp, self.Apbar);
-            [options.MAm, options.Ambar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MAm, self.Ambar);
-            [options.MA0, options.A0bar] = self.wvt.spectralVariableWithResolution(wvtX2,self.MA0, self.A0bar);
+
+            Abar = zeros(size(self.wvt.spectralMatrixSize));
+            Abar(self.Ap_indices) = self.Apbar;
+            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+            options.Apbar = self.Apbar;
+            options.Ap_indices = find(AbarX2);
+
+            Abar = zeros(size(self.wvt.spectralMatrixSize));
+            Abar(self.Am_indices) = self.Ambar;
+            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+            options.Ambar = self.Ambar;
+            options.Am_indices = find(AbarX2);
+
+            Abar = zeros(size(self.wvt.spectralMatrixSize));
+            Abar(self.A0_indices) = self.A0bar;
+            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+            options.A0bar = self.A0bar;
+            options.A0_indices = find(AbarX2);
+
             optionArgs = namedargs2cell(options);
             force = WVSpectralMasks(wvtX2,optionArgs{:});
+        end
+
+        function writeToGroup(self,group,propertyAnnotations,attributes)
+            arguments
+                self CAAnnotatedClass
+                group NetCDFGroup
+                propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
+                attributes = configureDictionary("string","string")
+            end
+            % override the logic, and only pass non-zero coefficients.
+            properties = {'name'};
+            if ~isempty(self.Ap_indices)
+                properties = union(properties,{'Ap_indices','Apbar','tauP'});
+            end
+            if ~isempty(self.Am_indices)
+                properties = union(properties,{'Am_indices','Ambar','tauM'});
+            end
+            if ~isempty(self.A0_indices)
+                properties = union(properties,{'A0_indices','A0bar','tau0'});
+            end
+            propertyAnnotations = self.propertyAnnotationWithName(properties);      
+            writeToGroup@CAAnnotatedClass(self,group,propertyAnnotations,attributes);
         end
     end
 
     methods (Static)
         function vars = classRequiredPropertyNames()
-            vars = {'name','MAp','Apbar','tauP','MAm','Ambar','tauM','MA0','A0bar','tau0'};
+            vars = {'name','Ap_indices','Apbar','tauP','Am_indices','Ambar','tauM','A0_indices','A0bar','tau0'};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -234,14 +299,14 @@ classdef WVSpectralMasks < WVForcing
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
             propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of the forcing');
-            propertyAnnotations(end+1) = CANumericProperty('MAp', {'j','kl'}, '','Ap mask');
-            propertyAnnotations(end+1) = CANumericProperty('Apbar', {'j','kl'}, '','Ap mean value');
+            propertyAnnotations(end+1) = CADimensionProperty('Ap_indices', '','indices into the Ap matrix');
+            propertyAnnotations(end+1) = CANumericProperty('Apbar', {'Ap_indices'}, '','Ap mean value');
             propertyAnnotations(end+1) = CANumericProperty('tauP', {}, 's','Ap relaxation time');
-            propertyAnnotations(end+1) = CANumericProperty('MAm', {'j','kl'}, '','Am mask');
-            propertyAnnotations(end+1) = CANumericProperty('Ambar', {'j','kl'}, '','Am mean value');
+            propertyAnnotations(end+1) = CADimensionProperty('Am_indices', '','indices into the Am matrix');
+            propertyAnnotations(end+1) = CANumericProperty('Ambar', {'Am_indices'}, '','Am mean value');
             propertyAnnotations(end+1) = CANumericProperty('tauM', {}, 's','Am relaxation time');
-            propertyAnnotations(end+1) = CANumericProperty('MA0', {'j','kl'}, '','A0 mask');
-            propertyAnnotations(end+1) = CANumericProperty('A0bar', {'j','kl'}, '','A0 mean value');
+            propertyAnnotations(end+1) = CADimensionProperty('A0_indices', '','indices into the A0 matrix');
+            propertyAnnotations(end+1) = CANumericProperty('A0bar', {'A0_indices'}, '','A0 mean value');
             propertyAnnotations(end+1) = CANumericProperty('tau0', {}, 's','A0 relaxation time');
         end
     end

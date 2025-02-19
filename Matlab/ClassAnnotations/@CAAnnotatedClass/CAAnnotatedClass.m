@@ -99,6 +99,66 @@ classdef CAAnnotatedClass < handle
                 end
             end
         end
+
+        function writeToGroup(self,group,propertyAnnotations,attributes)
+            arguments
+                self CAAnnotatedClass
+                group NetCDFGroup
+                propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
+                attributes = configureDictionary("string","string")
+            end
+            group.addAttribute('AnnotatedClass',class(self));
+
+            % Attributes are added to the targetGroup, not the (potential)
+            % subgroup.
+            attributeNames = keys(attributes);
+            for iKey=1:length(attributeNames)
+                group.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
+            end
+
+            for i=1:length(propertyAnnotations)
+                if isa(propertyAnnotations(i),'CADimensionProperty')
+                    dimAnnotation = propertyAnnotations(i);
+                    dimAnnotation.attributes('units') = dimAnnotation.units;
+                    dimAnnotation.attributes('long_name') = dimAnnotation.description;
+                    group.addDimension(dimAnnotation.name,self.(dimAnnotation.name),attributes=dimAnnotation.attributes);
+                end
+            end
+
+            for i=1:length(propertyAnnotations)
+                if isa(propertyAnnotations(i),'CAFunctionProperty')
+                    group.addFunctionHandle(propertyAnnotations(i).name,self.(propertyAnnotations(i).name),attributes=propertyAnnotations(i).attributes);
+                elseif isa(propertyAnnotations(i),'CAObjectProperty')
+                    obj = self.(propertyAnnotations(i).name);
+                    assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
+                    objGroup = group.addGroup(propertyAnnotations(i).name);
+                    if isscalar(obj)
+                        objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
+                        obj.writeToGroup(objGroup,objPropertyAnnotations);
+                    else
+                        for iObj=1:length(obj)
+                            sGroup = objGroup.addGroup(join( [string(propertyAnnotations(i).name),string(iObj)],"-"));
+                            objPropertyAnnotations = obj(iObj).propertyAnnotationWithName(obj(iObj).requiredProperties);
+                            obj(iObj).writeToGroup(sGroup,objPropertyAnnotations);
+                        end
+                    end
+                elseif isa(propertyAnnotations(i),'CANumericProperty')
+                    propAttributes = propertyAnnotations(i).attributes;
+                    if ~isempty(propertyAnnotations(i).units)
+                        propAttributes('units') = propertyAnnotations(i).units;
+                    end
+                    if ~isempty(propertyAnnotations(i).description)
+                        propAttributes('long_name') = propertyAnnotations(i).description;
+                    end
+                    group.addVariable(propertyAnnotations(i).name,propertyAnnotations(i).dimensions,self.(propertyAnnotations(i).name),isComplex=propertyAnnotations(i).isComplex,attributes=propAttributes);
+                elseif isa(propertyAnnotations(i),'CADimensionProperty')
+                else
+                    group.addAttribute(propertyAnnotations(i).name,self.(propertyAnnotations(i).name));
+                end
+            end
+
+            % dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
+        end
     end
 
     methods (Static)
@@ -133,7 +193,7 @@ classdef CAAnnotatedClass < handle
             end
             requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
             if ~isempty(requiredProperties)
-                var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
+                var = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties,shouldIgnoreMissingProperties=true);
             end
         end
 
@@ -240,69 +300,8 @@ classdef CAAnnotatedClass < handle
                 end
             end
             ncfile = NetCDFFile(path);
-            CAAnnotatedClass.writeToGroup(ac,ncfile,options.propertyAnnotations,options.attributes);
+            ac.writeToGroup(ncfile,options.propertyAnnotations,options.attributes);
         end
-
-        function writeToGroup(ac,group,propertyAnnotations,attributes)
-            arguments
-                ac CAAnnotatedClass
-                group NetCDFGroup
-                propertyAnnotations CAPropertyAnnotation = CAPropertyAnnotation.empty(0,0)
-                attributes = configureDictionary("string","string")
-            end
-            group.addAttribute('AnnotatedClass',class(ac));
-
-            % Attributes are added to the targetGroup, not the (potential)
-            % subgroup.
-            attributeNames = keys(attributes);
-            for iKey=1:length(attributeNames)
-                group.addAttribute(attributeNames{iKey},attributes(attributeNames{iKey}));
-            end
-
-            for i=1:length(propertyAnnotations)
-                if isa(propertyAnnotations(i),'CADimensionProperty')
-                    dimAnnotation = propertyAnnotations(i);
-                    dimAnnotation.attributes('units') = dimAnnotation.units;
-                    dimAnnotation.attributes('long_name') = dimAnnotation.description;
-                    group.addDimension(dimAnnotation.name,ac.(dimAnnotation.name),attributes=dimAnnotation.attributes);
-                end
-            end
-
-            for i=1:length(propertyAnnotations)
-                if isa(propertyAnnotations(i),'CAFunctionProperty')
-                    group.addFunctionHandle(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name),attributes=propertyAnnotations(i).attributes);
-                elseif isa(propertyAnnotations(i),'CAObjectProperty')
-                    obj = ac.(propertyAnnotations(i).name);
-                    assert( isa(obj,'CAAnnotatedClass'),'The object property %s is not a subclass of CAAnnotatedClass, and thus cannot be added to file',propertyAnnotations(i).name);
-                    objGroup = group.addGroup(propertyAnnotations(i).name);
-                    if isscalar(obj)
-                        objPropertyAnnotations = obj.propertyAnnotationWithName(obj.requiredProperties);
-                        CAAnnotatedClass.writeToGroup(obj,objGroup,objPropertyAnnotations);
-                    else
-                        for iObj=1:length(obj)
-                            sGroup = objGroup.addGroup(join( [string(propertyAnnotations(i).name),string(iObj)],"-"));
-                            objPropertyAnnotations = obj(iObj).propertyAnnotationWithName(obj(iObj).requiredProperties);
-                            CAAnnotatedClass.writeToGroup(obj(iObj),sGroup,objPropertyAnnotations);
-                        end
-                    end
-                elseif isa(propertyAnnotations(i),'CANumericProperty')
-                    propAttributes = propertyAnnotations(i).attributes;
-                    if ~isempty(propertyAnnotations(i).units)
-                        propAttributes('units') = propertyAnnotations(i).units;
-                    end
-                    if ~isempty(propertyAnnotations(i).description)
-                        propAttributes('long_name') = propertyAnnotations(i).description;
-                    end
-                    group.addVariable(propertyAnnotations(i).name,propertyAnnotations(i).dimensions,ac.(propertyAnnotations(i).name),isComplex=propertyAnnotations(i).isComplex,attributes=propAttributes);
-                elseif isa(propertyAnnotations(i),'CADimensionProperty')
-                else
-                    group.addAttribute(propertyAnnotations(i).name,ac.(propertyAnnotations(i).name));
-                end
-            end
-
-            % dimensionAnnotationDictionary = dictionary(string({options.dimAnnotations.name}),num2cell(options.dimAnnotations));
-        end
-
 
         % This was a previous implementation of writeToGroup which placed
         % the CAObjectProperty groups parallel to this classes group, so as

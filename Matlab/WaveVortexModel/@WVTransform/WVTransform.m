@@ -304,6 +304,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             didAddForcing = false;
             for iForce = 1:length(force)
                 aForce = force(iForce);
+                if aForce.wvt ~= self
+                    error('This force was not initialized with the same wvt that it is being added to!')
+                end
                 if isKey(self.forcingNameMap,aForce.name)
                     otherForce = self.forcingNameMap{aForce.name};
                     if ~aForce.isequal(otherForce)
