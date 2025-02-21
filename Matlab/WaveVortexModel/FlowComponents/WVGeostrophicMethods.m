@@ -213,7 +213,7 @@ classdef WVGeostrophicMethods < handle
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 3
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
-            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
+            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
             if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
                 self.throwErrorIfDensityViolation(A0=self.A0 + A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
@@ -268,7 +268,7 @@ classdef WVGeostrophicMethods < handle
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 2
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
-            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier((self.f/self.g)*psi(self.X,self.Y,self.Z) ));
+            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
             if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
             end
@@ -313,7 +313,7 @@ classdef WVGeostrophicMethods < handle
 
             [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.j,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            A0_indices = (self.f/self.g)*u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
             
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
@@ -359,7 +359,7 @@ classdef WVGeostrophicMethods < handle
 
             [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            A0_indices = (self.f/self.g)*u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
 
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;

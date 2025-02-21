@@ -138,7 +138,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 enstrophyFactor double
             end
-            enstrophyFactor = (self.wvt.h_0).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+            enstrophyFactor = (self.wvt.h_0/2).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
 
             %...which is slightly different for the j=0 mode
             enstrophyFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);

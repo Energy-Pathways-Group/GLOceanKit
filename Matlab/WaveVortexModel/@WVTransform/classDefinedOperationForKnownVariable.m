@@ -77,13 +77,13 @@ for iOp = 1:length(variableName)
 
         case 'p'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'kg/m/s2', 'pressure anomaly');
-            f = @(wvt) wvt.rho0*wvt.g*transformToSpatialDomainWithF(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.PA0.*wvt.A0t);
+            f = @(wvt) wvt.rho0*wvt.g*wvt.pi;
 
         case 'psi'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'m^2/s', 'geostrophic streamfunction');
             varAnnotation.isVariableWithLinearTimeStep = false;
             varAnnotation.isVariableWithNonlinearTimeStep = true;
-            f = @(wvt) (wvt.g/wvt.f) *transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.PA0.*wvt.A0t);
+            f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.A0t);
 
         case 'qgpv'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'1/s', 'quasigeostrophic potential vorticity');
