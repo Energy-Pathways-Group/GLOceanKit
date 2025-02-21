@@ -32,7 +32,7 @@ zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
 A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
 
 delta_bar = self.transformWithG_wg(self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat));
-nw_bar = self.transformWithG_wg(n_bar - A0);
+nw_bar = self.transformWithG_wg(n_bar - self.NA0.*A0);
 Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
 Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
 

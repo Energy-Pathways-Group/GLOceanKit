@@ -76,11 +76,10 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                 hkeFactor double {mustBeNonnegative}
             end
             % energy factor for most modes...
-            hkeFactor = (self.wvt.g/2)*self.wvt.K2 .* self.wvt.Lr2;
+            hkeFactor = (1/2)*self.wvt.K2 .* self.wvt.h_0;
 
             %...which is slightly different for the j=0 mode
-            Lr0 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
-            hkeFactor(self.wvt.J == 0) = (self.wvt.g/2)*(self.wvt.K2(self.wvt.J == 0)*Lr0);
+            hkeFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*self.wvt.K2(self.wvt.J == 0);
 
             % then zero out the entries where there are no solutions and
             % double because we are using half-complex format
@@ -94,7 +93,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 peFactor double {mustBeNonnegative}
             end
-            peFactor = (self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
+            peFactor = (self.wvt.f*self.wvt.f/self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
             peFactor(self.wvt.J == 0) = 0;
 
             % then zero out the entries where there are no solutions and
@@ -106,8 +105,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             % returns the qgpv multiplier for the coefficient matrix.
             %
             % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the squared absolute value of this matrix to
-            % produce the total energy.
+            % multiplies A0 to produce QGPV after transformation with F
             %
             % - Topic: Quadratic quantities
             % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
@@ -119,8 +117,8 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 qgpvFactor double
             end
-            qgpvFactor = -(self.wvt.g/self.wvt.f)*(self.wvt.K2 + 1./self.wvt.Lr2);
-            qgpvFactor(self.wvt.J == 0) = -(self.wvt.g/self.wvt.f)*self.wvt.K2(self.wvt.J == 0);
+            qgpvFactor = -(self.wvt.K2 + 1./self.wvt.Lr2);
+            qgpvFactor(self.wvt.J == 0) = -self.wvt.K2(self.wvt.J == 0);
             qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
@@ -140,11 +138,10 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 enstrophyFactor double
             end
-            enstrophyFactor = (self.wvt.g/2)*self.wvt.Lr2.*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+            enstrophyFactor = (self.wvt.h_0).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
 
             %...which is slightly different for the j=0 mode
-            Lr20 = self.wvt.g*self.wvt.Lz/self.wvt.f/self.wvt.f;
-            enstrophyFactor(self.wvt.J == 0) = (self.wvt.g/2)*Lr20*(self.wvt.K2(self.wvt.J == 0).^2);
+            enstrophyFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);
 
             % then zero out the entries where there are no solutions
             enstrophyFactor = enstrophyFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
@@ -285,7 +282,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
 
             if options.amplitudeIsMaxU == 1
-                A = A*wvt.f/abs((wvt.g*sqrt(k*k+l*l)*norm*h*m));
+                A = A/abs((sqrt(k*k+l*l)*norm*h*m));
             end
 
             if jMode == 0
@@ -297,15 +294,15 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
 
             theta = @(x,y,t) k*x + l*y + phi;
-            u = @(x,y,z,t) A*(wvt.g*l/wvt.f)*sin( theta(x,y,t) ).*F(z);
-            v = @(x,y,z,t) -A*(wvt.g*k/wvt.f)*sin( theta(x,y,t) ).*F(z);
+            u = @(x,y,z,t) A*l*sin( theta(x,y,t) ).*F(z);
+            v = @(x,y,z,t) -A*k*sin( theta(x,y,t) ).*F(z);
             w = @(x,y,z,t) zeros(size(x));
-            eta = @(x,y,z,t) A*cos( theta(x,y,t) ).*G(z);
-            p = @(x,y,z,t) A*wvt.rho0*wvt.g*cos( theta(x,y,t) ).*F(z);
+            eta = @(x,y,z,t) A*(wvt.f/wvt.g)*cos( theta(x,y,t) ).*G(z);
+            p = @(x,y,z,t) A*wvt.rho0*wvt.f*cos( theta(x,y,t) ).*F(z);
             if jMode == 0
-                qgpv = @(x,y,z,t) -A*(wvt.g/wvt.f)*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
+                qgpv = @(x,y,z,t) -A*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
             else
-                qgpv = @(x,y,z,t) -A*(wvt.g/wvt.f)*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
+                qgpv = @(x,y,z,t) -A*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
             end
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
@@ -320,13 +317,12 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
 
             K2 = k*k+l*l;
             if jMode == 0
-                Lr0 = wvt.g*wvt.Lz/wvt.f/wvt.f;
-                solution.energyFactor = (wvt.g/2)*(K2*Lr0);
-                solution.enstrophyFactor = (wvt.g/2)*Lr0*(K2)^2;
+                solution.energyFactor = (wvt.Lz/2)*K2;
+                solution.enstrophyFactor = (wvt.Lz/2)*(K2)^2;
             else
                 Lr2 = wvt.g*h/wvt.f/wvt.f;
-                solution.energyFactor = (wvt.g/2)*(K2*Lr2 + 1);
-                solution.enstrophyFactor = (wvt.g/2)*Lr2*(K2 + 1/Lr2)^2;
+                solution.energyFactor = (h/2)*(K2 + 1/Lr2);
+                solution.enstrophyFactor = (h/2)*(K2 + 1/Lr2)^2;
             end
 
             % These are half-complex solutions, so we need to double these
@@ -344,8 +340,9 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
 
             Lr2inv = (f*f)./(g*self.wvt.h_0);
             Lr2inv(1) = 0;
-            A0N = (Lr2inv./(K2 + Lr2inv));
-            A0Z = - (f/g)./(K2 + Lr2inv);
+            A0N = (f./(self.wvt.h_0.*(K2 + Lr2inv)));
+            A0N(self.wvt.J==0) = 0;
+            A0Z = - 1./(K2 + Lr2inv);
 
             mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
             A0N(~mask) = 0;
@@ -360,10 +357,10 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
 
             mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
 
-            UA0 = -sqrt(-1)*(g/f)*L .* mask;
-            VA0 = sqrt(-1)*(g/f)*K .* mask;
-            PA0 = mask;
-            NA0 = mask;
+            UA0 = -sqrt(-1)*L .* mask;
+            VA0 = sqrt(-1)*K .* mask;
+            PA0 = (f/g)*mask;
+            NA0 = (f/g)*mask;
             NA0(1,:) = 0;
         end
 
