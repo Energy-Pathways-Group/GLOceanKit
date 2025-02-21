@@ -150,6 +150,26 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             % need to double the total energy
             enstrophyFactor = enstrophyFactor*2;
         end
+
+        function psiFactor = psiFactorForA0(self)
+            % returns the streamfunction multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies A0 to return the streamfunction in the spectral
+            % domain.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: psiFactor = psiFactorForA0(self)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                psiFactor double
+            end
+            psiFactor = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
         
         function dof = degreesOfFreedomPerMode(self)
             dof = 2;
@@ -298,14 +318,17 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             v = @(x,y,z,t) -A*k*sin( theta(x,y,t) ).*F(z);
             w = @(x,y,z,t) zeros(size(x));
             eta = @(x,y,z,t) A*(wvt.f/wvt.g)*cos( theta(x,y,t) ).*G(z);
+            rho_e = @(x,y,z,t) (wvt.rho0/wvt.g)*N0*N0*eta(x,y,z,t);
             p = @(x,y,z,t) A*wvt.rho0*wvt.f*cos( theta(x,y,t) ).*F(z);
+            psi = @(x,y,z,t) A*cos( theta(x,y,t) ).*F(z);
+            ssh = @(x,y,t) p(x,y,0,t)/(wvt.rho0*wvt.g);
             if jMode == 0
                 qgpv = @(x,y,z,t) -A*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
             else
                 qgpv = @(x,y,z,t) -A*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
             end
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,rho_e,p,ssh,qgpv,psi=psi,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;

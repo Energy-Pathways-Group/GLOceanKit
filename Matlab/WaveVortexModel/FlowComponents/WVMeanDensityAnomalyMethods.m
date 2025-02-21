@@ -47,6 +47,7 @@ classdef WVMeanDensityAnomalyMethods < handle
 
             initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
+            initVariable("A0_Psi_factor",flowComponent.psiFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
             % self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);

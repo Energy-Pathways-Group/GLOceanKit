@@ -91,6 +91,26 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             enstrophyFactor = (self.wvt.g./(2*self.wvt.Lr2)).*self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
+        function psiFactor = psiFactorForA0(self)
+            % returns the streamfunction multiplier for the coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies A0 to return the streamfunction in the spectral
+            % domain.
+            %
+            % - Topic: Quadratic quantities
+            % - Declaration: psiFactor = psiFactorForA0(self)
+            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
+            % - Returns mask: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                psiFactor double
+            end
+            psiFactor = (self.wvt.g ./ self.wvt.f) .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+        end
+
         function dof = degreesOfFreedomPerMode(self)
             dof = 1;
         end
@@ -171,10 +191,13 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
             v = @(x,y,z,t) zeros(size(z));
             w = @(x,y,z,t) zeros(size(z));
             eta = @(x,y,z,t) A*G(z);
+            rho_e = @(x,y,z,t) (wvt.rho0/wvt.g)*N0*N0*eta(x,y,z,t);
             p = @(x,y,z,t) A*wvt.rho0*wvt.g*F(z);
+            psi = @(x,y,z,t) A*(wvt.g/wvt.f)*F(z);
+            ssh = @(x,y,t) p(x,y,0,t)/(wvt.rho0*wvt.g);
             qgpv = @(x,y,z,t) -A*(wvt.f/h)*F(z);
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,0,u,v,w,eta,rho_e,p,ssh,qgpv,psi=psi,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.A0;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A;

@@ -85,12 +85,16 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
             % changing.
             self.wvt.t = 86400;
             args = {self.wvt.X,self.wvt.Y,self.wvt.Z,self.wvt.t};
+            sshArgs = {self.wvt.X(:,:,end),self.wvt.Y(:,:,end),self.wvt.t};
             self.verifyThat(self.wvt.u,IsSameSolutionAs(soln.u(args{:})),'u');
             self.verifyThat(self.wvt.v,IsSameSolutionAs(soln.v(args{:})),'v');
             self.verifyThat(self.wvt.w,IsSameSolutionAs(soln.w(args{:})),'w');
             self.verifyThat(self.wvt.eta,IsSameSolutionAs(soln.eta(args{:})),'eta');
+            self.verifyThat(self.wvt.rho_e,IsSameSolutionAs(soln.rho_e(args{:})),'rho_e');
             self.verifyThat(self.wvt.p,IsSameSolutionAs(soln.p(args{:})),'p');
+            self.verifyThat(self.wvt.ssh,IsSameSolutionAs(soln.ssh(sshArgs{:})),'ssh');
             self.verifyThat(self.wvt.qgpv,IsSameSolutionAs(soln.qgpv(args{:})),'qgpv');
+            self.verifyThat(self.wvt.psi,IsSameSolutionAs(soln.psi(args{:})),'psi');
 
             self.verifyEqual(self.wvt.totalEnergy,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);
             self.verifyEqual(self.wvt.totalEnergySpatiallyIntegrated,soln.depthIntegratedTotalEnergy(isHydrostatic=self.wvt.isHydrostatic), "AbsTol",1e-7,"RelTol",1e-7);

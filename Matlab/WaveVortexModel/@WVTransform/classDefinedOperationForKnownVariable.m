@@ -83,7 +83,7 @@ for iOp = 1:length(variableName)
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'m^2/s', 'geostrophic streamfunction');
             varAnnotation.isVariableWithLinearTimeStep = false;
             varAnnotation.isVariableWithNonlinearTimeStep = true;
-            f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.A0t);
+            f = @(wvt) transformToSpatialDomainWithF(wvt,@(wvt) 0,@(wvt) 0,@(wvt) wvt.A0_Psi_factor .* wvt.A0t);
 
         case 'qgpv'
             varAnnotation =  WVVariableAnnotation(name,options.spatialDimensionNames,'1/s', 'quasigeostrophic potential vorticity');

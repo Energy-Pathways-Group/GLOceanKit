@@ -60,6 +60,7 @@ classdef WVGeostrophicMethods < handle
 
             initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
             initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
+            initVariable("A0_Psi_factor",flowComponent.psiFactorForA0);
             initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
 
             % self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
@@ -213,7 +214,9 @@ classdef WVGeostrophicMethods < handle
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 3
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
-            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
+            A0Psi = (1./self.A0_Psi_factor);
+            A0Psi(isinf(A0Psi)) = 0;
+            A0_ = A0Psi .* self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
             if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo='\n\nThe streamfunction you are adding violates this condition.\n');
                 self.throwErrorIfDensityViolation(A0=self.A0 + A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('Although the streamfunction you are adding does not violate this condition, the total geostrophic will exceed these bounds.\n'));
@@ -268,7 +271,9 @@ classdef WVGeostrophicMethods < handle
             % - Parameter psi: function handle that takes three arguments, psi(X,Y,Z)
             % - nav_order: 2
             self.throwErrorIfMeanPressureViolation(psi(self.X,self.Y,self.Z));
-            A0_ = self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
+            A0Psi = (1./self.A0_Psi_factor);
+            A0Psi(isinf(A0Psi)) = 0;
+            A0_ = A0Psi .* self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
             if isa(self,'WVStratification')
                 self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
             end

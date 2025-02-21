@@ -48,7 +48,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
 
     properties (GetAccess=public, SetAccess=public)
-        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor
+        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor, A0_Psi_factor
     end
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
@@ -718,11 +718,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                         prop.isVariableWithLinearTimeStep = 0;
                         prop.isVariableWithNonlinearTimeStep = 1;
                     case 'A0_TE_factor'
-                        prop = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+                        prop = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m^{-1}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
                     case 'A0_QGPV_factor'
-                        prop = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-1} s^{-1}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+                        prop = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
+                    case 'A0_Psi_factor'
+                        prop = CANumericProperty('A0_Psi_factor',options.spectralDimensionNames,'', 'multiplicative factor that multiplies $$A_0$$ to compute the geostrophic streamfunction (psi). The units are mixed: unitless for the geostrophic part, $$s m^{-1}$$ for the MDA part.',isComplex=0);
                     case 'A0_TZ_factor'
-                        prop = CANumericProperty('A0_TZ_factor',options.spectralDimensionNames,'m^{-1} s^{-2}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
+                        prop = CANumericProperty('A0_TZ_factor',options.spectralDimensionNames,'m^{-3}', 'multiplicative factor that multiplies $$A_0^2$$ to compute quasigeostrophic enstrophy.',isComplex=0);
                     case 'Apm_TE_factor'
                         prop = CANumericProperty('Apm_TE_factor',options.spectralDimensionNames,'m', 'multiplicative factor that multiplies $$A_\pm^2$$ to compute total energy.',isComplex=0);
 

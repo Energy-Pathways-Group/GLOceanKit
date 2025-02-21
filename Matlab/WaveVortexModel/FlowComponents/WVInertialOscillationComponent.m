@@ -185,10 +185,12 @@ classdef WVInertialOscillationComponent < WVPrimaryFlowComponent
             v = @(x,y,z,t) -A*sin( theta(x,y,t) ).*F(z);
             w = @(x,y,z,t) G(z);
             eta = @(x,y,z,t) G(z);
+            rho_e = @(x,y,z,t) (wvt.rho0/wvt.g)*N0*N0*eta(x,y,z,t);
             p = @(x,y,z,t) G(z);
+            ssh = @(x,y,t) p(x,y,0,t)/(wvt.rho0*wvt.g);
             qgpv = @(x,y,z,t) zeros(size(x));
 
-            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,p,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
+            solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,rho_e,p,ssh,qgpv,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
             solution.coefficientMatrix = WVCoefficientMatrix.Ap;
             solution.coefficientMatrixIndex = wvt.indexFromModeNumber(kMode,lMode,jMode);
             solution.coefficientMatrixAmplitude = A*exp(sqrt(-1)*phi)/2;

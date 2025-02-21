@@ -27,7 +27,7 @@ classdef WVOrthogonalSolution < handle
         kMode, lMode, jMode
         amplitude
         phase
-        u,v,w,eta,p,qgpv
+        u,v,w,eta,rho_e,p,ssh,qgpv,psi
         Lx,Ly,Lz
         N2
 
@@ -44,7 +44,7 @@ classdef WVOrthogonalSolution < handle
     end
 
     methods
-        function self = WVOrthogonalSolution(kMode, lMode, jMode, amplitude,phase,u,v,w,eta,p,qgpv,options)
+        function self = WVOrthogonalSolution(kMode, lMode, jMode, amplitude,phase,u,v,w,eta,rho_e,p,ssh,qgpv,options)
             arguments (Input)
                 kMode (1,1) double
                 lMode (1,1) double
@@ -55,8 +55,11 @@ classdef WVOrthogonalSolution < handle
                 v function_handle
                 w function_handle
                 eta function_handle
+                rho_e function_handle
                 p function_handle
+                ssh function_handle
                 qgpv function_handle
+                options.psi function_handle = @(x,y,z,t) 0*x;
                 options.Lxyz (3,1) double
                 options.N2 function_handle
             end
@@ -69,8 +72,11 @@ classdef WVOrthogonalSolution < handle
             self.v = v;
             self.w = w;
             self.eta = eta;
+            self.rho_e = rho_e;
             self.p = p;
+            self.ssh = ssh;
             self.qgpv = qgpv;
+            self.psi = options.psi;
             self.Lx = options.Lxyz(1);
             self.Ly = options.Lxyz(2);
             self.Lz = options.Lxyz(3);
