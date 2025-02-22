@@ -189,6 +189,51 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
             rvFactor = -self.wvt.K2;
         end
+
+        function factor = multiplierForVariable(self,name,coefficientMatrix)
+            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
+            switch name
+                case "rv"
+                    factor = -self.wvt.K2 .* mask;
+                case "psi"
+                    factor = mask;
+                case "enstrophy"
+                    factor = (self.wvt.h_0/2).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+
+                    %...which is slightly different for the j=0 mode
+                    factor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);
+
+                    % then zero out the entries where there are no solutions
+                    % We do not have any of the conjugates in the matrix, so we
+                    % need to double the total energy
+                    factor = 2*factor .* mask;
+                case "qgpv"
+                    factor = -(self.wvt.K2 + 1./self.wvt.Lr2);
+                    factor(self.wvt.J == 0) = -self.wvt.K2(self.wvt.J == 0);
+                    factor = factor .* mask;
+                case "pe"
+                    factor = (self.wvt.f*self.wvt.f/self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
+                    factor(self.wvt.J == 0) = 0;
+
+                    % then zero out the entries where there are no solutions and
+                    % double because we are using half-complex format
+                    factor = 2* factor .* mask;
+                case "hke"
+                    % energy factor for most modes...
+                    factor = (1/2)*self.wvt.K2 .* self.wvt.h_0;
+
+                    %...which is slightly different for the j=0 mode
+                    factor(self.wvt.J == 0) = (self.wvt.Lz/2)*self.wvt.K2(self.wvt.J == 0);
+
+                    % then zero out the entries where there are no solutions and
+                    % double because we are using half-complex format
+                    factor = 2* factor .* mask;
+                case "energy"
+                    hke = self.multiplierForVariable("hke",coefficientMatrix);
+                    pe = self.multiplierForVariable("pe",coefficientMatrix);
+                    factor = hke + pe;
+            end
+        end
         
         function dof = degreesOfFreedomPerMode(self)
             dof = 2;
