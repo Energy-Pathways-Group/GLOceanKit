@@ -136,16 +136,19 @@ classdef WVModelFixedTimeStepMethods < handle
                 cfl = 0.25;
             end
 
-            omega = self.wvt.Omega;
-            period = 2*pi/max(abs(omega(:)));
             U = self.wvt.uvMax;
-            dx = (3/2)*(self.wvt.x(2)-self.wvt.x(1));
-
+            dx = self.wvt.effectiveHorizontalGridResolution;
             advectiveDT = cfl*dx/U;
-            oscillatoryDT = cfl*period;
+            oscillatoryDT = Inf;
+            period = Inf;
+            if self.wvt.hasWaveComponent == true
+                omega = self.wvt.Omega;
+                period = 2*pi/max(abs(omega(:)));
+                oscillatoryDT = cfl*period;
+            end
             % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
 
-            if self.wvt.isBarotropic ~= 1
+            if isa(self,'WVStratification')
                 W = self.wvt.w;
                 W = W(:,:,2:end);
                 ratio = abs((W./((3/2)*shiftdim(diff(self.wvt.z),-2))));
