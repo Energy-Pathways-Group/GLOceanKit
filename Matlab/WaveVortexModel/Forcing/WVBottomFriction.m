@@ -24,7 +24,7 @@ classdef WVBottomFriction < WVForcing
             end
             self@WVForcing(wvt,"bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.r = options.r;
-            self.RVA0 = - wvt.g * (wvt.Kh .* wvt.Kh) / wvt.f;
+            self.RVA0 = wvt.geostrophicComponent.relativeVorticityFactor;
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)

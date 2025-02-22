@@ -170,6 +170,25 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
             psiFactor = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
+
+        function rvFactor = relativeVorticityFactor(self)
+            % returns the rv multiplier for the A0 coefficient matrix.
+            %
+            % Returns a matrix of size wvt.spectralMatrixSize that
+            % multiplies the A0 matrix so that when transformed with the Fg
+            % modes will return relative vorticity.
+            %
+            % - Topic: Properties
+            % - Declaration: rvFactor = relativeVorticityFactor(self)
+            % - Returns qgpvFactor: matrix of size [Nj Nkl]
+            arguments (Input)
+                self WVFlowComponent {mustBeNonempty}
+            end
+            arguments (Output)
+                rvFactor double
+            end
+            rvFactor = -self.wvt.K2;
+        end
         
         function dof = degreesOfFreedomPerMode(self)
             dof = 2;

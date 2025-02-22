@@ -231,8 +231,8 @@ classdef WVModelFixedTimeStepMethods < handle
             F = cell(1,1);
             n = 0;
             if self.linearDynamics == 0
-                nlF = self.wvt.nFluxedComponents;
-                [nlF{:}] = self.nonlinearFluxOperation.compute(self.wvt);
+                nlF = cell(1,self.wvt.nFluxedComponents);
+                [nlF{:}] = self.wvt.nonlinearFlux();
                 if self.wvt.hasWaveComponent == true
                     n=n+1; F{n} = nlF{n};
                     n=n+1; F{n} = nlF{n};
