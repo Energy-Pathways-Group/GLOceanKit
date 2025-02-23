@@ -703,7 +703,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 name = variableName{iVar};
                 switch name
                     case 'A0'
-                        prop = WVVariableAnnotation('A0',options.spectralDimensionNames,'m', 'geostrophic coefficients at reference time t0');
+                        prop = WVVariableAnnotation('A0',options.spectralDimensionNames,'m^2 s^{-1}', 'geostrophic coefficients at reference time t0');
                         prop.isComplex = 1;
                         prop.isVariableWithLinearTimeStep = 0;
                         prop.isVariableWithNonlinearTimeStep = 1;
