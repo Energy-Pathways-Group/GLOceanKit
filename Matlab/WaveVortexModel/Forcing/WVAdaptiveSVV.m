@@ -104,5 +104,16 @@ classdef WVAdaptiveSVV < WVForcing
             force = WVAdaptiveSVV(wvtX2);
         end
     end
+    methods (Static)
+        function vars = classRequiredPropertyNames()
+            vars = {};
+        end
 
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+        end
+    end
 end

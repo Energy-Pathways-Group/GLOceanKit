@@ -362,6 +362,10 @@ classdef NetCDFGroup < handle
             if ~isempty(value) && ~isfield(options,'isComplex')
                 options.isComplex = ~isreal(value);
             end
+            
+            if ~isempty(value) && isfield(options,'isComplex') && options.isComplex == false && ~isreal(value)
+                warning('The variable %s is complex, but the property annotation indicates that it is real.\n',name);
+            end
 
             if options.isComplex==1
                 var = NetCDFComplexVariable(group=self,name=name,dimensions=self.dimensionWithName(dimNames{:}),attributes=options.attributes,type=options.type);

@@ -95,7 +95,7 @@ classdef CAAnnotatedClass < handle
                         flag = false;
                     end
                 else
-                    flag = flag & isequal(self.(name{1}), other.(name{1}));
+                    flag = flag & (isequal(self.(name{1}), other.(name{1})) | (isempty(self.(name{1})) & isempty(other.(name{1}))));
                 end
             end
         end

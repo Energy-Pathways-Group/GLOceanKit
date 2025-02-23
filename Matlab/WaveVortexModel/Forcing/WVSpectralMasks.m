@@ -31,17 +31,17 @@ classdef WVSpectralMasks < WVForcing
     % - Topic: Initializing
     % - Declaration: WVNonlinearFluxForced < [WVNonlinearFlux](/classes/wvnonlinearflux/)
     properties
-        A0_indices uint64 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
-        Ap_indices uint64 = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
-        Am_indices uint64 = []    % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
+        A0_indices (:,1) uint64 = []    % Forcing mask, A0. 1s at the forced modes, 0s at the unforced modes
+        Ap_indices (:,1) uint64 = []    % Forcing mask, Ap. 1s at the forced modes, 0s at the unforced modes
+        Am_indices (:,1) uint64 = []    % Forcing mask, Am. 1s at the forced modes, 0s at the unforced modes
 
-        A0bar = []  % A0 'mean' value to relax to
-        Apbar = []  % Ap 'mean' value to relax to
-        Ambar = []  % Am 'mean' value to relax to
+        A0bar (:,1) double = []  % A0 'mean' value to relax to
+        Apbar (:,1) double = []  % Ap 'mean' value to relax to
+        Ambar (:,1) double = []  % Am 'mean' value to relax to
 
-        tau0 = 0    % A0 relaxation time
-        tauP = 0    % Ap relaxation time
-        tauM = 0    % Am relaxation time
+        tau0 (1,1) double = 0    % A0 relaxation time
+        tauP (1,1) double = 0    % Ap relaxation time
+        tauM (1,1) double = 0    % Am relaxation time
     end
 
     methods
@@ -384,13 +384,13 @@ classdef WVSpectralMasks < WVForcing
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
             propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of the forcing');
             propertyAnnotations(end+1) = CADimensionProperty('Ap_indices', '','indices into the Ap matrix');
-            propertyAnnotations(end+1) = CANumericProperty('Apbar', {'Ap_indices'}, '','Ap mean value');
+            propertyAnnotations(end+1) = CANumericProperty('Apbar', {'Ap_indices'}, '','Ap mean value',isComplex=true);
             propertyAnnotations(end+1) = CANumericProperty('tauP', {}, 's','Ap relaxation time');
             propertyAnnotations(end+1) = CADimensionProperty('Am_indices', '','indices into the Am matrix');
-            propertyAnnotations(end+1) = CANumericProperty('Ambar', {'Am_indices'}, '','Am mean value');
+            propertyAnnotations(end+1) = CANumericProperty('Ambar', {'Am_indices'}, '','Am mean value',isComplex=true);
             propertyAnnotations(end+1) = CANumericProperty('tauM', {}, 's','Am relaxation time');
             propertyAnnotations(end+1) = CADimensionProperty('A0_indices', '','indices into the A0 matrix');
-            propertyAnnotations(end+1) = CANumericProperty('A0bar', {'A0_indices'}, '','A0 mean value');
+            propertyAnnotations(end+1) = CANumericProperty('A0bar', {'A0_indices'}, '','A0 mean value',isComplex=true);
             propertyAnnotations(end+1) = CANumericProperty('tau0', {}, 's','A0 relaxation time');
         end
     end
