@@ -577,6 +577,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                   
             self.openNetCDFFileForTimeStepping();
 
+            self.wvt.restoreForcingAmplitudes();
             if strcmp(self.integratorType,"adaptive")
                 self.integrateToTimeWithAdaptiveTimeStep(finalTime)
             else

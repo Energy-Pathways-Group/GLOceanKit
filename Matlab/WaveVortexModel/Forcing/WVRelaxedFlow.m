@@ -1,4 +1,4 @@
-classdef WVSpectralMasks < WVForcing
+classdef WVRelaxedFlow < WVForcing
     % Resonant forcing at the natural frequency of each mode
     %
     % The unforced model basically looks likes like this,
@@ -45,7 +45,7 @@ classdef WVSpectralMasks < WVForcing
     end
 
     methods
-        function self = WVSpectralMasks(wvt,options)
+        function self = WVRelaxedFlow(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -116,7 +116,7 @@ classdef WVSpectralMasks < WVForcing
             % - Parameter tauP: (optional) relaxation time (default 0)
             % - Parameter tauM: (optional) relaxation time (default 0)
             arguments
-                self WVSpectralMasks {mustBeNonempty}
+                self WVRelaxedFlow {mustBeNonempty}
                 Apbar (:,:) double {mustBeNonempty}
                 Ambar (:,:) double {mustBeNonempty}
                 options.MAp (:,:) logical = abs(Apbar) > 1e-6*max(abs(Apbar(:)))
@@ -173,7 +173,7 @@ classdef WVSpectralMasks < WVForcing
             % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
             % - Parameter tau0: (optional) relaxation time
             arguments
-                self WVSpectralMasks {mustBeNonempty}
+                self WVRelaxedFlow {mustBeNonempty}
                 A0bar (:,:) double {mustBeNonempty}
                 options.MA0 (:,:) logical = abs(A0bar) > 1e-6*max(abs(A0bar(:)))
                 options.tau0 (1,1) double = 0
@@ -199,7 +199,7 @@ classdef WVSpectralMasks < WVForcing
 
         function [model_spectrum, r] = setNarrowBandGeostrophicForcing(self, options)
             arguments
-                self WVSpectralMasks {mustBeNonempty}
+                self WVRelaxedFlow {mustBeNonempty}
                 options.r (1,1) double
                 options.k_r (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*2
                 options.k_f (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*20
@@ -346,7 +346,7 @@ classdef WVSpectralMasks < WVForcing
             options.A0_indices = find(AbarX2);
 
             optionArgs = namedargs2cell(options);
-            force = WVSpectralMasks(wvtX2,optionArgs{:});
+            force = WVRelaxedFlow(wvtX2,optionArgs{:});
         end
 
         function writeToGroup(self,group,propertyAnnotations,attributes)

@@ -1,13 +1,15 @@
 classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     % Computes a forcing
     %
-    % A WVForcingFluxOperation is an abstract class that defines how forcing
-    % gets added to a WVTransform. You can use one the built-in forcing
-    % operations, or make your own.
+    % WVForcing is an abstract class that defines how forcing gets added to
+    % a WVTransform. You can use one the built-in forcing operations, or
+    % make your own.
     %
     % Forcing is applied at two stages:
-    % 1. in the spatial domain to d/dt(u,v,w,eta) and
-    % 2. in the spectral domain to d/dt(Ap,Am,A0)
+    % 1. in the spatial domain to
+    %   1a. non-hydrostatic flow d/dt(u,v,w,eta) = (Fu,Fv,Fw,Feta) or
+    %   1b. hydrostatic flow d/dt(u,v,eta) = (Fu,Fv,Feta)  and
+    % 2. in the spectral domain to d/dt(Ap,Am,A0) = (Fp,Fm,F0)
     %
     % Each WVForcingFluxOperation must choose one of the two options and
     % override either,
@@ -50,6 +52,8 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         % PVSpatial                     addPotentialVorticitySpatialForcing
         % Spectral                      addSpectralForcing
         % PVSpectral                    addPotentialVorticitySpectralForcing
+        % SpectralAmplitude             setSpectralForcing / setSpectralAmplitude
+        % PVSpectralAmplitude           setPotentialVorticitySpectralForcing / setPotentialVorticitySpectralAmplitude
         %
         % - Topic: Properties
         forcingType WVForcingType = WVForcingType.empty(0,0)
@@ -95,10 +99,24 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
         end
 
+        function [Ap, Am, A0] = setSpectralAmplitude(self, wvt, Ap, Am, A0)
+        end
+
+        function [Fp, Fm, F0] = setSpectralForcing(self, wvt, Fp, Fm, F0)
+        end
+
+
+
         function F0 = addPotentialVorticitySpatialForcing(self, wvt, F0)
         end
 
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
+        end
+
+        function A0 = setPotentialVorticitySpectralAmplitude(self, wvt, A0)
+        end
+
+        function F0 = setPotentialVorticitySpectralForcing(self, wvt, F0)
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,24 +124,6 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         % Read and write to file
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        % function writeToFile(self,group,wvt)
-        %     %write information about the forcing to file
-        %     %
-        %     % To enable model restarts, all subclass should override this
-        %     % method to write variables or parameters to file necessary to
-        %     % re-initialize directly from file.
-        %     %
-        %     % - Topic: Write to file
-        %     % - Declaration: writeToFile(group,wvt)
-        %     % - Parameter group: NetCDFGroup instance that should be written to
-        %     % - Parameter wvt: the WVTransform associated with the nonlinear flux
-        %     arguments
-        %         self WVForcingFluxOperation {mustBeNonempty}
-        %         group NetCDFGroup {mustBeNonempty}
-        %         wvt WVTransform {mustBeNonempty}
-        %     end
-        % end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
             %create a new WVForcing with double the resolution
@@ -138,30 +138,21 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
             force = WVForcing(wvtX2,self.name);
         end
 
-        % function flag = isequal(self,other)
-        %     %check for equality with another force
-        %     %
-        %     % Subclasses to should override this method to implement
-        %     % additional logic.
-        %     %
-        %     % - Topic: Equality
-        %     % - Declaration: flag = isequal(other)
-        %     % - Parameter other: another WVForcing instance
-        %     % - Returns flag: boolean indicating equality
-        %     arguments
-        %         self WVForcing
-        %         other WVForcing
-        %     end
-        %     flag = (self.doesHydrostaticSpatialForcing == other.doesHydrostaticSpatialForcing);
-        %     flag = flag & (self.doesNonhydrostaticSpatialForcing == other.doesNonhydrostaticSpatialForcing);
-        %     flag = flag & (self.doesSpectralForcing == other.doesSpectralForcing);
-        %     flag = flag & (self.doesSpectralA0Forcing == other.doesSpectralA0Forcing);
-        %     flag = flag & strcmp(self.name,other.name);
-        % end
-
     end
 
     methods (Static)
+
+        function forceTypes = spatialFluxTypes()
+            forceTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
+        end
+
+        function forceTypes = spectralFluxTypes()
+            forceTypes = WVForcingType(["Spectral","PVSpectral"]);
+        end
+
+        function forceTypes = spectralAmplitudeTypes()
+            forceTypes = WVForcingType(["SpectralAmplitude","PVSpectralAmplitude"]);
+        end
 
         function force = forcingFromGroup(group,wvt)
             %initialize a WVForcing instance from NetCDF file

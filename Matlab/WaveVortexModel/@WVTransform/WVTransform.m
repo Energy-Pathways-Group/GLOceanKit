@@ -83,8 +83,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         totalFlowComponent
 
         forcingNameMap
-        spatialForcing WVForcing = WVForcing.empty(0,0)
-        spectralForcing WVForcing = WVForcing.empty(0,0)
+        spatialFluxForcing WVForcing = WVForcing.empty(0,0)
+        spectralFluxForcing WVForcing = WVForcing.empty(0,0)
+        spectralAmplitudeForcing WVForcing = WVForcing.empty(0,0)
     end
     
     methods (Abstract)
@@ -165,13 +166,14 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
             self.forcingNameMap = configureDictionary("string","cell");
 
-            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
-            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
-            if length(intersect(spatialTypes,forcingType)) > 1
-                error("A WVTransform cannot have more than one spatial forcing type.")
+            if length(intersect(WVForcing.spatialFluxTypes(),forcingType)) > 1
+                error("A WVTransform cannot have more than one spatial flux forcing type.")
             end
-            if length(intersect(spectralTypes,forcingType)) > 1
-                error("A WVTransform cannot have more than one spectral forcing type.")
+            if length(intersect(WVForcing.spectralFluxTypes(),forcingType)) > 1
+                error("A WVTransform cannot have more than one spectral flux forcing type.")
+            end
+            if length(intersect(WVForcing.spectralAmplitudeTypes(),forcingType)) > 1
+                error("A WVTransform cannot have more than one spectral amplitude forcing type.")
             end
             self.forcingType = forcingType;
         end
@@ -288,8 +290,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 force WVForcing
             end
             self.forcingNameMap = configureDictionary("string","cell");
-            self.spatialForcing = WVForcing.empty(0,0);
-            self.spectralForcing = WVForcing.empty(0,0);
+            self.spatialFluxForcing = WVForcing.empty(0,0);
+            self.spectralFluxForcing = WVForcing.empty(0,0);
+            self.spectralAmplitudeForcing = WVForcing.empty(0,0);
             self.addForcing(force);
         end
 
@@ -299,8 +302,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 force WVForcing
             end
 
-            spatialTypes = WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]);
-            spectralTypes = WVForcingType(["Spectral","PVSpectral"]);
             didAddForcing = false;
             for iForce = 1:length(force)
                 aForce = force(iForce);
@@ -314,13 +315,18 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                     end
                     self.removeForcing(aForce);
                 end
-                if ismember(intersect(aForce.forcingType,self.forcingType),spatialTypes)
-                    self.spatialForcing(end+1) = aForce;
+                if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spatialFluxTypes())
+                    self.spatialFluxForcing(end+1) = aForce;
                     self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
-                if ismember(intersect(aForce.forcingType,self.forcingType),spectralTypes)
-                    self.spectralForcing(end+1) = aForce;
+                if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spectralFluxTypes)
+                    self.spectralFluxForcing(end+1) = aForce;
+                    self.forcingNameMap{aForce.name} = aForce;
+                    didAddForcing = true;
+                end
+                if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spectralAmplitudeTypes)
+                    self.spectralAmplitudeForcing(end+1) = aForce;
                     self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
@@ -337,14 +343,15 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             end
             for iForce = 1:length(force)
                 aForce = force(iForce);
-                self.spatialForcing = setdiff(self.spatialForcing,aForce,'stable');
-                self.spectralForcing = setdiff(self.spectralForcing,aForce,'stable');
+                self.spatialFluxForcing = setdiff(self.spatialFluxForcing,aForce,'stable');
+                self.spectralFluxForcing = setdiff(self.spectralFluxForcing,aForce,'stable');
+                self.spectralAmplitudeForcing = setdiff(self.spectralAmplitudeForcing,aForce,'stable');
                 self.forcingNameMap{aForce.name} = [];
             end
         end
 
         function forcing = get.forcing(self)
-            forcing = cat(2,self.spatialForcing,self.spectralForcing);
+            forcing = cat(2,self.spatialFluxForcing,self.spectralFluxForcing,self.spectralAmplitudeForcing);
         end
 
         function bool = hasForcingWithName(self,name)
@@ -386,6 +393,19 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             forcing = [self.forcingNameMap{name}];
         end
 
+        function restoreForcingAmplitudes(self)
+            if any(ismember(WVForcingType("PVSpectralAmplitude"),self.forcingType))
+                for i=1:length(self.spectralAmplitudeForcing)
+                    self.A0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralAmplitude(self,self.A0);
+                end
+            end
+
+            if any(ismember(WVForcingType("SpectralAmplitude"),self.forcingType))
+                for i=1:length(self.spectralAmplitudeForcing)
+                    [self.Ap, self.Am, self.A0] = self.spectralAmplitudeForcing(i).setSpectralAmplitude(self,self.A0, self.Am, self.A0);
+                end
+            end
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
