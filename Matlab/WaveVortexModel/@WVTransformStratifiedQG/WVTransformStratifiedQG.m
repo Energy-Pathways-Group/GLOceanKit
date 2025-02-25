@@ -79,7 +79,7 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
 
             optionArgs = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, optionArgs{:})
-            self@WVTransform(WVForcingType(["PVSpectral","PVSpatial"]));
+            self@WVTransform(WVForcingType(["PVSpectral","PVSpatial","PVSpectralAmplitude"]));
             self@WVGeostrophicMethods();
 
             self.initializeGeostrophicComponent();
@@ -153,14 +153,44 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
 
         function F0 = nonlinearFlux(self)
             self.Fpv = 0*self.Fpv;
-            for i=1:length(self.spatialForcing)
-               self.Fpv = self.spatialForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+            for i=1:length(self.spatialFluxForcing)
+                self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
             end
             self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
-            for i=1:length(self.spectralForcing)
-               self.F0 = self.spectralForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
+            for i=1:length(self.spectralFluxForcing)
+                self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
+            end
+            for i=1:length(self.spectralAmplitudeForcing)
+                self.F0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(self,self.F0);
             end
             F0 = self.F0;
+        end
+
+        function F0 = fluxForForcing(self)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Output)
+                F0 dictionary
+            end
+            F0 = configureDictionary("string","cell");
+            self.Fpv = 0*self.Fpv;
+            for i=1:length(self.spatialFluxForcing)
+                Fpv0 = self.Fpv;
+                self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+                F0{self.spatialFluxForcing(i).name} = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0));
+            end
+            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
+            for i=1:length(self.spectralFluxForcing)
+                F0_i = self.F0;
+                self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
+                F0{self.spectralFluxForcing(i).name} = self.F0 - F0_i;
+            end
+            for i=1:length(self.spectralAmplitudeForcing)
+                F0_i = self.F0;
+                self.F0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(self,self.F0);
+                F0{self.spectralAmplitudeForcing(i).name} = self.F0 - F0_i;
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

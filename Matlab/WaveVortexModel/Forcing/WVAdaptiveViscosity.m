@@ -1,4 +1,4 @@
-classdef WVAdaptiveSVV < WVForcing
+classdef WVAdaptiveViscosity < WVForcing
     % Small-scale damping
     %
     % The damping is a simple Laplacian, but with a spectral vanishing
@@ -17,7 +17,7 @@ classdef WVAdaptiveSVV < WVForcing
     end
 
     methods
-        function self = WVAdaptiveSVV(wvt)
+        function self = WVAdaptiveViscosity(wvt)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -46,7 +46,7 @@ classdef WVAdaptiveSVV < WVForcing
 
         function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self,options)
             arguments
-                self WVAdaptiveSVV {mustBeNonempty}
+                self WVAdaptiveViscosity {mustBeNonempty}
                 options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
             end
             wvt_ = self.wvt;
@@ -101,7 +101,7 @@ classdef WVAdaptiveSVV < WVForcing
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
-            force = WVAdaptiveSVV(wvtX2);
+            force = WVAdaptiveViscosity(wvtX2);
         end
     end
     methods (Static)

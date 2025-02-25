@@ -275,7 +275,11 @@ classdef WVGeostrophicMethods < handle
             A0Psi(isinf(A0Psi)) = 0;
             A0_ = A0Psi .* self.transformFromSpatialDomainWithFg( self.transformFromSpatialDomainWithFourier(psi(self.X,self.Y,self.Z) ));
             if isa(self,'WVStratification')
-                self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
+                if self.hasWaveComponent
+                    self.throwErrorIfDensityViolation(A0=A0_,Ap=self.Apt,Am=self.Amt,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
+                else
+                    self.throwErrorIfDensityViolation(A0=A0_,additionalErrorInfo=sprintf('The streamfunction you are setting violates this condition.\n'));
+                end
             end
             self.A0 = A0_;
         end

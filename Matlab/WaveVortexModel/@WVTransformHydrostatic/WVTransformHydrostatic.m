@@ -79,7 +79,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
 
             optionArgs = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, optionArgs{:})
-            self@WVTransform(WVForcingType(["HydrostaticSpatial","Spectral"]));
+            self@WVTransform(WVForcingType(["HydrostaticSpatial","Spectral","SpectralAmplitude"]));
             self@WVGeostrophicMethods();
             self@WVMeanDensityAnomalyMethods();
             self@WVInternalGravityWaveMethods();
@@ -152,13 +152,16 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
 
         function [Fp,Fm,F0] = nonlinearFlux(self)
             Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
-            for i=1:length(self.spatialForcing)
-               [Fu, Fv, Feta] = self.spatialForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
+            for i=1:length(self.spatialFluxForcing)
+               [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
             [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
-            for i=1:length(self.spectralForcing)
-               [Fp,Fm,F0] = self.spectralForcing(i).addSpectralForcing(self,Fp, Fm, F0);
-            end            
+            for i=1:length(self.spectralFluxForcing)
+               [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+            end
+            for i=1:length(self.spectralAmplitudeForcing)
+               [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
+            end  
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
