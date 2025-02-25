@@ -42,6 +42,8 @@ ncfile = NetCDFFile(path);
 if isKey(ncfile.attributes,'WVTransform')
     wvtClassName = ncfile.attributes('WVTransform');
     wvt = feval(strcat(wvtClassName,'.waveVortexTransformFromFile'),path,'iTime',options.iTime);
+else
+    error("Unable to find the attribute WVTransform in this file, suggesting this was not created by the wave vortex model.");
 end
 
 % totalForcingGroups = ncfile.attributes('TotalForcingGroups');

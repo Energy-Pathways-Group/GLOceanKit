@@ -49,7 +49,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 stratOptions.z_int (:,1) double
             end
             optionCell = namedargs2cell(geomOptions);
-            self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldAntialias=true,shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
+            self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
 
             statOptionCell = namedargs2cell(stratOptions);
             self@WVStratificationVariable(Lxyz(3),Nxyz(3),statOptionCell{:});

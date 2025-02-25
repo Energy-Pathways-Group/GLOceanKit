@@ -164,6 +164,34 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             end  
         end
 
+        function F = fluxForForcing(self)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Output)
+                F dictionary
+            end
+            F = configureDictionary("string","cell");
+            Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
+            for i=1:length(self.spatialFluxForcing)
+                Fu0=Fu;Fv0=Fv;Feta0=Feta;
+                [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
+                [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0,self.t);
+                F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
+            end
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
+            for i=1:length(self.spectralFluxForcing)
+                Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+                F{self.spectralFluxForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
+            end
+            for i=1:length(self.spectralAmplitudeForcing)
+                Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
+                F{self.spectralAmplitudeForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations FROM the spatial domain

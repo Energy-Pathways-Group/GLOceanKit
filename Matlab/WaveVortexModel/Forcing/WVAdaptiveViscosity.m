@@ -17,7 +17,7 @@ classdef WVAdaptiveViscosity < WVForcing
     end
 
     methods
-        function self = WVAdaptiveViscosity(wvt)
+        function self = WVAdaptiveViscosity(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -29,25 +29,33 @@ classdef WVAdaptiveViscosity < WVForcing
             % - Returns nlFlux: a WVNonlinearFlux instance
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.shouldAssumeAntialiasing logical = false
             end
             self@WVForcing(wvt,"adaptive svv",WVForcingType(["Spectral","PVSpectral"]));
             self.wvt = wvt;
             self.isClosure = true;
-            self.buildDampingOperator();
+            self.buildDampingOperator(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
         end
 
-        function buildDampingOperator(self)
+        function buildDampingOperator(self,options)
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+                options.shouldAssumeAntialiasing logical = false
+            end
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
-            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
             prefactor = self.wvt.effectiveHorizontalGridResolution/(pi^2);
+            if options.shouldAssumeAntialiasing == true
+                prefactor = 3*prefactor/2;
+            end
             self.damp = -(prefactor*Qkl.*(K.^2 +L.^2));
         end
 
         function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self,options)
             arguments
                 self WVAdaptiveViscosity {mustBeNonempty}
-                options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
+                options.shouldAssumeAntialiasing logical = false
             end
             wvt_ = self.wvt;
             % Builds the spectral vanishing viscosity operator
