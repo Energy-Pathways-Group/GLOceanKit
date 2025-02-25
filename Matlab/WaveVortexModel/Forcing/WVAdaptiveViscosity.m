@@ -1,14 +1,14 @@
 classdef WVAdaptiveViscosity < WVForcing
-    % Small-scale damping
+    % Adaptive small-scale damping
     %
     % The damping is a simple Laplacian, but with a spectral vanishing
     % viscosity (SVV) operator applied that prevents any damping below a
-    % cutoff wavenumber. The SVV operator adjusts the wavenumbers being
+    % cutoff wavenumber, adapted to the current fluid velocity. The SVV operator adjusts the wavenumbers being
     % damped depending on whether anti-aliasing is applied.
     %
     %
     % - Topic: Initializing
-    % - Declaration: WVNonlinearFlux < [WVForcingFluxOperation](/classes/wvnonlinearfluxoperation/)
+    % - Declaration: WVAdaptiveViscosity < [WVForcing](/classes/forcing/wvforcing/)
     properties
         damp
 
@@ -20,13 +20,9 @@ classdef WVAdaptiveViscosity < WVForcing
         function self = WVAdaptiveViscosity(wvt)
             % initialize the WVNonlinearFlux nonlinear flux
             %
-            % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
+            % - Declaration: nlFlux = WVAdaptiveViscosity(wvt)
             % - Parameter wvt: a WVTransform instance
-            % - Parameter uv_damp: (optional) characteristic speed used to set the damping. Try using wvt.uvMax.
-            % - Parameter w_damp: (optional) characteristic speed used to set the damping. Try using wvt.wMax.
-            % - Parameter nu_xy: (optional) coefficient for damping
-            % - Parameter nu_z: (optional) coefficient for damping
-            % - Returns nlFlux: a WVNonlinearFlux instance
+            % - Returns self: a WVAdaptiveViscosity instance
             arguments
                 wvt WVTransform {mustBeNonempty}
             end
@@ -37,6 +33,14 @@ classdef WVAdaptiveViscosity < WVForcing
         end
 
         function buildDampingOperator(self)
+            % Builds the damping operator
+            %
+            % - Declaration: buildDampingOperator(self)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Returns: None
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+            end
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
             [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
@@ -44,13 +48,18 @@ classdef WVAdaptiveViscosity < WVForcing
             self.damp = -(prefactor*Qkl.*(K.^2 +L.^2));
         end
 
-        function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self,options)
+        function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self, options)
+            % Builds the spectral vanishing viscosity operator
+            %
+            % - Declaration: spectralVanishingViscosityFilter(self, options)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Parameter options: struct with field shouldAssumeAntialiasing
+            % - Returns: Qkl, Qj, kl_cutoff, kl_damp
             arguments
                 self WVAdaptiveViscosity {mustBeNonempty}
                 options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
             end
             wvt_ = self.wvt;
-            % Builds the spectral vanishing viscosity operator
             k_max = max(wvt_.k);
             l_max = max(wvt_.l);
             j_max = max(wvt_.j);
@@ -86,10 +95,34 @@ classdef WVAdaptiveViscosity < WVForcing
         end
 
         function dampingTimeScale = dampingTimeScale(self)
+            % Computes the damping time scale
+            %
+            % - Declaration: dampingTimeScale(self)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Returns: dampingTimeScale
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+            end
             dampingTimeScale = 1/max(abs(self.damp(:)));
         end
         
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
+            % Adds spectral forcing
+            %
+            % - Declaration: addSpectralForcing(self, wvt, Fp, Fm, F0)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Parameter wvt: a WVTransform instance
+            % - Parameter Fp: positive frequency forcing
+            % - Parameter Fm: negative frequency forcing
+            % - Parameter F0: zero frequency forcing
+            % - Returns: Fp, Fm, F0
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+                Fp double {mustBeNonempty}
+                Fm double {mustBeNonempty}
+                F0 double {mustBeNonempty}
+            end
             uvMax = wvt.uvMax;
             Fp = Fp + uvMax * self.damp .* wvt.Ap;
             Fm = Fm + uvMax * self.damp .* wvt.Am;
@@ -97,19 +130,51 @@ classdef WVAdaptiveViscosity < WVForcing
         end
 
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
+            % Adds potential vorticity spectral forcing
+            %
+            % - Declaration: addPotentialVorticitySpectralForcing(self, wvt, F0)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Parameter wvt: a WVTransform instance
+            % - Parameter F0: zero frequency forcing
+            % - Returns: F0
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+                wvt WVTransform {mustBeNonempty}
+                F0 double {mustBeNonempty}
+            end
             F0 = F0 + wvt.uvMax * self.damp .* wvt.A0;
         end
 
-        function force = forcingWithResolutionOfTransform(self,wvtX2)
+        function force = forcingWithResolutionOfTransform(self, wvtX2)
+            % Creates a forcing with the resolution of the transform
+            %
+            % - Declaration: forcingWithResolutionOfTransform(self, wvtX2)
+            % - Parameter self: an instance of WVAdaptiveViscosity
+            % - Parameter wvtX2: a WVTransform instance with doubled resolution
+            % - Returns: force
+            arguments
+                self WVAdaptiveViscosity {mustBeNonempty}
+                wvtX2 WVTransform {mustBeNonempty}
+            end
             force = WVAdaptiveViscosity(wvtX2);
         end
     end
     methods (Static)
         function vars = classRequiredPropertyNames()
+            % Returns the required property names for the class
+            %
+            % - Declaration: classRequiredPropertyNames()
+            % - Returns: vars
+            arguments
+            end
             vars = {};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
+            % Returns the defined property annotations for the class
+            %
+            % - Declaration: classDefinedPropertyAnnotations()
+            % - Returns: propertyAnnotations
             arguments (Output)
                 propertyAnnotations CAPropertyAnnotation
             end
