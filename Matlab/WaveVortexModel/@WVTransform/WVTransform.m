@@ -402,7 +402,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
 
             if any(ismember(WVForcingType("SpectralAmplitude"),self.forcingType))
                 for i=1:length(self.spectralAmplitudeForcing)
-                    [self.Ap, self.Am, self.A0] = self.spectralAmplitudeForcing(i).setSpectralAmplitude(self,self.A0, self.Am, self.A0);
+                    [self.Ap, self.Am, self.A0] = self.spectralAmplitudeForcing(i).setSpectralAmplitude(self,self.Ap, self.Am, self.A0);
                 end
             end
         end

@@ -17,7 +17,7 @@ classdef WVAdaptiveViscosity < WVForcing
     end
 
     methods
-        function self = WVAdaptiveViscosity(wvt)
+        function self = WVAdaptiveViscosity(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVAdaptiveViscosity(wvt)
@@ -25,14 +25,15 @@ classdef WVAdaptiveViscosity < WVForcing
             % - Returns self: a WVAdaptiveViscosity instance
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.shouldAssumeAntialiasing logical = false
             end
             self@WVForcing(wvt,"adaptive svv",WVForcingType(["Spectral","PVSpectral"]));
             self.wvt = wvt;
             self.isClosure = true;
-            self.buildDampingOperator();
+            self.buildDampingOperator(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
         end
 
-        function buildDampingOperator(self)
+        function buildDampingOperator(self,options)
             % Builds the damping operator
             %
             % - Declaration: buildDampingOperator(self)
@@ -40,11 +41,15 @@ classdef WVAdaptiveViscosity < WVForcing
             % - Returns: None
             arguments
                 self WVAdaptiveViscosity {mustBeNonempty}
+                options.shouldAssumeAntialiasing logical = false
             end
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
-            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=0);
+            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
             prefactor = self.wvt.effectiveHorizontalGridResolution/(pi^2);
+            if options.shouldAssumeAntialiasing == true
+                prefactor = 3*prefactor/2;
+            end
             self.damp = -(prefactor*Qkl.*(K.^2 +L.^2));
         end
 
@@ -57,7 +62,7 @@ classdef WVAdaptiveViscosity < WVForcing
             % - Returns: Qkl, Qj, kl_cutoff, kl_damp
             arguments
                 self WVAdaptiveViscosity {mustBeNonempty}
-                options.shouldAssumeAntialiasing double {mustBeMember(options.shouldAssumeAntialiasing,[0 1])} = 1
+                options.shouldAssumeAntialiasing logical = false
             end
             wvt_ = self.wvt;
             k_max = max(wvt_.k);
