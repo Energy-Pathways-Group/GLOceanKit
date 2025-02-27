@@ -22,7 +22,11 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
     end
 
     properties (GetAccess=private,SetAccess=private)
-        Fpv, F0, A0PV
+        Fpv, F0
+    end
+
+    properties
+        A0PV
     end
 
     methods
