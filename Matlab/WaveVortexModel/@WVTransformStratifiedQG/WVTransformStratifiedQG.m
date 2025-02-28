@@ -180,7 +180,7 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
                 self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
                 F0{self.spatialFluxForcing(i).name} = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0));
             end
-            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFourier(self.Fpv);
+            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
             for i=1:length(self.spectralFluxForcing)
                 F0_i = self.F0;
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
