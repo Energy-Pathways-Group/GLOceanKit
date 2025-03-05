@@ -200,7 +200,7 @@ classdef WVFixedAmplitudeForcing < WVForcing
                 surfaceMag = 1/F(end,options.j_f+1);
                 sbRatio = abs(F(end,options.j_f+1)/F(1,options.j_f+1));
                 % sbRatio = 1; % should we change the damping scale? Or no?
-                h = self.wvt.h(options.j_f+1);
+                h = self.wvt.h_0(options.j_f+1);
                 magicNumber = 2.25;
             else
                 surfaceMag = 1;
@@ -211,8 +211,7 @@ classdef WVFixedAmplitudeForcing < WVForcing
 
 
             if isfield(options,"r")
-                r = options.r;
-                k_r = self.r/(magicNumber*options.u_rms);
+                k_r = options.r/(magicNumber*options.u_rms);
             else
                 r = magicNumber*sbRatio*options.u_rms*options.k_r; % 1/s bracket [0.02 0.025]
                 % fprintf('1/r is %.1f days, switching to %.1f days\n',1/(self.r*86400),1/(r*86400));
