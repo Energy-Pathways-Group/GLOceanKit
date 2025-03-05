@@ -51,6 +51,12 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             optionCell = namedargs2cell(geomOptions);
             self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
 
+            if geomOptions.shouldAntialias == true && ~isfield(stratOptions,"Nj")
+                maxNj = Nxyz(3)-1;
+                if maxNj > 3
+                    stratOptions.Nj = floor(2*maxNj/3);
+                end
+            end
             statOptionCell = namedargs2cell(stratOptions);
             self@WVStratificationVariable(Lxyz(3),Nxyz(3),statOptionCell{:});
         end

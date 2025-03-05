@@ -31,7 +31,7 @@ for iVar=1:length(varargin)
 end
 
 for iVar=1:length(varargin)
-    varargout{iVar} =  fftshift(fftshift(self.horizontalModes.transformFromWVGridToDFTGrid(varargin{iVar}),1),2);
+    varargout{iVar} =  fftshift(fftshift(self.transformFromWVGridToDFTGrid(varargin{iVar}),1),2);
     % If you don't want it to swap the axis ordering:
     % for iMode=1:size(varargin{iVar},1)
     %     varargout{iVar}(iMode,:,:) =  fftshift(fftshift(self.horizontalModes.transformFromWVGridToDFTGrid(varargin{iVar}(iMode,:)),2),3);

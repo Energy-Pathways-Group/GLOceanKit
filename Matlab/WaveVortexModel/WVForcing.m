@@ -140,6 +140,16 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
 
     end
 
+    methods (Sealed)
+        function tf = eq(obj1, obj2)
+            tf = eq@handle(obj1, obj2);
+        end
+
+        function tf = ne(obj1, obj2)
+            tf = ne@handle(obj1, obj2);
+        end
+    end
+
     methods (Static)
 
         function forceTypes = spatialFluxTypes()
