@@ -1,4 +1,4 @@
-classdef WVBottomFriction < WVForcing
+classdef WVBottomFrictionLinear < WVForcing
     % Bottom friction
     %
     % Applies linear bottom friction to the flow, i.e., $$\frac{du}{dt} = -r*u$$.
@@ -7,11 +7,12 @@ classdef WVBottomFriction < WVForcing
     % - Declaration: WVBottomFriction < [WVForcing](/classes/wvforcing/)
     properties
         r
+        r_scaled
         RVA0
     end
 
     methods
-        function self = WVBottomFriction(wvt,options)
+        function self = WVBottomFrictionLinear(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: self = WVBottomFriction(wvt,options)
@@ -22,25 +23,25 @@ classdef WVBottomFriction < WVForcing
                 wvt WVTransform {mustBeNonempty}
                 options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
             end
-            self@WVForcing(wvt,"bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
+            self@WVForcing(wvt,"linear bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.r = options.r;
+            self.r_scaled = self.r * wvt.Lz / wvt.z_int(1);
             self.RVA0 = wvt.geostrophicComponent.relativeVorticityFactor;
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
-            Fu(:,:,1) = Fu(:,:,1) - self.r*wvt.u(:,:,1);
-            Fv(:,:,1) = Fv(:,:,1) - self.r*wvt.v(:,:,1);
+            Fu(:,:,1) = Fu(:,:,1) - self.r_scaled*wvt.u(:,:,1);
+            Fv(:,:,1) = Fv(:,:,1) - self.r_scaled*wvt.v(:,:,1);
         end
 
         function [Fu, Fv, Fw, Feta] = addNonhydrostaticSpatialForcing(self, wvt, Fu, Fv, Fw, Feta)
-            Fu(:,:,1) = Fu(:,:,1) - self.r*wvt.u(:,:,1);
-            Fv(:,:,1) = Fv(:,:,1) - self.r*wvt.v(:,:,1);
+            Fu(:,:,1) = Fu(:,:,1) - self.r_scaled*wvt.u(:,:,1);
+            Fv(:,:,1) = Fv(:,:,1) - self.r_scaled*wvt.v(:,:,1);
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            mask = zeros(wvt.spatialMatrixSize);
-            mask(:,:,1) = 1;
-            Fpv = Fpv - self.r * mask.*wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
+            rv = wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
+            Fpv(:,:,1) = Fpv(:,:,1) - self.r_scaled * rv(:,:,1);
         end
 
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
@@ -48,7 +49,7 @@ classdef WVBottomFriction < WVForcing
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
-            force = WVBottomFriction(wvtX2,r=self.r);
+            force = WVBottomFrictionLinear(wvtX2,r=self.r);
         end
     end
     methods (Static)
