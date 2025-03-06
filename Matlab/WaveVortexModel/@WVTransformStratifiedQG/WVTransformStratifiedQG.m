@@ -156,10 +156,11 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
             for i=1:length(self.spatialFluxForcing)
                 self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
             end
-            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
+            self.F0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
             for i=1:length(self.spectralFluxForcing)
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
             end
+            self.F0 = self.A0PV .* self.F0;
             for i=1:length(self.spectralAmplitudeForcing)
                 self.F0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(self,self.F0);
             end
@@ -180,12 +181,13 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
                 self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
                 F0{self.spatialFluxForcing(i).name} = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0));
             end
-            self.F0 = self.A0PV .* self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
+            self.F0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
             for i=1:length(self.spectralFluxForcing)
                 F0_i = self.F0;
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
-                F0{self.spectralFluxForcing(i).name} = self.F0 - F0_i;
+                F0{self.spectralFluxForcing(i).name} = self.A0PV .* (self.F0 - F0_i);
             end
+            self.F0 = self.A0PV .* self.F0;
             for i=1:length(self.spectralAmplitudeForcing)
                 F0_i = self.F0;
                 self.F0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(self,self.F0);

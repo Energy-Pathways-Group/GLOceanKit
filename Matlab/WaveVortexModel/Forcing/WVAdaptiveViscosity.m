@@ -46,11 +46,17 @@ classdef WVAdaptiveViscosity < WVForcing
             [K,L,J] = self.wvt.kljGrid;
             M = J*pi/self.wvt.Lz;
             [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
-            prefactor = self.wvt.effectiveHorizontalGridResolution/(pi^2);
+            prefactor_xy = self.wvt.effectiveHorizontalGridResolution/(pi^2);
+            prefactor_z = self.wvt.effectiveVerticalGridResolution/(pi^2);
             if options.shouldAssumeAntialiasing == true
-                prefactor = 3*prefactor/2;
+                prefactor_xy = 3*prefactor_xy/2;
+                prefactor_z = 3*prefactor_z/2;
             end
-            self.damp = -(prefactor*Qkl.*(K.^2 +L.^2));
+            Lr2inv = 1./self.wvt.Lr2;
+            self.damp = -(prefactor_xy*Qkl.*(K.^2 +L.^2) + prefactor_z*Qj.*Lr2inv);
+            if ~isempty(intersect(self.wvt.forcingType,WVForcingType("PVSpectral")))
+                self.damp = - (K.^2 +L.^2) .* self.damp;
+            end
         end
 
         function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self, options)
