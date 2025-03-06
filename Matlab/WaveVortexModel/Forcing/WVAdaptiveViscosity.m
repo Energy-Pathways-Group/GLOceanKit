@@ -52,8 +52,9 @@ classdef WVAdaptiveViscosity < WVForcing
                 prefactor_xy = 3*prefactor_xy/2;
                 prefactor_z = 3*prefactor_z/2;
             end
+            % (max(self.wvt.N2)/self.wvt.f/self.wvt.f)*
             Lr2inv = 1./self.wvt.Lr2;
-            self.damp = -(prefactor_xy*Qkl.*(K.^2 +L.^2) + prefactor_z*Qj.*Lr2inv);
+            self.damp = -prefactor_xy*(Qkl.*(K.^2 +L.^2) + Qj.*Lr2inv);
             if ~isempty(intersect(self.wvt.forcingType,WVForcingType("PVSpectral")))
                 self.damp = - (K.^2 +L.^2) .* self.damp;
             end

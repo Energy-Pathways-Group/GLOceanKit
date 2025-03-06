@@ -8,7 +8,7 @@ classdef WVBottomFrictionLinear < WVForcing
     properties
         r
         r_scaled
-        RVA0
+        % RVA0
     end
 
     methods
@@ -26,7 +26,7 @@ classdef WVBottomFrictionLinear < WVForcing
             self@WVForcing(wvt,"linear bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.r = options.r;
             self.r_scaled = self.r * wvt.Lz / wvt.z_int(1);
-            self.RVA0 = wvt.geostrophicComponent.relativeVorticityFactor;
+            % self.RVA0 = wvt.geostrophicComponent.relativeVorticityFactor;
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
@@ -40,8 +40,8 @@ classdef WVBottomFrictionLinear < WVForcing
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            rv = wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
-            Fpv(:,:,1) = Fpv(:,:,1) - self.r_scaled * rv(:,:,1);
+            % rv = wvt.transformToSpatialDomainWithF(A0=self.RVA0 .* wvt.A0);
+            Fpv(:,:,1) = Fpv(:,:,1) - self.r_scaled * wvt.zeta_z(:,:,1);
         end
 
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
