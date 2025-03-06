@@ -46,14 +46,14 @@ classdef WVBottomFrictionQuadratic < WVForcing
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            ub = wvt.u(:,:,1);
-            vb = wvt.v(:,:,1);
-            cb = sqrt(ub.^2 + vb.^2);
-            Fpv(:,:,1) = Fpv(:,:,1) - self.cd * (cb .* wvt.zeta_z(:,:,1));
+            u_b = wvt.u(:,:,1);
+            v_b = wvt.v(:,:,1);
+            uv_mag = sqrt(u_b.^2 + v_b.^2);
+            Fpv(:,:,1) = Fpv(:,:,1) - self.cd * (wvt.diffX(uv_mag.*v_b) - wvt.diffY(uv_mag.*u_b));
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
-            force = WVBottomFrictionQuadratic(wvtX2,r=self.Cd);
+            force = WVBottomFrictionQuadratic(wvtX2,Cd=self.Cd);
         end
     end
     methods (Static)
