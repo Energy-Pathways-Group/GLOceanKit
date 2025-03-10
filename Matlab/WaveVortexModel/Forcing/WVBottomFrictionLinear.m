@@ -21,7 +21,7 @@ classdef WVBottomFrictionLinear < WVForcing
             % - Returns frictionalForce: a WVBottomFriction instance
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.r (1,1) double {mustBeNonnegative} = 0 % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
+                options.r (1,1) double {mustBeNonnegative} = 1/(200*86400) % linear bottom friction, try 1/(200*86400) https://www.nemo-ocean.eu/doc/node70.html
             end
             self@WVForcing(wvt,"linear bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.r = options.r;
