@@ -5,15 +5,20 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
     % WVRigidLidFlowGroup
     % OrthogonalSolutionGroup
     % - Declaration: classdef WVGeostrophicComponent < WVFlowComponent
+    properties
+        normalization
+    end
     methods
-        function self = WVGeostrophicComponent(wvt)
+        function self = WVGeostrophicComponent(wvt,options)
             arguments
                 wvt {mustBeDoulbyPeriodicFPlane}
+                options.normalization = "streamfunction" % "qgpv" %"streamfunction" %mustBeMember
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "geostrophic";
             self.shortName = "geostrophic";
             self.abbreviatedName = "g";
+            self.normalization = options.normalization;
         end
 
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
@@ -61,44 +66,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                 totalEnergyFactor double {mustBeNonnegative}
             end
 
-            totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
-            switch(coefficientMatrix)
-                case WVCoefficientMatrix.A0
-                    totalEnergyFactor = self.hkeFactorForA0 + self.peFactorForA0;
-            end
-        end
-
-        function hkeFactor = hkeFactorForA0(self)
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                hkeFactor double {mustBeNonnegative}
-            end
-            % energy factor for most modes...
-            hkeFactor = (1/2)*self.wvt.K2 .* self.wvt.h_0;
-
-            %...which is slightly different for the j=0 mode
-            hkeFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*self.wvt.K2(self.wvt.J == 0);
-
-            % then zero out the entries where there are no solutions and
-            % double because we are using half-complex format
-            hkeFactor = 2* hkeFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
-
-        function peFactor = peFactorForA0(self)
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                peFactor double {mustBeNonnegative}
-            end
-            peFactor = (self.wvt.f*self.wvt.f/self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
-            peFactor(self.wvt.J == 0) = 0;
-
-            % then zero out the entries where there are no solutions and
-            % double because we are using half-complex format
-            peFactor = 2* peFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            totalEnergyFactor = self.multiplierForVariable(coefficientMatrix,"energy");
         end
 
         function qgpvFactor = qgpvFactorForA0(self)
@@ -117,9 +85,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 qgpvFactor double
             end
-            qgpvFactor = -(self.wvt.K2 + 1./self.wvt.Lr2);
-            qgpvFactor(self.wvt.J == 0) = -self.wvt.K2(self.wvt.J == 0);
-            qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
+            qgpvFactor = self.multiplierForVariable(coefficientMatrix,"qgpv");
         end
 
         function enstrophyFactor = enstrophyFactorForA0(self)
@@ -138,100 +104,121 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             arguments (Output)
                 enstrophyFactor double
             end
-            enstrophyFactor = (self.wvt.h_0/2).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
-
-            %...which is slightly different for the j=0 mode
-            enstrophyFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);
-
-            % then zero out the entries where there are no solutions
-            enstrophyFactor = enstrophyFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-
-            % We do not have any of the conjugates in the matrix, so we
-            % need to double the total energy
-            enstrophyFactor = enstrophyFactor*2;
+            enstrophyFactor = self.multiplierForVariable(coefficientMatrix,"enstrophy");
         end
 
-        function psiFactor = psiFactorForA0(self)
-            % returns the streamfunction multiplier for the coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies A0 to return the streamfunction in the spectral
-            % domain.
-            %
-            % - Topic: Quadratic quantities
-            % - Declaration: psiFactor = psiFactorForA0(self)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nj Nkl]
+        function varargout = multiplierForVariable(self,coefficientMatrix,variableName)
             arguments (Input)
                 self WVFlowComponent {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
-            arguments (Output)
-                psiFactor double
+            arguments (Input,Repeating)
+                variableName char
             end
-            psiFactor = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
-
-        function rvFactor = relativeVorticityFactor(self)
-            % returns the rv multiplier for the A0 coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the A0 matrix so that when transformed with the Fg
-            % modes will return relative vorticity.
-            %
-            % - Topic: Properties
-            % - Declaration: rvFactor = relativeVorticityFactor(self)
-            % - Returns qgpvFactor: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                rvFactor double
-            end
-            rvFactor = -self.wvt.K2;
-        end
-
-        function factor = multiplierForVariable(self,name,coefficientMatrix)
             mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
-            switch name
-                case "rv"
-                    factor = -self.wvt.K2 .* mask;
-                case "psi"
-                    factor = mask;
-                case "enstrophy"
-                    factor = (self.wvt.h_0/2).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+            K = self.wvt.K;
+            L = self.wvt.L;
+            K2 = self.wvt.K2;
+            f = self.wvt.f;
+            g = self.wvt.g;
+            Lr2inv = (f*f)./(g*self.wvt.h_0);
+            Lr2inv(1) = 0;
 
-                    %...which is slightly different for the j=0 mode
-                    factor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);
-
-                    % then zero out the entries where there are no solutions
-                    % We do not have any of the conjugates in the matrix, so we
-                    % need to double the total energy
-                    factor = 2*factor .* mask;
-                case "qgpv"
-                    factor = -(self.wvt.K2 + 1./self.wvt.Lr2);
-                    factor(self.wvt.J == 0) = -self.wvt.K2(self.wvt.J == 0);
-                    factor = factor .* mask;
-                case "pe"
-                    factor = (self.wvt.f*self.wvt.f/self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
-                    factor(self.wvt.J == 0) = 0;
-
-                    % then zero out the entries where there are no solutions and
-                    % double because we are using half-complex format
-                    factor = 2* factor .* mask;
-                case "hke"
-                    % energy factor for most modes...
-                    factor = (1/2)*self.wvt.K2 .* self.wvt.h_0;
-
-                    %...which is slightly different for the j=0 mode
-                    factor(self.wvt.J == 0) = (self.wvt.Lz/2)*self.wvt.K2(self.wvt.J == 0);
-
-                    % then zero out the entries where there are no solutions and
-                    % double because we are using half-complex format
-                    factor = 2* factor .* mask;
-                case "energy"
-                    hke = self.multiplierForVariable("hke",coefficientMatrix);
-                    pe = self.multiplierForVariable("pe",coefficientMatrix);
-                    factor = hke + pe;
+            varargout = cell(size(variableName));
+            for iVar=1:length(varargout)
+                if self.normalization == "streamfunction"
+                    switch variableName{iVar}
+                        case "u"
+                            variableFactor = -sqrt(-1)*L;
+                        case "v"
+                            variableFactor = sqrt(-1)*K;
+                        case "w"
+                            variableFactor = 0*mask;
+                        case "p"
+                            variableFactor = (f/g)*mask;
+                        case "eta"
+                            variableFactor = (f/g)*mask;
+                            variableFactor(1,:) = 0;
+                        case "A0N"
+                            variableFactor = (f./(self.wvt.h_0.*(K2 + Lr2inv)));
+                            variableFactor(self.wvt.J==0) = 0;
+                        case "A0Z"
+                            variableFactor = - 1./(K2 + Lr2inv);
+                        case "rv"
+                            variableFactor = -self.wvt.K2;
+                        case "psi"
+                            variableFactor = mask;
+                        case "psi-inv"
+                            variableFactor = mask;
+                        case "enstrophy"
+                            variableFactor = (self.wvt.h_0/2).*(self.wvt.K2 + 1./self.wvt.Lr2).^2;
+                            variableFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*(self.wvt.K2(self.wvt.J == 0).^2);
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "qgpv"
+                            variableFactor = -(self.wvt.K2 + 1./self.wvt.Lr2);
+                            variableFactor(self.wvt.J == 0) = -self.wvt.K2(self.wvt.J == 0);
+                        case "qgpv-inv"
+                            variableFactor = 1./self.multiplierForVariable(coefficientMatrix,"qgpv");
+                            variableFactor(isinf(variableFactor))=0;
+                        case "pe"
+                            variableFactor = (self.wvt.f*self.wvt.f/self.wvt.g/2)*ones(self.wvt.spectralMatrixSize);
+                            variableFactor(self.wvt.J == 0) = 0;
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "hke"
+                            variableFactor = (1/2)*self.wvt.K2 .* self.wvt.h_0;
+                            variableFactor(self.wvt.J == 0) = (self.wvt.Lz/2)*self.wvt.K2(self.wvt.J == 0);
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "energy"
+                            [hke,pe] = self.multiplierForVariable(coefficientMatrix,"hke","pe");
+                            variableFactor = hke + pe;
+                    end
+                elseif self.normalization == "qgpv"
+                    switch variableName{iVar}
+                        case "u"
+                            variableFactor = sqrt(-1)*L./(K2 + Lr2inv);
+                        case "v"
+                            variableFactor = -sqrt(-1)*K./(K2 + Lr2inv);
+                        case "w"
+                            variableFactor = 0*mask;
+                        case "p"
+                            variableFactor = -(f/g)./(K2 + Lr2inv);
+                        case "eta"
+                            variableFactor = -(f/g)./(K2 + Lr2inv);
+                            variableFactor(1,:) = 0;
+                        case "A0N"
+                            variableFactor = -(f./self.wvt.h_0).*mask;
+                            variableFactor(self.wvt.J==0) = 0;
+                        case "A0Z"
+                            variableFactor = mask;
+                        case "rv"
+                            variableFactor = self.wvt.K2./(K2 + Lr2inv);
+                        case "psi"
+                            variableFactor = -1./(K2 + Lr2inv);
+                        case "psi-inv"
+                            variableFactor = -(K2 + Lr2inv);
+                        case "enstrophy"
+                            variableFactor = (self.wvt.h_0/2).*mask;
+                            variableFactor(self.wvt.J == 0) = (self.wvt.Lz/2);
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "qgpv"
+                            variableFactor = mask;
+                        case "qgpv-inv"
+                            variableFactor = mask;
+                        case "pe"
+                            variableFactor = (self.wvt.f*self.wvt.f/self.wvt.g/2)./((K2 + Lr2inv).^2);
+                            variableFactor(self.wvt.J == 0) = 0;
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "hke"
+                            variableFactor = (1/2)*self.wvt.K2 .* self.wvt.h_0./((K2 + Lr2inv).^2);
+                            variableFactor(self.wvt.J == 0) = (self.wvt.Lz/2)./self.wvt.K2(self.wvt.J == 0);
+                            variableFactor = 2*variableFactor; % We do not have any of the conjugates in the matrix, so we need to double the total energy
+                        case "energy"
+                            [hke,pe] = self.multiplierForVariable(coefficientMatrix,"hke","pe");
+                            variableFactor = hke + pe;
+                    end
+                end
+                variableFactor(~mask) = 0;
+                varargout{iVar} = variableFactor;
             end
         end
         
@@ -364,9 +351,18 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             h = N0^2/(wvt.g*m^2);
             sign = -2*(mod(jMode,2) == 1)+1;
             norm = sign*sqrt(2*wvt.g/wvt.Lz)/N0;
+             Lr2 = wvt.g*h/wvt.f/wvt.f;
+
+            if self.normalization == "streamfunction"
+                scale = 1;
+            elseif self.normalization == "qgpv"
+                scale = -1/(k*k + l*l + 1/Lr2);
+            else
+                error('unknown normalization');
+            end
 
             if options.amplitudeIsMaxU == 1
-                A = A/abs((sqrt(k*k+l*l)*norm*h*m));
+                A = A/abs((sqrt(k*k+l*l)*norm*h*m))/abs(scale);
             end
 
             if jMode == 0
@@ -378,18 +374,18 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             end
 
             theta = @(x,y,t) k*x + l*y + phi;
-            u = @(x,y,z,t) A*l*sin( theta(x,y,t) ).*F(z);
-            v = @(x,y,z,t) -A*k*sin( theta(x,y,t) ).*F(z);
+            u = @(x,y,z,t) A*scale*l*sin( theta(x,y,t) ).*F(z);
+            v = @(x,y,z,t) -A*scale*k*sin( theta(x,y,t) ).*F(z);
             w = @(x,y,z,t) zeros(size(x));
-            eta = @(x,y,z,t) A*(wvt.f/wvt.g)*cos( theta(x,y,t) ).*G(z);
+            eta = @(x,y,z,t) A*scale*(wvt.f/wvt.g)*cos( theta(x,y,t) ).*G(z);
             rho_e = @(x,y,z,t) (wvt.rho0/wvt.g)*N0*N0*eta(x,y,z,t);
-            p = @(x,y,z,t) A*wvt.rho0*wvt.f*cos( theta(x,y,t) ).*F(z);
-            psi = @(x,y,z,t) A*cos( theta(x,y,t) ).*F(z);
+            p = @(x,y,z,t) A*scale*wvt.rho0*wvt.f*cos( theta(x,y,t) ).*F(z);
+            psi = @(x,y,z,t) A*scale*cos( theta(x,y,t) ).*F(z);
             ssh = @(x,y,t) p(x,y,0,t)/(wvt.rho0*wvt.g);
             if jMode == 0
-                qgpv = @(x,y,z,t) -A*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
+                qgpv = @(x,y,z,t) -A*scale*(k*k + l*l)*cos( theta(x,y,t) ).*F(z);
             else
-                qgpv = @(x,y,z,t) -A*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
+                qgpv = @(x,y,z,t) -A*scale*(k*k + l*l + wvt.f*wvt.f/(wvt.g*h))*cos( theta(x,y,t) ).*F(z);
             end
 
             solution = WVOrthogonalSolution(kMode,lMode,jMode,A,phi,u,v,w,eta,rho_e,p,ssh,qgpv,psi=psi,Lxyz=[wvt.Lx wvt.Ly wvt.Lz],N2=@(z) N0*N0*ones(size(z)));
@@ -403,13 +399,22 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             % solution.conjugateCoefficientMatrixAmplitude = A*exp(-sqrt(-1)*phi)/2;
 
             K2 = k*k+l*l;
-            if jMode == 0
-                solution.energyFactor = (wvt.Lz/2)*K2;
-                solution.enstrophyFactor = (wvt.Lz/2)*(K2)^2;
-            else
-                Lr2 = wvt.g*h/wvt.f/wvt.f;
-                solution.energyFactor = (h/2)*(K2 + 1/Lr2);
-                solution.enstrophyFactor = (h/2)*(K2 + 1/Lr2)^2;
+            if self.normalization == "streamfunction"
+                if jMode == 0
+                    solution.energyFactor = (wvt.Lz/2)*K2;
+                    solution.enstrophyFactor = (wvt.Lz/2)*(K2)^2;
+                else
+                    solution.energyFactor = (h/2)*(K2 + 1/Lr2);
+                    solution.enstrophyFactor = (h/2)*(K2 + 1/Lr2)^2;
+                end
+            elseif self.normalization == "qgpv"
+                if jMode == 0
+                    solution.energyFactor = (wvt.Lz/2)/K2;
+                    solution.enstrophyFactor = (wvt.Lz/2);
+                else
+                    solution.energyFactor = (h/2)/(K2 + 1/Lr2);
+                    solution.enstrophyFactor = (h/2);
+                end
             end
 
             % These are half-complex solutions, so we need to double these
@@ -418,37 +423,6 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                 solution.energyFactor = 2*solution.energyFactor;
                 solution.enstrophyFactor = 2*solution.enstrophyFactor;
             end
-        end
-
-        function [A0Z,A0N] = geostrophicSpectralTransformCoefficients(self)
-            K2 = self.wvt.K2;
-            f = self.wvt.f;
-            g = self.wvt.g;
-
-            Lr2inv = (f*f)./(g*self.wvt.h_0);
-            Lr2inv(1) = 0;
-            A0N = (f./(self.wvt.h_0.*(K2 + Lr2inv)));
-            A0N(self.wvt.J==0) = 0;
-            A0Z = - 1./(K2 + Lr2inv);
-
-            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-            A0N(~mask) = 0;
-            A0Z(~mask) = 0;
-        end
-        
-        function [UA0,VA0,NA0,PA0] = geostrophicSpatialTransformCoefficients(self)
-            K = self.wvt.K;
-            L = self.wvt.L;
-            f = self.wvt.f;
-            g = self.wvt.g;
-
-            mask = self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-
-            UA0 = -sqrt(-1)*L .* mask;
-            VA0 = sqrt(-1)*K .* mask;
-            PA0 = (f/g)*mask;
-            NA0 = (f/g)*mask;
-            NA0(1,:) = 0;
         end
 
     end 

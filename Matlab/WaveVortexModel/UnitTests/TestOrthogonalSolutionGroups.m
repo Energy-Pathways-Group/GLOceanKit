@@ -14,7 +14,7 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
         transform = {'hydrostatic'};
         % orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
-        orthogonalSolutionGroup = {'WVMeanDensityAnomalyComponent'}
+        orthogonalSolutionGroup = {'WVGeostrophicComponent'}
     end
 
     methods (TestClassSetup)

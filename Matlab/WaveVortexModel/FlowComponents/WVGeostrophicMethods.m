@@ -49,8 +49,8 @@ classdef WVGeostrophicMethods < handle
                 end
                 
             end
-            [A0Z_,A0N_] = flowComponent.geostrophicSpectralTransformCoefficients;
-            [UA0_,VA0_,NA0_,PA0_] = flowComponent.geostrophicSpatialTransformCoefficients;
+            [A0Z_,A0N_] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"A0Z","A0N");
+            [UA0_,VA0_,NA0_,PA0_] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"u","v","eta","p");
             initVariable("A0Z",A0Z_);
             initVariable("A0N",A0N_);
             initVariable("UA0",UA0_);
@@ -58,10 +58,11 @@ classdef WVGeostrophicMethods < handle
             initVariable("NA0",NA0_);
             initVariable("PA0",PA0_);
 
-            initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
-            initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
-            initVariable("A0_Psi_factor",flowComponent.psiFactorForA0);
-            initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
+            [te,qgpv,psi,tz] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"energy","qgpv","psi","enstrophy");
+            initVariable("A0_TE_factor",te);
+            initVariable("A0_QGPV_factor",qgpv);
+            initVariable("A0_Psi_factor",psi);
+            initVariable("A0_TZ_factor",tz);
 
             % self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
         end
@@ -102,7 +103,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicKineticEnergy
             % - nav_order: 2
-            hkeFactorForA0 = self.geostrophicComponent.hkeFactorForA0;
+            hkeFactorForA0 = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"hke");
             energy = sum(hkeFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
         end
 
@@ -112,7 +113,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicPotentialEnergy
             % - nav_order: 3
-            peFactorForA0 = self.geostrophicComponent.peFactorForA0;
+            peFactorForA0 = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"pe");
             energy = sum(peFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
         end
 
@@ -322,7 +323,8 @@ classdef WVGeostrophicMethods < handle
 
             [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.j,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
+            U2 = sqrt(abs(self.UA0).^2 + abs(self.VA0).^2);
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*U2(indices));
             
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;
@@ -368,7 +370,8 @@ classdef WVGeostrophicMethods < handle
 
             [kMode,lMode,jMode,u,phi] = self.geostrophicComponent.normalizeGeostrophicModeProperties(options.kMode,options.lMode,options.jMode,options.u,options.phi);
             indices = self.indexFromModeNumber(kMode,lMode,jMode);
-            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*self.Kh(indices));
+            U2 = sqrt(abs(self.UA0).^2 + abs(self.VA0).^2);
+            A0_indices = u.*exp(sqrt(-1)*phi)./(2*self.maxFg(kMode,lMode,jMode).*U2(indices));
 
             % Check to see if the user is about to make things bad.
             A0_ = self.A0;

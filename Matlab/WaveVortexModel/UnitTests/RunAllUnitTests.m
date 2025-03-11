@@ -7,8 +7,8 @@ runner = testrunner("textoutput");
 % runner.addPlugin(plugin)
 
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestSpectralDifferentiationXY);
-diffTest = matlab.unittest.TestSuite.fromClass(?TestSpectralDifferentiationZ);
-% diffTest = matlab.unittest.TestSuite.fromClass(?TestOrthogonalSolutionGroups);
+% diffTest = matlab.unittest.TestSuite.fromClass(?TestSpectralDifferentiationZ);
+diffTest = matlab.unittest.TestSuite.fromClass(?TestOrthogonalSolutionGroups);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestRadialTransformation);
 % diffTest = matlab.unittest.TestSuite.fromClass(?TestWVTransformInitialization);
 % 

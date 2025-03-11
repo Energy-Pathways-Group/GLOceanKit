@@ -74,8 +74,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
             self.A0 = zeros(self.spectralMatrixSize);
             self.F0 = zeros(self.spectralMatrixSize);
             self.Fpv = zeros(self.spatialMatrixSize);
-            self.A0PV = 1./self.A0_QGPV_factor;
-            self.A0PV(isinf(self.A0PV))=0;
+            self.A0PV = self.geostrophicComponent.multiplierForVariable(WVCoefficientMatrix.A0,"qgpv-inv");
             %self.addOperation(self.operationForKnownVariable('u','v','eta','p',flowComponent=self.geostrophicComponent));
         end
 
