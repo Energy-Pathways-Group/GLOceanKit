@@ -83,9 +83,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         totalFlowComponent
 
         forcingNameMap
-        spatialFluxForcing WVForcing = WVForcing.empty(0,0)
-        spectralFluxForcing WVForcing = WVForcing.empty(0,0)
-        spectralAmplitudeForcing WVForcing = WVForcing.empty(0,0)
+        spatialFluxForcing WVForcing = WVForcing.empty(1,0)
+        spectralFluxForcing WVForcing = WVForcing.empty(1,0)
+        spectralAmplitudeForcing WVForcing = WVForcing.empty(1,0)
     end
     
     methods (Abstract)
@@ -290,9 +290,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 force WVForcing
             end
             self.forcingNameMap = configureDictionary("string","cell");
-            self.spatialFluxForcing = WVForcing.empty(0,1);
-            self.spectralFluxForcing = WVForcing.empty(0,1);
-            self.spectralAmplitudeForcing = WVForcing.empty(0,1);
+            self.spatialFluxForcing = WVForcing.empty(1,0);
+            self.spectralFluxForcing = WVForcing.empty(1,0);
+            self.spectralAmplitudeForcing = WVForcing.empty(1,0);
             self.addForcing(force);
         end
 
@@ -351,7 +351,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         end
 
         function forcing = get.forcing(self)
-            forcing = cat(1,self.spatialFluxForcing,self.spectralFluxForcing,self.spectralAmplitudeForcing);
+            forcing = cat(2,self.spatialFluxForcing,self.spectralFluxForcing,self.spectralAmplitudeForcing);
         end
 
         function bool = hasForcingWithName(self,name)
