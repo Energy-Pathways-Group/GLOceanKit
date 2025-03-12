@@ -59,7 +59,7 @@ classdef WVAdaptiveViscosity < WVForcing
             if ~isempty(intersect(self.wvt.forcingType,WVForcingType("Spectral")))
                 self.Fpm_damp = -prefactor_xy*Qkl.*(K.^2 +L.^2);
             end
-            RV = self.geostrophicComponent.multiplierForVariable(WVCoefficientMatrix.A0,"rv");
+            RV = self.wvt.geostrophicComponent.multiplierForVariable(WVCoefficientMatrix.A0,"rv");
             self.F0_damp = -prefactor_xy*Qkl.*RV.*(K.^2 +L.^2);
         end
 
