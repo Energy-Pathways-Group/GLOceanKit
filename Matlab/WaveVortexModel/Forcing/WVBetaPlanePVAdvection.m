@@ -16,7 +16,7 @@ classdef WVBetaPlanePVAdvection < WVForcing
                 wvt WVTransform {mustBeNonempty}
             end
             self@WVForcing(wvt,"beta-plane advection of qgpv",WVForcingType(["Spectral" "PVSpatial"]));
-            self.betaA0 = -wvt.beta * (wvt.VA0 ./ wvt.A0_QGPV_factor);
+            self.betaA0 = -wvt.beta * wvt.VA0;
             self.betaA0(1,1,1) = 0;
         end
 
