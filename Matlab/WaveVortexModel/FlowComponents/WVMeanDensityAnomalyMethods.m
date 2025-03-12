@@ -66,7 +66,7 @@ classdef WVMeanDensityAnomalyMethods < handle
             % - Topic: Energetics
             % - Declaration: mdaEnergy
             % - nav_order: 1
-            energy = self.totalEnergyOfFlowComponent(self.flowComponent('mda'));
+            energy = self.totalEnergyOfFlowComponent(self.flowComponentWithName('mda'));
         end
 
         function addMeanDensityAnomaly(self,eta)
