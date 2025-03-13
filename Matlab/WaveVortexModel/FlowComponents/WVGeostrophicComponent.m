@@ -12,7 +12,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
         function self = WVGeostrophicComponent(wvt,options)
             arguments
                 wvt {mustBeDoulbyPeriodicFPlane}
-                options.normalization = "streamfunction" % "qgpv" %"streamfunction" %mustBeMember
+                options.normalization = "qgpv" % "qgpv" %"streamfunction" %mustBeMember
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "geostrophic";
@@ -122,7 +122,7 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             f = self.wvt.f;
             g = self.wvt.g;
             Lr2inv = (f*f)./(g*self.wvt.h_0);
-            Lr2inv(1) = 0;
+            Lr2inv(self.wvt.j == 0) = 0;
 
             varargout = cell(size(variableName));
             for iVar=1:length(varargout)
