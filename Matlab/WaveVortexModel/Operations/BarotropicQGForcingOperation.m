@@ -32,18 +32,18 @@ classdef BarotropicQGForcingOperation < WVOperation
                 self.Fpv = wvt.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(wvt,self.Fpv);
                 varargout{iForce} = (self.Fpv-Fpv0);
             end
-            F0 = wvt.A0PV .* wvt.transformFromSpatialDomainWithFourier(self.Fpv);
+            F0 = wvt.transformFromSpatialDomainWithFourier(self.Fpv);
             for i=1:length(wvt.spectralFluxForcing)
                iForce = iForce + 1;
                F0_i = F0;
                F0 = wvt.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(wvt,F0);
-               varargout{iForce} = wvt.transformToSpatialDomainWithFourier(wvt.A0_QGPV_factor.*(F0 - F0_i));
+               varargout{iForce} = wvt.transformToSpatialDomainWithFourier(F0 - F0_i);
             end
             for i=1:length(wvt.spectralAmplitudeForcing)
                iForce = iForce + 1;
                F0_i = F0;
                F0 = wvt.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(wvt,F0);
-               varargout{iForce} = wvt.transformToSpatialDomainWithFourier(wvt.A0_QGPV_factor.*(F0 - F0_i));
+               varargout{iForce} = wvt.transformToSpatialDomainWithFourier(F0 - F0_i);
             end
         end
 
