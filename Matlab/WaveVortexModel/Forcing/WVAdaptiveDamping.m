@@ -13,6 +13,8 @@ classdef WVAdaptiveDamping < WVForcing
         damp
         k_damp % wavenumber at which the significant scale damping starts.
         k_no_damp % wavenumber below which there is zero damping
+        j_damp % wavenumber at which the significant scale damping starts.
+        j_no_damp % wavenumber below which there is zero damping
     end
 
     methods
@@ -43,7 +45,7 @@ classdef WVAdaptiveDamping < WVForcing
                 options.shouldAssumeAntialiasing logical = false
             end
             [K,L,~] = self.wvt.kljGrid;
-            [Qkl,Qj,self.k_no_damp,self.k_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
+            [Qkl,Qj,self.k_no_damp,self.k_damp,self.j_no_damp,self.j_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
             prefactor_xy = self.wvt.effectiveHorizontalGridResolution/(pi^2);
             prefactor_z = (pi*pi*min(self.wvt.Lr2)/(self.wvt.effectiveHorizontalGridResolution)^2)*prefactor_xy;
             if options.shouldAssumeAntialiasing == true
@@ -58,7 +60,7 @@ classdef WVAdaptiveDamping < WVForcing
             end
         end
 
-        function [Qkl,Qj,kl_cutoff, kl_damp] = spectralVanishingViscosityFilter(self, options)
+        function [Qkl,Qj,kl_cutoff, kl_damp, j_cutoff, j_damp] = spectralVanishingViscosityFilter(self, options)
             % Builds the spectral vanishing viscosity operator
             %
             % - Declaration: spectralVanishingViscosityFilter(self, options)
@@ -96,10 +98,13 @@ classdef WVAdaptiveDamping < WVForcing
             if wvt_.Nj > 2
                 dj = wvt_.j(2)-wvt_.j(1);
                 j_cutoff = dj*(j_max/dj)^(3/4);
+                j_damp = (j_max+b*j_cutoff)/(1+b); % approximately
                 Qj = exp( - ((J-j_max)./(J-j_cutoff)).^2 );
                 Qj(J<j_cutoff) = 0;
                 Qj(J>j_max) = 1;
             else
+                j_cutoff = 0;
+                j_damp = 0;
                 Qj = ones(size(J));
             end
         end
