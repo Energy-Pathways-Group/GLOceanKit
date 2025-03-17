@@ -38,4 +38,5 @@ function ncfile = writeToFile(self,path,properties,options)
     propertyAnnotations = self.propertyAnnotationWithName(properties);
 
     ncfile = CAAnnotatedClass.writeToPath(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting,propertyAnnotations=propertyAnnotations,attributes=options.attributes);
+    ncfile.sync();
 end

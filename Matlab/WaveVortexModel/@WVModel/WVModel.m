@@ -766,6 +766,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                     self.outputGroups(iGroup).writeTimeStepToNetCDFFile(self.t);
                 end
                 self.timeOfLastIncrementWrittenToFile = self.t;
+                self.ncfile.sync();
             end
         end
 
