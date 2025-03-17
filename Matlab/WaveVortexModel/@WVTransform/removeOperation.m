@@ -12,5 +12,6 @@ for iVar=1:operation.nVarOut
 end
 self.operationNameMap{operation.name} = [];
 % brute force
-self.variableCache = configureDictionary("string","cell");
+% self.variableCache = configureDictionary("string","cell");
+self.variableCache = containers.Map();
 end

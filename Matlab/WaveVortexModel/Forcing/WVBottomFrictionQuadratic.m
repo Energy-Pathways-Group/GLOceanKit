@@ -5,6 +5,18 @@ classdef WVBottomFrictionQuadratic < WVForcing
     % $$\frac{du}{dt} = -(Cd/dz)*|u|*u$$. Cd is unitless, and dz is
     % (approximately) the size of the grid spacing at the bottom boundary.
     %
+    % To compare with linear bottom friction where $$\frac{du}{dt} =
+    % -r*u$$, note that $$-(Lz/dz)*r = -(Cd/dz)*|u|$$ and you will find a
+    % characteristic velocity $$|u|$$ of about 11.5 cm/s for Cd=0.002 and
+    % r=1/(200 days). If Cd=0.001, then the damping time scale has to
+    % double to 1/(400 days) for and equivalent characteristic velocity.
+    %
+    % For barotropic QG we want the scaling to work out similarly, but now
+    % have $$-r = -(Cd/D)*|u|$$ where $$D$$ works out to be Lz. Thus, we
+    % will scale the barotropic QG quadratic bottom drag by 4000 m, to match
+    % typical oceanic scales.
+    % 
+    %
     % - Topic: Initializing
     % - Declaration: WVBottomFrictionQuadratic < [WVForcing](/classes/wvforcing/)
     properties
@@ -26,7 +38,13 @@ classdef WVBottomFrictionQuadratic < WVForcing
             end
             self@WVForcing(wvt,"quadratic bottom friction",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
             self.Cd = options.Cd;
-            self.cd = self.Cd/wvt.z_int(1);
+            
+            if ~isa(self.wvt,"WVGeometryDoublyPeriodicBarotropic")
+                self.cd = self.Cd/wvt.z_int(1);
+            else
+                % scaled by Lz, a typical ocean depth
+                self.cd = self.Cd/4000;
+            end
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
