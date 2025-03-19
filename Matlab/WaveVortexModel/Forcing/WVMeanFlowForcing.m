@@ -1,4 +1,4 @@
-classdef WVRelaxedFlow < WVForcing
+classdef WVMeanFlowForcing < WVForcing
     % Resonant forcing at the natural frequency of each mode
     %
     % The unforced model basically looks likes like this,
@@ -45,7 +45,7 @@ classdef WVRelaxedFlow < WVForcing
     end
 
     methods
-        function self = WVRelaxedFlow(wvt,options)
+        function self = WVMeanFlowForcing(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % - Declaration: nlFlux = WVNonlinearFlux(wvt,options)
@@ -116,7 +116,7 @@ classdef WVRelaxedFlow < WVForcing
             % - Parameter tauP: (optional) relaxation time (default 0)
             % - Parameter tauM: (optional) relaxation time (default 0)
             arguments
-                self WVRelaxedFlow {mustBeNonempty}
+                self WVMeanFlowForcing {mustBeNonempty}
                 Apbar (:,:) double {mustBeNonempty}
                 Ambar (:,:) double {mustBeNonempty}
                 options.MAp (:,:) logical = abs(Apbar) > 1e-6*max(abs(Apbar(:)))
@@ -173,7 +173,7 @@ classdef WVRelaxedFlow < WVForcing
             % - Parameter MA0: (optional) forcing mask, A0. 1s at the forced modes, 0s at the unforced modes. If it is left blank, then it will be produced using the nonzero values of A0bar
             % - Parameter tau0: (optional) relaxation time
             arguments
-                self WVRelaxedFlow {mustBeNonempty}
+                self WVMeanFlowForcing {mustBeNonempty}
                 A0bar (:,:) double {mustBeNonempty}
                 options.MA0 (:,:) logical = abs(A0bar) > 1e-6*max(abs(A0bar(:)))
                 options.tau0 (1,1) double = 0
@@ -199,7 +199,7 @@ classdef WVRelaxedFlow < WVForcing
 
         function [model_spectrum, r] = setNarrowBandGeostrophicForcing(self, options)
             arguments
-                self WVRelaxedFlow {mustBeNonempty}
+                self WVMeanFlowForcing {mustBeNonempty}
                 options.r (1,1) double
                 options.k_r (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*2
                 options.k_f (1,1) double =(self.wvt.k(2)-self.wvt.k(1))*20
@@ -323,30 +323,38 @@ classdef WVRelaxedFlow < WVForcing
         end
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
+            options.name = self.name;
+            
             options.tauP = self.tauP;
             options.tauM = self.tauM;
             options.tau0 = self.tau0;
 
-            Abar = zeros(size(self.wvt.spectralMatrixSize));
-            Abar(self.Ap_indices) = self.Apbar;
-            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
-            options.Apbar = self.Apbar;
-            options.Ap_indices = find(AbarX2);
+            if ~isempty(self.Ap_indices)
+                Abar = zeros(self.wvt.spectralMatrixSize);
+                Abar(self.Ap_indices) = self.Apbar;
+                [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+                options.Apbar = self.Apbar;
+                options.Ap_indices = find(AbarX2);
+            end
 
-            Abar = zeros(size(self.wvt.spectralMatrixSize));
-            Abar(self.Am_indices) = self.Ambar;
-            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
-            options.Ambar = self.Ambar;
-            options.Am_indices = find(AbarX2);
+            if ~isempty(self.Am_indices)
+                Abar = zeros(self.wvt.spectralMatrixSize);
+                Abar(self.Am_indices) = self.Ambar;
+                [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+                options.Ambar = self.Ambar;
+                options.Am_indices = find(AbarX2);
+            end
 
-            Abar = zeros(size(self.wvt.spectralMatrixSize));
-            Abar(self.A0_indices) = self.A0bar;
-            [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
-            options.A0bar = self.A0bar;
-            options.A0_indices = find(AbarX2);
+            if ~isempty(self.A0_indices)
+                Abar = zeros(self.wvt.spectralMatrixSize);
+                Abar(self.A0_indices) = self.A0bar;
+                [AbarX2] = self.wvt.spectralVariableWithResolution(wvtX2,Abar);
+                options.A0bar = self.A0bar;
+                options.A0_indices = find(AbarX2);
+            end
 
             optionArgs = namedargs2cell(options);
-            force = WVRelaxedFlow(wvtX2,optionArgs{:});
+            force = WVMeanFlowForcing(wvtX2,optionArgs{:});
         end
 
         function writeToGroup(self,group,propertyAnnotations,attributes)
