@@ -103,7 +103,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicKineticEnergy
             % - nav_order: 2
-            hkeFactorForA0 = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"hke");
+            hkeFactorForA0 = self.geostrophicComponent.multiplierForVariable(WVCoefficientMatrix.A0,"hke");
             energy = sum(hkeFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
         end
 
@@ -113,7 +113,7 @@ classdef WVGeostrophicMethods < handle
             % - Topic: Energetics
             % - Declaration: geostrophicPotentialEnergy
             % - nav_order: 3
-            peFactorForA0 = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"pe");
+            peFactorForA0 = self.geostrophicComponent.multiplierForVariable(WVCoefficientMatrix.A0,"pe");
             energy = sum(peFactorForA0(:).*( self.geostrophicComponent.maskA0(:).*abs(self.A0(:)).^2));
         end
 
