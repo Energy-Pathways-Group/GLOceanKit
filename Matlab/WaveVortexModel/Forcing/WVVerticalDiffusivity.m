@@ -20,7 +20,7 @@ classdef WVVerticalDiffusivity < WVForcing
                 wvt WVTransform {mustBeNonempty}
                 options.kappa_z double = 1e-5
             end
-            self@WVForcing(wvt,"vertical diffusivity",WVForcingType(["Spectral","PVSpectral"]));
+            self@WVForcing(wvt,"vertical diffusivity",WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]));
             self.wvt = wvt;
             self.kappa_z = options.kappa_z;
             if isa(wvt,'WVStratificationVariable')
@@ -37,7 +37,11 @@ classdef WVVerticalDiffusivity < WVForcing
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
-            Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3) - wvt.diffZG(self.dLnN2));
+            % Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3) - wvt.diffZG(self.dLnN2));
+                        Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3));
+                        % I believe this is incorrect because it excludes
+                        % the MDA
+
         end
 
         function force = forcingWithResolutionOfTransform(self, wvtX2)

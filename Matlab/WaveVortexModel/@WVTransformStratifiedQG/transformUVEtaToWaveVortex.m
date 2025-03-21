@@ -30,18 +30,6 @@ iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
 n_bar = self.transformFromSpatialDomainWithGg(n_hat);
 zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
 A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
-
-delta_bar = self.transformWithG_wg(self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat));
-nw_bar = self.transformWithG_wg(n_bar - A0);
-Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
-Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
-
-Ap(:,1) = self.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
-Am(:,1) = conj(Ap(:,1));
-
-if nargin == 5
-    phase = exp(-self.iOmega*(t-self.t0));
-    Ap = Ap .* phase;
-    Am = Am .* conj(phase);
-end
+Ap = 0;
+Am = 0;
 end

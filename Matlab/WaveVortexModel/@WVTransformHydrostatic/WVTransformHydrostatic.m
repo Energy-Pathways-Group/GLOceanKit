@@ -151,7 +151,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function [Fp,Fm,F0] = nonlinearFlux(self)
-            Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
+            Fu=zeros(self.spatialMatrixSize);Fv=zeros(self.spatialMatrixSize);Feta=zeros(self.spatialMatrixSize); % this isn't good, need to cached
             for i=1:length(self.spatialFluxForcing)
                [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
