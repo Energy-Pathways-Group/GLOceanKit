@@ -86,6 +86,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
 
             function absTol = absoluteErrorToleranceAdaptive()
                 absTol = zeros(self.arrayLength,1);
+                
+                % Adjust the absolute tolerance based on the resolution
+                m = -log10(options.absTolerance);
+                m0 = max(0,log10(prod(self.wvt.spectralMatrixSize))-3.8);
+                options.absTolerance = 10^(-(m+m0));
 
                 alpha0 = options.absTolerance*sqrt(1./self.wvt.A0_TE_factor);
                 alphapm = options.absTolerance*sqrt(1./self.wvt.Apm_TE_factor);
