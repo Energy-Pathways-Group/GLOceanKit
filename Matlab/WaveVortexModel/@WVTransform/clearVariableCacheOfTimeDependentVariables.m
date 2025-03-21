@@ -2,9 +2,5 @@ function clearVariableCacheOfTimeDependentVariables(self)
 % clear the internal cache of variables that claim to be time dependent
 %
 % - Topic: Internal
-%self.variableCache(intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys)) = [];
-keys = intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys);
-if ~isempty(keys)
-    self.variableCache.remove(cellstr(keys));
-end
+self.variableCache(intersect(self.variableCache.keys,self.timeDependentVariablesNameMap.keys)) = [];
 end

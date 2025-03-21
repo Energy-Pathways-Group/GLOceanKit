@@ -152,8 +152,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 forcingType WVForcingType {mustBeNonempty}
             end
             
-            %self.variableCache = configureDictionary("string","cell");
-            self.variableCache = containers.Map();
+            self.variableCache = configureDictionary("string","cell");
             self.operationVariableNameMap = configureDictionary("string","WVVariableAnnotation"); %containers.Map(); % contains names of variables with associated operations
             self.operationNameMap = configureDictionary("string","cell");
             self.timeDependentVariablesNameMap = configureDictionary("string","cell");
