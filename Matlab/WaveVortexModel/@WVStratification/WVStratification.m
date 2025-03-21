@@ -240,6 +240,34 @@ classdef WVStratification < WVRotatingFPlane
         %     dims = {'z','j'};
         % end
 
+        function Nz = verticalResolutionForHorizontalResolution(Lxy,Lz,Nx,options,rotatingOptions)
+            % optimal resolution for a QG model, such that k_max =
+            % 1/\lambda_max. WKB scaling would suggest
+            % Nz = Nxy * (pi * sqrt(Lr2(2)))/Lxy
+            arguments
+                Lxy (1,1) double {mustBePositive}
+                Lz (1,1) double {mustBePositive}
+                Nx (1,1) double {mustBePositive}
+                options.rhoFunction function_handle = @isempty
+                options.N2Function function_handle = @isempty
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                rotatingOptions.rotationRate (1,1) double = 7.2921E-5
+                rotatingOptions.latitude (1,1) double = 33
+                rotatingOptions.g (1,1) double = 9.81
+            end
+            z = linspace(-Lz,0,500);
+            nEVP = max(256,Nx);
+            nModes = floor(nEVP/2.1);
+            im = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=z,latitude=rotatingOptions.latitude,rho0=options.rho0,nModes=nModes,nEVP=nEVP,rotationRate=rotatingOptions.rotationRate,g=rotatingOptions.g);
+            im.normalization = Normalization.geostrophic;
+            im.upperBoundary = UpperBoundary.rigidLid;
+            [~,~,h] = im.ModesAtFrequency(0);
+            Lr = sqrt(rotatingOptions.g*h)/im.f0;
+            kmax = pi*Nx/Lxy;
+
+            [~,Nz] = min( abs(Lr*kmax-1) );
+        end
+
         function requiredPropertyNames = namesOfRequiredPropertiesForStratification()
             requiredPropertyNames = WVRotatingFPlane.namesOfRequiredPropertiesForRotatingFPlane();
             requiredPropertyNames = union(requiredPropertyNames,{'z','Lz','j','rho0','N2Function'});
