@@ -58,11 +58,13 @@ classdef WVGeostrophicMethods < handle
             initVariable("NA0",NA0_);
             initVariable("PA0",PA0_);
 
-            [te,qgpv,psi,tz] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"energy","qgpv","psi","enstrophy");
+            [te,qgpv,psi,tz,hke,pe] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"energy","qgpv","psi","enstrophy","hke","pe");
             initVariable("A0_TE_factor",te);
             initVariable("A0_QGPV_factor",qgpv);
             initVariable("A0_Psi_factor",psi);
             initVariable("A0_TZ_factor",tz);
+            initVariable("A0_PE_factor",pe);
+            initVariable("A0_KE_factor",hke);
 
             % self.addOperation(self.operationForDynamicalVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
         end

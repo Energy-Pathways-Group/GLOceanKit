@@ -39,16 +39,20 @@ classdef WVMeanDensityAnomalyMethods < handle
                 end
                 
             end
-            A0Nmda = flowComponent.meanDensityAnomalySpectralTransformCoefficients;
-            NA0mda = flowComponent.meanDensityAnomalySpatialTransformCoefficients;
-            initVariable("A0N",A0Nmda);
-            initVariable("NA0",NA0mda);
-            initVariable("PA0",NA0mda);
+            [A0Z_,A0N_] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"A0Z","A0N");
+            [NA0_,PA0_] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"eta","p");
+            initVariable("A0Z",A0Z_);
+            initVariable("A0N",A0N_);
+            initVariable("NA0",NA0_);
+            initVariable("PA0",PA0_);
 
-            initVariable("A0_TE_factor",flowComponent.totalEnergyFactorForCoefficientMatrix(WVCoefficientMatrix.A0));
-            initVariable("A0_QGPV_factor",flowComponent.qgpvFactorForA0);
-            initVariable("A0_Psi_factor",flowComponent.psiFactorForA0);
-            initVariable("A0_TZ_factor",flowComponent.enstrophyFactorForA0);
+            [te,qgpv,psi,tz,hke,pe] = flowComponent.multiplierForVariable(WVCoefficientMatrix.A0,"energy","qgpv","psi","enstrophy","hke","pe");
+            initVariable("A0_TE_factor",te);
+            initVariable("A0_QGPV_factor",qgpv);
+            initVariable("A0_Psi_factor",psi);
+            initVariable("A0_TZ_factor",tz);
+            initVariable("A0_PE_factor",pe);
+            initVariable("A0_KE_factor",hke);
 
             % self.addVariableAnnotations(WVMeanDensityAnomalyMethods.variableAnnotationsForMeanDensityAnomalyComponent);
             % self.addOperation(self.operationForDynamicalVariable('eta','p',flowComponent=self.mdaComponent));

@@ -121,45 +121,6 @@ classdef WVPrimaryFlowComponent < WVFlowComponent
             totalEnergyFactor = zeros(self.wvt.spectralMatrixSize);
         end
 
-        function qgpvFactor = qgpvFactorForA0(self)
-            % returns the qgpv multiplier for the A0 coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the A0 matrix so that when transformed with the Fg
-            % modes will return QGPV.
-            %
-            % - Topic: Properties
-            % - Declaration: qgpvFactor = qgpvFactorForA0()
-            % - Returns qgpvFactor: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                qgpvFactor double
-            end
-            qgpvFactor = zeros(self.wvt.spectralMatrixSize);
-        end
-
-        function enstrophyFactor = enstrophyFactorForA0(self)
-            % returns the enstrophy multiplier for the A0 coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the squared absolute value of this matrix to
-            % produce the total enstrophy.
-            %
-            % - Topic: Quadratic quantities
-            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                enstrophyFactor double {mustBeNonnegative}
-            end
-            enstrophyFactor = zeros(self.wvt.spectralMatrixSize);
-        end
-
         function bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
             % returns a boolean indicating whether (k,l,j) is a valid mode number
             %

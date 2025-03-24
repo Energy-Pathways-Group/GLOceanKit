@@ -8,13 +8,14 @@ classdef TestOrthogonalSolutionGroups < matlab.unittest.TestCase
         % Lxyz = struct('Lxyz',[15e3, 15e3, 1300]);
         Nxyz = struct('Nx8Ny8Nz5',[8 8 5]);
         % Nxyz = struct('Nx16Ny16Nz5',[16 16 5]);
+        % Nxyz = struct('Nx16Ny16Nz16',[16 16 16]);
         % transform = {'constant','hydrostatic','boussinesq'};
         Lxyz = struct('Lxyz',[1000, 500, 500]);
         % Nxyz = struct('Nx16Ny8Nz9',[16 8 9]);
         % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
         transform = {'hydrostatic'};
-        % orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
-        orthogonalSolutionGroup = {'WVGeostrophicComponent'}
+        orthogonalSolutionGroup = {'WVInertialOscillationComponent','WVMeanDensityAnomalyComponent','WVInternalGravityWaveComponent','WVGeostrophicComponent'}
+        % orthogonalSolutionGroup = {'WVMeanDensityAnomalyComponent'}
     end
 
     methods (TestClassSetup)

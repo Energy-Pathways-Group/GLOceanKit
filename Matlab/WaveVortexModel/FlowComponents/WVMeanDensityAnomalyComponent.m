@@ -2,15 +2,20 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
     %Inertial oscillation solution group
     %
     % - Declaration: classdef WVInertialOscillationComponent < WVFlowComponent
+    properties
+        normalization
+    end
     methods
-        function self = WVMeanDensityAnomalyComponent(wvt)
+        function self = WVMeanDensityAnomalyComponent(wvt,options)
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.normalization = "eta"
             end
             self@WVPrimaryFlowComponent(wvt);
             self.name = "mean density anomaly";
             self.shortName = "mda";
             self.abbreviatedName = "mda";
+            self.normalization = options.normalization;
         end
 
         function mask = maskOfPrimaryModesForCoefficientMatrix(self,coefficientMatrix)
@@ -47,68 +52,63 @@ classdef WVMeanDensityAnomalyComponent < WVPrimaryFlowComponent
                 totalEnergyFactor double {mustBeNonnegative}
             end
 
-            % energy factor fo of the mda modes is just 1!!!
-            totalEnergyFactor = (self.wvt.g/2)*self.maskOfModesForCoefficientMatrix(coefficientMatrix);
+            totalEnergyFactor = self.multiplierForVariable(coefficientMatrix,"energy");
         end
 
-        function qgpvFactor = qgpvFactorForA0(self)
-            % returns the qgpv multiplier for the coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the squared absolute value of this matrix to
-            % produce the total energy.
-            %
-            % - Topic: Quadratic quantities
-            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nj Nkl]
+        function varargout = multiplierForVariable(self,coefficientMatrix,variableName)
             arguments (Input)
                 self WVFlowComponent {mustBeNonempty}
+                coefficientMatrix WVCoefficientMatrix {mustBeNonempty}
             end
-            arguments (Output)
-                qgpvFactor double
+            arguments (Input,Repeating)
+                variableName char
             end
-            qgpvFactor = -self.wvt.f ./ self.wvt.h_0;
-            qgpvFactor = qgpvFactor .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
+            mask = self.maskOfModesForCoefficientMatrix(coefficientMatrix);
 
-        function enstrophyFactor = enstrophyFactorForA0(self)
-            % returns the qgpv multiplier for the A0 coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the A0 matrix so that when transformed with the Fg
-            % modes will return QGPV.
-            %
-            % - Topic: Properties
-            % - Declaration: qgpvFactor = qgpvFactorForA0()
-            % - Returns qgpvFactor: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
+            varargout = cell(size(variableName));
+            for iVar=1:length(varargout)
+                if self.normalization == "eta"
+                    switch variableName{iVar}
+                        case "u"
+                            variableFactor = 0*mask;
+                        case "v"
+                            variableFactor = 0*mask;
+                        case "w"
+                            variableFactor = 0*mask;
+                        case "p"
+                            variableFactor = mask;
+                        case "eta"
+                            variableFactor = mask;
+                        case "A0N"
+                            variableFactor = mask;
+                        case "A0Z"
+                            variableFactor = (self.wvt.g./(2*self.wvt.Lr2)).*mask;
+                        case "rv"
+                            variableFactor = 0*mask;
+                        case "psi"
+                            variableFactor = (self.wvt.g ./ self.wvt.f) .* mask;
+                        case "psi-inv"
+                            variableFactor = (self.wvt.f ./ self.wvt.g) .*mask;
+                        case "enstrophy"
+                            variableFactor = (self.wvt.g./(2*self.wvt.Lr2)).*mask;
+                        case "qgpv"
+                            variableFactor =  - (self.wvt.f ./ self.wvt.h_0) .* mask;
+                        case "qgpv-inv"
+                            variableFactor = - (self.wvt.h_0 ./ self.wvt.f) .* mask;
+                        case "pe"
+                            variableFactor = (self.wvt.g/2)*mask;
+                        case "hke"
+                            variableFactor = 0*mask;
+                        case "energy"
+                            [hke,pe] = self.multiplierForVariable(coefficientMatrix,"hke","pe");
+                            variableFactor = hke + pe;
+                    end
+                else
+                    error("unknown normalization");
+                end
+                variableFactor(~mask) = 0;
+                varargout{iVar} = variableFactor;
             end
-            arguments (Output)
-                enstrophyFactor double
-            end
-            enstrophyFactor = (self.wvt.g./(2*self.wvt.Lr2)).*self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
-        end
-
-        function psiFactor = psiFactorForA0(self)
-            % returns the streamfunction multiplier for the coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies A0 to return the streamfunction in the spectral
-            % domain.
-            %
-            % - Topic: Quadratic quantities
-            % - Declaration: psiFactor = psiFactorForA0(self)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                psiFactor double
-            end
-            psiFactor = (self.wvt.g ./ self.wvt.f) .* self.maskOfModesForCoefficientMatrix(WVCoefficientMatrix.A0);
         end
 
         function dof = degreesOfFreedomPerMode(self)

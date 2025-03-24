@@ -69,44 +69,6 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
             totalEnergyFactor = self.multiplierForVariable(coefficientMatrix,"energy");
         end
 
-        function qgpvFactor = qgpvFactorForA0(self)
-            % returns the qgpv multiplier for the coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies A0 to produce QGPV after transformation with F
-            %
-            % - Topic: Quadratic quantities
-            % - Declaration: totalEnergyFactor = totalEnergyFactorForCoefficientMatrix(coefficientMatrix)
-            % - Parameter coefficientMatrix: a WVCoefficientMatrix type
-            % - Returns mask: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                qgpvFactor double
-            end
-            qgpvFactor = self.multiplierForVariable(coefficientMatrix,"qgpv");
-        end
-
-        function enstrophyFactor = enstrophyFactorForA0(self)
-            % returns the qgpv multiplier for the A0 coefficient matrix.
-            %
-            % Returns a matrix of size wvt.spectralMatrixSize that
-            % multiplies the A0 matrix so that when transformed with the Fg
-            % modes will return QGPV.
-            %
-            % - Topic: Properties
-            % - Declaration: qgpvFactor = qgpvFactorForA0()
-            % - Returns qgpvFactor: matrix of size [Nj Nkl]
-            arguments (Input)
-                self WVFlowComponent {mustBeNonempty}
-            end
-            arguments (Output)
-                enstrophyFactor double
-            end
-            enstrophyFactor = self.multiplierForVariable(coefficientMatrix,"enstrophy");
-        end
-
         function varargout = multiplierForVariable(self,coefficientMatrix,variableName)
             arguments (Input)
                 self WVFlowComponent {mustBeNonempty}

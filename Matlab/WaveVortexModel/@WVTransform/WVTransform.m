@@ -48,7 +48,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     end
 
     properties (GetAccess=public, SetAccess=public)
-        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor, A0_Psi_factor
+        Apm_TE_factor, A0_TE_factor, A0_TZ_factor, A0_QGPV_factor, A0_Psi_factor, A0_KE_factor, A0_PE_factor
     end
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
@@ -739,6 +739,10 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                         prop.isVariableWithNonlinearTimeStep = 1;
                     case 'A0_TE_factor'
                         prop = CANumericProperty('A0_TE_factor',options.spectralDimensionNames,'m^{-1}', 'multiplicative factor that multiplies $$A_0^2$$ to compute total energy.',isComplex=0);
+                    case 'A0_KE_factor'
+                        prop = CANumericProperty('A0_KE_factor',options.spectralDimensionNames,'m^{-1}', 'multiplicative factor that multiplies $$A_0^2$$ to compute kinetic energy.',isComplex=0);
+                    case 'A0_PE_factor'
+                        prop = CANumericProperty('A0_PE_factor',options.spectralDimensionNames,'m^{-1}', 'multiplicative factor that multiplies $$A_0^2$$ to compute potential energy.',isComplex=0);
                     case 'A0_QGPV_factor'
                         prop = CANumericProperty('A0_QGPV_factor',options.spectralDimensionNames,'m^{-2}', 'multiplicative factor that multiplies $$A_0$$ to compute quasigeostrophic potential vorticity (QGPV).',isComplex=0);
                     case 'A0_Psi_factor'
