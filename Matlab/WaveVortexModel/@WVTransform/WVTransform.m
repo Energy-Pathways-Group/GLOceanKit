@@ -440,7 +440,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         [Fp,Fm,F0] = nonlinearFluxWithGradientMasks(self,ApUMask,AmUMask,A0UMask,ApUxMask,AmUxMask,A0UxMask)
         [Fp,Fm,F0] = nonlinearFluxForFlowComponents(self,uFlowComponent,gradUFlowComponent)
 
-        [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
+        [Ep,Em,E0_A,E0_B] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

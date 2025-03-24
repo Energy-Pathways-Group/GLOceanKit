@@ -1,4 +1,4 @@
-function [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
+function [Ep,Em,E0_A,E0_B] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
 % converts nonlinear flux into energy flux
 %
 % Multiplies the nonlinear flux (Fp,Fm,F0) by the appropriate coefficients
@@ -18,7 +18,8 @@ function [Ep,Em,E0] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options)
 % - Parameter deltaT: (optional) include the deltaT term in the Euler time step
 % - Returns Ep: energy flux into the Ap coefficients
 % - Returns Em: energy flux into the Am coefficients
-% - Returns E0: energy flux into the A0 coefficients
+% - Returns E0_A: energy flux into the A0 coefficients if three return variables are requested, or returns the kinetic energy flux if four return variables are requested.
+% - Returns E0_B: potential energy flux into the A0 coefficients
 arguments
     self WVTransform {mustBeNonempty}
     Fp (:,:) double
@@ -32,11 +33,21 @@ end
 % equivalent ignoring the phase below here.
 Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap) );
 Em = 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am) );
-E0 = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
+if nargout == 3
+    E0_A = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0) );
+elseif nargout == 4
+    E0_A = 2*self.A0_KE_factor.*real( F0 .* conj(self.A0) );
+    E0_B = 2*self.A0_PE_factor.*real( F0 .* conj(self.A0) );
+end
 
-if options.deltaT > 0 
+if options.deltaT > 0
     Ep = Ep + 2*Fp.*conj(Fp).*self.Apm_TE_factor*options.deltaT;
     Em = Em + 2*Fm.*conj(Fm).*self.Apm_TE_factor*options.deltaT;
-    E0 = E0 + 2*F0.*conj(F0).*self.A0_TE_factor*options.deltaT;
+    if nargout == 3
+        E0_A = E0_A + 2*F0.*conj(F0).*self.A0_TE_factor*options.deltaT;
+    elseif nargout == 4
+        E0_A = E0_A + 2*F0.*conj(F0).*self.A0_KE_factor*options.deltaT;
+        E0_B = E0_B + 2*F0.*conj(F0).*self.A0_PE_factor*options.deltaT;
+    end
 end
 end
