@@ -87,13 +87,38 @@ classdef WVModelAdapativeTimeStepMethods < handle
             function absTol = absoluteErrorToleranceAdaptive()
                 absTol = zeros(self.arrayLength,1);
                 
-                % Adjust the absolute tolerance based on the resolution
-                m = -log10(options.absTolerance);
-                m0 = max(0,log10(prod(self.wvt.spectralMatrixSize))-3.8);
-                options.absTolerance = 10^(-(m+m0));
+                alpha0 = ones(self.wvt.spectralMatrixSize);
+                alphapm = ones(self.wvt.spectralMatrixSize);
+                AbsErrorSpectrum = @isempty;
+                kRadial = self.wvt.kRadial;
+                Kh = self.wvt.Kh;
+                J = self.wvt.J;
+                dk = kRadial(2)-kRadial(1);
+                for iK=1:length(kRadial)
+                    indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
+                    for iJ=1:length(self.wvt.j)
+                        % this is faster than logical indexing
+                        indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
+                        nIndicesForKJ = length(indicesForKJ);
 
-                alpha0 = options.absTolerance*sqrt(1./self.wvt.A0_TE_factor);
-                alphapm = options.absTolerance*sqrt(1./self.wvt.Apm_TE_factor);
+                        if isequal(AbsErrorSpectrum,@isempty)
+                            energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
+                            energyPerApmComponent = energyPerA0Component;
+                        else
+                            energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
+                            energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
+                        end
+                        if self.wvt.hasPVComponent == true
+                            alpha0(indicesForKJ) = options.absTolerance*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
+                        end
+                        if self.wvt.hasWaveComponent == true
+                            alphapm(indicesForKJ) = options.absTolerance*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
+                        end
+                    end
+                end
+
+                % alpha0 = options.absTolerance*sqrt(1./self.wvt.A0_TE_factor);
+                % alphapm = options.absTolerance*sqrt(1./self.wvt.Apm_TE_factor);
                 alpha0(isinf(alpha0)) = 1;
                 alphapm(isinf(alphapm)) = 1;
 
@@ -138,6 +163,46 @@ classdef WVModelAdapativeTimeStepMethods < handle
             self.odeIntegrator = options.integrator;
 
             self.didSetupIntegrator = 1;
+        end
+
+        function [alpha0, alphapm] = absoluteErrorTolerance(self,options)
+            % Useful to make a plot
+            % [alpha0, alphapm] = model.absoluteErrorTolerance(absTolerance=1e-6);
+            % E_noise_kr = wvt.transformToRadialWavenumber(wvt.A0_TE_factor .* alpha0 .* alpha0);
+            % plot(wvt.kRadial,E_noise_kr/dk,LineWidth=2,Color=0*[1 1 1])
+            arguments
+                self 
+                options.absTolerance = 1e-6
+            end
+            alpha0 = ones(self.wvt.spectralMatrixSize);
+            alphapm = ones(self.wvt.spectralMatrixSize);
+            AbsErrorSpectrum = @isempty;
+            kRadial = self.wvt.kRadial;
+            Kh = self.wvt.Kh;
+            J = self.wvt.J;
+            dk = kRadial(2)-kRadial(1);
+            for iK=1:length(kRadial)
+                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
+                for iJ=1:length(self.wvt.j)
+                    % this is faster than logical indexing
+                    indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
+                    nIndicesForKJ = length(indicesForKJ);
+
+                    if isequal(AbsErrorSpectrum,@isempty)
+                        energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
+                        energyPerApmComponent = energyPerA0Component;
+                    else
+                        energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
+                        energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
+                    end
+                    if self.wvt.hasPVComponent == true
+                        alpha0(indicesForKJ) = options.absTolerance*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
+                    end
+                    if self.wvt.hasWaveComponent == true
+                        alphapm(indicesForKJ) = options.absTolerance*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
+                    end
+                end
+            end
         end
 
         function resetAdapativeTimeStepIntegrator(self)
