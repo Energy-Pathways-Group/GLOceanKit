@@ -15,10 +15,7 @@ arguments
 end
 
 wvg.fftw_complex_cache = wvg.dft.scaleFactor*(sqrt(-1)*wvg.k_hc).^n .* wvg.dft.transformForwardIntoArray(u,wvg.fftw_complex_cache);
-% [wvg.fftw_complex_cache, wvg.fftw_real_cache] = wvg.dft.transformBackIntoArrayDestructive(wvg.fftw_complex_cache,wvg.fftw_real_cache);
-wvg.fftw_real_cache = wvg.dft.transformBackIntoArrayDestructive(wvg.fftw_complex_cache,wvg.fftw_real_cache);
-% [wvg.fftw_real_cache,wvg.fftw_complex_cache] = wvg.dft.transformBackIntoArrayDestructive(wvg.fftw_complex_cache,wvg.fftw_real_cache);
-
+[wvg.fftw_complex_cache,wvg.fftw_real_cache] = wvg.dft.transformBackIntoArrayDestructive(wvg.fftw_complex_cache,wvg.fftw_real_cache);
 du = wvg.fftw_real_cache;
 
 end

@@ -134,6 +134,9 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — Spatial grid
         dft
+
+        fftw_complex_cache
+        fftw_real_cache
     end
 
     properties (GetAccess=private,SetAccess=private)
@@ -142,8 +145,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         % - Topic: Domain attributes — Spatial grid
         Nz
 
-        fftw_complex_cache
-        fftw_real_cache
     end
 
     properties (Dependent, SetAccess=private)
@@ -315,9 +316,9 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
             
             if exist('RealToComplexTransform', 'class')
-                self.dft = RealToComplexTransform([Nxy(1) Nxy(2) options.Nz],dims=[1 2],nCores=8,planner="measure");
+                self.dft = RealToComplexTransform([Nxy(1) Nxy(2) options.Nz],dims=1,nCores=8,planner="measure");
                 self.fftw_complex_cache = complex(zeros(self.dft.complexSize));
-                self.fftw_real_cache = double(zeros(self.dft.complexSize));
+                self.fftw_real_cache = double(zeros(self.dft.realSize));
                 fprintf("successfully loaded fftw.\n");
             end
         end
@@ -360,19 +361,11 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         end
 
         function k_hc = get.k_hc(self)
-            if self.conjugateDimension == 1
-                k_hc = self.k_dft(1:(self.Nx/2+1));
-            else
-                k_hc = self.k_dft;
-            end
+            k_hc = self.k_dft(1:(self.Nx/2+1));
         end
 
         function l_hc = get.l_hc(self)
-            if self.conjugateDimension == 2
-                l_hc = self.l_dft(1:(self.Ny/2+1));
-            else
-                l_hc = self.l_dft;
-            end
+            l_hc = self.l_dft(1:(self.Ny/2+1));
         end
 
         function kAxis = get.kAxis(self)
