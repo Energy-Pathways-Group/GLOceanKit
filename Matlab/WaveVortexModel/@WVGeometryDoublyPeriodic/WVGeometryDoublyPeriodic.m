@@ -129,6 +129,11 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — WV grid
         l
+
+        % discrete Fourier transform object
+        %
+        % - Topic: Domain attributes — Spatial grid
+        dft
     end
 
     properties (GetAccess=private,SetAccess=private)
@@ -136,6 +141,9 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — Spatial grid
         Nz
+
+        fftw_complex_cache
+        fftw_real_cache
     end
 
     properties (Dependent, SetAccess=private)
@@ -214,6 +222,16 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — WV grid
         dl
+
+        % k wavenumber dimension on the half-complex grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        k_hc
+        
+        % l wavenumber dimension on the half-complex grid
+        %
+        % - Topic: Domain attributes — DFT grid
+        l_hc
 
         kAxis, lAxis
     end
@@ -295,6 +313,13 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
 
             self.dftBuffer = zeros([self.Nx self.Ny options.Nz]);
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
+            
+            if exist('RealToComplexTransform', 'class')
+                self.dft = RealToComplexTransform([Nxy(1) Nxy(2) options.Nz],dims=[1 2],nCores=8,planner="measure");
+                self.fftw_complex_cache = complex(zeros(self.dft.complexSize));
+                self.fftw_real_cache = double(zeros(self.dft.complexSize));
+                fprintf("successfully loaded fftw.\n");
+            end
         end
 
         function x = get.x(self)
@@ -332,6 +357,22 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
 
         function l_dft = get.l_dft(self)
             l_dft = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]/self.Ly)';
+        end
+
+        function k_hc = get.k_hc(self)
+            if self.conjugateDimension == 1
+                k_hc = self.k_dft(1:(self.Nx/2+1));
+            else
+                k_hc = self.k_dft;
+            end
+        end
+
+        function l_hc = get.l_hc(self)
+            if self.conjugateDimension == 2
+                l_hc = self.l_dft(1:(self.Ny/2+1));
+            else
+                l_hc = self.l_dft;
+            end
         end
 
         function kAxis = get.kAxis(self)
