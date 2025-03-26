@@ -59,7 +59,6 @@ end
 toc
 
 %%
-wvt.nonlinearFluxOperation = WVNonlinearFlux(wvt);
 [Fp,Fm,F0] = wvt.nonlinearFlux();
 
 tic
