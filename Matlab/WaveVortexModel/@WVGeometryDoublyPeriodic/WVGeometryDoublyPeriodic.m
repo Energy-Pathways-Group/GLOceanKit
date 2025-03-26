@@ -115,11 +115,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         % - Topic: Domain attributes — WV grid
         wvConjugateIndex uint64
 
-        % memory buffer to hold the dft matrices
-        %
-        % - Topic: Domain attributes — WV grid
-        dftBuffer
- 
         % k-wavenumber dimension on the WV grid
         %
         % - Topic: Domain attributes — WV grid
@@ -130,10 +125,10 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         % - Topic: Domain attributes — WV grid
         l
 
-        % discrete Fourier transform object
+        % fast transform object
         %
         % - Topic: Domain attributes — Spatial grid
-        dft
+        fastTransform
     end
 
     properties (GetAccess=private,SetAccess=private)
@@ -141,9 +136,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         %
         % - Topic: Domain attributes — Spatial grid
         Nz
-
-        fftw_complex_cache
-        fftw_real_cache
     end
 
     properties (Dependent, SetAccess=private)
@@ -223,16 +215,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         % - Topic: Domain attributes — WV grid
         dl
 
-        % k wavenumber dimension on the half-complex grid
-        %
-        % - Topic: Domain attributes — DFT grid
-        k_hc
-        
-        % l wavenumber dimension on the half-complex grid
-        %
-        % - Topic: Domain attributes — DFT grid
-        l_hc
-
         kAxis, lAxis
     end
 
@@ -311,15 +293,12 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             self.k = K(self.dftPrimaryIndices2D);
             self.l = L(self.dftPrimaryIndices2D);
 
-            self.dftBuffer = zeros([self.Nx self.Ny options.Nz]);
             [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
-            
-            if exist('RealToComplexTransform', 'class')
-                self.dft = RealToComplexTransform([Nxy(1) Nxy(2) options.Nz],dims=[1 2],nCores=8,planner="measure");
-                self.fftw_complex_cache = complex(zeros(self.dft.complexSize));
-                self.fftw_real_cache = double(zeros(self.dft.complexSize));
-                fprintf("successfully loaded fftw.\n");
-            end
+            self.fastTransform = WVFastTransformDoublyPeriodicMatlab(self,self.Nz);
+            % if exist('RealToComplexTransform', 'class')
+            % 
+            %     fprintf("successfully loaded fftw.\n");
+            % end
         end
 
         function x = get.x(self)
@@ -357,22 +336,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
 
         function l_dft = get.l_dft(self)
             l_dft = 2*pi*([0:ceil(self.Ny/2)-1 -floor(self.Ny/2):-1]/self.Ly)';
-        end
-
-        function k_hc = get.k_hc(self)
-            if self.conjugateDimension == 1
-                k_hc = self.k_dft(1:(self.Nx/2+1));
-            else
-                k_hc = self.k_dft;
-            end
-        end
-
-        function l_hc = get.l_hc(self)
-            if self.conjugateDimension == 2
-                l_hc = self.l_dft(1:(self.Ny/2+1));
-            else
-                l_hc = self.l_dft;
-            end
         end
 
         function kAxis = get.kAxis(self)
@@ -466,14 +429,29 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
         end
 
         function u_bar = transformFromSpatialDomainWithFourier(self,u)
-            u_bar = fft(fft(u,self.Nx,1),self.Ny,2)/(self.Nx*self.Ny);
-            u_bar = reshape(u_bar(self.dftPrimaryIndex),[self.Nz self.Nkl]);
+            u_bar = self.fastTransform.transformFromSpatialDomainWithFourier(u);
         end
 
         function u = transformToSpatialDomainWithFourier(self,u_bar)
-            self.dftBuffer(self.dftPrimaryIndex) = u_bar;
-            self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
-            u = ifft(ifft(self.dftBuffer,self.Nx,1),self.Ny,2,'symmetric')*(self.Nx*self.Ny);
+            u = self.fastTransform.transformToSpatialDomainWithFourier(u_bar);
+        end
+
+        function u_x = diffX(self,u,options)
+            arguments
+                self
+                u 
+                options.n = 1
+            end
+            u_x = self.fastTransform.diffX(u,n=options.n);
+        end
+
+        function u_y = diffY(self,u,options)
+            arguments
+                self
+                u 
+                options.n = 1
+            end
+            u_y = self.fastTransform.diffY(u,n=options.n);
         end
 
         function u = transformToSpatialDomainWithFourierAtPosition(self,u_bar,x,y)
@@ -481,9 +459,6 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             self.dftBuffer(self.dftConjugateIndex) = conj(u_bar(self.wvConjugateIndex));
             u = self.transformToSpatialDomainAtPosition(self.dftBuffer,x,y);
         end
-
-        u_x = diffX(self,u,n);
-        u_y = diffY(self,u,n);
 
         function bool = isValidPrimaryKLModeNumber(self,kMode,lMode)
             % return a boolean indicating whether (k,l) is a valid primary (non-conjugate) WV mode number

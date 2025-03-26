@@ -6,10 +6,10 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
     properties (ClassSetupParameter)
         %transform = {'constant','hydrostatic','boussinesq'};
         % Lxyz = struct('Lxyz',[1 10 4]);
-        % Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
+        Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
         % transform = {'hydrostatic'};
         Lxyz = struct('Lxyz',[1000, 500, 500]);
-        Nxyz = struct('Nx32N16Nz17',[32 16 17]);
+        % Nxyz = struct('Nx32N16Nz17',[32 16 17]);
         transform = {'hydrostatic'};
     end
 
@@ -67,7 +67,7 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
                     Df_analytical = (kx^4)*cos(kx*X+phix).*cos(ky*Y+phiy);
             end
 
-            testCase.verifyEqual(testCase.wvt.diffX(f,derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
+            testCase.verifyEqual(testCase.wvt.diffX(f,n=derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
         end
 
         function testDiffY(testCase,derivative,k_n,l_n)
@@ -92,7 +92,7 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
                     Df_analytical = (ky^4)*cos(ky*Y+phiy).*cos(kx*X+phix);
             end
 
-            testCase.verifyEqual(testCase.wvt.diffY(f,derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
+            testCase.verifyEqual(testCase.wvt.diffY(f,n=derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
 
         end
     end

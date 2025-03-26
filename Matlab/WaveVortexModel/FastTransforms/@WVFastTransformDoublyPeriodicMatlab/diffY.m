@@ -1,4 +1,4 @@
-function du = diffY(wvg,u,n)
+function du = diffY(self,u,options)
 % differentiate a spatial variable in the y-direction
 %
 % Performs spectral differentiation on variable u.
@@ -9,11 +9,11 @@ function du = diffY(wvg,u,n)
 % - Parameter n: (optional) order of differentiation $$\frac{d^n}{dy^n}$$ (default 1)
 % - Returns du: differentiated variable in the spatial domain
 arguments
-    wvg         WVGeometryDoublyPeriodic
+    self        WVFastTransformDoublyPeriodicMatlab
     u (:,:,:)   double
-    n (1,1)     double = 1
+    options.n (1,1)     double = 1
 end
 
-du = ifft( (sqrt(-1)*shiftdim(wvg.l_dft,-1)).^n .*fft(u,wvg.Ny,2), wvg.Ny, 2,'symmetric');
+du = ifft( (sqrt(-1)*shiftdim(self.wvg.l_dft,-1)).^options.n .*fft(u,self.wvg.Ny,2), self.wvg.Ny, 2,'symmetric');
 
 end
