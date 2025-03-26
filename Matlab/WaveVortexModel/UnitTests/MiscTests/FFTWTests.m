@@ -1,6 +1,6 @@
 Lxyz = [1000, 500, 500];
 Nxyz = [32 16 17];
-wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformStratifiedQG(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 
 % %%
 % u = wvt.u;
