@@ -35,6 +35,8 @@ wvt.initWithRandomFlow();
 u = wvt.u;
 du = zeros(size(u));
 u_bar = wvt.transformFromSpatialDomainWithFourier(u);
+%%
+
 profile on
 tic
 for i=1:50
@@ -70,7 +72,7 @@ profile viewer
 % return
 profile on
 tic
-for i=1:50
+for i=1:5
     wvt.t = i; % prevent caching
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end

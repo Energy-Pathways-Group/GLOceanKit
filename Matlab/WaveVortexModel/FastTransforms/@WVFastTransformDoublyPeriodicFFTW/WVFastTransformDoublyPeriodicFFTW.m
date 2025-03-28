@@ -34,7 +34,7 @@ classdef WVFastTransformDoublyPeriodicFFTW < WVFastTransformDoublyPeriodic
             arguments
                 wvg 
                 Nz 
-                options.nCores = 6
+                options.nCores = 12
             end
             self.wvg = wvg;
             self.complexBuffer = complex(zeros([wvg.Nx wvg.Ny Nz]));
