@@ -241,6 +241,7 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
                 options.shouldExcludeNyquist (1,1) logical = true
                 options.shouldExludeConjugates (1,1) logical = true
                 options.isHalfComplex (1,1) logical = true
+                options.fastTransform string {mustBeMember(options.fastTransform,["builtin","fftw"])} = "builtin"
             end
             self.Lx = Lxy(1);
             self.Ly = Lxy(2);
@@ -278,7 +279,12 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             if self.shouldExludeConjugates == 1
                 notPrimaryCoeffs = notPrimaryCoeffs | WVGeometryDoublyPeriodic.maskForConjugateFourierCoefficients(self.Nk_dft,self.Nl_dft,conjugateDimension=self.conjugateDimension);
             end
-
+            
+            % In theory we might have to re-do this for the FFTW grid, but
+            % because of Matlabs index ordering, it's the same.
+            % e.g., we do not need
+            %   notPrimaryCoeffs = notPrimaryCoeffs(:,1:(self.Ny/2 + 1));
+            %   [K,L] = ndgrid(self.k_dft,self.l_dft(1:(self.Ny/2 + 1)));
             [K,L] = ndgrid(self.k_dft,self.l_dft);
             Kh = sqrt(K.*K + L.*L);
 
@@ -288,13 +294,46 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             % Now remove all the coefficients that we didn't want
             self.dftPrimaryIndices2D = self.dftPrimaryIndices2D(sortedMultiIndex(:,1) == 0);
 
-            self.dftConjugateIndices2D = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
-            self.dftConjugateIndices2D = self.dftConjugateIndices2D(self.dftPrimaryIndices2D);
-            self.k = K(self.dftPrimaryIndices2D);
-            self.l = L(self.dftPrimaryIndices2D);
+            canUseFFTW = false;
+            if options.fastTransform == "fftw"
+                if ~exist('RealToComplexTransform','class')
+                    warning("Unable to find the class RealToComplexTransform. Reverting to built-in transforms.");
+                else
+                    if exist('fftw_dft2','file') == 3
+                        fprintf('fftw_dft2 found. Will use fftw.\n')
+                        canUseFFTW = true;
+                    else
+                        try
+                            RealToComplexTransform.makeMexFiles();
+                            canUseFFTW = true;
+                        catch
+                            warning('Unable to compile fftw_dft2. Will use builtins.\n')
+                        end
+                    end
+                end
+            end
 
-            [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
-            self.fastTransform = WVFastTransformDoublyPeriodicMatlab(self,self.Nz);
+            if canUseFFTW == true
+                self.dftConjugateIndices2D = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
+                self.dftConjugateIndices2D = self.dftConjugateIndices2D(self.dftPrimaryIndices2D);
+                self.k = K(self.dftPrimaryIndices2D);
+                self.l = L(self.dftPrimaryIndices2D);
+
+                [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToFFTWGrid(self.Nz,isHalfComplex=1);
+                self.fastTransform = WVFastTransformDoublyPeriodicFFTW(self,self.Nz);
+            else
+                self.dftConjugateIndices2D = WVGeometryDoublyPeriodic.indicesOfFourierConjugates(self.Nx,self.Ny);
+                self.dftConjugateIndices2D = self.dftConjugateIndices2D(self.dftPrimaryIndices2D);
+                self.k = K(self.dftPrimaryIndices2D);
+                self.l = L(self.dftPrimaryIndices2D);
+
+                [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
+                self.fastTransform = WVFastTransformDoublyPeriodicMatlab(self,self.Nz);
+            end
+
+
+            % self.fastTransform = WVFastTransformDoublyPeriodicMatlab(self,self.Nz);
+
             % if exist('RealToComplexTransform', 'class')
             % 
             %     fprintf("successfully loaded fftw.\n");
@@ -745,6 +784,95 @@ classdef WVGeometryDoublyPeriodic < CAAnnotatedClass
             end
         end
 
+        function [dftPrimaryIndices_, dftConjugateIndices_, wvConjugateIndices_] = indicesFromWVGridToFFTWGrid(self,Nz,options)
+            % indices to convert from WV to DFT grid
+            %
+            % This function returns indices to quickly reformat the memory
+            % layout of a data structure on a WV grid to one on a DFT grid.
+            %
+            % This function is should generally be faster than the function
+            % transformFromWVGridToDFTGrid if you cache these indices.
+            %
+            % - Topic: Index gymnastics
+            % - Declaration: [dftPrimaryIndices, wvPrimaryIndices, dftConjugateIndices, wvConjugateIndices] = indicesFromWVGridToFFTWGrid(Nz,options)
+            % - Parameter Nz: length of the outer dimension (default 1)
+            % - Parameter isHalfComplex: (optional) set whether the DFT grid excludes modes iL>Ny/2 [0 1] (default 1)
+            % - Returns dftPrimaryIndices: indices into a DFT matrix, matches wvPrimaryIndices
+            % - Returns wvPrimaryIndices: indices into a WV matrix, matches dftPrimaryIndices
+            % - Returns dftConjugateIndices: indices into a DFT matrix, matches wvConjugateIndices
+            % - Returns wvConjugateIndices: indices into a WV matrix, matches dftConjugateIndices
+            arguments (Input)
+                self (1,1) WVGeometryDoublyPeriodic
+                Nz (1,1) double {mustBeInteger,mustBePositive}
+                options.isHalfComplex (1,1) logical = true
+            end
+            arguments (Output)
+                dftPrimaryIndices_ (:,1) double
+                dftConjugateIndices_ (:,1) double
+                wvConjugateIndices_ (:,1) double
+            end
+
+            dftPrimaryIndices_ = zeros(Nz*self.Nkl,1);
+            wvPrimaryIndices_ = zeros(Nz*self.Nkl,1);
+            index=1;
+            for iZ=1:Nz
+                for iK=1:self.Nkl
+                    dftPrimaryIndices_(index) = self.dftPrimaryIndices2D(iK) + (iZ-1)*(self.Nx*(self.Ny/2+1));
+                    wvPrimaryIndices_(index) = iZ + (iK-1)*Nz;
+                    index = index+1;
+                end
+            end
+
+            % Considered unsorted, dft-sorted, and wv-sorted indices.
+            % The code:
+            %   wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
+            %   wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+            % runs about 10% faster when dft-sorted, than the other two
+            % options.
+            % The code:
+            %   wvt.wvBuffer(wvt.wvPrimaryIndex) = wvt.dftBuffer(wvt.dftPrimaryIndex);
+            % runs about the same when wv or dft-sorted. But importantly
+            %   wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
+            % is almost twice as fast and can be used when wv-sorted.
+            % Ha ha, but even better is that when wv-sorted,
+            %   wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer;
+            %   wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+            % runs the absolute fastest. So, that's a no-brainer!
+
+            [~,indices] = sort(wvPrimaryIndices_);
+            dftPrimaryIndices_ = dftPrimaryIndices_(indices);
+
+            index=1;
+            if options.isHalfComplex == 1
+                wvConjugateIndices2D_ = find(self.lMode_wv == 0 & self.kMode_wv ~= 0);
+                dftConjugateIndices2D_ = self.dftConjugateIndices2D(wvConjugateIndices2D_);
+                dftConjugateIndices_ = zeros(Nz*length(wvConjugateIndices2D_),1);
+                wvConjugateIndices_ = zeros(Nz*length(wvConjugateIndices2D_),1);
+
+                for iIndex=1:length(wvConjugateIndices2D_)
+                    wvIndex = wvConjugateIndices2D_(iIndex);
+                    dftIndex = dftConjugateIndices2D_(iIndex);
+                    for iZ=1:Nz
+                        dftConjugateIndices_(index) = dftIndex + (iZ-1)*(self.Nx*(self.Ny/2+1));
+                        wvConjugateIndices_(index) = iZ + (wvIndex-1)*Nz;
+                        index = index+1;
+                    end
+                end
+            else
+                dftConjugateIndices_ = zeros(Nz*self.Nkl,1);
+                wvConjugateIndices_ = zeros(Nz*self.Nkl,1);
+                for iZ=1:Nz
+                    for iK=1:self.Nkl
+                        dftConjugateIndices_(index) = self.dftConjugateIndices2D(iK) + (iZ-1)*(self.Nx*self.Ny);
+                        wvConjugateIndices_(index) = iZ + (iK-1)*Nz;
+                        index = index+1;
+                    end
+                end
+            end
+
+            [wvConjugateIndices_,indices] = sort(wvConjugateIndices_);
+            dftConjugateIndices_ = dftConjugateIndices_(indices);
+        end
 
         function [dftPrimaryIndices_, dftConjugateIndices_, wvConjugateIndices_] = indicesFromWVGridToDFTGrid(self,Nz,options)
             % indices to convert from WV to DFT grid

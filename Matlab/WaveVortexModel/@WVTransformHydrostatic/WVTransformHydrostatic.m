@@ -27,6 +27,9 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         totalEnergySpatiallyIntegrated
         totalEnergy
     end
+    properties
+        Fu, Fv, Feta
+    end
     % properties (GetAccess=public)
     %     h_0
     % end
@@ -106,6 +109,10 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             self.A0 = zeros(self.spectralMatrixSize);
             self.Ap = zeros(self.spectralMatrixSize);
             self.Am = zeros(self.spectralMatrixSize);
+
+            self.Fu=zeros(self.spatialMatrixSize);
+            self.Fv=zeros(self.spatialMatrixSize);
+            self.Feta=zeros(self.spatialMatrixSize);
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -150,18 +157,34 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        % function [Fp,Fm,F0] = nonlinearFlux(self)
+        %     % self.Fu(:)=0;self.Fv(:)=0;self.Feta(:)=0;
+        %     % self.Fu=0*self.Fu;self.Fv(:)=0*self.Fv;self.Feta(:)=0*self.Feta;
+        %     self.Fu=zeros(self.spatialMatrixSize);self.Fv=zeros(self.spatialMatrixSize);self.Feta=zeros(self.spatialMatrixSize);
+        %     for i=1:length(self.spatialFluxForcing)
+        %        [self.Fu, self.Fv, self.Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, self.Fu, self.Fv, self.Feta);
+        %     end
+        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(self.Fu, self.Fv, self.Feta,self.t);
+        %     for i=1:length(self.spectralFluxForcing)
+        %        [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+        %     end
+        %     for i=1:length(self.spectralAmplitudeForcing)
+        %        [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
+        %     end  
+        % end
+
         function [Fp,Fm,F0] = nonlinearFlux(self)
             Fu=zeros(self.spatialMatrixSize);Fv=zeros(self.spatialMatrixSize);Feta=zeros(self.spatialMatrixSize); % this isn't good, need to cached
             for i=1:length(self.spatialFluxForcing)
-               [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
+                [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
             [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
             for i=1:length(self.spectralFluxForcing)
-               [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+                [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
             end
             for i=1:length(self.spectralAmplitudeForcing)
-               [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
-            end  
+                [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
+            end
         end
 
         function F = fluxForForcing(self)

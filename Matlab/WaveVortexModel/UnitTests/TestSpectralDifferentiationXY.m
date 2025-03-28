@@ -17,11 +17,11 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
         function classSetup(testCase,Lxyz,Nxyz,transform)
             switch transform
                 case 'constant'
-                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz);
+                    testCase.wvt = WVTransformConstantStratification(Lxyz, Nxyz,shouldAntialias=false);
                 case 'hydrostatic'
-                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+                    testCase.wvt = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=false);
                 case 'boussinesq'
-                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+                    testCase.wvt = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=false);
             end
         end
     end
@@ -41,6 +41,7 @@ classdef TestSpectralDifferentiationXY < matlab.unittest.TestCase
 
     properties (TestParameter)
         derivative = struct('first',1,'second',2,'third',3,'fourth',4);
+        % derivative = struct('second',2,'third',3,'fourth',4);
         k_n
         l_n
     end

@@ -11,7 +11,8 @@
 % April 12th, 2018      Version 1.0
 
 % profile on
-wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [1024 1024 30], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
 % wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [128 128 128]);
 % wvt = WVTransformSingleMode([2000e3 1000e3], 2*[256 128], h=0.8, latitude=25);
@@ -19,7 +20,7 @@ wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*
 
 %%
 % profile on
-% wvt.initWithRandomFlow();
+wvt.initWithRandomFlow();
 % profile viewer
 
 % wvt.removeEnergyFromAliasedModes();
@@ -31,32 +32,52 @@ wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*
 
 % return
 
-%%
-% unsorted is fastest!!! DFT sorted is 2x slower, WV sorted is 10% slower
+u = wvt.u;
+du = zeros(size(u));
+u_bar = wvt.transformFromSpatialDomainWithFourier(u);
+profile on
 tic
-for i=1:500
-    wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
-    wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+for i=1:50
+    % du = wvt.diffX(u);
+    % du = wvt.fastTransform.diffXIntoArray(u,du);
+    u_bar = wvt.transformFromSpatialDomainWithFourier(u);
+    % u_bar = u_bar*wvt.fastTransform.dftXY.scaleFactor;
+    % u = wvt.transformToSpatialDomainWithFourier(u_bar);
 end
 toc
+profile viewer
 
 %%
-% unsorted is 10% slower than sorting either dimension
-tic
-for i=1:500
-    wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
-end
-toc
+% unsorted is fastest!!! DFT sorted is 2x slower, WV sorted is 10% slower
+% tic
+% for i=1:500
+%     wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
+%     wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
+% end
+% toc
+% 
+% %%
+% % unsorted is 10% slower than sorting either dimension
+% tic
+% for i=1:500
+%     wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
+% end
+% toc
 
 %%
 [Fp,Fm,F0] = wvt.nonlinearFlux();
-% profile on
+
+% return
+profile on
 tic
 for i=1:50
     wvt.t = i; % prevent caching
     [Fp,Fm,F0] = wvt.nonlinearFlux();
 end
 toc
+profile viewer
+
+return
 
 %%
 [Fp,Fm,F0] = wvt.nonlinearFlux();

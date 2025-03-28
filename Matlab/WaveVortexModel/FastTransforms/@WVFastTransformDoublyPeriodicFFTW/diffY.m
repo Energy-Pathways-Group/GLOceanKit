@@ -1,4 +1,4 @@
-function du = diffY(self,u,n)
+function du = diffY(self,u,options)
 % differentiate a spatial variable in the y-direction
 %
 % Performs spectral differentiation on variable u.
@@ -9,11 +9,18 @@ function du = diffY(self,u,n)
 % - Parameter n: (optional) order of differentiation $$\frac{d^n}{dy^n}$$ (default 1)
 % - Returns du: differentiated variable in the spatial domain
 arguments
-    self        WVFastTransformDoublyPeriodicMatlab
+    self        WVFastTransformDoublyPeriodicFFTW
     u (:,:,:)   double
-    n (1,1)     double = 1
+    options.n (1,1)     double = 1
 end
 
-du = ifft( (sqrt(-1)*shiftdim(self.wvg.l_dft,-1)).^n .*fft(u,self.wvg.Ny,2), self.wvg.Ny, 2,'symmetric');
+% Method 1: works fine
+self.dftYComplexBuffer = self.dftY.transformForwardIntoArray(u,self.dftYComplexBuffer);
+self.dftYComplexBuffer = self.dftY.scaleFactor * ((self.dy).^options.n) .* self.dftYComplexBuffer;
+du = double(zeros(self.dftY.realSize));
+[self.dftYComplexBuffer,du] = self.dftY.transformBackIntoArrayDestructive(self.dftYComplexBuffer,du);
 
+% Method 2: now passes, but is slower
+% [self.dftYComplexBuffer,self.dftRealBuffer] = self.dftY.transformBackIntoArrayDestructive(self.dftYComplexBuffer,self.dftRealBuffer);
+% du = self.dftRealBuffer;
 end

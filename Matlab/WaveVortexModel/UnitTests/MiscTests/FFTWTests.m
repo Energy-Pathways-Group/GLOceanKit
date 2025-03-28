@@ -18,8 +18,9 @@ ky = 2*pi*l_n/Ly;
 f = cos(kx*X+phix) .* cos(ky*Y+phiy);
 
 Df_analytical = -kx*sin(kx*X+phix).*cos(ky*Y+phiy);
-
 Df_numerical = wvt.diffX(f);
-% Df_numerical = wvt.diffX_fftw(f,1);
+max(abs(Df_analytical(:)-Df_numerical(:)))
 
+Df_analytical = -ky*sin(ky*Y+phiy).*cos(kx*X+phix);
+Df_numerical = wvt.diffY(f);
 max(abs(Df_analytical(:)-Df_numerical(:)))
