@@ -55,11 +55,25 @@ classdef WVObservingSystem < CAAnnotatedClass
                 name {mustBeText}
             end
             % Do we actually want to inherit the properties from the
-            % WVTransform? I'm not sure.
+            % WVTransform? I'm not sure. I think this should be optional.
+            % If an OS does, then its output can go in the wave-vortex
+            % group.
             self@CAAnnotatedClass();
             self.wvt = wvt;
             self.name = name;
         end
+
+
+        function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
+            % this will only be called 
+            t = [];
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Integrated variables
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function Y0 = absErrorTolerance(self)
             % return a cell array of the absolute tolerances of the
@@ -86,12 +100,6 @@ classdef WVObservingSystem < CAAnnotatedClass
             % passes updated values of the variables being integrated.
         end
 
-        function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
-            % this will only be called 
-            t = [];
-        end
-
-         
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
