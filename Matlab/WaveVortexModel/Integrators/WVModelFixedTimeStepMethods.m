@@ -148,7 +148,7 @@ classdef WVModelFixedTimeStepMethods < handle
             end
             % A cfl of 1/12 for oscillatoryDT might be necessary for good numerical precision when advecting particles.
 
-            if isa(self,'WVStratification')
+            if isa(self.wvt,'WVStratification')
                 W = self.wvt.w;
                 W = W(:,:,2:end);
                 ratio = abs((W./((3/2)*shiftdim(diff(self.wvt.z),-2))));

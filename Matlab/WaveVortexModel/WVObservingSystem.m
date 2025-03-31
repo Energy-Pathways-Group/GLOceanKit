@@ -13,6 +13,10 @@ classdef WVObservingSystem < CAAnnotatedClass
         % boolean indicating whether the observing system requires custom
         % output logic.
         %
+        % If this is set to true, the function
+        %   - outputTimesForIntegrationPeriod
+        % will be called.
+        %
         % Lagrangian particles or a passive tracer field can be sampled at
         % any output time, and thus would return false. In contrast, a
         % satellite passover occurs at custom times, determined by the
@@ -25,9 +29,10 @@ classdef WVObservingSystem < CAAnnotatedClass
         %
         % Setting a value greater than zero will require that you
         % implement,
-        %   - initialConditions
-        %   - fluxAtTime
-        %   - updateIntegratorValues
+        %   -absErrorTolerance
+        %   -initialConditions
+        %   -fluxAtTime
+        %   -updateIntegratorValues
         %
         % - Topic: Properties
         nFluxComponents uint8 = 0
@@ -56,16 +61,37 @@ classdef WVObservingSystem < CAAnnotatedClass
             self.name = name;
         end
 
-        function Y0 = initialConditionsCellArray(self)
+        function Y0 = absErrorTolerance(self)
+            % return a cell array of the absolute tolerances of the
+            % variables being integrated. You can pass either scalar
+            % values, or an array of the same size as the variable.
+            %
+            % this will only be called when the time-stepping is run with
+            % an adaptive integrator.
             Y0 = {};
         end
 
-        function F = fluxAtTimeCellArray(self,t,y0)
+        function Y0 = initialConditions(self)
+            % return a cell array of variables that need to be integrated
+            Y0 = {};
+        end
+
+        function F = fluxAtTime(self,t,y0)
+            % return a cell array of the flux of the variables being
+            % integrated. You may want to call -updateIntegratorValues.
             F = {};
         end
 
-        function updateIntegratorValuesFromCellArray(self,t,y0)
+        function updateIntegratorValues(self,t,y0)
+            % passes updated values of the variables being integrated.
         end
+
+        function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
+            % this will only be called 
+            t = [];
+        end
+
+         
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
