@@ -66,7 +66,7 @@ classdef WVVerticalDiffusivity < WVForcing
             % - Returns: vars
             arguments
             end
-            vars = {};
+            vars = {"kappa_z"};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -78,6 +78,7 @@ classdef WVVerticalDiffusivity < WVForcing
                 propertyAnnotations CAPropertyAnnotation
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CANumericProperty('kappa_z', {}, 'm^2 s^{-1}','vertical diffusivity');
         end
     end
 end

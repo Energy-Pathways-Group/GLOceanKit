@@ -126,7 +126,7 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function force = forcingWithResolutionOfTransform(self,wvtX2)
-            %create a new WVForcing with double the resolution
+            %create a new WVForcing with a new resolution
             %
             % Subclasses to should override this method an implement the
             % correct logic.
