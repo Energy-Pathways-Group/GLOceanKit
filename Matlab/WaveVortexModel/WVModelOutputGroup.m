@@ -19,12 +19,12 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
         % output index of the current/most recent step.
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        incrementsWrittenToFile (1,1) uint64 = 0
+        incrementsWrittenToGroup (1,1) uint64 = 0
 
         % output index of the current/most recent step.
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        timeOfLastIncrementWrittenToFile (1,1) double = -Inf
+        timeOfLastIncrementWrittenToGroup (1,1) double = -Inf
 
         didInitializeStorage = false
     end
@@ -138,13 +138,13 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
                 self.observingSystems(iObs).initializeStorage(self.group);
             end
 
-            self.incrementsWrittenToFile = 0;
+            self.incrementsWrittenToGroup = 0;
             self.writeTimeStepToNetCDFFile(self.model.t);
         end
 
         function writeTimeStepToNetCDFFile(self,t)
-            if ( ~isempty(self.group) && t > self.timeOfLastIncrementWrittenToFile )
-                outputIndex = self.incrementsWrittenToFile + 1;
+            if ( ~isempty(self.group) && t > self.timeOfLastIncrementWrittenToGroup )
+                outputIndex = self.incrementsWrittenToGroup + 1;
 
                 self.group.variableWithName('t').setValueAlongDimensionAtIndex(t,'t',outputIndex);
 
@@ -152,14 +152,14 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
                     self.observingSystems(iObs).writeTimeStepToFile(self.group,outputIndex);
                 end
 
-                self.incrementsWrittenToFile = outputIndex;
-                self.timeOfLastIncrementWrittenToFile = t;
+                self.incrementsWrittenToGroup = outputIndex;
+                self.timeOfLastIncrementWrittenToGroup = t;
             end
         end
 
         function closeNetCDFFile(self)
             if ~isempty(self.group)
-                fprintf('Ending simulation. Wrote %d time points to %s group\n',self.incrementsWrittenToFile,self.name);
+                fprintf('Ending simulation. Wrote %d time points to %s group\n',self.incrementsWrittenToGroup,self.name);
             end
         end
 
