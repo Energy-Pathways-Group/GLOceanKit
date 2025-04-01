@@ -1,9 +1,11 @@
 classdef NetCDFVariable < handle
     % Encapsulates variable data in a NetCDF file
     % 
-
+    properties (WeakHandle)
+        group NetCDFGroup
+    end
+    
     properties
-        group
         name
         dimensions
         attributes

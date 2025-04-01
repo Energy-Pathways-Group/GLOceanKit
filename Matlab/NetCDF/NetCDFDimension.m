@@ -1,9 +1,12 @@
 classdef NetCDFDimension < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
+    
+    properties (WeakHandle)
+        group NetCDFGroup
+    end
 
     properties
-        group
         id
         name
         nPoints

@@ -10,6 +10,12 @@ classdef NetCDFGroup < handle
     % - Topic: Working with global attributes
     %
     % - Declaration: classdef NetCDFGroup < handle
+    properties (WeakHandle)
+        % parent group (may be nil)
+        % - Topic: Accessing group properties
+        parentGroup NetCDFGroup
+    end
+
     properties
         % id of the group
         % - Topic: Accessing group properties
@@ -19,9 +25,6 @@ classdef NetCDFGroup < handle
         % - Topic: Accessing group properties
         name
 
-        % parent group (may be nil)
-        % - Topic: Accessing group properties
-        parentGroup
 
         % array of NetCDFGroup objects
         % - Topic: Working with groups

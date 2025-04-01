@@ -2,9 +2,12 @@ classdef WVObservingSystem < CAAnnotatedClass
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties (GetAccess=public, SetAccess=protected)
-        model
+    properties (WeakHandle)
+        % Reference to the WVModel being used
+        model WVModel
+    end
 
+    properties (GetAccess=public, SetAccess=protected)
         % boolean indicating this class implements addHydrostaticSpatialForcing
         %
         % - Topic: Properties

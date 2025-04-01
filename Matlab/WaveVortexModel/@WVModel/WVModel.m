@@ -22,6 +22,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
     % model = WVModel.modelFromFile('SomeFile.nc');
     %```
     % 
+    % Advanced usage
+    % --------------
+    %
+    % 1. Create 1 or more NetCDFFiles
+    % 2. Add 1 or more WVModelOutputGroups to each file
+    % 3. Add 1 or more WVObservingSystems to each output group.
+    %
     % - Topic: Initialization
     % - Topic: Model Properties
     % - Topic: Integration
@@ -41,16 +48,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Writing to NetCDF files
         % Empty indicates no file output.
         ncfile NetCDFFile
-
-        % output index of the current/most recent step.
-        % - Topic: Integration
-        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        incrementsWrittenToFile (1,1) uint64 = 0
-
-        % output index of the current/most recent step.
-        % - Topic: Integration
-        % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
-        timeOfLastIncrementWrittenToFile (1,1) double = -Inf
 
         fluxedObservingSystems
     end
@@ -172,7 +169,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function outputGroup = defaultOutputGroup(self)
-                        arguments (Input)
+            arguments (Input)
                 self WVModel {mustBeNonempty}
             end
             arguments (Output)

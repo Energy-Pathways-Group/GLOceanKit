@@ -1,16 +1,20 @@
-classdef WVModelOutputGroup < handle
+classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
 
-    properties
+    properties (WeakHandle)
+        % Reference to the WVModel being used
         model WVModel
 
-        name string
-
-        % Reference to the NetCDFFile being used for model output
+        % Reference to the NetCDFGroup being used for model output
         % - Topic: Writing to NetCDF files
-        % Empty indicates no file output.
+        % Empty indicates no file output. The output group creates the
+        % NetCDFGroup, but the NetCDFFile owns it, hence a WeakHandle.
         group NetCDFGroup
+    end
+
+    properties
+        name string
 
         % output index of the current/most recent step.
         % - Topic: Integration

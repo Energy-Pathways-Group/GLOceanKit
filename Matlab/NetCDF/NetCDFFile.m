@@ -39,6 +39,9 @@ classdef NetCDFFile < NetCDFGroup
         format = 'FORMAT_NETCDF4'
     end
 
+    properties (Dependent)
+        filename
+    end
     methods
         function self = NetCDFFile(path,options)
             % NetCDFFile initialize an from existing or create new file
@@ -91,6 +94,11 @@ classdef NetCDFFile < NetCDFGroup
         % Utilities
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function filename = get.filename(self)
+            [~,name,ext] = fileparts(self.path);
+            filename = name + ext;
+        end
 
 
         function self = sync(self)
