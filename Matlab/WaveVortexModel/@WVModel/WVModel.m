@@ -51,6 +51,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
         timeOfLastIncrementWrittenToFile (1,1) double = -Inf
+
+        fluxedObservingSystems
     end
 
     properties (Dependent)
@@ -81,6 +83,52 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
     end
 
     methods
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Initialization
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function self = WVModel(wvt)
+            % Initialize a model from a WVTransform instance
+            %
+            % - Topic: Initialization
+            % - Declaration: WVModel(wvt,options)
+            % - Parameter wvt: a WaveVortexTranform instance
+            %
+            % 
+            arguments
+                wvt WVTransform {mustBeNonempty}
+            end
+
+            self.wvt = wvt; 
+            self.initialOutputTime = self.t;
+            self.initialTime = self.t;
+            if self.wvt.hasClosure == false
+                warning('The nonlinear flux has no damping and may not be stable.');
+            end
+            defaultGroup = self.addOutputGroup(self.defaultOutputGroupName);
+            outVars = intersect({'Ap','Am','A0'},wvt.variableNames);
+            defaultGroup.setNetCDFOutputVariables(outVars{:});
+            self.particleIndexWithName = containers.Map();
+            self.tracerIndexWithName = containers.Map();
+        end
+        
+        function value = get.linearDynamics(self)
+            value = isempty(self.wvt.forcing);
+        end
+
+        function value = get.t(self)
+            value = self.wvt.t;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Output groups
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function outputGroups = get.outputGroups(self)
             outputGroups = [self.outputGroupNameMap(self.outputGroupNameMap.keys)];
         end
@@ -123,7 +171,49 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.outputGroupNameMap(name) = outputGroup;
         end
 
-        function addNetCDFOutputVariables(self,variables,options)
+        function outputGroup = defaultOutputGroup(self)
+                        arguments (Input)
+                self WVModel {mustBeNonempty}
+            end
+            arguments (Output)
+                outputGroup WVModelOutputGroup
+            end
+            outputGroup = self.outputGroupWithName(self.defaultOutputGroupName);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Fluxed observing systems
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function addFluxedObservingSystem(self,anObservingSystem)
+            arguments
+                self WVModel {mustBeNonempty}
+                anObservingSystem WVObservingSystem
+            end
+            for iObs=1:length(anObservingSystem)
+                self.fluxedObservingSystems(end+1) = anObservingSystem(iObs);
+            end
+        end
+
+        function removeFluxedObservingSystem(self,anObservingSystem)
+            arguments
+                self WVModel {mustBeNonempty}
+                anObservingSystem WVObservingSystem
+            end
+            for iObs=1:length(anObservingSystem)
+                self.fluxedObservingSystems = setdiff(self.fluxedObservingSystems,anObservingSystem(iObs),'stable');
+            end
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Convenience functions for adding/removing Eulerian variables
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function addNetCDFOutputVariables(self,variables)
             % Add variables to list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -144,17 +234,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            arguments
-                options.outputGroupName
-            end
-            if ~isfield(options,"outputGroupName")
-                options.outputGroupName = self.defaultOutputGroupName;
-            end
-            outputGroup = self.outputGroupWithName(options.outputGroupName);
-            outputGroup.addNetCDFOutputVariables(variables{:});
+            self.defaultOutputGroup.addNetCDFOutputVariables(variables{:});
         end
 
-        function setNetCDFOutputVariables(self,variables,options)
+        function setNetCDFOutputVariables(self,variables)
             % Set list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -174,17 +257,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            arguments
-                options.outputGroupName
-            end
-            if ~isfield(options,"outputGroupName")
-                options.outputGroupName = self.defaultOutputGroupName;
-            end
-            outputGroup = self.outputGroupWithName(options.outputGroupName);
-            outputGroup.setNetCDFOutputVariables(variables{:});
+            self.defaultOutputGroup.setNetCDFOutputVariables(variables{:});
         end
 
-        function removeNetCDFOutputVariables(self,variables,options)
+        function removeNetCDFOutputVariables(self,variables)
             % Remove variables from the list of variables to be written to the NetCDF variable during the model run.
             %
             % - Topic: Writing to NetCDF files
@@ -204,56 +280,16 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            arguments
-                options.outputGroupName
-            end
-            if ~isfield(options,"outputGroupName")
-                options.outputGroupName = self.defaultOutputGroupName;
-            end
-            outputGroup = self.outputGroupWithName(options.outputGroupName);
-            outputGroup.removeNetCDFOutputVariables(variables{:});
+            self.defaultOutputGroup.removeNetCDFOutputVariables(variables{:});
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Initialization
+        % Convenience functions for floats and drifters and tracer
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WVModel(wvt)
-            % Initialize a model from a WVTransform instance
-            %
-            % - Topic: Initialization
-            % - Declaration: WVModel(wvt,options)
-            % - Parameter wvt: a WaveVortexTranform instance
-            %
-            % 
-            arguments
-                wvt WVTransform {mustBeNonempty}
-            end
-
-            self.wvt = wvt; 
-            self.initialOutputTime = self.t;
-            self.initialTime = self.t;
-            if self.wvt.hasClosure == false
-                warning('The nonlinear flux has no damping and may not be stable.');
-            end
-            defaultGroup = self.addOutputGroup(self.defaultOutputGroupName);
-            outVars = intersect({'Ap','Am','A0'},wvt.variableNames);
-            defaultGroup.setNetCDFOutputVariables(outVars{:});
-            self.particleIndexWithName = containers.Map();
-            self.tracerIndexWithName = containers.Map();
-        end
-        
-        function value = get.linearDynamics(self)
-            value = isempty(self.wvt.forcing);
-        end
-
-        function value = get.t(self)
-            value = self.wvt.t;
-        end
-        
-        function addParticles(self,name,fluxOp,x,y,z,trackedFieldNames,options)
+        function addParticles(self,name,isXYOnly,x,y,z,trackedFieldNames,options)
             % Add particles to be advected by the flow.
             %
             % - Topic: Particles
@@ -269,7 +305,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 self WVModel {mustBeNonempty}
                 name char {mustBeNonempty}
-                fluxOp WVParticleFluxOperation {mustBeNonempty}
+                isXYOnly logical {mustBeNonempty}
                 x (1,:) double
                 y (1,:) double
                 z (1,:) double
@@ -278,51 +314,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 trackedFieldNames char
             end
             arguments
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "spline"
                 options.outputGroupName = "wave-vortex"
             end
 
-            if self.didSetupIntegrator == 1
-                error('Integrator was already setup, you cannot add particles.')
-            end
-
-            % Confirm that we really can track these variables.
-            for iVar=1:length(trackedFieldNames)
-                if ~any(ismember(self.wvt.variableNames,trackedFieldNames{iVar}))
-                    error('Unable to find a WVVariableAnnotation named %s.', trackedFieldNames{iVar});
-                end
-                transformVar = self.wvt.propertyAnnotationWithName(trackedFieldNames{iVar});
-                if isequal(self.wvt.spatialDimensionNames,{'x','y'})
-                    if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                        error('The WVVariableAnnotation %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
-                    end
-                else
-                    if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
-                        error('The WVVariableAnnotation %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', trackedFieldNames{iVar});
-                    end
-                end
-            end
-
-            n = length(self.particle) + 1;
-
-            self.particleIndexWithName(name) = n;
-            self.particle{n}.name = name;
-            self.particle{n}.fluxOp = fluxOp;
-            self.particle{n}.x = x;
-            self.particle{n}.y = y;
-            self.particle{n}.z = z;
-            self.particle{n}.trackedFieldNames = trackedFieldNames;
-            trackedFields = struct;
-            for i=1:length(trackedFieldNames)
-                trackedFields.(trackedFieldNames{i}) = zeros(1,length(x));
-            end
-            self.particle{n}.trackedFields = trackedFields;
-            self.particle{n}.trackedFieldInterpMethod = options.trackedVarInterpolation;
-
-            self.updateParticleTrackedFields();
-
-            outputGroup = self.outputGroupWithName(options.outputGroupName);
-            outputGroup.addNetCDFOutputParticles(name);
+            observingSystem = WVLagrangianParticles(self,name=name,isXYOnly=isXYOnly,x=x,y=y,z=z,trackedFieldNames=trackedFieldNames{:},advectionInterpolation=options.advectionInterpolation,trackedVarInterpolation=options.trackedVarInterpolation);
+            self.defaultOutputGroup.addObservingSystem(observingSystem);
         end
 
         function [x,y,z,trackedFields] = particlePositions(self,name)
@@ -331,18 +329,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Topic: Particles
             % - Declaration: [x,y,z,trackedFields] = particlePositions(name)
             % - Parameter name: name of the particles
-            p = self.particle{self.particleIndexWithName(name)};
-            x = p.x;
-            y = p.y;
-            z = p.z;
-            trackedFields = self.particle{self.particleIndexWithName(name)}.trackedFields;
+            [x,y,z,trackedFields] = self.defaultOutputGroup.observingSystemWithName(name).particlePositions;
         end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Floats and drifters and tracer!
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function setFloatPositions(self,x,y,z,trackedFields,options)
             % Set positions of float-like particles to be advected by the model.
@@ -399,10 +387,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
-                options.outputGroupName = "wave-vortex"
             end
-            floatFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v','w',interpolationMethod=options.advectionInterpolation));
-            self.addParticles('float',floatFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
+            self.addParticles('float',false,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
         end
 
         function [x,y,z,tracked] = floatPositions(self)
@@ -451,10 +437,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
-                options.outputGroupName = "wave-vortex"
             end
-            drifterFlux = WVParticleFluxOperation('floatFlux',@(wvt,x,y,z) wvt.variableAtPositionWithName(x,y,z,'u','v',interpolationMethod=options.advectionInterpolation),isXYOnly=1);
-            self.addParticles('drifter',drifterFlux,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
+            self.addParticles('drifter',true,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
         end
 
         function [x,y,z,tracked] = drifterPositions(self)
@@ -466,15 +450,15 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         function addTracer(self,phi,name)
             % Add a scalar field tracer to be advected by the flow
             % - Topic: Tracer
-            n = length(self.tracerIndexWithName) + 1;
-            self.tracerIndexWithName(name) = n;
-            self.tracerArray{n} = phi;
+            isXYOnly= (length(self.wvt.spatialDimensions) == 2);
+            observingSystem = WVLagrangianParticles(self,name=name,phi=phi,isXYOnly=isXYOnly);
+            self.defaultOutputGroup.addObservingSystem(observingSystem);
         end
 
         function phi = tracer(self,name)
             % Scalar field of the requested tracer at the current model time.
             % - Topic: Tracer
-            phi = self.tracerArray{self.tracerIndexWithName(name)};
+            phi = self.defaultOutputGroup.observingSystemWithName(name).phi;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -728,22 +712,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             fprintf('Finished after time %s.\n', integrationTotalTime);
         end
 
-        function updateParticleTrackedFields(self)
-            % One special thing we have to do is log the particle
-            % tracked fields
-            for iParticle=1:length(self.particle)
-                trackedFieldNames = self.particle{iParticle}.trackedFieldNames;
-                if ~isempty(trackedFieldNames)
-                    varLagrangianValues = cell(1,length(trackedFieldNames));
-                    p = self.particle{iParticle};
-                    [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(p.x,p.y,p.z,trackedFieldNames{:},interpolationMethod=self.particle{iParticle}.trackedFieldInterpMethod);
-                    for i=1:length(trackedFieldNames)
-                        self.particle{iParticle}.trackedFields.(trackedFieldNames{i}) = varLagrangianValues{i};
-                    end
-                end
-            end
-        end
-
         function openNetCDFFileForTimeStepping(self)
             arguments (Input)
                 self WVModel {mustBeNonempty}
@@ -761,7 +729,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
         function writeTimeStepToNetCDFFile(self)
             if ( ~isempty(self.ncfile) && self.t > self.timeOfLastIncrementWrittenToFile )
-                self.updateParticleTrackedFields();
                 for iGroup =1:length(self.outputGroups)
                     self.outputGroups(iGroup).writeTimeStepToNetCDFFile(self.t);
                 end

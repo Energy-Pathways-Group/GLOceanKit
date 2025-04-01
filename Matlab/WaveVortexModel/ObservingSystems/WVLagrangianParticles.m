@@ -3,6 +3,14 @@ classdef WVLagrangianParticles < WVObservingSystem
     %   Detailed explanation goes here
 
     properties (GetAccess=public, SetAccess=protected)
+        x, y, z
+        isXYOnly
+        advectionInterpolation
+        trackedFieldNames
+        trackedFields
+        trackedFieldInterpMethod
+        absToleranceXY
+        absToleranceZ
     end
 
     methods
@@ -20,12 +28,82 @@ classdef WVLagrangianParticles < WVObservingSystem
             arguments
                 model WVModel
                 options.name {mustBeText}
+                options.x (1,:) double
+                options.y (1,:) double
+                options.z (1,:) double
+                options.isXYOnly (1,1) logical = false
+                options.trackedFieldNames = {}
+                options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.absToleranceXY = 1e-1; % 100 km * 10^{-6}
+                options.absToleranceZ = 1e-2;  
             end
             % Do we actually want to inherit the properties from the
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
             self@WVObservingSystem(model,options.name);
+
+            % Confirm that we really can track these variables.
+            for iVar=1:length(options.trackedFieldNames)
+                if ~any(ismember(self.wvt.variableNames,options.trackedFieldNames{iVar}))
+                    error('Unable to find a WVVariableAnnotation named %s.', options.trackedFieldNames{iVar});
+                end
+                transformVar = self.wvt.propertyAnnotationWithName(options.trackedFieldNames{iVar});
+                if isequal(self.wvt.spatialDimensionNames,{'x','y'})
+                    if ~all(ismember(transformVar.dimensions,{'x','y'})) && ~all(ismember(transformVar.dimensions,{'x','y','z'}))
+                        error('The WVVariableAnnotation %s does not have dimensions (x,y) or (x,y,z) and theforefore cannot be used for particle tracking', options.trackedFieldNames{iVar});
+                    end
+                else
+                    if ~all(ismember(transformVar.dimensions,{'x','y','z'}))
+                        error('The WVVariableAnnotation %s does not have dimensions x,y,z and theforefore cannot be used for particle tracking', options.trackedFieldNames{iVar});
+                    end
+                end
+            end
+
+            self.x = options.x;
+            self.y = options.y;
+            self.z = options.z;
+            self.isXYOnly = options.isXYOnly;
+            self.trackedFieldNames = options.trackedFieldNames;
+            self.trackedFieldInterpMethod = options.trackedVarInterpolation;
+            self.advectionInterpolation = options.advectionInterpolation;
+            self.absToleranceXY = options.absToleranceXY;
+            self.absToleranceZ = options.absToleranceZ;
+
+            if self.isXYOnly
+                self.nFluxComponents = 2;
+            else
+                self.nFluxComponents = 3;
+            end
+
+            self.updateParticleTrackedFields();
+        end
+
+        function [x,y,z,trackedFields] = particlePositions(self)
+            % Positions and values of tracked fields of particles at the current model time.
+            %
+            % - Topic: Particles
+            % - Declaration: [x,y,z,trackedFields] = particlePositions(name)
+            % - Parameter name: name of the particles
+            x = self.x;
+            y = self.y;
+            z = self.z;
+            trackedFields = self.trackedFields;
+        end
+
+        function updateParticleTrackedFields(self)
+            % One special thing we have to do is log the particle
+            % tracked fields
+            for iParticle=1:length(self.particle)
+                if ~isempty(self.trackedFieldNames)
+                    varLagrangianValues = cell(1,length(self.trackedFieldNames));
+                    [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,self.trackedFieldNames{:},interpolationMethod=self.trackedFieldInterpMethod);
+                    for i=1:length(self.trackedFieldNames)
+                        self.trackedFields.(self.trackedFieldNames{i}) = varLagrangianValues{i};
+                    end
+                end
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,22 +119,40 @@ classdef WVLagrangianParticles < WVObservingSystem
             %
             % this will only be called when the time-stepping is run with
             % an adaptive integrator.
-            Y0 = {};
+            if self.isXYOnly
+                Y0 = {self.absToleranceXY,self.absToleranceXY};
+            else
+                Y0 = {self.absToleranceXY,self.absToleranceXY,self.absToleranceZ};
+            end
         end
 
         function Y0 = initialConditions(self)
             % return a cell array of variables that need to be integrated
-            Y0 = {};
+            if self.isXYOnly
+                Y0 = {self.x,self.y};
+            else
+                Y0 = {self.x,self.y,self.z};
+            end
         end
 
         function F = fluxAtTime(self,t,y0)
             % return a cell array of the flux of the variables being
             % integrated. You may want to call -updateIntegratorValues.
-            F = {};
+            self.updateIntegratorValues(t,y0);
+            if self.isXYOnly
+                F = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v',interpolationMethod=self.advectionInterpolation);
+            else
+                F = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v','w',interpolationMethod=self.advectionInterpolation);
+            end
         end
 
         function updateIntegratorValues(self,t,y0)
             % passes updated values of the variables being integrated.
+            self.x = y0{1};
+            self.y = y0{2};
+            if ~self.isXYOnly
+                self.z = self.y0{3};
+            end
         end
 
 
@@ -65,6 +161,48 @@ classdef WVLagrangianParticles < WVObservingSystem
         % Read and write to file
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function initializeStorage(self,group)
+            variables = containers.Map();
+
+            attributes = containers.Map({'isParticle','particleName'},{true,self.name});
+            attributes('units') = 'unitless id number';
+            attributes('particleVariableName') = 'id';
+            [dim,var] = group.addDimension(strcat(particleName,'_id'),(1:nParticles).',attributes=attributes);
+            variables('id') = var;
+
+            % careful to create a new object each time we init
+            spatialDimensionNames = self.model.wvt.spatialDimensionNames;
+            for iVar=1:length(spatialDimensionNames)
+                attributes = containers.Map(commonKeys,commonVals);
+                attributes('units') = self.model.wvt.dimensionAnnotationWithName(spatialDimensionNames{iVar}).units;
+                attributes('long_name') = strcat(self.model.wvt.dimensionAnnotationWithName(spatialDimensionNames{iVar}).description,', recorded along the particle trajectory');
+                attributes('particleVariableName') = spatialDimensionNames{iVar};
+                variables(spatialDimensionNames{iVar}) = group.addVariable(strcat(particleName,'_',spatialDimensionNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
+            end
+
+            for iVar=1:length(self.trackedFieldNames)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.trackedFieldNames{iVar});
+                attributes = containers.Map(commonKeys,commonVals);
+                attributes('units') = varAnnotation.units;
+                attributes('long_name') = strcat(varAnnotation.description,', recorded along the particle trajectory');
+                attributes('particleVariableName') = self.trackedFieldNames{iVar};
+                variables(self.trackedFieldNames{iVar}) = group.addVariable(strcat(particleName,'_',self.trackedFieldNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
+            end
+        end
+
+        function writeTimeStepToFile(self,group,outputIndex)
+            group.variableWithName(strcat(self.name,'_x')).setValueAlongDimensionAtIndex(self.x,'t',outputIndex);
+            group.variableWithName(strcat(self.name,'_y')).setValueAlongDimensionAtIndex(self.y,'t',outputIndex);
+            if ~isequal(self.model.wvt.spatialDimensionNames,{'x','y'})
+                group.variableWithName(strcat(self.name,'_z')).setValueAlongDimensionAtIndex(self.z,'t',iTime);
+            end
+
+            self.updateParticleTrackedFields();
+            for iField=1:length(self.trackedFieldNames)
+                group.variableWithName(strcat(particleName,'_',self.trackedFieldNames{iField})).setValueAlongDimensionAtIndex(trackedFields.(self.trackedFieldNames{iField}),'t',iTime);
+            end
+        end
 
         function os = observingSystemWithResolutionOfTransform(self,wvtX2)
             %create a new WVObservingSystem with a new resolution
@@ -77,33 +215,6 @@ classdef WVLagrangianParticles < WVObservingSystem
             % - Parameter wvtX2: the WVTransform with increased resolution
             % - Returns force: a new instance of WVObservingSystem
             os = WVLagrangianParticles(wvtX2,self.name);
-        end
-    end
-
-    methods (Static)
-        function os = observingSystemFromGroup(group,wvt)
-            %initialize a WVObservingSystem instance from NetCDF file
-            %
-            % Subclasses to should override this method to enable model
-            % restarts. This method works in conjunction with -writeToFile
-            % to provide restart capability.
-            %
-            % - Topic: Initialization
-            % - Declaration: os = observingSystemFromGroup(group,wvt)
-            % - Parameter wvt: the WVTransform to be used
-            % - Returns force: a new instance of WVForcing
-            arguments
-                group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
-            end
-            className = group.attributes('AnnotatedClass');
-            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
-            if isempty(vars)
-                os = feval(className,wvt);
-            else
-                options = namedargs2cell(vars);
-                os = feval(className,wvt,options{:});
-            end
         end
     end
 end

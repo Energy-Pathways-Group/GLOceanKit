@@ -12,6 +12,9 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
         outputInterval = [] % (1,1) double
 
         t0 = 0;
+
+        initialTime
+        finalTime
     end
 
     methods
@@ -20,9 +23,16 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
                 model WVModel
                 options.name {mustBeText}
                 options.outputInterval (1,1) double {mustBePositive}
+                options.initialTime (1,1) double = -Inf
+                options.finalTime (1,1) double = Inf
             end
             self@WVModelOutputGroup(model,options.name);
             self.outputInterval = options.outputInterval;
+            if options.initialTime == -Inf
+                options.initialTime = model.wvt.t;
+            end
+            self.initialTime = options.initialTime;
+            self.finalTime = options.finalTime;
         end
 
         function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
@@ -31,6 +41,8 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
             end
             t = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
             t(t<initialTime) = [];
+            t(t<self.initialTime) = [];
+            t(t>self.finalTime) = [];
         end
 
     end

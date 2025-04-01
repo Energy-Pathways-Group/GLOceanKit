@@ -21,6 +21,8 @@ classdef WVModelOutputGroup < handle
         % - Topic: Integration
         % If stepsTaken=0, outputIndex=1 means the initial conditions get written at index 1
         timeOfLastIncrementWrittenToFile (1,1) double = -Inf
+
+        didInitializeStorage = false
     end
 
     properties
@@ -42,6 +44,9 @@ classdef WVModelOutputGroup < handle
             arguments
                 self WVModelOutputGroup {mustBeNonempty}
                 observingSystem WVModelOutputGroup
+            end
+            if self.didInitializeStorage
+                error('Storage already initialized! You cannot add a new observing system after the storage has been initialized.');
             end
 
             for iObs = 1:length(observingSystem)
@@ -91,6 +96,15 @@ classdef WVModelOutputGroup < handle
             end
         end
 
+        function observingSystem = observingSystemWithName(self,name)
+            idx = find(strcmp({self.observingSystems.name}, name),1);
+            if isempty(idx)
+                error('No observing system named %s exists to remove.', anObservingSystem.name);
+            else
+                observingSystem = self.observingSystems(idx);
+            end
+        end
+
         function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
             % this will only be called 
             t = [];
@@ -100,6 +114,9 @@ classdef WVModelOutputGroup < handle
             arguments (Input)
                 self WVModelOutputGroup {mustBeNonempty}
                 ncfile NetCDFGroup {mustBeNonempty}
+            end
+            if self.didInitializeStorage
+                error('Storage already initialized!');
             end
             self.group = ncfile.addGroup(self.name);
 
@@ -128,7 +145,7 @@ classdef WVModelOutputGroup < handle
                 self.group.variableWithName('t').setValueAlongDimensionAtIndex(t,'t',outputIndex);
 
                 for iObs = 1:length(self.observingSystems)
-                    self.observingSystems(iObs).writeTimeStepToFile(outputIndex);
+                    self.observingSystems(iObs).writeTimeStepToFile(self.group,outputIndex);
                 end
 
                 self.incrementsWrittenToFile = outputIndex;

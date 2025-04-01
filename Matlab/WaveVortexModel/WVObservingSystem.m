@@ -38,6 +38,10 @@ classdef WVObservingSystem < CAAnnotatedClass
         nFluxComponents uint8 = 0
     end
 
+    properties (Dependent)
+        wvt
+    end
+
     methods
         function self = WVObservingSystem(model,name)
             %create a new observing system
@@ -61,6 +65,10 @@ classdef WVObservingSystem < CAAnnotatedClass
             self@CAAnnotatedClass();
             self.model = model;
             self.name = name;
+        end
+
+        function wvt = get.wvt(self)
+            wvt = self.model.wvt;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,6 +109,12 @@ classdef WVObservingSystem < CAAnnotatedClass
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function initializeStorage(self,group)
+        end
+
+        function writeTimeStepToFile(self,group,outputIndex)
+        end
+
         function os = observingSystemWithResolutionOfTransform(self,wvtX2)
             %create a new WVObservingSystem with a new resolution
             %
@@ -116,7 +130,7 @@ classdef WVObservingSystem < CAAnnotatedClass
     end
 
     methods (Static)
-        function os = observingSystemFromGroup(group,wvt)
+        function os = observingSystemFromGroup(group,model)
             %initialize a WVObservingSystem instance from NetCDF file
             %
             % Subclasses to should override this method to enable model
@@ -125,19 +139,19 @@ classdef WVObservingSystem < CAAnnotatedClass
             %
             % - Topic: Initialization
             % - Declaration: os = observingSystemFromGroup(group,wvt)
-            % - Parameter wvt: the WVTransform to be used
-            % - Returns force: a new instance of WVForcing
+            % - Parameter model: the WVModel to be used
+            % - Returns os: a new instance of WVObservingSystem
             arguments
                 group NetCDFGroup {mustBeNonempty}
-                wvt WVTransform {mustBeNonempty}
+                model WVTransform {mustBeNonempty}
             end
             className = group.attributes('AnnotatedClass');
             vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
             if isempty(vars)
-                os = feval(className,wvt);
+                os = feval(className,model);
             else
                 options = namedargs2cell(vars);
-                os = feval(className,wvt,options{:});
+                os = feval(className,model,options{:});
             end
         end
     end
