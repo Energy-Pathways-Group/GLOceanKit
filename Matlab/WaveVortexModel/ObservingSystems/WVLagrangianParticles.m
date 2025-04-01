@@ -1,66 +1,31 @@
-classdef WVObservingSystem < CAAnnotatedClass
+classdef WVLagrangianParticles < WVObservingSystem
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
     properties (GetAccess=public, SetAccess=protected)
-        model
-
-        % boolean indicating this class implements addHydrostaticSpatialForcing
-        %
-        % - Topic: Properties
-        name
-
-        % boolean indicating whether the observing system requires custom
-        % output logic.
-        %
-        % If this is set to true, the function
-        %   - outputTimesForIntegrationPeriod
-        % will be called.
-        %
-        % Lagrangian particles or a passive tracer field can be sampled at
-        % any output time, and thus would return false. In contrast, a
-        % satellite passover occurs at custom times, determined by the
-        % observing system and would return true.
-        %
-        % - Topic: Properties
-        requiresCustomOutputTimes logical =  false
-
-        % number of components that need to be integrated in time.
-        %
-        % Setting a value greater than zero will require that you
-        % implement,
-        %   -absErrorTolerance
-        %   -initialConditions
-        %   -fluxAtTime
-        %   -updateIntegratorValues
-        %
-        % - Topic: Properties
-        nFluxComponents uint8 = 0
     end
 
     methods
-        function self = WVObservingSystem(model,name)
+        function self = WVLagrangianParticles(model,options)
             %create a new observing system
             %
             % This class is intended to be subclassed, so it generally
             % assumed that this initialization will not be called directly.
             %
             % - Topic: Initialization
-            % - Declaration: self = WVObservingSystem(wvt,name)
-            % - Parameter wvt: the WVTransform instance
+            % - Declaration: self = WVObservingSystem(model,name)
+            % - Parameter model: the WVModel instance
             % - Parameter name: name of the observing system
             % - Returns self: a new instance of WVObservingSystem
             arguments
                 model WVModel
-                name {mustBeText}
+                options.name {mustBeText}
             end
             % Do we actually want to inherit the properties from the
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
-            self@CAAnnotatedClass();
-            self.model = model;
-            self.name = name;
+            self@WVObservingSystem(model,options.name);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +76,7 @@ classdef WVObservingSystem < CAAnnotatedClass
             % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
             % - Parameter wvtX2: the WVTransform with increased resolution
             % - Returns force: a new instance of WVObservingSystem
-            os = WVObservingSystem(wvtX2,self.name);
+            os = WVLagrangianParticles(wvtX2,self.name);
         end
     end
 
