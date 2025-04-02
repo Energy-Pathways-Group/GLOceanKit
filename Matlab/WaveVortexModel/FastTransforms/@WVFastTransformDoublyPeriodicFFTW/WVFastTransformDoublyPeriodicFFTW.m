@@ -24,6 +24,7 @@ classdef WVFastTransformDoublyPeriodicFFTW < WVFastTransformDoublyPeriodic
         dftXComplexBuffer
         dftYComplexBuffer
         dftRealBuffer
+        Nz
 
         dx
         dy
@@ -37,6 +38,7 @@ classdef WVFastTransformDoublyPeriodicFFTW < WVFastTransformDoublyPeriodic
                 options.nCores = 12
             end
             self.wvg = wvg;
+            self.Nz = Nz;
             self.complexBuffer = complex(zeros([wvg.Nx wvg.Ny Nz]));
 
             self.dftXY = RealToComplexTransform([wvg.Nx wvg.Ny Nz],dims=[1 2],nCores=options.nCores,planner="measure");
