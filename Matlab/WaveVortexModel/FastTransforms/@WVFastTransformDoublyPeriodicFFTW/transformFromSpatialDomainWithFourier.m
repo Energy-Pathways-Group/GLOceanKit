@@ -24,6 +24,6 @@ u_bar = u_bar*self.dftXY.scaleFactor;
 % u_bar = self.dftXY.scaleFactor*self.dftXY.transformForwardIntoArray(u,u_bar);
 
 
-u_bar = reshape(u_bar(self.wvg.dftPrimaryIndex),[self.wvg.Nz self.wvg.Nkl]);
+u_bar = reshape(u_bar(self.wvg.dftPrimaryIndex),[self.Nz self.wvg.Nkl]);
 
 end

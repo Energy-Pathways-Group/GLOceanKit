@@ -6,12 +6,14 @@ classdef WVFastTransformDoublyPeriodicMatlab < WVFastTransformDoublyPeriodic
         %
         % - Topic: Domain attributes — WV grid
         complexBuffer
+        Nz
     end
 
     methods
         function self = WVFastTransformDoublyPeriodicMatlab(wvg,Nz)
             self.wvg = wvg;
             self.complexBuffer = complex(zeros([wvg.Nx wvg.Ny Nz]));
+            self.Nz=Nz;
         end
     end
 
