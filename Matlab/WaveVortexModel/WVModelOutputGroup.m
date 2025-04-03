@@ -44,6 +44,12 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             self.observingSystems = WVObservingSystem.empty(1,0);
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Add/remove observing systems
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function addObservingSystem(self,observingSystem)
             arguments
                 self WVModelOutputGroup {mustBeNonempty}
@@ -109,8 +115,21 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             end
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Write to file
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
-            % this will only be called 
+            arguments (Input)
+                self WVModelOutputGroup
+                initialTime (1,1) double
+                finalTime (1,1) double
+            end
+            arguments (Output)
+                t (:,1) double
+            end
             t = [];
         end
 

@@ -36,6 +36,14 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
         end
 
         function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
+            arguments (Input)
+                self WVModelOutputGroup
+                initialTime (1,1) double
+                finalTime (1,1) double
+            end
+            arguments (Output)
+                t (:,1) double
+            end
             if self.timeOfLastIncrementWrittenToFile == -Inf
                 error('self.timeOfLastIncrementWrittenToFile not initialized');
             end

@@ -12,6 +12,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
         ncfile NetCDFFile
 
         didInitializeStorage = false
+        tInitialize = Inf;
     end
 
     properties (Dependent)
@@ -20,6 +21,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
 
     properties (Access=private)
         outputGroupNameMap = configureDictionary("string","WVModelOutputGroup")
+        outputGroupOutputTimeMap = configureDictionary("WVModelOutputGroup","double")
     end
 
     methods
@@ -34,7 +36,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Output groups
+        % Add/remove output groups
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -90,6 +92,66 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             end
             outputGroup = self.outputGroupWithName(self.defaultOutputGroupName);
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Write to file
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
+            % This will be called exactly once before an integration
+            % begins.
+            arguments (Input)
+                self WVModelOutputFile
+                initialTime (1,1) double
+                finalTime (1,1) double
+            end
+            arguments (Output)
+                t (:,1) double
+            end
+            t = [];
+            outputGroups_ = self.outputGroups;
+            for iGroup = 1:length(outputGroups_)
+                t_group = outputGroups_(iGroup).outputTimesForIntegrationPeriod(initialTime,finalTime);
+                self.outputGroupOutputTimeMap(outputGroups_(iGroup)) = t_group;
+                t = cat(1,t,t_group);
+            end
+            t = sort(t);
+            if self.didInitializeStorage == false && ~isempty(t)
+                self.tInitialize = t(1);
+            end
+        end
+
+        function writeTimeStepToOutputFile(self,t)
+            % Here we need to insert the logical to create the NetCDF file
+            % if it hasn't been created.
+            % 
+            outputGroups_ = self.outputGroupOutputTimeMap.keys;
+            for i = 1:length(outputGroups_)
+                t_group = self.outputGroupOutputTimeMap(outputGroups_(i));
+                if ~isempty(t_group) && abs(t - t_group(1)) < eps
+                    outputGroups_(i).writeTimeStepToNetCDFFile(t);
+                    t_group(1) = [];
+                    self.outputGroupOutputTimeMap(outputGroups_(i)) = t_group;
+                end
+            end
+        end
+
+        function bool = observingSystemWillWriteWaveVortexCoefficients(self)
+            % A simple check to see if one of the observing systems will be
+            % writing wave-vortex coefficients
+            outputGroups_ = self.outputGroups;
+            bool = false;
+            for iGroup = 1:length(outputGroups_)
+                observingSystems = outputGroups_(iGroup).observingSystems;
+                for iObs = 1:length(observingSystems)
+                    if isa(observingSystems(iObs),'WVEulerianFields')
+                        bool = bool | all(ismember(intersect({'Ap','Am','A0'},wvt.variableNames),observingSystems(iObs).netCDFOutputVariables));
+                    end
+                end
+            end
+        end
 
         function openNetCDFFileForTimeStepping(self,ncfile)
             arguments (Input)
@@ -99,6 +161,9 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             if self.didInitializeStorage
                 error('Storage already initialized!');
             end
+
+% abs(t(iTime) - self.outputTimes(1)) < eps
+
             self.ncfile = ncfile.addGroup(self.name);
 
             varAnnotation = self.model.wvt.propertyAnnotationWithName('t');
