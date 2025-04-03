@@ -6,6 +6,7 @@ classdef WVVerticalDiffusivity < WVForcing
     % - Declaration: WVVerticalDiffusivity < [WVForcing](/classes/forcing/wvforcing/)
     properties
         kappa_z
+        shouldForceMeanDensityAnomaly
         dLnN2 = 0
     end
 
@@ -19,11 +20,13 @@ classdef WVVerticalDiffusivity < WVForcing
             arguments
                 wvt WVTransform {mustBeNonempty}
                 options.kappa_z double = 1e-5
+                options.shouldForceMeanDensityAnomaly = true;
             end
             self@WVForcing(wvt,"vertical diffusivity",WVForcingType(["HydrostaticSpatial","NonhydrostaticSpatial","PVSpatial"]));
             self.wvt = wvt;
             self.kappa_z = options.kappa_z;
-            if isa(wvt,'WVStratificationVariable')
+            self.shouldForceMeanDensityAnomaly = options.shouldForceMeanDensityAnomaly;
+            if isa(wvt,'WVStratificationVariable') && self.shouldForceMeanDensityAnomaly
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             end
         end
@@ -38,10 +41,9 @@ classdef WVVerticalDiffusivity < WVForcing
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
             % Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3) - wvt.diffZG(self.dLnN2));
-                        Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3));
-                        % I believe this is incorrect because it excludes
-                        % the MDA
-
+            Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3));
+            % I believe this is incorrect because it excludes
+            % the MDA
         end
 
         function force = forcingWithResolutionOfTransform(self, wvtX2)
@@ -66,7 +68,7 @@ classdef WVVerticalDiffusivity < WVForcing
             % - Returns: vars
             arguments
             end
-            vars = {"kappa_z"};
+            vars = {"kappa_z","shouldForceMeanDensityAnomaly"};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -79,6 +81,7 @@ classdef WVVerticalDiffusivity < WVForcing
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
             propertyAnnotations(end+1) = CANumericProperty('kappa_z', {}, 'm^2 s^{-1}','vertical diffusivity');
+            propertyAnnotations(end+1) = CANumericProperty('shouldForceMeanDensityAnomaly',{},'bool', 'whether the vertical diffusivity is applied to the mean density anomaly');
         end
     end
 end
