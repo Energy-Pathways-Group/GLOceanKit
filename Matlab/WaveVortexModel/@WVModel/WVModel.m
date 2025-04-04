@@ -574,15 +574,22 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function ncfile = createNetCDFFileForModelOutput(self,netcdfFile,options)
+        function ncfile = createNetCDFFileForModelOutput(self,path,options)
             % Create a NetCDF file for model output
             % - Topic: Writing to NetCDF files
             arguments
                 self WVModel {mustBeNonempty}
-                netcdfFile char {mustBeNonempty}
+                path char {mustBeNonempty}
                 options.outputInterval (1,1) double {mustBePositive}
                 options.shouldOverwriteExisting logical = false
             end
+
+            outputFile = WVModelOutputFile(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting);
+            self.addOutputFile(outputFile);
+            outputGroup = WVModelOutputGroupEvenlySpaced(self,initialTime=self.t,outputInterval=options.outputInterval);
+            outputFile.addOutputGroup(outputGroup);
+            observingSystem = WVEulerianFields(model,name=self.defaultOutputGroupName,fields=intersect({'Ap','Am','A0'},self.wvt.variableNames));
+            outputGroup.addObservingSystem(observingSystem);
 
             defaultGroup = self.outputGroupWithName(self.defaultOutputGroupName);
             if isempty(defaultGroup.outputInterval)
@@ -602,7 +609,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
             properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
 
-            ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
+            ncfile = self.wvt.writeToFile(path,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
             self.ncfile = ncfile;
             self.didInitializeNetCDFFile = 0;
         end

@@ -133,7 +133,7 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             t = [];
         end
 
-        function openNetCDFFileForTimeStepping(self,ncfile)
+        function initializeOutputGroup(self,ncfile)
             arguments (Input)
                 self WVModelOutputGroup {mustBeNonempty}
                 ncfile NetCDFGroup {mustBeNonempty}
@@ -158,7 +158,7 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             end
 
             self.incrementsWrittenToGroup = 0;
-            self.writeTimeStepToNetCDFFile(self.model.t);
+            self.didInitializeStorage = true;
         end
 
         function writeTimeStepToNetCDFFile(self,t)

@@ -8,6 +8,8 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
     end
 
     properties
+        path
+
         % Reference to the NetCDFFile being used for model output
         ncfile NetCDFFile
 
@@ -17,6 +19,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
 
     properties (Dependent)
         outputGroups
+        filename
     end
 
     properties (Access=private)
@@ -25,13 +28,28 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
     end
 
     methods
-        function self = WVModelOutputFile(model,name)
+        function self = WVModelOutputFile(model,path,options)
             arguments
                 model WVModel
-                name {mustBeText}
+                path {mustBeText}
+                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+            end
+            if options.shouldOverwriteExisting == 1
+                if isfile(path)
+                    delete(path);
+                end
+            else
+                if isfile(path)
+                    error('A file already exists with that name.')
+                end
             end
             self.model = model;
-            self.name = name;
+            self.path = path;
+        end
+
+        function filename = get.filename(self)
+            [~,name,ext] = fileparts(self.path);
+            filename = name + ext;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,22 +142,12 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
         end
 
         function writeTimeStepToOutputFile(self,t)
-            % Here we need to insert the logical to create the NetCDF file
-            % if it hasn't been created.
-            % 
+            % 1) initialize the netcdf file if necessary
             if self.didInitializeStorage == false && abs(t - self.tInitialize) < eps
-                if self.observingSystemWillWriteWaveVortexCoefficients == true
-                    properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
-                else
-                    properties = setdiff(self.wvt.requiredProperties,{'t'});
-                end
-                self.ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
-                self.didInitializeStorage = true;
-
-                %% NOTE!! Still needs to inform the output groups to setup
+                self.initializeOutputFile();
             end
 
-            % inform groups that they need to write a time step.
+            % 2) inform the appropriate groups that they need to write a time step.
             outputGroups_ = self.outputGroupOutputTimeMap.keys;
             for i = 1:length(outputGroups_)
                 t_group = self.outputGroupOutputTimeMap(outputGroups_(i));
@@ -149,6 +157,18 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                     self.outputGroupOutputTimeMap(outputGroups_(i)) = t_group;
                 end
             end
+        end
+
+        function initializeOutputFile(self)
+            if self.observingSystemWillWriteWaveVortexCoefficients == true
+                properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
+            else
+                properties = setdiff(self.wvt.requiredProperties,{'t'});
+            end
+            self.ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
+            self.didInitializeStorage = true;
+
+            arrayfun( @(outputGroup) outputGroup.initializeOutputGroup(self.ncfile), self.outputGroups);
         end
 
         function bool = observingSystemWillWriteWaveVortexCoefficients(self)
@@ -166,55 +186,10 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             end
         end
 
-        function openNetCDFFileForTimeStepping(self,ncfile)
-            arguments (Input)
-                self WVModelOutputFile {mustBeNonempty}
-                ncfile NetCDFGroup {mustBeNonempty}
-            end
-            if self.didInitializeStorage
-                error('Storage already initialized!');
-            end
-
-% abs(t(iTime) - self.outputTimes(1)) < eps
-
-            self.ncfile = ncfile.addGroup(self.name);
-
-            varAnnotation = self.model.wvt.propertyAnnotationWithName('t');
-            varAnnotation.attributes('units') = varAnnotation.units;
-            varAnnotation.attributes('long_name') = varAnnotation.description;
-            varAnnotation.attributes('standard_name') = 'time';
-            varAnnotation.attributes('long_name') = 'time';
-            varAnnotation.attributes('units') = 'seconds since 1970-01-01 00:00:00';
-            varAnnotation.attributes('axis') = 'T';
-            varAnnotation.attributes('calendar') = 'standard';
-            self.ncfile.addDimension(varAnnotation.name,length=Inf,type="double",attributes=varAnnotation.attributes);
-
-            for iObs = 1:length(self.observingSystems)
-                self.observingSystems(iObs).initializeStorage(self.ncfile);
-            end
-
-            self.incrementsWrittenToGroup = 0;
-            self.writeTimeStepToNetCDFFile(self.model.t);
-        end
-
-        function writeTimeStepToNetCDFFile(self,t)
-            if ( ~isempty(self.ncfile) && t > self.timeOfLastIncrementWrittenToGroup )
-                outputIndex = self.incrementsWrittenToGroup + 1;
-
-                self.ncfile.variableWithName('t').setValueAlongDimensionAtIndex(t,'t',outputIndex);
-
-                for iObs = 1:length(self.observingSystems)
-                    self.observingSystems(iObs).writeTimeStepToFile(self.ncfile,outputIndex);
-                end
-
-                self.incrementsWrittenToGroup = outputIndex;
-                self.timeOfLastIncrementWrittenToGroup = t;
-            end
-        end
-
         function closeNetCDFFile(self)
             if ~isempty(self.ncfile)
-                fprintf('Ending simulation. Wrote %d time points to %s group\n',self.incrementsWrittenToGroup,self.name);
+                arrayfun( @(outputGroup) outputGroup.closeNetCDFFile(), self.outputGroups);
+                self.ncfile = [];
             end
         end
 

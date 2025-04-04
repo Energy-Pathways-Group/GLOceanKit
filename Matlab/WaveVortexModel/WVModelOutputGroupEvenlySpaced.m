@@ -27,6 +27,9 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
                 options.finalTime (1,1) double = Inf
             end
             self@WVModelOutputGroup(model,options.name);
+            if ~isfield(options,"outputInterval")
+                error("You must specify an output interval");
+            end
             self.outputInterval = options.outputInterval;
             if options.initialTime == -Inf
                 options.initialTime = model.wvt.t;
@@ -44,10 +47,13 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
             arguments (Output)
                 t (:,1) double
             end
+            % Two possibilities here either:
+            % 1) nothing is initialize, or 2) we already wrote to file
             if self.timeOfLastIncrementWrittenToFile == -Inf
-                error('self.timeOfLastIncrementWrittenToFile not initialized');
+                t = (self.initialTime:self.outputInterval:finalTime).';
+            else
+                t = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
             end
-            t = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
             t(t<initialTime) = [];
             t(t<self.initialTime) = [];
             t(t>self.finalTime) = [];
