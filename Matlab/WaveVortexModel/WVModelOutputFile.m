@@ -127,6 +127,19 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             % Here we need to insert the logical to create the NetCDF file
             % if it hasn't been created.
             % 
+            if self.didInitializeStorage == false && abs(t - self.tInitialize) < eps
+                if self.observingSystemWillWriteWaveVortexCoefficients == true
+                    properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
+                else
+                    properties = setdiff(self.wvt.requiredProperties,{'t'});
+                end
+                self.ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
+                self.didInitializeStorage = true;
+
+                %% NOTE!! Still needs to inform the output groups to setup
+            end
+
+            % inform groups that they need to write a time step.
             outputGroups_ = self.outputGroupOutputTimeMap.keys;
             for i = 1:length(outputGroups_)
                 t_group = self.outputGroupOutputTimeMap(outputGroups_(i));
