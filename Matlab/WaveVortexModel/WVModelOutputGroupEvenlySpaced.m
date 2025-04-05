@@ -18,15 +18,15 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
     end
 
     methods
-        function self = WVModelOutputGroupEvenlySpaced(model,options)
+        function self = WVModelOutputGroupEvenlySpaced(model,name,options)
             arguments
                 model WVModel
-                options.name {mustBeText}
+                name {mustBeText}
                 options.outputInterval (1,1) double {mustBePositive}
                 options.initialTime (1,1) double = -Inf
                 options.finalTime (1,1) double = Inf
             end
-            self@WVModelOutputGroup(model,options.name);
+            self@WVModelOutputGroup(model,name);
             if ~isfield(options,"outputInterval")
                 error("You must specify an output interval");
             end

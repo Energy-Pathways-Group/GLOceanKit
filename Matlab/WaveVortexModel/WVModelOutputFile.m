@@ -186,6 +186,30 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             end
         end
 
+        function recordNetCDFFileHistory(self,options)
+            arguments
+                self WVModelOutputFile {mustBeNonempty}
+                options.didBlowUp {mustBeNumeric} = 0
+            end
+            if isempty(self.ncfile)
+                return
+            end
+
+            if options.didBlowUp == 1
+                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+            else
+                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+            end
+            if isKey(self.ncfile.attributes,'history')
+                history = reshape(self.ncfile.attributes('history'),1,[]);
+                history =cat(2,squeeze(history),a);
+            else
+                history = a;
+            end
+            self.ncfile.addAttribute('history',history);
+        end
+
+
         function closeNetCDFFile(self)
             if ~isempty(self.ncfile)
                 arrayfun( @(outputGroup) outputGroup.closeNetCDFFile(), self.outputGroups);

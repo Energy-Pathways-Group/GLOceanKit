@@ -28,6 +28,9 @@ classdef WVTracer < WVObservingSystem
                 options.absTolerance = 1e-6; 
             end
             self@WVObservingSystem(model,options.name);
+            if ~isfield(options.phi)
+                error('You must specify the initial tracer field phi');
+            end
 
             self.isXYOnly = options.isXYOnly;
             self.phi = options.phi;
@@ -41,6 +44,11 @@ classdef WVTracer < WVObservingSystem
         % Integrated variables
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function nArray = lengthOfFluxComponents(self)
+            % return an array containing the numel of each flux component.
+            nArray = numel(self.phi);
+        end
 
         function Y0 = absErrorTolerance(self)
             Y0 = {self.absTolerance};

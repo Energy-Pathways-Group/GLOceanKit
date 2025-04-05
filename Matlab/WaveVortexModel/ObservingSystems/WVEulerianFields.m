@@ -22,14 +22,14 @@ classdef WVEulerianFields < WVObservingSystem
             % - Returns self: a new instance of WVObservingSystem
             arguments
                 model WVModel
-                options.name {mustBeText}
                 options.fieldNames = {}
             end
             % Do we actually want to inherit the properties from the
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
-            self@WVObservingSystem(model,options.name);
+            self@WVObservingSystem(model,"eulerian fields");
+            self.netCDFOutputVariables = options.fieldNames;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -80,6 +80,11 @@ classdef WVObservingSystem < CAAnnotatedClass
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function nArray = lengthOfFluxComponents(self)
+            % return an array containing the numel of each flux component.
+            nArray = [];
+        end
+
         function Y0 = absErrorTolerance(self)
             % return a cell array of the absolute tolerances of the
             % variables being integrated. You can pass either scalar

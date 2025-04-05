@@ -111,6 +111,15 @@ classdef WVLagrangianParticles < WVObservingSystem
         % Integrated variables
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function nArray = lengthOfFluxComponents(self)
+            % return an array containing the numel of each flux component.
+            if self.isXYOnly
+                nArray = [numel(self.x);numel(self.y)];
+            else
+                nArray = [numel(self.x);numel(self.y);numel(self.z)];
+            end
+        end
 
         function Y0 = absErrorTolerance(self)
             % return a cell array of the absolute tolerances of the

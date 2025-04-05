@@ -192,6 +192,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             for iObs=1:length(anObservingSystem)
                 self.fluxedObservingSystems(end+1) = anObservingSystem(iObs);
             end
+            self.nFluxComponents = 0;
+            for i = 1:length(self.fluxedObservingSystems)
+               self.nFluxComponents = self.fluxedObservingSystems(i).nFluxComponents + self.nFluxComponents;
+            end
         end
 
         function removeFluxedObservingSystem(self,anObservingSystem)
@@ -201,6 +205,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
             for iObs=1:length(anObservingSystem)
                 self.fluxedObservingSystems = setdiff(self.fluxedObservingSystems,anObservingSystem(iObs),'stable');
+            end
+            self.nFluxComponents = 0;
+            for i = 1:length(self.fluxedObservingSystems)
+                self.nFluxComponents = self.fluxedObservingSystems(i).nFluxComponents + self.nFluxComponents;
             end
         end
 
@@ -556,7 +564,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
                   
-            self.openNetCDFFileForTimeStepping();
+            arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
 
             self.wvt.restoreForcingAmplitudes();
             if strcmp(self.integratorType,"adaptive")
@@ -566,6 +574,91 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
 
             self.recordNetCDFFileHistory();            
+        end
+
+        function Y0 = initialConditionsCellArray(self)
+            Y0 = cell(self.nFluxComponents,1);
+            n = 0;
+            if self.linearDynamics == 0
+                if self.wvt.hasWaveComponent == true
+                    n=n+1;Y0{n} = self.wvt.Ap;
+                    n=n+1;Y0{n} = self.wvt.Am;
+                end
+                if self.wvt.hasPVComponent == true
+                    n=n+1;Y0{n} = self.wvt.A0;
+                end
+            end
+
+            for i = 1:length(self.fluxedObservingSystems)
+                Y0((n+1):(n+self.fluxedObservingSystems(i).nFluxComponents)) = self.fluxedObservingSystems(i).initialConditions();
+                n = n+self.fluxedObservingSystems(i).nFluxComponents;
+            end
+        end
+
+
+        function F = fluxAtTimeCellArray(self,t,y0)
+            self.updateIntegratorValuesFromCellArray(t,y0);
+
+            F = cell(1,1);
+            n = 0;
+            if self.linearDynamics == 0
+                nlF = cell(1,self.wvt.nFluxedComponents);
+                [nlF{:}] = self.wvt.nonlinearFlux();
+                if self.wvt.hasWaveComponent == true
+                    n=n+1; F{n} = nlF{n};
+                    n=n+1; F{n} = nlF{n};
+                end
+                if self.wvt.hasPVComponent == true
+                    n=n+1; F{n} = nlF{n};
+                end
+            else
+
+            end
+
+            for iParticles=1:length(self.particle)
+                p = self.particle{iParticles};
+                if self.particle{iParticles}.fluxOp.isXYOnly
+                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
+                    n=n+2;
+                else
+                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
+                    n=n+3;
+                end
+            end
+
+            if ~isempty(self.tracerArray)
+                for i=1:length(self.tracerArray)
+                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
+                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
+                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
+                end
+            end
+        end
+
+        function updateIntegratorValuesFromCellArray(self,t,y0)
+            n=0;
+            self.wvt.t = t;
+            if self.linearDynamics == 0
+                if self.wvt.hasWaveComponent == true
+                    n=n+1; self.wvt.Ap = y0{n};
+                    n=n+1; self.wvt.Am = y0{n};
+                end
+                if self.wvt.hasPVComponent == true
+                    n=n+1; self.wvt.A0 = y0{n};
+                end
+            end
+
+            for iParticles=1:length(self.particle)
+                n=n+1; self.particle{iParticles}.x = y0{n};
+                n=n+1; self.particle{iParticles}.y = y0{n};
+                if ~self.particle{iParticles}.fluxOp.isXYOnly
+                    n=n+1; self.particle{iParticles}.z = y0{n};
+                end
+            end
+
+            for iTracer=1:length(self.tracerArray)
+                n=n+1; self.tracerArray{iTracer} = self.y0{n};
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -586,32 +679,17 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
             outputFile = WVModelOutputFile(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting);
             self.addOutputFile(outputFile);
-            outputGroup = WVModelOutputGroupEvenlySpaced(self,initialTime=self.t,outputInterval=options.outputInterval);
+            
+            outputGroup = WVModelOutputGroupEvenlySpaced(self,self.defaultOutputGroupName,initialTime=self.t,outputInterval=options.outputInterval);
             outputFile.addOutputGroup(outputGroup);
-            observingSystem = WVEulerianFields(model,name=self.defaultOutputGroupName,fields=intersect({'Ap','Am','A0'},self.wvt.variableNames));
+
+            observingSystem = WVEulerianFields(model,fields=intersect({'Ap','Am','A0'},self.wvt.variableNames));
             outputGroup.addObservingSystem(observingSystem);
 
-            defaultGroup = self.outputGroupWithName(self.defaultOutputGroupName);
-            if isempty(defaultGroup.outputInterval)
-                if ~isfield(options,"outputInterval")
-                    error("You must set an output interval");
-                end
-                defaultGroup.outputInterval = options.outputInterval;
-            end
-
-            hasOutputInterval = true;
-            for iGroup =1:length(self.outputGroups)
-                hasOutputInterval = hasOutputInterval & ~isempty(self.outputGroups(iGroup).outputInterval);
-            end
-            if ~hasOutputInterval
-                error("One or more groups is missing an output interval");
-            end
-
-            properties = setdiff(self.wvt.requiredProperties,{'Ap','Am','A0','t'});
-
-            ncfile = self.wvt.writeToFile(path,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
-            self.ncfile = ncfile;
-            self.didInitializeNetCDFFile = 0;
+            %% Now what happens?
+            % Still need to set the default group? No, its set by name
+            % Do we need to trigger a write? Or let the first time step do
+            % that?
         end
 
         function recordNetCDFFileHistory(self,options)
@@ -619,34 +697,14 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self WVModel {mustBeNonempty}
                 options.didBlowUp {mustBeNumeric} = 0
             end
-            if isempty(self.ncfile)
-                return
-            end
 
-            if options.didBlowUp == 1
-                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
-            else
-                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
-            end
-            if isKey(self.ncfile.attributes,'history')
-                history = reshape(self.ncfile.attributes('history'),1,[]);
-                history =cat(2,squeeze(history),a);
-            else
-                history = a;
-            end
-            self.ncfile.addAttribute('history',history);
+            arrayfun( @(outputFile) outputFile.recordNetCDFFileHistory(didBlowUp=options.didBlowUp), self.outputFiles);
         end
 
     end
 
 
     properties %(Access = protected)
-        particle = {}  % cell array containing particle structs
-        particleIndexWithName % map from particle name to cell array index
-
-        tracerIndexWithName
-        tracerArray = {}
-
         didSetupIntegrator=0
         didInitializeNetCDFFile=0
 

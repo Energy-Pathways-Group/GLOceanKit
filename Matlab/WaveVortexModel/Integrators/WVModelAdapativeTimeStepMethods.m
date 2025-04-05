@@ -285,18 +285,10 @@ classdef WVModelAdapativeTimeStepMethods < handle
             if self.wvt.hasPVComponent == true
                 n=n+1; nArray(n) = numel(self.wvt.A0);
             end
+            nArray = reshape(nArray,[],1);
 
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                n=n+1;nArray(n) = numel(p.x);
-                n=n+1;nArray(n) = numel(p.y);
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1;nArray(n) = numel(p.z);
-                end
-            end
-
-            for i=1:length(self.tracerArray)
-                n=n+1;nArray(n) = numel(self.tracerArray{i});
+            for i = 1:length(self.fluxedObservingSystems)
+                nArray = cat(1,nArray,self.fluxedObservingSystems(i).lengthOfFluxComponents);
             end
         end
 
