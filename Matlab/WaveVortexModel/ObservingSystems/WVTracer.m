@@ -25,7 +25,7 @@ classdef WVTracer < WVObservingSystem
                 options.name {mustBeText}
                 options.phi double
                 options.isXYOnly (1,1) logical = false
-                options.absTolerance = 1e-6; 
+                options.absTolerance = 1e-5; 
             end
             self@WVObservingSystem(model,options.name);
             if ~isfield(options.phi)

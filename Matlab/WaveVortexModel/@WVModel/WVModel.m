@@ -1,4 +1,4 @@
-classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeStepMethods
+classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeStepMethods
     % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WVTransform.
     %
     % Assuming you have already initialized a WVTransform, e.g.,
@@ -43,32 +43,31 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % performs all computations necessary to return information about
         % the ocean state at a given time.
         wvt
-        
-        % Reference to the NetCDFFile being used for model output
-        % - Topic: Writing to NetCDF files
-        % Empty indicates no file output.
-        ncfile NetCDFFile
 
         fluxedObservingSystems
-    end
+        nFluxComponents
+        indicesForFluxedSystem
 
-    properties (Dependent)
         % Indicates whether or not the model is using linear or nonlinear dynamics.
         % - Topic: Model Properties
         % In practice, this is simply checking whether the nonlinearFlux
         % property is nil.
-        linearDynamics
+        isDynamicsLinear
 
+        eulerianObservingSystem
+    end
+
+    properties (Dependent)
         % Current model time (seconds)
         % - Topic: Model Properties
         % Current time of the ocean state, particle positions, and tracer.
         t % (1,1) double
 
-        outputGroups
+        outputFiles
     end
 
     properties (Access=private)
-        outputGroupNameMap = configureDictionary("string","WVModelOutputGroup")
+        outputFileNameMap = configureDictionary("string","WVModelOutputFile")
     end
 
     methods (Static)
@@ -99,21 +98,11 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 wvt WVTransform {mustBeNonempty}
             end
 
-            self.wvt = wvt; 
-            self.initialOutputTime = self.t;
-            self.initialTime = self.t;
+            self.wvt = wvt;
+            self.eulerianObservingSystem = WVEulerianFields(self,fieldNames=intersect({'Ap','Am','A0'},self.wvt.variableNames));
             if self.wvt.hasClosure == false
                 warning('The nonlinear flux has no damping and may not be stable.');
             end
-            defaultGroup = self.addOutputGroup(self.defaultOutputGroupName);
-            outVars = intersect({'Ap','Am','A0'},wvt.variableNames);
-            defaultGroup.setNetCDFOutputVariables(outVars{:});
-            self.particleIndexWithName = containers.Map();
-            self.tracerIndexWithName = containers.Map();
-        end
-        
-        function value = get.linearDynamics(self)
-            value = isempty(self.wvt.forcing);
         end
 
         function value = get.t(self)
@@ -126,10 +115,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function outputGroups = get.outputGroups(self)
-            outputGroups = [self.outputGroupNameMap(self.outputGroupNameMap.keys)];
+        function outputFiles = get.outputFiles(self)
+            outputFiles = [self.outputFileNameMap(self.outputFileNameMap.keys)];
         end
-        function names = outputGroupNames(self)
+        function names = outputFileNames(self)
             % retrieve the names of all output group names
             %
             % - Topic: Utility function — Metadata
@@ -139,10 +128,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Output)
                 names string
             end
-            names = self.outputGroupNameMap.keys;
+            names = self.outputFileNameMap.keys;
         end
 
-        function val = outputGroupWithName(self,name)
+        function val = outputFileWithName(self,name)
             % retrieve a WVModelOutputGroup by name
             arguments (Input)
                 self WVModel {mustBeNonempty}
@@ -151,31 +140,15 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Output)
                 val WVModelOutputGroup
             end
-            val = self.outputGroupNameMap(name);
+            val = self.outputFileNameMap(name);
         end
 
-        function outputGroup = addOutputGroup(self,name,options)
+        function addOutputFile(self,outputFile)
             arguments
                 self WVModel {mustBeNonempty}
-                name {mustBeText}
-                options.outputInterval
+                outputFile WVModelOutputFile
             end
-            if isfield(options,"outputInterval")
-                outputGroup = WVModelOutputGroup(self,name,outputInterval=options.outputInterval);
-            else
-                outputGroup = WVModelOutputGroup(self,name);
-            end
-            self.outputGroupNameMap(name) = outputGroup;
-        end
-
-        function outputGroup = defaultOutputGroup(self)
-            arguments (Input)
-                self WVModel {mustBeNonempty}
-            end
-            arguments (Output)
-                outputGroup WVModelOutputGroup
-            end
-            outputGroup = self.outputGroupWithName(self.defaultOutputGroupName);
+            self.outputFileNameMap(outputFile.filename) = outputFile;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,6 +156,20 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % Fluxed observing systems
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function addFluxedCoefficients(self,anObservingSystem)
+            arguments
+                self WVModel {mustBeNonempty}
+                anObservingSystem (1,1) WVCoefficients
+            end
+            % prepend, so that its always first
+            if isempty(self.fluxedObservingSystems)
+                self.fluxedObservingSystems = anObservingSystem;
+            else
+                self.fluxedObservingSystems = cat(find(size(self.fluxedObservingSystems) > 1, 1), anObservingSystem, self.fluxedObservingSystems);
+            end
+            self.recomputeIndicesForFluxedSystems();
+        end 
 
         function addFluxedObservingSystem(self,anObservingSystem)
             arguments
@@ -192,10 +179,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             for iObs=1:length(anObservingSystem)
                 self.fluxedObservingSystems(end+1) = anObservingSystem(iObs);
             end
-            self.nFluxComponents = 0;
-            for i = 1:length(self.fluxedObservingSystems)
-               self.nFluxComponents = self.fluxedObservingSystems(i).nFluxComponents + self.nFluxComponents;
-            end
+            self.recomputeIndicesForFluxedSystems();
         end
 
         function removeFluxedObservingSystem(self,anObservingSystem)
@@ -206,9 +190,22 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             for iObs=1:length(anObservingSystem)
                 self.fluxedObservingSystems = setdiff(self.fluxedObservingSystems,anObservingSystem(iObs),'stable');
             end
-            self.nFluxComponents = 0;
+            self.recomputeIndicesForFluxedSystems();
+        end
+
+        function anObservingSystem = fluxedObservingSystemWithName(self,name)
+            arguments (Input)
+                self WVModel {mustBeNonempty}
+                name {mustBeText}
+            end
+            arguments (Output)
+                anObservingSystem WVObservingSystem
+            end
+            anObservingSystem = [];
             for i = 1:length(self.fluxedObservingSystems)
-                self.nFluxComponents = self.fluxedObservingSystems(i).nFluxComponents + self.nFluxComponents;
+                if strcmp(self.fluxedObservingSystems(i).name,name)
+                    anObservingSystem = self.fluxedObservingSystems(i);
+                end
             end
         end
 
@@ -239,7 +236,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            self.defaultOutputGroup.addNetCDFOutputVariables(variables{:});
+            self.eulerianObservingSystem.addNetCDFOutputVariables(variables{:});
         end
 
         function setNetCDFOutputVariables(self,variables)
@@ -262,7 +259,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            self.defaultOutputGroup.setNetCDFOutputVariables(variables{:});
+            self.eulerianObservingSystem.setNetCDFOutputVariables(variables{:});
         end
 
         function removeNetCDFOutputVariables(self,variables)
@@ -285,7 +282,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments (Repeating)
                 variables char
             end
-            self.defaultOutputGroup.removeNetCDFOutputVariables(variables{:});
+            self.eulerianObservingSystem.removeNetCDFOutputVariables(variables{:});
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -307,6 +304,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Parameter trackedFields: strings of variable names
             % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
             % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
+            % - Parameter absToleranceXY: (adapative) absolute tolerance in meters for particle advection in (x,y). 1e-1 (default)
+            % - Parameter absToleranceZ: (adapative) absolute tolerance  in meters for particle advection in (z). 1e-2 (default)
             arguments
                 self WVModel {mustBeNonempty}
                 name char {mustBeNonempty}
@@ -322,10 +321,18 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "spline"
                 options.outputGroupName = "wave-vortex"
+                options.absToleranceXY = 1e-1; % 100 km * 10^{-6}
+                options.absToleranceZ = 1e-2;
             end
 
             observingSystem = WVLagrangianParticles(self,name=name,isXYOnly=isXYOnly,x=x,y=y,z=z,trackedFieldNames=trackedFieldNames{:},advectionInterpolation=options.advectionInterpolation,trackedVarInterpolation=options.trackedVarInterpolation);
-            self.defaultOutputGroup.addObservingSystem(observingSystem);
+            if isscalar(self.outputFiles) && isscalar(self.outputFiles(1).outputGroups)
+                self.outputFiles(1).outputGroups(1).addObservingSystem(observingSystem);
+            elseif isempty(self.outputFiles)
+                self.addFluxedObservingSystem(observingSystem);
+            else
+                error('There is more than one output file associated with this model. You must manually choose which file to add particles to.');
+            end
         end
 
         function [x,y,z,trackedFields] = particlePositions(self,name)
@@ -334,7 +341,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Topic: Particles
             % - Declaration: [x,y,z,trackedFields] = particlePositions(name)
             % - Parameter name: name of the particles
-            [x,y,z,trackedFields] = self.defaultOutputGroup.observingSystemWithName(name).particlePositions;
+            [x,y,z,trackedFields] = self.fluxedObservingSystemWithName(name).particlePositions;
         end
         
         function setFloatPositions(self,x,y,z,trackedFields,options)
@@ -348,6 +355,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Parameter trackedFields: strings of variable names
             % - Parameter advectionInterpolation: (optional) interpolation method used for particle advection. "linear" (default), "spline", "exact"
             % - Parameter trackedVarInterpolation: (optional) interpolation method used for tracked field. "linear" (default), "spline", "exact"
+            % - Parameter absToleranceXY: (adapative) absolute tolerance in meters for particle advection in (x,y). 1e-1 (default)
+            % - Parameter absToleranceZ: (adapative) absolute tolerance  in meters for particle advection in (z). 1e-2 (default)
             %
             % Pass the initial positions of particles to be advected by all
             % three components of the velocity field, (u,v,w).
@@ -392,8 +401,11 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.absToleranceXY = 1e-1;
+                options.absToleranceZ = 1e-2;
             end
-            self.addParticles('float',false,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
+            optionCell = namedargs2cell(options);
+            self.addParticles('float',false,x,y,z,trackedFields{:},optionCell{:});
         end
 
         function [x,y,z,tracked] = floatPositions(self)
@@ -442,8 +454,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
+                options.absToleranceXY = 1e-1;
             end
-            self.addParticles('drifter',true,x,y,z,trackedFields{:},trackedVarInterpolation=options.trackedVarInterpolation,outputGroupName=options.outputGroupName);
+            optionCell = namedargs2cell(options);
+            self.addParticles('drifter',true,x,y,z,trackedFields{:},optionCell{:});
         end
 
         function [x,y,z,tracked] = drifterPositions(self)
@@ -457,13 +471,19 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Topic: Tracer
             isXYOnly= (length(self.wvt.spatialDimensions) == 2);
             observingSystem = WVLagrangianParticles(self,name=name,phi=phi,isXYOnly=isXYOnly);
-            self.defaultOutputGroup.addObservingSystem(observingSystem);
+            if isscalar(self.outputFiles) && isscalar(self.outputFiles(1).outputGroups)
+                self.outputFiles(1).outputGroups(1).addObservingSystem(observingSystem);
+            elseif isempty(self.outputFiles)
+                self.addFluxedObservingSystem(observingSystem);
+            else
+                error('There is more than one output file associated with this model. You must manually choose which file to add particles to.');
+            end
         end
 
         function phi = tracer(self,name)
             % Scalar field of the requested tracer at the current model time.
             % - Topic: Tracer
-            phi = self.defaultOutputGroup.observingSystemWithName(name).phi;
+            phi = self.fluxedObservingSystemWithName(name).phi;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -508,16 +528,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % - Parameter integrator: (adapative) function handle of integrator. @ode78 (default)
             % - Parameter absTolerance: (adapative) absolute tolerance for sqrt(energy). 1e-6 (default)
             % - Parameter relTolerance: (adapative) relative tolerance for sqrt(energy). 1e-3 (default)
-            % - Parameter shouldUseScaledTolerance: (adapative) whether to scale by the energy norm. 0 or 1 (default)
-            % - Parameter absToleranceA0: (adapative) absolute tolerance for A0 used when shouldUseScaledTolerance=0 . 1e-10 (default)
-            % - Parameter absToleranceApm: (adapative) absolute tolerance for Apm used when shouldUseScaledTolerance=0 . 1e-10 (default)
-            % - Parameter absToleranceXY: (adapative) absolute tolerance in meters for particle advection in (x,y). 1e-1 (default)
-            % - Parameter absToleranceZ: (adapative) absolute tolerance  in meters for particle advection in (z). 1e-2 (default)
             % - Parameter shouldShowIntegrationStats: (adapative) whether to show integration output 0 or 1 (default)
             arguments
                 self WVModel {mustBeNonempty}
 
                 options.integratorType char {mustBeMember(options.integratorType,["fixed","adaptive"])} = "adaptive"
+                options.shouldIntegrateWaveVortexCoefficients logical = true
 
                 fixedTimeStepOptions.deltaT (1,1) double {mustBePositive}
                 fixedTimeStepOptions.cfl (1,1) double
@@ -526,26 +542,30 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 adaptiveTimeStepOptions.integrator = @ode78
                 adaptiveTimeStepOptions.absTolerance = 1e-6
                 adaptiveTimeStepOptions.relTolerance = 1e-3;
-                adaptiveTimeStepOptions.shouldUseScaledTolerance = 1;
-                adaptiveTimeStepOptions.absToleranceA0 = 1e-10
-                adaptiveTimeStepOptions.absToleranceApm = 1e-6
-                adaptiveTimeStepOptions.absToleranceXY = 1e-1; % 100 km * 10^{-6}
-                adaptiveTimeStepOptions.absToleranceZ = 1e-2;  
                 adaptiveTimeStepOptions.shouldShowIntegrationStats double {mustBeMember(adaptiveTimeStepOptions.shouldShowIntegrationStats,[0 1])} = 0
             end
 
-            self.resetFixedTimeStepIntegrator();
+            if options.shouldIntegrateWaveVortexCoefficients == true
+                self.addFluxedCoefficients(WVCoefficients(self,absTolerance=adaptiveTimeStepOptions.absTolerance));
+                self.isDynamicsLinear = false;
+            end
+
+            % self.resetFixedTimeStepIntegrator();
             self.resetAdapativeTimeStepIntegrator();
 
             self.integratorType = options.integratorType;
             if strcmp(self.integratorType,"adaptive")
+                adaptiveTimeStepOptions = rmfield(adaptiveTimeStepOptions,"absTolerance");
                 optionArgs = namedargs2cell(adaptiveTimeStepOptions);
                 self.setupAdaptiveTimeStepIntegrator(optionArgs{:});
             else
                 optionArgs = namedargs2cell(fixedTimeStepOptions);
                 self.setupFixedTimeStepIntegrator(optionArgs{:});
             end 
+
+            self.didSetupIntegrator = true;
         end
+        
         
         function integrateToTime(self,finalTime,options)
             % Time step the model forward to the requested time.
@@ -559,7 +579,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 fprintf('Reqested integration to time %d, but the model is currently at time t=%d.\n',round(finalTime),round(self.t));
                 return;
             end
-            if self.didSetupIntegrator ~= 1
+            if ~self.didSetupIntegrator
                 self.setupIntegrator();
             end
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
@@ -567,6 +587,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
 
             self.wvt.restoreForcingAmplitudes();
+            
+
             if strcmp(self.integratorType,"adaptive")
                 self.integrateToTimeWithAdaptiveTimeStep(finalTime)
             else
@@ -576,88 +598,47 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             self.recordNetCDFFileHistory();            
         end
 
-        function Y0 = initialConditionsCellArray(self)
-            Y0 = cell(self.nFluxComponents,1);
-            n = 0;
-            if self.linearDynamics == 0
-                if self.wvt.hasWaveComponent == true
-                    n=n+1;Y0{n} = self.wvt.Ap;
-                    n=n+1;Y0{n} = self.wvt.Am;
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1;Y0{n} = self.wvt.A0;
-                end
+
+        function recomputeIndicesForFluxedSystems(self)
+            self.nFluxComponents = 0;
+            for i = 1:length(self.fluxedObservingSystems)
+                self.nFluxComponents = self.fluxedObservingSystems(i).nFluxComponents + self.nFluxComponents;
             end
 
+            self.indicesForFluxedSystem = cell(length(self.fluxedObservingSystems),1);
+            nFinal = 0;
             for i = 1:length(self.fluxedObservingSystems)
-                Y0((n+1):(n+self.fluxedObservingSystems(i).nFluxComponents)) = self.fluxedObservingSystems(i).initialConditions();
-                n = n+self.fluxedObservingSystems(i).nFluxComponents;
+                nInitial = nFinal + 1;
+                nFinal = nFinal + self.fluxedObservingSystems(i).nFluxComponents;
+                
+                self.indicesForFluxedSystem{i} = reshape(nInitial:nFinal,[],1);
             end
         end
 
+        function Y0 = absErrorToleranceCellArray(self)
+            Y0 = cell(self.nFluxComponents,1);
+            for i = 1:length(self.fluxedObservingSystems)
+                Y0(self.indicesForFluxedSystem{i}) = self.fluxedObservingSystems(i).absErrorTolerance();
+            end
+        end
+
+        function Y0 = initialConditionsCellArray(self)
+            Y0 = cell(self.nFluxComponents,1);
+            for i = 1:length(self.fluxedObservingSystems)
+                Y0(self.indicesForFluxedSystem{i}) = self.fluxedObservingSystems(i).initialConditions();
+            end
+        end
 
         function F = fluxAtTimeCellArray(self,t,y0)
-            self.updateIntegratorValuesFromCellArray(t,y0);
-
-            F = cell(1,1);
-            n = 0;
-            if self.linearDynamics == 0
-                nlF = cell(1,self.wvt.nFluxedComponents);
-                [nlF{:}] = self.wvt.nonlinearFlux();
-                if self.wvt.hasWaveComponent == true
-                    n=n+1; F{n} = nlF{n};
-                    n=n+1; F{n} = nlF{n};
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1; F{n} = nlF{n};
-                end
-            else
-
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F{n+1},F{n+2}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+2;
-                else
-                    [F{n+1},F{n+2},F{n+3}] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+3;
-                end
-            end
-
-            if ~isempty(self.tracerArray)
-                for i=1:length(self.tracerArray)
-                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;F{n} = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
-                end
+            F = cell(self.nFluxComponents,1);
+            for i = 1:length(self.fluxedObservingSystems)
+                F(self.indicesForFluxedSystem{i}) = self.fluxedObservingSystems(i).fluxAtTime(t,y0(self.indicesForFluxedSystem{i}));
             end
         end
 
         function updateIntegratorValuesFromCellArray(self,t,y0)
-            n=0;
-            self.wvt.t = t;
-            if self.linearDynamics == 0
-                if self.wvt.hasWaveComponent == true
-                    n=n+1; self.wvt.Ap = y0{n};
-                    n=n+1; self.wvt.Am = y0{n};
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1; self.wvt.A0 = y0{n};
-                end
-            end
-
-            for iParticles=1:length(self.particle)
-                n=n+1; self.particle{iParticles}.x = y0{n};
-                n=n+1; self.particle{iParticles}.y = y0{n};
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1; self.particle{iParticles}.z = y0{n};
-                end
-            end
-
-            for iTracer=1:length(self.tracerArray)
-                n=n+1; self.tracerArray{iTracer} = self.y0{n};
+            for i = 1:length(self.fluxedObservingSystems)
+                self.fluxedObservingSystems(i).updateIntegratorValues(t,y0(self.indicesForFluxedSystem{i}));
             end
         end
 
@@ -683,8 +664,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             outputGroup = WVModelOutputGroupEvenlySpaced(self,self.defaultOutputGroupName,initialTime=self.t,outputInterval=options.outputInterval);
             outputFile.addOutputGroup(outputGroup);
 
-            observingSystem = WVEulerianFields(model,fields=intersect({'Ap','Am','A0'},self.wvt.variableNames));
-            outputGroup.addObservingSystem(observingSystem);
+            outputGroup.addObservingSystem(self.eulerianObservingSystem);
+            for i = 1:length(self.fluxedObservingSystems)
+                outputGroup.addObservingSystem(self.fluxedObservingSystems(i));
+            end 
 
             %% Now what happens?
             % Still need to set the default group? No, its set by name
@@ -705,15 +688,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
 
     properties %(Access = protected)
-        didSetupIntegrator=0
-        didInitializeNetCDFFile=0
+        didSetupIntegrator=false
 
         integrationStartTime
         integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
         integrationLastInformModelTime
         integrationInformTime = 10
-
-        initialOutputTime   % output time corresponding to outputIndex=1 (set on instance initialization)
 
         integratorType      % Array integrator
         finalIntegrationTime % set only during an integration
@@ -738,6 +718,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 flag = 0;
             end
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Diagnostics (start/during/finish) integration
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function showIntegrationStartDiagnostics(self,finalTime)
             if self.shouldShowIntegrationDiagnostics  == 0
@@ -774,38 +760,46 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             fprintf('Finished after time %s.\n', integrationTotalTime);
         end
 
-        function openNetCDFFileForTimeStepping(self)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Write to file
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function integratorTimes = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
+            % This will be called exactly once before an integration
+            % begins.
             arguments (Input)
-                self WVModel {mustBeNonempty}
+                self WVModel
+                initialTime (1,1) double
+                finalTime (1,1) double
             end
-            if ~isempty(self.ncfile) && self.didInitializeNetCDFFile == 0
-                for iGroup =1:length(self.outputGroups)
-                    self.outputGroups(iGroup).openNetCDFFileForTimeStepping(self.ncfile);
-                end
-                self.didInitializeNetCDFFile = 1;
-                self.incrementsWrittenToFile = 0;
-                self.writeTimeStepToNetCDFFile();
+            arguments (Output)
+                integratorTimes (:,1) double
             end
-        
+            integratorTimes = [];
+            outputFiles_ = self.outputFiles;
+            for iGroup = 1:length(outputFiles_)
+                integratorTimes = cat(1,integratorTimes,outputFiles_(iGroup).outputTimesForIntegrationPeriod(initialTime,finalTime));
+            end
+            integratorTimes = sort(integratorTimes);
+            if isempty(integratorTimes) || integratorTimes(1) ~= self.t
+                integratorTimes = cat(1,self.t,integratorTimes);
+            end
+            if integratorTimes(end) ~= finalTime
+                integratorTimes = cat(1,integratorTimes,finalTime);
+            end
         end
 
-        function writeTimeStepToNetCDFFile(self)
-            if ( ~isempty(self.ncfile) && self.t > self.timeOfLastIncrementWrittenToFile )
-                for iGroup =1:length(self.outputGroups)
-                    self.outputGroups(iGroup).writeTimeStepToNetCDFFile(self.t);
-                end
-                self.timeOfLastIncrementWrittenToFile = self.t;
-                self.ncfile.sync();
+        function writeTimeStepToNetCDFFile(self,t)
+            outputFiles_ = self.outputFiles;
+            for iGroup = 1:length(outputFiles_)
+                outputFiles_(iGroup).writeTimeStepToOutputFile(t);
             end
         end
 
         function closeNetCDFFile(self)
-            if ~isempty(self.ncfile)
-                for iGroup =1:length(self.outputGroups)
-                    self.outputGroups(iGroup).closeNetCDFFile();
-                end
-                self.ncfile.close();
-            end
+            arrayfun( @(outputFile) outputFile.closeNetCDFFile(), self.outputFiles);
         end
     end
 

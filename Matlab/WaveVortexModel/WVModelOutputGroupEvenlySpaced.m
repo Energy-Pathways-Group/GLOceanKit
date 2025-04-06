@@ -49,10 +49,10 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
             end
             % Two possibilities here either:
             % 1) nothing is initialize, or 2) we already wrote to file
-            if self.timeOfLastIncrementWrittenToFile == -Inf
+            if self.timeOfLastIncrementWrittenToGroup == -Inf
                 t = (self.initialTime:self.outputInterval:finalTime).';
             else
-                t = ((self.timeOfLastIncrementWrittenToFile+self.outputInterval):self.outputInterval:finalTime).';
+                t = ((self.timeOfLastIncrementWrittenToGroup+self.outputInterval):self.outputInterval:finalTime).';
             end
             t(t<initialTime) = [];
             t(t<self.initialTime) = [];

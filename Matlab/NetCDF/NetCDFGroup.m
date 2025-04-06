@@ -786,7 +786,9 @@ classdef NetCDFGroup < handle
                 id (1,1) double {mustBeNonnegative,mustBeInteger}
             end
             self.id = id;
-            self.parentGroup = parentGroup;
+            if ~isempty(parentGroup)
+                self.parentGroup = parentGroup;
+            end
             self.name = netcdf.inqGrpName(self.id);
             if ~isempty(self.parentGroup)
                 if isequal(self.parentGroup.groupPath,"")

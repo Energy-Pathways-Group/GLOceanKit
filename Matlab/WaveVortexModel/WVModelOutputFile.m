@@ -20,11 +20,12 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
     properties (Dependent)
         outputGroups
         filename
+        wvt
     end
 
     properties (Access=private)
         outputGroupNameMap = configureDictionary("string","WVModelOutputGroup")
-        outputGroupOutputTimeMap = configureDictionary("WVModelOutputGroup","double")
+        outputGroupNameOutputTimeMap = configureDictionary("string","cell")
     end
 
     methods
@@ -49,7 +50,11 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
 
         function filename = get.filename(self)
             [~,name,ext] = fileparts(self.path);
-            filename = name + ext;
+            filename = strcat(name,ext);
+        end
+
+        function wvt = get.wvt(self)
+            wvt = self.model.wvt;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,28 +92,12 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             val = self.outputGroupNameMap(name);
         end
 
-        function outputGroup = addOutputGroup(self,name,options)
+        function addOutputGroup(self,outputGroup)
             arguments
                 self WVModelOutputFile {mustBeNonempty}
-                name {mustBeText}
-                options.outputInterval
-            end
-            if isfield(options,"outputInterval")
-                outputGroup = WVModelOutputGroup(self,name,outputInterval=options.outputInterval);
-            else
-                outputGroup = WVModelOutputGroup(self,name);
-            end
-            self.outputGroupNameMap(name) = outputGroup;
-        end
-
-        function outputGroup = defaultOutputGroup(self)
-            arguments (Input)
-                self WVModelOutputFile {mustBeNonempty}
-            end
-            arguments (Output)
                 outputGroup WVModelOutputGroup
             end
-            outputGroup = self.outputGroupWithName(self.defaultOutputGroupName);
+            self.outputGroupNameMap(outputGroup.name) = outputGroup;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +121,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             outputGroups_ = self.outputGroups;
             for iGroup = 1:length(outputGroups_)
                 t_group = outputGroups_(iGroup).outputTimesForIntegrationPeriod(initialTime,finalTime);
-                self.outputGroupOutputTimeMap(outputGroups_(iGroup)) = t_group;
+                self.outputGroupNameOutputTimeMap{outputGroups_(iGroup).name} = t_group;
                 t = cat(1,t,t_group);
             end
             t = sort(t);
@@ -148,14 +137,19 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             end
 
             % 2) inform the appropriate groups that they need to write a time step.
-            outputGroups_ = self.outputGroupOutputTimeMap.keys;
-            for i = 1:length(outputGroups_)
-                t_group = self.outputGroupOutputTimeMap(outputGroups_(i));
+            outputGroupNames = self.outputGroupNameOutputTimeMap.keys;
+            didWriteToFile = false;
+            for i = 1:length(outputGroupNames)
+                t_group = self.outputGroupNameOutputTimeMap{outputGroupNames(i)};
                 if ~isempty(t_group) && abs(t - t_group(1)) < eps
-                    outputGroups_(i).writeTimeStepToNetCDFFile(t);
+                    self.outputGroupWithName(outputGroupNames(i)).writeTimeStepToNetCDFFile(t);
                     t_group(1) = [];
-                    self.outputGroupOutputTimeMap(outputGroups_(i)) = t_group;
+                    self.outputGroupNameOutputTimeMap{outputGroupNames(i)} = t_group;
+                    didWriteToFile = true;
                 end
+            end
+            if didWriteToFile
+                self.ncfile.sync();
             end
         end
 
@@ -165,7 +159,11 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             else
                 properties = setdiff(self.wvt.requiredProperties,{'t'});
             end
-            self.ncfile = self.wvt.writeToFile(netcdfFile,properties{:},shouldOverwriteExisting=options.shouldOverwriteExisting,shouldAddRequiredProperties=false);
+            % in theory we already removed the file if the user requested
+            if isfile(self.path)
+                error('A file already exists at this path.');
+            end
+            self.ncfile = self.wvt.writeToFile(self.path,properties{:},shouldOverwriteExisting=false,shouldAddRequiredProperties=false);
             self.didInitializeStorage = true;
 
             arrayfun( @(outputGroup) outputGroup.initializeOutputGroup(self.ncfile), self.outputGroups);
@@ -180,7 +178,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                 observingSystems = outputGroups_(iGroup).observingSystems;
                 for iObs = 1:length(observingSystems)
                     if isa(observingSystems(iObs),'WVEulerianFields')
-                        bool = bool | all(ismember(intersect({'Ap','Am','A0'},wvt.variableNames),observingSystems(iObs).netCDFOutputVariables));
+                        bool = bool | all(ismember(intersect({'Ap','Am','A0'},self.wvt.variableNames),observingSystems(iObs).netCDFOutputVariables));
                     end
                 end
             end
@@ -191,22 +189,11 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                 self WVModelOutputFile {mustBeNonempty}
                 options.didBlowUp {mustBeNumeric} = 0
             end
-            if isempty(self.ncfile)
-                return
-            end
 
-            if options.didBlowUp == 1
-                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
-            else
-                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+            if ~isempty(self.ncfile)
+                arrayfun( @(outputGroup) outputGroup.recordNetCDFFileHistory(didBlowUp=options.didBlowUp), self.outputGroups);
+                self.ncfile = [];
             end
-            if isKey(self.ncfile.attributes,'history')
-                history = reshape(self.ncfile.attributes('history'),1,[]);
-                history =cat(2,squeeze(history),a);
-            else
-                history = a;
-            end
-            self.ncfile.addAttribute('history',history);
         end
 
 

@@ -66,7 +66,6 @@ classdef WVModelFixedTimeStepMethods < handle
             self.integratorOptions = options;
 
             self.createFixedTimeStepIntegrator();
-            self.didSetupIntegrator = 1;
         end
 
         function resetFixedTimeStepIntegrator(self)

@@ -1,4 +1,4 @@
-classdef WVObservingSystem < CAAnnotatedClass
+classdef WVObservingSystem < CAAnnotatedClass & matlab.mixin.Heterogeneous
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -108,6 +108,7 @@ classdef WVObservingSystem < CAAnnotatedClass
 
         function updateIntegratorValues(self,t,y0)
             % passes updated values of the variables being integrated.
+            % Called 1) during fluxAtTime and 2) during interpolation
         end
 
 

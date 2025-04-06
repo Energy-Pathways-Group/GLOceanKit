@@ -9,10 +9,6 @@ classdef WVModelAdapativeTimeStepMethods < handle
         wvt
     end
     properties (Abstract) %(Access = protected)
-        particle
-        tracerArray
-        linearDynamics
-        didSetupIntegrator
         finalIntegrationTime
     end
     methods (Abstract)
@@ -27,9 +23,6 @@ classdef WVModelAdapativeTimeStepMethods < handle
         arrayEndIndex
         odeOptions
         odeIntegrator
-
-        % list of remaining times that need to be output to file
-        outputTimes = [];
     end
 
     methods
@@ -37,15 +30,9 @@ classdef WVModelAdapativeTimeStepMethods < handle
         function setupAdaptiveTimeStepIntegrator(self,options)
             arguments
                 self WVModel {mustBeNonempty}
-                options.shouldShowIntegrationStats double {mustBeMember(options.shouldShowIntegrationStats,[0 1])} = 0
+                options.shouldShowIntegrationStats logical = false
                 options.integrator = @ode78
-                options.absTolerance = 1e-6
                 options.relTolerance = 1e-3;
-                options.shouldUseScaledTolerance = 1;
-                options.absToleranceA0 = 1e-10
-                options.absToleranceApm = 1e-6
-                options.absToleranceXY = 1e-1; % 100 km * 10^{-6}
-                options.absToleranceZ = 1e-2;  
             end
 
             nArray = self.lengthOfFluxComponents;
@@ -57,152 +44,17 @@ classdef WVModelAdapativeTimeStepMethods < handle
             end
             self.arrayLength = sum(nArray);
 
-            function absTol = absoluteErrorTolerance()
-                absTol = zeros(self.arrayLength,1);
-
-                n = 0;
-                if self.linearDynamics == 0
-                    if self.wvt.hasWaveComponent == true
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceApm;
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceApm;
-                    end
-                    if self.wvt.hasPVComponent == true
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceA0;
-                    end
-                end
-
-                for iParticles=1:length(self.particle)
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceXY;
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceXY;
-                    if ~self.particle{iParticles}.fluxOp.isXYOnly
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceZ;
-                    end
-                end
-
-                for iTracer=1:length(self.tracerArray)
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = 1e-5;
-                end
-            end
-
-            function absTol = absoluteErrorToleranceAdaptive()
-                absTol = zeros(self.arrayLength,1);
-                
-                alpha0 = ones(self.wvt.spectralMatrixSize);
-                alphapm = ones(self.wvt.spectralMatrixSize);
-                AbsErrorSpectrum = @isempty;
-                kRadial = self.wvt.kRadial;
-                Kh = self.wvt.Kh;
-                J = self.wvt.J;
-                dk = kRadial(2)-kRadial(1);
-                for iK=1:length(kRadial)
-                    indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
-                    for iJ=1:length(self.wvt.j)
-                        % this is faster than logical indexing
-                        indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
-                        nIndicesForKJ = length(indicesForKJ);
-
-                        if isequal(AbsErrorSpectrum,@isempty)
-                            energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
-                            energyPerApmComponent = energyPerA0Component;
-                        else
-                            energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
-                            energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
-                        end
-                        if self.wvt.hasPVComponent == true
-                            alpha0(indicesForKJ) = options.absTolerance*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
-                        end
-                        if self.wvt.hasWaveComponent == true
-                            alphapm(indicesForKJ) = options.absTolerance*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
-                        end
-                    end
-                end
-
-                % alpha0 = options.absTolerance*sqrt(1./self.wvt.A0_TE_factor);
-                % alphapm = options.absTolerance*sqrt(1./self.wvt.Apm_TE_factor);
-                alpha0(isinf(alpha0)) = 1;
-                alphapm(isinf(alphapm)) = 1;
-
-                n = 0;
-                if self.linearDynamics == 0
-                    if self.wvt.hasWaveComponent == true
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alphapm;
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alphapm;
-                    end
-                    if self.wvt.hasPVComponent == true
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = alpha0;
-                    end
-                end
-
-                for iParticles=1:length(self.particle)
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceXY;
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceXY;
-                    if ~self.particle{iParticles}.fluxOp.isXYOnly
-                        n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = options.absToleranceZ;
-                    end
-                end
-
-                for iTracer=1:length(self.tracerArray)
-                    n=n+1;absTol(self.arrayStartIndex(n):self.arrayEndIndex(n)) = 1e-5;
-                end
-            end
-
             self.odeOptions = odeset('OutputFcn',@self.timeStepIncrement);
             self.odeOptions = odeset(self.odeOptions,'RelTol',options.relTolerance);
-            if options.shouldUseScaledTolerance == 1
-                self.odeOptions = odeset(self.odeOptions,'AbsTol',absoluteErrorToleranceAdaptive);
-            else
-                self.odeOptions = odeset(self.odeOptions,'AbsTol',absoluteErrorTolerance);
-            end
+            self.odeOptions = odeset(self.odeOptions,'AbsTol',self.absErrorToleranceArray);
             self.odeOptions = odeset(self.odeOptions,'Refine',1); % must be set to 1
-            if options.shouldShowIntegrationStats == 1
+            if options.shouldShowIntegrationStats
                 self.odeOptions = odeset(self.odeOptions,'Stats','on');
             else
                 self.odeOptions = odeset(self.odeOptions,'Stats','off');
             end
 
             self.odeIntegrator = options.integrator;
-
-            self.didSetupIntegrator = 1;
-        end
-
-        function [alpha0, alphapm] = absoluteErrorTolerance(self,options)
-            % Useful to make a plot
-            % [alpha0, alphapm] = model.absoluteErrorTolerance(absTolerance=1e-6);
-            % E_noise_kr = wvt.transformToRadialWavenumber(wvt.A0_TE_factor .* alpha0 .* alpha0);
-            % plot(wvt.kRadial,E_noise_kr/dk,LineWidth=2,Color=0*[1 1 1])
-            arguments
-                self 
-                options.absTolerance = 1e-6
-            end
-            alpha0 = ones(self.wvt.spectralMatrixSize);
-            alphapm = ones(self.wvt.spectralMatrixSize);
-            AbsErrorSpectrum = @isempty;
-            kRadial = self.wvt.kRadial;
-            Kh = self.wvt.Kh;
-            J = self.wvt.J;
-            dk = kRadial(2)-kRadial(1);
-            for iK=1:length(kRadial)
-                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
-                for iJ=1:length(self.wvt.j)
-                    % this is faster than logical indexing
-                    indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
-                    nIndicesForKJ = length(indicesForKJ);
-
-                    if isequal(AbsErrorSpectrum,@isempty)
-                        energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
-                        energyPerApmComponent = energyPerA0Component;
-                    else
-                        energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
-                        energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
-                    end
-                    if self.wvt.hasPVComponent == true
-                        alpha0(indicesForKJ) = options.absTolerance*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
-                    end
-                    if self.wvt.hasWaveComponent == true
-                        alphapm(indicesForKJ) = options.absTolerance*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
-                    end
-                end
-            end
         end
 
         function resetAdapativeTimeStepIntegrator(self)
@@ -220,24 +72,8 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 self WVModel {mustBeNonempty}
                 finalTime (1,1) double
             end
-            if ~isempty(self.ncfile)
-                if length(self.outputGroups) > 1
-                    error('As a temporary measure, only one output group is supported.');
-                end
-                outputInterval = self.outputGroupWithName(self.defaultOutputGroupName).outputInterval;
 
-                self.outputTimes = ((self.timeOfLastIncrementWrittenToFile+outputInterval):outputInterval:finalTime).';
-                integratorTimes = self.outputTimes;
-                if integratorTimes(1) ~= self.t
-                    integratorTimes = cat(1,self.t,integratorTimes);
-                end
-                if integratorTimes(end) ~= finalTime
-                    integratorTimes = cat(1,integratorTimes,finalTime);
-                end
-            else
-                integratorTimes = [self.t finalTime];
-            end
-
+            integratorTimes = self.outputTimesForIntegrationPeriod(self.t,finalTime);
             self.finalIntegrationTime = finalTime;
             self.odeIntegrator(@(t,y) self.fluxArray(t,y),integratorTimes,self.initialConditionsArray,self.odeOptions);
             self.finalIntegrationTime = [];
@@ -253,13 +89,11 @@ classdef WVModelAdapativeTimeStepMethods < handle
             elseif strcmp(flag,'done')
                 self.showIntegrationFinishDiagnostics();
             else
+                % these are the 'interpolation' times, between the actual
+                % time step
                 for iTime=1:length(t)
-                        self.updateIntegratorValues(t(iTime),y(:,iTime))
-
-                    if ~isempty(self.outputTimes) && abs(t(iTime) - self.outputTimes(1)) < eps
-                        self.writeTimeStepToNetCDFFile();
-                        self.outputTimes(1) = [];
-                    end
+                    self.updateIntegratorValuesFromArray(t(iTime),y(:,iTime))
+                    self.writeTimeStepToNetCDFFile(t(iTime));
                 end
                 self.showIntegrationTimeDiagnostics(self.finalIntegrationTime);
             end
@@ -270,121 +104,58 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 status = 0;
             end
         end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Integration: initial conditions, flux, and one time step
+        % Conversion from cell array to linear array
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function nArray = lengthOfFluxComponents(self)
-            n = 0;
-            if self.wvt.hasWaveComponent == true
-                n=n+1; nArray(n) = numel(self.wvt.Ap);
-                n=n+1; nArray(n) = numel(self.wvt.Am);
-            end
-            if self.wvt.hasPVComponent == true
-                n=n+1; nArray(n) = numel(self.wvt.A0);
-            end
-            nArray = reshape(nArray,[],1);
-
+            nArray = [];
             for i = 1:length(self.fluxedObservingSystems)
                 nArray = cat(1,nArray,self.fluxedObservingSystems(i).lengthOfFluxComponents);
             end
         end
 
-        function Y0 = initialConditionsArray(self)
-            Y0 = zeros(self.arrayLength,1);
+        function Y0_array = absErrorToleranceArray(self)
+            Y0_array = zeros(self.arrayLength,1);
+            Y0_cell = self.absErrorToleranceCellArray;
 
-            n = 0;
-            if self.linearDynamics == 0
-                if self.wvt.hasWaveComponent == true
-                    n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.Ap(:);
-                    n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.Am(:);
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.wvt.A0(:);
-                end
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = p.x(:);
-                n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = p.y(:);
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = p.z(:);
-                end
-            end
-
-            for i=1:length(self.tracerArray)
-                n=n+1;Y0(self.arrayStartIndex(n):self.arrayEndIndex(n)) = self.tracerArray{i}(:);
+            for n=1:self.nFluxComponents
+                Y0_array(self.arrayStartIndex(n):self.arrayEndIndex(n)) = Y0_cell{n}(:);
             end
         end
 
-        function F = fluxArray(self,t,y0)
-            self.updateIntegratorValues(t,y0)
+        function Y0_array = initialConditionsArray(self)
+            Y0_array = zeros(self.arrayLength,1);
+            Y0_cell = self.initialConditionsCellArray;
 
-            F = zeros(self.arrayLength,1);
-            n = 0;
-            if self.linearDynamics == 0
-                nlF = cell(1,self.wvt.nFluxedComponents);
-                [nlF{:}] = self.wvt.nonlinearFlux();
-                if self.wvt.hasWaveComponent == true
-                    n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
-                    n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1; F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = nlF{n};
-                end
-            else
-
-            end
-
-            for iParticles=1:length(self.particle)
-                p = self.particle{iParticles};
-                if self.particle{iParticles}.fluxOp.isXYOnly
-                    [F(self.arrayStartIndex(n+1):self.arrayEndIndex(n+1)),F(self.arrayStartIndex(n+2):self.arrayEndIndex(n+2))] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+2;
-                else
-                    [F(self.arrayStartIndex(n+1):self.arrayEndIndex(n+1)),F(self.arrayStartIndex(n+2):self.arrayEndIndex(n+2)),F(self.arrayStartIndex(n+3):self.arrayEndIndex(n+3))] = self.particle{iParticles}.fluxOp.compute(self.wvt,p.x,p.y,p.z);
-                    n=n+3;
-                end
-            end
-
-            if ~isempty(self.tracerArray)
-                for i=1:length(self.tracerArray)
-                    phibar = self.wvt.transformFromSpatialDomainWithF(y0{n+1});
-                    [~,Phi_x,Phi_y,Phi_z] = self.wvt.transformToSpatialDomainWithFAllDerivatives(phibar);
-                    n=n+1;F(self.arrayStartIndex(n):self.arrayEndIndex(n)) = -self.wvt.u .* Phi_x - self.wvt.v.*Phi_y - self.wvt.w.*Phi_z;
-                end
+            for n=1:self.nFluxComponents
+                Y0_array(self.arrayStartIndex(n):self.arrayEndIndex(n)) = Y0_cell{n}(:);
             end
         end
 
-
-        function updateIntegratorValues(self,t,y0)
-            n=0;
-            self.wvt.t = t;
-            if self.linearDynamics == 0
-                if self.wvt.hasWaveComponent == true
-                    n=n+1; self.wvt.Ap(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                    n=n+1; self.wvt.Am(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1; self.wvt.A0(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                end
+        function F_array = fluxArray(self,t,Y0_array)
+            F_array = zeros(self.arrayLength,1);
+            Y0_cell = cell(self.nFluxComponents,1);
+            for n=1:self.nFluxComponents
+                Y0_cell{n} = Y0_array(self.arrayStartIndex(n):self.arrayEndIndex(n));
             end
 
-            for iParticles=1:length(self.particle)
-                n=n+1; self.particle{iParticles}.x(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                n=n+1; self.particle{iParticles}.y(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                if ~self.particle{iParticles}.fluxOp.isXYOnly
-                    n=n+1; self.particle{iParticles}.z(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
-                end
-            end
+            F_cell = self.fluxAtTimeCellArray(t,Y0_cell);
 
-            for iTracer=1:length(self.tracerArray)
-                n=n+1; self.tracerArray{iTracer}(:) = y0(self.arrayStartIndex(n):self.arrayEndIndex(n));
+            for n=1:self.nFluxComponents
+                F_array(self.arrayStartIndex(n):self.arrayEndIndex(n)) = F_cell{n}(:);
             end
         end
 
+        function updateIntegratorValuesFromArray(self,t,Y0_array)
+            Y0_cell = cell(self.nFluxComponents,1);
+            for n=1:self.nFluxComponents
+                Y0_cell{n} = Y0_array(self.arrayStartIndex(n):self.arrayEndIndex(n));
+            end
+            self.updateIntegratorValuesFromCellArray(t,Y0_cell);
+        end
     end
 end

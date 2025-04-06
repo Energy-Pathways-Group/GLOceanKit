@@ -53,7 +53,7 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
         function addObservingSystem(self,observingSystem)
             arguments
                 self WVModelOutputGroup {mustBeNonempty}
-                observingSystem WVModelOutputGroup
+                observingSystem WVObservingSystem
             end
             if self.didInitializeStorage
                 error('Storage already initialized! You cannot add a new observing system after the storage has been initialized.');
@@ -61,8 +61,8 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
 
             for iObs = 1:length(observingSystem)
                 anObservingSystem = observingSystem(iObs);
-                if anObservingSystem.wvt ~= self
-                    error('This force was not initialized with the same wvt that it is being added to!')
+                if anObservingSystem.wvt ~= self.model.wvt
+                    error('This observing system was not initialized with the same wvt that it is being added to!')
                 end
 
                 if ~isempty(find(strcmp({self.observingSystems.name}, anObservingSystem.name), 1))
@@ -79,7 +79,7 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
         function removeObservingSystem(self, observingSystem)
             arguments
                 self WVModelOutputGroup {mustBeNonempty}
-                observingSystem WVModelOutputGroup
+                observingSystem WVObservingSystem
             end
 
             for iObs = 1:length(observingSystem)
@@ -174,6 +174,29 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
                 self.incrementsWrittenToGroup = outputIndex;
                 self.timeOfLastIncrementWrittenToGroup = t;
             end
+        end
+
+        function recordNetCDFFileHistory(self,options)
+            arguments
+                self WVModelOutputGroup {mustBeNonempty}
+                options.didBlowUp {mustBeNumeric} = 0
+            end
+            if isempty(self.group)
+                return
+            end
+
+            if options.didBlowUp == 1
+                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+            else
+                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+            end
+            if isKey(self.group.attributes,'history')
+                history = reshape(self.group.attributes('history'),1,[]);
+                history =cat(2,squeeze(history),a);
+            else
+                history = a;
+            end
+            self.group.addAttribute('history',history);
         end
 
         function closeNetCDFFile(self)

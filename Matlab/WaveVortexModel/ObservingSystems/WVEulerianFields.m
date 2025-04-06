@@ -145,7 +145,7 @@ classdef WVEulerianFields < WVObservingSystem
                     end
                 end
 
-                if (self.model.linearDynamics == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.model.linearDynamics == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
+                if (self.model.isDynamicsLinear == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.model.isDynamicsLinear == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
                     self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
                     group.addVariable(varAnnotation.name,horzcat(varAnnotation.dimensions,'t'),type="double",isComplex=varAnnotation.isComplex,attributes=varAnnotation.attributes);
                 else
