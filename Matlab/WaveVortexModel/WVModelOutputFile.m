@@ -57,6 +57,10 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             wvt = self.model.wvt;
         end
 
+        function aString = description(self)
+            aString = "evenly spaced output with an interval of start a";
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Add/remove output groups

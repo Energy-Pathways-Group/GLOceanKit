@@ -38,6 +38,14 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
             self.finalTime = options.finalTime;
         end
 
+        function aString = description(self)
+            if self.finalTime == Inf
+                aString = "evenly spaced output with an interval of " + string(self.outputInterval) + " starting at time t=" + string(self.initialTime) + " and continuing indefinitely";
+            else
+                aString = "evenly spaced output with an interval of " + string(self.outputInterval) + " start at time t=" + string(self.initialTime) + "and ending at time t=" + string(self.finalTime);
+            end
+        end
+
         function t = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
             arguments (Input)
                 self WVModelOutputGroup

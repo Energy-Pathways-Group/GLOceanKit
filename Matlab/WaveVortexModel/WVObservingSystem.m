@@ -74,6 +74,10 @@ classdef WVObservingSystem < CAAnnotatedClass & matlab.mixin.Heterogeneous
             wvt = self.model.wvt;
         end
 
+        function aString = desciption(self)
+            aString = "An instance of " + class(self) + " named " + self.name;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Integrated variables

@@ -648,6 +648,38 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function summarize(self)
+            if isempty(self.fluxedObservingSystems)
+                fprintf('The model has no systems to integrate.\n');
+            else
+                if isscalar(self.fluxedObservingSystems)
+                    fprintf("The model is integrating 1 system.\n");
+                else
+                    fprintf("The model is integrating " + length(self.fluxedObservingSystems) + " systems.\n");
+                end
+
+                for i = 1:length(self.fluxedObservingSystems)
+                    fprintf("\t" + string(i) + ": " + self.fluxedObservingSystems(i).description + "\n");
+                end
+            end
+            fprintf('\n');
+            if isempty(length(self.outputFiles))
+                fprintf('The model has no output files.\n');
+            else
+                if isscalar(self.outputFiles)
+                    fprintf("The model will write to 1 output file.\n");
+                else
+                    fprintf("The model will write to " + length(self.outputFiles) + " output files.\n");
+                end
+                for iFile=1:length(self.outputFiles)
+                    fprintf('writing to file' + self.outputFiles(iFile).filename + ':\n')
+                    for iGroup=1:length(self.outputFiles(iFile).outputGroups)
+                        fprintf("\t" + self.outputFiles(iFile).outputGroups(iGroup).description + "\n");
+                    end
+                end
+            end
+        end
+
         function ncfile = createNetCDFFileForModelOutput(self,path,options)
             % Create a NetCDF file for model output
             % - Topic: Writing to NetCDF files
