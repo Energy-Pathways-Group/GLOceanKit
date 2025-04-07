@@ -1,4 +1,4 @@
-classdef WVObservingSystem < CAAnnotatedClass & matlab.mixin.Heterogeneous
+classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -65,7 +65,7 @@ classdef WVObservingSystem < CAAnnotatedClass & matlab.mixin.Heterogeneous
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
-            self@CAAnnotatedClass();
+            % self@CAAnnotatedClass();
             self.model = model;
             self.name = name;
         end
@@ -74,7 +74,7 @@ classdef WVObservingSystem < CAAnnotatedClass & matlab.mixin.Heterogeneous
             wvt = self.model.wvt;
         end
 
-        function aString = desciption(self)
+        function aString = description(self)
             aString = "An instance of " + class(self) + " named " + self.name;
         end
 

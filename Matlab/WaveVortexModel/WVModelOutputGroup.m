@@ -186,9 +186,9 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             end
 
             if options.didBlowUp == 1
-                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToFile);
+                a = sprintf('%s: wrote %d time points to file. Terminated due to model blow-up.',datetime('now'),self.incrementsWrittenToGroup);
             else
-                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToFile);
+                a = sprintf('%s: wrote %d time points to file',datetime('now'),self.incrementsWrittenToGroup);
             end
             if isKey(self.group.attributes,'history')
                 history = reshape(self.group.attributes('history'),1,[]);

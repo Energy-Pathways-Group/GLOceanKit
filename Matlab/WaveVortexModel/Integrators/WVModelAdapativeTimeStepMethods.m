@@ -72,8 +72,13 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 self WVModel {mustBeNonempty}
                 finalTime (1,1) double
             end
-
+            
+            % The function call here is stupid, because it is not obvious
+            % that callign outputTimesForIntegrationPeriod actually has the
+            % side-effect of setting up the run
             integratorTimes = self.outputTimesForIntegrationPeriod(self.t,finalTime);
+            arrayfun( @(outputFile) outputFile.writeTimeStepToOutputFile(self.t), self.outputFiles);
+
             self.finalIntegrationTime = finalTime;
             self.odeIntegrator(@(t,y) self.fluxArray(t,y),integratorTimes,self.initialConditionsArray,self.odeOptions);
             self.finalIntegrationTime = [];

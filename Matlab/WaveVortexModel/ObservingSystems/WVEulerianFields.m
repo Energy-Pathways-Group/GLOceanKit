@@ -54,7 +54,7 @@ classdef WVEulerianFields < WVObservingSystem
             % ```
 
             arguments
-                self WVModelOutputGroup
+                self WVEulerianFields
             end
             arguments (Repeating)
                 variables char
@@ -81,7 +81,7 @@ classdef WVEulerianFields < WVObservingSystem
             % model.setNetCDFOutputVariables('A0','u','v');
             % ```
             arguments
-                self WVModelOutputGroup
+                self WVEulerianFields
             end
             arguments (Repeating)
                 variables char
@@ -108,7 +108,7 @@ classdef WVEulerianFields < WVObservingSystem
             % model.removeNetCDFOutputVariables('A0','u','v');
             % ```
             arguments
-                self WVModelOutputGroup
+                self WVEulerianFields
             end
             arguments (Repeating)
                 variables char

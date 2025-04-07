@@ -28,7 +28,7 @@ classdef WVTracer < WVObservingSystem
                 options.absTolerance = 1e-5; 
             end
             self@WVObservingSystem(model,options.name);
-            if ~isfield(options.phi)
+            if ~isfield(options,'phi')
                 error('You must specify the initial tracer field phi');
             end
 
@@ -61,14 +61,14 @@ classdef WVTracer < WVObservingSystem
         function F = fluxAtTime(self,t,y0)
             self.updateIntegratorValues(t,y0);
             if self.isXYOnly
-                F = {-wvt.u .* wvt.diffX(self.phi) - wvt.v .* wvt.diffY(self.phi)};
+                F = {-self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi)};
             else
-                F = {-wvt.u .* wvt.diffX(self.phi) - wvt.v .* wvt.diffY(self.phi) - wvt.w .* wvt.diffZF(self.phi)};
+                F = {-self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi) - self.wvt.w .* self.wvt.diffZF(self.phi)};
             end
         end
 
         function updateIntegratorValues(self,t,y0)
-            self.phi = y0{1};
+            self.phi(:) = y0{1};
         end
 
 
@@ -79,7 +79,7 @@ classdef WVTracer < WVObservingSystem
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function initializeStorage(self,group)
-            group.addVariable(self.netCDFOutputTracers{iTracer},horzcat(self.model.wvt.spatialDimensionNames,'t'),type="double",attributes=containers.Map({'isTracer'},{true}));
+            group.addVariable(self.name,horzcat(self.model.wvt.spatialDimensionNames,'t'),isComplex=false,type="double",attributes=containers.Map({'isTracer'},{uint8(1)}));
         end
 
         function writeTimeStepToFile(self,group,outputIndex)

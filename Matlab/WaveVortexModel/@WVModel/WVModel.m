@@ -44,7 +44,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         % the ocean state at a given time.
         wvt
 
-        fluxedObservingSystems
+        fluxedObservingSystems = WVObservingSystem.empty(0,0)
         nFluxComponents
         indicesForFluxedSystem
 
@@ -166,7 +166,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             if isempty(self.fluxedObservingSystems)
                 self.fluxedObservingSystems = anObservingSystem;
             else
-                self.fluxedObservingSystems = cat(find(size(self.fluxedObservingSystems) > 1, 1), anObservingSystem, self.fluxedObservingSystems);
+                if ~isa(self.fluxedObservingSystems(1),'WVCoefficients')
+                    idx = find(size(self.fluxedObservingSystems) > 1, 1);
+                    if isempty(idx)
+                        idx = 1;
+                    end
+                    self.fluxedObservingSystems = cat(idx, anObservingSystem, self.fluxedObservingSystems);
+                end
             end
             self.recomputeIndicesForFluxedSystems();
         end 
@@ -177,7 +183,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
                 anObservingSystem WVObservingSystem
             end
             for iObs=1:length(anObservingSystem)
-                self.fluxedObservingSystems(end+1) = anObservingSystem(iObs);
+                alreadyInArray = any(cellfun(@(x) isequal(x, anObservingSystem(iObs)), num2cell(self.fluxedObservingSystems)));
+                if ~alreadyInArray
+                    self.fluxedObservingSystems(end+1) = anObservingSystem(iObs);
+                end
             end
             self.recomputeIndicesForFluxedSystems();
         end
@@ -325,7 +334,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
                 options.absToleranceZ = 1e-2;
             end
 
-            observingSystem = WVLagrangianParticles(self,name=name,isXYOnly=isXYOnly,x=x,y=y,z=z,trackedFieldNames=trackedFieldNames{:},advectionInterpolation=options.advectionInterpolation,trackedVarInterpolation=options.trackedVarInterpolation);
+            observingSystem = WVLagrangianParticles(self,name=name,isXYOnly=isXYOnly,x=x,y=y,z=z,trackedFieldNames=trackedFieldNames,advectionInterpolation=options.advectionInterpolation,trackedVarInterpolation=options.trackedVarInterpolation);
             if isscalar(self.outputFiles) && isscalar(self.outputFiles(1).outputGroups)
                 self.outputFiles(1).outputGroups(1).addObservingSystem(observingSystem);
             elseif isempty(self.outputFiles)
@@ -467,10 +476,15 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         end
 
         function addTracer(self,phi,name)
+            arguments
+                self WVModel
+                phi double
+                name {mustBeNonempty,mustBeText}
+            end
             % Add a scalar field tracer to be advected by the flow
             % - Topic: Tracer
-            isXYOnly= (length(self.wvt.spatialDimensions) == 2);
-            observingSystem = WVLagrangianParticles(self,name=name,phi=phi,isXYOnly=isXYOnly);
+            isXYOnly= (length(self.wvt.spatialDimensionNames) == 2);
+            observingSystem = WVTracer(self,name=name,phi=phi,isXYOnly=isXYOnly);
             if isscalar(self.outputFiles) && isscalar(self.outputFiles(1).outputGroups)
                 self.outputFiles(1).outputGroups(1).addObservingSystem(observingSystem);
             elseif isempty(self.outputFiles)
@@ -584,7 +598,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             end
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
                   
-            arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
+            % arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
+            % arrayfun( @(outputFile) outputFile.writeTimeStepToOutputFile(self.t), self.outputFiles);
 
             self.wvt.restoreForcingAmplitudes();
             
@@ -672,9 +687,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
                     fprintf("The model will write to " + length(self.outputFiles) + " output files.\n");
                 end
                 for iFile=1:length(self.outputFiles)
-                    fprintf('writing to file' + self.outputFiles(iFile).filename + ':\n')
+                    if isscalar(length(self.outputFiles(iFile).outputGroups))
+                        fprintf(string(iFile) + ": " + self.outputFiles(iFile).filename + " with " + length(self.outputFiles(iFile).outputGroups) + " output group\n");
+                    else
+                        fprintf(string(iFile) + ": " + self.outputFiles(iFile).filename + " with " + length(self.outputFiles(iFile).outputGroups) + " output groups\n");
+                    end
                     for iGroup=1:length(self.outputFiles(iFile).outputGroups)
-                        fprintf("\t" + self.outputFiles(iFile).outputGroups(iGroup).description + "\n");
+                        fprintf("\t" + string(iGroup) + ": " + self.outputFiles(iFile).outputGroups(iGroup).description + "\n");
                     end
                 end
             end
@@ -825,8 +844,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
 
         function writeTimeStepToNetCDFFile(self,t)
             outputFiles_ = self.outputFiles;
-            for iGroup = 1:length(outputFiles_)
-                outputFiles_(iGroup).writeTimeStepToOutputFile(t);
+            for iFile = 1:length(outputFiles_)
+                outputFiles_(iFile).writeTimeStepToOutputFile(t);
             end
         end
 

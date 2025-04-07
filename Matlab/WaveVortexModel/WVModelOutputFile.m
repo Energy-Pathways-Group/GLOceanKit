@@ -196,7 +196,6 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
 
             if ~isempty(self.ncfile)
                 arrayfun( @(outputGroup) outputGroup.recordNetCDFFileHistory(didBlowUp=options.didBlowUp), self.outputGroups);
-                self.ncfile = [];
             end
         end
 
@@ -204,7 +203,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
         function closeNetCDFFile(self)
             if ~isempty(self.ncfile)
                 arrayfun( @(outputGroup) outputGroup.closeNetCDFFile(), self.outputGroups);
-                self.ncfile = [];
+                self.ncfile = NetCDFFile.empty(0,0);
             end
         end
 

@@ -107,7 +107,7 @@ classdef WVCoefficients < WVObservingSystem
         function nlF = fluxAtTime(self,t,y0)
             self.updateIntegratorValues(t,y0)
 
-            nlF = cell(1,self.wvt.nFluxedComponents);
+            nlF = cell(1,self.nFluxComponents);
             [nlF{:}] = self.wvt.nonlinearFlux();
         end
 

@@ -13,6 +13,10 @@ classdef WVLagrangianParticles < WVObservingSystem
         absToleranceZ
     end
 
+    properties (Dependent)
+        nParticles
+    end
+
     methods
         function self = WVLagrangianParticles(model,options)
             %create a new observing system
@@ -80,6 +84,10 @@ classdef WVLagrangianParticles < WVObservingSystem
             self.updateParticleTrackedFields();
         end
 
+        function nParticles = get.nParticles(self)
+            nParticles = length(self.x);
+        end
+
         function [x,y,z,trackedFields] = particlePositions(self)
             % Positions and values of tracked fields of particles at the current model time.
             %
@@ -95,13 +103,11 @@ classdef WVLagrangianParticles < WVObservingSystem
         function updateParticleTrackedFields(self)
             % One special thing we have to do is log the particle
             % tracked fields
-            for iParticle=1:length(self.particle)
-                if ~isempty(self.trackedFieldNames)
-                    varLagrangianValues = cell(1,length(self.trackedFieldNames));
-                    [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,self.trackedFieldNames{:},interpolationMethod=self.trackedFieldInterpMethod);
-                    for i=1:length(self.trackedFieldNames)
-                        self.trackedFields.(self.trackedFieldNames{i}) = varLagrangianValues{i};
-                    end
+            if ~isempty(self.trackedFieldNames)
+                varLagrangianValues = cell(1,length(self.trackedFieldNames));
+                [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,self.trackedFieldNames{:},interpolationMethod=self.trackedFieldInterpMethod);
+                for i=1:length(self.trackedFieldNames)
+                    self.trackedFields.(self.trackedFieldNames{i}) = varLagrangianValues{i};
                 end
             end
         end
@@ -148,10 +154,11 @@ classdef WVLagrangianParticles < WVObservingSystem
             % return a cell array of the flux of the variables being
             % integrated. You may want to call -updateIntegratorValues.
             self.updateIntegratorValues(t,y0);
+            F = cell(1,self.nFluxComponents);
             if self.isXYOnly
-                F = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v',interpolationMethod=self.advectionInterpolation);
+                [F{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v',interpolationMethod=self.advectionInterpolation);
             else
-                F = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v','w',interpolationMethod=self.advectionInterpolation);
+                [F{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,'u','v','w',interpolationMethod=self.advectionInterpolation);
             end
         end
 
@@ -160,7 +167,7 @@ classdef WVLagrangianParticles < WVObservingSystem
             self.x = y0{1};
             self.y = y0{2};
             if ~self.isXYOnly
-                self.z = self.y0{3};
+                self.z = y0{3};
             end
         end
 
@@ -174,10 +181,12 @@ classdef WVLagrangianParticles < WVObservingSystem
         function initializeStorage(self,group)
             variables = containers.Map();
 
-            attributes = containers.Map({'isParticle','particleName'},{true,self.name});
+            commonKeys = {'isParticle','particleName'};
+            commonVals = {uint8(1),self.name};
+            attributes = containers.Map(commonKeys,commonVals);
             attributes('units') = 'unitless id number';
             attributes('particleVariableName') = 'id';
-            [dim,var] = group.addDimension(strcat(particleName,'_id'),(1:nParticles).',attributes=attributes);
+            [dim,var] = group.addDimension(strcat(self.name,'_id'),(1:self.nParticles).',attributes=attributes);
             variables('id') = var;
 
             % careful to create a new object each time we init
@@ -187,7 +196,7 @@ classdef WVLagrangianParticles < WVObservingSystem
                 attributes('units') = self.model.wvt.dimensionAnnotationWithName(spatialDimensionNames{iVar}).units;
                 attributes('long_name') = strcat(self.model.wvt.dimensionAnnotationWithName(spatialDimensionNames{iVar}).description,', recorded along the particle trajectory');
                 attributes('particleVariableName') = spatialDimensionNames{iVar};
-                variables(spatialDimensionNames{iVar}) = group.addVariable(strcat(particleName,'_',spatialDimensionNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
+                variables(spatialDimensionNames{iVar}) = group.addVariable(strcat(self.name,'_',spatialDimensionNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
             end
 
             for iVar=1:length(self.trackedFieldNames)
@@ -196,7 +205,7 @@ classdef WVLagrangianParticles < WVObservingSystem
                 attributes('units') = varAnnotation.units;
                 attributes('long_name') = strcat(varAnnotation.description,', recorded along the particle trajectory');
                 attributes('particleVariableName') = self.trackedFieldNames{iVar};
-                variables(self.trackedFieldNames{iVar}) = group.addVariable(strcat(particleName,'_',self.trackedFieldNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
+                variables(self.trackedFieldNames{iVar}) = group.addVariable(strcat(self.name,'_',self.trackedFieldNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
             end
         end
 
@@ -204,12 +213,12 @@ classdef WVLagrangianParticles < WVObservingSystem
             group.variableWithName(strcat(self.name,'_x')).setValueAlongDimensionAtIndex(self.x,'t',outputIndex);
             group.variableWithName(strcat(self.name,'_y')).setValueAlongDimensionAtIndex(self.y,'t',outputIndex);
             if ~isequal(self.model.wvt.spatialDimensionNames,{'x','y'})
-                group.variableWithName(strcat(self.name,'_z')).setValueAlongDimensionAtIndex(self.z,'t',iTime);
+                group.variableWithName(strcat(self.name,'_z')).setValueAlongDimensionAtIndex(self.z,'t',outputIndex);
             end
 
             self.updateParticleTrackedFields();
             for iField=1:length(self.trackedFieldNames)
-                group.variableWithName(strcat(particleName,'_',self.trackedFieldNames{iField})).setValueAlongDimensionAtIndex(trackedFields.(self.trackedFieldNames{iField}),'t',iTime);
+                group.variableWithName(strcat(self.name,'_',self.trackedFieldNames{iField})).setValueAlongDimensionAtIndex(self.trackedFields.(self.trackedFieldNames{iField}),'t',outputIndex);
             end
         end
 
