@@ -45,7 +45,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         wvt
 
         fluxedObservingSystems = WVObservingSystem.empty(0,0)
-        nFluxComponents
+        nFluxComponents = 0
         indicesForFluxedSystem
 
         % Indicates whether or not the model is using linear or nonlinear dynamics.
@@ -109,6 +109,16 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             value = self.wvt.t;
         end
         
+        function ncfile = ncfile(self)
+            ncfile = NetCDFFile.empty(0,0);
+            outputFiles_ = self.outputFiles;
+            for iFile = 1:length(outputFiles_)
+                if ~isempty(outputFiles_(iFile).ncfile)
+                    ncfile(end+1) = outputFiles_(iFile).ncfile;
+                end
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Output groups
@@ -562,6 +572,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             if options.shouldIntegrateWaveVortexCoefficients == true
                 self.addFluxedCoefficients(WVCoefficients(self,absTolerance=adaptiveTimeStepOptions.absTolerance));
                 self.isDynamicsLinear = false;
+            else
+                vars = {'Ap','Am','A0'};
+                self.eulerianObservingSystem.removeNetCDFOutputVariables(vars{:});
+                self.isDynamicsLinear = true;
             end
 
             % self.resetFixedTimeStepIntegrator();
@@ -596,6 +610,15 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             if ~self.didSetupIntegrator
                 self.setupIntegrator();
             end
+
+            if self.nFluxComponents == 0
+                if self.eulerianObservingSystem.nTimeSeriesVariables == 0
+                    error("Nothing to do! There are no variables being integrated and no dynamical fields being output.");
+                else
+                    warning('There no variables being integrated, and the variables that are being written can be recovered instantly from the initial conditions.');
+                end
+            end
+
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
                   
             % arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
@@ -604,7 +627,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             self.wvt.restoreForcingAmplitudes();
             
 
-            if strcmp(self.integratorType,"adaptive")
+            if self.nFluxComponents == 0
+                self.pseudoIntegrateToTime(finalTime);
+            elseif strcmp(self.integratorType,"adaptive")
                 self.integrateToTimeWithAdaptiveTimeStep(finalTime)
             else
                 self.integrateToTimeWithFixedTimeStep(finalTime);
@@ -652,6 +677,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         end
 
         function updateIntegratorValuesFromCellArray(self,t,y0)
+            % We must set the time here. If we are integrating the
+            % wave-vortex coefficients, then this is benign because it will
+            % immediately get repeated momentarily. But we we are not
+            % integrating, and are running linearly, then we need the
+            % fields to update.
+            self.wvt.t = t;
             for i = 1:length(self.fluxedObservingSystems)
                 self.fluxedObservingSystems(i).updateIntegratorValues(t,y0(self.indicesForFluxedSystem{i}));
             end
@@ -816,6 +847,27 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
         % Write to file
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function pseudoIntegrateToTime(self,finalTime)
+            % Time step the model forward linearly
+            arguments
+                self WVModel {mustBeNonempty}
+                finalTime (1,1) double
+            end
+
+            % The function call here is stupid, because it is not obvious
+            % that callign outputTimesForIntegrationPeriod actually has the
+            % side-effect of setting up the run
+            integratorTimes = self.outputTimesForIntegrationPeriod(self.t,finalTime);
+            arrayfun( @(outputFile) outputFile.writeTimeStepToOutputFile(self.t), self.outputFiles);
+
+            self.finalIntegrationTime = finalTime;
+            for iTime=1:length(integratorTimes)
+                self.wvt.t = integratorTimes(iTime);
+                self.writeTimeStepToNetCDFFile(self.wvt.t);
+            end
+            self.finalIntegrationTime = [];
+        end
 
         function integratorTimes = outputTimesForIntegrationPeriod(self,initialTime,finalTime)
             % This will be called exactly once before an integration

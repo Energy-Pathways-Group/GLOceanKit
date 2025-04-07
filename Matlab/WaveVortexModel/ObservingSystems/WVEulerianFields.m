@@ -8,6 +8,11 @@ classdef WVEulerianFields < WVObservingSystem
         timeSeriesVariables = {};
     end
 
+    properties (Dependent)
+        nOutputVariables
+        nTimeSeriesVariables
+    end
+
     methods
         function self = WVEulerianFields(model,options)
             %create a new observing system
@@ -32,6 +37,19 @@ classdef WVEulerianFields < WVObservingSystem
             self.netCDFOutputVariables = options.fieldNames;
         end
 
+        function nOutputVariables = get.nOutputVariables(self)
+            nOutputVariables = length(self.netCDFOutputVariables);
+        end
+
+        function nOutputVariables = get.nTimeSeriesVariables(self)
+            nOutputVariables = 0;
+            for iVar = 1:length(self.netCDFOutputVariables)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.netCDFOutputVariables{iVar});
+                if (self.model.isDynamicsLinear == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.model.isDynamicsLinear == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
+                    nOutputVariables = nOutputVariables + 1;
+                end
+            end
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Add/remove output variables
