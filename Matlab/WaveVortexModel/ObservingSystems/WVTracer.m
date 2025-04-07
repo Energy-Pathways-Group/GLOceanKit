@@ -6,6 +6,7 @@ classdef WVTracer < WVObservingSystem
         isXYOnly
         phi
         absTolerance
+        shouldAntialias
     end
 
     methods
@@ -25,7 +26,8 @@ classdef WVTracer < WVObservingSystem
                 options.name {mustBeText}
                 options.phi double
                 options.isXYOnly (1,1) logical = false
-                options.absTolerance = 1e-5; 
+                options.absTolerance = 1e-5; % set assuming phi is normalized to a max value of 1
+                options.shouldAntialias = true;
             end
             self@WVObservingSystem(model,options.name);
             if ~isfield(options,'phi')
@@ -35,6 +37,7 @@ classdef WVTracer < WVObservingSystem
             self.isXYOnly = options.isXYOnly;
             self.phi = options.phi;
             self.absTolerance = options.absTolerance;
+            self.shouldAntialias = options.shouldAntialias;
 
             self.nFluxComponents = 1;
         end
@@ -61,10 +64,14 @@ classdef WVTracer < WVObservingSystem
         function F = fluxAtTime(self,t,y0)
             self.updateIntegratorValues(t,y0);
             if self.isXYOnly
-                F = {-self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi)};
+                F_phi = -self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi);
             else
-                F = {-self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi) - self.wvt.w .* self.wvt.diffZF(self.phi)};
+                F_phi = -self.wvt.u .* self.wvt.diffX(self.phi) - self.wvt.v .* self.wvt.diffY(self.phi) - self.wvt.w .* self.wvt.diffZF(self.phi);
             end
+            if self.shouldAntialias
+                F_phi = self.wvt.transformToSpatialDomainWithFourier(self.wvt.transformFromSpatialDomainWithFourier(F_phi));
+            end
+            F = {F_phi};
         end
 
         function updateIntegratorValues(self,t,y0)
