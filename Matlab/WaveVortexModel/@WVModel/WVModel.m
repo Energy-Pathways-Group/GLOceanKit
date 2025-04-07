@@ -882,10 +882,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             end
             integratorTimes = [];
             outputFiles_ = self.outputFiles;
-            for iGroup = 1:length(outputFiles_)
-                integratorTimes = cat(1,integratorTimes,outputFiles_(iGroup).outputTimesForIntegrationPeriod(initialTime,finalTime));
+            for iFile = 1:length(outputFiles_)
+                integratorTimes = cat(1,integratorTimes,outputFiles_(iFile).outputTimesForIntegrationPeriod(initialTime,finalTime));
             end
-            integratorTimes = sort(integratorTimes);
+            integratorTimes = sort(uniquetol(integratorTimes));
             if isempty(integratorTimes) || integratorTimes(1) ~= self.t
                 integratorTimes = cat(1,self.t,integratorTimes);
             end

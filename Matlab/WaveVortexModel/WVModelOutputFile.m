@@ -128,7 +128,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                 self.outputGroupNameOutputTimeMap{outputGroups_(iGroup).name} = t_group;
                 t = cat(1,t,t_group);
             end
-            t = sort(t);
+            t = sort(uniquetol(t));
             if self.didInitializeStorage == false && ~isempty(t)
                 self.tInitialize = t(1);
             end
