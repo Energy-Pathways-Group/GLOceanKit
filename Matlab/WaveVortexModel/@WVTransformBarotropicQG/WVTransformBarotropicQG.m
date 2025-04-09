@@ -163,11 +163,23 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
         end
 
         function wvtX2 = waveVortexTransformWithResolution(self,m)
-            wvtX2 = WVTransformBarotropicQG([self.Lx self.Ly],m,h=self.h,latitude=self.latitude,rotationRate=self.rotationRate,g=self.g);
+            names = {'shouldAntialias','h','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+            end
+            wvtX2 = WVTransformBarotropicQG([self.Lx self.Ly],m,optionArgs{:});
+
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvtX2);
+            end
+            wvtX2.setForcing(forcing);
+
             wvtX2.t0 = self.t0;
             wvtX2.t = self.t;
             wvtX2.A0 = self.spectralVariableWithResolution(wvtX2,self.A0);
-            % wvtX2.nonlinearFluxOperation = self.nonlinearFluxOperation.nonlinearFluxWithResolutionOfTransform(wvtX2);
         end
 
         function wvtX2 = waveVortexTransformWithDoubleResolution(self)
