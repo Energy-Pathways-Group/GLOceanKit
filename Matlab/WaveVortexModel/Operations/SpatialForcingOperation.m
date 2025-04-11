@@ -59,11 +59,28 @@ classdef SpatialForcingOperation < WVOperation
                 end
             elseif isa(wvt,"WVTransformHydrostatic")
                 Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
-                for i=1:length(self.spatialFluxForcing)
+                iForce = 0;
+                for i=1:length(wvt.spatialFluxForcing)
                     Fu0=Fu;Fv0=Fv;Feta0=Feta;
-                    [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
-                    [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0,self.t);
-                    F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
+                    [Fu, Fv, Feta] = wvt.spatialFluxForcing(i).addHydrostaticSpatialForcing(wvt, Fu, Fv, Feta);
+                    iForce = iForce + 1; varargout{iForce} = Fu-Fu0;
+                    iForce = iForce + 1; varargout{iForce} = Fv-Fv0;
+                    iForce = iForce + 1; varargout{iForce} = Feta-Feta0;
+                end
+                [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(Fu, Fv, Feta,wvt.t);
+                for i=1:length(wvt.spectralFluxForcing)
+                    Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                    [Fp,Fm,F0] = wvt.spectralFluxForcing(i).addSpectralForcing(wvt,Fp, Fm, F0);
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*(Fp-Fp_i) + wvt.UAm.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*(Fp-Fp_i) + wvt.VAm.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*(Fp-Fp_i) + wvt.NAm.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
+                end
+                for i=1:length(wvt.spectralAmplitudeForcing)
+                    Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                    [Fp,Fm,F0] = wvt.spectralFluxForcing(i).setSpectralForcing(wvt,Fp, Fm, F0);
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*(Fp-Fp_i) + wvt.UAm.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*(Fp-Fp_i) + wvt.VAm.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*(Fp-Fp_i) + wvt.NAm.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
                 end
 
             end
