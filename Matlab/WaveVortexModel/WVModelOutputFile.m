@@ -33,7 +33,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             arguments
                 model WVModel
                 path {mustBeText}
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
+                options.shouldOverwriteExisting logical = false
             end
             if options.shouldOverwriteExisting == 1
                 if isfile(path)
@@ -102,6 +102,22 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                 outputGroup WVModelOutputGroup
             end
             self.outputGroupNameMap(outputGroup.name) = outputGroup;
+        end
+
+        function outputGroup = addNewEvenlySpacedOutputGroup(self,name,options)
+            arguments (Input)
+                self WVModelOutputFile
+                name {mustBeText}
+                options.outputInterval (1,1) double {mustBePositive}
+                options.initialTime (1,1) double = -Inf
+                options.finalTime (1,1) double = Inf
+            end
+            arguments (Output)
+                outputGroup WVModelOutputGroup
+            end
+            optionCell = namedargs2cell(options);
+            outputGroup = WVModelOutputGroupEvenlySpaced(self.model,name,optionCell{:});
+            self.addOutputGroup(outputGroup);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

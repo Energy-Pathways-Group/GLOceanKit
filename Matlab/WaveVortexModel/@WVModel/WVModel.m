@@ -161,6 +161,19 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             self.outputFileNameMap(outputFile.filename) = outputFile;
         end
 
+        function outputFile = addNewOutputFile(self,path,options)
+            arguments (Input)
+                self WVModel {mustBeNonempty}
+                path {mustBeText}
+                options.shouldOverwriteExisting logical = false
+            end
+            arguments (Output)
+                outputFile WVModelOutputFile
+            end
+            outputFile = WVModelOutputFile(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting);
+            self.addOutputFile(outputFile);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Fluxed observing systems
@@ -740,11 +753,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
                 options.shouldOverwriteExisting logical = false
             end
 
-            outputFile = WVModelOutputFile(self,path,shouldOverwriteExisting=options.shouldOverwriteExisting);
-            self.addOutputFile(outputFile);
-            
-            outputGroup = WVModelOutputGroupEvenlySpaced(self,self.defaultOutputGroupName,initialTime=self.t,outputInterval=options.outputInterval);
-            outputFile.addOutputGroup(outputGroup);
+            outputFile = self.addNewOutputFile(path,shouldOverwriteExisting=options.shouldOverwriteExisting);
+            outputGroup = outputFile.addNewEvenlySpacedOutputGroup(self.defaultOutputGroupName,initialTime=self.t,outputInterval=options.outputInterval);
 
             outputGroup.addObservingSystem(self.eulerianObservingSystem);
             for i = 1:length(self.fluxedObservingSystems)
