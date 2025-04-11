@@ -77,7 +77,7 @@ classdef SpatialForcingOperation < WVOperation
                 end
                 for i=1:length(wvt.spectralAmplitudeForcing)
                     Fp_i = Fp; Fm_i = Fm; F0_i = F0;
-                    [Fp,Fm,F0] = wvt.spectralFluxForcing(i).setSpectralForcing(wvt,Fp, Fm, F0);
+                    [Fp,Fm,F0] = wvt.spectralAmplitudeForcing(i).setSpectralForcing(wvt,Fp, Fm, F0);
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*(Fp-Fp_i) + wvt.UAm.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*(Fp-Fp_i) + wvt.VAm.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*(Fp-Fp_i) + wvt.NAm.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
