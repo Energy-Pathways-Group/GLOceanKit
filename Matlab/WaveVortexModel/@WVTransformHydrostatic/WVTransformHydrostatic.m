@@ -215,6 +215,13 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             end
         end
 
+        function [Fu,Fv,Feta] = spatialFluxForForcingWithName(self,name)
+            Fu_name = replace(replace(join( ["Fu_", string(name)],"")," ","_"),"-","_");
+            Fv_name = replace(replace(join( ["Fv_", string(name)],"")," ","_"),"-","_");
+            Feta_name = replace(replace(join( ["Feta_", string(name)],"")," ","_"),"-","_");
+            [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformations FROM the spatial domain

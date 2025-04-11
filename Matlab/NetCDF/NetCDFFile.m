@@ -119,9 +119,11 @@ classdef NetCDFFile < NetCDFGroup
         end
 
         function delete(self)
-            netcdf.close(self.id);
-            self.id = [];
-            disp('NetCDFFile closed.');
+            if ~isempty(self.id)
+                netcdf.close(self.id);
+                self.id = [];
+                disp('NetCDFFile closed.');
+            end
         end
     end
 end
