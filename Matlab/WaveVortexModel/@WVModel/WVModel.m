@@ -743,7 +743,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeS
             end
         end
 
-        function ncfile = createNetCDFFileForModelOutput(self,path,options)
+        function outputFile = createNetCDFFileForModelOutput(self,path,options)
             % Create a NetCDF file for model output
             % - Topic: Writing to NetCDF files
             arguments

@@ -119,6 +119,17 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             outputGroup = WVModelOutputGroupEvenlySpaced(self.model,name,optionCell{:});
             self.addOutputGroup(outputGroup);
         end
+
+        function addObservingSystem(self,observingSystem)
+            arguments
+                self WVModelOutputFile {mustBeNonempty}
+                observingSystem WVObservingSystem
+            end
+            if length(self.outputGroups) ~= 1
+                error("This output file has %d output groups, thus you must add the observing system the group you want.",length(self.outputGroups))
+            end
+            self.outputGroups(1).addObservingSystem(observingSystem);
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
