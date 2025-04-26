@@ -238,7 +238,7 @@ classdef NetCDFRealVariable < NetCDFVariable
                 index {mustBeNonnegative}
             end
             dimension = self.group.dimensionWithName(dimensionName);
-            if dimension.nPoints < index && dimension.isMutable ~= 1
+            if any(dimension.nPoints < index) && dimension.isMutable ~= 1
                 error('Cannot increase the length of a dimension that is not mutable');
             end
 
@@ -246,8 +246,8 @@ classdef NetCDFRealVariable < NetCDFVariable
             count = zeros(1,length(self.dimensions));
             for iDim=1:length(self.dimensions)
                 if self.dimensions(iDim) == dimension
-                    start(iDim) = index-1;
-                    count(iDim) = 1;
+                    start(iDim) = index(1)-1;
+                    count(iDim) = length(index);
                 else
                     start(iDim) = 0;
                     count(iDim) = self.dimensions(iDim).nPoints;
