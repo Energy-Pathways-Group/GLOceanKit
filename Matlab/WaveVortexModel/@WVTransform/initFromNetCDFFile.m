@@ -39,7 +39,8 @@ wvt.t0 = ncfile.readVariables('t0');
 hasTimeDimension = 0;
 if ncfile.hasDimensionWithName('t')
     hasTimeDimension = 1;
-    tDim = ncfile.readVariables(ncfile.variablePathsWithName('t'));
+    varPaths =cellstr(ncfile.variablePathsWithName('t'));
+    tDim = ncfile.readVariables(varPaths{:});
     if isinf(options.iTime)
         iTime = length(tDim);
     elseif options.iTime > length(tDim)
