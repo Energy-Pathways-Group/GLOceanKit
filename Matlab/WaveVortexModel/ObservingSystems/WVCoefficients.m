@@ -112,16 +112,14 @@ classdef WVCoefficients < WVObservingSystem
         end
 
         function updateIntegratorValues(self,t,y0)
-            if abs(t - self.wvt.t) > eps
-                n = 0;
-                self.wvt.t = t;
-                if self.wvt.hasWaveComponent == true
-                    n=n+1; self.wvt.Ap(:) = y0{n};
-                    n=n+1; self.wvt.Am(:) = y0{n};
-                end
-                if self.wvt.hasPVComponent == true
-                    n=n+1; self.wvt.A0(:) = y0{n};
-                end
+            n = 0;
+            self.wvt.t = t;
+            if self.wvt.hasWaveComponent == true
+                n=n+1; self.wvt.Ap(:) = y0{n};
+                n=n+1; self.wvt.Am(:) = y0{n};
+            end
+            if self.wvt.hasPVComponent == true
+                n=n+1; self.wvt.A0(:) = y0{n};
             end
         end
 

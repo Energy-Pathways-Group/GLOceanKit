@@ -23,6 +23,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
         arrayEndIndex
         odeOptions
         odeIntegrator
+        nFluxComputations uint64 = 0
     end
 
     methods
@@ -93,6 +94,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
                 self.showIntegrationStartDiagnostics(self.finalIntegrationTime);
             elseif strcmp(flag,'done')
                 self.showIntegrationFinishDiagnostics();
+                % fprintf("nFlux computations: " + string(self.nFluxComputations) + "\n");
             else
                 % these are the 'interpolation' times, between the actual
                 % time step
@@ -142,6 +144,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
         end
 
         function F_array = fluxArray(self,t,Y0_array)
+            self.nFluxComputations = self.nFluxComputations + 1;
             F_array = zeros(self.arrayLength,1);
             Y0_cell = cell(self.nFluxComponents,1);
             for n=1:self.nFluxComponents
