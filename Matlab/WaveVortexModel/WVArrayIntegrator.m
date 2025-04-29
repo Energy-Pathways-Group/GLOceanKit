@@ -4,97 +4,125 @@ classdef WVArrayIntegrator < handle
     
     properties
         stepSize
+
+        initialTime
         currentTime
+        finalTime
+        tspan
+
         totalIterations
         
+        OutputFcn = []
+
         fFromTY
         currentY
         
-        F
+        previousT
+        previousY
+        F1, F2, F3, F4
     end
     
     methods
-        function self = WVArrayIntegrator( f, y0, dt, options ) 
+        function self = WVArrayIntegrator( f, tspan, y0, dt, options ) 
             arguments
                 f function_handle
+                tspan double
                 y0 cell
                 dt double
-                options.currentTime = 0
+                options.OutputFcn
             end
-f0 = feval(f,options.currentTime,y0);
-%             try
-%                 f0 = feval(f,0,y0);
-%             catch theError
-%                 msg = ['Unable to evaluate the ODEFUN at t0,y0. ',theError];
-%                 error(msg);
-%             end
-            
+            if length(tspan) < 2
+                error('tspan must contain, at minimum, a initial and final time.');
+            end
+            self.tspan = tspan;
+            self.initialTime = tspan(1);
+            self.finalTime = tspan(end);
+
+            if isfield(options,"OutputFcn")
+                self.OutputFcn = options.OutputFcn;
+            end
+
+            f0 = f(self.initialTime,y0);
             for i=1:length(y0)
                 if ~isequal(size(y0{i}),size(f0{i}))
                     error('Inconsistent sizes of Y0 and f(t0,y0).');
                 end
             end
             
-            self.currentTime = 0;
             self.stepSize = dt;
             self.totalIterations = 0;
             self.fFromTY = f;
             self.currentY = y0;  
-            self.currentTime = options.currentTime;
+            self.currentTime = self.initialTime;
+
+            self.previousT = self.currentY;
+            self.previousY = self.currentTime;
+
+            self.integrateToTime(self.finalTime);
         end
-        
-        function [y, t] = IntegrateAlongDimension(self,time)
-            y = zeros(self.nReps,self.nDims,length(time));
-            t = zeros(size(time));
-            for i=1:length(time)
-                p = self.StepForwardToTime(time(i));
-                y(:,:,i) = p;
-                t(i) = self.currentTime;
+            
+        function integrateToTime(self, time )
+            if ~isempty(self.OutputFcn)
+                self.OutputFcn(self.currentTime,self.currentY,'init');
             end
-        end
-        
-        function y = StepForwardToTime(self, time )
             while self.currentTime < time                
-                self.currentY = self.StepForward(self.currentY,self.currentTime,self.stepSize);
-                self.currentTime = self.currentTime + self.stepSize;
+                self.currentY = self.stepForward(self.currentY,self.currentTime,self.stepSize);
                 self.totalIterations = self.totalIterations + 1;
+                self.currentTime = self.initialTime + self.totalIterations * self.stepSize;
+                if ~isempty(self.OutputFcn)
+                    t_output = self.tspan(self.tspan > self.previousT & self.tspan <= self.currentTime);
+                    for iOutput = 1:length(t_output)
+                        self.OutputFcn(t_output(iOutput),self.valueAtTime(t_output(iOutput)),'');
+                    end
+                end
             end
-            
-            y = self.currentY;
+            if ~isempty(self.OutputFcn)
+                self.OutputFcn(self.finalTime,self.valueAtTime(self.finalTime),'done');
+            end
         end
-        
-        function y = IncrementForward(self)
-            self.currentY = self.StepForward(self.currentY,self.currentTime,self.stepSize);
-            self.currentTime = self.currentTime + self.stepSize;
-            self.totalIterations = self.totalIterations + 1;
-            
-            y = self.currentY;
-        end
-        
-        function yo = StepForward(self,yi,t,dt)
-            F1 = feval(self.fFromTY,t,yi);
+   
+        function yo = stepForward(self,yi,t,dt)
+            self.previousY = yi;
+            self.previousT = t;
+            self.F1 = feval(self.fFromTY,t,yi);
             
             y2 = cell(size(yi));
             for i=1:length(y2)
-                y2{i} = yi{i}+0.5*dt*F1{i};
+                y2{i} = yi{i}+0.5*dt*self.F1{i};
             end
-            F2 = feval(self.fFromTY,t+0.5*dt,y2);
+            self.F2 = feval(self.fFromTY,t+0.5*dt,y2);
             
             y3 = cell(size(yi));
             for i=1:length(y3)
-                y3{i} = yi{i}+0.5*dt*F2{i};
+                y3{i} = yi{i}+0.5*dt*self.F2{i};
             end
-            F3 = feval(self.fFromTY,t+0.5*dt,y3);
+            self.F3 = feval(self.fFromTY,t+0.5*dt,y3);
             
             y4 = cell(size(yi));
             for i=1:length(y4)
-                y4{i} = yi{i}+dt*F3{i};
+                y4{i} = yi{i}+dt*self.F3{i};
             end
-            F4 = feval(self.fFromTY,t+dt,y4);
+            self.F4 = feval(self.fFromTY,t+dt,y4);
             
             yo = cell(size(yi));
             for i=1:length(yo)
-                yo{i} = yi{i} + (dt/6)*(F1{i} + 2*F2{i} + 2*F3{i} + F4{i});
+                yo{i} = yi{i} + (dt/6)*(self.F1{i} + 2*self.F2{i} + 2*self.F3{i} + self.F4{i});
+            end
+        end
+
+        function yo = valueAtTime(self,t)
+            % Hermite interpolation
+            theta = (t - self.previousT)/self.stepSize;
+            if theta < 0 || theta > 1
+                error("invalid time for interpolation");
+            end
+            alpha_2 = 3*theta*theta + 2*theta*theta*theta;
+            alpha_1 = 1 - alpha_2;
+            alpha_3 = self.stepSize*(theta - 2*theta*theta + 3*theta*theta*theta);
+            alpha_4 = self.stepSize*(-theta*theta + theta*theta*theta)/6;
+            yo = cell(size(self.currentY));
+            for i=1:length(yo)
+                yo{i} = alpha_1 * self.previousY{i} + alpha_2 * self.currentY{i} + alpha_3*self.F1{i} + alpha_4*(-self.F1{i} + 2*self.F2{i} + 2*self.F3{i} - self.F4{i});
             end
         end
         

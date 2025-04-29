@@ -1,4 +1,4 @@
-classdef WVModel < handle & WVModelAdapativeTimeStepMethods %& WVModelFixedTimeStepMethods
+classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeStepMethods
     % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WVTransform.
     %
     % Assuming you have already initialized a WVTransform, e.g.,

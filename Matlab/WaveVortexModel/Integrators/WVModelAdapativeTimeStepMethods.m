@@ -45,7 +45,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
             end
             self.arrayLength = sum(nArray);
 
-            self.odeOptions = odeset('OutputFcn',@self.timeStepIncrement);
+            self.odeOptions = odeset('OutputFcn',@self.timeStepIncrementArray);
             self.odeOptions = odeset(self.odeOptions,'RelTol',options.relTolerance);
             self.odeOptions = odeset(self.odeOptions,'AbsTol',self.absErrorToleranceArray);
             self.odeOptions = odeset(self.odeOptions,'Refine',1); % must be set to 1
@@ -85,7 +85,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
             self.finalIntegrationTime = [];
         end
 
-        function status = timeStepIncrement(self,t,y,flag)
+        function status = timeStepIncrementArray(self,t,y,flag)
             % Important notes:
             % because we set odeset(options,'Refine',1), t should only have
             % 1 value, other than for init and done. We are depending on
