@@ -23,7 +23,6 @@ classdef WVModelAdapativeTimeStepMethods < handle
         arrayEndIndex
         odeOptions
         odeIntegrator
-        nFluxComputations uint64 = 0
     end
 
     methods
@@ -46,6 +45,7 @@ classdef WVModelAdapativeTimeStepMethods < handle
             self.arrayLength = sum(nArray);
 
             self.odeOptions = odeset('OutputFcn',@self.timeStepIncrementArray);
+            self.odeOptions = odeset(self.odeOptions,'InitialStep',self.timeStepForCFL(0.5));
             self.odeOptions = odeset(self.odeOptions,'RelTol',options.relTolerance);
             self.odeOptions = odeset(self.odeOptions,'AbsTol',self.absErrorToleranceArray);
             self.odeOptions = odeset(self.odeOptions,'Refine',1); % must be set to 1
@@ -144,7 +144,6 @@ classdef WVModelAdapativeTimeStepMethods < handle
         end
 
         function F_array = fluxArray(self,t,Y0_array)
-            self.nFluxComputations = self.nFluxComputations + 1;
             F_array = zeros(self.arrayLength,1);
             Y0_cell = cell(self.nFluxComponents,1);
             for n=1:self.nFluxComponents

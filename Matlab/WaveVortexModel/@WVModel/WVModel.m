@@ -46,6 +46,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
         fluxedObservingSystems = WVObservingSystem.empty(0,0)
         nFluxComponents = 0
+        nFluxComputations uint64 = 0
         indicesForFluxedSystem
 
         % Indicates whether or not the model is using linear or nonlinear dynamics.
@@ -683,6 +684,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function F = fluxAtTimeCellArray(self,t,y0)
+            self.nFluxComputations = self.nFluxComputations + 1;
             F = cell(self.nFluxComponents,1);
             for i = 1:length(self.fluxedObservingSystems)
                 F(self.indicesForFluxedSystem{i}) = self.fluxedObservingSystems(i).fluxAtTime(t,y0(self.indicesForFluxedSystem{i}));
@@ -782,10 +784,12 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
     properties %(Access = protected)
         didSetupIntegrator=false
 
-        integrationStartTime
+        integrationStartWallTime
+        integrationStartModelTime
         integrationLastInformWallTime       % wall clock, to keep track of the expected integration time
         integrationLastInformModelTime
         integrationInformTime = 10
+        nFluxComputationsAtLastInform uint64 = 0
 
         integratorType      % Array integrator
         finalIntegrationTime % set only during an integration
@@ -821,8 +825,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             if self.shouldShowIntegrationDiagnostics  == 0
                 return;
             end
-            self.integrationStartTime = datetime('now');
-            fprintf('Starting numerical simulation on %s.\n', datetime(self.integrationStartTime,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'));
+            self.nFluxComputations = 0;
+            self.integrationStartWallTime = datetime('now');
+            self.integrationStartModelTime = self.wvt.t;
+            fprintf('Starting numerical simulation on %s.\n', datetime(self.integrationStartWallTime,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'));
             fprintf('\tStarting at model time t=%.2f inertial periods and integrating to t=%.2f inertial periods.\n',self.t/self.wvt.inertialPeriod,finalTime/self.wvt.inertialPeriod);
             self.integrationLastInformWallTime = datetime('now');
             self.integrationLastInformModelTime = self.wvt.t;
@@ -836,11 +842,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             if ( seconds(deltaWallTime) > self.integrationInformTime)
                 wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
                 wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
-                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s)\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z')) ;
+                deltaT = (self.wvt.t-self.integrationLastInformModelTime)/( self.nFluxComputations - self.nFluxComputationsAtLastInform);
+                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s). Δ≅%.2fs\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'),deltaT) ;
                 self.wvt.summarizeEnergyContent();
 
                 self.integrationLastInformWallTime = datetime('now');
                 self.integrationLastInformModelTime = self.wvt.t;
+                self.nFluxComputationsAtLastInform = self.nFluxComputations;
             end
         end
 
@@ -848,8 +856,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             if self.shouldShowIntegrationDiagnostics  == 0
                 return;
             end
-            integrationTotalTime = datetime('now')-self.integrationStartTime;
-            fprintf('Finished after time %s.\n', integrationTotalTime);
+            integrationTotalTime = datetime('now')-self.integrationStartWallTime;
+            deltaT = (self.wvt.t-self.integrationStartModelTime)/self.nFluxComputations ;
+            fprintf('Finished after time %s. Δ≅%.2fs\n', integrationTotalTime,deltaT);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

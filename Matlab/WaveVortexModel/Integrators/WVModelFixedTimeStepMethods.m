@@ -104,7 +104,7 @@ classdef WVModelFixedTimeStepMethods < handle
                 deltaT = self.integratorOptions.deltaT;
             else
                 if ~isfield(self.integratorOptions,"cfl")
-                    self.integratorOptions.cfl = 0.25;
+                    self.integratorOptions.cfl = 0.5;
                 end
                 [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(self.integratorOptions.cfl);
                 if strcmp(self.integratorOptions.timeStepConstraint,"advective")
