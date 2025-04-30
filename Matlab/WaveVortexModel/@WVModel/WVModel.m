@@ -1,4 +1,4 @@
-classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeStepMethods
+classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeStepMethods & WVModelAdapativeTimeStepCellMethods
     % The WVModel is responsible for time-stepping (integrating) the ocean state forward in time, as represented by a WVTransform.
     %
     % Assuming you have already initialized a WVTransform, e.g.,
@@ -570,7 +570,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 self WVModel {mustBeNonempty}
 
-                options.integratorType char {mustBeMember(options.integratorType,["fixed","adaptive"])} = "adaptive"
+                options.integratorType char {mustBeMember(options.integratorType,["fixed","adaptive","adaptive-cell"])} = "adaptive"
                 options.shouldIntegrateWaveVortexCoefficients logical = true
 
                 fixedTimeStepOptions.deltaT (1,1) double {mustBePositive}
@@ -600,6 +600,11 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 adaptiveTimeStepOptions = rmfield(adaptiveTimeStepOptions,"absTolerance");
                 optionArgs = namedargs2cell(adaptiveTimeStepOptions);
                 self.setupAdaptiveTimeStepIntegrator(optionArgs{:});
+            elseif strcmp(self.integratorType,"adaptive-cell")
+                adaptiveTimeStepOptions = rmfield(adaptiveTimeStepOptions,"absTolerance");
+                adaptiveTimeStepOptions = rmfield(adaptiveTimeStepOptions,"integrator");
+                optionArgs = namedargs2cell(adaptiveTimeStepOptions);
+                self.setupAdaptiveTimeStepCellIntegrator(optionArgs{:});
             else
                 optionArgs = namedargs2cell(fixedTimeStepOptions);
                 self.setupFixedTimeStepIntegrator(optionArgs{:});
@@ -645,6 +650,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self.pseudoIntegrateToTime(finalTime);
             elseif strcmp(self.integratorType,"adaptive")
                 self.integrateToTimeWithAdaptiveTimeStep(finalTime)
+            elseif strcmp(self.integratorType,"adaptive-cell")
+                self.integrateToTimeWithAdaptiveTimeStepCell(finalTime)
             else
                 self.integrateToTimeWithFixedTimeStep(finalTime);
             end
