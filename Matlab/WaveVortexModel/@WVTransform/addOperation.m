@@ -22,6 +22,7 @@ arguments
     self WVTransform {mustBeNonempty}
     operation (1,:) WVOperation {mustBeNonempty}
     options.shouldOverwriteExisting logical = false
+    options.shouldSuppressWarning logical = false
 end
 for iOp=1:length(operation)
     isExisting = 0;
@@ -56,7 +57,9 @@ for iOp=1:length(operation)
             error('A variable with the same name already exists! You attempted to replace the operation %s with the operation %s. If you are sure you want to do this, call wvt.addOperation(newOp,overwriteExisting=1).', message1,message2);
         else
             self.removeOperation(existingVar.modelOp);
-            fprintf('The operation %s has been removed and the operation %s has been added.\n',message1,message2);
+            if options.shouldSuppressWarning == false
+                fprintf('The operation %s has been removed and the operation %s has been added.\n',message1,message2);
+            end
         end
     end
 

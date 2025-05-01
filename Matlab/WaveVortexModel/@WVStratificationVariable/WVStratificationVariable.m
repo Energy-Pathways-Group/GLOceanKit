@@ -68,8 +68,26 @@ classdef WVStratificationVariable < WVStratification & CAAnnotatedClass
                 directInit.Q0 (:,1) double
                 directInit.z_int (:,1) double
             end
+            if ~isfield(options,'z')
+                options.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=options.latitude,rotationRate=options.rotationRate);
+            end
+            nModes = Nz-1;
+            if ~isequal(options.N2Function,@isempty)
+                verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=options.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=options.rotationRate,g=options.g);
+                options.N2Function = options.N2Function;
+                options.rhoFunction = @(z) verticalModes.rho_function(z);
+            elseif ~isequal(options.rhoFunction,@isempty)
+                verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=options.z,latitude=options.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=options.rotationRate,g=options.g);
+                options.N2Function = @(z) verticalModes.N2_function(z);
+                options.rhoFunction = options.rhoFunction;
+            end
+            verticalModes.normalization = Normalization.kConstant;
+            verticalModes.upperBoundary = UpperBoundary.rigidLid;
+
             superclassOptions = namedargs2cell(options);
             self@WVStratification(Lz,Nz,superclassOptions{:});
+            self.verticalModes = verticalModes;
+
             allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
             canInitializeDirectly = all(isfield(allFields, WVStratificationVariable.namesOfRequiredPropertiesForStratification));
 
@@ -87,22 +105,7 @@ classdef WVStratificationVariable < WVStratification & CAAnnotatedClass
                 self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
                 [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
-
-            % self.dftBuffer = zeros(self.spatialMatrixSize);
-            % self.wvBuffer = zeros([self.Nz self.Nkl]);
-            % [self.dftPrimaryIndex, self.dftConjugateIndex, self.wvConjugateIndex] = self.horizontalModes.indicesFromWVGridToDFTGrid(self.Nz,isHalfComplex=1);
         end
-
-        % function initializeStratifiedFlow(wvt)
-        %     % After initializing the WVTransform, this method can be called
-        %     % and the WVStratifiedFlow will register.
-        %     arguments
-        %         wvt WVTransform
-        %     end
-        %     wvt.addPropertyAnnotations(WVStratificationVariable.propertyAnnotationsForStratifiedFlow);
-        %     wvt.addOperation(EtaTrueOperation());
-        %     wvt.addOperation(APVOperation());
-        % end
 
         function Lr2 = get.Lr2(self)
             Lr2 = self.g*self.h_0/(self.f*self.f);

@@ -99,7 +99,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.
             varNames = self.namesOfTransformVariables();
-            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true,shouldSuppressWarning=true);
 
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.waveComponent));

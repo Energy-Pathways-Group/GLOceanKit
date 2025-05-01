@@ -65,7 +65,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.
             varNames = WVTransformBarotropicQG.namesOfTransformVariables();
-            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true,shouldSuppressWarning=true);
 
             self.A0 = zeros(self.spectralMatrixSize);
             self.F0 = zeros(self.spectralMatrixSize);
