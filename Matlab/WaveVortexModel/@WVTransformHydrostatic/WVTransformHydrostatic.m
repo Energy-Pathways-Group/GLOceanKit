@@ -296,35 +296,6 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
 
     methods (Static)
 
-        function names = spectralDimensionNames()
-            % return a cell array of property names required by the class
-            %
-            % This function returns an array of property names required to be written
-            % by the class, in order to restore its state.
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spectralDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'j','kl'};
-        end
-
-        function names = spatialDimensionNames()
-            % return a cell array of the spatial dimension names
-            %
-            % This function returns an array of dimension names
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spatialDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'x','y','z'};
-        end
-
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % CAAnnotatedClass required methods, which enables writeToFile
