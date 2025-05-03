@@ -53,7 +53,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         version = "3.1.0";
-        isHydrostatic = true
+        % isHydrostatic = true
         forcingType
     end
 

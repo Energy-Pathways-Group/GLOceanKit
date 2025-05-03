@@ -84,13 +84,16 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
         % Nonlinear flux computation
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function A0 = transformQGPVToWaveVortex(qgpv)
+            A0 = self.transformFromSpatialDomainWithFourier(qgpv);
+        end
 
         function F0 = nonlinearFlux(self)
             self.Fpv = 0*self.Fpv;
             for i=1:length(self.spatialFluxForcing)
                self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
             end
-            self.F0 = self.transformFromSpatialDomainWithFourier(self.Fpv);
+            self.F0 = self.transformQGPVToWaveVortex(self.Fpv);
             for i=1:length(self.spectralFluxForcing)
                self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
             end
@@ -112,9 +115,9 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
             for i=1:length(self.spatialFluxForcing)
                Fpv0 = self.Fpv;
                self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
-               F0{self.spatialFluxForcing(i).name} = self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0);
+               F0{self.spatialFluxForcing(i).name} = self.transformQGPVToWaveVortex(self.Fpv-Fpv0);
             end
-            self.F0 = self.transformFromSpatialDomainWithFourier(self.Fpv);
+            self.F0 = self.transformQGPVToWaveVortex(self.Fpv);
             for i=1:length(self.spectralFluxForcing)
                 F0_i = self.F0;
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);

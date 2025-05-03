@@ -23,16 +23,12 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
     properties (Dependent)
-        h_pm  % [Nj 1]
         totalEnergySpatiallyIntegrated
         totalEnergy
     end
     properties
         Fu, Fv, Feta
     end
-    % properties (GetAccess=public)
-    %     h_0
-    % end
 
     methods
         function self = WVTransformHydrostatic(Lxyz, Nxyz, options)
@@ -134,10 +130,6 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [wvtX2.A0,wvtX2.Ap,wvtX2.Am] = self.spectralVariableWithResolution(wvtX2,self.A0,self.Ap,self.Am);
         end
 
-        function h_pm = get.h_pm(self)
-            h_pm = self.h_0;
-        end
-
         function energy = get.totalEnergySpatiallyIntegrated(self)
             if self.isHydrostatic == 1
                 [u,v,eta] = self.variableWithName('u','v','eta');
@@ -222,76 +214,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformations FROM the spatial domain
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function u = transformToSpatialDomainWithF(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
-            end
-            u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
-        end
-
-        function w = transformToSpatialDomainWithG(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
-            end
-            w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformations TO the spatial domain
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function u_bar = transformFromSpatialDomainWithFio(self, u)
-            u_bar = (self.PF0*u)./self.P0;
-        end
-
-        function u_bar = transformFromSpatialDomainWithFg(self, u)
-            u_bar = (self.PF0*u)./self.P0;
-        end
-
-        function w_bar = transformFromSpatialDomainWithGg(self, w)
-            w_bar = (self.QG0*w)./self.Q0;
-        end
-
-        function w_bar = transformWithG_wg(~, w_bar )
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Needed to add and remove internal waves from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function ratio = maxFw(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
-
-        function ratio = maxFg(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
     end
 
     methods (Static)

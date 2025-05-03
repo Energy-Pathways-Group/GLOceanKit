@@ -1,9 +1,11 @@
-classdef WVStratificationConstant < WVStratification
+classdef WVStratificationConstant < WVStratification & CAAnnotatedClass
     properties (GetAccess=public, SetAccess=protected)
         N0
         h_0
+        h_pm
 
         F_g,G_g
+        F_wg, G_wg
         DCT, iDCT, DST, iDST
     end
 
@@ -60,93 +62,16 @@ classdef WVStratificationConstant < WVStratification
             self.buildVerticalModeProjectionOperators();
         end
 
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformation matrices
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function Finv = get.FinvMatrix(wvt)
-            % transformation matrix $$F^{-1}$$
-            %
-            % A matrix that transforms a vector from vertical mode space to physical
-            % space.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: Finv = FinvMatrix(wvt)
-            % - Returns Finv: A matrix with dimensions [Nz Nj]
-            arguments
-                wvt         WVTransform
-            end
-
-            Finv = shiftdim(wvt.F_g(:,1),1) .* wvt.iDCT;
-
-        end
-
-        function F = get.FMatrix(wvt)
-            % transformation matrix $$F$$
-            %
-            % A matrix that transforms a vector from physical
-            % space to vertical mode space.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: F = FMatrix(wvt)
-            % - Returns Finv: A matrix with dimensions [Nz Nj]
-            arguments
-                wvt         WVTransform
-            end
-
-            F = wvt.DCT ./ wvt.F_g(:,1);
-
-        end
-        function Ginv = get.GinvMatrix(wvt)
-            % transformation matrix $$G^{-1}$$
-            %
-            % A matrix that transforms a vector from vertical mode space to physical
-            % space.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: Ginv = GinvMatrix(wvt)
-            % - Returns Finv: A matrix with dimensions [Nz Nj]
-            arguments
-                wvt         WVTransform
-            end
-
-            Ginv = shiftdim(wvt.G_g(:,1),1) .* wvt.iDST;
-
-        end
-        function G = get.GMatrix(wvt)
-            % transformation matrix $$G$$
-            %
-            % A matrix that transforms a vector from physical
-            % space to vertical mode space.
-            %
-            % - Topic: Operations — Transformations
-            % - Declaration: G = GMatrix(wvt)
-            % - Returns Ginv: A matrix with dimensions [Nz Nj]
-            arguments
-                wvt         WVTransform
-            end
-
-            G = wvt.DST ./ wvt.G_g(:,1);
-
-        end
-
-        function vm = verticalModes(self)
-            vm = InternalModesConstantStratification(N0=self.N0, rho0=self.rho0, zIn=[self.z(1) 0], zOut=self.z, latitude=self.latitude);
-        end
-
         function self = buildVerticalModeProjectionOperators(self)
             % Build the transformation matrices
-            self.DCT = WVTransformConstantStratification.CosineTransformForwardMatrix(self.Nz);
+            self.DCT = WVStratificationConstant.CosineTransformForwardMatrix(self.Nz);
             self.DCT = self.DCT(1:self.Nj,:); % dump the Nyquist mode
-            self.iDCT = WVTransformConstantStratification.CosineTransformBackMatrix(self.Nz);
+            self.iDCT = WVStratificationConstant.CosineTransformBackMatrix(self.Nz);
             self.iDCT = self.iDCT(:,1:self.Nj); % dump the Nyquist mode
-            self.DST = WVTransformConstantStratification.SineTransformForwardMatrix(self.Nz);
+            self.DST = WVStratificationConstant.SineTransformForwardMatrix(self.Nz);
             self.DST = cat(1,zeros(1,self.Nz),self.DST);
             self.DST = self.DST(1:self.Nj,:);
-            self.iDST = WVTransformConstantStratification.SineTransformBackMatrix(self.Nz);
+            self.iDST = WVStratificationConstant.SineTransformBackMatrix(self.Nz);
             self.iDST = cat(2,zeros(self.Nz,1),self.iDST);
             self.iDST = self.iDST(:,1:self.Nj);
 
@@ -165,16 +90,193 @@ classdef WVStratificationConstant < WVStratification
             self.G_g = signNorm .* sqrt(2*g_/(self.Lz*N*N));
             self.F_g(J==0) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G_g(J==0) = 1; % j=0 mode doesn't exist for G
+
+            if self.isHydrostatic == 1
+                F_w = self.F_g;
+                G_w = self.G_g;
+            else
+                F_w = signNorm .* ((self.h_pm).*M) * sqrt(2*g_/(self.Lz*(N*N-f*f)));
+                G_w = signNorm .* sqrt(2*g_/(self.Lz*(N*N-f*f)));
+            end
+            F_w(J==0) = 2; % j=0 mode is a factor of 2 too big in DCT-I
+            G_w(J==0) = 1;
+
+            self.G_wg = self.G_g ./ G_w;
+            self.F_wg = self.F_g ./ F_w;
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices (hydrostatic)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function h = get.h_0(self)
             M = reshape(self.j,[],1)*pi/self.Lz;
             h = (1/self.g)*(self.N0*self.N0)./(M.*M);
             h(1) = self.Lz;
         end
-    end
 
-    methods (Access=protected)
+        function Finv = get.FinvMatrix(wvt)
+            % transformation matrix $$F^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Finv = shiftdim(wvt.F_g(:,1),1) .* wvt.iDCT;
+        end
+
+        function F = get.FMatrix(wvt)
+            % transformation matrix $$F$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            F = wvt.DCT ./ wvt.F_g(:,1);
+        end
+        function Ginv = get.GinvMatrix(wvt)
+            % transformation matrix $$G^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            Ginv = shiftdim(wvt.G_g(:,1),1) .* wvt.iDST;
+        end
+        function G = get.GMatrix(wvt)
+            % transformation matrix $$G$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GMatrix(wvt)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVTransform
+            end
+
+            G = wvt.DST ./ wvt.G_g(:,1);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices (non-hydrostatic)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function h = get.h_pm(self)
+            [K,L,J] = self.kljGrid;
+            M = J*pi/self.Lz;
+            if self.isHydrostatic == 1
+                h = (1/self.g)*(self.N0*self.N0)./(M.*M);
+                h(J==0) = 1; % prevent divide by zero
+            else
+                K2 = K.*K + L.*L;
+                h = (1/self.g)*(self.N0*self.N0 - self.f*self.f)./(M.*M+K2);
+                h(J==0) = 1; % prevent divide by zero
+            end
+        end
+
+        function Finv = FwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FwInvMatrix(wvt,kMode,lMode)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            Finv = shiftdim(self.F_g(iK)./self.F_wg(iK),1) .* self.iDCT; % 
+        end
+
+        function F = FwMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FwMatrix(wvt,kMode,lMode)
+            % - Returns F: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            F = self.DCT ./ reshape(self.F_g(iK)./self.F_wg(iK),[],1);
+        end
+
+        function Ginv = GwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GwInvMatrix(wvt,kMode,lMode)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            Ginv = shiftdim(self.G_g(iK)./self.G_wg(iK),1) .* self.iDST; %
+        end
+
+        function G = GwMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GwMatrix(wvt,kMode,lMode)
+            % - Returns G: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            iK = self.indexFromModeNumber(kMode,lMode,self.j);
+            G = self.DST ./ reshape(self.G_g(iK)./self.G_wg(iK),[],1);
+        end
+
+        function vm = verticalModes(self)
+            vm = InternalModesConstantStratification(N0=self.N0, rho0=self.rho0, zIn=[self.z(1) 0], zOut=self.z, latitude=self.latitude);
+        end
+
 
     end
 

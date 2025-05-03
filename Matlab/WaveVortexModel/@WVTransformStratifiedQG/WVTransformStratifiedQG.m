@@ -153,12 +153,16 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        function A0 = transformQGPVToWaveVortex(qgpv)
+            A0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(qgpv));
+        end
+
         function F0 = nonlinearFlux(self)
             self.Fpv = 0*self.Fpv;
             for i=1:length(self.spatialFluxForcing)
                 self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
             end
-            self.F0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
+            self.F0 = self.transformQGPVToWaveVortex(self.Fpv);
             for i=1:length(self.spectralFluxForcing)
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
             end
@@ -178,11 +182,11 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
             F0 = configureDictionary("string","cell");
             self.Fpv = 0*self.Fpv;
             for i=1:length(self.spatialFluxForcing)
-                Fpv0 = self.Fpv;
-                self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
-                F0{self.spatialFluxForcing(i).name} = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv-Fpv0));
+               Fpv0 = self.Fpv;
+               self.Fpv = self.spatialFluxForcing(i).addPotentialVorticitySpatialForcing(self,self.Fpv);
+               F0{self.spatialFluxForcing(i).name} = self.transformQGPVToWaveVortex(self.Fpv-Fpv0);
             end
-            self.F0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(self.Fpv));
+            self.F0 = self.transformQGPVToWaveVortex(self.Fpv);
             for i=1:length(self.spectralFluxForcing)
                 F0_i = self.F0;
                 self.F0 = self.spectralFluxForcing(i).addPotentialVorticitySpectralForcing(self,self.F0);
@@ -193,20 +197,6 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
                 self.F0 = self.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(self,self.F0);
                 F0{self.spectralAmplitudeForcing(i).name} = self.F0 - F0_i;
             end
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformations FROM the spatial domain
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function u_bar = transformFromSpatialDomainWithFg(self, u)
-            u_bar = (self.PF0*u)./self.P0;
-        end
-
-        function w_bar = transformFromSpatialDomainWithGg(self, w)
-            w_bar = (self.QG0*w)./self.Q0;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,64 +223,9 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
             w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* options.A0));
         end
 
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Needed to add and remove internal waves from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function ratio = maxFw(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
-
-        function ratio = maxFg(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
     end
 
     methods (Static)
-
-        function names = spectralDimensionNames()
-            % return a cell array of property names required by the class
-            %
-            % This function returns an array of property names required to be written
-            % by the class, in order to restore its state.
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spectralDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'j','kl'};
-        end
-
-        function names = spatialDimensionNames()
-            % return a cell array of the spatial dimension names
-            %
-            % This function returns an array of dimension names
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spatialDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'x','y','z'};
-        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

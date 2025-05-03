@@ -16,8 +16,6 @@ classdef WVStratification < WVRotatingFPlane
     end
 
     properties (Dependent)
-        % Z, J % No! these have to be implemented at the transform level
-        % because you have to know the full geometry
         Nz, Nj
     end
 
