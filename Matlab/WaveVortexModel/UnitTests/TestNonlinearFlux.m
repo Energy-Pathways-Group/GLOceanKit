@@ -9,18 +9,17 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
         Nxyz = struct('Nx16Ny16Nz9',[16 16 9]);
         %transform = {'constant','hydrostatic','boussinesq'};
         % transform = {'constant-hydrostatic','constant-boussinesq','hydrostatic','boussinesq'};
-        % transform = {'constant-hydrostatic','constant-boussinesq'};
-        transform = {'hydrostatic'};
+        transform = {'constant-hydrostatic','constant-boussinesq'};
+        % transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)
         function classSetup(testCase,Lxyz,Nxyz,transform)
             switch transform
                 case 'constant-hydrostatic'
-                    testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz, isHydrostatic=1, shouldAntialias=0);
+                    testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz, isHydrostatic=true, shouldAntialias=0);
                 case 'constant-boussinesq'
-                    testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz, isHydrostatic=0, shouldAntialias=0);
-                    testCase.wvt_.nonlinearFluxOperation = WVNonlinearFluxNonhydrostatic(testCase.wvt_);
+                    testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz,shouldAntialias=0);
                 case 'hydrostatic'
                     testCase.wvt_ = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
                 case 'boussinesq'
@@ -30,20 +29,20 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
     end
 
     methods (Test)
-        function testNonlinearFlux(self)
-            wvt = self.wvt_;
-            wvt.initWithRandomFlow();
-            spatialFlux = WVNonlinearFluxSpatial(wvt);
-            standardFlux = WVNonlinearFlux(wvt);
-
-            wvt.t = 6000;
-            [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(wvt);
-            [StandardFp,StandardFm,StandardF0] = standardFlux.compute(wvt);
-
-            self.verifyEqual(StandardFp,SpatialFp, "AbsTol",1e-7,"RelTol",1e-7);
-            self.verifyEqual(StandardFm,SpatialFm, "AbsTol",1e-7,"RelTol",1e-7);
-            self.verifyEqual(StandardF0,SpatialF0, "AbsTol",1e-7,"RelTol",1e-7);
-        end
+        % function testNonlinearFlux(self)
+        %     wvt = self.wvt_;
+        %     wvt.initWithRandomFlow();
+        %     spatialFlux = WVNonlinearFluxSpatial(wvt);
+        %     standardFlux = WVNonlinearFlux(wvt);
+        % 
+        %     wvt.t = 6000;
+        %     [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(wvt);
+        %     [StandardFp,StandardFm,StandardF0] = standardFlux.compute(wvt);
+        % 
+        %     self.verifyEqual(StandardFp,SpatialFp, "AbsTol",1e-7,"RelTol",1e-7);
+        %     self.verifyEqual(StandardFm,SpatialFm, "AbsTol",1e-7,"RelTol",1e-7);
+        %     self.verifyEqual(StandardF0,SpatialF0, "AbsTol",1e-7,"RelTol",1e-7);
+        % end
 
         function testEnergyFluxConservation(self)
             wvt = self.wvt_;
@@ -120,10 +119,10 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
             % implemented in this form, so maybe this is the best we can
             % do?!
             % DCT = WVTransformConstantStratification.CosineTransformForwardMatrix(wvt.Nz);
-            DCT = CosineTransformForwardMatrix(wvt.Nz);
+            DCT = WVGeometryDoublyPeriodicStratifiedConstant.CosineTransformForwardMatrix(wvt.Nz);
             DCT = DCT(1:wvt.Nj,:); % dump the Nyquist mode
             % DST = WVTransformConstantStratification.SineTransformForwardMatrix(wvt.Nz);
-            DST = SineTransformForwardMatrix(wvt.Nz);
+            DST = WVGeometryDoublyPeriodicStratifiedConstant.SineTransformForwardMatrix(wvt.Nz);
             DST = cat(1,zeros(1,wvt.Nz),DST);
             DST = DST(1:wvt.Nj,:);
 

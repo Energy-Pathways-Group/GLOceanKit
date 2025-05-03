@@ -7,8 +7,10 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
         F_g,G_g
         F_wg, G_wg
         DCT, iDCT, DST, iDST
+    end
 
-        isHydrostatic logical
+    properties
+        isHydrostatic
     end
 
     properties (Dependent)
@@ -53,10 +55,12 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
             Nz = Nxyz(3);
             dz = Lz/(Nz-1);
             
-            if geomOptions.shouldAntialias == true && ~isfield(stratOptions,"Nj")
+            if ~isfield(stratOptions,"Nj")
                 maxNj = Nxyz(3)-1;
-                if maxNj > 3
+                if geomOptions.shouldAntialias == true && maxNj > 3
                     stratOptions.Nj = floor(2*maxNj/3);
+                else
+                    stratOptions.Nj = maxNj;
                 end
             end
 
@@ -73,6 +77,8 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
 
             self.isHydrostatic = options.isHydrostatic;
             self.N0 = options.N0;
+            self.z_int = dz*ones(Nz,1);
+            self.z_int(1) = dz/2; self.z_int(end) = dz/2; 
             self.buildVerticalModeProjectionOperators();
         end
         
@@ -116,7 +122,7 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
             self.F_g(J==0) = 2; % j=0 mode is a factor of 2 too big in DCT-I
             self.G_g(J==0) = 1; % j=0 mode doesn't exist for G
 
-            if self.isHydrostatic == 1
+            if self.isHydrostatic == true
                 F_w = self.F_g;
                 G_w = self.G_g;
             else
@@ -213,7 +219,7 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
         function h = get.h_pm(self)
             [K,L,J] = self.kljGrid;
             M = J*pi/self.Lz;
-            if self.isHydrostatic == 1
+            if self.isHydrostatic == true
                 h = (1/self.g)*(self.N0*self.N0)./(M.*M);
                 h(J==0) = 1; % prevent divide by zero
             else
@@ -585,7 +591,7 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
             propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
-            propertyAnnotations = cat(2,propertyAnnotations,WVStratificationConstant.propertyAnnotationsForStratification());
+            propertyAnnotations = cat(2,propertyAnnotations,WVStratification.propertyAnnotationsForStratification());
             propertyAnnotations = cat(2,propertyAnnotations,WVGeometryCartesianXYZ.propertyAnnotationsForGeometry());
             propertyAnnotations(end+1) = CANumericProperty('isHydrostatic',{},'bool', 'whether the transforms are hydrostatic or non-hydrostatic', detailedDescription='- topic: Domain Attributes — Grid');
             propertyAnnotations(end+1) = CANumericProperty('N0',{},'rad s^{-1}', 'buoyancy frequency of the no-motion density', detailedDescription="The buoyancy frequency $$N_0$$ is defined as $$N_0\equiv sqrt{ - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z} }$$.");

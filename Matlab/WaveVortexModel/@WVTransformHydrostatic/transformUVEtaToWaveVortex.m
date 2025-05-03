@@ -1,4 +1,4 @@
-function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
+function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N)
 % transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
 %
 % This function **is** the WVTransform. It is a [linear
@@ -39,9 +39,6 @@ Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
 Ap(:,1) = self.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
 Am(:,1) = conj(Ap(:,1));
 
-if nargin == 5
-    phase = exp(-self.iOmega*(t-self.t0));
-    Ap = Ap .* phase;
-    Am = Am .* conj(phase);
-end
+Ap = Ap .* self.conjPhase;
+Am = Am .* self.phase;
 end

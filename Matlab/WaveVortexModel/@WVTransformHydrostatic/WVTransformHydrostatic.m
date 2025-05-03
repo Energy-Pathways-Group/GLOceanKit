@@ -25,6 +25,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
     properties (Dependent)
         totalEnergySpatiallyIntegrated
         totalEnergy
+        isHydrostatic
     end
     properties
         Fu, Fv, Feta
@@ -142,6 +143,10 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
 
         function energy = get.totalEnergy(self)
             energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
+        end
+
+        function flag = get.isHydrostatic(self)
+            flag = true;
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
