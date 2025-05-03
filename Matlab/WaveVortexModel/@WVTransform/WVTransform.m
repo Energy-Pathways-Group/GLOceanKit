@@ -540,6 +540,19 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             end
         end
 
+        function bool = hasVariableWithName(self,name)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Input,Repeating)
+                name char
+            end
+            arguments (Output)
+                bool logical
+            end
+            bool = ismember(string(name),self.variableNames);
+        end
+
         summarizeEnergyContent(self)
         summarizeDegreesOfFreedom(self)
         summarizeModeEnergy(self,options)
