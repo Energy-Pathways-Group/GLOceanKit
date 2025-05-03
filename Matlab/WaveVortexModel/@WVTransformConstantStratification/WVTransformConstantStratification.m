@@ -171,7 +171,7 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
         %     for i=1:length(self.spatialFluxForcing)
         %        [self.Fu, self.Fv, self.Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, self.Fu, self.Fv, self.Feta);
         %     end
-        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(self.Fu, self.Fv, self.Feta,self.t);
+        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(self.Fu, self.Fv, self.Feta);
         %     for i=1:length(self.spectralFluxForcing)
         %        [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
         %     end
@@ -222,10 +222,10 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
             for i=1:length(self.spatialFluxForcing)
                 Fu0=Fu;Fv0=Fv;Feta0=Feta;
                 [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
-                [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0,self.t);
+                [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0);
                 F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
             end
-            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
             for i=1:length(self.spectralFluxForcing)
                 Fp_i = Fp; Fm_i = Fm; F0_i = F0;
                 [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);

@@ -25,6 +25,7 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
     properties (Dependent)
         totalEnergySpatiallyIntegrated
         totalEnergy
+        isHydrostatic
     end
 
     properties (GetAccess=private,SetAccess=private)
@@ -146,6 +147,10 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
 
         function energy = get.totalEnergy(self)
             energy = sum( self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
+        end
+        
+        function flag = get.isHydrostatic(self)
+            flag = true;
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

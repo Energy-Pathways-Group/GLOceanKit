@@ -14,7 +14,7 @@ arguments
     N (:,:,:) double {mustBeNonempty,mustBeReal}
 end
 
-[Ap,Am,A0] = self.transformUVEtaToWaveVortex(U,V,N,self.t);
+[Ap,Am,A0] = self.transformUVEtaToWaveVortex(U,V,N);
 
 self.Ap = self.Ap + Ap;
 self.Am = self.Am + Am;

@@ -433,7 +433,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.clearVariableCacheOfApAmA0DependentVariables();
         end
 
-        [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
+        [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)

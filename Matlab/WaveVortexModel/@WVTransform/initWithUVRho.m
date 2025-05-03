@@ -15,6 +15,6 @@ arguments
     RHO (:,:,:) double {mustBeNonempty,mustBeReal}
 end
 
-[self.Ap,self.Am,self.A0] = self.transformUVEtaToWaveVortex(U,V,(self.g/self.rho0)*RHO./shiftdim(self.N2,-2),self.t);
+[self.Ap,self.Am,self.A0] = self.transformUVEtaToWaveVortex(U,V,(self.g/self.rho0)*RHO./shiftdim(self.N2,-2));
 
 end

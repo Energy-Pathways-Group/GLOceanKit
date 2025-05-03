@@ -4,9 +4,10 @@ function [Ap,Am,A0] = transformUVWEtaToWaveVortex(self,U,V,W,N)
 % This function tuned for constant stratification.
 %
 % - Topic: Operations — Transformations
-% - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N,t)
-% - Parameter u: x-component of the fluid velocity
-% - Parameter v: y-component of the fluid velocity
+% - Declaration: [Ap,Am,A0] = transformUVWEtaToWaveVortex(U,V,N)
+% - Parameter u: x-component of the momentum
+% - Parameter v: y-component of the momentum
+% - Parameter w: y-component of the momentum
 % - Parameter n: scaled density anomaly
 % - Parameter t: (optional) time of observations
 % - Returns Ap: positive wave coefficients at reference time t0
