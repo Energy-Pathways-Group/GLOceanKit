@@ -76,7 +76,7 @@ To implement this in code, you need to subclass the `WVNonlinearFluxOperation` a
      vNL = wvt.u .* wvt.diffX(wvt.v)   + wvt.v .* wvt.diffY(wvt.v)   + wvt.w .*  wvt.diffZF(wvt.v);
      nNL = wvt.u .* wvt.diffX(wvt.eta) + wvt.v .* wvt.diffY(wvt.eta) + wvt.w .* (wvt.diffZG(wvt.eta) + wvt.eta .* wvt.dLnN2);
 
-     [varargout{:}] = wvt.transformUVEtaToWaveVortex(-uNL,-vNL,-nNL,wvt.t);
+     [varargout{:}] = wvt.transformUVEtaToWaveVortex(-uNL,-vNL,-nNL);
 end
 ```
 

@@ -1,15 +1,28 @@
-classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStratificationVariable
+classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStratification & WVGeometryCartesianXYZ
+    properties (Access=public) %(GetAccess=private, SetAccess=private) %(Access=private)
+        dLnN2
 
-    properties (Dependent, SetAccess=private)
-        spatialMatrixSize
-        spectralMatrixSize
-        K2, Kh
-        X, Y, Z
-        K, L, J
+        % Transformation matrices
+        PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
+        PF0, QG0 % size(PF,PG)=[Nj x Nz]
+        h_0 % [Nj 1]
+        h_pm
+
+        P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
+        Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
+    end
+
+    properties (Dependent)
+        FinvMatrix
+        GinvMatrix
+        FMatrix
+        GMatrix
+        Lr2
+          % [Nj 1]
     end
 
     methods
-        function self = WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, geomOptions, stratOptions)
+        function self = WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, geomOptions, stratOptions, directInit)
             % create geometry for 2D barotropic flow
             %
             % ```matlab
@@ -38,18 +51,36 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 stratOptions.rotationRate (1,1) double = 7.2921E-5
                 stratOptions.latitude (1,1) double = 33
                 stratOptions.g (1,1) double = 9.81
-                stratOptions.dLnN2 (:,1) double
-                stratOptions.PF0inv
-                stratOptions.QG0inv
-                stratOptions.PF0
-                stratOptions.QG0
-                stratOptions.h_0 (:,1) double
-                stratOptions.P0 (:,1) double
-                stratOptions.Q0 (:,1) double
-                stratOptions.z_int (:,1) double
+
+                % ALL of these must be set for direct initialization to
+                % avoid actually computing the modes.
+                directInit.dLnN2 (:,1) double
+                directInit.PF0inv
+                directInit.QG0inv
+                directInit.PF0
+                directInit.QG0
+                directInit.h_0 (:,1) double
+                directInit.P0 (:,1) double
+                directInit.Q0 (:,1) double
+                directInit.z_int (:,1) double
             end
-            optionCell = namedargs2cell(geomOptions);
-            self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
+            Lz = Lxyz(3);
+            Nz = Nxyz(3);
+            if ~isfield(stratOptions,'z')
+                stratOptions.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=stratOptions.rhoFunction,N2=stratOptions.N2Function,latitude=stratOptions.latitude,rotationRate=stratOptions.rotationRate);
+            end
+            nModes = Nz-1;
+            if ~isequal(stratOptions.N2Function,@isempty)
+                verticalModes = InternalModesWKBSpectral(N2=stratOptions.N2Function,zIn=[-Lz 0],zOut=stratOptions.z,latitude=stratOptions.latitude,rho0=stratOptions.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=stratOptions.rotationRate,g=stratOptions.g);
+                stratOptions.N2Function = stratOptions.N2Function;
+                stratOptions.rhoFunction = @(z) verticalModes.rho_function(z);
+            elseif ~isequal(stratOptions.rhoFunction,@isempty)
+                verticalModes = InternalModesWKBSpectral(rho=stratOptions.rhoFunction,zIn=[-Lz 0],zOut=stratOptions.z,latitude=stratOptions.latitude,rho0=stratOptions.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=stratOptions.rotationRate,g=stratOptions.g);
+                stratOptions.N2Function = @(z) verticalModes.N2_function(z);
+                stratOptions.rhoFunction = stratOptions.rhoFunction;
+            end
+            verticalModes.normalization = Normalization.kConstant;
+            verticalModes.upperBoundary = UpperBoundary.rigidLid;
 
             if geomOptions.shouldAntialias == true && ~isfield(stratOptions,"Nj")
                 maxNj = Nxyz(3)-1;
@@ -57,74 +88,178 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                     stratOptions.Nj = floor(2*maxNj/3);
                 end
             end
+
             statOptionCell = namedargs2cell(stratOptions);
-            self@WVStratificationVariable(Lxyz(3),Nxyz(3),statOptionCell{:});
+            self@WVStratification(Lxyz(3),Nxyz(3),statOptionCell{:});
+
+            optionCell = namedargs2cell(geomOptions);
+            self@WVGeometryDoublyPeriodic(Lxyz(1:2),Nxyz(1:2),optionCell{:},Nz=Nxyz(3),shouldExcludeNyquist=true,shouldExludeConjugates=true,conjugateDimension=2);
+
+            self.verticalModes = verticalModes;
+
+            allFields = cell2struct([struct2cell(stratOptions);struct2cell(directInit)],[fieldnames(stratOptions);fieldnames(directInit)]);
+            canInitializeDirectly = all(isfield(allFields, WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForStratification));
+
+            if canInitializeDirectly == true
+                self.dLnN2 = directInit.dLnN2;
+                self.PF0inv = directInit.PF0inv;
+                self.QG0inv = directInit.QG0inv;
+                self.PF0 = directInit.PF0;
+                self.QG0 = directInit.QG0;
+                self.P0 = directInit.P0;
+                self.Q0 = directInit.Q0;
+                self.h_0 = directInit.h_0;
+                self.z_int = directInit.z_int;
+            else
+                self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
+                [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
+            end
+            self.h_pm = self.h_0;
         end
 
-        function sz = get.spatialMatrixSize(self)
-            % size of any real-valued field variable
-            sz = [self.Nx self.Ny self.Nz];
-        end
+        du = diffZF(self,u,n)
+        dw = diffZG(self,w,n)
 
-        function sz = get.spectralMatrixSize(self)
-            % size of any spectral matrix, Ap, Am, A0
-            sz = [self.Nj self.Nkl];
-        end
-
-        function [X,Y,Z] = xyzGrid(self)
-            X = self.X; Y = self.Y; Z = self.Z;
-        end
-
-        function [K,L,J] = kljGrid(self)
-            K = repmat(shiftdim(self.k,-1),self.Nj,1);
-            L = repmat(shiftdim(self.l,-1),self.Nj,1);
-            J = repmat(self.j,1,self.Nkl);
-        end
-
-        function value = get.K(self)
-            value = repmat(shiftdim(self.k,-1),self.Nj,1);
-        end
-
-        function value = get.L(self)
-            value = repmat(shiftdim(self.l,-1),self.Nj,1);
-        end
-
-        function value = get.J(self)
-            value = repmat(self.j,1,self.Nkl);
-        end
-
-        function K2 = get.K2(self)
-            K2 = self.K .* self.K + self.L .* self.L;
-        end
-
-        function Kh = get.Kh(self)
-            Kh = sqrt(self.K .* self.K + self.L .* self.L);
-        end 
-
-        function value = get.X(self)
-            [value,~,~] = ndgrid(self.x,self.y,self.z);
-        end
-
-        function value = get.Y(self)
-            [~,value,~] = ndgrid(self.x,self.y,self.z);
-        end
-
-        function value = get.Z(self)
-            [~,~,value] = ndgrid(self.x,self.y,self.z);
+        function Lr2 = get.Lr2(self)
+            Lr2 = self.g*self.h_0/(self.f*self.f);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Mode numbers and indices
+        % Transformation matrices
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        bool = isValidPrimaryModeNumber(self,kMode,lMode,jMode)
-        bool = isValidConjugateModeNumber(self,kMode,lMode,jMode)
-        bool = isValidModeNumber(self,kMode,lMode,jMode)
-        index = indexFromModeNumber(self,kMode,lMode,jMode)
-        [kMode,lMode,jMode] = modeNumberFromIndex(self,linearIndex)
+        function Finv = get.FinvMatrix(wvt)
+            % transformation matrix $$F^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            Finv = shiftdim(wvt.P0,1) .* wvt.PF0inv;
+        end
 
+        function F = get.FMatrix(wvt)
+            % transformation matrix $$F$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            F = wvt.PF0 ./ shiftdim(wvt.P0,2);
+        end
+
+        function Ginv = get.GinvMatrix(wvt)
+            % transformation matrix $$G^{-1}$$
+            %
+            % A matrix that transforms a vector from vertical mode space to physical
+            % space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GinvMatrix(wvt)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            Ginv = shiftdim(wvt.Q0,1) .* wvt.QG0inv;
+        end
+
+        function G = get.GMatrix(wvt)
+            % transformation matrix $$G$$
+            %
+            % A matrix that transforms a vector from physical
+            % space to vertical mode space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GMatrix(wvt)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                wvt         WVStratification
+            end
+            G = wvt.QG0 ./ shiftdim(wvt.Q0,2);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations FROM the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function u = transformToSpatialDomainWithF(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
+        end
+
+        function w = transformToSpatialDomainWithG(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+            w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations TO the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function u_bar = transformFromSpatialDomainWithFio(self, u)
+            u_bar = (self.PF0*u)./self.P0;
+        end
+
+        function u_bar = transformFromSpatialDomainWithFg(self, u)
+            u_bar = (self.PF0*u)./self.P0;
+        end
+
+        function w_bar = transformFromSpatialDomainWithGg(self, w)
+            w_bar = (self.QG0*w)./self.Q0;
+        end
+
+        function w_bar = transformWithG_wg(~, w_bar )
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Needed to add and remove internal waves from the model
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ratio = maxFw(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
+        end
+
+        function ratio = maxFg(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            ratio = self.P0(j+1);
+        end
     end
 
     methods (Static)
@@ -149,9 +284,14 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
-            requiredPropertyNames = WVStratificationVariable.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodicStratified.newRequiredPropertyNames());
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry());
-            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicBarotropic.newNonrequiredPropertyNames);
+            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicStratified.newNonrequiredPropertyNames);
+        end
+
+        function newRequiredPropertyNames = newRequiredPropertyNames()
+            newRequiredPropertyNames = {'dLnN2','PF0inv','QG0inv','PF0','QG0','P0','Q0','h_0','z_int'};
         end
 
         function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
@@ -160,16 +300,18 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
             propertyAnnotations = WVGeometryDoublyPeriodic.propertyAnnotationsForGeometry();
-            propertyAnnotations = cat(2,propertyAnnotations,WVStratificationVariable.propertyAnnotationsForStratification());
+            propertyAnnotations = cat(2,propertyAnnotations,WVStratification.propertyAnnotationsForStratification());
+            propertyAnnotations = cat(2,propertyAnnotations,WVGeometryCartesianXYZ.propertyAnnotationsForGeometry());
 
-            propertyAnnotations(end+1) = CANumericProperty('K',{'j','kl'},'rad/m', 'k-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('L',{'j','kl'},'rad/m', 'l-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('J',{'j','kl'},'rad/m', 'j-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('Kh',{'j','kl'},'rad/m', 'horizontal wavenumber, $$Kh=\sqrt(K^2+L^2)$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('K2',{'j','kl'},'rad/m', 'squared horizontal wavenumber, $$K2=K^2+L^2$$', detailedDescription='- topic: Domain Attributes — Grid — Spectral');
-            propertyAnnotations(end+1) = CANumericProperty('X',{'x','y','z'},'m', 'x-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-            propertyAnnotations(end+1) = CANumericProperty('Y',{'x','y','z'},'m', 'y-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
-            propertyAnnotations(end+1) = CANumericProperty('Z',{'x','y','z'},'m', 'z-coordinate matrix', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
+            propertyAnnotations(end+1) = CANumericProperty('PF0inv',{'z','j'},'','Preconditioned F-mode inverse transformation');
+            propertyAnnotations(end+1) = CANumericProperty('QG0inv',{'z','j'},'','Preconditioned G-mode inverse transformation');
+            propertyAnnotations(end+1) = CANumericProperty('PF0',{'j','z'},'','Preconditioned F-mode forward transformation');
+            propertyAnnotations(end+1) = CANumericProperty('QG0',{'j','z'},'','Preconditioned G-mode forward transformation');
+            propertyAnnotations(end+1) = CANumericProperty('P0',{'j'},'','Preconditioner for F, size(P)=[1 Nj]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat');
+            propertyAnnotations(end+1) = CANumericProperty('Q0',{'j'},'','Preconditioner for G, size(Q)=[1 Nj]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat. ');
+
+            propertyAnnotations(end+1) = CANumericProperty('h_0',{'j'},'m', 'equivalent depth of each geostrophic mode', detailedDescription='- topic: Domain Attributes — Stratification');
+            propertyAnnotations(end+1) = CANumericProperty('Lr2',{'j'},'m^2', 'squared Rossby radius');
         end
 
         function [Lxyz, Nxyz, options] = requiredPropertiesForGeometryFromGroup(group)
@@ -182,8 +324,10 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 options
             end
             [Lxyz(1:2), Nxyz(1:2), geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingProperties=true);
-            [Lxyz(3), Nxyz(3), stratOptions] = WVStratificationVariable.requiredPropertiesForStratificationFromGroup(group);
-            options = cat(2,stratOptions,geomOptions);
+            [Lxyz(3), Nxyz(3), stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVGeometryDoublyPeriodicStratified.newRequiredPropertyNames);
+            newOptions = namedargs2cell(vars);
+            options = cat(2,stratOptions,geomOptions,newOptions);
         end
 
         function geometry = geometryFromFile(path)
@@ -204,6 +348,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             arguments (Output)
                 geometry WVGeometryDoublyPeriodicStratified {mustBeNonempty}
             end
+            CAAnnotatedClass.throwErrorIfMissingProperties(group,WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForGeometry);
             [Lxyz, Nxyz, options] = WVGeometryDoublyPeriodicStratified.requiredPropertiesForGeometryFromGroup(group);
             geometry = WVGeometryDoublyPeriodicStratified(Lxyz,Nxyz,options{:});
         end

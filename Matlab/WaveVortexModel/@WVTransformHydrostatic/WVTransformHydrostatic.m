@@ -23,16 +23,13 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
     %
     % - Declaration: classdef WVTransformHydrostatic < [WVTransform](/classes/wvtransform/)
     properties (Dependent)
-        h_pm  % [Nj 1]
         totalEnergySpatiallyIntegrated
         totalEnergy
+        isHydrostatic
     end
     properties
         Fu, Fv, Feta
     end
-    % properties (GetAccess=public)
-    %     h_0
-    % end
 
     methods
         function self = WVTransformHydrostatic(Lxyz, Nxyz, options)
@@ -99,7 +96,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             % the property annotations for these variables will already
             % have beena added, but that is okay, they will be replaced.
             varNames = self.namesOfTransformVariables();
-            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true);
+            self.addOperation(self.operationForKnownVariable(varNames{:}),shouldOverwriteExisting=true,shouldSuppressWarning=true);
 
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.geostrophicComponent));
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
@@ -134,8 +131,23 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [wvtX2.A0,wvtX2.Ap,wvtX2.Am] = self.spectralVariableWithResolution(wvtX2,self.A0,self.Ap,self.Am);
         end
 
-        function h_pm = get.h_pm(self)
-            h_pm = self.h_0;
+        function wvt = boussinesqTransform(self)
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+            end
+            wvt = WVTransformBoussinesq([self.Lx self.Ly self.Lz],[self.Nx self.Ny self.Nz],optionArgs{:});
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvt);
+            end
+            wvt.setForcing(forcing);
+
+            wvt.t0 = self.t0;
+            wvt.t = self.t;
+            [wvt.A0,wvt.Ap,wvt.Am] = self.spectralVariableWithResolution(wvt,self.A0,self.Ap,self.Am);
         end
 
         function energy = get.totalEnergySpatiallyIntegrated(self)
@@ -151,6 +163,10 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         function energy = get.totalEnergy(self)
             energy = sum( self.Apm_TE_factor(:).*( abs(self.Ap(:)).^2 + abs(self.Am(:)).^2 ) + self.A0_TE_factor(:).*( abs(self.A0(:)).^2) );
         end
+
+        function flag = get.isHydrostatic(self)
+            flag = true;
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Nonlinear flux computation
@@ -164,7 +180,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         %     for i=1:length(self.spatialFluxForcing)
         %        [self.Fu, self.Fv, self.Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, self.Fu, self.Fv, self.Feta);
         %     end
-        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(self.Fu, self.Fv, self.Feta,self.t);
+        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(self.Fu, self.Fv, self.Feta);
         %     for i=1:length(self.spectralFluxForcing)
         %        [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
         %     end
@@ -178,7 +194,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             for i=1:length(self.spatialFluxForcing)
                 [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
             end
-            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
             for i=1:length(self.spectralFluxForcing)
                 [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
             end
@@ -199,10 +215,10 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             for i=1:length(self.spatialFluxForcing)
                 Fu0=Fu;Fv0=Fv;Feta0=Feta;
                 [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
-                [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0,self.t);
+                [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0);
                 F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
             end
-            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta,self.t);
+            [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
             for i=1:length(self.spectralFluxForcing)
                 Fp_i = Fp; Fm_i = Fm; F0_i = F0;
                 [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
@@ -222,108 +238,10 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
         end
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformations FROM the spatial domain
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function u = transformToSpatialDomainWithF(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
-            end
-            u = self.transformToSpatialDomainWithFourier(self.PF0inv*(self.P0 .* (options.Apm + options.A0)));
-        end
-
-        function w = transformToSpatialDomainWithG(self, options)
-            arguments
-                self WVTransform {mustBeNonempty}
-                options.Apm double = 0
-                options.A0 double = 0
-            end
-            w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Transformations TO the spatial domain
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function u_bar = transformFromSpatialDomainWithFio(self, u)
-            u_bar = (self.PF0*u)./self.P0;
-        end
-
-        function u_bar = transformFromSpatialDomainWithFg(self, u)
-            u_bar = (self.PF0*u)./self.P0;
-        end
-
-        function w_bar = transformFromSpatialDomainWithGg(self, w)
-            w_bar = (self.QG0*w)./self.Q0;
-        end
-
-        function w_bar = transformWithG_wg(~, w_bar )
-        end
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %
-        % Needed to add and remove internal waves from the model
-        %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function ratio = maxFw(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
-
-        function ratio = maxFg(self,kMode,lMode,j)
-            arguments
-                self WVTransform {mustBeNonempty}
-                kMode (:,1) double
-                lMode (:,1) double
-                j (:,1) double
-            end
-            ratio = self.P0(j+1);
-        end
     end
 
     methods (Static)
-
-        function names = spectralDimensionNames()
-            % return a cell array of property names required by the class
-            %
-            % This function returns an array of property names required to be written
-            % by the class, in order to restore its state.
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spectralDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'j','kl'};
-        end
-
-        function names = spatialDimensionNames()
-            % return a cell array of the spatial dimension names
-            %
-            % This function returns an array of dimension names
-            %
-            % - Topic: Developer
-            % - Declaration:  names = spatialDimensionNames()
-            % - Returns names: array strings
-            arguments (Output)
-                names cell
-            end
-            names = {'x','y','z'};
-        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %

@@ -58,7 +58,7 @@ else
     warning('WVTransform not recognized.')
 end
 
-[Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL,self.t);
+[Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 
 % Fp = ApNL .* conj(phase);
 % Fm = AmNL .* phase;

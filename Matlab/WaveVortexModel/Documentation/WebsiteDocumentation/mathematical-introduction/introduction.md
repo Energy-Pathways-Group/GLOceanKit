@@ -30,7 +30,7 @@ $$
 In the `WVTransform` the linear transformation and its inverse are implemented as,
 
 ```matlab
-[Ap,Am,A0] = wvt.transformUVEtaToWaveVortex(U,V,N,t);
+[Ap,Am,A0] = wvt.transformUVEtaToWaveVortex(U,V,N);
 [U,V,W,N] = wvt.transformWaveVortexToUVWEta(Ap,Am,A0,t);
 ```
 

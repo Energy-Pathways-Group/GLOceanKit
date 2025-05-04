@@ -68,7 +68,7 @@ elseif all(ncfile.hasVariableWithName('u','v','eta'))
     else
         [u,v,eta] = ncfile.readVariables('u','v','eta');
     end
-    [wvt.Ap,wvt.Am,wvt.A0] = wvt.transformUVEtaToWaveVortex(u,v,eta,wvt.t);
+    [wvt.Ap,wvt.Am,wvt.A0] = wvt.transformUVEtaToWaveVortex(u,v,eta);
     if options.shouldDisplayInit == 1
         fprintf('%s initialized from u, u, eta.\n',ncfile.attributes('WVTransform'));
     end

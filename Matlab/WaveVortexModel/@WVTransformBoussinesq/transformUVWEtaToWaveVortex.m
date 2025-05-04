@@ -1,26 +1,21 @@
-function [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N)
-% transform fluid variables $$(u,v,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
+function [Ap,Am,A0] = transformUVWEtaToWaveVortex(self,U,V,W,N)
+% transform momentum variables $$(u,v,w,\eta)$$ to wave-vortex coefficients $$(A_+,A_-,A_0)$$.
 %
-% This function **is** the WVTransform. It is a [linear
-% transformation](/mathematical-introduction/transformations.html)
-% denoted $$\mathcal{L}$$.
-%
-% This function is not intended to be used directly (although
-% you can), and is kept here to demonstrate a simple
-% implementation of the transformation. Instead, you should
-% initialize the WVTransform using one of the
-% initialization functions.
+% This function tuned for constant stratification.
 %
 % - Topic: Operations — Transformations
-% - Declaration: [Ap,Am,A0] = transformUVEtaToWaveVortex(U,V,N)
-% - Parameter u: x-component of the fluid velocity
-% - Parameter v: y-component of the fluid velocity
+% - Declaration: [Ap,Am,A0] = transformUVWEtaToWaveVortex(U,V,N)
+% - Parameter u: x-component of the momentum
+% - Parameter v: y-component of the momentum
+% - Parameter w: y-component of the momentum
 % - Parameter n: scaled density anomaly
+% - Parameter t: (optional) time of observations
 % - Returns Ap: positive wave coefficients at reference time t0
 % - Returns Am: negative wave coefficients at reference time t0
 % - Returns A0: geostrophic coefficients at reference time t0
 u_hat = self.transformFromSpatialDomainWithFourier(U);
 v_hat = self.transformFromSpatialDomainWithFourier(V);
+w_hat = self.transformFromSpatialDomainWithFourier(W);
 n_hat = self.transformFromSpatialDomainWithFourier(N);
 
 iK = sqrt(-1)*repmat(shiftdim(self.k,-1),self.Nz,1);
@@ -29,11 +24,11 @@ iL = sqrt(-1)*repmat(shiftdim(self.l,-1),self.Nz,1);
 n_bar = self.transformFromSpatialDomainWithGg(n_hat);
 zeta_bar = self.transformFromSpatialDomainWithFg(iK .* v_hat - iL .* u_hat);
 A0 = self.A0Z.*zeta_bar + self.A0N.*n_bar;
-
-delta_bar = self.transformWithG_wg(self.h_0.*self.transformFromSpatialDomainWithFg(iK .* u_hat + iL .* v_hat));
 nw_bar = self.transformWithG_wg(n_bar - self.NA0.*A0);
-Ap = self.ApmD .* delta_bar + self.ApmN .* nw_bar;
-Am = self.ApmD .* delta_bar - self.ApmN .* nw_bar;
+
+delta_w_bar = self.transformFromSpatialDomainWithG_w(self.Ddelta * (self.delta_uhat .* u_hat + self.delta_vhat .* v_hat) + sqrt(-1)*self.ApmW .* w_hat);
+Ap = delta_w_bar + self.ApmN .* nw_bar;
+Am = delta_w_bar - self.ApmN .* nw_bar;
 
 Ap(:,1) = self.transformFromSpatialDomainWithFio(u_hat(:,1) - sqrt(-1)*v_hat(:,1))/2;
 Am(:,1) = conj(Ap(:,1));

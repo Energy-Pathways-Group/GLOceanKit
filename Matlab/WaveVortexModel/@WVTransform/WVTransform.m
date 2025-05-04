@@ -53,13 +53,13 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     % Public read-only properties
     properties (GetAccess=public, SetAccess=protected)
         version = "3.1.0";
-        isHydrostatic = true
         forcingType
     end
 
     properties (Abstract)
         totalEnergySpatiallyIntegrated
         totalEnergy
+        isHydrostatic
     end
 
     properties (Dependent, SetAccess=private)
@@ -433,7 +433,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.clearVariableCacheOfApAmA0DependentVariables();
         end
 
-        [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N,t)
+        [Ap,Am,A0] = transformUVEtaToWaveVortex(self,U,V,N)
         [U,V,W,N] = transformWaveVortexToUVWEta(self,Ap,Am,A0,t)
 
         [Fp,Fm,F0] = nonlinearFluxWithMask(self,mask)

@@ -67,7 +67,7 @@ classdef SpatialForcingOperation < WVOperation
                     iForce = iForce + 1; varargout{iForce} = Fv-Fv0;
                     iForce = iForce + 1; varargout{iForce} = Feta-Feta0;
                 end
-                [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(Fu, Fv, Feta,wvt.t);
+                [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(Fu, Fv, Feta);
                 for i=1:length(wvt.spectralFluxForcing)
                     Fp_i = Fp; Fm_i = Fm; F0_i = F0;
                     [Fp,Fm,F0] = wvt.spectralFluxForcing(i).addSpectralForcing(wvt,Fp, Fm, F0);

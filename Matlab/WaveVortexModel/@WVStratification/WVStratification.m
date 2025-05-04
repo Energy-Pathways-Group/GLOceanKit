@@ -16,8 +16,6 @@ classdef WVStratification < WVRotatingFPlane
     end
 
     properties (Dependent)
-        % Z, J % No! these have to be implemented at the transform level
-        % because you have to know the full geometry
         Nz, Nj
     end
 
@@ -152,11 +150,7 @@ classdef WVStratification < WVRotatingFPlane
             optionCell = namedargs2cell(rotatingOptions);
             self@WVRotatingFPlane(optionCell{:});
 
-            if isfield(options,'z')
-                self.z=options.z;
-            else
-                self.z = WVStratification.quadraturePointsForStratifiedFlow(Lz,Nz,rho=options.rhoFunction,N2=options.N2Function,latitude=self.latitude,rotationRate=self.rotationRate);
-            end
+            self.z=options.z;
             self.Lz = Lz;
 
             if isfield(options,'j')
@@ -170,35 +164,12 @@ classdef WVStratification < WVRotatingFPlane
                 self.j = (0:(Nj-1))';
             end
 
-            nModes = Nz-1;
             self.rho0 = options.rho0;
-            if ~isequal(options.N2Function,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(N2=options.N2Function,zIn=[-Lz 0],zOut=self.z,latitude=self.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate,g=self.g);
-                self.N2 = options.N2Function(self.z);
-                self.N2Function = options.N2Function;
-                self.rhoFunction = self.verticalModes.rho_function;
-                self.rho_nm = self.rhoFunction(self.z);
-            elseif ~isequal(options.rhoFunction,@isempty)
-                self.verticalModes = InternalModesWKBSpectral(rho=options.rhoFunction,zIn=[-Lz 0],zOut=self.z,latitude=self.latitude,rho0=options.rho0,nModes=nModes,nEVP=max(256,floor(2.1*Nz)),rotationRate=self.rotationRate,g=self.g);
-                self.N2 = self.verticalModes.N2;
-                self.N2Function = self.verticalModes.N2_function;
-                self.rhoFunction = options.rhoFunction;
-                self.rho_nm = self.rhoFunction(self.z);       
-            end
-            self.verticalModes.normalization = Normalization.kConstant;
-            self.verticalModes.upperBoundary = UpperBoundary.rigidLid;
+            self.N2 = options.N2Function(self.z);
+            self.N2Function = options.N2Function;
+            self.rhoFunction = options.rhoFunction;
+            self.rho_nm = self.rhoFunction(self.z);
         end
-
-        % function initializeStratifiedFlow(wvt)
-        %     % After initializing the WVTransform, this method can be called
-        %     % and the WVStratification will register.
-        %     arguments
-        %         wvt WVTransform
-        %     end
-        %     wvt.addPropertyAnnotations(WVStratification.propertyAnnotationsForStratifiedFlow);
-        %     wvt.addOperation(EtaTrueOperation());
-        %     wvt.addOperation(APVOperation());
-        % end
 
         function [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
             % Now go compute the appropriate number of modes at the
