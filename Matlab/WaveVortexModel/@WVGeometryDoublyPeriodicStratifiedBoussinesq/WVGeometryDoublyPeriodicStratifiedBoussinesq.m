@@ -10,6 +10,12 @@ classdef WVGeometryDoublyPeriodicStratifiedBoussinesq < WVGeometryDoublyPeriodic
         QGwg  % size(PF,PG)=[Nj x Nj x Nk]
         Ppm % Preconditioner for F, size(P)=[Nj x Nk]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
         Qpm % Preconditioner for G, size(Q)=[Nj x Nk]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
+
+        wvBuffer
+    end
+    
+    properties (Dependent, SetAccess=private)
+        nK2unique    % number of unique squared-wavenumbers
     end
 
     methods
@@ -105,6 +111,8 @@ classdef WVGeometryDoublyPeriodicStratifiedBoussinesq < WVGeometryDoublyPeriodic
 
                 self.buildVerticalModeProjectionOperators();
             end
+
+            self.wvBuffer = zeros(self.Nz,self.Nkl);
         end
 
         function self = buildVerticalModeProjectionOperators(self)
@@ -117,14 +125,285 @@ classdef WVGeometryDoublyPeriodicStratifiedBoussinesq < WVGeometryDoublyPeriodic
             self.Qpm =     zeros(self.Nj,self.nK2unique);
             self.QGwg =    zeros(self.Nj,self.Nj,self.nK2unique);
 
+            fprintf("building %d boussinesq transformation matrices...",self.nK2unique)
             for iK=1:self.nK2unique
+                if mod(iK,50) == 1
+                    fprintf("%d...",iK);
+                end
                 [self.Ppm(:,iK),self.Qpm(:,iK),self.PFpmInv(:,:,iK),self.PFpm(:,:,iK),self.QGpmInv(:,:,iK),self.QGpm(:,:,iK),h(:,iK)] = self.verticalProjectionOperatorsForIGWModes(sqrt(self.K2unique(iK)),self.Nj);
                 self.QGwg(:,:,iK ) = self.QGpm(:,:,iK )*self.QG0inv;
             end
+            fprintf("finished.\n");
 
             self.h_pm = zeros(self.spectralMatrixSize);
             for iK=1:size(self.h_pm,2)
                 self.h_pm(:,iK) = h(:,self.iK2unique(iK));
+            end
+        end
+
+        function value = get.nK2unique(self)
+            value=length(self.K2unique);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformation matrices
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function Finv = FwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Finv = FwInvMatrix(wvt,kMode,lMode)
+            % - Returns Finv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            [kMode,lMode] = self.primaryKLModeNumberFromKLModeNumber(kMode,lMode);
+            iK = self.indexFromKLModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            Finv = shiftdim(self.Ppm(:,iUnique),1) .* self.PFpmInv(:,:,iUnique ); % 
+        end
+
+        function F = FwMatrix(self,kMode,lMode)
+            % transformation matrix $$F_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: F = FwMatrix(wvt,kMode,lMode)
+            % - Returns F: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            [kMode,lMode] = self.primaryKLModeNumberFromKLModeNumber(kMode,lMode);
+            iK = self.indexFromKLModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            F = self.PFpm(:,:,iUnique )./self.Ppm(:,iUnique);
+        end
+
+        function Ginv = GwInvMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w^{-1}$$
+            %
+            % A matrix that transforms a vector of igw amplitudes from
+            % vertical mode space to physical space.
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: Ginv = GwInvMatrix(wvt,kMode,lMode)
+            % - Returns Ginv: A matrix with dimensions [Nz Nj]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            [kMode,lMode] = self.primaryKLModeNumberFromKLModeNumber(kMode,lMode);
+            iK = self.indexFromKLModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            Ginv = shiftdim(self.Qpm(:,iUnique),1) .* self.QGpmInv(:,:,iUnique ); % 
+        end
+
+        function G = GwMatrix(self,kMode,lMode)
+            % transformation matrix $$G_w$$
+            %
+            % A matrix that transforms a vector in physical space to IGW
+            % mode space
+            %
+            % - Topic: Operations — Transformations
+            % - Declaration: G = GwMatrix(wvt,kMode,lMode)
+            % - Returns G: A matrix with dimensions [Nj Nz]
+            arguments
+                self WVTransform
+                kMode (1,1) double
+                lMode (1,1) double
+            end
+
+            [kMode,lMode] = self.primaryKLModeNumberFromKLModeNumber(kMode,lMode);
+            iK = self.indexFromKLModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            G = self.QGpm(:,:,iUnique )./self.Qpm(:,iUnique);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Needed to add and remove internal waves from the model
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function ratio = maxFw(self,kMode,lMode,j)
+            arguments
+                self WVTransform {mustBeNonempty}
+                kMode (:,1) double
+                lMode (:,1) double
+                j (:,1) double
+            end
+            [kMode,lMode] = self.primaryKLModeNumberFromKLModeNumber(kMode,lMode);
+            iK = self.indexFromKLModeNumber(kMode,lMode);
+            for iUnique=1:length(self.K2unique)
+                if ismember(iK, self.K2uniqueK2Map{iUnique})
+                    break
+                end
+            end
+            ratio = self.Ppm(j+1,iUnique);
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations FROM the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+
+        function u_bar = transformFromSpatialDomainWithFio(self,u)
+            u_bar = (self.PFpm(:,:,1 )*u)./self.Ppm(:,1);
+        end
+
+        function u_bar = transformFromSpatialDomainWithFg(self, u)
+            u_bar = (self.PF0*u)./self.P0;
+        end
+
+        function w_bar = transformFromSpatialDomainWithGg(self, w)
+            w_bar = (self.QG0*w)./self.Q0;
+        end
+
+        function w_bar = transformWithG_wg(self, w_bar )
+            w_bar = self.Q0 .* w_bar;
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                w_bar(:,indices) = (self.QGwg(:,:,iK) * w_bar(:,indices))./self.Qpm(:,iK);
+            end
+        end
+
+        function w_bar = transformFromSpatialDomainWithG_w(self, w_hat )
+            w_bar = zeros(self.spectralMatrixSize);
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                w_bar(:,indices) = (self.QGpm(:,:,iK) * w_hat(:,indices))./self.Qpm(:,iK);
+            end
+        end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Transformations to and from the spatial domain
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+
+        function u = transformToSpatialDomainWithF(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+
+            if isscalar(options.Apm) && isscalar(options.A0)
+                u = zeros(self.spatialMatrixSize);
+            else
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
+                    end
+                elseif ~isscalar(options.Apm)
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.PFpmInv(:,:,iK )*(self.Ppm(:,iK) .* options.Apm(:,indices));
+                    end
+                else
+                    self.wvBuffer = self.PF0inv*(self.P0 .* options.A0);
+                end
+                u = self.transformToSpatialDomainWithFourier(self.wvBuffer);  
+            end
+        end
+
+        function w = transformToSpatialDomainWithG(self, options)
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.Apm double = 0
+                options.A0 double = 0
+            end
+
+            if isscalar(options.Apm) && isscalar(options.A0)
+                w = zeros(self.spatialMatrixSize);
+            else
+                if ~isscalar(options.Apm) && ~isscalar(options.A0)
+                    self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.wvBuffer(:,indices) + self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
+                    end
+                elseif ~isscalar(options.Apm)
+                    for iK=1:length(self.K2unique)
+                        indices = self.K2uniqueK2Map{iK};
+                        self.wvBuffer(:,indices) = self.QGpmInv(:,:,iK )*(self.Qpm(:,iK) .* options.Apm(:,indices));
+                    end
+                else
+                    self.wvBuffer = self.QG0inv*(self.Q0 .* options.A0);
+                end
+                w = self.transformToSpatialDomainWithFourier(self.wvBuffer);
+            end
+        end
+
+
+        function u = transformToSpatialDomainWithFg(self, u_bar)
+            % arguments
+            %     self WVTransform {mustBeNonempty}
+            %     u_bar
+            % end
+            u = self.PF0inv*(self.P0 .* u_bar);
+        end
+
+        function w = transformToSpatialDomainWithGg(self, w_bar)
+            % arguments
+            %     self WVTransform {mustBeNonempty}
+            %     w_bar
+            % end
+            % simply changing QG0inv to PF0inv dramatically increases the
+            % speed of the downstream function transformFromWVGridToDFTGrid.
+            % Why?
+            w = self.QG0inv*(self.Q0 .* w_bar);
+        end
+        
+        function u = transformToSpatialDomainWithFw(self, u_bar)
+            u = zeros(self.Nz,self.Nkl);
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                u_bar(:,indices) = self.Ppm(:,iK) .* u_bar(:,indices);
+                u(:,indices) = self.PFpmInv(:,:,iK )*u_bar(:,indices);
+            end
+        end
+                
+        function w = transformToSpatialDomainWithGw(self, w_bar)
+            w = zeros(self.Nz,self.Nkl);
+            for iK=1:length(self.K2unique)
+                indices = self.K2uniqueK2Map{iK};
+                w_bar(:,indices) = self.Qpm(:,iK) .* w_bar(:,indices);
+                w(:,indices) = self.QGpmInv(:,:,iK )*w_bar(:,indices);
             end
         end
     end

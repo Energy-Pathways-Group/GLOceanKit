@@ -6,6 +6,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
         PF0inv, QG0inv % size(PFinv,PGinv)=[Nz x Nj]
         PF0, QG0 % size(PF,PG)=[Nj x Nz]
         h_0 % [Nj 1]
+        h_pm
 
         P0 % Preconditioner for F, size(P)=[Nj 1]. F*u = uhat, (PF)*u = P*uhat, so ubar==P*uhat
         Q0 % Preconditioner for G, size(Q)=[Nj 1]. G*eta = etahat, (QG)*eta = Q*etahat, so etabar==Q*etahat.
@@ -17,7 +18,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
         FMatrix
         GMatrix
         Lr2
-        h_pm  % [Nj 1]
+          % [Nj 1]
     end
 
     methods
@@ -113,6 +114,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 self.dLnN2 = self.verticalModes.rho_zz./self.verticalModes.rho_z;
                 [self.P0,self.Q0,self.PF0inv,self.PF0,self.QG0inv,self.QG0,self.h_0,self.z_int] = self.verticalProjectionOperatorsForGeostrophicModes(self.Nj);
             end
+            self.h_pm = self.h_0;
         end
 
         du = diffZF(self,u,n)
@@ -186,10 +188,6 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
                 wvt         WVStratification
             end
             G = wvt.QG0 ./ shiftdim(wvt.Q0,2);
-        end
-
-        function h_pm = get.h_pm(self)
-            h_pm = self.h_0;
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -289,7 +287,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodicStratified.newRequiredPropertyNames());
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry());
-            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodic.newNonrequiredPropertyNames);
+            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicStratified.newNonrequiredPropertyNames);
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
