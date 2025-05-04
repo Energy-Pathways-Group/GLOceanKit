@@ -67,31 +67,31 @@ classdef WVGeometryDoublyPeriodicStratifiedBoussinesq < WVGeometryDoublyPeriodic
                 directInit.Ppm
                 directInit.Qpm
                 directInit.QGwg
+                directInit.K2unique
+                directInit.iK2unique
             end
 
             optionCell = namedargs2cell(options);
             self@WVGeometryDoublyPeriodicStratified(Lxyz, Nxyz, optionCell{:})
 
             allFields = cell2struct([struct2cell(options);struct2cell(directInit)],[fieldnames(options);fieldnames(directInit)]);
-            canInitializeDirectly = all(isfield(allFields, WVStratification.namesOfRequiredPropertiesForStratification));
+            canInitializeDirectly = all(isfield(allFields, WVGeometryDoublyPeriodicStratifiedBoussinesq.newRequiredPropertyNames));
 
             if canInitializeDirectly
-                self.PFpmInv = options.PFpmInv;
-                self.QGpmInv = options.QGpmInv;
-                self.PFpm = options.PFpm;
-                self.QGpm = options.QGpm;
-                self.h_pm = options.h_pm;
-                self.Ppm = options.Ppm;
-                self.Qpm = options.Qpm;
-                self.QGwg = options.QGwg;
+                self.PFpmInv = directInit.PFpmInv;
+                self.QGpmInv = directInit.QGpmInv;
+                self.PFpm = directInit.PFpm;
+                self.QGpm = directInit.QGpm;
+                self.h_pm = directInit.h_pm;
+                self.Ppm = directInit.Ppm;
+                self.Qpm = directInit.Qpm;
+                self.QGwg = directInit.QGwg;
+                self.K2unique = directInit.K2unique;
+                self.iK2unique = directInit.iK2unique;
 
                 % K2unique are the unique wavenumbers (sorted)
                 % iK2unique is the same size as K2, but are the indices for
                 % the K2unique matrix to recreate/map back to K2unique.
-                Kh = self.Kh;
-                K2 = reshape((Kh(1,:)).^2,[],1);
-                [self.K2unique,~,self.iK2unique] = unique(K2);
-                self.iK2unique = reshape(self.iK2unique,size(K2));
                 self.K2uniqueK2Map = cell(length(self.K2unique),1);
                 for iK=1:length(self.K2unique)
                     self.K2uniqueK2Map{iK} = find(self.iK2unique==iK);
@@ -435,11 +435,14 @@ classdef WVGeometryDoublyPeriodicStratifiedBoussinesq < WVGeometryDoublyPeriodic
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
-            newRequiredPropertyNames = {'PFpmInv','QGpmInv','PFpm','QGpm','Ppm','Qpm','QGwg','h_pm'};
+            newRequiredPropertyNames = {'K2unique','iK2unique','PFpmInv','QGpmInv','PFpm','QGpm','Ppm','Qpm','QGwg','h_pm'};
         end
 
         function propertyAnnotations = propertyAnnotationsForGeometry()
             propertyAnnotations = WVGeometryDoublyPeriodicStratified.propertyAnnotationsForGeometry();
+
+            propertyAnnotations(end+1) = CADimensionProperty('K2unique', 'rad/m', 'unique horizontal wavenumbers (sorted)');
+            propertyAnnotations(end+1) = CANumericProperty('iK2unique',{'kl'},'index', 'index for the K2 unique matrix');
 
             propertyAnnotations(end+1) = CANumericProperty('PFpmInv',{'z','j','K2unique'},'','Preconditioned F-mode inverse transformation');
             propertyAnnotations(end+1) = CANumericProperty('QGpmInv',{'z','j','K2unique'},'','Preconditioned G-mode inverse transformation');

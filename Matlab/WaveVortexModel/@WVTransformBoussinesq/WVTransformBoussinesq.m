@@ -87,6 +87,8 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
                 options.Ppm
                 options.Qpm
                 options.QGwg
+                options.K2unique
+                options.iK2unique
             end
 
             optionArgs = namedargs2cell(options);
@@ -269,7 +271,7 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForTransform()
-            requiredPropertyNames = WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForGeometry();
+            requiredPropertyNames = WVGeometryDoublyPeriodicStratifiedBoussinesq.namesOfRequiredPropertiesForGeometry();
             requiredPropertyNames = union(requiredPropertyNames,WVTransformBoussinesq.newRequiredPropertyNames);
         end
 
@@ -285,7 +287,7 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
             spectralDimensionNames = WVTransformBoussinesq.spectralDimensionNames();
             spatialDimensionNames = WVTransformBoussinesq.spatialDimensionNames();
 
-            propertyAnnotations = WVGeometryDoublyPeriodicStratified.propertyAnnotationsForGeometry();
+            propertyAnnotations = WVGeometryDoublyPeriodicStratifiedBoussinesq.propertyAnnotationsForGeometry();
             propertyAnnotations = cat(2,propertyAnnotations,WVGeostrophicMethods.propertyAnnotationsForGeostrophicComponent(spectralDimensionNames = spectralDimensionNames));
             transformProperties = WVTransform.propertyAnnotationsForTransform('A0','Ap','Am','A0_TE_factor','A0_QGPV_factor','A0_TZ_factor','A0_Psi_factor','Apm_TE_factor',spectralDimensionNames = spectralDimensionNames);
 
