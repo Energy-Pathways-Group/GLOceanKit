@@ -97,7 +97,7 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             self.verticalModes = verticalModes;
 
             allFields = cell2struct([struct2cell(stratOptions);struct2cell(directInit)],[fieldnames(stratOptions);fieldnames(directInit)]);
-            canInitializeDirectly = all(isfield(allFields, WVStratification.namesOfRequiredPropertiesForStratification));
+            canInitializeDirectly = all(isfield(allFields, WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForStratification));
 
             if canInitializeDirectly == true
                 self.dLnN2 = directInit.dLnN2;
