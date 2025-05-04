@@ -158,7 +158,7 @@ classdef WVTransformStratifiedQG < WVGeometryDoublyPeriodicStratified & WVTransf
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function A0 = transformQGPVToWaveVortex(qgpv)
+        function A0 = transformQGPVToWaveVortex(self,qgpv)
             A0 = self.transformFromSpatialDomainWithFg(self.transformFromSpatialDomainWithFourier(qgpv));
         end
 

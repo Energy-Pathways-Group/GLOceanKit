@@ -19,6 +19,7 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
         h_0
         totalEnergySpatiallyIntegrated
         totalEnergy
+        isHydrostatic
     end
 
     properties %(GetAccess=private,SetAccess=private)
@@ -79,12 +80,16 @@ classdef WVTransformBarotropicQG < WVGeometryDoublyPeriodicBarotropic & WVTransf
             val = self.h;
         end
 
+        function flag = get.isHydrostatic(self)
+            flag = true;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Nonlinear flux computation
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function A0 = transformQGPVToWaveVortex(qgpv)
+        function A0 = transformQGPVToWaveVortex(self,qgpv)
             A0 = self.transformFromSpatialDomainWithFourier(qgpv);
         end
 
