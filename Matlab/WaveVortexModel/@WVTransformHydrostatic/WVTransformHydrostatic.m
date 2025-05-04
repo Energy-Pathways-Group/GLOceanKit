@@ -131,6 +131,25 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [wvtX2.A0,wvtX2.Ap,wvtX2.Am] = self.spectralVariableWithResolution(wvtX2,self.A0,self.Ap,self.Am);
         end
 
+        function wvt = boussinesqTransform(self)
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+            end
+            wvt = WVTransformBoussinesq([self.Lx self.Ly self.Lz],[self.Nx self.Ny self.Nz],optionArgs{:});
+            forcing = WVForcing.empty(0,length(self.forcing));
+            for iForce=1:length(self.forcing)
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvt);
+            end
+            wvt.setForcing(forcing);
+
+            wvt.t0 = self.t0;
+            wvt.t = self.t;
+            [wvt.A0,wvt.Ap,wvt.Am] = self.spectralVariableWithResolution(wvt,self.A0,self.Ap,self.Am);
+        end
+
         function energy = get.totalEnergySpatiallyIntegrated(self)
             if self.isHydrostatic == 1
                 [u,v,eta] = self.variableWithName('u','v','eta');
