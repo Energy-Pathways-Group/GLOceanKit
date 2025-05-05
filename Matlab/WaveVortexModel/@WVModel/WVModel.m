@@ -56,6 +56,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         isDynamicsLinear
 
         eulerianObservingSystem
+
+        integrationCallback
     end
 
     properties (Dependent)
@@ -620,7 +622,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             arguments
                 self WVModel {mustBeNonempty}
                 finalTime (1,:) double
-                options.shouldShowIntegrationDiagnostics double {mustBeMember(options.shouldShowIntegrationDiagnostics,[0 1])} = 1
+                options.shouldShowIntegrationDiagnostics logical = true
+                options.callback
             end
             if finalTime <= self.t
                 fprintf('Reqested integration to time %d, but the model is currently at time t=%d.\n',round(finalTime),round(self.t));
@@ -639,6 +642,9 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             end
 
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
+            if isfield(options,'callback')
+                self.integrationCallback = options.callback;
+            end
                   
             % arrayfun( @(outputFile) outputFile.initializeOutputFile(), self.outputFiles);
             % arrayfun( @(outputFile) outputFile.writeTimeStepToOutputFile(self.t), self.outputFiles);
@@ -800,7 +806,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
         integratorType      % Array integrator
         finalIntegrationTime % set only during an integration
-        shouldShowIntegrationDiagnostics = 1
+        shouldShowIntegrationDiagnostics = true
 
         % Initial model time (seconds)
         % - Topic: Model Properties
@@ -829,7 +835,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function showIntegrationStartDiagnostics(self,finalTime)
-            if self.shouldShowIntegrationDiagnostics  == 0
+            if self.shouldShowIntegrationDiagnostics  == false
                 return;
             end
             self.nFluxComputations = 0;
@@ -842,25 +848,31 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         end
 
         function showIntegrationTimeDiagnostics(self,finalTime)
-            if self.shouldShowIntegrationDiagnostics  == 0
+            if self.shouldShowIntegrationDiagnostics == false && isempty(self.integrationCallback)  == 0
                 return;
             end
             deltaWallTime = datetime('now')-self.integrationLastInformWallTime;
             if ( seconds(deltaWallTime) > self.integrationInformTime)
-                wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
-                wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
-                deltaT = (self.wvt.t-self.integrationLastInformModelTime)/( self.nFluxComputations - self.nFluxComputationsAtLastInform);
-                fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s). Δ≅%.2fs\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'),deltaT) ;
-                self.wvt.summarizeEnergyContent();
+                if self.shouldShowIntegrationDiagnostics
+                    wallTimePerModelTime = deltaWallTime / (self.wvt.t - self.integrationLastInformModelTime);
+                    wallTimeRemaining = wallTimePerModelTime*(finalTime - self.wvt.t);
+                    deltaT = (self.wvt.t-self.integrationLastInformModelTime)/( self.nFluxComputations - self.nFluxComputationsAtLastInform);
+                    fprintf('\tmodel time t=%.2f inertial periods. Estimated time to reach %.2f inertial periods is %s (%s). Δ≅%.2fs\n', self.t/self.wvt.inertialPeriod, finalTime/self.wvt.inertialPeriod, wallTimeRemaining, datetime(datetime('now')+wallTimeRemaining,TimeZone='local',Format='d-MMM-y HH:mm:ss Z'),deltaT) ;
+                    self.wvt.summarizeEnergyContent();
 
-                self.integrationLastInformWallTime = datetime('now');
-                self.integrationLastInformModelTime = self.wvt.t;
-                self.nFluxComputationsAtLastInform = self.nFluxComputations;
+                    self.integrationLastInformWallTime = datetime('now');
+                    self.integrationLastInformModelTime = self.wvt.t;
+                    self.nFluxComputationsAtLastInform = self.nFluxComputations;
+                end
+                if ~isempty(self.integrationCallback)
+                    self.integrationCallback(self);
+                end
             end
         end
 
         function showIntegrationFinishDiagnostics(self)
-            if self.shouldShowIntegrationDiagnostics  == 0
+            self.integrationCallback = [];
+            if self.shouldShowIntegrationDiagnostics  == false
                 return;
             end
             integrationTotalTime = datetime('now')-self.integrationStartWallTime;
