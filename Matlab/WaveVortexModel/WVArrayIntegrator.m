@@ -119,10 +119,11 @@ classdef WVArrayIntegrator < handle
             alpha_2 = 3*theta*theta - 2*theta*theta*theta;
             alpha_1 = 1 - alpha_2;
             alpha_3 = self.stepSize*(theta - 2*theta*theta + theta*theta*theta);
-            alpha_4 = self.stepSize*(-theta*theta + theta*theta*theta)/6;
+            alpha_4 = self.stepSize*(theta*theta*theta - theta*theta);
+
             yo = cell(size(self.currentY));
-            for i=1:length(yo)
-                yo{i} = alpha_1 * self.previousY{i} + alpha_2 * self.currentY{i} + alpha_3*self.F1{i} + alpha_4*(-self.F1{i} + 2*self.F2{i} + 2*self.F3{i} - self.F4{i});
+            for i = 1:numel(yo)
+                yo{i} = alpha_1*self.previousY{i} + alpha_2*self.currentY{i} + alpha_3*self.F1{i} + alpha_4*self.F4{i};
             end
         end
         
