@@ -271,7 +271,7 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForTransform()
-            requiredPropertyNames = WVGeometryDoublyPeriodicStratified.namesOfRequiredPropertiesForGeometry();
+            requiredPropertyNames = WVGeometryDoublyPeriodicStratifiedConstant.namesOfRequiredPropertiesForGeometry();
             requiredPropertyNames = union(requiredPropertyNames,WVTransformConstantStratification.newRequiredPropertyNames);
         end
 

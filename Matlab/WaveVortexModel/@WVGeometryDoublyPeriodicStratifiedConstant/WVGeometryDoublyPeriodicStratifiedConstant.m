@@ -575,10 +575,10 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function requiredPropertyNames = namesOfRequiredPropertiesForGeometry()
-            requiredPropertyNames = WVStratificationConstant.namesOfRequiredPropertiesForStratification();
+            requiredPropertyNames = WVStratification.namesOfRequiredPropertiesForStratification();
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodic.namesOfRequiredPropertiesForGeometry());
             requiredPropertyNames = union(requiredPropertyNames,WVGeometryDoublyPeriodicStratifiedConstant.newRequiredPropertyNames());
-            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodic.newNonrequiredPropertyNames);
+            requiredPropertyNames = setdiff(requiredPropertyNames,WVGeometryDoublyPeriodicStratifiedConstant.newNonrequiredPropertyNames);
         end
 
         function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
