@@ -71,16 +71,16 @@ classdef SpatialForcingOperation < WVOperation
                 for i=1:length(wvt.spectralFluxForcing)
                     Fp_i = Fp; Fm_i = Fm; F0_i = F0;
                     [Fp,Fm,F0] = wvt.spectralFluxForcing(i).addSpectralForcing(wvt,Fp, Fm, F0);
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*(Fp-Fp_i) + wvt.UAm.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*(Fp-Fp_i) + wvt.VAm.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*(Fp-Fp_i) + wvt.NAm.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.phase.*(Fp-Fp_i) + wvt.UAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
                 end
                 for i=1:length(wvt.spectralAmplitudeForcing)
                     Fp_i = Fp; Fm_i = Fm; F0_i = F0;
                     [Fp,Fm,F0] = wvt.spectralAmplitudeForcing(i).setSpectralForcing(wvt,Fp, Fm, F0);
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*(Fp-Fp_i) + wvt.UAm.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*(Fp-Fp_i) + wvt.VAm.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
-                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*(Fp-Fp_i) + wvt.NAm.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.phase.*(Fp-Fp_i) + wvt.UAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
                 end
 
             end
