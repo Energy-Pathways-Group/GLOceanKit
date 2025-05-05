@@ -113,7 +113,7 @@ classdef WVArrayIntegrator < handle
         function yo = valueAtTime(self,t)
             % Hermite interpolation
             theta = (t - self.previousT)/self.stepSize;
-            if theta < 0 || theta > 1
+            if theta < -eps || theta > 1+eps
                 error("invalid time for interpolation");
             end
             alpha_2 = 3*theta*theta - 2*theta*theta*theta;
