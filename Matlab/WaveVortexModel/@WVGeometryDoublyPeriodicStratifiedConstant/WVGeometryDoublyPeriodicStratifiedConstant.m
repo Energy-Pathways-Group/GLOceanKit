@@ -582,7 +582,7 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
         end
 
         function newNonrequiredPropertyNames = newNonrequiredPropertyNames()
-            newNonrequiredPropertyNames = {'conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
+            newNonrequiredPropertyNames = {'N2Function','j','conjugateDimension','shouldExcludeNyquist','shouldExludeConjugates'};
         end
 
         function newRequiredPropertyNames = newRequiredPropertyNames()
@@ -609,8 +609,12 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
                 options
             end
             [Lxyz(1:2), Nxyz(1:2), geomOptions] = WVGeometryDoublyPeriodic.requiredPropertiesForGeometryFromGroup(group,shouldIgnoreMissingProperties=true);
-            [Lxyz(3), Nxyz(3), stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group);
+            [Lxyz(3), Nxyz(3), stratOptions] = WVStratification.requiredPropertiesForStratificationFromGroup(group,shouldIgnoreMissingProperties=true);
             vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVGeometryDoublyPeriodicStratifiedConstant.newRequiredPropertyNames);
+            S = struct(stratOptions{:});
+            S = rmfield(S,'j');
+            S = rmfield(S,'z');
+            stratOptions = namedargs2cell(S);
             newOptions = namedargs2cell(vars);
             options = cat(2,stratOptions,geomOptions,newOptions);
         end

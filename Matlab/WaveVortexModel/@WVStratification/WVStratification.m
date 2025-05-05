@@ -281,16 +281,17 @@ classdef WVStratification < WVRotatingFPlane
             propertyAnnotations(end+1) = CANumericProperty('Nz',{},'', 'points in the z-coordinate, `length(z)`', detailedDescription='- topic: Domain Attributes — Grid — Spatial');
         end
 
-        function [Lz,Nz,options] = requiredPropertiesForStratificationFromGroup(group)
+        function [Lz,Nz,options] = requiredPropertiesForStratificationFromGroup(group,opts)
             arguments (Input)
                 group NetCDFGroup {mustBeNonempty}
+                opts.shouldIgnoreMissingProperties logical = false
             end
             arguments (Output)
                 Lz (1,1) double {mustBePositive}
                 Nz (1,1) double {mustBePositive}
                 options
             end
-            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratification.namesOfRequiredPropertiesForStratification);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,WVStratification.namesOfRequiredPropertiesForStratification,shouldIgnoreMissingProperties=opts.shouldIgnoreMissingProperties);
 
             Nz = length(vars.z);
             Lz = vars.Lz;
