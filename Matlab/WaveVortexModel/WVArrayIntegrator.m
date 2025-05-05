@@ -116,9 +116,9 @@ classdef WVArrayIntegrator < handle
             if theta < 0 || theta > 1
                 error("invalid time for interpolation");
             end
-            alpha_2 = 3*theta*theta + 2*theta*theta*theta;
+            alpha_2 = 3*theta*theta - 2*theta*theta*theta;
             alpha_1 = 1 - alpha_2;
-            alpha_3 = self.stepSize*(theta - 2*theta*theta + 3*theta*theta*theta);
+            alpha_3 = self.stepSize*(theta - 2*theta*theta + theta*theta*theta);
             alpha_4 = self.stepSize*(-theta*theta + theta*theta*theta)/6;
             yo = cell(size(self.currentY));
             for i=1:length(yo)
