@@ -312,8 +312,11 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                     otherForce = self.forcingNameMap{aForce.name};
                     if ~aForce.isequal(otherForce)
                         sprintf('A forcing named %s already exists. It will be removed and replaced.\n',aForce.name)
+                        self.removeForcing(otherForce);
+                    else
+                        warning("You have attempted to add the forcing named '%s', but this forcing is already added to the WVTransform. This will be ignored.",aForce.name);
+                        return
                     end
-                    self.removeForcing(aForce);
                 end
                 if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spatialFluxTypes())
                     self.spatialFluxForcing(end+1) = aForce;
