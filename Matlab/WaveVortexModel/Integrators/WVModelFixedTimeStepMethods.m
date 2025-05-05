@@ -36,7 +36,7 @@ classdef WVModelFixedTimeStepMethods < handle
                 self WVModel {mustBeNonempty}
                 options.deltaT (1,1) double {mustBePositive}
                 options.cfl (1,1) double
-                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
+                options.timeStepConstraint char {mustBeMember(options.timeStepConstraint,["advective","oscillatory","min"])} = "min"
             end
 
             self.integratorOptions = options;
@@ -104,7 +104,7 @@ classdef WVModelFixedTimeStepMethods < handle
                 deltaT = self.integratorOptions.deltaT;
             else
                 if ~isfield(self.integratorOptions,"cfl")
-                    self.integratorOptions.cfl = 0.5;
+                    self.integratorOptions.cfl = 0.25;
                 end
                 [deltaT,advectiveDT,oscillatoryDT] = self.timeStepForCFL(self.integratorOptions.cfl);
                 if strcmp(self.integratorOptions.timeStepConstraint,"advective")

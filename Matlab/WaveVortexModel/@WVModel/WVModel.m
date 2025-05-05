@@ -577,7 +577,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
 
                 fixedTimeStepOptions.deltaT (1,1) double {mustBePositive}
                 fixedTimeStepOptions.cfl (1,1) double
-                fixedTimeStepOptions.timeStepConstraint char {mustBeMember(fixedTimeStepOptions.timeStepConstraint,["advective","oscillatory","min"])} = "advective"
+                fixedTimeStepOptions.timeStepConstraint char {mustBeMember(fixedTimeStepOptions.timeStepConstraint,["advective","oscillatory","min"])} = "min"
 
                 adaptiveTimeStepOptions.integrator = @ode78
                 adaptiveTimeStepOptions.absTolerance = 1e-6

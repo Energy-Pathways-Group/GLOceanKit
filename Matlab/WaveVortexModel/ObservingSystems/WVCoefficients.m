@@ -136,4 +136,45 @@ classdef WVCoefficients < WVObservingSystem
             os = WVCoefficients(wvtX2,self.name);
         end
     end
+
+    methods (Static)
+        % Useful to make a plot
+        % [alpha0, alphapm] = model.absoluteErrorTolerance(absTolerance=1e-6);
+        % E_noise_kr = wvt.transformToRadialWavenumber(wvt.A0_TE_factor .* alpha0 .* alpha0);
+        % plot(wvt.kRadial,E_noise_kr/dk,LineWidth=2,Color=0*[1 1 1])
+        function [alpha0, alphapm] = errorTolerances(wvt,absTolerance)
+            alpha0 = ones(wvt.spectralMatrixSize);
+            alphapm = ones(wvt.spectralMatrixSize);
+            AbsErrorSpectrum = @isempty;
+            kRadial = wvt.kRadial;
+            Kh = wvt.Kh;
+            J = wvt.J;
+            dk = kRadial(2)-kRadial(1);
+            for iK=1:length(kRadial)
+                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
+                for iJ=1:length(wvt.j)
+                    % this is faster than logical indexing
+                    indicesForKJ = find(indicesForK & J == wvt.j(iJ));
+                    nIndicesForKJ = length(indicesForKJ);
+
+                    if isequal(AbsErrorSpectrum,@isempty)
+                        energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
+                        energyPerApmComponent = energyPerA0Component;
+                    else
+                        energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
+                        energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
+                    end
+                    if wvt.hasPVComponent == true
+                        alpha0(indicesForKJ) = absTolerance*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForKJ) ));
+                    end
+                    if wvt.hasWaveComponent == true
+                        alphapm(indicesForKJ) = absTolerance*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForKJ) ));
+                    end
+                end
+            end
+
+            alpha0(isinf(alpha0)) = 1;
+            alphapm(isinf(alphapm)) = 1;
+        end
+    end
 end
