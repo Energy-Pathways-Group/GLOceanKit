@@ -52,38 +52,7 @@ classdef WVCoefficients < WVObservingSystem
         end
 
         function Y0 = absErrorTolerance(self)
-            alpha0 = ones(self.wvt.spectralMatrixSize);
-            alphapm = ones(self.wvt.spectralMatrixSize);
-            AbsErrorSpectrum = @isempty;
-            kRadial = self.wvt.kRadial;
-            Kh = self.wvt.Kh;
-            J = self.wvt.J;
-            dk = kRadial(2)-kRadial(1);
-            for iK=1:length(kRadial)
-                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
-                for iJ=1:length(self.wvt.j)
-                    % this is faster than logical indexing
-                    indicesForKJ = find(indicesForK & J == self.wvt.j(iJ));
-                    nIndicesForKJ = length(indicesForKJ);
-
-                    if isequal(AbsErrorSpectrum,@isempty)
-                        energyPerA0Component = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0))/nIndicesForKJ;
-                        energyPerApmComponent = energyPerA0Component;
-                    else
-                        energyPerA0Component = integral(@(k) A0AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ;
-                        energyPerApmComponent = integral(@(k) ApmAbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2;
-                    end
-                    if self.wvt.hasPVComponent == true
-                        alpha0(indicesForKJ) = self.absTolerance*sqrt(energyPerA0Component./(self.wvt.A0_TE_factor(indicesForKJ) ));
-                    end
-                    if self.wvt.hasWaveComponent == true
-                        alphapm(indicesForKJ) = self.absTolerance*sqrt(energyPerApmComponent./(self.wvt.Apm_TE_factor(indicesForKJ) ));
-                    end
-                end
-            end
-
-            alpha0(isinf(alpha0)) = 1;
-            alphapm(isinf(alphapm)) = 1;
+            [alpha0, alphapm] = WVCoefficients.errorTolerances(self.wvt,self.absTolerance);
 
             Y0 = {};
             if self.wvt.hasWaveComponent == true
@@ -143,6 +112,50 @@ classdef WVCoefficients < WVObservingSystem
         % E_noise_kr = wvt.transformToRadialWavenumber(wvt.A0_TE_factor .* alpha0 .* alpha0);
         % plot(wvt.kRadial,E_noise_kr/dk,LineWidth=2,Color=0*[1 1 1])
         function [alpha0, alphapm] = errorTolerances(wvt,absTolerance)
+            alpha0 = ones(wvt.spectralMatrixSize);
+            alphapm = ones(wvt.spectralMatrixSize);
+
+            kRadial = wvt.kRadial;
+            Kh = wvt.Kh;
+            J = wvt.J;
+            dk = kRadial(2)-kRadial(1);
+            k_star = 1/sqrt(wvt.Lr2(1));
+            % k_star = dk;
+            % k_star = wvt.forcingWithName("adaptive damping").k_damp/2/pi;
+            m = 2;
+            AbsErrorSpectrum =  @(k,j) (k_star^m)*2./( (j.^2+1) .* (k.^m+(k_star^m)) );
+            % AbsErrorSpectrum = @isempty;
+            for iK=1:length(kRadial)
+                indicesForK = kRadial(iK)-dk/2 < Kh & Kh <= kRadial(iK)+dk/2;
+                for iJ=1:length(wvt.j)
+                    % this is faster than logical indexing
+                    indicesForKJ = find(indicesForK & J == wvt.j(iJ));
+                    nIndicesForKJ = length(indicesForKJ);
+
+                    if isequal(AbsErrorSpectrum,@isempty)
+                        energyPerA0Component = 1/nIndicesForKJ;
+                        energyPerApmComponent = 1/nIndicesForKJ;
+                    else
+                        d = (kRadial(iK)+dk/2 - max(kRadial(iK)-dk/2,0));
+                        energyPerA0Component = integral(@(k) AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/d;
+                        energyPerApmComponent = integral(@(k) AbsErrorSpectrum(k,J(iJ)),max(kRadial(iK)-dk/2,0),kRadial(iK)+dk/2)/nIndicesForKJ/2/d;
+                        % energyPerA0Component = AbsErrorSpectrum(kRadial(iK),J(iJ))/nIndicesForKJ;
+                        % energyPerApmComponent = AbsErrorSpectrum(kRadial(iK),J(iJ))/nIndicesForKJ/2;
+                    end
+                    if wvt.hasPVComponent == true
+                        alpha0(indicesForKJ) = absTolerance*sqrt(energyPerA0Component./(wvt.A0_TE_factor(indicesForKJ) ));
+                    end
+                    if wvt.hasWaveComponent == true
+                        alphapm(indicesForKJ) = 1e6*absTolerance*sqrt(energyPerApmComponent./(wvt.Apm_TE_factor(indicesForKJ) ));
+                    end
+                end
+            end
+
+            alpha0(isinf(alpha0)) = 1;
+            alphapm(isinf(alphapm)) = 1;
+        end
+
+        function [alpha0, alphapm] = errorTolerancesOld(wvt,absTolerance)
             alpha0 = ones(wvt.spectralMatrixSize);
             alphapm = ones(wvt.spectralMatrixSize);
             AbsErrorSpectrum = @isempty;
