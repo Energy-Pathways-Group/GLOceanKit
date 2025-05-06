@@ -26,6 +26,18 @@ classdef SpatialForcingOperation < WVOperation
 
                     name = replace(replace(join( ["Feta_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
                     outputVariables((i-1)*3+3) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-1}', join(['spatial representation of hydrostatic forcing on the scaled density perturbation equation',string(wvt.forcing(i).name)]));
+                elseif isa(wvt,"WVTransformBoussinesq")
+                    name = replace(replace(join( ["Fu_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
+                    outputVariables((i-1)*4+1) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-2}', join(['spatial representation of non-hydrostatic forcing on the x-momentum equation',string(wvt.forcing(i).name)]));
+
+                    name = replace(replace(join( ["Fv_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
+                    outputVariables((i-1)*4+2) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-2}', join(['spatial representation of non-hydrostatic forcing on the y-momentum equation',string(wvt.forcing(i).name)]));
+
+                    name = replace(replace(join( ["Fw_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
+                    outputVariables((i-1)*4+3) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-2}', join(['spatial representation of non-hydrostatic forcing on the z-momentum equation',string(wvt.forcing(i).name)]));
+
+                    name = replace(replace(join( ["Feta_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
+                    outputVariables((i-1)*4+4) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-1}', join(['spatial representation of non-hydrostatic forcing on the scaled density perturbation equation',string(wvt.forcing(i).name)]));
                 end
             end
             self@WVOperation('spatial forcing',outputVariables,@disp);
@@ -82,7 +94,34 @@ classdef SpatialForcingOperation < WVOperation
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
                 end
-
+            elseif isa(wvt,"WVTransformBoussinesq")
+                Fu=0;Fv=0;Fw=0;Feta=0; % this isn't good, need to cached
+                iForce = 0;
+                for i=1:length(wvt.spatialFluxForcing)
+                    Fu0=Fu;Fv0=Fv;Fw0=Fw;Feta0=Feta;
+                    [Fu, Fv, Fw, Feta] = wvt.spatialFluxForcing(i).addNonhydrostaticSpatialForcing(wvt, Fu, Fv, Fw, Feta);
+                    iForce = iForce + 1; varargout{iForce} = Fu-Fu0;
+                    iForce = iForce + 1; varargout{iForce} = Fv-Fv0;
+                    iForce = iForce + 1; varargout{iForce} = Fw-Fw0;
+                    iForce = iForce + 1; varargout{iForce} = Feta-Feta0;
+                end
+                [Fp,Fm,F0] = wvt.transformUVEtaToWaveVortex(Fu, Fv, Feta);
+                for i=1:length(wvt.spectralFluxForcing)
+                    Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                    [Fp,Fm,F0] = wvt.spectralFluxForcing(i).addSpectralForcing(wvt,Fp, Fm, F0);
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.phase.*(Fp-Fp_i) + wvt.UAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*wvt.phase.*(Fp-Fp_i) + wvt.WAm.*wvt.conjPhase.*(Fm-Fm_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
+                end
+                for i=1:length(wvt.spectralAmplitudeForcing)
+                    Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                    [Fp,Fm,F0] = wvt.spectralAmplitudeForcing(i).setSpectralForcing(wvt,Fp, Fm, F0);
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.UAp.*wvt.phase.*(Fp-Fp_i) + wvt.UAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.UA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.WAp.*wvt.phase.*(Fp-Fp_i) + wvt.WAm.*wvt.conjPhase.*(Fm-Fm_i));
+                    iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
+                end
             end
         end
 

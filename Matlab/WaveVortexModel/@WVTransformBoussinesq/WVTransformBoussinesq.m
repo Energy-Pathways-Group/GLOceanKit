@@ -210,40 +210,41 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
             end
         end
 
-        % function F = fluxForForcing(self)
-        %     arguments (Input)
-        %         self WVTransform
-        %     end
-        %     arguments (Output)
-        %         F dictionary
-        %     end
-        %     F = configureDictionary("string","cell");
-        %     Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
-        %     for i=1:length(self.spatialFluxForcing)
-        %         Fu0=Fu;Fv0=Fv;Feta0=Feta;
-        %         [Fu, Fv, Feta] = self.spatialFluxForcing(i).addHydrostaticSpatialForcing(self, Fu, Fv, Feta);
-        %         [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Feta-Feta0);
-        %         F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
-        %     end
-        %     [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(Fu, Fv, Feta);
-        %     for i=1:length(self.spectralFluxForcing)
-        %         Fp_i = Fp; Fm_i = Fm; F0_i = F0;
-        %         [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
-        %         F{self.spectralFluxForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
-        %     end
-        %     for i=1:length(self.spectralAmplitudeForcing)
-        %         Fp_i = Fp; Fm_i = Fm; F0_i = F0;
-        %         [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
-        %         F{self.spectralAmplitudeForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
-        %     end
-        % end
-        % 
-        % function [Fu,Fv,Feta] = spatialFluxForForcingWithName(self,name)
-        %     Fu_name = replace(replace(join( ["Fu_", string(name)],"")," ","_"),"-","_");
-        %     Fv_name = replace(replace(join( ["Fv_", string(name)],"")," ","_"),"-","_");
-        %     Feta_name = replace(replace(join( ["Feta_", string(name)],"")," ","_"),"-","_");
-        %     [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
-        % end
+        function F = fluxForForcing(self)
+            arguments (Input)
+                self WVTransform
+            end
+            arguments (Output)
+                F dictionary
+            end
+            F = configureDictionary("string","cell");
+            Fu=0;Fv=0;Fw=0;Feta=0; % this isn't good, need to cached
+            for i=1:length(self.spatialFluxForcing)
+                Fu0=Fu;Fv0=Fv;Fw0=Fw;Feta0=Feta;
+                [Fu, Fv, Fw, Feta] = self.spatialFluxForcing(i).addNonhydrostaticSpatialForcing(self, Fu, Fv, Fw, Feta);
+                [Fp,Fm,F0] = self.transformUVWEtaToWaveVortex(Fu-Fu0, Fv-Fv0, Fw-Fw0, Feta-Feta0);
+                F{self.spatialFluxForcing(i).name} = struct("Fp",Fp,"Fm",Fm,"F0",F0);
+            end
+            [Fp,Fm,F0] = self.transformUVWEtaToWaveVortex(Fu, Fv, Fw, Feta);
+            for i=1:length(self.spectralFluxForcing)
+                Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                [Fp,Fm,F0] = self.spectralFluxForcing(i).addSpectralForcing(self,Fp, Fm, F0);
+                F{self.spectralFluxForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
+            end
+            for i=1:length(self.spectralAmplitudeForcing)
+                Fp_i = Fp; Fm_i = Fm; F0_i = F0;
+                [Fp,Fm,F0] = self.spectralAmplitudeForcing(i).setSpectralForcing(self,Fp, Fm, F0);
+                F{self.spectralAmplitudeForcing(i).name} = struct("Fp",Fp-Fp_i,"Fm",Fm-Fm_i,"F0",F0-F0_i);
+            end
+        end
+
+        function [Fu,Fv,Fw,Feta] = spatialFluxForForcingWithName(self,name)
+            Fu_name = replace(replace(join( ["Fu_", string(name)],"")," ","_"),"-","_");
+            Fv_name = replace(replace(join( ["Fv_", string(name)],"")," ","_"),"-","_");
+            Fw_name = replace(replace(join( ["Fw_", string(name)],"")," ","_"),"-","_");
+            Feta_name = replace(replace(join( ["Feta_", string(name)],"")," ","_"),"-","_");
+            [Fu,Fv,Fw,Feta] = self.variableWithName(Fu_name,Fv_name,Fw_name,Feta_name);
+        end
 
 
     end

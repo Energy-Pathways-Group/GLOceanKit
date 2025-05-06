@@ -27,10 +27,9 @@ arguments
 end
 
 % Apply operator T_\omega---defined in (C2) in the manuscript
-phase = exp(self.iOmega*(self.t-self.t0));
-Apt = self.Ap .* phase;
-Amt = self.Am .* conj(phase);
-A0t = self.A0;
+Apt = self.Apt;
+Amt = self.Amt;
+A0t = self.A0t;
 
 % Apply operator S---defined in (C4) in the manuscript
 % Finishing applying S, but also compute derivatives at the
@@ -51,16 +50,17 @@ uNL = -U.*Ux - V.*Uy - W.*Uz;
 vNL = -U.*Vx - V.*Vy - W.*Vz;
 if isa(self,'WVTransformConstantStratification')
     nNL = -U.*ETAx - V.*ETAy - W.*ETAz;
+    [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
 elseif isa(self,'WVTransformHydrostatic')
     nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-else
+    [Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
+elseif isa(self,'WVTransformBoussinesq')
+    [~,Wx,Wy,Wz] = self.transformToSpatialDomainWithGAllDerivatives(Apm=(ApUxMask.*self.WAp.*Apt + AmUxMask.*self.WAm.*Amt));
+    wNL = -U.*Wx - V.*Wy - W.*Wz;
     nNL = -U.*ETAx - V.*ETAy - W.*(ETAz + ETA.*shiftdim(self.dLnN2,-2));
-    warning('WVTransform not recognized.')
+    [Fp,Fm,F0] = self.transformUVWEtaToWaveVortex(uNL,vNL,wNL,nNL);
+else
+    error('WVTransform not recognized.')
 end
 
-[Fp,Fm,F0] = self.transformUVEtaToWaveVortex(uNL,vNL,nNL);
-
-% Fp = ApNL .* conj(phase);
-% Fm = AmNL .* phase;
-% F0 = A0NL;
 end
