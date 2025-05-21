@@ -39,10 +39,8 @@ classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
         %
         % - Topic: Properties
         nFluxComponents uint8 = 0
-    end
 
-    properties (Dependent)
-        wvt
+        wvt % this should be weak
     end
 
     methods
@@ -68,10 +66,7 @@ classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
             % self@CAAnnotatedClass();
             self.model = model;
             self.name = name;
-        end
-
-        function wvt = get.wvt(self)
-            wvt = self.model.wvt;
+            self.wvt = model.wvt;
         end
 
         function aString = description(self)

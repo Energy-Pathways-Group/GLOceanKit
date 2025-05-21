@@ -14,4 +14,6 @@ for i=1:length(primaryFlowComponent)
     self.flowComponentNameMap{primaryFlowComponent(i).shortName} = primaryFlowComponent(i);
 end
 self.totalFlowComponent = WVTotalFlowComponent(self);
+self.hasPVComponent = self.totalFlowComponent.hasPVComponent;
+self.hasWaveComponent = self.totalFlowComponent.hasWaveComponent;
 end

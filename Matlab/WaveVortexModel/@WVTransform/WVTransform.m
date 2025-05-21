@@ -65,8 +65,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
     properties (Dependent, SetAccess=private)
         hasClosure
         primaryFlowComponents
-        hasPVComponent logical
-        hasWaveComponent logical
         nFluxedComponents
         forcing
     end
@@ -81,6 +79,9 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         primaryFlowComponentNameMap
         flowComponentNameMap
         totalFlowComponent
+
+        hasPVComponent logical
+        hasWaveComponent logical
 
         forcingNameMap
         spatialFluxForcing WVForcing = WVForcing.empty(1,0)
@@ -222,14 +223,6 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         addFlowComponent(self,flowComponent)
         names = flowComponentNames(self)
         val = flowComponentWithName(self,name)
-
-        function bool = get.hasPVComponent(self)
-            bool = self.totalFlowComponent.hasPVComponent;
-        end
-
-        function bool = get.hasWaveComponent(self)
-            bool = self.totalFlowComponent.hasWaveComponent;
-        end
 
         function n = get.nFluxedComponents(self)
             n = 2*self.hasWaveComponent + self.hasPVComponent;
