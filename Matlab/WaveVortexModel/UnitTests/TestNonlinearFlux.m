@@ -11,7 +11,8 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
         % transform = {'constant-hydrostatic','constant-boussinesq','hydrostatic','boussinesq'};
         % transform = {'constant-hydrostatic','constant-boussinesq'};
         % transform = {'boussinesq'};
-        transform = {'hydrostatic'};
+        % transform = {'hydrostatic'};
+        transform = {'hydrostatic-exp'};
     end
 
     methods (TestClassSetup)
@@ -23,6 +24,11 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
                     testCase.wvt_ = WVTransformConstantStratification(Lxyz, Nxyz,shouldAntialias=0);
                 case 'hydrostatic'
                     testCase.wvt_ = WVTransformHydrostatic(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=false);
+                case 'hydrostatic-exp'
+                    N0 = 3*2*pi/3600; % buoyancy frequency at the surface, radians/seconds
+                    L_gm = 1300; % thermocline exponential scale, meters
+                    N2 = @(z) N0*N0*exp(2*z/L_gm);
+                    testCase.wvt_ = WVTransformHydrostatic(Lxyz, Nxyz, N2=N2,shouldAntialias=false);
                 case 'boussinesq'
                     testCase.wvt_ = WVTransformBoussinesq(Lxyz, Nxyz, N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)),shouldAntialias=0);
             end
