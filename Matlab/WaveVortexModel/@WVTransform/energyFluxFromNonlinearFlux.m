@@ -41,13 +41,13 @@ elseif nargout == 4
 end
 
 if options.deltaT > 0
-    Ep = Ep + 2*Fp.*conj(Fp).*self.Apm_TE_factor*options.deltaT;
-    Em = Em + 2*Fm.*conj(Fm).*self.Apm_TE_factor*options.deltaT;
+    Ep = Ep + Fp.*conj(Fp).*self.Apm_TE_factor*options.deltaT;
+    Em = Em + Fm.*conj(Fm).*self.Apm_TE_factor*options.deltaT;
     if nargout == 3
-        E0_A = E0_A + 2*F0.*conj(F0).*self.A0_TE_factor*options.deltaT;
+        E0_A = E0_A + F0.*conj(F0).*self.A0_TE_factor*options.deltaT;
     elseif nargout == 4
-        E0_A = E0_A + 2*F0.*conj(F0).*self.A0_KE_factor*options.deltaT;
-        E0_B = E0_B + 2*F0.*conj(F0).*self.A0_PE_factor*options.deltaT;
+        E0_A = E0_A + F0.*conj(F0).*self.A0_KE_factor*options.deltaT;
+        E0_B = E0_B + F0.*conj(F0).*self.A0_PE_factor*options.deltaT;
     end
 end
 end
