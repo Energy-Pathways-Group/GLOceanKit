@@ -55,8 +55,8 @@ classdef WVArrayIntegrator < handle
             self.currentY = y0;  
             self.currentTime = self.initialTime;
 
-            self.previousT = self.currentY;
-            self.previousY = self.currentTime;
+            self.previousT = self.currentTime;
+            self.previousY = self.currentY;
 
             self.integrateToTime(self.finalTime);
         end
