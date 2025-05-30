@@ -44,14 +44,16 @@ classdef WVAdaptiveDamping < WVForcing
                 self WVAdaptiveDamping {mustBeNonempty}
                 options.shouldAssumeAntialiasing logical = false
             end
+            if options.shouldAssumeAntialiasing == true
+                % essentially, assume a lower effective resolution
+                effectiveHorizontalGridResolution = 3*self.wvt.effectiveHorizontalGridResolution/2;
+            else
+                effectiveHorizontalGridResolution = self.wvt.effectiveHorizontalGridResolution;
+            end
             [K,L,~] = self.wvt.kljGrid;
             [Qkl,Qj,self.k_no_damp,self.k_damp,self.j_no_damp,self.j_damp] = self.spectralVanishingViscosityFilter(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
-            prefactor_xy = self.wvt.effectiveHorizontalGridResolution/(pi^2);
-            prefactor_z = (pi*pi*min(self.wvt.Lr2)/(self.wvt.effectiveHorizontalGridResolution)^2)*prefactor_xy;
-            if options.shouldAssumeAntialiasing == true
-                prefactor_xy = 3*prefactor_xy/2;
-                prefactor_z = 3*prefactor_z/2;
-            end
+            prefactor_xy = effectiveHorizontalGridResolution/(pi^2);
+            prefactor_z = (pi*pi*min(self.wvt.Lr2)/(effectiveHorizontalGridResolution)^2)*prefactor_xy;
 
             Lr2inv = 1./self.wvt.Lr2;
             self.damp = -prefactor_xy*Qkl.*(K.^2 +L.^2) ;
