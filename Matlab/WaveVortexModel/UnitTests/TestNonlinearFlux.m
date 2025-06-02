@@ -135,10 +135,10 @@ classdef TestNonlinearFlux < matlab.unittest.TestCase
 
             if isa(wvt,"WVTransformHydrostatic")
                 [Fu,Fv,Feta] = wvt.spatialFluxForForcingWithName("nonlinear advection");
-                F_density = wvt.u .* Fu + wvt.v .* Fv+ wvt.eta_true .* shiftdim(wvt.N2,-2) .* Feta;
+                F_density = wvt.u .* Fu + wvt.v .* Fv+ wvt.eta_true .* shiftdim(wvt.N2,-2) .* Feta + wvt.w .* shiftdim(wvt.N2,-2) .* (wvt.eta_true-wvt.eta) ;
             elseif isa(wvt,"WVTransformBoussinesq")
                 [Fu,Fv,Fw,Feta] = wvt.spatialFluxForForcingWithName("nonlinear advection");
-                F_density = wvt.u .* Fu + wvt.v .* Fv +  wvt.w .* Fw + wvt.eta_true .* shiftdim(wvt.N2,-2) .* Feta;
+                F_density = wvt.u .* Fu + wvt.v .* Fv +  wvt.w .* Fw + wvt.eta_true .* shiftdim(wvt.N2,-2) .* Feta + wvt.w .* shiftdim(wvt.N2,-2) .* (wvt.eta_true-wvt.eta) ;
             else
                 error("Transform not yet supported.");
             end
