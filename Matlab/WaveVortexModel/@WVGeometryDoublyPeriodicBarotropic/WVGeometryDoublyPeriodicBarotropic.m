@@ -68,6 +68,10 @@ classdef WVGeometryDoublyPeriodicBarotropic < WVGeometryDoublyPeriodic & WVRotat
             val = 1;
         end
 
+        function j_max = effectiveJMax(self)
+            j_max = max(self.j);
+        end
+
         function val = get.Lz(self)
             val = self.h;
         end

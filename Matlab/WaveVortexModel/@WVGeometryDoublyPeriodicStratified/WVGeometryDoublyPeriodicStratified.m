@@ -124,6 +124,10 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             Lr2 = self.g*self.h_0/(self.f*self.f);
         end
 
+        function j_max = effectiveJMax(self)
+            j_max = max(self.j);
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Transformation matrices

@@ -277,15 +277,22 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             end
         end
 
-        function setForcing(self,force)
+        function removeAllForcing(self)
             arguments
                 self WVTransform {mustBeNonempty}
-                force WVForcing
             end
             self.forcingNameMap = configureDictionary("string","cell");
             self.spatialFluxForcing = WVForcing.empty(1,0);
             self.spectralFluxForcing = WVForcing.empty(1,0);
             self.spectralAmplitudeForcing = WVForcing.empty(1,0);
+        end
+
+        function setForcing(self,force)
+            arguments
+                self WVTransform {mustBeNonempty}
+                force WVForcing
+            end
+            self.removeAllForcing();
             self.addForcing(force);
         end
 
@@ -313,16 +320,22 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 end
                 if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spatialFluxTypes())
                     self.spatialFluxForcing(end+1) = aForce;
+                    [~, idx] = sort([self.spatialFluxForcing.priority]);
+                    self.spatialFluxForcing = self.spatialFluxForcing(idx);
                     self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
                 if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spectralFluxTypes)
                     self.spectralFluxForcing(end+1) = aForce;
+                    [~, idx] = sort([self.spectralFluxForcing.priority]);
+                    self.spectralFluxForcing = self.spectralFluxForcing(idx);
                     self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end
                 if ismember(intersect(aForce.forcingType,self.forcingType),WVForcing.spectralAmplitudeTypes)
                     self.spectralAmplitudeForcing(end+1) = aForce;
+                    [~, idx] = sort([self.spectralAmplitudeForcing.priority]);
+                    self.spectralAmplitudeForcing = self.spectralAmplitudeForcing(idx);
                     self.forcingNameMap{aForce.name} = aForce;
                     didAddForcing = true;
                 end

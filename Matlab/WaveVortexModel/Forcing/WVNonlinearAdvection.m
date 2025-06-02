@@ -19,6 +19,7 @@ classdef WVNonlinearAdvection < WVForcing
                 wvt WVTransform {mustBeNonempty}
             end
             self@WVForcing(wvt,"nonlinear advection",WVForcingType(["HydrostaticSpatial" "NonhydrostaticSpatial" "PVSpatial"]));
+            self.priority = 127;
             if isa(wvt,'WVStratification')
                 self.dLnN2 = shiftdim(wvt.dLnN2,-2);
             end

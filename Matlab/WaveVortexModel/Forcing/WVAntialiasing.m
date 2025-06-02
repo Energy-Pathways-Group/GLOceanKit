@@ -29,6 +29,7 @@ classdef WVAntialiasing < WVForcing
                 options.Nj
             end
             self@WVForcing(wvt,"antialias filter",WVForcingType(["Spectral","PVSpectral"]));
+            self.priority = 127;
             if wvt.shouldAntialias
                 error("WVAntialiasing:AntialiasingNotSupported","Antialiasing is not supported for a transform that aliases at the transform level.");
             end
@@ -39,7 +40,7 @@ classdef WVAntialiasing < WVForcing
             if ~isfield(options,"Nj")
                 options.Nj = floor(2*wvt.Nj/3);
             end
-            self.M(wvt.J > options.Nj) = 1;
+            self.M(wvt.J > (options.Nj-1)) = 1;
         end
 
         function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
@@ -57,6 +58,13 @@ classdef WVAntialiasing < WVForcing
                 self WVAntialiasing
             end
             effectiveHorizontalGridResolution = pi/max(max(abs(self.wvt.L(~self.M)),abs(self.wvt.K(~self.M))));
+        end
+
+        function j_max = effectiveJMax(self)
+            arguments
+                self WVAntialiasing
+            end
+            j_max = max(abs(self.wvt.J(~self.M)));
         end
         
         function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
