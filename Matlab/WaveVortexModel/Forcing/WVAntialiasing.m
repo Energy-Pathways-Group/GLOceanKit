@@ -28,7 +28,7 @@ classdef WVAntialiasing < WVForcing
                 wvt WVTransform {mustBeNonempty}
                 options.Nj
             end
-            self@WVForcing(wvt,"antialias filter",WVForcingType(["SpectralAmplitude","PVSpectralAmplitude"]));
+            self@WVForcing(wvt,"antialias filter",WVForcingType(["Spectral","PVSpectral"]));
             if wvt.shouldAntialias
                 error("WVAntialiasing:AntialiasingNotSupported","Antialiasing is not supported for a transform that aliases at the transform level.");
             end
@@ -42,6 +42,29 @@ classdef WVAntialiasing < WVForcing
             self.M(wvt.J > options.Nj) = 1;
         end
 
+        function effectiveHorizontalGridResolution = effectiveHorizontalGridResolution(self)
+            %returns the effective grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Properties
+            % - Declaration: flag = effectiveHorizontalGridResolution(other)
+            % - Returns effectiveHorizontalGridResolution: double
+            arguments
+                self WVAntialiasing
+            end
+            effectiveHorizontalGridResolution = pi/max(max(abs(self.wvt.L(~self.M)),abs(self.wvt.K(~self.M))));
+        end
+        
+        function [Fp, Fm, F0] = addSpectralForcing(self, wvt, Fp, Fm, F0)
+            Fp = Fp - self.M .* Fp;
+            Fm = Fm - self.M .* Fm;
+            F0 = F0 - self.M .* F0;
+        end
+
         function F0 = addPotentialVorticitySpectralForcing(self, wvt, F0)
             F0 = F0 - self.M .* F0;
         end
@@ -52,11 +75,7 @@ classdef WVAntialiasing < WVForcing
             A0 = (~self.M) .* A0;
         end
 
-        function [Fp, Fm, F0] = setSpectralForcing(self, wvt, Fp, Fm, F0)
-            Fp = Fp - self.M .* Fp;
-            Fm = Fm - self.M .* Fm;
-            F0 = F0 - self.M .* F0;
-        end
+
 
         function A0 = setPotentialVorticitySpectralAmplitude(self, wvt, A0)
             arguments
