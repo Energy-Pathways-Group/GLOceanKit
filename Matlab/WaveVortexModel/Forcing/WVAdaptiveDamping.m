@@ -55,7 +55,7 @@ classdef WVAdaptiveDamping < WVForcing
             [K,L,~] = self.wvt.kljGrid;
             [Qkl,Qj,self.k_no_damp,self.k_damp,self.j_no_damp,self.j_damp] = self.spectralVanishingViscosityFilter(kl_max, j_max);
             prefactor_xy = effectiveHorizontalGridResolution/(pi^2);
-            prefactor_z = (pi*pi*min(self.wvt.Lr2)/(effectiveHorizontalGridResolution)^2)*prefactor_xy;
+            prefactor_z = (pi*pi*self.wvt.Lr2(j_max+1)/(effectiveHorizontalGridResolution)^2)*prefactor_xy;
 
             Lr2inv = 1./self.wvt.Lr2;
             self.damp = -prefactor_xy*Qkl.*(K.^2 +L.^2) ;
