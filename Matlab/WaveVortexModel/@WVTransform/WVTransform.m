@@ -377,16 +377,17 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         end
 
         function names = forcingNames(self)
-            % retrieve the names of all available variables
+            % retrieve the names of all available variables. This preserves
+            % the order in which the forcing is applied.
             %
             % - Topic: Utility function — Metadata
             arguments (Input)
                 self WVTransform {mustBeNonempty}
             end
             arguments (Output)
-                names string
+                names (:,1) string
             end
-            names = self.forcingNameMap.keys;
+            names = [self.spatialFluxForcing.name, self.spectralFluxForcing.name, self.spectralAmplitudeForcing.name];
         end
 
         function forcing = forcingWithName(self,name)
@@ -470,7 +471,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.Ap =previousY{1};
             self.Am =previousY{2};
             self.A0 =previousY{3};
-            
+
             Fp = (rk4Integrator.currentY{1} - rk4Integrator.previousY{1})/dt;
             Fm = (rk4Integrator.currentY{2} - rk4Integrator.previousY{2})/dt;
             F0 = (rk4Integrator.currentY{3} - rk4Integrator.previousY{3})/dt;
