@@ -34,12 +34,12 @@ end
 % The phase is tricky here. It is wound forward for the flux,
 % as it should be... but then it is wound back to zero. This is
 % equivalent ignoring the phase below here.
-Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap + (Fp + options.Fp_j)*options.deltaT) );
-Em = 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am + (Fm + options.Fm_j)*options.deltaT) );
+Ep = 2*self.Apm_TE_factor.*real( Fp .* conj(self.Ap + (Fp/2 + options.Fp_j)*options.deltaT) );
+Em = 2*self.Apm_TE_factor.*real( Fm .* conj(self.Am + (Fm/2 + options.Fm_j)*options.deltaT) );
 if nargout == 3
-    E0_A = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0 + (F0 + options.F0_j)*options.deltaT) );
+    E0_A = 2*self.A0_TE_factor.*real( F0 .* conj(self.A0 + (F0/2 + options.F0_j)*options.deltaT) );
 elseif nargout == 4
-    E0_A = 2*self.A0_KE_factor.*real( F0 .* conj(self.A0 + (F0 + options.F0_j)*options.deltaT) );
-    E0_B = 2*self.A0_PE_factor.*real( F0 .* conj(self.A0 + (F0 + options.F0_j)*options.deltaT) );
+    E0_A = 2*self.A0_KE_factor.*real( F0 .* conj(self.A0 + (F0/2 + options.F0_j)*options.deltaT) );
+    E0_B = 2*self.A0_PE_factor.*real( F0 .* conj(self.A0 + (F0/2 + options.F0_j)*options.deltaT) );
 end
 end
