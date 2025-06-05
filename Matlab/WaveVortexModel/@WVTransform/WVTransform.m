@@ -477,6 +477,35 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             F0 = (rk4Integrator.currentY{3} - rk4Integrator.previousY{3})/dt;
         end
 
+        function [Fp,Fm,F0,rk4Integrator] = rk4NonlinearFlux(self)
+            function nlF = fluxAtTimeCellArray(t,y0,wvt)
+                n = 0;
+                wvt.t = t;
+                if wvt.hasWaveComponent == true
+                    n=n+1; wvt.Ap(:) = y0{n};
+                    n=n+1; wvt.Am(:) = y0{n};
+                end
+                if wvt.hasPVComponent == true
+                    n=n+1; wvt.A0(:) = y0{n};
+                end
+
+                nlF = cell(1,3);
+                [nlF{:}] = wvt.nonlinearFlux;
+            end
+            dt = 2*pi/max(abs(self.Omega(:)))/10;
+            previousY = {self.Ap;self.Am;self.A0};
+            previousT = self.t;
+            rk4Integrator = WVArrayIntegrator(@(t,y0) fluxAtTimeCellArray(t,y0,self),[self.t self.t+dt],previousY,dt);
+            self.t = previousT;
+            self.Ap =previousY{1};
+            self.Am =previousY{2};
+            self.A0 =previousY{3};
+
+            Fp = (rk4Integrator.currentY{1} - rk4Integrator.previousY{1})/dt;
+            Fm = (rk4Integrator.currentY{2} - rk4Integrator.previousY{2})/dt;
+            F0 = (rk4Integrator.currentY{3} - rk4Integrator.previousY{3})/dt;
+        end
+
         [Ep,Em,E0_A,E0_B] = energyFluxFromNonlinearFlux(self,Fp,Fm,F0,options);
         Z0 = enstrophyFluxFromNonlinearFlux(self,F0,options);
 

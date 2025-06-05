@@ -310,6 +310,74 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
         end
 
+        function nlF = fluxAtTimeCellArray(wvt,t,y0)
+            % y0 is a 3x1 cell array
+            % returns a dictionary, containing structs {Fp,Fm,F0}
+            n = 0;
+            wvt.t = t;
+            if wvt.hasWaveComponent == true
+                n=n+1; wvt.Ap(:) = y0{n};
+                n=n+1; wvt.Am(:) = y0{n};
+            end
+            if wvt.hasPVComponent == true
+                n=n+1; wvt.A0(:) = y0{n};
+            end
+
+            nlF = wvt.fluxForForcing;
+        end
+
+        function F = sumFluxDictionary(self,nlF)
+            nothing = zeros(self.spectralMatrixSize);
+            F = {nothing;nothing;nothing};
+            names = self.forcingNames;
+            for i=1:numel(names)
+                F{1} = F{1} + nlF{names(i)}.Fp;
+                F{2} = F{2} + nlF{names(i)}.Fm;
+                F{3} = F{3} + nlF{names(i)}.F0;
+            end
+        end
+
+        function F = rk4FluxForForcing(self)
+            dt = 2*pi/max(abs(self.Omega(:)))/10/10;
+
+            t1 = self.t;
+            y1 = {self.Ap;self.Am;self.A0};
+            F1_d = self.fluxAtTimeCellArray(t1,y1);
+            F1 = self.sumFluxDictionary(F1_d);
+
+            y2 = cell(size(y1));
+            for i=1:length(y2)
+                y2{i} = y1{i}+0.5*dt*F1{i};
+            end
+            F2_d = self.fluxAtTimeCellArray(t1+0.5*dt,y2);
+            F2 = self.sumFluxDictionary(F2_d);
+
+            y3 = cell(size(y1));
+            for i=1:length(y3)
+                y3{i} = y1{i}+0.5*dt*F2{i};
+            end
+            F3_d = self.fluxAtTimeCellArray(t1+0.5*dt,y3);
+            F3 = self.sumFluxDictionary(F3_d);
+
+            y4 = cell(size(y1));
+            for i=1:length(y4)
+                y4{i} = y1{i}+dt*F3{i};
+            end
+            F4_d = self.fluxAtTimeCellArray(t1+dt,y4);
+
+            names = self.forcingNames;
+            F = configureDictionary("string","cell");
+            for i=1:numel(names)
+                F{names(i)}.Fp = (1/6)*F1_d{names(i)}.Fp + (2/6)*F2_d{names(i)}.Fp + (2/6)*F3_d{names(i)}.Fp + (1/6)*F4_d{names(i)}.Fp;
+                F{names(i)}.Fm = (1/6)*F1_d{names(i)}.Fm + (2/6)*F2_d{names(i)}.Fm + (2/6)*F3_d{names(i)}.Fm + (1/6)*F4_d{names(i)}.Fm;
+                F{names(i)}.F0 = (1/6)*F1_d{names(i)}.F0 + (2/6)*F2_d{names(i)}.F0 + (2/6)*F3_d{names(i)}.F0 + (1/6)*F4_d{names(i)}.F0;
+            end
+
+            self.t = t1;
+            self.Ap = y1{1};
+            self.Am = y1{2};
+            self.A0 = y1{3};
+        end
 
     end
 
