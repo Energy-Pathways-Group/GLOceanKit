@@ -261,7 +261,16 @@ classdef WVFlowComponent < handle & matlab.mixin.Heterogeneous
             Am(isnan(Am)) = 0;
         end
     end
-    
+
+    % methods (Sealed)
+    %     function tf = eq(a, b)
+    %         tf = isequal(a, b);  % compares references
+    %     end
+    % 
+    %     function tf = ne(a, b)
+    %         tf = ~isequal(a, b); % logical negation
+    %     end
+    % end
     
 end
 
