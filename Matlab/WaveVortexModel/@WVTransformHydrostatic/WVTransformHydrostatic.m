@@ -112,33 +112,24 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
             self.Feta=zeros(self.spatialMatrixSize);
         end
 
-        function wvtX2 = waveVortexTransformWithResolution(self,m,options)
+        function wvtX2 = waveVortexTransformWithResolution(self,m)
             % If you set shouldAntialias == false, when the transform
             % you're copying had shouldAntialias == true, then we will
             % override the adaptive damping with this flag as well.
             arguments
                 self 
                 m 
-                options.shouldAntialias logical
             end
             names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
             optionArgs = {};
             for i=1:length(names)
                 optionArgs{2*i-1} = names{i};
                 optionArgs{2*i} = self.(names{i});
-                if names{i} == "shouldAntialias" && isfield(options,"shouldAntialias")
-                    optionArgs{2*i} = options.shouldAntialias;
-                end
             end
-            shouldOverrideAdaptiveDamping = options.shouldAntialias == false && self.shouldAntialias == true;
             wvtX2 = WVTransformHydrostatic([self.Lx self.Ly self.Lz],m,optionArgs{:});
             forcing = WVForcing.empty(0,length(self.forcing));
             for iForce=1:length(self.forcing)
-                if shouldOverrideAdaptiveDamping && self.forcing(iForce).name == "adaptive damping"
-                    forcing(iForce) = WVAdaptiveDamping(wvtX2,shouldAssumeAntialiasing=true);
-                else
-                    forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvtX2);
-                end
+                forcing(iForce) = self.forcing(iForce).forcingWithResolutionOfTransform(wvtX2);
             end
             wvtX2.setForcing(forcing);
 

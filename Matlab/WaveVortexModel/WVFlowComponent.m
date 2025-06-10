@@ -92,6 +92,10 @@ classdef WVFlowComponent < handle & matlab.mixin.Heterogeneous
             self.maskA0 = options.maskA0;
         end
 
+        function bool = contains(self,otherComponent)
+            bool = all( ~otherComponent.maskA0(:) | self.maskA0(:)) & all( ~otherComponent.maskAm(:) | self.maskAm(:)) & all( ~otherComponent.maskAm(:) | self.maskAm(:));
+        end
+
         function h = plus(f,g)
             h = WVFlowComponent(f.wvt);
             h.name = join(cat(2,string(f.name),string(g.name)),' + ');
