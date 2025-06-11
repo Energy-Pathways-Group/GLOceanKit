@@ -68,4 +68,20 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
         end
 
     end
+
+    methods (Static)
+        function vars = classRequiredPropertyNames()
+            vars = {'outputInterval','initialTime','finalTime'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CANumericProperty('outputInterval', {}, 's','output interval');
+            propertyAnnotations(end+1) = CANumericProperty('initialTime', {}, 's','model time of first allowed write to file');
+            propertyAnnotations(end+1) = CANumericProperty('finalTime', {}, 's','model time of last allowed write to file');
+        end
+    end
 end
