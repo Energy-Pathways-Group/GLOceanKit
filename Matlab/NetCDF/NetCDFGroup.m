@@ -741,8 +741,10 @@ classdef NetCDFGroup < handle
                     end
                     fprintf(')\n');
                     for attName = string(variable.attributes.keys)
-                        if isa(variable.attributes(attName),'char') || isa(variable.attributes(attName),'string')
+                        if isa(variable.attributes(attName),'char')
                             fprintf('%s%s = \"%s\"\n',indent3,attName,variable.attributes(attName));
+                        elseif isa(variable.attributes(attName),'string')
+                            fprintf('%s%s = \"%s\"\n',indent3,attName,strjoin(variable.attributes(attName),", "));
                         elseif isa(variable.attributes(attName),'double') || isa(variable.attributes(attName),'single')
                             fprintf('%s%s = %f\n',indent3,attName,variable.attributes(attName));
                         else
@@ -755,8 +757,10 @@ classdef NetCDFGroup < handle
             if self.attributes.Count > 0
                 fprintf('\n%sattributes: \n',indent1);
                 for attName = string(self.attributes.keys)
-                    if isa(self.attributes(attName),'char') || isa(self.attributes(attName),'string')
+                    if isa(self.attributes(attName),'char')
                         fprintf('%s%s = \"%s\"\n',indent2,attName,self.attributes(attName));
+                    elseif isa(self.attributes(attName),'string')
+                        fprintf('%s%s = \"%s\"\n',indent2,attName,strjoin(self.attributes(attName),", "));
                     elseif isa(self.attributes(attName),'double') || isa(self.attributes(attName),'single')
                         fprintf('%s%s = %f\n',indent2,attName,self.attributes(attName));
                     else

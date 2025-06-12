@@ -34,13 +34,16 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
     end
 
     methods
-        function self = WVModelOutputGroup(model,name)
+        function self = WVModelOutputGroup(model,options)
             arguments
                 model WVModel
-                name {mustBeText}
+                options.name {mustBeText}
+            end
+            if ~isfield(options,"name")
+                error("You must specify an output group name");
             end
             self.model = model;
-            self.name = name;
+            self.name = options.name;
             self.observingSystems = WVObservingSystem.empty(1,0);
         end
 
@@ -206,6 +209,17 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
             end
         end
 
+        function initObservingSystemsFromGroup(self,group)
+            arguments
+                self WVModelOutputGroup {mustBeNonempty}
+                group NetCDFGroup {mustBeNonempty}
+            end
+
+            f = @(className,group) feval(strcat(className,'.observingSystemFromGroup'),group, self.model);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"observingSystems"},classConstructor=f);
+            self.addObservingSystem(vars.observingSystems);
+        end
+
     end
 
     methods (Static)
@@ -225,13 +239,21 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
                 model WVModel {mustBeNonempty}
             end
             className = group.attributes('AnnotatedClass');
-            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+            requiredProperties = feval(strcat(className,'.classRequiredPropertyNames'));
+            requiredProperties(ismember(requiredProperties,'observingSystems')) = [];
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,requiredProperties);
             if isempty(vars)
                 outputGroup = feval(className,model);
             else
                 options = namedargs2cell(vars);
                 outputGroup = feval(className,model,options{:});
             end
+            outputGroup.group = group;
+            nPoints = group.dimensionWithName("t").nPoints;
+            outputGroup.incrementsWrittenToGroup = nPoints;
+            outputGroup.timeOfLastIncrementWrittenToGroup = group.readVariablesAtIndexAlongDimension('t',nPoints,'t');
+            outputGroup.initObservingSystemsFromGroup(group);
+            outputGroup.didInitializeStorage = true;
         end
     end
 end
