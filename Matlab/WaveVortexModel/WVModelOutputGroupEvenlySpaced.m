@@ -71,7 +71,7 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
 
     methods (Static)
         function vars = classRequiredPropertyNames()
-            vars = {'outputInterval','initialTime','finalTime'};
+            vars = {'observingSystems','name','outputInterval','initialTime','finalTime'};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -79,6 +79,8 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
                 propertyAnnotations CAPropertyAnnotation
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAObjectProperty('observingSystems','array of WVObservingSystem objects');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of output group');
             propertyAnnotations(end+1) = CANumericProperty('outputInterval', {}, 's','output interval');
             propertyAnnotations(end+1) = CANumericProperty('initialTime', {}, 's','model time of first allowed write to file');
             propertyAnnotations(end+1) = CANumericProperty('finalTime', {}, 's','model time of last allowed write to file');

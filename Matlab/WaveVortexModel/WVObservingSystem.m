@@ -1,4 +1,4 @@
-classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
+classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -151,7 +151,7 @@ classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
             % - Returns os: a new instance of WVObservingSystem
             arguments
                 group NetCDFGroup {mustBeNonempty}
-                model WVTransform {mustBeNonempty}
+                model WVModel {mustBeNonempty}
             end
             className = group.attributes('AnnotatedClass');
             vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);

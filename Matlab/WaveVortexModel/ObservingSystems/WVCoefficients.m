@@ -176,5 +176,17 @@ classdef WVCoefficients < WVObservingSystem
             alpha0(isinf(alpha0)) = 1;
             alphapm(isinf(alphapm)) = 1;
         end
+
+        function vars = classRequiredPropertyNames()
+            vars = {'absTolerance'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CANumericProperty('absTolerance', {}, 'm^{3} s^{-2}','absolute tolerance of the wave-vortex coefficients');
+        end
     end
 end

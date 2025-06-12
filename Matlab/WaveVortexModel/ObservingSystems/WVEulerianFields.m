@@ -11,6 +11,7 @@ classdef WVEulerianFields < WVObservingSystem
     properties (Dependent)
         nOutputVariables
         nTimeSeriesVariables
+        fieldNames
     end
 
     methods
@@ -27,14 +28,23 @@ classdef WVEulerianFields < WVObservingSystem
             % - Returns self: a new instance of WVObservingSystem
             arguments
                 model WVModel
-                options.fieldNames = {}
+                options.fieldNames
             end
             % Do we actually want to inherit the properties from the
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
+            if ~isfield(options,"fieldNames")
+                options.fieldNames = {};
+            elseif isa(options.fieldNames,"string")
+                options.fieldNames = cellstr(options.fieldNames);
+            end
             self@WVObservingSystem(model,"eulerian fields");
             self.netCDFOutputVariables = options.fieldNames;
+        end
+
+        function names = get.fieldNames(self)
+            names = string(self.netCDFOutputVariables);
         end
 
         function nOutputVariables = get.nOutputVariables(self)
@@ -193,4 +203,17 @@ classdef WVEulerianFields < WVObservingSystem
         end
     end
 
+    methods (Static)
+        function vars = classRequiredPropertyNames()
+            vars = {'fieldNames'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAPropertyAnnotation('fieldNames','eulerian field names');
+        end
+    end
 end

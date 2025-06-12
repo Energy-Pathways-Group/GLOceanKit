@@ -1,4 +1,4 @@
-classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
+classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -142,6 +142,7 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
                 error('Storage already initialized!');
             end
             self.group = ncfile.addGroup(self.name);
+            self.writeToGroup(self.group,self.propertyAnnotationWithName(self.requiredProperties));
 
             varAnnotation = self.model.wvt.propertyAnnotationWithName('t');
             varAnnotation.attributes('units') = varAnnotation.units;
@@ -205,5 +206,32 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous
             end
         end
 
+    end
+
+    methods (Static)
+        function outputGroup = modelOutputGroupFromGroup(group,model)
+            %initialize a WVModelOutputGroup instance from NetCDF file
+            %
+            % Subclasses to should override this method to enable model
+            % restarts. This method works in conjunction with -writeToFile
+            % to provide restart capability.
+            %
+            % - Topic: Initialization
+            % - Declaration: outputGroup = modelOutputGroupFromGroup(group,wvt)
+            % - Parameter wvt: the WVTransform to be used
+            % - Returns outputGroup: a new instance of WVModelOutputGroup
+            arguments
+                group NetCDFGroup {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+            end
+            className = group.attributes('AnnotatedClass');
+            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+            if isempty(vars)
+                outputGroup = feval(className,model);
+            else
+                options = namedargs2cell(vars);
+                outputGroup = feval(className,model,options{:});
+            end
+        end
     end
 end

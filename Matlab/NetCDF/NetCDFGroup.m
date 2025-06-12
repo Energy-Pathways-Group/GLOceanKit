@@ -673,6 +673,10 @@ classdef NetCDFGroup < handle
             self.attributes(name) = data;
         end
 
+        function bool = hasAttributeWithName(self,name)
+            bool = isKey(self.attributes,name);
+        end
+
         function dump(self,options)
             arguments
                 self NetCDFGroup
