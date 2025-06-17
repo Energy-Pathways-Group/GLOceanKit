@@ -249,7 +249,7 @@ classdef CAAnnotatedClass < handle
                 if options.shouldIgnoreMissingProperties == true
                     continue;
                 else
-                    error('Unable to find the property %s',name);
+                    error('Unable to find the property: %s',name);
                 end
             end
             if ~exist("var","var")
