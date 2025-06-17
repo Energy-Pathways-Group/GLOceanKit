@@ -752,7 +752,11 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                         fprintf(string(iFile) + ": " + self.outputFiles(iFile).filename + " with " + length(self.outputFiles(iFile).outputGroups) + " output groups\n");
                     end
                     for iGroup=1:length(self.outputFiles(iFile).outputGroups)
-                        fprintf("\t" + string(iGroup) + ": " + self.outputFiles(iFile).outputGroups(iGroup).description + "\n");
+                        nObsSystems = length(self.outputFiles(iFile).outputGroups(iGroup).observingSystems);
+                        fprintf("\t" + string(iGroup) + ": " + self.outputFiles(iFile).outputGroups(iGroup).description + ", writing " + string(nObsSystems) + " observing systems\n");
+                        for iOs = 1:nObsSystems
+                            fprintf("\t\t" + string(iOs) + ": " + self.outputFiles(iFile).outputGroups(iGroup).observingSystems(iOs).description + "\n");
+                        end
                     end
                 end
             end

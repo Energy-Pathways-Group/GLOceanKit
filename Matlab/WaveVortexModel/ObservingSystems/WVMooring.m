@@ -5,6 +5,10 @@ classdef WVMooring < WVObservingSystem
     properties (GetAccess=public, SetAccess=protected)
         x, y
         x_index, y_index
+        trackedFieldNamesCell
+    end
+
+    properties (Dependent)
         trackedFieldNames
     end
 
@@ -22,18 +26,23 @@ classdef WVMooring < WVObservingSystem
             % - Returns self: a new instance of WVObservingSystem
             arguments
                 model WVModel
+                options.name = "mooring"
                 options.nMoorings = 1
-                options.trackedFieldNames = {}
+                options.trackedFieldNames
+                options.x
+                options.y
             end
-            self@WVObservingSystem(model,"mooring");
+            self@WVObservingSystem(model,options.name);
             self.nFluxComponents = 0;
 
             if length(model.wvt.spatialDimensionNames) ~= 3
                 error("I do not know how to do moorings for anything other than (x,y,z) domain.")
             end
 
-            if isempty(options.trackedFieldNames)
+            if ~isfield(options,"trackedFieldNames")
                 options.trackedFieldNames = {"u","v","w","eta","rho_e"};
+            elseif isa(options.trackedFieldNames,"string")
+                options.trackedFieldNames = cellstr(options.trackedFieldNames);
             end
             % Confirm that we really can track these variables.
             for iVar=1:length(options.trackedFieldNames)
@@ -45,23 +54,28 @@ classdef WVMooring < WVObservingSystem
                     error('The WVVariableAnnotation %s does not have dimensions x,y,z and theforefore cannot be used for mooring observations', options.trackedFieldNames{iVar});
                 end
             end
-            self.trackedFieldNames = options.trackedFieldNames;
+            self.trackedFieldNamesCell = options.trackedFieldNames;
 
-            N = options.nMoorings;
-            [x, y] = WVMooring.cvtTorus(N, model.wvt.Lx, model.wvt.Ly, 30);
+            if ~isfield(options,"x") && ~isfield(options,"y")
+                N = options.nMoorings;
+                [x, y] = WVMooring.cvtTorus(N, model.wvt.Lx, model.wvt.Ly, 30);
 
-            closestMooring = Inf*ones(N,1);
-            for i=1:N
-                d = Inf*ones(N,1);
-                for j=1:N
-                    if i == j
-                        continue;
+                closestMooring = Inf*ones(N,1);
+                for i=1:N
+                    d = Inf*ones(N,1);
+                    for j=1:N
+                        if i == j
+                            continue;
+                        end
+                        d(j) = WVMooring.torusDist([x(i) y(i)],[x(j) y(j)],model.wvt.Lx,model.wvt.Ly);
                     end
-                    d(j) = WVMooring.torusDist([x(i) y(i)],[x(j) y(j)],model.wvt.Lx,model.wvt.Ly);
+                    closestMooring(i) = min(d);
                 end
-                closestMooring(i) = min(d);
+                fprintf('The closest two moorings are %f meters apart in this toroidal ocean.\n',min(closestMooring));
+            else
+                x = options.x;
+                y = options.y;
             end
-            fprintf('The closest two moorings are %f meters apart in this toroidal ocean.\n',min(closestMooring));
 
             self.x = x;
             self.y = y;
@@ -69,6 +83,10 @@ classdef WVMooring < WVObservingSystem
             self.x_index = floor(x/dx);
             dy = model.wvt.y(2)-model.wvt.y(1);
             self.y_index = floor(y/dy);
+        end
+
+        function names = get.trackedFieldNames(self)
+            names = string(self.trackedFieldNamesCell);
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,42 +116,69 @@ classdef WVMooring < WVObservingSystem
                 group.addVariable(strcat(self.name,'_',spatialDimensionNames{iVar}),{dim_id.name},self.(spatialDimensionNames{iVar}),attributes=attributes);
             end
 
-            for iVar=1:length(self.trackedFieldNames)
-                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.trackedFieldNames{iVar});
+            for iVar=1:length(self.trackedFieldNamesCell)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.trackedFieldNamesCell{iVar});
                 attributes = containers.Map(KeyType='char',ValueType='any');
                 attributes('units') = varAnnotation.units;
                 attributes('long_name') = strcat(varAnnotation.description,', recorded at the mooring');
-                group.addVariable(strcat(self.name,'_',self.trackedFieldNames{iVar}),{dim_z.name,dim_id.name,'t'},type="double",attributes=attributes,isComplex=false);
+                group.addVariable(strcat(self.name,'_',self.trackedFieldNamesCell{iVar}),{dim_z.name,dim_id.name,'t'},type="double",attributes=attributes,isComplex=false);
             end
         end
 
         function writeTimeStepToFile(self,group,outputIndex)
-            for iField=1:length(self.trackedFieldNames)
-                griddedVar = self.wvt.variableWithName(self.trackedFieldNames{iField});
+            for iField=1:length(self.trackedFieldNamesCell)
+                griddedVar = self.wvt.variableWithName(self.trackedFieldNamesCell{iField});
                 outputVar = zeros(self.wvt.Nz,length(self.x));
                 for iMooring = 1:length(self.x)
                     outputVar(:,iMooring) = griddedVar(self.x_index(iMooring),self.y_index(iMooring),:);
                 end
-                group.variableWithName(strcat(self.name,'_',self.trackedFieldNames{iField})).setValueAlongDimensionAtIndex(outputVar,'t',outputIndex);
+                group.variableWithName(strcat(self.name,'_',self.trackedFieldNamesCell{iField})).setValueAlongDimensionAtIndex(outputVar,'t',outputIndex);
             end
-        end
-
-        function os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            %create a new WVObservingSystem with a new resolution
-            %
-            % Subclasses to should override this method an implement the
-            % correct logic.
-            %
-            % - Topic: Initialization
-            % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            % - Parameter wvtX2: the WVTransform with increased resolution
-            % - Returns force: a new instance of WVObservingSystem
-            os = WVMooring(wvtX2,self.name);
-            error('this needs to be implemented');
         end
     end
 
     methods (Static)
+        function os = observingSystemFromGroup(group,model,outputGroup)
+            %initialize a WVObservingSystem instance from NetCDF file
+            %
+            % Subclasses to should override this method to enable model
+            % restarts. This method works in conjunction with -writeToFile
+            % to provide restart capability.
+            %
+            % - Topic: Initialization
+            % - Declaration: os = observingSystemFromGroup(group,wvt)
+            % - Parameter model: the WVModel to be used
+            % - Returns os: a new instance of WVObservingSystem
+            arguments
+                group NetCDFGroup {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+                outputGroup WVModelOutputGroup
+            end
+            % most variables will be returned with this call, but we still
+            % need to fetch (x,y,z), and the tracked variables
+            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+
+            parentGroup = outputGroup.group;
+            vars.x = parentGroup.readVariables(vars.name+"_x");
+            vars.y = parentGroup.readVariables(vars.name+"_y");
+
+            options = namedargs2cell(vars);
+            os = WVMooring(model,options{:});
+        end
+
+        function vars = classRequiredPropertyNames()
+            vars = {'name','trackedFieldNames'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of Lagrangian particles');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('trackedFieldNames','tracked field names');
+        end
+
         function [x, y] = cvtTorus(N, Lx, Ly, nIter)
             %CVTTORUS   Centroidal Voronoi tessellation on a 2D torus
             %

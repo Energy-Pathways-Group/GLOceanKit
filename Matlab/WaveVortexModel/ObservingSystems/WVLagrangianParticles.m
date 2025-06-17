@@ -231,23 +231,10 @@ classdef WVLagrangianParticles < WVObservingSystem
                 group.variableWithName(strcat(self.name,'_',self.trackedFieldNamesCell{iField})).setValueAlongDimensionAtIndex(self.trackedFields.(self.trackedFieldNamesCell{iField}),'t',outputIndex);
             end
         end
-
-        function os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            %create a new WVObservingSystem with a new resolution
-            %
-            % Subclasses to should override this method an implement the
-            % correct logic.
-            %
-            % - Topic: Initialization
-            % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            % - Parameter wvtX2: the WVTransform with increased resolution
-            % - Returns force: a new instance of WVObservingSystem
-            os = WVLagrangianParticles(wvtX2,self.name);
-        end
     end
 
     methods (Static)
-        function os = observingSystemFromGroup(group,model)
+        function os = observingSystemFromGroup(group,model,outputGroup)
             %initialize a WVObservingSystem instance from NetCDF file
             %
             % Subclasses to should override this method to enable model
@@ -261,17 +248,32 @@ classdef WVLagrangianParticles < WVObservingSystem
             arguments
                 group NetCDFGroup {mustBeNonempty}
                 model WVModel {mustBeNonempty}
+                outputGroup WVModelOutputGroup
             end
-            className = group.attributes('AnnotatedClass');
+            % most variables will be returned with this call, but we still
+            % need to fetch (x,y,z), and the tracked variables
             vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
-            nPoints = group.dimensionWithName("t").nPoints;
-            outputGroup.timeOfLastIncrementWrittenToGroup = group.readVariablesAtIndexAlongDimension('t',nPoints,'t');
-            group.readVariablesAtIndexAlongDimension('t',nPoints,strcat(vars.name,'_x'));
-            group.variableWithName(strcat(vars.name,'_y')).setValueAlongDimensionAtIndex(self.y,'t',outputIndex);
+
+            parentGroup = outputGroup.group;
+            nPoints = parentGroup.dimensionWithName("t").nPoints;
+            vars.x = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_x");
+            vars.y = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_y");
+            if ~isequal(model.wvt.spatialDimensionNames,{'x','y'})
+                vars.z = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_z");
+            end
+
+            options = namedargs2cell(vars);
+            os = WVLagrangianParticles(model,options{:});
+
+            % We still need to recover the last value of the tracked fields
+            for i=1:length(os.trackedFieldNamesCell)
+                trackedFieldName = os.name+"_"+os.trackedFieldNamesCell{i};
+                os.trackedFields.(os.trackedFieldNamesCell{i}) = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,trackedFieldName);
+            end
         end
 
         function vars = classRequiredPropertyNames()
-            vars = {'name','isXYOnly','advectionInterpolation','trackedFieldNames','trackedFieldInterpMethod','absToleranceXY','absToleranceZ'};
+            vars = {'name','isXYOnly','trackedFieldNames','advectionInterpolation','trackedVarInterpolation','absToleranceXY','absToleranceZ'};
         end
 
         function propertyAnnotations = classDefinedPropertyAnnotations()
@@ -279,11 +281,11 @@ classdef WVLagrangianParticles < WVObservingSystem
                 propertyAnnotations CAPropertyAnnotation
             end
             propertyAnnotations = CAPropertyAnnotation.empty(0,0);
-            propertyAnnotations(end+1) = CANumericProperty('isXYOnly',{}, 'bool', 'whether the advection is only applied in x-y');
             propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of Lagrangian particles');
+            propertyAnnotations(end+1) = CANumericProperty('isXYOnly',{}, 'bool', 'whether the advection is only applied in x-y');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('trackedFieldNames','tracked field names');
             propertyAnnotations(end+1) = CAPropertyAnnotation('advectionInterpolation','interpolation method for the advection scheme');
             propertyAnnotations(end+1) = CAPropertyAnnotation('trackedVarInterpolation','interpolation method for the tracked fields');
-            propertyAnnotations(end+1) = CAPropertyAnnotation('trackedFieldNames','tracked field names');
             propertyAnnotations(end+1) = CANumericProperty('absToleranceXY', {}, 'm','absolute tolerance for the adaptive integrator in x-y directions');
             propertyAnnotations(end+1) = CANumericProperty('absToleranceZ', {}, 'm','absolute tolerance for the adaptive integrator in z direction');
         end

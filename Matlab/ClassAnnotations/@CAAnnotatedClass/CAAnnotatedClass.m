@@ -252,6 +252,9 @@ classdef CAAnnotatedClass < handle
                     error('Unable to find the property %s',name);
                 end
             end
+            if ~exist("var","var")
+                var = [];
+            end
         end
 
         function [canInit, errorString] = canInitializeDirectlyFromGroup(group,requiredProperties)

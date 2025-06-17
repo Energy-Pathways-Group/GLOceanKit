@@ -209,14 +209,14 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
             end
         end
 
-        function initObservingSystemsFromGroup(self,group)
+        function initObservingSystemsFromGroup(self,outputGroup)
             arguments
                 self WVModelOutputGroup {mustBeNonempty}
-                group NetCDFGroup {mustBeNonempty}
+                outputGroup NetCDFGroup {mustBeNonempty}
             end
 
-            f = @(className,group) feval(strcat(className,'.observingSystemFromGroup'),group, self.model);
-            vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"observingSystems"},classConstructor=f);
+            f = @(className,group) feval(strcat(className,'.observingSystemFromGroup'),group, self.model, self);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(outputGroup,{"observingSystems"},classConstructor=f);
             self.addObservingSystem(vars.observingSystems);
         end
 
