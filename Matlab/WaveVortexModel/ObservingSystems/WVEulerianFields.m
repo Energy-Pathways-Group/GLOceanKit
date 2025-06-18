@@ -3,9 +3,12 @@ classdef WVEulerianFields < WVObservingSystem
     %   Detailed explanation goes here
 
     properties (GetAccess=public, SetAccess=protected)
-        netCDFOutputVariables = {};
         initialConditionOnlyVariables = {};
         timeSeriesVariables = {};
+    end
+
+    properties (SetObservable)
+        netCDFOutputVariables = {};
     end
 
     properties (Dependent)
@@ -40,6 +43,7 @@ classdef WVEulerianFields < WVObservingSystem
                 options.fieldNames = cellstr(options.fieldNames);
             end
             self@WVObservingSystem(model,"eulerian fields");
+            addlistener(self,'netCDFOutputVariables','PostSet',@(src,evnt) self.updateNetCDFVariableCategorization);
             self.netCDFOutputVariables = options.fieldNames;
         end
 
@@ -59,6 +63,11 @@ classdef WVEulerianFields < WVObservingSystem
                     nOutputVariables = nOutputVariables + 1;
                 end
             end
+        end
+
+        function aString = description(self)
+            aString = description@WVObservingSystem(self);
+            aString = aString + ", writing fields " + strjoin(string(self.timeSeriesVariables),", ");
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -142,6 +151,19 @@ classdef WVEulerianFields < WVObservingSystem
                 variables char
             end
             self.netCDFOutputVariables = setdiff(self.netCDFOutputVariables,variables);
+        end
+
+        function updateNetCDFVariableCategorization(self)
+            self.initialConditionOnlyVariables = {};
+            self.timeSeriesVariables = {};
+            for iVar = 1:length(self.netCDFOutputVariables)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.netCDFOutputVariables{iVar});
+                if (self.model.isDynamicsLinear == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.model.isDynamicsLinear == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
+                    self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
+                else
+                    self.initialConditionOnlyVariables{end+1} = self.netCDFOutputVariables{iVar};
+                end
+            end
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -89,7 +89,7 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = WVModel(wvt)
+        function self = WVModel(wvt,options)
             % Initialize a model from a WVTransform instance
             %
             % - Topic: Initialization
@@ -99,13 +99,18 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
             % 
             arguments
                 wvt WVTransform {mustBeNonempty}
+                options.shouldUseLinearDynamics = false
             end
 
             self.wvt = wvt;
-            self.eulerianObservingSystem = WVEulerianFields(self,fieldNames=intersect({'Ap','Am','A0'},self.wvt.variableNames));
-            if self.wvt.hasClosure == false
-                warning('The nonlinear flux has no damping and may not be stable.');
+            self.isDynamicsLinear = options.shouldUseLinearDynamics;
+            if ~self.isDynamicsLinear
+                self.addFluxedCoefficients(WVCoefficients(self));
+                if self.wvt.hasClosure == false
+                    warning('The nonlinear flux has no damping and may not be stable.');
+                end
             end
+            self.eulerianObservingSystem = WVEulerianFields(self,fieldNames=intersect({'Ap','Am','A0'},self.wvt.variableNames));
         end
 
         function value = get.t(self)
@@ -182,6 +187,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
         % Fluxed observing systems
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function wvCoeff = wvCoefficientFluxedObservingSystem(self)
+            wvCoeff = [];
+            if ~isempty(self.fluxedObservingSystems) && isa(self.fluxedObservingSystems(1),'WVCoefficients')
+                wvCoeff = self.fluxedObservingSystems(1);
+            end
+        end
 
         function addFluxedCoefficients(self,anObservingSystem)
             arguments
@@ -573,7 +585,6 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self WVModel {mustBeNonempty}
 
                 options.integratorType char {mustBeMember(options.integratorType,["fixed","adaptive","adaptive-cell"])} = "adaptive"
-                options.shouldIntegrateWaveVortexCoefficients logical = true
 
                 fixedTimeStepOptions.deltaT (1,1) double {mustBePositive}
                 fixedTimeStepOptions.cfl (1,1) double
@@ -585,13 +596,8 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 adaptiveTimeStepOptions.shouldShowIntegrationStats double {mustBeMember(adaptiveTimeStepOptions.shouldShowIntegrationStats,[0 1])} = 0
             end
 
-            if options.shouldIntegrateWaveVortexCoefficients == true
-                self.addFluxedCoefficients(WVCoefficients(self,absTolerance=adaptiveTimeStepOptions.absTolerance));
-                self.isDynamicsLinear = false;
-            else
-                vars = {'Ap','Am','A0'};
-                self.eulerianObservingSystem.removeNetCDFOutputVariables(vars{:});
-                self.isDynamicsLinear = true;
+            if self.isDynamicsLinear == false
+                self.wvCoefficientFluxedObservingSystem.absTolerance = adaptiveTimeStepOptions.absTolerance;
             end
 
             % self.resetFixedTimeStepIntegrator();
