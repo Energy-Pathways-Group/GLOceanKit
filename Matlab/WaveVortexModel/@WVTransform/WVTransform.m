@@ -711,8 +711,12 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             % group = ncfile.groupWithName(class(self));
             group = ncfile;
             f = @(className,group) feval(strcat(className,'.forcingFromGroup'),group, self);
-            vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"forcing"},classConstructor=f);
-            self.setForcing(vars.forcing);
+            vars = CAAnnotatedClass.propertyValuesFromGroup(group,{"forcing"},classConstructor=f,shouldIgnoreMissingProperties=true);
+            if isfield(vars,"forcing")
+                self.setForcing(vars.forcing);
+            else
+                self.removeAllForcing();
+            end
         end
 
         initWithUVRho(self,u,v,rho,t)

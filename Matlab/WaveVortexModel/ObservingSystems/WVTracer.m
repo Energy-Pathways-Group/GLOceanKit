@@ -92,19 +92,50 @@ classdef WVTracer < WVObservingSystem
         function writeTimeStepToFile(self,group,outputIndex)
             group.variableWithName(self.name).setValueAlongDimensionAtIndex(self.phi,'t',outputIndex);
         end
+    end
 
-        function os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            %create a new WVObservingSystem with a new resolution
+    methods (Static)
+        function os = observingSystemFromGroup(group,model,outputGroup)
+            %initialize a WVObservingSystem instance from NetCDF file
             %
-            % Subclasses to should override this method an implement the
-            % correct logic.
+            % Subclasses to should override this method to enable model
+            % restarts. This method works in conjunction with -writeToFile
+            % to provide restart capability.
             %
             % - Topic: Initialization
-            % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            % - Parameter wvtX2: the WVTransform with increased resolution
-            % - Returns force: a new instance of WVObservingSystem
-            os = WVTracer(wvtX2,self.name);
-            error('this needs to be implemented');
+            % - Declaration: os = observingSystemFromGroup(group,wvt)
+            % - Parameter model: the WVModel to be used
+            % - Returns os: a new instance of WVObservingSystem
+            arguments
+                group NetCDFGroup {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+                outputGroup WVModelOutputGroup
+            end
+            % most variables will be returned with this call, but we still
+            % need to fetch (x,y,z), and the tracked variables
+            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+
+            parentGroup = outputGroup.group;
+            nPoints = parentGroup.dimensionWithName("t").nPoints;
+            vars.phi = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name);
+
+            options = namedargs2cell(vars);
+            os = WVTracer(model,options{:});
+        end
+
+        function vars = classRequiredPropertyNames()
+            vars = {'name','isXYOnly','absTolerance','shouldAntialias'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of Lagrangian particles');
+            propertyAnnotations(end+1) = CANumericProperty('isXYOnly',{}, 'bool', 'whether the advection is only applied in x-y');
+            propertyAnnotations(end+1) = CANumericProperty('absTolerance', {}, '','absolute tolerance of phi for the adaptive integrator');
+            propertyAnnotations(end+1) = CANumericProperty('shouldAntialias',{}, 'bool', 'whether to antialias');
         end
     end
 end

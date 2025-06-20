@@ -1,4 +1,4 @@
-classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
+classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -122,23 +122,10 @@ classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
 
         function writeTimeStepToFile(self,group,outputIndex)
         end
-
-        function os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            %create a new WVObservingSystem with a new resolution
-            %
-            % Subclasses to should override this method an implement the
-            % correct logic.
-            %
-            % - Topic: Initialization
-            % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            % - Parameter wvtX2: the WVTransform with increased resolution
-            % - Returns force: a new instance of WVObservingSystem
-            os = WVObservingSystem(wvtX2,self.name);
-        end
     end
 
     methods (Static)
-        function os = observingSystemFromGroup(group,model)
+        function os = observingSystemFromGroup(group,model, outputGroup)
             %initialize a WVObservingSystem instance from NetCDF file
             %
             % Subclasses to should override this method to enable model
@@ -151,7 +138,8 @@ classdef WVObservingSystem < handle & matlab.mixin.Heterogeneous
             % - Returns os: a new instance of WVObservingSystem
             arguments
                 group NetCDFGroup {mustBeNonempty}
-                model WVTransform {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+                outputGroup WVModelOutputGroup
             end
             className = group.attributes('AnnotatedClass');
             vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);

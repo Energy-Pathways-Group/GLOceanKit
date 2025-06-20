@@ -18,15 +18,18 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
     end
 
     methods
-        function self = WVModelOutputGroupEvenlySpaced(model,name,options)
+        function self = WVModelOutputGroupEvenlySpaced(model,options)
             arguments
                 model WVModel
-                name {mustBeText}
+                options.name {mustBeText}
                 options.outputInterval (1,1) double {mustBePositive}
                 options.initialTime (1,1) double = -Inf
                 options.finalTime (1,1) double = Inf
             end
-            self@WVModelOutputGroup(model,name);
+            self@WVModelOutputGroup(model,name=options.name);
+            if ~isfield(options,"name")
+                error("You must specify an output group name");
+            end
             if ~isfield(options,"outputInterval")
                 error("You must specify an output interval");
             end
@@ -67,5 +70,23 @@ classdef WVModelOutputGroupEvenlySpaced < WVModelOutputGroup
             t(t>self.finalTime) = [];
         end
 
+    end
+
+    methods (Static)
+        function vars = classRequiredPropertyNames()
+            vars = {'observingSystems','name','outputInterval','initialTime','finalTime'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAObjectProperty('observingSystems','array of WVObservingSystem objects');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of output group');
+            propertyAnnotations(end+1) = CANumericProperty('outputInterval', {}, 's','output interval');
+            propertyAnnotations(end+1) = CANumericProperty('initialTime', {}, 's','model time of first allowed write to file');
+            propertyAnnotations(end+1) = CANumericProperty('finalTime', {}, 's','model time of last allowed write to file');
+        end
     end
 end

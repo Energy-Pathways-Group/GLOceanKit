@@ -6,15 +6,16 @@ classdef WVLagrangianParticles < WVObservingSystem
         x, y, z
         isXYOnly
         advectionInterpolation
-        trackedFieldNames
+        trackedFieldNamesCell
         trackedFields
-        trackedFieldInterpMethod
+        trackedVarInterpolation
         absToleranceXY
         absToleranceZ
     end
 
     properties (Dependent)
         nParticles
+        trackedFieldNames
     end
 
     methods
@@ -36,7 +37,7 @@ classdef WVLagrangianParticles < WVObservingSystem
                 options.y (1,:) double
                 options.z (1,:) double
                 options.isXYOnly (1,1) logical = false
-                options.trackedFieldNames = {}
+                options.trackedFieldNames
                 options.advectionInterpolation char {mustBeMember(options.advectionInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.trackedVarInterpolation char {mustBeMember(options.trackedVarInterpolation,["linear","spline","exact","finufft"])} = "linear"
                 options.absToleranceXY = 1e-1; % 100 km * 10^{-6}
@@ -47,6 +48,11 @@ classdef WVLagrangianParticles < WVObservingSystem
             % If an OS does, then its output can go in the wave-vortex
             % group.
             self@WVObservingSystem(model,options.name);
+            if ~isfield(options,"trackedFieldNames")
+                options.trackedFieldNames = {};
+            elseif isa(options.trackedFieldNames,"string")
+                options.trackedFieldNames = cellstr(options.trackedFieldNames);
+            end
 
             % Confirm that we really can track these variables.
             for iVar=1:length(options.trackedFieldNames)
@@ -69,8 +75,8 @@ classdef WVLagrangianParticles < WVObservingSystem
             self.y = options.y;
             self.z = options.z;
             self.isXYOnly = options.isXYOnly;
-            self.trackedFieldNames = options.trackedFieldNames;
-            self.trackedFieldInterpMethod = options.trackedVarInterpolation;
+            self.trackedFieldNamesCell = options.trackedFieldNames;
+            self.trackedVarInterpolation = options.trackedVarInterpolation;
             self.advectionInterpolation = options.advectionInterpolation;
             self.absToleranceXY = options.absToleranceXY;
             self.absToleranceZ = options.absToleranceZ;
@@ -82,6 +88,10 @@ classdef WVLagrangianParticles < WVObservingSystem
             end
 
             self.updateParticleTrackedFields();
+        end
+
+        function names = get.trackedFieldNames(self)
+            names = string(self.trackedFieldNamesCell);
         end
 
         function nParticles = get.nParticles(self)
@@ -103,11 +113,11 @@ classdef WVLagrangianParticles < WVObservingSystem
         function updateParticleTrackedFields(self)
             % One special thing we have to do is log the particle
             % tracked fields
-            if ~isempty(self.trackedFieldNames)
-                varLagrangianValues = cell(1,length(self.trackedFieldNames));
-                [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,self.trackedFieldNames{:},interpolationMethod=self.trackedFieldInterpMethod);
-                for i=1:length(self.trackedFieldNames)
-                    self.trackedFields.(self.trackedFieldNames{i}) = varLagrangianValues{i};
+            if ~isempty(self.trackedFieldNamesCell)
+                varLagrangianValues = cell(1,length(self.trackedFieldNamesCell));
+                [varLagrangianValues{:}] = self.wvt.variableAtPositionWithName(self.x,self.y,self.z,self.trackedFieldNamesCell{:},interpolationMethod=self.trackedVarInterpolation);
+                for i=1:length(self.trackedFieldNamesCell)
+                    self.trackedFields.(self.trackedFieldNamesCell{i}) = varLagrangianValues{i};
                 end
             end
         end
@@ -199,13 +209,13 @@ classdef WVLagrangianParticles < WVObservingSystem
                 variables(spatialDimensionNames{iVar}) = group.addVariable(strcat(self.name,'_',spatialDimensionNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
             end
 
-            for iVar=1:length(self.trackedFieldNames)
-                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.trackedFieldNames{iVar});
+            for iVar=1:length(self.trackedFieldNamesCell)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.trackedFieldNamesCell{iVar});
                 attributes = containers.Map(commonKeys,commonVals);
                 attributes('units') = varAnnotation.units;
                 attributes('long_name') = strcat(varAnnotation.description,', recorded along the particle trajectory');
-                attributes('particleVariableName') = self.trackedFieldNames{iVar};
-                variables(self.trackedFieldNames{iVar}) = group.addVariable(strcat(self.name,'_',self.trackedFieldNames{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
+                attributes('particleVariableName') = self.trackedFieldNamesCell{iVar};
+                variables(self.trackedFieldNamesCell{iVar}) = group.addVariable(strcat(self.name,'_',self.trackedFieldNamesCell{iVar}),{dim.name,'t'},type="double",attributes=attributes,isComplex=false);
             end
         end
 
@@ -217,22 +227,67 @@ classdef WVLagrangianParticles < WVObservingSystem
             end
 
             self.updateParticleTrackedFields();
-            for iField=1:length(self.trackedFieldNames)
-                group.variableWithName(strcat(self.name,'_',self.trackedFieldNames{iField})).setValueAlongDimensionAtIndex(self.trackedFields.(self.trackedFieldNames{iField}),'t',outputIndex);
+            for iField=1:length(self.trackedFieldNamesCell)
+                group.variableWithName(strcat(self.name,'_',self.trackedFieldNamesCell{iField})).setValueAlongDimensionAtIndex(self.trackedFields.(self.trackedFieldNamesCell{iField}),'t',outputIndex);
+            end
+        end
+    end
+
+    methods (Static)
+        function os = observingSystemFromGroup(group,model,outputGroup)
+            %initialize a WVObservingSystem instance from NetCDF file
+            %
+            % Subclasses to should override this method to enable model
+            % restarts. This method works in conjunction with -writeToFile
+            % to provide restart capability.
+            %
+            % - Topic: Initialization
+            % - Declaration: os = observingSystemFromGroup(group,wvt)
+            % - Parameter model: the WVModel to be used
+            % - Returns os: a new instance of WVObservingSystem
+            arguments
+                group NetCDFGroup {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+                outputGroup WVModelOutputGroup
+            end
+            % most variables will be returned with this call, but we still
+            % need to fetch (x,y,z), and the tracked variables
+            vars = CAAnnotatedClass.requiredPropertiesFromGroup(group);
+
+            parentGroup = outputGroup.group;
+            nPoints = parentGroup.dimensionWithName("t").nPoints;
+            vars.x = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_x");
+            vars.y = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_y");
+            if ~isequal(model.wvt.spatialDimensionNames,{'x','y'})
+                vars.z = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,vars.name+"_z");
+            end
+
+            options = namedargs2cell(vars);
+            os = WVLagrangianParticles(model,options{:});
+
+            % We still need to recover the last value of the tracked fields
+            for i=1:length(os.trackedFieldNamesCell)
+                trackedFieldName = os.name+"_"+os.trackedFieldNamesCell{i};
+                os.trackedFields.(os.trackedFieldNamesCell{i}) = parentGroup.readVariablesAtIndexAlongDimension('t',nPoints,trackedFieldName);
             end
         end
 
-        function os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            %create a new WVObservingSystem with a new resolution
-            %
-            % Subclasses to should override this method an implement the
-            % correct logic.
-            %
-            % - Topic: Initialization
-            % - Declaration: os = observingSystemWithResolutionOfTransform(self,wvtX2)
-            % - Parameter wvtX2: the WVTransform with increased resolution
-            % - Returns force: a new instance of WVObservingSystem
-            os = WVLagrangianParticles(wvtX2,self.name);
+        function vars = classRequiredPropertyNames()
+            vars = {'name','isXYOnly','trackedFieldNames','advectionInterpolation','trackedVarInterpolation','absToleranceXY','absToleranceZ'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAPropertyAnnotation('name','name of Lagrangian particles');
+            propertyAnnotations(end+1) = CANumericProperty('isXYOnly',{}, 'bool', 'whether the advection is only applied in x-y');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('trackedFieldNames','tracked field names');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('advectionInterpolation','interpolation method for the advection scheme');
+            propertyAnnotations(end+1) = CAPropertyAnnotation('trackedVarInterpolation','interpolation method for the tracked fields');
+            propertyAnnotations(end+1) = CANumericProperty('absToleranceXY', {}, 'm','absolute tolerance for the adaptive integrator in x-y directions');
+            propertyAnnotations(end+1) = CANumericProperty('absToleranceZ', {}, 'm','absolute tolerance for the adaptive integrator in z direction');
         end
     end
 end

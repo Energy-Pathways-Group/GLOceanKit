@@ -3,14 +3,18 @@ classdef WVEulerianFields < WVObservingSystem
     %   Detailed explanation goes here
 
     properties (GetAccess=public, SetAccess=protected)
-        netCDFOutputVariables = {};
         initialConditionOnlyVariables = {};
         timeSeriesVariables = {};
+    end
+
+    properties (SetObservable)
+        netCDFOutputVariables = {};
     end
 
     properties (Dependent)
         nOutputVariables
         nTimeSeriesVariables
+        fieldNames
     end
 
     methods
@@ -27,14 +31,24 @@ classdef WVEulerianFields < WVObservingSystem
             % - Returns self: a new instance of WVObservingSystem
             arguments
                 model WVModel
-                options.fieldNames = {}
+                options.fieldNames
             end
             % Do we actually want to inherit the properties from the
             % WVTransform? I'm not sure. I think this should be optional.
             % If an OS does, then its output can go in the wave-vortex
             % group.
+            if ~isfield(options,"fieldNames")
+                options.fieldNames = {};
+            elseif isa(options.fieldNames,"string")
+                options.fieldNames = cellstr(options.fieldNames);
+            end
             self@WVObservingSystem(model,"eulerian fields");
+            addlistener(self,'netCDFOutputVariables','PostSet',@(src,evnt) self.updateNetCDFVariableCategorization);
             self.netCDFOutputVariables = options.fieldNames;
+        end
+
+        function names = get.fieldNames(self)
+            names = string(self.netCDFOutputVariables);
         end
 
         function nOutputVariables = get.nOutputVariables(self)
@@ -49,6 +63,11 @@ classdef WVEulerianFields < WVObservingSystem
                     nOutputVariables = nOutputVariables + 1;
                 end
             end
+        end
+
+        function aString = description(self)
+            aString = description@WVObservingSystem(self);
+            aString = aString + ", writing fields " + strjoin(string(self.timeSeriesVariables),", ");
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -134,6 +153,19 @@ classdef WVEulerianFields < WVObservingSystem
             self.netCDFOutputVariables = setdiff(self.netCDFOutputVariables,variables);
         end
 
+        function updateNetCDFVariableCategorization(self)
+            self.initialConditionOnlyVariables = {};
+            self.timeSeriesVariables = {};
+            for iVar = 1:length(self.netCDFOutputVariables)
+                varAnnotation = self.model.wvt.propertyAnnotationWithName(self.netCDFOutputVariables{iVar});
+                if (self.model.isDynamicsLinear == 1 && varAnnotation.isVariableWithLinearTimeStep == 1) || (self.model.isDynamicsLinear == 0 && varAnnotation.isVariableWithNonlinearTimeStep == 1)
+                    self.timeSeriesVariables{end+1} = self.netCDFOutputVariables{iVar};
+                else
+                    self.initialConditionOnlyVariables{end+1} = self.netCDFOutputVariables{iVar};
+                end
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Read and write to file
@@ -193,4 +225,17 @@ classdef WVEulerianFields < WVObservingSystem
         end
     end
 
+    methods (Static)
+        function vars = classRequiredPropertyNames()
+            vars = {'fieldNames'};
+        end
+
+        function propertyAnnotations = classDefinedPropertyAnnotations()
+            arguments (Output)
+                propertyAnnotations CAPropertyAnnotation
+            end
+            propertyAnnotations = CAPropertyAnnotation.empty(0,0);
+            propertyAnnotations(end+1) = CAPropertyAnnotation('fieldNames','eulerian field names');
+        end
+    end
 end

@@ -33,15 +33,21 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             arguments
                 model WVModel
                 path {mustBeText}
+                options.ncfile
                 options.shouldOverwriteExisting logical = false
             end
-            if options.shouldOverwriteExisting == 1
-                if isfile(path)
-                    delete(path);
-                end
+            if isfield(options,"ncfile")
+                self.ncfile = options.ncfile;
+                self.didInitializeStorage = true;
             else
-                if isfile(path)
-                    error('A file already exists with that name.')
+                if options.shouldOverwriteExisting == 1
+                    if isfile(path)
+                        delete(path);
+                    end
+                else
+                    if isfile(path)
+                        error('A file already exists with that name.')
+                    end
                 end
             end
             self.model = model;
@@ -115,8 +121,9 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             arguments (Output)
                 outputGroup WVModelOutputGroup
             end
+            options.name = name;
             optionCell = namedargs2cell(options);
-            outputGroup = WVModelOutputGroupEvenlySpaced(self.model,name,optionCell{:});
+            outputGroup = WVModelOutputGroupEvenlySpaced(self.model,optionCell{:});
             self.addOutputGroup(outputGroup);
         end
 
@@ -234,5 +241,25 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
             end
         end
 
+    end
+
+    methods (Static)
+        function outputFile = modelOutputFileFromFile(file,model)
+            arguments
+                file NetCDFFile {mustBeNonempty}
+                model WVModel {mustBeNonempty}
+            end
+            outputFile = WVModelOutputFile(model,file.path,ncfile=file);
+
+            for iGroup=1:length(file.groups)
+                group = file.groups(iGroup);
+                if group.hasAttributeWithName("AnnotatedClass")
+                    className = group.attributes('AnnotatedClass');
+                    if exist(className,'class') && ismember("WVModelOutputGroup",superclasses(className))
+                        outputFile.addOutputGroup(WVModelOutputGroup.modelOutputGroupFromGroup(group,model));                        
+                    end
+                end
+            end
+        end
     end
 end
