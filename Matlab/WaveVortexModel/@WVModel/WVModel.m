@@ -639,13 +639,13 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self.setupIntegrator();
             end
 
-            if self.nFluxComponents == 0
-                if self.eulerianObservingSystem.nTimeSeriesVariables == 0
-                    error("Nothing to do! There are no variables being integrated and no dynamical fields being output.");
-                else
-                    warning('There no variables being integrated, and the variables that are being written can be recovered instantly from the initial conditions.');
-                end
-            end
+            % if self.nFluxComponents == 0
+            %     if self.eulerianObservingSystem.nTimeSeriesVariables == 0
+            %         error("Nothing to do! There are no variables being integrated and no dynamical fields being output.");
+            %     else
+            %         warning('There no variables being integrated, and the variables that are being written can be recovered instantly from the initial conditions.');
+            %     end
+            % end
 
             self.shouldShowIntegrationDiagnostics = options.shouldShowIntegrationDiagnostics;
             if isfield(options,'callback')
