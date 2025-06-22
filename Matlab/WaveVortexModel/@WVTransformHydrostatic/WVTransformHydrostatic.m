@@ -404,7 +404,7 @@ classdef WVTransformHydrostatic < WVGeometryDoublyPeriodicStratified & WVTransfo
         end
 
         function names = namesOfTransformVariables()
-            names = {'phase','conjPhase','A0t','Apt','Amt','uvMax','wMax','zeta_z','ssh','ssu','ssv','u','v','w','eta','pi','p','psi','qgpv','rho_e','rho_total'};
+            names = {'phase','conjPhase','A0t','Apt','Amt','uvMax','wMax','zeta_x','zeta_y','zeta_z','ssh','ssu','ssv','u','v','w','eta','pi','p','psi','qgpv','rho_e','rho_total'};
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()

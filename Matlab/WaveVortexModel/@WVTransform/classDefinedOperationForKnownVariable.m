@@ -113,6 +113,14 @@ for iOp = 1:length(variableName)
             varAnnotation = WVVariableAnnotation('rho_total',options.spatialDimensionNames,'kg/m3', 'total potential density');
             f = @(wvt) reshape(wvt.rho_nm,1,1,[]) + wvt.rho_e;
 
+        case 'zeta_x'
+            varAnnotation = WVVariableAnnotation('zeta_x',options.spatialDimensionNames,'1/s', 'x-component component of relative vorticity');
+            f = @(wvt) wvt.diffY(wvt.w) - wvt.diffZF(wvt.v);
+
+        case 'zeta_y'
+            varAnnotation = WVVariableAnnotation('zeta_y',options.spatialDimensionNames,'1/s', 'y-component component of relative vorticity');
+            f = @(wvt) wvt.diffZF(wvt.u) - wvt.diffX(wvt.w);
+
         case 'zeta_z'
             varAnnotation = WVVariableAnnotation('zeta_z',options.spatialDimensionNames,'1/s', 'vertical component of relative vorticity');
             varAnnotation.attributes('short_name') = 'ocean_relative_vorticity';
