@@ -133,6 +133,8 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                         case "energy"
                             [hke,pe] = self.multiplierForVariable(coefficientMatrix,"hke","pe");
                             variableFactor = hke + pe;
+                        otherwise
+                            error("unknown variables name: " + variableName{iVar})
                     end
                 elseif self.normalization == "qgpv"
                     switch variableName{iVar}
@@ -177,6 +179,8 @@ classdef WVGeostrophicComponent < WVPrimaryFlowComponent
                         case "energy"
                             [hke,pe] = self.multiplierForVariable(coefficientMatrix,"hke","pe");
                             variableFactor = hke + pe;
+                        otherwise
+                            error("unknown variables name: " + variableName{iVar})
                     end
                 end
                 variableFactor(~mask) = 0;
