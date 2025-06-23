@@ -251,7 +251,9 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
             outputGroup.group = group;
             nPoints = group.dimensionWithName("t").nPoints;
             outputGroup.incrementsWrittenToGroup = nPoints;
-            outputGroup.timeOfLastIncrementWrittenToGroup = group.readVariablesAtIndexAlongDimension('t',nPoints,'t');
+            if nPoints > 0
+                outputGroup.timeOfLastIncrementWrittenToGroup = group.readVariablesAtIndexAlongDimension('t',nPoints,'t');
+            end
             outputGroup.initObservingSystemsFromGroup(group);
             outputGroup.didInitializeStorage = true;
         end
