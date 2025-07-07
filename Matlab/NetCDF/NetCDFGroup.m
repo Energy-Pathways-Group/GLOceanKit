@@ -649,6 +649,82 @@ classdef NetCDFGroup < handle
             self.addGroupPrimitive(grp);
         end
 
+        function addDuplicateGroup(self,sourceGroup,options)
+            arguments
+                self NetCDFGroup
+                sourceGroup NetCDFGroup
+                options.shouldAddToSelf = false
+            end
+            if options.shouldAddToSelf
+                grp = self;
+            else
+                grp = self.addGroup(sourceGroup.name);
+            end
+            for iDim=1:length(sourceGroup.dimensions)
+                sourceDim = sourceGroup.dimensions(iDim);
+                if ~grp.hasDimensionWithName(sourceDim.name)
+                    dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=sourceDim.nPoints);
+                    dim.isMutable = sourceDim.isMutable;
+                    grp.addDimensionPrimitive(dim);
+                end
+            end
+
+            for iVar=1:length(sourceGroup.realVariables)
+                sourceVar = sourceGroup.realVariables(iVar);
+                if ~grp.hasVariableWithName(sourceVar.name)
+                    attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    dimNames = {sourceVar.dimensions.name};
+                    var = NetCDFRealVariable(grp,name=sourceVar.name,dimensions=grp.dimensionWithName(dimNames{:}),attributes=attributesCopy,type=sourceVar.type);
+                    grp.addRealVariablePrimitive(var);
+                    mutableDimID = find([var.dimensions.isMutable],1,'first');
+                    if isempty(mutableDimID)
+                        if attributesCopy.isKey(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey) && attributesCopy(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey)
+                            data = netcdf.getVar(sourceGroup.id,sourceVar.id);
+                            netcdf.putVar(grp.id, var.id, data);
+                        else
+                            var.value = sourceVar.value;
+                        end
+                    else
+                        mutableDim = var.dimensions(mutableDimID);
+                        for index=1:mutableDim.nPoints
+                            data = sourceVar.valueAlongDimensionAtIndex(mutableDim.name,index);
+                            var.setValueAlongDimensionAtIndex(data,mutableDim.name,index)
+                        end
+                    end
+                end
+            end
+
+            for iVar=1:length(sourceGroup.complexVariables)
+                sourceVar = sourceGroup.complexVariables(iVar);
+                if ~grp.hasVariableWithName(sourceVar.name)
+                    attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    dimNames = {sourceVar.dimensions.name};
+                    var = NetCDFComplexVariable(group=grp,name=sourceVar.name,dimensions=grp.dimensionWithName(dimNames{:}),attributes=attributesCopy,type=sourceVar.type);
+                    grp.addComplexVariablePrimitive(var);
+
+                    mutableDimID = find([var.dimensions.isMutable],1,'first');
+                    if isempty(mutableDimID)
+                        var.value = sourceVar.value;
+                    else
+                        mutableDim = var.dimensions(mutableDimID);
+                        for index=1:mutableDim.nPoints
+                            data = sourceVar.valueAlongDimensionAtIndex(mutableDim.name,index);
+                            var.setValueAlongDimensionAtIndex(data,mutableDim.name,index)
+                        end
+                    end
+                end
+            end
+
+            for attName = string(sourceGroup.attributes.keys)
+                grp.addAttribute(attName,sourceGroup.attributes(attName));
+            end
+
+            for iGroup=1:length(sourceGroup.groups)
+                group = sourceGroup.groups(iGroup);
+                grp.addDuplicateGroup(group);
+            end
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Attributes

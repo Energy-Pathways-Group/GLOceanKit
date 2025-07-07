@@ -6,7 +6,7 @@ classdef NetCDFRealVariable < NetCDFVariable
         id
     end
 
-    properties (Dependent)
+    properties (Dependent, Hidden)
         value
     end
 
@@ -119,7 +119,8 @@ classdef NetCDFRealVariable < NetCDFVariable
             self.name = name;
             self.type = type;
 
-            if strcmp(type,"logical")
+            isFunctionHandle = attributes.isKey(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey) && ~attributes(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey);
+            if strcmp(type,"logical") && isFunctionHandle
                 attributes(NetCDFVariable.GLNetCDFSchemaIsLogicalTypeKey) = uint8(1);
             end
 

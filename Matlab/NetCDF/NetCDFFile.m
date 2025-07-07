@@ -125,5 +125,24 @@ classdef NetCDFFile < NetCDFGroup
                 disp('NetCDFFile closed.');
             end
         end
+
+        function ncfile = duplicate(self,path,options)
+            arguments
+                self 
+                path 
+                options.shouldOverwriteExisting logical = false
+            end
+            if options.shouldOverwriteExisting == 1
+                if isfile(path)
+                    delete(path);
+                end
+            else
+                if isfile(path)
+                    error('A file already exists with that name.')
+                end
+            end
+            ncfile = NetCDFFile(path);
+            ncfile.addDuplicateGroup(self,shouldAddToSelf=true);
+        end
     end
 end
