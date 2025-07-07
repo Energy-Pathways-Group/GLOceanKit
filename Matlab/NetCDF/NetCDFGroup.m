@@ -654,6 +654,7 @@ classdef NetCDFGroup < handle
                 self NetCDFGroup
                 sourceGroup NetCDFGroup
                 options.shouldAddToSelf = false
+                options.indexRange = dictionary(string.empty,cell.empty)
             end
             if options.shouldAddToSelf
                 grp = self;
@@ -663,7 +664,11 @@ classdef NetCDFGroup < handle
             for iDim=1:length(sourceGroup.dimensions)
                 sourceDim = sourceGroup.dimensions(iDim);
                 if ~grp.hasDimensionWithName(sourceDim.name)
-                    dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=sourceDim.nPoints);
+                    if sourceDim.isMutable && options.indexRange.isKey(sourceDim.namePath)
+                        dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=length(options.indexRange{sourceDim.namePath}));
+                    else
+                        dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=sourceDim.nPoints);
+                    end
                     dim.isMutable = sourceDim.isMutable;
                     grp.addDimensionPrimitive(dim);
                 end
@@ -686,8 +691,13 @@ classdef NetCDFGroup < handle
                         end
                     else
                         mutableDim = var.dimensions(mutableDimID);
-                        for index=1:mutableDim.nPoints
-                            data = sourceVar.valueAlongDimensionAtIndex(mutableDim.name,index);
+                        if options.indexRange.isKey(sourceDim.namePath)
+                            indexRange = options.indexRange{sourceDim.namePath};
+                        else
+                            indexRange = 1:mutableDim.nPoints;
+                        end
+                        for index=1:length(indexRange)
+                            data = sourceVar.valueAlongDimensionAtIndex(mutableDim.name,indexRange(index));
                             var.setValueAlongDimensionAtIndex(data,mutableDim.name,index)
                         end
                     end
@@ -721,7 +731,7 @@ classdef NetCDFGroup < handle
 
             for iGroup=1:length(sourceGroup.groups)
                 group = sourceGroup.groups(iGroup);
-                grp.addDuplicateGroup(group);
+                grp.addDuplicateGroup(group,indexRange=options.indexRange);
             end
         end
 

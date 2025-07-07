@@ -131,6 +131,7 @@ classdef NetCDFFile < NetCDFGroup
                 self 
                 path 
                 options.shouldOverwriteExisting logical = false
+                options.indexRange = dictionary(string.empty,cell.empty)
             end
             if options.shouldOverwriteExisting == 1
                 if isfile(path)
@@ -142,7 +143,7 @@ classdef NetCDFFile < NetCDFGroup
                 end
             end
             ncfile = NetCDFFile(path);
-            ncfile.addDuplicateGroup(self,shouldAddToSelf=true);
+            ncfile.addDuplicateGroup(self,shouldAddToSelf=true,indexRange=options.indexRange);
         end
     end
 end
