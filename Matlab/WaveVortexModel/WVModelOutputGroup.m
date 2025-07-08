@@ -165,7 +165,15 @@ classdef WVModelOutputGroup < handle & matlab.mixin.Heterogeneous & CAAnnotatedC
             self.didInitializeStorage = true;
         end
 
-        function writeTimeStepToNetCDFFile(self,t)
+        function writeTimeStepToNetCDFFile(self,ncfile,t)
+            arguments
+                self WVModelOutputGroup
+                ncfile NetCDFFile
+                t double
+            end
+            if ~self.didInitializeStorage
+                self.initializeOutputGroup(ncfile);
+            end
             if ( ~isempty(self.group) && t > self.timeOfLastIncrementWrittenToGroup )
                 outputIndex = self.incrementsWrittenToGroup + 1;
 
