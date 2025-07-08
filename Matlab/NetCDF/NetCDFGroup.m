@@ -664,8 +664,8 @@ classdef NetCDFGroup < handle
             for iDim=1:length(sourceGroup.dimensions)
                 sourceDim = sourceGroup.dimensions(iDim);
                 if ~grp.hasDimensionWithName(sourceDim.name)
-                    if sourceDim.isMutable && options.indexRange.isKey(sourceDim.namePath)
-                        dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=length(options.indexRange{sourceDim.namePath}));
+                    if sourceDim.isMutable
+                        dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=Inf);
                     else
                         dim = NetCDFDimension(grp,name=sourceDim.name,nPoints=sourceDim.nPoints);
                     end
@@ -677,7 +677,11 @@ classdef NetCDFGroup < handle
             for iVar=1:length(sourceGroup.realVariables)
                 sourceVar = sourceGroup.realVariables(iVar);
                 if ~grp.hasVariableWithName(sourceVar.name)
-                    attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    if sourceVar.attributes.Count
+                        attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    else
+                        attributesCopy = containers.Map();
+                    end
                     dimNames = {sourceVar.dimensions.name};
                     var = NetCDFRealVariable(grp,name=sourceVar.name,dimensions=grp.dimensionWithName(dimNames{:}),attributes=attributesCopy,type=sourceVar.type);
                     grp.addRealVariablePrimitive(var);
@@ -707,7 +711,11 @@ classdef NetCDFGroup < handle
             for iVar=1:length(sourceGroup.complexVariables)
                 sourceVar = sourceGroup.complexVariables(iVar);
                 if ~grp.hasVariableWithName(sourceVar.name)
-                    attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    if sourceVar.attributes.Count
+                        attributesCopy = containers.Map(sourceVar.attributes.keys,sourceVar.attributes.values);
+                    else
+                        attributesCopy = containers.Map();
+                    end
                     dimNames = {sourceVar.dimensions.name};
                     var = NetCDFComplexVariable(group=grp,name=sourceVar.name,dimensions=grp.dimensionWithName(dimNames{:}),attributes=attributesCopy,type=sourceVar.type);
                     grp.addComplexVariablePrimitive(var);
