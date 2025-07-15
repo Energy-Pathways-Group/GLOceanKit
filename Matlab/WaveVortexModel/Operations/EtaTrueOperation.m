@@ -1,5 +1,26 @@
 classdef EtaTrueOperation < WVOperation
-% Computes the nonlinear flux for a WVTransform
+% Computes the true vertical displacement, eta.
+%
+% 2025-07-14
+% Note: this will recover rho_e with
+%   rho_e = wvt.rhoFunction(wvt.Z-wvt.eta_true)-wvt.rhoFunction(wvt.Z);
+% for which
+%   drho = wvt.rho_e - rho_e;
+%   sqrt(mean(drho(:).^2))
+% gives 1e-13 for a realistic simulation.
+%
+% Using
+%   int_vol = @(integrand) sum(mean(mean(shiftdim(wvt.z_int,-2).*integrand,1),2),3);
+% I find that
+%   int_vol(eta_true)
+% returns ~4000 (or an average of 1 m displacement).
+%
+% This should be compared with
+%   int_vol(shiftdim(wvt.N2,-2).*wvt.eta)/wvt.N2(end)
+% which returns ~-65 or O(100) m.
+%
+% This all assume an adiabatic simulation---this is really just a measure
+% of the MDA.
 
     properties (GetAccess=public, SetAccess=protected)
     

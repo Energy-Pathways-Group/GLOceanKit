@@ -18,7 +18,7 @@ end
 
 operations = WVOperation.empty(length(variableName),0);
 
-knownMaskableVariables = ["u","v","w","eta","p","psi","qgpv","energy"];
+knownMaskableVariables = ["u","v","w","eta", "rho_e","p","psi","qgpv","energy"];
 d = setdiff(variableName,knownMaskableVariables);
 if isMasked && ~isempty(d)
     error("The variables %s cannot be masked.",strjoin(d,", "));
@@ -107,7 +107,8 @@ for iOp = 1:length(variableName)
 
         case 'rho_e'
             varAnnotation = WVVariableAnnotation('rho_e',options.spatialDimensionNames,'kg/m3', 'excess density');
-            f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
+            f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* transformToSpatialDomainWithG(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.NA0.*wvt.A0t);
+            % f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* wvt.eta;
 
         case 'rho_total'
             varAnnotation = WVVariableAnnotation('rho_total',options.spatialDimensionNames,'kg/m3', 'total potential density');
