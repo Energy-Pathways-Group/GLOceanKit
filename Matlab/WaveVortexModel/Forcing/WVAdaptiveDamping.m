@@ -21,6 +21,11 @@ classdef WVAdaptiveDamping < WVForcing
         function self = WVAdaptiveDamping(wvt,options)
             % initialize the WVNonlinearFlux nonlinear flux
             %
+            % Note that you should never need to set
+            % shouldAssumeAntialiasing to true, because the WVGeometry will
+            % hand back the correct effective grid resolution whether you
+            % enabled it at the transform level, or as a filter.
+            %
             % - Declaration: nlFlux = WVAdaptiveViscosity(wvt)
             % - Parameter wvt: a WVTransform instance
             % - Returns self: a WVAdaptiveViscosity instance
