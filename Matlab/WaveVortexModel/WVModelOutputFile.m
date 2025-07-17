@@ -14,6 +14,7 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
         ncfile NetCDFFile
 
         didInitializeStorage = false
+        tInitialize = Inf
     end
 
     properties (Dependent)
@@ -162,9 +163,18 @@ classdef WVModelOutputFile < handle & matlab.mixin.Heterogeneous
                 t = cat(1,t,t_group);
             end
             t = sort(uniquetol(t));
+            if self.didInitializeStorage == false && ~isempty(t)
+                self.tInitialize = t(1);
+            end
         end
 
         function writeTimeStepToOutputFile(self,t)
+            % 1) initialize the netcdf file if necessary
+            if self.didInitializeStorage == false && abs(t - self.tInitialize) < eps
+                self.initializeOutputFile();
+            end
+
+            % 2) inform the appropriate groups that they need to write a time step.
             outputGroupNames = self.outputGroupNameOutputTimeMap.keys;
             didWriteToFile = false;
             for i = 1:length(outputGroupNames)

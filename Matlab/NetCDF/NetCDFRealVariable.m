@@ -120,7 +120,7 @@ classdef NetCDFRealVariable < NetCDFVariable
             self.type = type;
 
             isFunctionHandle = attributes.isKey(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey) && ~attributes(NetCDFVariable.GLNetCDFSchemaIsFunctionHandleTypeKey);
-            if strcmp(type,"logical") && isFunctionHandle
+            if strcmp(type,"logical") %&& isFunctionHandle
                 attributes(NetCDFVariable.GLNetCDFSchemaIsLogicalTypeKey) = uint8(1);
             end
 
