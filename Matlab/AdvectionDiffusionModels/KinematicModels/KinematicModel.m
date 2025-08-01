@@ -9,6 +9,8 @@ classdef KinematicModel < handle
         yIsPeriodic = 0 % If ylim is finite, this may be set to 1 (true)
         obstacles = [] % polygon structure defining island/continents/other structures
         
+        isSpherical = 0 % indicates whether to use spherical geometry
+        
         xVisLim % visual (box) limits of the ocean, no infinities
         yVisLim % visual (box) limits of the ocean, no infinities   
         visualScale = 1e3
@@ -102,7 +104,7 @@ classdef KinematicModel < handle
 
 %                 quiver(X/self.visualScale,Y/self.visualScale,mask.*self.u(t,X,Y),mask.*self.v(t,X,Y)), hold on
                 quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale), hold on
-                plot(scale(self.obstacles,1e-3))
+                plot(scale(self.obstacles,1/self.visualScale))
             else
                 quiver(X/self.visualScale,Y/self.visualScale,self.u(t,X,Y),self.v(t,X,Y),quiverscale)
             end
