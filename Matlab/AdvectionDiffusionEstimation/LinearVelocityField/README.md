@@ -50,11 +50,11 @@ Recommended approach for least squares fits
 
 To reproduce the results from the Latmix Site 1 drifter fits, try the following approach using the code in the folder `AdvectionDiffusionEstimation/LinearVelocityField/FluidsPaperFigures/`. The data is found in `AdvectionDiffusionEstimation/Fluid Paper Code`.
 
-1. Run `GenerateBootstrapFits.m`, which will read the `smoothedGriddedRho1Drifters.mat` file and then perform BSpline of all the models, with 1000 different drifter permutations, with time variation from 1 to 6 degrees-of-freedom. The data will be stored in 6 different `.mat` files in the BootstrapData folder.
+1. Run `GenerateBootstrapFits.m`, which will read the `smoothedGriddedRho1Drifters.mat` file and then perform estimation of all the models, with 1000 different drifter permutations, with time variation from 1 to 6 degrees-of-freedom. The data will be stored in 6 different `.mat` files in the BootstrapData folder. Note that the velocity is computed from the positions with a second-order finite difference matrix, i.e., line 80 in `EstimateLinearVelocityFieldParametersBSpline.m` calls `D = FiniteDifferenceMatrix(1,t,1,1,2);`.
 
-2. `CompareBootstrapFits.m` will produce a Latex table that will let you assess the quality of fit, and choose the best model.
+2. `CompareBootstrapFits.m` will produce a Latex table that will let you assess the quality of fit, and choose the best model. Refer to [section 5.1 in the manuscript](https://www.mdpi.com/2311-5521/6/1/14).
 
-3. The script `MakeFigureBestSplineFitSite1` will produce a plot showing the time varying parameters of any of the resulting models, including the error bars. We chose the model with 4 dof.
+3. The script `MakeFigureBestSplineFitSite1` will produce a plot showing the time varying parameters of any of the resulting models, including the error bars. We chose the model with 4 dof.  This reproduces [figure 13 in the manuscript](https://www.mdpi.com/2311-5521/6/1/14).
 
 4. To actually use the decomposition, you will want to find the most probable set of parameters and then apply the decomposition,
 ```matlab
