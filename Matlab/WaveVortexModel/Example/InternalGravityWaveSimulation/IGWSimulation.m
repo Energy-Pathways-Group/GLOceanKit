@@ -31,12 +31,6 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 rho0 = 1025;
 
-% Simulation length
-inertialPeriod = (2*pi/(2 * 7.2921E-5 * sin( latitude*pi/180 )));
-maxTime = 2*inertialPeriod;
-outputInterval = inertialPeriod/10;
-cfl = .25;
-
 outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,16 +39,10 @@ outputfile = '/Users/jearly/Data/InternalWaveSimulation/igw-simulation.nc';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-t = 3600;
-
-wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0,rho0,'shouldAntiAlias',1);
-% wvm.shouldAntiAlias = 1;
-wvm.InitializeWithGMSpectrum(1.0)
-wvm.summarizeEnergyContent;
-
-deltaT = wvm.TimeStepForCFL(cfl,outputInterval);
-stepsPerOutput = round(outputInterval/deltaT);
-t = (0:outputInterval:maxTime)';
+wvt = WVTransformConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], N0,latitude=latitude);
+wvt.initWithGMSpectrum(1.0)
+wvt.removeEnergyFromAliasedModes();
+wvt.summarizeEnergyContent;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -62,53 +50,33 @@ t = (0:outputInterval:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-netcdfTool = WaveVortexModelNetCDFTools(outputfile);
-netcdfTool.CreateNetCDFFileFromModel(wvm,length(t),'double');
-netcdfTool.CreateAmplitudeCoefficientVariables();
-netcdfTool.CreateEnergeticsVariables();
-netcdfTool.CreateEnergeticsKJVariables();
+model = WVModel(wvt,nonlinearFlux=BoussinesqConstantN(wvt,shouldAntialias=1));
+model.setupIntegrator(timeStepConstraint="advective", outputInterval=wvt.inertialPeriod/10);
+model.createNetCDFFileForModelOutput(outputfile,shouldOverwriteExisting=1);
+model.integrateToTime(3*wvt.inertialPeriod);
 
-% Save the initial conditions
-iTime = 1;
-netcdfTool.WriteTimeAtIndex(iTime,t(iTime));
-netcdfTool.WriteAmplitudeCoefficientsAtIndex(iTime);
-netcdfTool.WriteEnergeticsAtIndex(iTime);
-netcdfTool.WriteEnergeticsKJAtIndex(iTime);
+% ncfile = model.ncfile;
+% t = ncfile.readVariables('t');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Time step forward!
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-integrator = ArrayIntegrator(@(t,y0) wvm.NonlinearFluxAtTimeArray(t,y0),{wvm.Ap,wvm.Am,wvm.A0},deltaT);
-
-% profile on
-for iTime=2:length(t)
-    if iTime == 2
-        startTime = datetime('now');
-        fprintf('Starting numerical simulation on %s\n', datestr(startTime));
-    end
-    if iTime == 3 || mod(iTime,5) == 0
-        timePerStep = (datetime('now')-startTime)/(iTime-2);
-        timeRemaining = (length(t)-iTime+1)*timePerStep;
-        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
-    end
-
-    for i=1:stepsPerOutput
-        integrator.IncrementForward();
-        wvm.Ap = integrator.currentY{1};
-        wvm.Am = integrator.currentY{2};
-        wvm.A0 = integrator.currentY{3};
-    end
-
-    if mod(iTime,10)==0
-        wvm.summarizeEnergyContent();
-    end
-    netcdfTool.WriteTimeAtIndex(iTime,t(iTime));
-    netcdfTool.WriteAmplitudeCoefficientsAtIndex(iTime);
-    netcdfTool.WriteEnergeticsAtIndex(iTime);
-    netcdfTool.WriteEnergeticsKJAtIndex(iTime);
-end
-
-netcdfTool.close();
+% deltaT = 175;
+% totalOuterLoop = round(2*wvt.inertialPeriod/deltaT/5);
+% 
+% integrator2 = ArrayIntegrator(@(t,y0) nonlinearFluxAtTime(wvt,t,y0),{wvt.Ap,wvt.Am,wvt.A0},deltaT);
+% wvt.summarizeEnergyContent;
+% for j=1:totalOuterLoop
+% for i=1:5
+%     integrator2.IncrementForward();
+%     wvt.Ap = integrator2.currentY{1};
+%     wvt.Am = integrator2.currentY{2};
+%     wvt.A0 = integrator2.currentY{3};
+% end
+% wvm.summarizeEnergyContent;
+% wvt.summarizeEnergyContent;
+% end
+% 
+% 
+% function Farray = nonlinearFluxAtTime(wvt,t,y0)
+% wvt.t = t;
+% [Fp,Fm,F0] = wvt.nonlinearFlux;
+% Farray = {Fp,Fm,F0};
+% end

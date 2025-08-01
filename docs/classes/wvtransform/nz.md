@@ -1,0 +1,19 @@
+---
+layout: default
+title: Nz
+parent: WVTransform
+grand_parent: Classes
+nav_order: 42
+mathjax: true
+---
+
+#  Nz
+
+points in the z-coordinate, `length(z)`
+
+
+---
+
+## Description
+Real valued property with no dimensions and no units.
+

@@ -40,6 +40,7 @@ classdef (Abstract) InternalModesBase < handle
     properties (Access = public)
         shouldShowDiagnostics = 0 % flag to show diagnostic information, default = 0
         
+        rotationRate % rotation rate of the planetary body
         latitude % Latitude for which the modes are being computed.
         f0 % Coriolis parameter at the above latitude.
         Lz % Depth of the ocean.
@@ -49,7 +50,7 @@ classdef (Abstract) InternalModesBase < handle
         
         z % Depth coordinate grid used for all output (same as zOut).
         zDomain % [zMin zMax]
-        requiresMonotonicDensity = 0
+        requiresMonotonicDensity
         
         gridFrequency = [] % last requested frequency from the user---set to f0 if a wavenumber was last requested
         normalization = Normalization.kConstant % Normalization used for the modes. Either Normalization.(kConstant, omegaConstant, uMax, or wMax).
@@ -70,7 +71,7 @@ classdef (Abstract) InternalModesBase < handle
     end
     
     properties (Access = protected)
-        g = 9.81 % 9.81 meters per second.
+        g % 9.81 meters per second.
         omegaFromK % function handle to compute omega(h,k)
         kFromOmega % function handle to compute k(h,omega)
     end
@@ -94,7 +95,7 @@ classdef (Abstract) InternalModesBase < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set.normalization(obj,norm)
-            if  (norm ~= Normalization.kConstant && norm ~= Normalization.omegaConstant && norm ~= Normalization.uMax && norm ~= Normalization.wMax && norm ~= Normalization.surfacePressure)
+            if  (norm ~= Normalization.geostrophic && norm ~= Normalization.kConstant && norm ~= Normalization.omegaConstant && norm ~= Normalization.uMax && norm ~= Normalization.wMax && norm ~= Normalization.surfacePressure)
                 error('Invalid normalization! Valid options: Normalization.kConstant, Normalization.omegaConstant, Normalization.uMax, Normalization.wMax')
             else
                 obj.normalization = norm;
@@ -121,99 +122,66 @@ classdef (Abstract) InternalModesBase < handle
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesBase(rho, z_in, z_out, latitude, varargin)
-            % Initialize with either a grid or analytical profile.
-            
-            % Make everything a column vector
-            if isrow(z_in)
-                z_in = z_in.';
+        function self = InternalModesBase(options)
+            arguments
+                options.rho = ''
+                options.N2 function_handle = @disp
+                options.zIn (:,1) double = []
+                options.zOut (:,1) double = []
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
+                options.rotationRate (1,1) double = 7.2921e-5
+                options.g (1,1) double = 9.81
             end
-            if isrow(z_out)
-                z_out = z_out.';
+            if isempty(options.zIn)
+                error('You must specify zIn');
             end
-            
-            self.zDomain = [min(z_in) max(z_in)];
+
+            self.requiresMonotonicDensity = self.requiresMonotonicDensitySetting();
+            self.zDomain = [min(options.zIn) max(options.zIn)];
             self.Lz = self.zDomain(2)-self.zDomain(1);
-            self.latitude = latitude;
-            self.f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
-            self.z = z_out; % Note that z might now be a col-vector, when user asked for a row-vector.
-            
-            % Set properties supplied as name,value pairs
-            userSpecifiedRho0 = 0;
-            userSpecifiedN2 = 0;
-            nargs = length(varargin);
-            if mod(nargs,2) ~= 0
-                error('Arguments must be given as name/value pairs');
-            end
-            for k = 1:2:length(varargin) 
-                if strcmp(varargin{k}, 'rho0')
-                    userSpecifiedRho0 = 1;
-                end
-                if strcmp(varargin{k}, 'N2')
-                    userSpecifiedN2 = 1;
-                    continue; % no property to set
-                end
-                self.(varargin{k}) = varargin{k+1};
+            self.latitude = options.latitude;
+            self.rotationRate = options.rotationRate;
+            self.f0 = 2*(self.rotationRate)*sin(self.latitude*pi/180);
+            self.rho0 = options.rho0;
+            self.nModes = options.nModes;
+            self.g = options.g;
+
+            if isempty(options.zOut)
+                self.z = options.zIn;
+            else
+                self.z = options.zOut;
             end
             
-            if userSpecifiedN2 == 1 && userSpecifiedRho0 == 0
-                error('If you pass N2 instead of rho, you must also provide a rho0')
-            end
-             
-            % Is density specified as a function handle or as a grid of
-            % values?
-            if isa(rho,'BSpline') == true
-                if userSpecifiedRho0 == 0
-                    self.rho0 = rho(max(rho.domain));
-                end
-                if userSpecifiedN2 == 1
-                    error('Initialization with an N2 BSpline is not yet supported.')
-                else
-                    self.InitializeWithBSpline(rho);
-                end
-            elseif isa(rho,'function_handle') == true
-                if numel(z_in) ~= 2
-                    error('When using a function handle, z_domain must be an array with two values: z_domain = [z_bottom z_surface];')
-                end
-                if userSpecifiedRho0 == 0
-                    self.rho0 = rho(max(z_in));
-                end
-                if self.shouldShowDiagnostics == 1
-                    fprintf('Initialized %s class with a function handle.\n', class(self));
-                end
-                if userSpecifiedN2 == 1
-                    self.InitializeWithN2Function(rho, min(z_in), max(z_in));
-                else
-                    self.InitializeWithFunction(rho, min(z_in), max(z_in));
-                end
-            elseif isa(rho,'numeric') == true
-                if numel(rho) ~= length(rho) || length(rho) ~= length(z_in)
+            if ~isequal(options.N2,@disp)
+                self.InitializeWithN2Function(options.N2, min(options.zIn), max(options.zIn));
+            elseif isa(options.rho,'function_handle') == true
+                self.InitializeWithFunction(options.rho, min(options.zIn), max(options.zIn));
+            elseif isa(options.rho,'BSpline') == true
+                self.rho0 = rho(max(options.rho.domain));
+                self.InitializeWithBSpline(options.rho);
+            elseif isa(options.rho,'numeric') == true
+                if length(options.rho) ~= length(options.zIn)
                     error('rho must be 1 dimensional and z must have the same length');
                 end
-                if isrow(rho)
-                    rho = rho.';
-                end
-                if userSpecifiedRho0 == 0
-                    self.rho0 = min(rho);
-                end
-                if self.shouldShowDiagnostics == 1
-                    fprintf('Initialized %s class with gridded data.\n', class(self));
-                end
-                [z_in,I] = sort(z_in,'ascend');
-                rho = rho(I);
-                if userSpecifiedN2 == 1
-                    error('Initialization with a gridded N2 is not yet supported.')
-                else
-                    self.InitializeWithGrid(rho,z_in);
-                end
+                self.rho0 = min(options.rho);
+                options.rho = reshape(options.rho,[],1);
+                [zGrid,I] = sort(options.zIn,'ascend');
+                rhoGrid = options.rho(I);
+                self.InitializeWithGrid(rhoGrid,zGrid);
             else
-                error('rho must be a function handle or an array.');
-            end   
+                error('You must initialize InternalModes with rho, N2, rhoGrid, or rhoSpline');
+            end
             
             self.kFromOmega = @(h,omega) sqrt((omega^2 - self.f0^2)./(self.g * h));
             self.omegaFromK = @(h,k) sqrt( self.g * h * k^2 + self.f0^2 );
         end
                 
+        function out=requiresMonotonicDensitySetting(~)
+            out=0;
+        end
+
         function self = upperBoundaryDidChange(self)
             % This function is called when the user changes the surface
             % boundary condition. By overriding this function, a subclass

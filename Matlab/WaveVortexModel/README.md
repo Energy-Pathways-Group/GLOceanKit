@@ -62,11 +62,11 @@ j0 = 20; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 
-period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+period = wavemodel.setWaveModes(k0,l0,j0,U,sign);
 ```
 or a full spectrum of waves,
 ```matlab
-wavemodel.InitializeWithGMSpectrum(1.0);
+wavemodel.initWithGMSpectrum(1.0);
 ```
 
 To access the velocity field or density field, you can simply request their value at any time,
@@ -93,20 +93,20 @@ Gridded wave modes
 
 The gridded wave modes by individually added or set by specifying the mode number and amplitude,
 ```matlab
-[omega,k,l] = wavemodel.AddGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
-[omega,k,l] = wavemodel.SetGriddedWavesWithWavemodes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.addWaveModes(kMode, lMode, jMode, phi, Amp, signs);
+[omega,k,l] = wavemodel.setWaveModes(kMode, lMode, jMode, phi, Amp, signs);
 ```
 where  `-Nx/2 < kMode < Nx/2` and `-Ny/2 < lMode < Ny/2` are integers specifying which modes you want to initialize. The `Set` method will remove all gridded modes and then add the list you give it, and the `Add` method will append these modes to the existing list.
 
 Equivalently, you can call
 ```matlab
-period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
+period = wavemodel.setWaveModes(k0,l0,j0,U,sign);
 ```
-which just calls `SetGriddedWavesWithWavemodes` with a phase of 0.
+which just calls `setWaveModes` with a phase of 0.
 
 The clear the gridded wave modes, call
 ```matlab
-wavemodel.RemoveAllGriddedWaves();
+wavemodel.removeAllWaves();
 ```
 and they will be set to 0 amplitude.
 
@@ -116,17 +116,17 @@ External wave modes
 
 The external wave modes can be added or set either by specifying the wavelength of the modes,
 ```matlab
-omega = wavemodel.AddExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
-omega = wavemodel.SetExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+omega = wavemodel.addExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
+omega = wavemodel.setExternalWavesWithWavenumbers(k,l,j,phi,A,norm);
 ```
 or by specifying the frequency of the modes,
 ```matlab
-k = wavemodel.AddExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
-k = wavemodel.SetExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+k = wavemodel.addExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
+k = wavemodel.setExternalWavesWithFrequencies(omega, alpha, j, phi, A, norm);
 ```
 The `Set` methods will remove all external modes and then add the list you give it, and the `Add` methods will append these modes to the existing list. You can call,
 ```matlab
-wavemodel.RemoveAllExternalWaves();
+wavemodel.removeAllExternalWaves();
 ```
 to remove all external modes.
 
@@ -134,8 +134,8 @@ The amplitude of the waves is set with respect to a given norm of the internal m
 
 You can extract the nonzero *gridded* wave components, and feed those directly into the external wave modes. The amplitude in this case uses `Normalization.kConstant`. This can be done with two lines of code,
 ```matlab
-[omega, alpha, mode, phi, A, norm] = wavemodel.WaveCoefficientsFromGriddedWaves();
-wavemodel.SetExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
+[omega, alpha, mode, phi, A, norm] = wavemodel.waveModesFromWaveCoefficients();
+wavemodel.setExternalWavesWithFrequencies(omega, alpha, mode, phi, A, norm);
 ```
 but of course now have you external waves with the exact same values as the gridded waves, which isn't likely very helpful.
 
@@ -212,8 +212,8 @@ In practice, the Eulerian function `InternalVariableFieldsAtTime` is doing all t
 
 The external dynamical variables can be access with,
 ```matlab
-[u,v,w,rho_prime,zeta] = wavemodel.ExternalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
-[u,v,w,rho_prime,zeta] = wavemodel.ExternalVariablesAtTimePosition(t,x,y,z,'u','v','w','rho_prime','zeta');
+[u,v,w,rho_prime,zeta] = wavemodel.externalVariableFieldsAtTime(t,'u','v','w','rho_prime','zeta');
+[u,v,w,rho_prime,zeta] = wavemodel.externalVariablesAtTimePosition(t,x,y,z,'u','v','w','rho_prime','zeta');
 ```
 Notice that interpolation is not an option, because these values are always exact.
 
@@ -222,13 +222,13 @@ Initialization
 
   The model can be initialized with a Garrett-Munk spectrum by calling,
   ```matlab
-  wavemodel.InitializeWithGMSpectrum(1.0);
+  wavemodel.initWithGMSpectrum(1.0);
   ```
 where the only required argument indicates the GM reference level. This function also takes the following name/value pairs.
 
 - `'j_star'` takes any integer value, default is 3.
 - `'shouldRandomizeAmplitude'` takes a 0 or 1 to indicate whether or not the amplitude should be randomized with a Gaussian random variable with expectation matching the GM value. The default is 0.
-- `'maxDeltaOmega'` is the maximum width in frequency that will be integrated over for assigned energy. By default it is self.Nmax-self.f0.
+- `'maxDeltaOmega'` is the maximum width in frequency that will be integrated over for assigned energy. By default it is self.Nmax-self.f.
 - `'initializeModes'`  is used to determine which modes get initialized. Possible values are `'all'`, `'internalOnly'`, or `'externalOnly'` . Default is `'all'`
 - `'energyWarningThreshold'` will provide a warning if the energy of a single mode exceeds a certain value of the total energy in that modal band. Values between 0 and 1. Default is 0.5 (e.g., you get a warning if the energy in a single mode exceeds 50% of the total energy).
 - `'excludeNyquist'` takes a 0 or 1 to indicate whether or not to include the Nyquist wavenumbers in initialization. Default 1.

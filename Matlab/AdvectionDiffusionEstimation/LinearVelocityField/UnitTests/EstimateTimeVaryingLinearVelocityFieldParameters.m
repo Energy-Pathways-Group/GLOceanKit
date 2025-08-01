@@ -20,11 +20,13 @@ y0 = [0; 0; -500; -250; 0; 250; 500; 0; 0;];
 dof = 2;
 K = 2;
 [parameters,error,B] = FitTrajectoriesToTimeVaryingEllipseModel( x, y, t, 'strain-diffusive', dof, K );
+X = B(:,1);
 
+%%
 figure
 subplot(1,3,1)
-plot(t/86400,B*parameters.m_sigma)
+plot(t/86400,X.*parameters.sigma)
 subplot(1,3,2)
-plot(t/86400,B*parameters.m_theta*180/pi)
+plot(t/86400,X.*parameters.theta*180/pi)
 subplot(1,3,3)
-plot(t/86400,B*parameters.m_kappa)
+plot(t/86400,X.*parameters.kappa)

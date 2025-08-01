@@ -8,31 +8,31 @@ classdef InternalModesConstantStratification < InternalModesBase
     end
     
     methods
-        function self = InternalModesConstantStratification(rho, z_in, z_out, latitude, varargin) 
-            if isa(rho,'numeric') == true && (length(rho) == 1 || length(rho) == 2)
-                N0 = rho(1);
-                if length(rho) == 2
-                    rho0 = rho(2);
-                else
-                    rho0 = 1025;
-                end
-                g = 9.81;
-                rhoFunction = @(z) -(N0*N0*rho0/g)*z + rho0;
-                N2Function = @(z) N0*N0*ones(size(z));
-            else
-                error('Invalid initialization: the first argument must be the buoyancy frequency.\n');
+        function self = InternalModesConstantStratification(options) 
+            arguments
+                options.N0 (1,1) double = 5.2e-3
+                options.zIn (1,2) double = [-1300 0]
+                options.zOut (:,1) double = linspace(-1300,0,65).'
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
+                options.rotationRate (1,1) double = 7.2921e-5
+                options.g (1,1) double = 9.81
             end
+            rho0 = options.rho0;
+            N0 = options.N0;
+            rhoFunction = @(z) -(N0*N0*rho0/options.g)*z + rho0;
+            N2Function = @(z) N0*N0*ones(size(z));
             
             
-            self@InternalModesBase(rhoFunction,z_in,z_out,latitude, varargin{:});
+            self@InternalModesBase(rho=rhoFunction,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=rho0,nModes=options.nModes,rotationRate=options.rotationRate,g=options.g);
             self.N0 = N0;
-
             self.rho = rhoFunction(self.z);
             self.N2 = N2Function(self.z);
             self.rho_z = -(self.N0*self.N0*self.rho0/self.g)*ones(size(self.z));
             self.rho_zz = zeros(size(self.z));
             
-            fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
+            % fprintf('Using the analytical form for constant stratification N0=%.7g\n',self.N0);
         end
                 
         function [F,G,h,omega,varargout] = ModesAtWavenumber(self, k, varargin )

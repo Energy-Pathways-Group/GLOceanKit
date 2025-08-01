@@ -4,14 +4,14 @@ t = ncread(file,'t');
 
 internalWaveEnergyPlus = ncread(file,'EnergyIGWPlus');
 internalWaveEnergyMinus = ncread(file,'EnergyIGWMinus');
-baroclinicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBaroclinic');
-barotropicGeostrophicEnergy = ncread(file,'EnergyGeostrophicBarotropic');
-baroclinicInertialEnergy = ncread(file,'EnergyIOBaroclinic');
-barotropicInertialEnergy = ncread(file,'EnergyIOBarotropic');
+geostrophicEnergyBaroclinic = ncread(file,'EnergyGeostrophicBaroclinic');
+geostrophicEnergyBarotropic = ncread(file,'EnergyGeostrophicBarotropic');
+inertialEnergyBaroclinic = ncread(file,'EnergyIOBaroclinic');
+inertialEnergyBarotropic = ncread(file,'EnergyIOBarotropic');
 
 WaveEnergyTotal = internalWaveEnergyPlus + internalWaveEnergyMinus;
-GeostrophicTotal = baroclinicGeostrophicEnergy + barotropicGeostrophicEnergy;
-InertialTotal = baroclinicInertialEnergy + barotropicInertialEnergy;
+GeostrophicTotal = geostrophicEnergyBaroclinic + geostrophicEnergyBarotropic;
+InertialTotal = inertialEnergyBaroclinic + inertialEnergyBarotropic;
 
 SpectralTotal = WaveEnergyTotal+GeostrophicTotal+InertialTotal;
 

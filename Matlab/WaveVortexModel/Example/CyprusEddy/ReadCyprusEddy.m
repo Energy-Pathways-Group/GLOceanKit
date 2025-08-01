@@ -18,11 +18,11 @@ wvm = netcdfTools.InitializeWaveVortexModelFromNetCDFFile();
 % subplot(2,2,4)
 % plot(j,sum(A0KJ,1)), ylog
 
-% [Ep,Em,E0] = wvm.EnergyFluxAtTime(integrator.currentTime,wvm.Ap,wvm.Am,wvm.A0);
+% [Ep,Em,E0] = wvm.energyFlux;
 % inertialFlux = sum(Ep(1,1,:)) + sum(Em(1,1,:));
 % Ep(1,1,:) = 0; Em(1,1,:) = 0;
 % waveFlux = sum(Ep(:)) + sum(Em(:));
-% fprintf('total spectral: %g, total depth integrated: %g\n',wvm.totalSpectralEnergy,wvm.totalHydrostaticEnergy);
+% fprintf('total spectral: %g, total depth integrated: %g\n',wvm.totalEnergy,wvm.totalHydrostaticEnergy);
 % fprintf('io flux: %g, wave flux: %g, geostrophic flux: %g. Net: %g\n',inertialFlux,waveFlux,sum(E0(:)),inertialFlux+waveFlux+sum(E0(:)))
 
 figure
@@ -32,7 +32,7 @@ for i=1:10
     netcdfTools.SetWaveModelToIndex(i);
   % [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(abs(wvm.Ap).^2+abs(wvm.Am).^2);
   %[k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(wvm.A0_TE_factor.*abs(wvm.A0).^2);
-  [Ep,Em,E0] = wvm.EnergyFluxAtTime(currentTime,wvm.Ap,wvm.Am,wvm.A0);
+  [Ep,Em,E0] = wvm.energyFlux;
     [k,j,A0KJ] = wvm.ConvertToWavenumberAndMode(E0);
     subplot(sp1);
     plot(j,sum(A0KJ,1).'),xlog, hold on

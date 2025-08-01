@@ -10,72 +10,147 @@
 %
 % April 12th, 2018      Version 1.0
 
+% profile on
+% wvt = WVTransformHydrostatic([15e3, 15e3, 5000], 2*[64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+wvt = WVTransformHydrostatic([15e3, 15e3, 5000], [1024 1024 30], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformBoussinesq([15e3, 15e3, 5000], [64 64 33], N2=@(z) (5.2e-3)*(5.2e-3)*ones(size(z)));
+% wvt = WVTransformConstantStratification([15e3, 15e3, 5000], [128 128 128]);
+% wvt = WVTransformSingleMode([2000e3 1000e3], 2*[256 128], h=0.8, latitude=25);
+% profile viewer
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Specify the problem dimensions
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+% profile on
+wvt.initWithRandomFlow();
+% profile viewer
 
-N = 128;
-aspectRatio = 1;
-
-Lx = 100e3;
-Ly = aspectRatio*100e3;
-Lz = 5000;
-
-Nx = N;
-Ny = aspectRatio*N;
-Nz = N+1; % 2^n + 1 grid points, to match the Winters model, but 2^n ok too.
-
-latitude = 31;
-N0 = 5.2e-3; % Choose your stratification 7.6001e-04
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Initialize the wave model
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if 1 == 0
-    wvm = WaveVortexModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
-else
-    rho0 = 1025; g = 9.81;
-    rho = @(z) -(N0*N0*rho0/g)*z + rho0;
-    N2Function = @(z) N0*N0*ones(size(z));
-    dLnN2Function = @(z) zeros(size(z));
-    wvm = WaveVortexModelHydrostatic([Lx, Ly, Lz], [Nx, Ny, Nz-1], latitude, rho,'N2func', N2Function, 'dLnN2func',dLnN2Function);
-end
-[ApIO,AmIO,ApIGW,AmIGW,A0G,A0G0,A0rhobar] = wvm.GenerateRandomFlowState();
-Ap = ApIO + ApIGW;
-Am = AmIO + AmIGW;
-A0 = A0G + A0G0 + A0rhobar;
-
-Ubar = wvm.UAp.*Ap + wvm.UAm.*Am + wvm.UA0.*A0;
-% Nbar = boussinesq.NAp.*Ap + boussinesq.NAm.*Am + boussinesq.NA0.*A0;
+% wvt.removeEnergyFromAliasedModes();
+% spatialFlux = WVNonlinearFluxSpatial(wvt);
+% standardFlux = WVNonlinearFlux(wvt,shouldAntialias=0);
 % 
-% profile on
-% for i=1:100
-%     u = boussinesq.TransformToSpatialDomainWithF(Ubar);
-%     ubar = boussinesq.TransformFromSpatialDomainWithF(u);
-%     eta = boussinesq.TransformToSpatialDomainWithG(Nbar);
-%     nbar = boussinesq.TransformFromSpatialDomainWithG(eta);
+% [SpatialFp,SpatialFm,SpatialF0] = spatialFlux.compute(wvt);
+% [StandardFp,StandardFm,StandardF0] = standardFlux.compute(wvt);
+
+% return
+
+u = wvt.u;
+du = zeros(size(u));
+u_bar = wvt.transformFromSpatialDomainWithFourier(u);
+%%
+
+profile on
+tic
+for i=1:50
+    % du = wvt.diffX(u);
+    % du = wvt.fastTransform.diffXIntoArray(u,du);
+    u_bar = wvt.transformFromSpatialDomainWithFourier(u);
+    % u_bar = u_bar*wvt.fastTransform.dftXY.scaleFactor;
+    % u = wvt.transformToSpatialDomainWithFourier(u_bar);
+end
+toc
+profile viewer
+
+%%
+% unsorted is fastest!!! DFT sorted is 2x slower, WV sorted is 10% slower
+% tic
+% for i=1:500
+%     wvt.dftBuffer(wvt.dftPrimaryIndex) = wvt.wvBuffer(wvt.wvPrimaryIndex);
+%     wvt.dftBuffer(wvt.dftConjugateIndex) = conj(wvt.wvBuffer(wvt.wvConjugateIndex));
 % end
+% toc
+% 
+% %%
+% % unsorted is 10% slower than sorting either dimension
+% tic
+% for i=1:500
+%     wvt.wvBuffer = wvt.dftBuffer(wvt.dftPrimaryIndex);
+% end
+% toc
+
+%%
+[Fp,Fm,F0] = wvt.nonlinearFlux();
+
+% return
+profile on
+tic
+for i=1:5
+    wvt.t = i; % prevent caching
+    [Fp,Fm,F0] = wvt.nonlinearFlux();
+end
+toc
+profile viewer
+
+return
+
+%%
+[Fp,Fm,F0] = wvt.nonlinearFlux();
+
+tic
+for i=1:50
+    wvt.t = i;
+    [Fp,Fm,F0] = wvt.nonlinearFlux();
+end
+toc
+
+% 18:15 2024-02-04 pre-omptimize: Elapsed time is 13.436532 seconds.
+% 18:23 2024-02-04 remove squeeze: Elapsed time is 9.491209 s seconds.
+% 18:38 2024-02-04 precompute double MM: Elapsed time is 8.681165 seconds.
+% 08:09 2024-02-05 loop over kUnique: Elapsed time is 5.783941 seconds.
+% 10:00 2024-04-27 [Nj Nkl] and dealiasing refactor: Elapsed time is 2.961629 seconds.
+% 16:09 2024-05-01 Improved memory reshuffle: Elapsed time is 1.784329 seconds.
+
+%%
+profile on
+for i=1:200
+    wvt.t = i;
+    [Fp,Fm,F0] = wvt.nonlinearFlux();
+end
+profile viewer
+%%
+
+% 18:15 2024-02-04 pre-omptimize: Elapsed time is 3.698 s seconds.
+% 18:23 2024-02-04 remove squeeze: Elapsed time is 2.725 s seconds.
+% 18:38 2024-02-04 precompute double MM: Elapsed time is 2.289  seconds.
+% 08:09 2024-02-05 loop over kUnique: Elapsed time is 1.649 seconds.
+% 13:23 2024-04-27 [Nj Nkl] and dealiasing refactor: Elapsed time is 0.886 seconds.
 % profile viewer
+
+%%
+% 2024-04-30 Finally got this down to something reasonable!!!
+% 
+A = randn(wvt.spectralMatrixSize) + sqrt(-1)*randn(wvt.spectralMatrixSize);
+A(wvt.Kh==0) = 0;
 
 % profile on
 tic
-for i=1:15
-[Fp,Fm,F0] = wvm.NonlinearFluxAtTimeNoMask(10,Ap,Am,A0);
+for i=1:500
+    u = wvt.transformToSpatialDomainWithF(A0=A,Apm=A);
+    w = wvt.transformToSpatialDomainWithG(A0=A,Apm=A);
+    % w = wvt.transformToSpatialDomainWithGUnrolled(A,A);
 end
 toc
-
-tic
-for i=1:15
-[Fp,Fm,F0] = wvm.NonlinearFluxAtTime(10,Ap,Am,A0);
-end
-toc
-
-
 % profile viewer
+% 2.7, 2.8
 
+%%
+% 2024-04-30 Finally got this down to something reasonable!!!
+% 
+A = randn(wvt.spatialMatrixSize);
+
+% profile on
+tic
+for i=1:5000
+    u = wvt.transformFromSpatialDomainWithFourier(A);
+end
+toc
+% profile viewer
+% 2.9, 2.8
+
+%%
+A = randn(100,100);
+B = randn(100,1000) + sqrt(-1)*randn(100,1000);
+A(1,:)=0; A(:,1)=0;
+tic;
+for i=1:100
+    C = A*B;
+end
+toc

@@ -24,6 +24,7 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
     properties %(Access = private)
         Nz_function
         Nz_xLobatto     	% (d/dz)N on the xiLobatto grid   
+        requiresMonotonicDensitySetting = 1
     end
     
     methods
@@ -33,10 +34,21 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
         % Initialization
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function self = InternalModesWKBSpectral(rho, z_in, z_out, latitude, varargin)
-            varargin{end+1} = 'requiresMonotonicDensity';
-            varargin{end+1} = 1;
-            self@InternalModesSpectral(rho,z_in,z_out,latitude, varargin{:});
+        function self = InternalModesWKBSpectral(options)
+            arguments
+                options.rho = ''
+                options.N2 function_handle = @disp
+                options.zIn (:,1) double = []
+                options.zOut (:,1) double = []
+                options.latitude (1,1) double = 33
+                options.rho0 (1,1) double {mustBePositive} = 1025
+                options.nModes (1,1) double = 0
+                options.nEVP = 512;
+                options.rotationRate (1,1) double = 7.2921e-5;
+                options.g (1,1) double = 9.81
+            end
+            self@InternalModesSpectral(rho=options.rho,N2=options.N2,zIn=options.zIn,zOut=options.zOut,latitude=options.latitude,rho0=options.rho0,nModes=options.nModes,nEVP=options.nEVP,rotationRate=options.rotationRate,g=options.g);
+
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,6 +77,46 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             B = diag( (omega*omega - self.N2_xLobatto)/self.g )*T;
             
             [A,B] = self.ApplyBoundaryConditions(A,B);
+        end
+
+        function [A,B] = EigenmatricesForMDAModes(self )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
+            B = diag( - self.N2_xLobatto/self.g )*T;
+
+            % upper-boundary
+            A(1,:) = Tz(1,:); %-Tz(n,:);
+            B(1,:) = 0 ;%1/self.Lz; %0*T(n,:);
+            self.upperBoundary = UpperBoundary.mda;
+
+            % lower-boundary
+            A(n,:) = Tz(n,:); %self.Lz*Tz(n,:)-T(n,:);
+            B(n,:) = 0; %1/self.Lz; %0*T(n,:);
+            self.lowerBoundary = LowerBoundary.mda;
+        end
+
+        function [A,B] = EigenmatricesForGeostrophicGModes(self, k )
+            T = self.T_xLobatto;
+            Tz = self.Tx_xLobatto;
+            Tzz = self.Txx_xLobatto;
+            n = self.nEVP;
+
+            A = diag(self.N2_xLobatto)*Tzz + diag(self.Nz_xLobatto)*Tz;
+            B = diag( (- self.N2_xLobatto)/self.g )*T;
+
+            A(n,:) = T(n,:);
+            B(n,:) = 0;
+
+            if (self.g/(self.f0*self.f0))*(k*k) < 1
+                A(1,:) = sqrt(self.N2_xLobatto(1))*Tz(1,:) + (self.g/(self.f0*self.f0))*(k*k)*T(1,:);
+            else
+                A(1,:) = sqrt(self.N2_xLobatto(1))*(self.f0*self.f0)/(self.g *k*k)* Tz(1,:) + T(1,:);
+            end
+            B(1,:) = 0;
         end
                 
         function [A,B] = ApplyBoundaryConditions(self,A,B)
@@ -148,11 +200,12 @@ classdef InternalModesWKBSpectral < InternalModesSpectral
             self.Nz_xLobatto = self.Nz_function(self.z_xLobatto);
 
             self.hFromLambda = @(lambda) 1.0 ./ lambda;
-            self.GOutFromGCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
-            self.FOutFromGCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
-            self.GFromGCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
-            self.FFromGCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
+            self.GOutFromVCheb = @(G_cheb,h) self.T_xCheb_zOut(G_cheb);
+            self.FOutFromVCheb = @(G_cheb,h) h * sqrt(self.N2) .* self.T_xCheb_zOut(self.Diff1_xCheb(G_cheb));
+            self.GFromVCheb = @(G_cheb,h) InternalModesSpectral.ifct(G_cheb);
+            self.FFromVCheb = @(G_cheb,h) h * sqrt(self.N2_xLobatto) .* InternalModesSpectral.ifct( self.Diff1_xCheb(G_cheb) );
             self.GNorm = @(Gj) abs(Gj(1)*Gj(1) + sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * (self.N2_xLobatto - self.f0*self.f0) .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
+            self.GeostrophicNorm = @(Gj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.g) * self.N2_xLobatto .* ( self.N2_xLobatto.^(-0.5) ) .* Gj .^ 2)));
             self.FNorm = @(Fj) abs(sum(self.Int_xCheb .*InternalModesSpectral.fct((1/self.Lz) * (Fj.^ 2) .* ( self.N2_xLobatto.^(-0.5) ))));
         end   
     end
