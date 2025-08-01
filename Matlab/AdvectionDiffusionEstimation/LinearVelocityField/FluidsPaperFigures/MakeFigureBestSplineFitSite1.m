@@ -5,8 +5,8 @@ dof = 4;
 totalPermutations = 1000;
 shouldSaveFigures = 0;
 
-load(sprintf('../observations/smoothedGriddedRho%dDrifters.mat',SiteNumber));
-load(sprintf('Rho%dDrifterSplineFits%d_K%d_dof%d.mat',SiteNumber,totalPermutations,K,dof));
+load(sprintf('smoothedGriddedRho%dDrifters.mat',SiteNumber));
+load(sprintf('BootstrapData/Rho%dDrifterSplineFits%d_dof%d.mat',SiteNumber,totalPermutations,dof));
 
 scaleFactor = 1;
 LoadFigureDefaults

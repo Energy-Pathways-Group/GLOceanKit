@@ -45,6 +45,27 @@ parameterEstimates = EstimateLinearVelocityFieldParameters( x, y, t, parametersT
 
 The structure `parameterEstimates` now contains values for `sigma_n` and `sigma_s` which, hopefully, give you back something close to what you put in.
 
+Recommended approach for least squares fits
+------------
+
+To reproduce the results from the Latmix Site 1 drifter fits, try the following approach using the code in the folder `AdvectionDiffusionEstimation/LinearVelocityField/FluidsPaperFigures/`. The data is found in `AdvectionDiffusionEstimation/Fluid Paper Code`.
+
+1. Run `GenerateBootstrapFits.m`, which will read the `smoothedGriddedRho1Drifters.mat` file and then perform BSpline of all the models, with 1000 different drifter permutations, with time variation from 1 to 6 degrees-of-freedom. The data will be stored in 6 different `.mat` files in the BootstrapData folder.
+
+2. `CompareBootstrapFits.m` will produce a Latex table that will let you assess the quality of fit, and choose the best model.
+
+3. The script `MakeFigureBestSplineFitSite1` will produce a plot showing the time varying parameters of any of the resulting models, including the error bars. We chose the model with 4 dof.
+
+4. To actually use the decomposition, you will want to find the most probable set of parameters and then apply the decomposition,
+```matlab
+[~,mostLikelyIndices] = sort(bootstraps{iModel}.jointlikelihood,'descend');
+...
+[u_meso,v_meso,u_bg,v_bg,u_sm,v_sm,dmxdt,dmydt] = DecomposeTrajectories(x, y, t, parameterEstimates);
+```
+which is done in, e.g., the script `MakeFigureBestSplineFitSite1.m` or `Website/MakeSite1DecompositionMovie`.
+
+
+
 Least squares fits
 ------------
 
