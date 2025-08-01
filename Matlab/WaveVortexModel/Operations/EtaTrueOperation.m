@@ -34,9 +34,19 @@ classdef EtaTrueOperation < WVOperation
         end
 
         function varargout = compute(self,wvt,varargin)
-            rho_nm = @(z) -(wvt.rhoFunction(z) - wvt.rho0);
-            rho_total = -rho_nm(wvt.Z) + wvt.rho_e;
+            
+            % rho_total = -rho_nm(wvt.Z) + wvt.rho_e;
 
+            % Alternative 1: reference to the original no-motion state
+            % rho_nm = @(z) -(wvt.rhoFunction(z) - wvt.rho0);
+
+            % Alternative 2: reference to the current no-motion state
+            rho_nm_v = wvt.rho_nm - wvt.rho_nm(end);
+            rho_bar = squeeze(mean(mean(wvt.rho_e,1),2));
+            rho_nm_t = sort(rho_bar+rho_nm_v,1,"descend") - rho_nm_v;
+            rho_nm = @(z) -(wvt.rhoFunction(z) - wvt.rho0) - interp1(wvt.z,rho_nm_t,z,"linear");
+
+            rho_total = (wvt.rhoFunction(wvt.Z) - wvt.rho0) + wvt.rho_e ;
 
             zMinusEta = EtaTrueOperation.fInverseBisection(rho_nm,-rho_total(:),-wvt.Lz,0,1e-12);
             zMinusEta = reshape(zMinusEta,size(wvt.X));
