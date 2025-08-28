@@ -27,6 +27,7 @@ k = self.kRadial;
 dk = k(2)-k(1);
 
 nK = length(k);
+Kh = self.Kh;
 
 varargout = cell(size(varargin));
 spectralMatrixSize = self.spectralMatrixSize;
@@ -39,7 +40,7 @@ for iVar=1:length(varargin)
 end
 
 for iK = 1:1:nK
-    indicesForK = k(iK)-dk/2 <= self.Kh(1,:) & self.Kh(1,:) < k(iK)+dk/2;
+    indicesForK = k(iK)-dk/2 <= Kh(1,:) & Kh(1,:) < k(iK)+dk/2;
     for iVar=1:length(varargin)
         for iMode = 1:size(varargin{iVar},1)
             varargout{iVar}(iMode,iK) =  sum(varargin{iVar}(iMode,indicesForK));
