@@ -1,15 +1,14 @@
 function S_f = crossSpectrumWithGgTransform(self,phi,gamma)
 arguments
-    self WVDiagnostics
+    self WVGeometryDoublyPeriodicStratified
     phi
     gamma
 end
-wvt = self.wvt;
 
-prefactorK = 2*ones(1,wvt.Nkl); prefactorK(1) = 1;
-prefactor = wvt.g * prefactorK;
+prefactorK = 2*ones(1,self.Nkl); prefactorK(1) = 1;
+prefactor = self.g * prefactorK;
 
-phi_bar = wvt.transformFromSpatialDomainWithGg(wvt.transformFromSpatialDomainWithFourier(phi));
-gamma_bar = wvt.transformFromSpatialDomainWithGg(wvt.transformFromSpatialDomainWithFourier(gamma));
+phi_bar = self.transformFromSpatialDomainWithGg(self.transformFromSpatialDomainWithFourier(phi));
+gamma_bar = self.transformFromSpatialDomainWithGg(self.transformFromSpatialDomainWithFourier(gamma));
 S_f = prefactor .* real(phi_bar .* conj(gamma_bar));
 end
