@@ -246,6 +246,33 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
             [Fu,Fv,Fw,Feta] = self.variableWithName(Fu_name,Fv_name,Fw_name,Feta_name);
         end
 
+        function wvt2 = waveVortexTransformWithExplicitAntialiasing(self)
+            if self.shouldAntialias == false
+                error("This function only applies to transforms that are dealiasing.")
+            end
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+                if names{i} == "shouldAntialias"
+                    optionArgs{2*i} = false;
+                end
+            end
+            wvt2 = WVTransformBoussinesq([self.Lx self.Ly self.Lz],[self.Nx self.Ny self.Nz],optionArgs{:});
+            wvt2.removeAllForcing();
+            wvt2.addForcing(WVAntialiasing(wvt2));
+
+            for iForce=1:length(self.forcing)
+                wvt2.addForcing(self.forcing(iForce).forcingWithResolutionOfTransform(wvt2));
+            end
+
+            wvt2.t0 = self.t0;
+            wvt2.t = self.t;
+            [wvt2.A0,wvt2.Ap,wvt2.Am] = self.spectralVariableWithResolution(wvt2,self.A0,self.Ap,self.Am);
+
+        end
+
 
     end
 
