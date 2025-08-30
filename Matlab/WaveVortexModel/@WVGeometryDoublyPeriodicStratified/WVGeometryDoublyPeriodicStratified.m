@@ -136,22 +136,9 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             Kh = sqrt(kj.^2 + kr.^2);
             allKs = unique(reshape(abs(Kh),[],1),'sorted');
             deltaK = max(diff(allKs));
-            % deltaK = jWavenumber(2); % this gives too-coarse spacing
             kAxis_ = 0:deltaK:(max(allKs)+deltaK/2);
-            % kAxis_ = linspace(0,(max(allKs)+deltaK/2),200); % easy control of wavenumber spacing
-
-            % tried log spacing... too many points at long wavelength
-            % kAxis_ = logspace(log10(deltaK),log10(max(allKs)+deltaK/2),150); % easy control of wavenumber spacing
-            % kAxis_ = [0,kAxis_];
-
-            % tried 1/wavelength spacing... too many points at long wavelength
-            % lambdaMax = 2*self.wvt.Lx;
-            % lambdaMin = 2*pi/(max(allKs)+deltaK/2);
-            % Nlambda = 20;
-            % lambdaAxis = linspace(lambdaMax,lambdaMin,Nlambda);
-            % kAxis_ = 2*pi./lambdaAxis;
-
-            % Thi is the final output axis for wavenumber
+            % This choices of axis spacing ensures that there will be no
+            % gaps in the resulting spectrum.
             kPseudoRadial = reshape(kAxis_,[],1);
         end
 
