@@ -355,7 +355,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 self.spatialFluxForcing = setdiff(self.spatialFluxForcing,aForce,'stable');
                 self.spectralFluxForcing = setdiff(self.spectralFluxForcing,aForce,'stable');
                 self.spectralAmplitudeForcing = setdiff(self.spectralAmplitudeForcing,aForce,'stable');
-                self.forcingNameMap{aForce.name} = [];
+                self.forcingNameMap = self.forcingNameMap.remove(aForce.name);
             end
         end
 
