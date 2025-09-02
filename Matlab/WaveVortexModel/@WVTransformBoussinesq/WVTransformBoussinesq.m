@@ -245,6 +245,35 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
             Feta_name = replace(replace(join( ["Feta_", string(name)],"")," ","_"),"-","_");
             [Fu,Fv,Fw,Feta] = self.variableWithName(Fu_name,Fv_name,Fw_name,Feta_name);
         end
+        
+        function dx = effectiveHorizontalGridResolution(self)
+            %returns the effective grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Properties
+            % - Declaration: flag = effectiveHorizontalGridResolution(other)
+            % - Returns effectiveHorizontalGridResolution: double
+            arguments
+                self WVGeometryDoublyPeriodic
+            end
+            if self.hasForcingWithName("antialias filter")
+                dx = self.forcingWithName("antialias filter").effectiveHorizontalGridResolution;
+            else
+                dx = effectiveHorizontalGridResolution@WVGeometryDoublyPeriodic(self);
+            end
+        end
+
+        function j_max = effectiveJMax(self)
+            if self.hasForcingWithName("antialias filter")
+                j_max = self.forcingWithName("antialias filter").effectiveJMax;
+            else
+                j_max =effectiveJMax@WVGeometryDoublyPeriodicStratified(self);
+            end
+        end
 
         function wvt2 = waveVortexTransformWithExplicitAntialiasing(self)
             if self.shouldAntialias == false
