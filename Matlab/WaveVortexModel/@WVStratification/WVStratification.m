@@ -4,7 +4,7 @@ classdef WVStratification < WVRotatingFPlane
     properties (GetAccess=public, SetAccess=protected)
         % eta_true operation needs rhoFunction
         rhoFunction, N2Function%, dLnN2Function = []
-        rho0, rho_nm, N2%, dLnN2
+        rho0, rho_nm0, N2%, dLnN2
         z, j
         z_int
         verticalModes
@@ -49,7 +49,7 @@ classdef WVStratification < WVRotatingFPlane
             % - Topic: Stratification — Validation
             % - Declaration: flag = isDensityInValidRange()
             % - Returns flag: a boolean
-            flag = ~(any(self.rho_total(:) < min(self.rho_nm)) | any(self.rho_total(:) > max(self.rho_nm)));
+            flag = ~(any(self.rho_total(:) < min(self.rho_nm0)) | any(self.rho_total(:) > max(self.rho_nm0)));
         end
 
         function effectiveVerticalGridResolution = effectiveVerticalGridResolution(self)
@@ -86,19 +86,23 @@ classdef WVStratification < WVRotatingFPlane
             % of the flow because we do not really know how everything will
             % add together in the end.
             if ~isscalar(options.Am) || ~isscalar(options.Ap)
-                rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0,Apm=self.NAp.*options.Ap + self.NAm.*options.Am);
+                rho_total = reshape(self.rho_nm0,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0,Apm=self.NAp.*options.Ap + self.NAm.*options.Am);
             else
-                rho_total = reshape(self.rho_nm,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0);
+                rho_total = reshape(self.rho_nm0,1,1,[]) + (self.rho0/self.g) * shiftdim(self.N2,-2) .* self.transformToSpatialDomainWithG(A0=self.NA0.*options.A0);
             end
-            densityViolation = any(rho_total(:) < min(self.rho_nm)) | any(rho_total(:) > max(self.rho_nm));
+            densityViolation = any(rho_total(:) < min(self.rho_nm0)) | any(rho_total(:) > max(self.rho_nm0));
             if densityViolation == 1
-                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm(end)-self.rho0,self.rho_nm(1)-self.rho0);
+                errorString = sprintf('The no-motion density minus rho0 spans from %.3f kg/m^{3} at the surface to %.3f kg/m^{3} at the bottom. Any adiabatic re-arrangement of the fluid requires the density anomaly stay within this range. ',self.rho_nm0(end)-self.rho0,self.rho_nm0(1)-self.rho0);
                 minString = sprintf('\tminimum density: %.3f kg/m^{3}\n',min(rho_total(:))-self.rho0);
                 maxString = sprintf('\tmaximum density: %.3f kg/m^{3}\n',max(rho_total(:))-self.rho0);
                 errorStruct.message = [errorString,options.additionalErrorInfo,minString,maxString];
                 errorStruct.identifier = 'WVTransform:DensityBoundsViolation';
                 error(errorStruct);
             end
+        end
+
+        function cheb_function = chebfunForZArray(self,my_z_vector)
+            cheb_function = chebfun( @(z) interp1(self.z,my_z_vector,z,'spline'),[min(self.z) max(self.z)],'splitting','on');
         end
     end
 
@@ -168,7 +172,7 @@ classdef WVStratification < WVRotatingFPlane
             self.N2 = options.N2Function(self.z);
             self.N2Function = options.N2Function;
             self.rhoFunction = options.rhoFunction;
-            self.rho_nm = self.rhoFunction(self.z);
+            self.rho_nm0 = self.rhoFunction(self.z);
         end
 
         function [P,Q,PFinv,PF,QGinv,QG,h,w] = verticalProjectionOperatorsForGeostrophicModes(self,Nj)
@@ -204,12 +208,13 @@ classdef WVStratification < WVRotatingFPlane
         % -requiredDimensionsForStratification
         % -requiredVariablesForStratification
         % function vars = requiredVariablesForStratification()
-        %     vars = {'rho0','rho_nm','N2'};
+        %     vars = {'rho0','rho_nm0','N2'};
         % end
         % 
         % function dims = requiredDimensionsForStratification()
         %     dims = {'z','j'};
         % end
+
 
         function Nz = verticalResolutionForHorizontalResolution(Lxy,Lz,Nx,options,rotatingOptions)
             % optimal resolution for a QG model, such that k_max =
@@ -266,7 +271,7 @@ classdef WVStratification < WVRotatingFPlane
             propertyAnnotations(end+1) = CAFunctionProperty('rhoFunction', 'takes $$z$$ values and returns the no-motion density.');
             propertyAnnotations(end+1) = CAFunctionProperty('N2Function', 'takes $$z$$ values and returns the squared buoyancy frequency of the no-motion density.');
             propertyAnnotations(end+1) = CAPropertyAnnotation('verticalModes', 'instance of the InternalModes class');
-            propertyAnnotations(end+1) = CANumericProperty('rho_nm',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density');
+            propertyAnnotations(end+1) = CANumericProperty('rho_nm0',{'z'},'kg m^{-3}', '$$\rho_\textrm{nm}(z)$$, no-motion density at time `t0`');
             propertyAnnotations(end+1) = CANumericProperty('N2',{'z'},'rad^2 s^{-2}', '$$N^2(z)$$, squared buoyancy frequency of the no-motion density, $$N^2\equiv - \frac{g}{\rho_0} \frac{\partial \rho_\textrm{nm}}{\partial z}$$');
             propertyAnnotations(end+1) = CANumericProperty('dLnN2',{'z'},'', '$$\frac{\partial \ln N^2}{\partial z}$$, vertical variation of the log of the squared buoyancy frequency');
             propertyAnnotations(end+1) = CANumericProperty('FinvMatrix',{'z','j'},'', 'transformation matrix $$F_g^{-1}$$');
