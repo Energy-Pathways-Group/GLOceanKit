@@ -15,10 +15,13 @@ classdef WVAdaptiveDamping < WVForcing
         k_no_damp % wavenumber below which there is zero damping
         j_damp % wavenumber at which the significant scale damping starts.
         j_no_damp % wavenumber below which there is zero damping
+
+        forcingListener
+        assumedEffectiveHorizontalGridResolution = Inf;
     end
 
     methods
-        function self = WVAdaptiveDamping(wvt,options)
+        function self = WVAdaptiveDamping(wvt)
             % initialize the WVNonlinearFlux nonlinear flux
             %
             % Note that you should never need to set
@@ -31,16 +34,26 @@ classdef WVAdaptiveDamping < WVForcing
             % - Returns self: a WVAdaptiveViscosity instance
             arguments
                 wvt WVTransform {mustBeNonempty}
-                options.shouldAssumeAntialiasing logical = false
             end
             self@WVForcing(wvt,"adaptive damping",WVForcingType(["Spectral","PVSpectral"]));
             self.wvt = wvt;
             self.isClosure = true;
-            self.buildDampingOperator(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
-            % addlistener(self.wvt,'forcingDidChange',@self.forcingDidChangeNotification);
+            self.buildDampingOperator();
+            self.forcingListener = addlistener(self.wvt,'forcingDidChange',@self.forcingDidChangeNotification);
         end
 
-        function buildDampingOperator(self,options)
+        function didGetRemovedFromTransform(self, wvt)
+            delete(self.forcingListener);
+            self.forcingListener = [];
+        end
+
+        function forcingDidChangeNotification(self,~,~)
+            if self.wvt.effectiveHorizontalGridResolution ~= self.assumedEffectiveHorizontalGridResolution
+                self.buildDampingOperator();
+            end
+        end
+
+        function buildDampingOperator(self)
             % Builds the damping operator
             %
             % - Declaration: buildDampingOperator(self)
@@ -48,21 +61,16 @@ classdef WVAdaptiveDamping < WVForcing
             % - Returns: None
             arguments
                 self WVAdaptiveDamping {mustBeNonempty}
-                options.shouldAssumeAntialiasing logical = false
             end
-            if options.shouldAssumeAntialiasing == true
-                % essentially, assume a lower effective resolution
-                effectiveHorizontalGridResolution = 3*self.wvt.effectiveHorizontalGridResolution/2;
-            else
-                effectiveHorizontalGridResolution = self.wvt.effectiveHorizontalGridResolution;
-            end
-            kl_max = pi/effectiveHorizontalGridResolution;
+            self.assumedEffectiveHorizontalGridResolution = self.wvt.effectiveHorizontalGridResolution;
+
+            kl_max = pi/self.assumedEffectiveHorizontalGridResolution;
             j_max = self.wvt.effectiveJMax;
             j_index = find(self.wvt.j == self.wvt.effectiveJMax);
             [K,L,~] = self.wvt.kljGrid;
             [Qkl,Qj,self.k_no_damp,self.k_damp,self.j_no_damp,self.j_damp] = self.spectralVanishingViscosityFilter(kl_max, j_max);
-            prefactor_xy = effectiveHorizontalGridResolution/(pi^2);
-            prefactor_z = (pi*pi*self.wvt.Lr2(j_index)/(effectiveHorizontalGridResolution)^2)*prefactor_xy;
+            prefactor_xy = self.assumedEffectiveHorizontalGridResolution/(pi^2);
+            prefactor_z = (pi*pi*self.wvt.Lr2(j_index)/(self.assumedEffectiveHorizontalGridResolution)^2)*prefactor_xy;
 
             Lr2inv = 1./self.wvt.Lr2;
             self.damp = -prefactor_xy*Qkl.*(K.^2 +L.^2) ;
