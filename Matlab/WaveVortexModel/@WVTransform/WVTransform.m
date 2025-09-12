@@ -88,6 +88,10 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
         spectralFluxForcing WVForcing = WVForcing.empty(1,0)
         spectralAmplitudeForcing WVForcing = WVForcing.empty(1,0)
     end
+
+    events
+        forcingDidChange
+    end
     
     methods (Abstract)
         wvtX2 = waveVortexTransformWithResolution(self,m)
@@ -285,6 +289,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             self.spatialFluxForcing = WVForcing.empty(1,0);
             self.spectralFluxForcing = WVForcing.empty(1,0);
             self.spectralAmplitudeForcing = WVForcing.empty(1,0);
+            notify(self,'forcingDidChange');
         end
 
         function setForcing(self,force)
@@ -343,6 +348,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
             if didAddForcing == false
                 error("This WVTransform does not support this type of forcing!!!");
             end
+            notify(self,'forcingDidChange');
         end
 
         function removeForcing(self,force)
@@ -357,6 +363,7 @@ classdef WVTransform < matlab.mixin.indexing.RedefinesDot & CAAnnotatedClass
                 self.spectralAmplitudeForcing = setdiff(self.spectralAmplitudeForcing,aForce,'stable');
                 self.forcingNameMap = self.forcingNameMap.remove(aForce.name);
             end
+            notify(self,'forcingDidChange');
         end
 
         function forcing = get.forcing(self)

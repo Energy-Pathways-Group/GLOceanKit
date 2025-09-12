@@ -37,6 +37,7 @@ classdef WVAdaptiveDamping < WVForcing
             self.wvt = wvt;
             self.isClosure = true;
             self.buildDampingOperator(shouldAssumeAntialiasing=options.shouldAssumeAntialiasing);
+            % addlistener(self.wvt,'forcingDidChange',@self.forcingDidChangeNotification);
         end
 
         function buildDampingOperator(self,options)
