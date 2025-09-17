@@ -32,16 +32,16 @@ classdef WVVerticalDiffusivity < WVForcing
         end
 
         function [Fu, Fv, Feta] = addHydrostaticSpatialForcing(self, wvt, Fu, Fv, Feta)
-            Feta = Feta + self.kappa_z * (wvt.diffZG(wvt.eta,2) - self.dLnN2);
+            Feta = Feta + self.kappa_z * (wvt.diffZG(wvt.eta,n=2) - self.dLnN2);
         end
 
         function [Fu, Fv, Fw, Feta] = addNonhydrostaticSpatialForcing(self, wvt, Fu, Fv, Fw, Feta)
-            Feta = Feta + self.kappa_z * (wvt.diffZG(wvt.eta,2) - self.dLnN2);
+            Feta = Feta + self.kappa_z * (wvt.diffZG(wvt.eta,n=2) - self.dLnN2);
         end
 
         function Fpv = addPotentialVorticitySpatialForcing(self, wvt, Fpv)
             % Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3) - wvt.diffZG(self.dLnN2));
-            Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,3));
+            Fpv = Fpv - wvt.f * self.kappa_z * (wvt.diffZG(wvt.eta,n=3));
             % I believe this is incorrect because it excludes
             % the MDA
         end

@@ -17,7 +17,7 @@ classdef SpatialForcingOperation < WVOperation
                 if isa(wvt,"WVTransformBarotropicQG") || isa(wvt,"WVTransformStratifiedQG")
                     name = replace(replace(join( ["Fqgpv_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
                     outputVariables(i) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'s^{-2}', join(['spatial representation of qgpv forcing',string(wvt.forcing(i).name)]));
-                elseif isa(wvt,"WVTransformHydrostatic")
+                elseif isa(wvt,"WVTransformHydrostatic") || (isa(wvt,"WVTransformConstantStratification") && wvt.isHydrostatic == true)
                     name = replace(replace(join( ["Fu_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
                     outputVariables((i-1)*3+1) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-2}', join(['spatial representation of hydrostatic forcing on the x-momentum equation',string(wvt.forcing(i).name)]));
 
@@ -26,7 +26,7 @@ classdef SpatialForcingOperation < WVOperation
 
                     name = replace(replace(join( ["Feta_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
                     outputVariables((i-1)*3+3) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-1}', join(['spatial representation of hydrostatic forcing on the scaled density perturbation equation',string(wvt.forcing(i).name)]));
-                elseif isa(wvt,"WVTransformBoussinesq")
+                elseif isa(wvt,"WVTransformBoussinesq") || (isa(wvt,"WVTransformConstantStratification") && wvt.isHydrostatic == false)
                     name = replace(replace(join( ["Fu_", string(wvt.forcing(i).name)],"")," ","_"),"-","_");
                     outputVariables((i-1)*4+1) = WVVariableAnnotation(name,wvt.spatialDimensionNames(),'m s^{-2}', join(['spatial representation of non-hydrostatic forcing on the x-momentum equation',string(wvt.forcing(i).name)]));
 
@@ -69,7 +69,7 @@ classdef SpatialForcingOperation < WVOperation
                     F0 = wvt.spectralAmplitudeForcing(i).setPotentialVorticitySpectralForcing(wvt,F0);
                     varargout{iForce} = wvt.transformToSpatialDomainWithFourier(F0 - F0_i);
                 end
-            elseif isa(wvt,"WVTransformHydrostatic")
+            elseif isa(wvt,"WVTransformHydrostatic") || (isa(wvt,"WVTransformConstantStratification") && wvt.isHydrostatic == true)
                 Fu=0;Fv=0;Feta=0; % this isn't good, need to cached
                 iForce = 0;
                 for i=1:length(wvt.spatialFluxForcing)
@@ -94,7 +94,7 @@ classdef SpatialForcingOperation < WVOperation
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithF(Apm=wvt.VAp.*wvt.phase.*(Fp-Fp_i) + wvt.VAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.VA0.*(F0-F0_i));
                     iForce = iForce + 1; varargout{iForce} = wvt.transformToSpatialDomainWithG(Apm=wvt.NAp.*wvt.phase.*(Fp-Fp_i) + wvt.NAm.*wvt.conjPhase.*(Fm-Fm_i),A0=wvt.NA0.*(F0-F0_i));
                 end
-            elseif isa(wvt,"WVTransformBoussinesq")
+            elseif isa(wvt,"WVTransformBoussinesq") || (isa(wvt,"WVTransformConstantStratification") && wvt.isHydrostatic == false)
                 Fu=0;Fv=0;Fw=0;Feta=0; % this isn't good, need to cached
                 iForce = 0;
                 for i=1:length(wvt.spatialFluxForcing)

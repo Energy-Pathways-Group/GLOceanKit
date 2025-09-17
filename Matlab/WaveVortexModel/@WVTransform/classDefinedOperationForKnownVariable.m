@@ -105,6 +105,14 @@ for iOp = 1:length(variableName)
             varAnnotation = WVVariableAnnotation('wMax',{},'m s^{-1}', 'max vertical fluid speed');
             f = @(wvt) max(max(max( abs(wvt.w)  )));
 
+        case 'rho_bar'
+            varAnnotation = WVVariableAnnotation('rho_bar',{'z'},'kg m^{-3}', 'mean density');
+            f = @(wvt) wvt.rho_nm0 + (wvt.rho0/wvt.g) * wvt.N2 .* wvt.GinvMatrix*(wvt.NA0(:,1).*wvt.A0t(:,1));
+
+        case 'rho_nm'
+            varAnnotation = WVVariableAnnotation('rho_nm',{'z'},'kg m^{-3}', 'no-motion density');
+            f = @(wvt) sort(wvt.rho_bar,1,"descend");
+
         case 'rho_e'
             varAnnotation = WVVariableAnnotation('rho_e',options.spatialDimensionNames,'kg/m3', 'excess density');
             f = @(wvt) (wvt.rho0/wvt.g) * shiftdim(wvt.N2,-2) .* transformToSpatialDomainWithG(wvt,@(wvt) wvt.NAp.*wvt.Apt,@(wvt) wvt.NAm.*wvt.Amt,@(wvt) wvt.NA0.*wvt.A0t);
@@ -112,7 +120,7 @@ for iOp = 1:length(variableName)
 
         case 'rho_total'
             varAnnotation = WVVariableAnnotation('rho_total',options.spatialDimensionNames,'kg/m3', 'total potential density');
-            f = @(wvt) reshape(wvt.rho_nm,1,1,[]) + wvt.rho_e;
+            f = @(wvt) reshape(wvt.rho_nm0,1,1,[]) + wvt.rho_e;
 
         case 'zeta_x'
             varAnnotation = WVVariableAnnotation('zeta_x',options.spatialDimensionNames,'1/s', 'x-component component of relative vorticity');

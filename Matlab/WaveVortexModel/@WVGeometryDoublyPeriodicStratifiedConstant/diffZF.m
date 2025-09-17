@@ -1,10 +1,10 @@
-function du = diffZF(self,u,n)
+function du = diffZF(self,u,options)
 arguments
     self        WVTransform
     u (:,:,:)   double
-    n (1,1)     double = 1
+    options.n (1,1)     double = 1
 end
-
+n = options.n;
 u = permute(u,[3 1 2]); % keep adjacent in memory
 u = reshape(u,self.Nz,[]);
 

@@ -32,16 +32,17 @@ function [wvt,ncfile] = waveVortexTransformFromFile(path,options)
 arguments (Input)
     path char {mustBeFile}
     options.iTime (1,1) double {mustBePositive} = 1
+    options.shouldReadOnly logical = false
 end
 arguments (Output)
     wvt WVTransform
     ncfile NetCDFFile
 end
-ncfile = NetCDFFile(path);
+ncfile = NetCDFFile(path,shouldReadOnly=options.shouldReadOnly);
 
 if isKey(ncfile.attributes,'WVTransform')
     wvtClassName = ncfile.attributes('WVTransform');
-    wvt = feval(strcat(wvtClassName,'.waveVortexTransformFromFile'),path,'iTime',options.iTime);
+    wvt = feval(strcat(wvtClassName,'.waveVortexTransformFromFile'),path,'iTime',options.iTime,'shouldReadOnly',options.shouldReadOnly);
 else
     error("Unable to find the attribute WVTransform in this file, suggesting this was not created by the wave vortex model.");
 end

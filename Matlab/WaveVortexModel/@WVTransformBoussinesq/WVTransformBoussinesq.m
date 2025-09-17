@@ -337,7 +337,7 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
         end
 
         function names = namesOfTransformVariables()
-            names = {'phase','conjPhase','A0t','Apt','Amt','uvMax','wMax','zeta_x','zeta_y','zeta_z','ssh','ssu','ssv','u','v','w','eta','pi','p','psi','qgpv','rho_e','rho_total'};
+            names = {'phase','conjPhase','A0t','Apt','Amt','uvMax','wMax','zeta_x','zeta_y','zeta_z','ssh','ssu','ssv','u','v','w','eta','pi','p','psi','qgpv','rho_e','rho_total','rho_bar','rho_nm'};
         end
 
         function propertyAnnotations = propertyAnnotationsForTransform()
@@ -383,12 +383,13 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
             arguments (Input)
                 path char {mustBeFile}
                 options.iTime (1,1) double {mustBePositive} = 1
+                options.shouldReadOnly logical = false
             end
             arguments (Output)
                 wvt WVTransform
                 ncfile NetCDFFile
             end
-            ncfile = NetCDFFile(path);
+            ncfile = NetCDFFile(path,shouldReadOnly=options.shouldReadOnly);
             wvt = WVTransformBoussinesq.transformFromGroup(ncfile);
             wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
             wvt.initForcingFromNetCDFFile(ncfile);

@@ -145,6 +145,62 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
             [wvtX2.A0,wvtX2.Ap,wvtX2.Am] = self.spectralVariableWithResolution(wvtX2,self.A0,self.Ap,self.Am);
         end
 
+        function wvt2 = waveVortexTransformWithExplicitAntialiasing(self)
+            if self.shouldAntialias == false
+                error("This function only applies to transforms that are dealiasing.")
+            end
+            names = {'shouldAntialias','N2Function','rho0','planetaryRadius','rotationRate','latitude','g'};
+            optionArgs = {};
+            for i=1:length(names)
+                optionArgs{2*i-1} = names{i};
+                optionArgs{2*i} = self.(names{i});
+                if names{i} == "shouldAntialias"
+                    optionArgs{2*i} = false;
+                end
+            end
+            wvt2 = WVTransformConstantStratification([self.Lx self.Ly self.Lz],[self.Nx self.Ny self.Nz],optionArgs{:});
+            wvt2.removeAllForcing();
+            wvt2.addForcing(WVAntialiasing(wvt2));
+
+            for iForce=1:length(self.forcing)
+                wvt2.addForcing(self.forcing(iForce).forcingWithResolutionOfTransform(wvt2));
+            end
+
+            wvt2.t0 = self.t0;
+            wvt2.t = self.t;
+            [wvt2.A0,wvt2.Ap,wvt2.Am] = self.spectralVariableWithResolution(wvt2,self.A0,self.Ap,self.Am);
+
+        end
+
+        function dx = effectiveHorizontalGridResolution(self)
+            %returns the effective grid resolution in meters
+            %
+            % The effective grid resolution is the highest fully resolved
+            % wavelength in the model. This value takes into account
+            % anti-aliasing, and is thus appropriate for setting damping
+            % operators.
+            %
+            % - Topic: Properties
+            % - Declaration: flag = effectiveHorizontalGridResolution(other)
+            % - Returns effectiveHorizontalGridResolution: double
+            arguments
+                self WVGeometryDoublyPeriodic
+            end
+            if self.hasForcingWithName("antialias filter")
+                dx = self.forcingWithName("antialias filter").effectiveHorizontalGridResolution;
+            else
+                dx = effectiveHorizontalGridResolution@WVGeometryDoublyPeriodic(self);
+            end
+        end
+
+        function j_max = effectiveJMax(self)
+            if self.hasForcingWithName("antialias filter")
+                j_max = self.forcingWithName("antialias filter").effectiveJMax;
+            else
+                j_max =effectiveJMax@WVGeometryDoublyPeriodicStratified(self);
+            end
+        end
+
         function energy = get.totalEnergySpatiallyIntegrated(self)
             if self.isHydrostatic == 1
                 [u,v,eta] = self.variableWithName('u','v','eta');
@@ -238,11 +294,18 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
         %     end
         % end
 
-        function [Fu,Fv,Feta] = spatialFluxForForcingWithName(self,name)
+        function varargout = spatialFluxForForcingWithName(self,name)
             Fu_name = replace(replace(join( ["Fu_", string(name)],"")," ","_"),"-","_");
             Fv_name = replace(replace(join( ["Fv_", string(name)],"")," ","_"),"-","_");
             Feta_name = replace(replace(join( ["Feta_", string(name)],"")," ","_"),"-","_");
-            [Fu,Fv,Feta] = self.variableWithName(Fu_name,Fv_name,Feta_name);
+            [Fu_,Fv_,Feta_] = self.variableWithName(Fu_name,Fv_name,Feta_name);
+            if self.isHydrostatic && nargout == 3
+                varargout = {Fu_,Fv_,Feta_};
+            elseif self.isHydrostatic == false && nargout == 4
+                Fw_name = replace(replace(join( ["Fw_", string(name)],"")," ","_"),"-","_");
+                F_w = self.variableWithName(Fw_name);
+                varargout = {Fu_,Fv_,F_w,Feta_};
+            end
         end
 
 
@@ -326,12 +389,13 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
             arguments (Input)
                 path char {mustBeFile}
                 options.iTime (1,1) double {mustBePositive} = 1
+                options.shouldReadOnly logical = false
             end
             arguments (Output)
                 wvt WVTransform
                 ncfile NetCDFFile
             end
-            ncfile = NetCDFFile(path);
+            ncfile = NetCDFFile(path,shouldReadOnly=options.shouldReadOnly);
             wvt = WVTransformConstantStratification.transformFromGroup(ncfile);
             wvt.initFromNetCDFFile(ncfile,iTime=options.iTime,shouldDisplayInit=1);
             wvt.initForcingFromNetCDFFile(ncfile);

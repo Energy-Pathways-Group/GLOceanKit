@@ -61,8 +61,9 @@ classdef NetCDFFile < NetCDFGroup
             % - Returns: a new NetCDFFile instance
             arguments
                 path char {mustBeNonempty}
-                options.shouldOverwriteExisting double {mustBeMember(options.shouldOverwriteExisting,[0 1])} = 0
-                options.shouldUseClassicNetCDF = 0
+                options.shouldOverwriteExisting logical = false
+                options.shouldUseClassicNetCDF logical = false
+                options.shouldReadOnly logical = false
             end
 
             if isfile(path) && options.shouldOverwriteExisting == 1
@@ -81,7 +82,11 @@ classdef NetCDFFile < NetCDFGroup
                     ncid = netcdf.create(path, netcdf.getConstant('NETCDF4'));
                 end
             else
-                ncid = netcdf.open(path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+                if options.shouldReadOnly
+                    ncid = netcdf.open(path);
+                else
+                    ncid = netcdf.open(path, bitor(netcdf.getConstant('SHARE'),netcdf.getConstant('WRITE')));
+                end
             end
             
             self@NetCDFGroup(id=ncid);

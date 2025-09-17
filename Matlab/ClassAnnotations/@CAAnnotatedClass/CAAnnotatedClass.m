@@ -80,22 +80,24 @@ classdef CAAnnotatedClass < handle
                 other CAAnnotatedClass
             end
             flag = isequal(class(self),class(other));
-            names = self.requiredProperties();
-            for name = names
-                if isa(self.(name{1}),"function_handle")
-                    flag = flag & isequal(func2str(self.(name{1})), func2str(other.(name{1})));
-                elseif isa(self.(name{1}),"CAAnnotatedClass")
-                    myObjs = self.(name{1});
-                    otherObjs = other.(name{1});
-                    if length(myObjs) == length(otherObjs)
-                        for iObj=1:length(myObjs)
-                            flag = flag & isequal(myObjs(iObj),otherObjs(iObj));
+            if flag
+                names = self.requiredProperties();
+                for name = names
+                    if isa(self.(name{1}),"function_handle")
+                        flag = flag & isequal(func2str(self.(name{1})), func2str(other.(name{1})));
+                    elseif isa(self.(name{1}),"CAAnnotatedClass")
+                        myObjs = self.(name{1});
+                        otherObjs = other.(name{1});
+                        if length(myObjs) == length(otherObjs)
+                            for iObj=1:length(myObjs)
+                                flag = flag & isequal(myObjs(iObj),otherObjs(iObj));
+                            end
+                        else
+                            flag = false;
                         end
                     else
-                        flag = false;
+                        flag = flag & (isequal(self.(name{1}), other.(name{1})) | (isempty(self.(name{1})) & isempty(other.(name{1}))));
                     end
-                else
-                    flag = flag & (isequal(self.(name{1}), other.(name{1})) | (isempty(self.(name{1})) & isempty(other.(name{1}))));
                 end
             end
         end

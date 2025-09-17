@@ -32,6 +32,11 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
     %
     % - Declaration: classdef WVForcing < handle
 
+    % Can't set wvt here because WeakHandle cannot use an abstract class
+    % properties (WeakHandle, GetAccess=public, SetAccess=protected)
+    % 
+    % end
+
     properties (GetAccess=public, SetAccess=protected)
         wvt
 
@@ -127,6 +132,10 @@ classdef WVForcing < handle & matlab.mixin.Heterogeneous & CAAnnotatedClass
         end
 
         function F0 = setPotentialVorticitySpectralForcing(self, wvt, F0)
+        end
+
+        function didGetRemovedFromTransform(self, wvt)
+            
         end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

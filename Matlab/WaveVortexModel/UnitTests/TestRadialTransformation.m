@@ -9,7 +9,7 @@ classdef TestRadialTransformation < matlab.unittest.TestCase
     properties (ClassSetupParameter)
         Lxyz = struct('Lxyz',[15e3 15e3 1300]);
         Nxyz = struct('Nx32Ny32Nz17',[32 32 17]);
-        transform = {'constant'};
+        transform = {'hydrostatic'};
     end
 
     methods (TestClassSetup)
