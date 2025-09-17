@@ -77,7 +77,7 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
                     Df_analytical = (kz^4)*cos(kz*Z).*cos(kx*X+phix).*cos(ky*Y+phiy);
             end
 
-            self.verifyEqual(self.wvt.diffZF(f,derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
+            self.verifyEqual(self.wvt.diffZF(f,n=derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
 
         end
 
@@ -109,9 +109,9 @@ classdef TestSpectralDifferentiationZ < matlab.unittest.TestCase
 
             if m_n==16 && (derivative == 1 || derivative == 3)
                 % Nquist, cosine of m=8 is not resolved.
-                self.verifyNotEqual(self.wvt.diffZG(f,derivative),Df_analytical);
+                self.verifyNotEqual(self.wvt.diffZG(f,n=derivative),Df_analytical);
             else
-                self.verifyEqual(self.wvt.diffZG(f,derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
+                self.verifyEqual(self.wvt.diffZG(f,n=derivative),Df_analytical, "AbsTol",1e-7,"RelTol",1e-7);
             end
 
         end
