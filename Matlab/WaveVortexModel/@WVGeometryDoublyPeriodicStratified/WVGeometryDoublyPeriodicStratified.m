@@ -232,6 +232,17 @@ classdef WVGeometryDoublyPeriodicStratified < WVGeometryDoublyPeriodic & WVStrat
             w = self.transformToSpatialDomainWithFourier(self.QG0inv*(self.Q0 .* (options.Apm + options.A0)));
         end
 
+        function u = transformToSpatialDomainWithFModesAtIndices(self, options)
+            % By assumption A is not [Nj Nkl], but now [length(modeIndices)
+            % Nkl]
+            arguments
+                self WVTransform {mustBeNonempty}
+                options.modeIndices
+                options.A double = 0
+            end
+            u = self.transformToSpatialDomainWithFourier(self.PF0inv(:,options.modeIndices)*(self.P0(options.modeIndices,:) .* options.A));
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Spectra
