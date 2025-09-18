@@ -82,8 +82,8 @@ classdef WVGeometryDoublyPeriodicStratifiedConstant < WVGeometryDoublyPeriodic &
             self.buildVerticalModeProjectionOperators();
         end
         
-        du = diffZF(self,u,n)
-        dw = diffZG(self,w,n)
+        du = diffZF(self,u,options)
+        dw = diffZG(self,w,options)
 
         function Lr2 = get.Lr2(self)
             Lr2 = self.g*self.h_0/(self.f*self.f);
