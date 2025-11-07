@@ -629,9 +629,10 @@ classdef WVModel < handle & WVModelAdapativeTimeStepMethods & WVModelFixedTimeSt
                 self WVModel {mustBeNonempty}
                 finalTime (1,:) double
                 options.shouldShowIntegrationDiagnostics logical = true
+                options.shouldAllowBackwardsIntegration = false
                 options.callback
             end
-            if finalTime <= self.t
+            if finalTime <= self.t && ~options.shouldAllowBackwardsIntegration
                 fprintf('Reqested integration to time %d, but the model is currently at time t=%d.\n',round(finalTime),round(self.t));
                 return;
             end
