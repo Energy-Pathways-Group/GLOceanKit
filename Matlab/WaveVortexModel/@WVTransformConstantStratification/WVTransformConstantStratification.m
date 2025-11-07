@@ -96,7 +96,10 @@ classdef WVTransformConstantStratification < WVGeometryDoublyPeriodicStratifiedC
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.waveComponent));
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.inertialComponent));
             self.addOperation(self.operationForKnownVariable('u','v','w','eta','p',flowComponent=self.mdaComponent));
-
+            self.addOperation(EtaTrueOperation());
+            self.addOperation(APVOperation());
+            self.addOperation(APEOperation(self));
+            
             self.A0 = zeros(self.spectralMatrixSize);
             self.Ap = zeros(self.spectralMatrixSize);
             self.Am = zeros(self.spectralMatrixSize);
