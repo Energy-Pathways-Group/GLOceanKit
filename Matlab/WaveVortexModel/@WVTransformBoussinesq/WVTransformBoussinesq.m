@@ -26,6 +26,9 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
         totalEnergySpatiallyIntegrated
         totalEnergy
         isHydrostatic
+        exactTotalEnergy
+        exactPotentialEnstrophy
+        volumeIntegral
     end
     properties
         Fu, Fv, Feta
@@ -176,6 +179,24 @@ classdef WVTransformBoussinesq < WVGeometryDoublyPeriodicStratifiedBoussinesq & 
 
         function flag = get.isHydrostatic(self)
             flag = false;
+        end
+
+        function vol_int = get.volumeIntegral(self)
+            vol_int = @(v) sum(shiftdim(self.z_int,-2).*mean(mean( v, 1 ),2 ) );
+        end
+
+        function energy = get.exactTotalEnergy(self)
+            if self.isHydrostatic == 1
+                [u,v,ape] = self.variableWithName('u','v','ape');
+                energy = self.volumeIntegral( (u.^2 + v.^2)/2 + ape);
+            else
+                [u,v,w,ape] = self.variableWithName('u','v','w','ape');
+                energy = self.volumeIntegral( (u.^2 + v.^2 + w.^2)/2 + ape);
+            end
+        end
+
+        function enstrophy = get.exactPotentialEnstrophy(self)
+            enstrophy = self.volumeIntegral(self.apv.*self.apv)/2;
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
