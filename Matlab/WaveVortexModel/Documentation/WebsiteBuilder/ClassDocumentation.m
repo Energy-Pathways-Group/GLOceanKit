@@ -12,6 +12,7 @@ classdef ClassDocumentation < handle
 
     properties
         name string
+        websiteRootURL
         pathOfClassFolderOnWebsite
         pathOfClassFolderOnHardDrive
         parent
@@ -35,6 +36,7 @@ classdef ClassDocumentation < handle
         function self = ClassDocumentation(name,options)
             arguments
                 name
+                options.websiteRootURL
                 options.buildFolder % the folder where we are dumping everything on the local hard drive. This will become the *root* website folder
                 options.websiteFolder % the folder relative to the root website folder
                 options.parent = []
@@ -43,6 +45,7 @@ classdef ClassDocumentation < handle
                 options.excludedSuperclasses = {'handle'};
             end
             self.name = name;
+            self.websiteRootURL = options.websiteRootURL;
             self.parent = options.parent;
             self.grandparent = options.grandparent;
             self.nav_order = options.nav_order;

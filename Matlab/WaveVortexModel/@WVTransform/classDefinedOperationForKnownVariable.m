@@ -111,7 +111,7 @@ for iOp = 1:length(variableName)
 
         case 'rho_nm'
             varAnnotation = WVVariableAnnotation('rho_nm',{'z'},'kg m^{-3}', 'no-motion density');
-            f = @(wvt) sort(wvt.rho_bar,1,"descend");
+            f = @(wvt) squeeze(mean(mean(reshape( sort(wvt.rho_total(:),'descend'), size(wvt.rho_total)),1),2));
 
         case 'rho_e'
             varAnnotation = WVVariableAnnotation('rho_e',options.spatialDimensionNames,'kg/m3', 'excess density');
