@@ -1,4 +1,11 @@
-GLOceanKit
+GLOceanKit has moved!
+
+If you are looking for the WaveVortexModel, go to [wavevortexmodel.org](https://wavevortexmodel.org).
+
+If you are looking for one of the other packages in GLOceanKit, go to [OceanKit](https://github.com/JeffreyEarly/OceanKit) and scroll down to the list of "Packages in this repository".
+
+
+GLOceanKit (Old)
 ===========
 GLOceanKit is a collection of models and analysis tools for physical oceanography.
 
